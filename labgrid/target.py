@@ -19,5 +19,5 @@ class Target(object):
         return result
 
     def __repr__(self):
-        return 'Target("{}",{},{})'.format(self.name, self.resources,
+        return 'Target({},{},{})'.format(self.name, self.resources,
                                            self.protocols)

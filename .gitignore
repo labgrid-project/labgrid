@@ -3,3 +3,7 @@
 .cache
 /MANIFEST
 .tox
+/.#tox.ini
+/.eggs/README.txt
+*.egg
+*.egg-info

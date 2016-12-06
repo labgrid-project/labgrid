@@ -1,13 +1,15 @@
 import requests as r
 import json
+import attr
 
 HOST = 'localhost'
 PORT = '8080'
 USERNAME = 'admin'
 PASSWORD = 'admin'
 
+@attr.s
 class HawkbitTestClient:
-    def __init__(self):
+    def __attr_post_init__(self):
         self.host = HOST
         self.port = PORT
         self.auth = (USERNAME, PASSWORD)

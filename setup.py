@@ -15,7 +15,8 @@ setup(name='labgrid',
         'mock-import',
       ],
       install_requires=[
-        "pyserial"
+          "pyserial",
+          "attrs"
       ],
       packages=['labgrid', 'labgrid.resource', 'labgrid.protocol', 'labgrid.external'],
      )

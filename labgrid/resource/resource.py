@@ -1,4 +1,9 @@
-class Resource(object):
+import abc
+
+class Resource(abc.ABC):
+    def __init__ (self, target, upper):
+        self.target.resources.append(upper)
+
     def on():
         raise NotImplementedError
 

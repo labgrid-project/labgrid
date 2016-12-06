@@ -1,6 +1,10 @@
+import attr
+
+@attr.s
 class Target(object):
-    def __init__(self, name):
-        self.name = name
+    name = attr.ib(validator=attr.validators.instance_of(str))
+
+    def __attrs_post_init__(self):
         self.resources = []
         self.protocols = []
 
@@ -17,7 +21,3 @@ class Target(object):
             if isinstance(p, cls):
                 result.append(p)
         return result
-
-    def __repr__(self):
-        return 'Target({},{},{})'.format(self.name, self.resources,
-                                           self.protocols)

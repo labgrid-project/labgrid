@@ -7,3 +7,5 @@
 /.eggs/README.txt
 *.egg
 *.egg-info
+/venv
+/build

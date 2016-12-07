@@ -15,5 +15,11 @@ class SerialDriver(ConsoleProtocol):
         self.port.timeout=1.0
 
     def run(self, cmd: str):
+        """
+        Runs the supplied cmd and returns the result
+
+        Arguments:
+        cmd -- cmd to be run
+        """
         self.port.write("{}\n".format(cmd).encode("utf-8"))
         return self.port.read()

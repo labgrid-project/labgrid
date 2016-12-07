@@ -13,9 +13,21 @@ class SerialPort(IOResource):
         self.target.resources.append(self)
 
     def read(self, size: int=1024):
+        """
+        Reads 'size' bytes from the serialport
+
+        Keyword Arguments:
+        size -- amount of bytes to read, defaults to 1024
+        """
         return self.serial.read(size)
 
     def write(self, data: bytes):
+        """
+        Writes 'data' to the serialport
+
+        Arguments:
+        data -- data to write, must be bytes
+        """
         self.serial.write(data)
 
     def __del__(self):

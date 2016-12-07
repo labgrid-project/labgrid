@@ -16,9 +16,9 @@ class Target(object):
         Arguments:
         cls -- resource-class to return as a resource
         """
-        for r in self.resources:
-            if isinstance(r, cls):
-                return r
+        for res in self.resources:
+            if isinstance(res, cls):
+                return res
         return None
 
     def get_driver(self, cls):
@@ -29,7 +29,7 @@ class Target(object):
         Arguments:
         cls -- driver-class to return as a resource
         """
-        for d in self.drivers:
-            if isinstance(d, cls):
-                return d
+        for drv in self.drivers:
+            if isinstance(drv, cls):
+                return drv
         return None

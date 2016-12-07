@@ -9,8 +9,12 @@ class SerialPort(IOResource):
     speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))
 
     def __attrs_post_init__(self):
-        self.serial = serial.Serial(self.port, self.speed) #pylint: disable=attribute-defined-outside-init
+        self.serial = serial.Serial() #pylint: disable=attribute-defined-outside-init
+        self.serial.port = self.port
+        self.serial.baudrate = self.speed
+        self.serial.timeout = 0
         self.target.resources.append(self) #pylint: disable=no-member
+        self.status = 0 #pylint: disable=attribute-defined-outside-init
 
     def read(self, size: int=1024):
         """
@@ -29,6 +33,17 @@ class SerialPort(IOResource):
         data -- data to write, must be bytes
         """
         self.serial.write(data)
+        self.serial.flush()
+
+    def open(self):
+        """Opens the serialport, does nothing if it is already closed"""
+        if not self.status:
+            self.serial.open()
+
+    def close(self):
+        """Closes the serialport, does nothing if it is already closed"""
+        if self.status:
+            self.serial.close()
 
     def __del__(self):
         if self.serial:

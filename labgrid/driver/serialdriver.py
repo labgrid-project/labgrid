@@ -1,31 +1,36 @@
 import attr
+import pexpect
 from ..protocol import ConsoleProtocol
 from ..resource import SerialPort
-import pexpect
+from .exception import NoResourceException
 
 @attr.s
 class SerialDriver(ConsoleProtocol):
+    """
+    Driver implementing the ConsoleProtocol interface over a SerialPort connection
+    """
     target = attr.ib()
 
     def __attrs_post_init__(self):
         self.port = self.target.get_resource(SerialPort) #pylint: disable=no-member,attribute-defined-outside-init
         if not self.port:
-            raise NotImplementedError
+            raise NoResourceException("Target has no SerialPort Resource")
         self.target.drivers.append(self) #pylint: disable=no-member
-        self.port.timeout = 1.0 #pylint: disable=no-member
+        self.port.open()
+        self.status = 1 #pylint: disable=attribute-defined-outside-init
 
-    def run(self, cmd: str):
+
+    def write(self, data: bytes):
         """
-        Runs the supplied cmd and returns the result
 
         Arguments:
-        cmd -- cmd to be run
+        data -- data to be send
         """
-        self.port.write("{}\n".format(cmd).encode("utf-8"))
-        return self.port.read()
+        self.port.write(data)
+        self.port.flush()
 
-    def login(self):
+    def read(self):
         """
-        Login to the test device and change state
+        Reads data from the underlying port
         """
-        pass
+        return self.port.read()

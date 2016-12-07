@@ -5,8 +5,8 @@ class Target(object):
     name = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
-        self.resources = []
-        self.drivers = []
+        self.resources = [] #pylint: disable=attribute-defined-outside-init
+        self.drivers = [] #pylint: disable=attribute-defined-outside-init
 
     def get_resource(self, cls):
         """

@@ -1,6 +1,6 @@
-from .resource import IOResource
 import serial
 import attr
+from .resource import IOResource
 
 @attr.s
 class SerialPort(IOResource):
@@ -9,8 +9,8 @@ class SerialPort(IOResource):
     speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))
 
     def __attrs_post_init__(self):
-        self.serial = serial.Serial(self.port, self.speed)
-        self.target.resources.append(self)
+        self.serial = serial.Serial(self.port, self.speed) #pylint: disable=attribute-defined-outside-init
+        self.target.resources.append(self) #pylint: disable=no-member
 
     def read(self, size: int=1024):
         """

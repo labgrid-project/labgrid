@@ -1,9 +1,7 @@
-from unittest.mock import MagicMock, patch
-from mock_import import mock_import
-import pytest
+from unittest.mock import MagicMock
 import serial
-from labgrid.resource import SerialPort
-from labgrid import Target
+from labgrid.resource import SerialPort # pylint: disable=import-error
+from labgrid import Target # pylint: disable=import-error
 
 class TestSerialPort:
     def test_instanziation(self, monkeypatch):

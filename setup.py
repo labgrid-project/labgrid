@@ -16,7 +16,8 @@ setup(name='labgrid',
       ],
       install_requires=[
           "pyserial",
-          "attrs"
+          "attrs",
+          "pexpect"
       ],
-      packages=['labgrid', 'labgrid.resource', 'labgrid.protocol', 'labgrid.external'],
+      packages=['labgrid', 'labgrid.resource', 'labgrid.protocol', 'labgrid.external', 'labgrid.driver'],
      )

@@ -1,21 +1,13 @@
 import abc
+import attr
 
-class Resource(abc.ABC):
-    def __init__ (self, target, upper):
-        self.target.resources.append(upper)
-
-    def on():
-        raise NotImplementedError
-
-    def off():
-        raise NotImplementedError
-
-    def reset():
-        raise NotImplementedError
-
+@attr.s
+class IOResource(abc.ABC):
+    @abc.abstractmethod
     def read():
         raise NotImplementedError
 
+    @abc.abstractmethod
     def write():
         raise NotImplementedError
 

@@ -4,13 +4,15 @@ import subprocess
 HOST = '192.168.24.137'
 IMAGE_NAME = 'backing_store'
 
-class USBStick():
+@attr.s
+class USBStick(object):
+    host  = attr.ib(validator=attr.validators.instance_of(str))
+    image_name  = attr.ib(validator=attr.validators.instance_of(str))
+
     _UNPLUGGED = 1
     _PLUGGED = 2
 
-    def __init__(self):
-        self.host = HOST
-        self.image_name = IMAGE_NAME
+    def __post_attr_init__(self):
         self.ssh("mount /dev/mmcblk1p1 /mnt")
 
     def plug_in(self):

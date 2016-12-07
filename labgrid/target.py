@@ -6,18 +6,14 @@ class Target(object):
 
     def __attrs_post_init__(self):
         self.resources = []
-        self.protocols = []
+        self.drivers = []
 
     def get_resource(self, cls):
-        result = []
         for r in self.resources:
             if isinstance(r, cls):
-                result.append(r)
-        return result
+                return r
 
-    def get_protocol(self, cls):
-        result = []
-        for p in self.protocols:
-            if isinstance(p, cls):
-                result.append(p)
-        return result
+    def get_driver(self, cls):
+        for d in self.drivers:
+            if isinstance(d, cls):
+                return d

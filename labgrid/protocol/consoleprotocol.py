@@ -1,18 +1,10 @@
-from ..resource import SerialPort
 import pexpect
 import attr
+import abc
 
 @attr.s
-class ConsoleProtocol(object):
-    target = attr.ib()
+class ConsoleProtocol(abc.ABC):
 
-    def __attrs_post_init__(self):
-        super(ConsoleProtocol, self).__init__(self.target, self)
-        self.port = self.target.get_resource(SerialPort)[0]
-        self.expect = fdpexpect.fdspawn(self.port)
-
+    @abc.abstractmethod
     def run(self, command: str):
-        self.port.write(command + '\n')
-        return self.read()
-
-
+        raise NotImplementedError

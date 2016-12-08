@@ -6,7 +6,7 @@ class CommandProtocol(abc.ABC):
     """Abstract class for the CommandProtocol"""
 
     @abc.abstractmethod
-    def run(self):
+    def run(self, data: int):
         """
         Run a command
         """
@@ -15,6 +15,6 @@ class CommandProtocol(abc.ABC):
     @abc.abstractmethod
     def get_status(self):
         """
-        Get status of the command
+        Get status of the ShellDriver
         """
         raise NotImplementedError

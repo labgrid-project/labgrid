@@ -7,6 +7,7 @@ class SerialPort(IOResource):
     target = attr.ib()
     port = attr.ib(validator=attr.validators.instance_of(str))
     speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))
+    status = attr.ib(default=0, validator=attr.validators.instance_of(int))
 
     def __attrs_post_init__(self):
         self.serial = serial.Serial() #pylint: disable=attribute-defined-outside-init
@@ -44,6 +45,10 @@ class SerialPort(IOResource):
         """Closes the serialport, does nothing if it is already closed"""
         if self.status:
             self.serial.close()
+
+    def fileno(self):
+        """Return POSIX fileno"""
+        return self.serial.fileno()
 
     def __del__(self):
         if self.serial:

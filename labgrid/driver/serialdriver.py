@@ -1,5 +1,4 @@
 import attr
-import pexpect
 from ..protocol import ConsoleProtocol
 from ..resource import SerialPort
 from .exception import NoResourceException
@@ -34,3 +33,7 @@ class SerialDriver(ConsoleProtocol):
         Reads data from the underlying port
         """
         return self.port.read()
+
+    def fileno(self):
+        """Return POSIX fileno"""
+        return self.port.fileno()

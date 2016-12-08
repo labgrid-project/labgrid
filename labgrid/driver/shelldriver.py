@@ -22,8 +22,9 @@ class ShellDriver(CommandProtocol):
             raise NoDriverException("Resource has no {} Driver".format(SerialDriver))
         self.target.drivers.append(self) #pylint: disable=no-member
         self.expect = pexpect.fdpexpect.fdspawn(self.driver.fileno(),logfile=open('expect.log','bw')) #pylint: disable=attribute-defined-outside-init
-        self._check_prompt()
         self.re_vt100 = re.compile('(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]') #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
+        self._check_prompt()
+        self._inject_run()
 
     def run(self, cmd):
         """
@@ -32,14 +33,19 @@ class ShellDriver(CommandProtocol):
         Arguments:
         cmd - cmd to run on the shell
         """
+        # FIXME: Handle pexpect Timeout
+        cmp_command = "run {}".format(cmd)
         if self.status == 1:
-            self.expect.sendline("{}".format(cmd))
+            self.expect.sendline(cmp_command)
             self.expect.expect(self.prompt)
             # Remove VT100 Codes and split by newline
             data = self.re_vt100.sub('', self.expect.before.decode('utf-8'), count=1000000).split('\r\n')
             # Remove first element, the invoked cmd
-            data.remove(cmd)
-            return data
+            data.remove(cmp_command)
+            del(data[-1])
+            exitcode = int(data[-1])
+            data.remove(exitcode)
+            return (data, exitcode)
         else:
             return None
 
@@ -56,3 +62,7 @@ class ShellDriver(CommandProtocol):
             self.status = 1
         except TIMEOUT:
             self.status = 0
+
+    def _inject_run(self):
+        self.expect.sendline('run() { cmd=$1; shift; ${cmd} $@; echo "$?"; }')
+        self.expect.expect(self.prompt)

@@ -50,7 +50,10 @@ class ShellDriver(CommandProtocol):
             return None
 
     def get_status(self):
-        pass
+        """Returns the status of the shell-driver.
+        0 means not connected/found, 1 means shell
+        """
+        return self._status
 
     def _check_prompt(self):
         """

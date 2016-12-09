@@ -1,6 +1,7 @@
 import abc
 import attr
 
+
 @attr.s
 class IOResource(abc.ABC):
     @abc.abstractmethod
@@ -11,3 +12,9 @@ class IOResource(abc.ABC):
     def write():
         raise NotImplementedError
 
+@attr.s
+class InfoResource(abc.ABC):
+
+    @abc.abstractmethod
+    def get(data: str):
+        raise NotImplementedError

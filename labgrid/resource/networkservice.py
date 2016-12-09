@@ -1,8 +1,9 @@
 import attr
+from .resource import 
 
 
 @attr.s
-class NetworkResource(object):
+class NetworkResource(InfoResource):
     target = attr.ib()
     addresses = attr.ib(default={},
                         validator=attr.validators.instance_of(dict))

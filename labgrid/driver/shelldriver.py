@@ -11,9 +11,8 @@ from .exception import NoDriverException
 class ShellDriver(CommandProtocol):
     """ShellDriver - Driver to execute commands on the shell"""
     target = attr.ib()
-    prompt = attr.ib()
-    login_prompt = attr.ib(default="")
-    status = attr.ib(default=0)
+    prompt = attr.ib(default="",validator=attr.validators.instance_of(str))
+    login_prompt = attr.ib(default="",validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         # FIXME: Hard coded for only one driver, should find the correct one in order

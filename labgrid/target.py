@@ -1,5 +1,6 @@
 import attr
 
+
 @attr.s
 class Target(object):
     name = attr.ib(validator=attr.validators.instance_of(str))

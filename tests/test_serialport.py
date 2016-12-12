@@ -1,4 +1,3 @@
-import serial
 from labgrid.resource import SerialPort # pylint: disable=import-error
 
 class TestSerialPort:

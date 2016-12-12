@@ -19,5 +19,5 @@ setup(name='labgrid',
           "attrs",
           "pexpect"
       ],
-      packages=['labgrid', 'labgrid.resource', 'labgrid.protocol', 'labgrid.external', 'labgrid.driver'],
+      packages=['labgrid', 'labgrid.resource', 'labgrid.protocol', 'labgrid.external', 'labgrid.driver', 'labgrid.util'],
      )

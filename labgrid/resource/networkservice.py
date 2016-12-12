@@ -1,5 +1,5 @@
 import attr
-from .resource import 
+from .resource import InfoResource
 
 
 @attr.s

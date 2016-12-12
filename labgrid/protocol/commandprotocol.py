@@ -1,7 +1,6 @@
 import abc
-import attr
 
-@attr.s
+
 class CommandProtocol(abc.ABC):
     """Abstract class for the CommandProtocol"""
 

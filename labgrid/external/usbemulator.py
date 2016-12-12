@@ -1,5 +1,5 @@
-import pexpect
 import subprocess
+import attr
 
 HOST = '192.168.24.137'
 IMAGE_NAME = 'backing_store'

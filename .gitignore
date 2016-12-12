@@ -1,5 +1,6 @@
 *.pyc
 *__pycache__
+.*.swp
 .cache
 /MANIFEST
 .tox

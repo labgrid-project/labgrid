@@ -1,4 +1,5 @@
 import attr
+import serial
 from ..protocol import ConsoleProtocol
 from ..resource import SerialPort
 from .exception import NoResourceException
@@ -14,26 +15,45 @@ class SerialDriver(ConsoleProtocol):
         self.port = self.target.get_resource(SerialPort) #pylint: disable=no-member,attribute-defined-outside-init
         if not self.port:
             raise NoResourceException("Target has no SerialPort Resource")
+        self.serial = serial.Serial()
+        self.serial.port = self.port.port
+        self.serial.baudrate = self.port.speed
         self.target.drivers.append(self) #pylint: disable=no-member
-        self.port.open()
-        self.status = 1 #pylint: disable=attribute-defined-outside-init
+        self.status = 0 #pylint: disable=attribute-defined-outside-init
+        self.serial.timeout = 0
+        self.open()
 
+
+    def read(self, size: int=1024):
+        """
+        Reads 'size' bytes from the serialport
+
+        Keyword Arguments:
+        size -- amount of bytes to read, defaults to 1024
+        """
+        return self.serial.read(size)
 
     def write(self, data: bytes):
         """
+        Writes 'data' to the serialport
 
         Arguments:
-        data -- data to be send
+        data -- data to write, must be bytes
         """
-        self.port.write(data)
-        self.port.flush()
+        self.serial.write(data)
+        self.serial.flush()
 
-    def read(self):
-        """
-        Reads data from the underlying port
-        """
-        return self.port.read()
+    def open(self):
+        """Opens the serialport, does nothing if it is already closed"""
+        if not self.status:
+            self.serial.open()
+            self.status = 1
+
+    def close(self):
+        """Closes the serialport, does nothing if it is already closed"""
+        if self.status:
+            self.serial.close()
 
     def fileno(self):
         """Return POSIX fileno"""
-        return self.port.fileno()
+        return self.serial.fileno()

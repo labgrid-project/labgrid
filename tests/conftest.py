@@ -6,13 +6,17 @@ from labgrid.driver import SerialDriver
 
 @pytest.fixture(scope='function')
 def target():
-    t = Target('Test')
-    return t
+    return Target('Test')
 
 @pytest.fixture(scope='function')
-def port(target, monkeypatch):
+def serial_port(target):
+    SerialPort(target,'/dev/test')
+    return target
+
+@pytest.fixture(scope='function')
+def serial_driver(serial_port, monkeypatch):
     serial_mock = MagicMock
     import serial
     monkeypatch.setattr(serial, 'Serial', serial_mock)
-    s = SerialPort(target,'port')
-    return s
+    s = SerialDriver(serial_port,'port')
+    return serial_port

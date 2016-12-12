@@ -9,3 +9,4 @@
 *.egg-info
 /venv
 /build
+/doc/.build

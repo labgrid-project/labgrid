@@ -1,7 +1,7 @@
 import abc
 
 
-class PowerProcotol(abc.ABC):
+class PowerProtocol(abc.ABC):
     @abc.abstractmethod
     def on(self):
         raise NotImplementedError
@@ -11,5 +11,5 @@ class PowerProcotol(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def reset(self):
+    def cycle(self):
         raise NotImplementedError

@@ -24,13 +24,14 @@ class SerialDriver(ConsoleProtocol):
         self.open()
 
 
-    def read(self, size: int=1024):
+    def read(self, size: int=1, timeout: int=0):
         """
         Reads 'size' bytes from the serialport
 
         Keyword Arguments:
         size -- amount of bytes to read, defaults to 1024
         """
+        self.serial.timeout = 0
         return self.serial.read(size)
 
     def write(self, data: bytes):
@@ -40,8 +41,7 @@ class SerialDriver(ConsoleProtocol):
         Arguments:
         data -- data to write, must be bytes
         """
-        self.serial.write(data)
-        self.serial.flush()
+        return self.serial.write(data)
 
     def open(self):
         """Opens the serialport, does nothing if it is already closed"""

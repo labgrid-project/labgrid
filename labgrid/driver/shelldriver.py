@@ -6,6 +6,7 @@ from pexpect import TIMEOUT
 from ..protocol import CommandProtocol
 from .serialdriver import SerialDriver
 from .exception import NoDriverException
+from ..util import PtxExpect
 
 
 @attr.s
@@ -21,7 +22,7 @@ class ShellDriver(CommandProtocol):
         if not self.driver:
             raise NoDriverException("Resource has no {} Driver".format(SerialDriver))
         self.target.drivers.append(self) #pylint: disable=no-member
-        self.expect = pexpect.fdpexpect.fdspawn(self.driver.fileno(), logfile=open('expect.log', 'bw')) #pylint: disable=attribute-defined-outside-init
+        self.expect = PtxExpect(self.driver) #pylint: disable=attribute-defined-outside-init
         self.re_vt100 = re.compile('(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]') #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
         self._status = 0 #pylint: disable=attribute-defined-outside-init
         self._check_prompt()

@@ -15,7 +15,7 @@ class SerialDriver(ConsoleProtocol):
         self.port = self.target.get_resource(SerialPort) #pylint: disable=no-member,attribute-defined-outside-init
         if not self.port:
             raise NoResourceException("Target has no SerialPort Resource")
-        self.serial = serial.Serial()
+        self.serial = serial.Serial() #pylint: disable=attribute-defined-outside-init
         self.serial.port = self.port.port
         self.serial.baudrate = self.port.speed
         self.target.drivers.append(self) #pylint: disable=no-member

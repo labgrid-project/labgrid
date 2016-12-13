@@ -53,7 +53,3 @@ class SerialDriver(ConsoleProtocol):
         """Closes the serialport, does nothing if it is already closed"""
         if self.status:
             self.serial.close()
-
-    def fileno(self):
-        """Return POSIX fileno"""
-        return self.serial.fileno()

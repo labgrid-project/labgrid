@@ -42,3 +42,13 @@ class TestSerialDriver:
         s.serial = serial_mock
         s.close()
         assert(serial_mock.close.called)
+
+    def test_fileno(self, monkeypatch, serial_port):
+        serial_mock = Mock()
+        serial_mock.fileno = MagicMock(return_value=42)
+        monkeypatch.setattr(serial, 'Serial', serial_mock)
+        s = SerialDriver(serial_port)
+        s.serial = serial_mock
+        v = s.fileno()
+        assert(serial_mock.fileno.called)
+        assert(v == 42)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(name='labgrid',
       version='0.0.1',
@@ -18,7 +18,7 @@ setup(name='labgrid',
         'pyserial',
         'attrs',
         'pexpect',
-        'pyaml',
+        'pyyaml',
       ],
       packages=[
         'labgrid',

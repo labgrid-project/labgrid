@@ -3,9 +3,9 @@ import abc
 
 class FilesystemProtocol(abc.ABC):
     @abc.abstractmethod
-    def upload(self, filename: str):
+    def put(self, filename: str):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def download(self, filename: str):
+    def get(self, filename: str):
         raise NotImplementedError

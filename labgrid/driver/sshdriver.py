@@ -24,8 +24,8 @@ class SSHDriver(CommandProtocol, FilesystemProtocol):
     def get_status(self):
         pass
 
-    def upload(self, filename):
+    def put(self, filename):
         pass
 
-    def download(self, filename):
+    def get(self, filename):
         pass

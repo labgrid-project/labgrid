@@ -9,6 +9,6 @@ class TestSSHDriver:
             SSHDriver(target)
 
     def test_create(self, target):
-        target.add_resource(NetworkService())
+        target.add_resource(NetworkService("1.2.3.4"))
         s = SSHDriver(target)
         assert(isinstance(s, SSHDriver))

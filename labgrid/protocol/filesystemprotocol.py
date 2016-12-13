@@ -1,7 +1,7 @@
 import abc
 
 
-class FileSytemProtocol(abc.ABC):
+class FilesystemProtocol(abc.ABC):
     @abc.abstractmethod
     def upload(self, filename: str):
         raise NotImplementedError

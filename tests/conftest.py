@@ -10,7 +10,7 @@ def target():
 
 @pytest.fixture(scope='function')
 def serial_port(target):
-    SerialPort(target,'/dev/test')
+    target.add_resource(SerialPort('/dev/test'))
     return target
 
 @pytest.fixture(scope='function')

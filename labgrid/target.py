@@ -1,4 +1,5 @@
 import attr
+from .driver.exception import NoResourceException
 
 
 @attr.s
@@ -21,6 +22,27 @@ class Target(object):
             if isinstance(res, cls):
                 return res
         return None
+
+    def add_resource(self, res):
+        """
+        Helper function to add a resource of the target.
+
+        Arguments:
+        res - resource to be added
+        """
+        self.resources.append(res)
+
+    def rm_resource(self, res):
+        """
+        Helper function to remove a resource of the target.
+
+        Arguments:
+        res - resource to be removed
+        """
+        try:
+            self.resources.remove(res)
+        except ValueError:
+            raise NoResourceException("Can't remove resource, not part of the target")
 
     def get_driver(self, cls):
         """

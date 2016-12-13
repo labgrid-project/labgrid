@@ -3,8 +3,7 @@ import re
 import attr
 import pexpect.fdpexpect
 from pexpect import TIMEOUT
-from ..protocol import CommandProtocol
-from .serialdriver import SerialDriver
+from ..protocol import CommandProtocol, ConsoleProtocol
 from .exception import NoDriverException
 from ..util import PtxExpect
 
@@ -18,11 +17,11 @@ class ShellDriver(CommandProtocol):
 
     def __attrs_post_init__(self):
         # FIXME: Hard coded for only one driver, should find the correct one in order
-        self.driver = self.target.get_driver(SerialDriver) #pylint: disable=no-member,attribute-defined-outside-init
-        if not self.driver:
-            raise NoDriverException("Resource has no {} Driver".format(SerialDriver))
+        self.console = self.target.get_driver(ConsoleProtocol) #pylint: disable=no-member,attribute-defined-outside-init
+        if not self.console:
+            raise NoDriverException("Resource has no {} Driver".format(ConsoleProtocol))
         self.target.drivers.append(self) #pylint: disable=no-member
-        self.expect = PtxExpect(self.driver) #pylint: disable=attribute-defined-outside-init
+        self.expect = PtxExpect(self.console) #pylint: disable=attribute-defined-outside-init
         self.re_vt100 = re.compile('(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]') #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
         self._status = 0 #pylint: disable=attribute-defined-outside-init
         self._check_prompt()

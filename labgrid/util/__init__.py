@@ -1,2 +1,2 @@
 from .expect import PtxExpect
-from .timeout import PtxTimeout
+from .timeout import Timeout

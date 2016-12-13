@@ -4,10 +4,12 @@ import attr
 import pexpect.fdpexpect
 from pexpect import TIMEOUT
 from ..protocol import CommandProtocol, ConsoleProtocol
-from .exception import NoDriverError
 from ..util import PtxExpect
+from ..factory import target_factory
+from .exception import NoDriverError
 
 
+@target_factory.reg_driver
 @attr.s
 class ShellDriver(CommandProtocol):
     """ShellDriver - Driver to execute commands on the shell"""

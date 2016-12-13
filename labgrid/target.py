@@ -3,7 +3,7 @@ from .driver.exception import NoResourceError
 
 
 @attr.s
-class Target(object):
+class Target:
     name = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
@@ -56,3 +56,13 @@ class Target(object):
             if isinstance(drv, cls):
                 return drv
         return None
+
+    def add_driver(self, drv):
+        """
+        Helper function to add a driver of the target.
+
+        Arguments:
+        drv - drvier to be added
+        """
+        self.drivers.append(drv)
+

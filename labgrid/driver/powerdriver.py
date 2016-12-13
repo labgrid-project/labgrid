@@ -2,9 +2,11 @@ import attr
 import subprocess
 import time
 from ..protocol import PowerProtocol
+from ..factory import target_factory
 from .exception import NoDriverError
 
 
+@target_factory.reg_driver
 @attr.s
 class ManualPowerDriver(PowerProtocol):
     """ManualPowerDriver - Driver to tell the user to control a target's power"""
@@ -28,6 +30,7 @@ def _external_cmd(instance, attribute, value):
             .format(name=attribute.name, value=value),
         )
 
+@target_factory.reg_driver
 @attr.s
 class ExternalPowerDriver(PowerProtocol):
     """ExternalPowerDriver- Driver using an external command to control a target's power"""

@@ -1,9 +1,11 @@
 import attr
 from ..protocol import CommandProtocol, FilesystemProtocol
 from ..resource import NetworkService
+from ..factory import target_factory
 from .exception import NoResourceError
 
 
+@target_factory.reg_driver
 @attr.s
 class SSHDriver(CommandProtocol, FilesystemProtocol):
     """SSHDriver - Driver to execute commands via SSH"""

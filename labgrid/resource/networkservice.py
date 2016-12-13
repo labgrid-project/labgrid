@@ -1,7 +1,9 @@
 import attr
+from ..factory import target_factory
 from .resource import InfoResource
 
 
+@target_factory.reg_resource
 @attr.s
 class NetworkService(InfoResource):
     addresses = attr.ib(default={},

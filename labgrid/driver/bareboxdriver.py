@@ -1,8 +1,10 @@
 import attr
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
+from ..factory import target_factory
 from .exception import NoDriverError
 
 
+@target_factory.reg_driver
 @attr.s
 class BareboxDriver(CommandProtocol, LinuxBootProtocol):
     """BareboxDriver - Driver to control barebox via the console"""

@@ -5,7 +5,7 @@ from .target import Target
 
 
 @attr.s
-class Environment(object):
+class Environment:
     """An environment encapsulates targets."""
     config_file = attr.ib(default="config.yaml", validator=attr.validators.instance_of(str))
 

@@ -6,7 +6,7 @@ SERIAL_PORT = '/dev/ttyUSB1'
 PASSWORD = 'password'
 PROMPT = "root@linux:~#"
 
-class SerialExpect(object):
+class SerialExpect:
     def __init__(self):
         self.serial = serial.Serial(SERIAL_PORT, 115200)
         self.expect = fdpexpect.fdspawn(self.serial,logfile=open('expect.log','bw'))

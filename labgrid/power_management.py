@@ -6,7 +6,7 @@ RL_DEVICE = 'kerlink'
 
 select = {'rl': Remotelab, 'user': UserInput}
 
-class PowerManager(object):
+class PowerManager:
    def __init__(self):
        "Provides power management for the test device"
        self._power = select['rl']()
@@ -20,7 +20,7 @@ class PowerManager(object):
    def off(self):
       self._power.off()
 
-class UserInput(object):
+class UserInput:
    def __init__(self):
       pass
 

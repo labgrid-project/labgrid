@@ -2,8 +2,11 @@ import attr
 import serial
 from ..protocol import ConsoleProtocol
 from ..resource import SerialPort
+from ..factory import target_factory
 from .exception import NoResourceError
 
+
+@target_factory.reg_driver
 @attr.s
 class SerialDriver(ConsoleProtocol):
     """

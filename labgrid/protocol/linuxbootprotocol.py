@@ -1,6 +1,7 @@
 import attr
 import abc
 
+
 class LinuxBootProtocol(abc.ABC):
     @abc.abstractmethod
     def boot(self, name: str):

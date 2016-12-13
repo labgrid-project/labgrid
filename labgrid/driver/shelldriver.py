@@ -16,7 +16,6 @@ class ShellDriver(CommandProtocol):
     login_prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
-        # FIXME: Hard coded for only one driver, should find the correct one in order
         self.console = self.target.get_driver(ConsoleProtocol) #pylint: disable=no-member,attribute-defined-outside-init
         if not self.console:
             raise NoDriverException("Resource has no {} Driver".format(ConsoleProtocol))

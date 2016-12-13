@@ -26,28 +26,28 @@ class USBStick(object):
 
     def upload_image(self, image):
         if not self.status == USBStick.UNPLUGGED:
-            raise StateException("Device stioll plugged in, can't insert new image")
+            raise StatError("Device stioll plugged in, can't insert new image")
         subprocess.call('scp {filname} {host}:/tmp/{image}').format(filename=image)
 
     def ssh(self, cmd):
         try:
             call = subprocess.call('ssh {host} {cmd}').format(host=self.host, cmd=cmd)
         except:
-            raise ExecutionException('Call failed: {}'.format(call))
+            raise ExecutioError('Call failed: {}'.format(call))
 
     def __del__(self):
         self.ssh("modprobe -r g_mass_storage")
 
-class ExecutionException(Exception):
+class ExecutioError(Exception):
     def __init__(self, msg):
         self.msg = msg
 
     def __repr__(self):
-        return "ExecutionException({msg})".format(msg=self.msg)
+        return "ExecutioError({msg})".format(msg=self.msg)
 
-class StateException(Exception):
+class StatError(Exception):
     def __init__(self, msg):
         self.msg = msg
 
     def __repr__(self):
-        return "StateException({msg})".format(msg=self.msg)
+        return "StatError({msg})".format(msg=self.msg)

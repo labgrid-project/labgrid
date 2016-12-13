@@ -1,5 +1,5 @@
 import pytest
-from labgrid.driver import NoResourceException
+from labgrid.driver import NoResourcError
 from labgrid import Target
 
 class TestTarget:
@@ -22,7 +22,7 @@ class TestTarget:
     def test_rm_resource_fail(self, target):
         class a():
             pass
-        with pytest.raises(NoResourceException):
+        with pytest.raises(NoResourcError):
             target.rm_resource(a())
             assert isinstance(target.get_resource(a),a)
 

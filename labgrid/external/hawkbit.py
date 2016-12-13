@@ -34,7 +34,7 @@ class HawkbitTestClient:
 
     def add_distributionset(self):
         if not self.module_id:
-            raise HawkbitException("No softwaremodule added")
+            raise HawkbiError("No softwaremodule added")
         testdata = [ { 'name': 'Test_distribution {}'.format(self.version)
                        ,'description': 'Test distribution'
                        ,'version': str(self.version)
@@ -45,14 +45,14 @@ class HawkbitTestClient:
 
     def add_artifact(self, filename: str):
         if not self.module_id:
-            raise HawkbitException("No softwaremodule added")
+            raise HawkbiError("No softwaremodule added")
         endpoint = 'softwaremodules/{}/artifacts'.format(self.module_id)
 
         self.post_binary(endpoint, filename)
 
     def assign_target(self):
         if not self.distribution_id:
-            raise HawkbitException("No distribution added")
+            raise HawkbiError("No distribution added")
         endpoint = 'distribuionsets/{}/assignedTargets'.format(self.distribution_id)
         testdata = [{ 'id': '1' }]
 
@@ -64,26 +64,26 @@ class HawkbitTestClient:
         headers = {'Content-Type': 'application/json;charset=UTF-8' }
         req = r.post(self.url.format(endpoint=endpoint, host=self.host,port=self.port), headers=headers, auth=self.auth, json=data)
         if req.status_code != 201:
-            raise HawkbitException('Wrong statuscode, got {} instead of 201, with error {}'.format(req.status_code, req.json()))
+            raise HawkbiError('Wrong statuscode, got {} instead of 201, with error {}'.format(req.status_code, req.json()))
         return req.json()
 
     def post_binary(self, endpoint: str, filename: str):
         files = { 'file': open(filename, 'rb') }
         req = r.post(self.url.format(endpoint=endpoint,host=self.host,port=self.port), auth=self.auth, files=files)
         if req.status_code != 201:
-            raise HawkbitException('Wrong statuscode, got {} instead of 201, with error {}'.format(req.status_code, req.json()))
+            raise HawkbiError('Wrong statuscode, got {} instead of 201, with error {}'.format(req.status_code, req.json()))
         return req.json()
 
     def get_endpoint(self, endpoint: str):
         req = r.get(self.url.format(endpoint=endpoint,host=self.host,port=self.port), headers=headers, auth=self.auth)
         if req.status_code != 200:
-            raise HawkbitException('Wrong statuscode, got {} instead of 200, with error {}'.format(req.status_code, req.json()))
+            raise HawkbiError('Wrong statuscode, got {} instead of 200, with error {}'.format(req.status_code, req.json()))
         return req.json()
 
 
 @attr.s
-class HawkbitException(Exception):
+class HawkbiError(Exception):
     msg = attr.ib()
 
     def __repr__(self):
-        return "HawkbitException({msg})".format(msg=self.msg)
+        return "HawkbiError({msg})".format(msg=self.msg)

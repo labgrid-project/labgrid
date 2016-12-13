@@ -2,10 +2,10 @@ import attr
 
 
 @attr.s
-class NoDriverException(Exception):
+class NoDriveError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
 
 
 @attr.s
-class NoResourceException(Exception):
+class NoResourcError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))

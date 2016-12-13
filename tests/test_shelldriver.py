@@ -1,6 +1,6 @@
 import pytest
 
-from labgrid.driver import ShellDriver, NoDriverException
+from labgrid.driver import ShellDriver, NoDriveError
 
 class TestShellDriver:
     def test_instance(self, serial_driver):
@@ -8,5 +8,5 @@ class TestShellDriver:
         assert(isinstance(s, ShellDriver))
 
     def test_no_driver(self, target):
-        with pytest.raises(NoDriverException):
+        with pytest.raises(NoDriveError):
             ShellDriver(target)

@@ -5,14 +5,14 @@ class TargetFactory:
 
     def reg_resource(self, cls):
         """Register a resource with the factory.
-        
+
         Returns the class to allow using it as a decorator."""
         self.resources[cls.__name__] = cls
         return cls
 
     def reg_driver(self, cls):
         """Register a driver with the factory.
-        
+
         Returns the class to allow using it as a decorator."""
         self.drivers[cls.__name__] = cls
         return cls

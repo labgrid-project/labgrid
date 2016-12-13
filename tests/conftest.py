@@ -18,5 +18,5 @@ def serial_driver(serial_port, monkeypatch):
     serial_mock = MagicMock
     import serial
     monkeypatch.setattr(serial, 'Serial', serial_mock)
-    s = SerialDriver(serial_port,'port')
+    s = SerialDriver(serial_port)
     return serial_port

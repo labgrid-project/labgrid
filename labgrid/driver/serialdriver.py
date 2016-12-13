@@ -2,7 +2,7 @@ import attr
 import serial
 from ..protocol import ConsoleProtocol
 from ..resource import SerialPort
-from .exception import NoResourcError
+from .exception import NoResourceError
 
 @attr.s
 class SerialDriver(ConsoleProtocol):
@@ -14,7 +14,7 @@ class SerialDriver(ConsoleProtocol):
     def __attrs_post_init__(self):
         self.port = self.target.get_resource(SerialPort) #pylint: disable=no-member,attribute-defined-outside-init
         if not self.port:
-            raise NoResourcError("Target has no SerialPort Resource")
+            raise NoResourceError("Target has no SerialPort Resource")
         self.serial = serial.Serial() #pylint: disable=attribute-defined-outside-init
         self.serial.port = self.port.port
         self.serial.baudrate = self.port.speed

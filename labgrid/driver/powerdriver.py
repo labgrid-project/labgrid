@@ -2,7 +2,7 @@ import attr
 import subprocess
 import time
 from ..protocol import PowerProtocol
-from .exception import NoDriveError
+from .exception import NoDriverError
 
 
 @attr.s

@@ -1,5 +1,5 @@
 import attr
-from .driver.exception import NoResourcError
+from .driver.exception import NoResourceError
 
 
 @attr.s
@@ -42,7 +42,7 @@ class Target(object):
         try:
             self.resources.remove(res)
         except ValueError:
-            raise NoResourcError("Can't remove resource, not part of the target")
+            raise NoResourceError("Can't remove resource, not part of the target")
 
     def get_driver(self, cls):
         """

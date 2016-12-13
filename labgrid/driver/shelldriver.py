@@ -4,7 +4,7 @@ import attr
 import pexpect.fdpexpect
 from pexpect import TIMEOUT
 from ..protocol import CommandProtocol, ConsoleProtocol
-from .exception import NoDriveError
+from .exception import NoDriverError
 from ..util import PtxExpect
 
 
@@ -18,7 +18,7 @@ class ShellDriver(CommandProtocol):
     def __attrs_post_init__(self):
         self.console = self.target.get_driver(ConsoleProtocol) #pylint: disable=no-member,attribute-defined-outside-init
         if not self.console:
-            raise NoDriveError("Resource has no {} Driver".format(ConsoleProtocol))
+            raise NoDriverError("Resource has no {} Driver".format(ConsoleProtocol))
         self.target.drivers.append(self) #pylint: disable=no-member
         self.expect = PtxExpect(self.console) #pylint: disable=attribute-defined-outside-init
         self.re_vt100 = re.compile('(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]') #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string

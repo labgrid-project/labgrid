@@ -2,11 +2,11 @@ from unittest.mock import Mock, MagicMock
 import pytest
 import serial
 
-from labgrid.driver import SerialDriver, NoResourcError
+from labgrid.driver import SerialDriver, NoResourceError
 
 class TestSerialDriver:
     def test_instanziation_fail_missing_port(self, target):
-        with pytest.raises(NoResourcError):
+        with pytest.raises(NoResourceError):
             SerialDriver(target)
 
     def test_instanziation(self, serial_port, monkeypatch):

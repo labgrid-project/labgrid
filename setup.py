@@ -15,10 +15,11 @@ setup(name='labgrid',
         'pytest-mock',
       ],
       install_requires=[
-        'pyserial',
         'attrs',
         'pexpect',
+        'pyserial',
         'pyyaml',
+        'requests',
       ],
       packages=[
         'labgrid',

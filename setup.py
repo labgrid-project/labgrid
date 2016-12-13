@@ -12,13 +12,13 @@ setup(name='labgrid',
       ],
       tests_require=[
         'pytest',
-        'mock-import',
+        'pytest-mock',
       ],
       install_requires=[
         'pyserial',
         'attrs',
         'pexpect',
-        'yaml',
+        'pyaml',
       ],
       packages=[
         'labgrid',

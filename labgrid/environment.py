@@ -6,16 +6,17 @@ from .target import Target
 
 @attr.s
 class Environment(object):
+    config = attr.ib(defautl="config.yaml", validator=attr.validators.instance_of(str))
+
     """An environment encapsulates targets."""
     def __attr_post_init__(self):
-        config = 'board.yaml'
-        with open(config) as filename:
+        self.targets = {} #pylint: disable=attribute-defined-outside-init
+        with open(self.config) as filename:
             try:
                 self.config = yaml.load(filename) #pylint: disable=attribute-defined-outside-init
             except:
-                raise NoConfigFoundError("{} could not be found".format(config))
+                raise NoConfigFoundError("{} could not be found".format(self.config))
 
-        self.targets = {} #pylint: disable=attribute-defined-outside-init
         for target in self.config:
             self.targets[target] = Target(target)
 

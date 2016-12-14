@@ -1,8 +1,10 @@
+import subprocess
+
 import attr
 from ..protocol import CommandProtocol, FilesystemProtocol
 from ..resource import NetworkService
 from ..factory import target_factory
-from .exception import NoResourceError
+from .exception import NoResourceError, ExecutionError
 
 
 @target_factory.reg_driver
@@ -19,7 +21,18 @@ class SSHDriver(CommandProtocol, FilesystemProtocol):
         self.target.drivers.append(self) #pylint: disable=no-member
 
     def run(self, cmd):
-        pass
+        complete_cmd = "ssh {user}@{host} {cmd}".format(user=self.networkservice.username,
+                                                        host=self.networkservice.address,
+                                                        cmd=cmd).split(' ')
+        try:
+            sub = subprocess.Popen(complete_cmd, stdout=subprocess.PIPE)
+            stdout, stderr = sub.communicate()
+            res = stdout.decode("utf-8").split('\n')
+            res.pop()
+            return (res, sub.returncode) 
+        except:
+            raise ExecutionError("error executing command: {}".format(complete_cmd))
+
     def run_check(self, cmd):
         """
         Runs the specified cmd on the shell and returns the output if successful,

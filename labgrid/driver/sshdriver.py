@@ -31,6 +31,7 @@ class SSHDriver(CommandProtocol, FilesystemProtocol):
         res = self.run(cmd)
         if res[1] != 0:
             raise ExecutionError(cmd)
+        return res[0]
 
     def get_status(self):
         pass

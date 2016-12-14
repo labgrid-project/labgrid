@@ -59,6 +59,7 @@ class SSHDriver(CommandProtocol, FilesystemProtocol):
         return res[0]
 
     def get_status(self):
+        """The SSHDriver is always connected, return 1"""
         return 1
 
     def put(self, filename):

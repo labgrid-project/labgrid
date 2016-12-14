@@ -17,6 +17,12 @@ class HawkbitTestClient:
         self.url = 'http://{host}:{port}/rest/v1/{endpoint}'
 
     def add_target(self, device_address: str, token: str):
+        """Add a target to the HawkBit Installation
+
+        Arguments:
+          - device_address: the device address of the added target
+          - token: token to uniquely identify the target
+        """
         testdata = [ { 'controllerId': "1"
                        ,'name': 'TestTarget {}'.format(self.version)
                        ,'description': 'test'

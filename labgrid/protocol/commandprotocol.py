@@ -12,8 +12,15 @@ class CommandProtocol(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def run_check(self, command: str):
+        """
+        Run a command, return str if succesful, ExecutionError otherwise
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def get_status(self):
         """
-        Get status of the ShellDriver
+        Get status of the Driver
         """
         raise NotImplementedError

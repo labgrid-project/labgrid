@@ -21,6 +21,9 @@ class BareboxDriver(CommandProtocol, LinuxBootProtocol):
     def run(self, cmd):
         pass
 
+    def run_check(self, cmd):
+        pass
+
     def get_status(self):
         pass
 

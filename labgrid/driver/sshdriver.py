@@ -21,6 +21,15 @@ class SSHDriver(CommandProtocol, FilesystemProtocol):
         self.target.drivers.append(self) #pylint: disable=no-member
 
     def run(self, cmd):
+        """Execute `cmd` on the target.
+
+        This method runs the specified `cmd` as a command on its target.
+        It uses the ssh shell command to run the command and parses the exitcode.
+        cmd - command to be run on the target
+
+        returns:
+        (stdout, stderr, returncode)
+        """
         complete_cmd = "ssh -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no {user}@{host} {cmd}".format(user=self.networkservice.username,
                                                                                                                     host=self.networkservice.address,
                                                                                                                     cmd=cmd).split(' ')
@@ -30,11 +39,11 @@ class SSHDriver(CommandProtocol, FilesystemProtocol):
             raise ExecutionError("error executing command: {}".format(complete_cmd))
 
         stdout, stderr = sub.communicate()
-        if sub.returncode != 0:
-            raise ExecutionError("Error executing remote command: {}, output {}/{}".format(complete_cmd, stdout,stderr))
-        res = stdout.decode("utf-8").split('\n')
-        res.pop()
-        return (res, sub.returncode)
+        stdout = stdout.decode("utf-8").split('\n')
+        stderr = stderr.decode("utf-8").split('\n')
+        stdout.pop()
+        stderr.pop()
+        return (stdout, stderr, sub.returncode)
 
     def run_check(self, cmd):
         """
@@ -45,7 +54,7 @@ class SSHDriver(CommandProtocol, FilesystemProtocol):
         cmd - cmd to run on the shell
         """
         res = self.run(cmd)
-        if res[1] != 0:
+        if res[2] != 0:
             raise ExecutionError(cmd)
         return res[0]
 

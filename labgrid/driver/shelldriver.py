@@ -47,7 +47,7 @@ class ShellDriver(CommandProtocol):
             del(data[-1])
             exitcode = int(data[-1])
             del(data[-1])
-            return (data, exitcode)
+            return (data, [''], exitcode)
         else:
             return None
 
@@ -60,7 +60,7 @@ class ShellDriver(CommandProtocol):
         cmd - cmd to run on the shell
         """
         res = self.run(cmd)
-        if res[1] != 0:
+        if res[2] != 0:
             raise ExecutionError(cmd)
         return res[0]
 

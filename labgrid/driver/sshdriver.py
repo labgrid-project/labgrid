@@ -20,6 +20,17 @@ class SSHDriver(CommandProtocol, FilesystemProtocol):
 
     def run(self, cmd):
         pass
+    def run_check(self, cmd):
+        """
+        Runs the specified cmd on the shell and returns the output if successful,
+        raises ExecutionError otherwise.
+
+        Arguments:
+        cmd - cmd to run on the shell
+        """
+        res = self.run(cmd)
+        if res[1] != 0:
+            raise ExecutionError(cmd)
 
     def get_status(self):
         pass

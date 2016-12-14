@@ -21,17 +21,20 @@ class SSHDriver(CommandProtocol, FilesystemProtocol):
         self.target.drivers.append(self) #pylint: disable=no-member
 
     def run(self, cmd):
-        complete_cmd = "ssh {user}@{host} {cmd}".format(user=self.networkservice.username,
-                                                        host=self.networkservice.address,
-                                                        cmd=cmd).split(' ')
+        complete_cmd = "ssh -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no {user}@{host} {cmd}".format(user=self.networkservice.username,
+                                                                                                                    host=self.networkservice.address,
+                                                                                                                    cmd=cmd).split(' ')
         try:
-            sub = subprocess.Popen(complete_cmd, stdout=subprocess.PIPE)
-            stdout, stderr = sub.communicate()
-            res = stdout.decode("utf-8").split('\n')
-            res.pop()
-            return (res, sub.returncode) 
+            sub = subprocess.Popen(complete_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except:
             raise ExecutionError("error executing command: {}".format(complete_cmd))
+
+        stdout, stderr = sub.communicate()
+        if sub.returncode != 0:
+            raise ExecutionError("Error executing remote command: {}, output {}/{}".format(complete_cmd, stdout,stderr))
+        res = stdout.decode("utf-8").split('\n')
+        res.pop()
+        return (res, sub.returncode)
 
     def run_check(self, cmd):
         """
@@ -47,7 +50,7 @@ class SSHDriver(CommandProtocol, FilesystemProtocol):
         return res[0]
 
     def get_status(self):
-        pass
+        return 1
 
     def put(self, filename):
         pass

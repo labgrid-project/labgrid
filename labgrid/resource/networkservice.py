@@ -7,3 +7,4 @@ from .resource import InfoResource
 @attr.s
 class NetworkService(InfoResource):
     address = attr.ib(validator=attr.validators.instance_of(str))
+    username = attr.ib(validator=attr.validators.instance_of(str))

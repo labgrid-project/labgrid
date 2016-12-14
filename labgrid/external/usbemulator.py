@@ -1,18 +1,25 @@
 import subprocess
 import attr
-
-HOST = '192.168.24.137'
-IMAGE_NAME = 'backing_store'
+from ..resource import NetworkService
+from ..protocol import CommandProtocol, FilesystemProtocol
+from ..driver import NoDriverError
 
 @attr.s
 class USBStick(object):
-    host  = attr.ib(validator=attr.validators.instance_of(str))
+    target = attr.ib()
     image_name  = attr.ib(validator=attr.validators.instance_of(str))
+    status = attr.ib(default=1)
 
     _UNPLUGGED = 1
     _PLUGGED = 2
 
     def __post_attr_init__(self):
+        self.command = self.target.get_driver(CommandProtocol) #pylint: disable=no-member
+        if not self.command:
+            raise NoDriverError("Target has no {} Driver".format(CommandProtocol))
+        # self.fileservice = self.target.get_driver(FilesystemProtocol) #pylint: disable=no-member
+        # if not self.fileservice:
+        #     raise NoDriverError("Target has no {} Driver".format(FilesystemProtocol))
         self.ssh("mount /dev/mmcblk1p1 /mnt")
 
     def plug_in(self):
@@ -22,18 +29,18 @@ class USBStick(object):
         self.ssh("modprobe -r g_mass_storage")
 
     def upload_file(self, filename):
-        subprocess.call('scp {filname} {host}:/tmp/{filename}').format(filename=filename)
+        subprocess.call('scp {filname} {host}:/tmp/{filename}'.format(filename=filename).split(' '))
 
     def upload_image(self, image):
-        if not self.status == USBStick.UNPLUGGED:
+        if not self.status == USBStick._UNPLUGGED:
             raise StateError("Device stioll plugged in, can't insert new image")
-        subprocess.call('scp {filname} {host}:/tmp/{image}').format(filename=image)
+        subprocess.call('scp {filname} {host}:/tmp/{image}'.format(filename=image).split(' '))
 
     def ssh(self, cmd):
         try:
-            call = subprocess.call('ssh {host} {cmd}').format(host=self.host, cmd=cmd)
+            self.command.run(cmd)
         except:
-            raise ExecutionError('Call failed: {}'.format(call))
+            raise ExecutionError('Call failed: {}'.format(cmd))
 
     def __del__(self):
         self.ssh("modprobe -r g_mass_storage")

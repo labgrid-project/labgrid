@@ -1,5 +1,7 @@
 import subprocess
 import tempfile
+import os
+import time
 import logging
 import shutil
 import atexit
@@ -8,7 +10,7 @@ import attr
 from ..protocol import CommandProtocol, FileTransferProtocol
 from ..resource import NetworkService
 from ..factory import target_factory
-from .exception import NoResourceError, ExecutionError
+from .exception import NoResourceError, ExecutionError, CleanUpError
 
 
 @target_factory.reg_driver
@@ -18,14 +20,42 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
     target = attr.ib()
 
     def __attrs_post_init__(self):
-        # FIXME: Hard coded for only one driver, should find the correct one in order
         self.networkservice = self.target.get_resource(NetworkService) #pylint: disable=no-member,attribute-defined-outside-init
         if not self.networkservice:
             raise NoResourceError("Target has no {} Resource".format(NetworkService))
         self.target.drivers.append(self) #pylint: disable=no-member
-        self.tmpdir = tempfile.mkdtemp(prefix='labgrid-ssh-tmp-')
-        atexit.register(self._cleanup)
         self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self.existing_master = self._check_master()
+        if not self.existing_master:
+            self._start_own_master()
+
+    def _start_own_master(self):
+        """Starts a controlmaster connection in a temporary directory."""
+        self.tmpdir = tempfile.mkdtemp(prefix='labgrid-ssh-tmp-')
+        self.control = os.path.join(self.tmpdir, 'control-{}'.format(self.networkservice.address))
+        args = ["ssh","-f", "-x", "-o", "ControlPersist=300", "-o", "PasswordAuthentication=no", "-o", "StrictHostKeyChecking=no", "-MN", "-S", self.control, '{}@{}'.format(self.networkservice.username, self.networkservice.address)]
+        self.process = subprocess.Popen(
+            args,
+        )
+
+        if self.process.wait(timeout=1) is not 0:
+            raise ExecutionError("failed to connect to {} with {} and {}".format(self.networkservice.address, args, self.process.wait()))
+
+        self._check_own_master()
+
+        self.logger.debug('Connected to {}'.format(self.networkservice.address))
+
+        atexit.register(self._cleanup_own_master)
+
+
+    def _check_own_master(self):
+        if not os.path.exists(self.control):
+            raise ExecutionError("no control socket to {}".format(self.networkservice.address))
+
+    def _check_master(self):
+        args = ["ssh", "-O", "check", "{}@{}".format(self.networkservice.username, self.networkservice.address)]
+        check = subprocess.call(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return check == 0
 
     def run(self, cmd):
         """Execute `cmd` on the target.
@@ -37,9 +67,14 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
         returns:
         (stdout, stderr, returncode)
         """
-        complete_cmd = "ssh -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no {user}@{host} {cmd}".format(user=self.networkservice.username,
-                                                                                                                    host=self.networkservice.address,
-                                                                                                                    cmd=cmd).split(' ')
+        if self.existing_master:
+            complete_cmd = "ssh -x {user}@{host} {cmd}".format(user=self.networkservice.username,
+                                                                                                                        host=self.networkservice.address,
+                                                                                                                        cmd=cmd).split(' ')
+        else:
+            complete_cmd = "ssh -x -o ControlPath={cpath} {user}@{host} {cmd}".format(cpath=self.control,user=self.networkservice.username,
+                                                                                                                        host=self.networkservice.address,
+                                                                                                                        cmd=cmd).split(' ')
         try:
             sub = subprocess.Popen(complete_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except:
@@ -75,5 +110,11 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
     def get(self, filename):
         pass
 
-    def _cleanup(self):
+    def _cleanup_own_master(self):
+        complete_cmd = "ssh -x -o ControlPath={cpath} -O exit {user}@{host}".format(cpath=self.control,user=self.networkservice.username,
+                                                         host=self.networkservice.address).split(' ')
+        res = subprocess.call(complete_cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        if res !=0:
+            raise CleanUpError("Could not cleanup ControlMaster")
         shutil.rmtree(self.tmpdir)

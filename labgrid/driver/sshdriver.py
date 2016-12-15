@@ -1,4 +1,7 @@
 import subprocess
+import tempfile
+import shutil
+import atexit
 
 import attr
 from ..protocol import CommandProtocol, FileTransferProtocol
@@ -19,6 +22,8 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
         if not self.networkservice:
             raise NoResourceError("Target has no {} Resource".format(NetworkService))
         self.target.drivers.append(self) #pylint: disable=no-member
+        self.tmpdir = tempfile.mkdtemp(prefix='labgrid-ssh-tmp-')
+        atexit.register(self._cleanup)
 
     def run(self, cmd):
         """Execute `cmd` on the target.
@@ -67,3 +72,6 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
 
     def get(self, filename):
         pass
+
+    def _cleanup(self):
+        shutil.rmtree(self.tmpdir)

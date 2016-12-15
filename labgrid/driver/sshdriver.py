@@ -1,7 +1,7 @@
 import subprocess
 
 import attr
-from ..protocol import CommandProtocol, FilesystemProtocol
+from ..protocol import CommandProtocol, FileTransferProtocol
 from ..resource import NetworkService
 from ..factory import target_factory
 from .exception import NoResourceError, ExecutionError
@@ -9,7 +9,7 @@ from .exception import NoResourceError, ExecutionError
 
 @target_factory.reg_driver
 @attr.s
-class SSHDriver(CommandProtocol, FilesystemProtocol):
+class SSHDriver(CommandProtocol, FileTransferProtocol):
     """SSHDriver - Driver to execute commands via SSH"""
     target = attr.ib()
 

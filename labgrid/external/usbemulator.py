@@ -1,7 +1,7 @@
 import subprocess
 import attr
 from ..resource import NetworkService
-from ..protocol import CommandProtocol, FilesystemProtocol
+from ..protocol import CommandProtocol, FileTransferProtocol
 from ..driver import NoDriverError
 
 @attr.s
@@ -17,9 +17,9 @@ class USBStick(object):
         self.command = self.target.get_driver(CommandProtocol) #pylint: disable=no-member
         if not self.command:
             raise NoDriverError("Target has no {} Driver".format(CommandProtocol))
-        # self.fileservice = self.target.get_driver(FilesystemProtocol) #pylint: disable=no-member
+        # self.fileservice = self.target.get_driver(FileTransferProtocol) #pylint: disable=no-member
         # if not self.fileservice:
-        #     raise NoDriverError("Target has no {} Driver".format(FilesystemProtocol))
+        #     raise NoDriverError("Target has no {} Driver".format(FileTransferProtocol))
         self.ssh("mount /dev/mmcblk1p1 /mnt")
 
     def plug_in(self):

@@ -2,4 +2,4 @@ from .commandprotocol import CommandProtocol
 from .consoleprotocol import ConsoleProtocol
 from .linuxbootprotocol import LinuxBootProtocol
 from .powerprotocol import PowerProtocol
-from .filesystemprotocol import FilesystemProtocol
+from .filetransferprotocol import FileTransferProtocol

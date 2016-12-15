@@ -1,7 +1,7 @@
 import abc
 
 
-class FilesystemProtocol(abc.ABC):
+class FileTransferProtocol(abc.ABC):
     @abc.abstractmethod
     def put(self, filename: str):
         raise NotImplementedError

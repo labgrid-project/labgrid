@@ -1,5 +1,6 @@
 import subprocess
 import tempfile
+import logging
 import shutil
 import atexit
 
@@ -24,6 +25,7 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
         self.target.drivers.append(self) #pylint: disable=no-member
         self.tmpdir = tempfile.mkdtemp(prefix='labgrid-ssh-tmp-')
         atexit.register(self._cleanup)
+        self.logger = logging.getLogger("{}({})".format(self, self.target))
 
     def run(self, cmd):
         """Execute `cmd` on the target.

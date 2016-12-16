@@ -11,13 +11,13 @@ setup(name='labgrid',
         'pytest-runner',
       ],
       tests_require=[
-        'pytest',
         'pytest-mock',
       ],
       install_requires=[
         'attrs',
         'pexpect',
         'pyserial',
+        'pytest',
         'pyyaml',
         'requests',
       ],
@@ -29,5 +29,15 @@ setup(name='labgrid',
         'labgrid.provider',
         'labgrid.resource',
         'labgrid.util',
+      ],
+      # the following makes a plugin available to pytest
+      entry_points = {
+          'pytest11': [
+              'name_of_plugin = labgrid.pytestplugin',
+          ]
+      },
+      # custom PyPI classifier for pytest plugins
+      classifiers=[
+          "Framework :: Pytest",
       ],
      )

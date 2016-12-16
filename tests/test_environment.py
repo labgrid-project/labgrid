@@ -11,9 +11,10 @@ class TestEnvironment:
         p = tmpdir.join("config.yaml")
         p.write("""
         test1:
-          - keks
+          drivers: {}
         test2:
-          - cookie
+          role: foo
+          resources: {}
         """)
         e = Environment(str(p))
         assert(isinstance(e, Environment))
@@ -22,9 +23,10 @@ class TestEnvironment:
         p = tmpdir.join("config.yaml")
         p.write("""
         test1:
-          - keks
+          drivers: {}
         test2:
-          - cookie
+          role: foo
+          resources: {}
         """)
         e = Environment(str(p))
         assert(e.get_target("test1"))

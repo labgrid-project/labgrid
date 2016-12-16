@@ -8,30 +8,31 @@ setup(name='labgrid',
       author='Rouven Czerwinski and Jan Luebbe',
       url='https://github.com/labgrid-project',
       setup_requires=[
-        'pytest-runner',
+          'pytest-runner',
       ],
       tests_require=[
-        'pytest-mock',
+          'pytest-mock',
       ],
       install_requires=[
-        'attrs',
-        'pexpect',
-        'pyserial',
-        'pytest',
-        'pyyaml',
-        'requests',
+          'attrs',
+          'pexpect',
+          'pyserial',
+          'pytest',
+          'pyyaml',
+          'requests',
       ],
       packages=[
-        'labgrid',
-        'labgrid.driver',
-        'labgrid.external',
-        'labgrid.protocol',
-        'labgrid.provider',
-        'labgrid.resource',
-        'labgrid.util',
+          'labgrid',
+          'labgrid.driver',
+          'labgrid.external',
+          'labgrid.protocol',
+          'labgrid.provider',
+          'labgrid.pytestplugin',
+          'labgrid.resource',
+          'labgrid.util',
       ],
       # the following makes a plugin available to pytest
-      entry_points = {
+      entry_points={
           'pytest11': [
               'name_of_plugin = labgrid.pytestplugin',
           ]

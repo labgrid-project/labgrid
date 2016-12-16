@@ -1,4 +1,5 @@
 import re
+import random
 
 import attr
 from pexpect import TIMEOUT
@@ -35,7 +36,7 @@ class ShellDriver(CommandProtocol):
         cmd - cmd to run on the shell
         """
         # FIXME: Handle pexpect Timeout
-        cmp_command = "run {}".format(cmd)
+        cmp_command = '''run "{}"'''.format(cmd)
         if self._status == 1:
             self.expect.sendline(cmp_command)
             self.expect.expect(self.prompt)
@@ -82,5 +83,5 @@ class ShellDriver(CommandProtocol):
             self._status = 0
 
     def _inject_run(self):
-        self.expect.sendline('run() { cmd=$1; shift; ${cmd} $@; echo "$?"; }')
+        self.expect.sendline('''run() { sh -c "$@"; echo "$?"; }''')
         self.expect.expect(self.prompt)

@@ -54,6 +54,7 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
 
     def _check_master(self):
         args = ["ssh", "-O", "check", "{}@{}".format(self.networkservice.username, self.networkservice.address)]
+        # FIXME: API change in python3.5 call -> run
         check = subprocess.call(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return check == 0
 
@@ -104,15 +105,48 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
         """The SSHDriver is always connected, return 1"""
         return 1
 
-    def put(self, filename):
-        pass
+    def put(self, filename, remotepath=None):
+        if self.existing_master:
+            transfer_cmd = "scp {filename} {user}@{host}:{remotepath}".format(filename=filename,
+                                                                              user=self.networkservice.username,
+                                                                              host=self.networkservice.address,
+                                                                              remotepath=remotepath).split(' ')
+        else:
+            transfer_cmd = "scp -o ControlPath={cpath} {filename} {user}@{host}:{remotepath}".format(cpath=self.control,
+                                                                                                     filename=filename,
+                                                                                                     user=self.networkservice.username,
+                                                                                                     host=self.networkservice.address,
+                                                                                                     remotepath=remotepath).split(' ')
+        try:
+            # FIXME: API change in python3.5 call -> run
+            sub = subprocess.call(transfer_cmd)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except:
+            raise ExecutionError("error executing command: {}".format(transfer_cmd))
+        if sub is not 0:
+            raise ExecutionError("error executing command: {}".format(transfer_cmd))
 
     def get(self, filename):
-        pass
+        if self.existing_master:
+            transfer_cmd = "scp {user}@{host}:{filename} .".format(filename=filename,
+                                                                 user=self.networkservice.username,
+                                                                 host=self.networkservice.address).split(' ')
+        else:
+            transfer_cmd = "scp -o ControlPath={cpath} {user}@{host}:{filename} .".format(cpath=self.control,
+                                                                                        filename=filename,
+                                                                                        user=self.networkservice.username,
+                                                                                        host=self.networkservice.address).split(' ')
+        try:
+            # FIXME: API change in python3.5 call -> run
+            sub = subprocess.call(transfer_cmd)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except:
+            raise ExecutionError("error executing command: {}".format(transfer_cmd))
+        if sub is not 0:
+            raise ExecutionError("error executing command: {}".format(transfer_cmd))
 
     def _cleanup_own_master(self):
         complete_cmd = "ssh -x -o ControlPath={cpath} -O exit {user}@{host}".format(cpath=self.control,user=self.networkservice.username,
                                                          host=self.networkservice.address).split(' ')
+        # FIXME: API change in python3.5 call -> run
         res = subprocess.call(complete_cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         if res !=0:

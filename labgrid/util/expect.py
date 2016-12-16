@@ -21,8 +21,9 @@ class PtxExpect(pexpect.spawn):
             cwd=cwd,
             logfile=self.logfile,
         )
+
     def send(self, s):
-        "Write to serial, return number of bytes written"
+        "Write to underlying transport, return number of bytes written"
         s = self._coerce_send_string(s)
         self._log(s, 'send')
 

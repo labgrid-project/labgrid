@@ -13,6 +13,9 @@ def pytest_addoption(parser):
 
 @pytest.fixture('session')
 def env(request):
+    """Return the environment configured in the supplied configuration file.
+    It contains the targets contained in the configuration file.
+    """
     env_config = request.config.option.env_config
     if env_config is None:
         pytest.skip("missing environemnt config (--env-config)")
@@ -20,4 +23,6 @@ def env(request):
 
 @pytest.fixture('session')
 def target(request, env):
+    """Return the default target `main` configured in the supplied
+    configuration file."""
     return env.get_target()

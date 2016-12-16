@@ -10,6 +10,7 @@ from .exception import NoDriverError
 @attr.s
 class ManualPowerDriver(PowerProtocol):
     """ManualPowerDriver - Driver to tell the user to control a target's power"""
+    target = attr.ib()
     name = attr.ib(validator=attr.validators.instance_of(str))
 
     def on(self):
@@ -22,33 +23,25 @@ class ManualPowerDriver(PowerProtocol):
         input("CYCLE the target {name} and press enter".format(name=self.name))
 
 
-def _external_cmd(instance, attribute, value):
-    attr.validators.instance_of(str)(instance, attribute, value)
-    if not '{name}' in value:
-        raise ValueError(
-            "'{name}' must contain a {{name}} placeholder which '{value}' doesn't."
-            .format(name=attribute.name, value=value),
-        )
-
 @target_factory.reg_driver
 @attr.s
 class ExternalPowerDriver(PowerProtocol):
     """ExternalPowerDriver- Driver using an external command to control a target's power"""
-    name = attr.ib(validator=attr.validators.instance_of(str))
-    cmd_on = attr.ib(validator=_external_cmd)
-    cmd_off = attr.ib(validator=_external_cmd)
-    cmd_cycle = attr.ib(default=None, validator=attr.validators.optional(_external_cmd))
+    target = attr.ib()
+    cmd_on = attr.ib(validator=attr.validators.instance_of(str))
+    cmd_off = attr.ib(validator=attr.validators.instance_of(str))
+    cmd_cycle = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     delay = attr.ib(default=1.0, validator=attr.validators.instance_of(float))
 
     def on(self):
-        subprocess.check_call(self.cmd_on.format(name=self.name))
+        subprocess.check_call(self.cmd_on)
 
     def off(self):
-        subprocess.check_call(self.cmd_off.format(name=self.name))
+        subprocess.check_call(self.cmd_off)
 
     def cycle(self):
         if self.cmd_cycle is not None:
-            subprocess.check_call(self.cmd_cycle.format(name=self.name))
+            subprocess.check_call(self.cmd_cycle)
         else:
             self.off()
             time.sleep(self.delay)

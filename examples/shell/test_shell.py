@@ -1,7 +1,6 @@
-import pytest
-from labgrid.protocol import ConsoleProtocol, CommandProtocol
+from labgrid.protocol import CommandProtocol
+
 
 def test_shell(target):
-     console = target.get_driver(ConsoleProtocol)
-     command = target.get_driver(CommandProtocol)
-     print(command.run('ls /'))
+    command = target.get_driver(CommandProtocol)
+    print(command.run('ls /'))

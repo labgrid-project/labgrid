@@ -35,7 +35,9 @@ class SerialDriver(ConsoleProtocol):
         size -- amount of bytes to read, defaults to 1024
         """
         self.serial.timeout = 0
-        return self.serial.read(size)
+        res = self.serial.read(size)
+        if not res:
+            raise TIMEOUT("Timeout exceed")
 
     def write(self, data: bytes):
         """

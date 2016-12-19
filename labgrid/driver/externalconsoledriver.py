@@ -53,7 +53,7 @@ class ExternalConsoleDriver(ConsoleProtocol):
         self._child.terminate()
         try:
             outs, errs = self._child.communicate(timeout=1)
-        except TimeoutExpired:
+        except subprocess.TimeoutExpired:
             proc.kill()
             outs, errs = proc.communicate()
 

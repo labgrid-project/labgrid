@@ -4,6 +4,7 @@ from labgrid import Target
 from labgrid.driver import BareboxDriver
 from labgrid.protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 
+
 @attr.s
 class FakeConsoleDriver(ConsoleProtocol):
     target = attr.ib()
@@ -32,6 +33,6 @@ class TestBareboxDriver:
         t = Target('dummy')
         cp = FakeConsoleDriver(t)
         d = BareboxDriver(t)
-        assert(isinstance(d, BareboxDriver))
-        assert(isinstance(d, CommandProtocol))
-        assert(isinstance(d, LinuxBootProtocol))
+        assert (isinstance(d, BareboxDriver))
+        assert (isinstance(d, CommandProtocol))
+        assert (isinstance(d, LinuxBootProtocol))

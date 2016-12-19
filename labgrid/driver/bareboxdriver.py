@@ -13,10 +13,14 @@ class BareboxDriver(CommandProtocol, LinuxBootProtocol):
 
     def __attrs_post_init__(self):
         # FIXME: Hard coded for only one driver, should find the correct one in order
-        self.console = self.target.get_driver(ConsoleProtocol) #pylint: disable=no-member,attribute-defined-outside-init
+        self.console = self.target.get_driver(
+            ConsoleProtocol
+        )  #pylint: disable=no-member,attribute-defined-outside-init
         if not self.console:
-            raise NoDriverError("Target has no {} driver".format(ConsoleProtocol))
-        self.target.drivers.append(self) #pylint: disable=no-member
+            raise NoDriverError(
+                "Target has no {} driver".format(ConsoleProtocol)
+            )
+        self.target.drivers.append(self)  #pylint: disable=no-member
 
     def run(self, cmd):
         pass

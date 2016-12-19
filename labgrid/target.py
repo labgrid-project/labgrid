@@ -7,8 +7,8 @@ class Target:
     name = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
-        self.resources = [] #pylint: disable=attribute-defined-outside-init
-        self.drivers = [] #pylint: disable=attribute-defined-outside-init
+        self.resources = []  #pylint: disable=attribute-defined-outside-init
+        self.drivers = []  #pylint: disable=attribute-defined-outside-init
 
     def get_resource(self, cls):
         """
@@ -42,7 +42,9 @@ class Target:
         try:
             self.resources.remove(res)
         except ValueError:
-            raise NoResourceError("Can't remove resource, not part of the target")
+            raise NoResourceError(
+                "Can't remove resource, not part of the target"
+            )
 
     def get_driver(self, cls):
         """
@@ -65,4 +67,3 @@ class Target:
         drv - drvier to be added
         """
         self.drivers.append(drv)
-

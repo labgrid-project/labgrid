@@ -5,9 +5,9 @@ from labgrid.util import Timeout
 class TestTimeout:
     def test_create(self):
         t = Timeout()
-        assert(isinstance(t, Timeout))
+        assert (isinstance(t, Timeout))
         t = Timeout(5.0)
-        assert(isinstance(t, Timeout))
+        assert (isinstance(t, Timeout))
         with pytest.raises(TypeError):
             t = Timeout(10)
         with pytest.raises(ValueError):

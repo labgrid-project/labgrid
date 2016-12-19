@@ -19,8 +19,8 @@ class ExternalConsoleDriver(ConsoleProtocol):
     cmd = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
-        self.target.drivers.append(self) #pylint: disable=no-member
-        self.status = 0 #pylint: disable=attribute-defined-outside-init
+        self.target.drivers.append(self)  #pylint: disable=no-member
+        self.status = 0  #pylint: disable=attribute-defined-outside-init
         self._child = None
         self.open()
 
@@ -29,10 +29,9 @@ class ExternalConsoleDriver(ConsoleProtocol):
         if self.status:
             return
         cmd = shlex.split(self.cmd)
-        self._child = subprocess.Popen(cmd,
-                                       stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE,
-                                       stderr=None)
+        self._child = subprocess.Popen(
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None
+        )
 
         # make stdout non-blocking
         stdout_fd = self._child.stdout.fileno()
@@ -83,5 +82,3 @@ class ExternalConsoleDriver(ConsoleProtocol):
         result = self._child.stdin.write(data)
         self._child.stdin.flush()
         return result
-
-

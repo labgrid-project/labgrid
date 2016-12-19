@@ -9,35 +9,41 @@ class TestEnvironment:
 
     def test_instance(self, tmpdir):
         p = tmpdir.join("config.yaml")
-        p.write("""
+        p.write(
+            """
         test1:
           drivers: {}
         test2:
           role: foo
           resources: {}
-        """)
+        """
+        )
         e = Environment(str(p))
-        assert(isinstance(e, Environment))
+        assert (isinstance(e, Environment))
 
     def test_get_target(self, tmpdir):
         p = tmpdir.join("config.yaml")
-        p.write("""
+        p.write(
+            """
         test1:
           drivers: {}
         test2:
           role: foo
           resources: {}
-        """)
+        """
+        )
         e = Environment(str(p))
-        assert(e.get_target("test1"))
-        assert(e.get_target("test2"))
+        assert (e.get_target("test1"))
+        assert (e.get_target("test2"))
 
     def test_instance_invalid_yaml(self, tmpdir):
         p = tmpdir.join("config.yaml")
-        p.write("""
+        p.write(
+            """
         I a(m) no yaml:
           - keks
           cookie
-        """)
+        """
+        )
         with pytest.raises(NoConfigFoundError):
             e = Environment(str(p))

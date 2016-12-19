@@ -13,11 +13,11 @@ class TestSSHDriver:
         target.add_resource(NetworkService("1.2.3.4", "root"))
         call = mocker.patch('subprocess.call')
         call.return_value = 0
-        popen = mocker.patch('subprocess.Popen',autospec=True)
+        popen = mocker.patch('subprocess.Popen', autospec=True)
         path = mocker.patch('os.path.exists')
         path.return_value = True
         instance_mock = mocker.MagicMock()
         popen.return_value = instance_mock
-        instance_mock.wait = mocker.MagicMock(return_value = 0)
+        instance_mock.wait = mocker.MagicMock(return_value=0)
         s = SSHDriver(target)
-        assert(isinstance(s, SSHDriver))
+        assert (isinstance(s, SSHDriver))

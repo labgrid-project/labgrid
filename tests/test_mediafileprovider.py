@@ -2,6 +2,7 @@ import pytest
 
 from labgrid.provider.mediafileprovider import MediaFileProvider
 
+
 class FakeMediaFileProvider(MediaFileProvider):
     def __init__(self):
         super(FakeMediaFileProvider, self).__init__()
@@ -12,7 +13,7 @@ class FakeMediaFileProvider(MediaFileProvider):
 class TestMediaFileProvider:
     def test_create(self):
         p = MediaFileProvider()
-        assert(isinstance(p, MediaFileProvider))
+        assert (isinstance(p, MediaFileProvider))
 
     def test_list(self):
         p = FakeMediaFileProvider()

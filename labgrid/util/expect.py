@@ -9,14 +9,16 @@ class PtxExpect(pexpect.spawn):
     This class provides pexpect functionality for the ConsoleProtocol classes.
     driver: ConsoleProtocol object to be passed in
     """
+
     def __init__(self, driver, logfile=None, timeout=None, cwd=None):
         if not isinstance(driver, ConsoleProtocol):
             raise NoValidDriverError("driver is not a ConsoleProtocol driver")
         self.driver = driver
-        self.logfile=logfile
+        self.logfile = logfile
         self.linesep = b"\n"
         pexpect.spawn.__init__(
-            self, None,
+            self,
+            None,
             timeout=timeout,
             maxread=1,
             cwd=cwd,
@@ -33,4 +35,4 @@ class PtxExpect(pexpect.spawn):
 
     def read_nonblocking(self, size=1, timeout=0):
         """ Pexpects needs a nonblocking read function, simply use pyserial with a timeout of 0"""
-        return self.driver.read(size=size,timeout=timeout)
+        return self.driver.read(size=size, timeout=timeout)

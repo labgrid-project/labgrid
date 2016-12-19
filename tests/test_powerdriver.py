@@ -3,10 +3,11 @@ import pytest
 from labgrid.driver import NoResourceError
 from labgrid.driver.powerdriver import ManualPowerDriver, ExternalPowerDriver
 
+
 class TestManualPowerDriver:
     def test_create(self, target):
         d = ManualPowerDriver(target, name='foo-board')
-        assert(isinstance(d, ManualPowerDriver))
+        assert (isinstance(d, ManualPowerDriver))
 
     def test_on(self, target, mocker):
         m = mocker.patch('builtins.input')
@@ -14,7 +15,9 @@ class TestManualPowerDriver:
         d = ManualPowerDriver(target, name='foo-board')
         d.on()
 
-        m.assert_called_once_with("Turn the target foo-board ON and press enter")
+        m.assert_called_once_with(
+            "Turn the target foo-board ON and press enter"
+        )
 
     def test_off(self, target, mocker):
         m = mocker.patch('builtins.input')
@@ -22,7 +25,9 @@ class TestManualPowerDriver:
         d = ManualPowerDriver(target, name='foo-board')
         d.off()
 
-        m.assert_called_once_with("Turn the target foo-board OFF and press enter")
+        m.assert_called_once_with(
+            "Turn the target foo-board OFF and press enter"
+        )
 
     def test_cycle(self, target, mocker):
         m = mocker.patch('builtins.input')
@@ -32,15 +37,20 @@ class TestManualPowerDriver:
 
         m.assert_called_once_with("CYCLE the target foo-board and press enter")
 
+
 class TestExternalPowerDriver:
     def test_create(self, target):
-        d = ExternalPowerDriver(target, cmd_on='set -1 foo-board', cmd_off='set -0 foo-board')
-        assert(isinstance(d, ExternalPowerDriver))
+        d = ExternalPowerDriver(
+            target, cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
+        )
+        assert (isinstance(d, ExternalPowerDriver))
 
     def test_on(self, target, mocker):
         m = mocker.patch('subprocess.check_call')
 
-        d = ExternalPowerDriver(target, cmd_on='set -1 foo-board', cmd_off='set -0 foo-board')
+        d = ExternalPowerDriver(
+            target, cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
+        )
         d.on()
 
         m.assert_called_once_with('set -1 foo-board')
@@ -48,7 +58,9 @@ class TestExternalPowerDriver:
     def test_off(self, target, mocker):
         m = mocker.patch('subprocess.check_call')
 
-        d = ExternalPowerDriver(target, cmd_on='set -1 foo-board', cmd_off='set -0 foo-board')
+        d = ExternalPowerDriver(
+            target, cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
+        )
         d.off()
 
         m.assert_called_once_with('set -0 foo-board')
@@ -57,7 +69,9 @@ class TestExternalPowerDriver:
         m_sleep = mocker.patch('time.sleep')
         m = mocker.patch('subprocess.check_call')
 
-        d = ExternalPowerDriver(target, cmd_on='set -1 foo-board', cmd_off='set -0 foo-board')
+        d = ExternalPowerDriver(
+            target, cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
+        )
         d.cycle()
 
         assert m.call_args_list == [
@@ -70,7 +84,8 @@ class TestExternalPowerDriver:
         m_sleep = mocker.patch('time.sleep')
         m = mocker.patch('subprocess.check_call')
 
-        d = ExternalPowerDriver(target,
+        d = ExternalPowerDriver(
+            target,
             cmd_on='set -1 foo-board',
             cmd_off='set -0 foo-board',
             cmd_cycle='set -c foo-board',

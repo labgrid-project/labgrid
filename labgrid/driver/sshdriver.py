@@ -20,39 +20,64 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
     target = attr.ib()
 
     def __attrs_post_init__(self):
-        self.networkservice = self.target.get_resource(NetworkService) #pylint: disable=no-member,attribute-defined-outside-init
+        self.networkservice = self.target.get_resource(
+            NetworkService
+        )  #pylint: disable=no-member,attribute-defined-outside-init
         if not self.networkservice:
-            raise NoResourceError("Target has no {} Resource".format(NetworkService))
-        self.target.drivers.append(self) #pylint: disable=no-member
+            raise NoResourceError(
+                "Target has no {} Resource".format(NetworkService)
+            )
+        self.target.drivers.append(self)  #pylint: disable=no-member
         self.logger = logging.getLogger("{}({})".format(self, self.target))
         self.control = self._check_master()
 
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
         self.tmpdir = tempfile.mkdtemp(prefix='labgrid-ssh-tmp-')
-        control = os.path.join(self.tmpdir, 'control-{}'.format(self.networkservice.address))
-        args = ["ssh","-f", "-x", "-o", "ControlPersist=300", "-o", "PasswordAuthentication=no", "-o", "StrictHostKeyChecking=no", "-MN", "-S", control, '{}@{}'.format(self.networkservice.username, self.networkservice.address)]
-        self.process = subprocess.Popen(
-            args,
+        control = os.path.join(
+            self.tmpdir, 'control-{}'.format(self.networkservice.address)
         )
+        args = [
+            "ssh", "-f", "-x", "-o", "ControlPersist=300", "-o",
+            "PasswordAuthentication=no", "-o", "StrictHostKeyChecking=no",
+            "-MN", "-S", control, '{}@{}'.format(
+                self.networkservice.username, self.networkservice.address
+            )
+        ]
+        self.process = subprocess.Popen(args, )
 
         if self.process.wait(timeout=1) is not 0:
-            raise ExecutionError("failed to connect to {} with {} and {}".format(self.networkservice.address, args, self.process.wait()))
+            raise ExecutionError(
+                "failed to connect to {} with {} and {}".
+                format(self.networkservice.address, args, self.process.wait())
+            )
 
         if not os.path.exists(control):
-            raise ExecutionError("no control socket to {}".format(self.networkservice.address))
+            raise ExecutionError(
+                "no control socket to {}".format(self.networkservice.address)
+            )
 
-        self.logger.debug('Connected to {}'.format(self.networkservice.address))
+        self.logger.debug(
+            'Connected to {}'.format(self.networkservice.address)
+        )
 
         atexit.register(self._cleanup_own_master)
 
         return control
 
-
     def _check_master(self):
-        args = ["ssh", "-O", "check", "{}@{}".format(self.networkservice.username, self.networkservice.address)]
+        args = [
+            "ssh", "-O", "check", "{}@{}".format(
+                self.networkservice.username, self.networkservice.address
+            )
+        ]
         # FIXME: API change in python3.5 call -> run
-        check = subprocess.call(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        check = subprocess.call(
+            args,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
         if check == 0:
             return ""
         else:
@@ -69,18 +94,27 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
         (stdout, stderr, returncode)
         """
         if self.control:
-            complete_cmd = "ssh -x -o ControlPath={cpath} {user}@{host} {cmd}".format(cpath=self.control,user=self.networkservice.username,
-                                                                                      host=self.networkservice.address,
-                                                                                      cmd=cmd).split(' ')
+            complete_cmd = "ssh -x -o ControlPath={cpath} {user}@{host} {cmd}".format(
+                cpath=self.control,
+                user=self.networkservice.username,
+                host=self.networkservice.address,
+                cmd=cmd
+            ).split(' ')
         else:
-            complete_cmd = "ssh -x {user}@{host} {cmd}".format(user=self.networkservice.username,
-                                                               host=self.networkservice.address,
-                                                               cmd=cmd).split(' ')
+            complete_cmd = "ssh -x {user}@{host} {cmd}".format(
+                user=self.networkservice.username,
+                host=self.networkservice.address,
+                cmd=cmd
+            ).split(' ')
         self.logger.debug("Sending command: %s", complete_cmd)
         try:
-            sub = subprocess.Popen(complete_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            sub = subprocess.Popen(
+                complete_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
         except:
-            raise ExecutionError("error executing command: {}".format(complete_cmd))
+            raise ExecutionError(
+                "error executing command: {}".format(complete_cmd)
+            )
 
         stdout, stderr = sub.communicate()
         stdout = stdout.decode("utf-8").split('\n')
@@ -108,48 +142,76 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
 
     def put(self, filename, remotepath=None):
         if self.control:
-            transfer_cmd = "scp -o ControlPath={cpath} {filename} {user}@{host}:{remotepath}".format(cpath=self.control,
-                                                                                                     filename=filename,
-                                                                                                     user=self.networkservice.username,
-                                                                                                     host=self.networkservice.address,
-                                                                                                     remotepath=remotepath).split(' ')
+            transfer_cmd = "scp -o ControlPath={cpath} {filename} {user}@{host}:{remotepath}".format(
+                cpath=self.control,
+                filename=filename,
+                user=self.networkservice.username,
+                host=self.networkservice.address,
+                remotepath=remotepath
+            ).split(' ')
         else:
-            transfer_cmd = "scp {filename} {user}@{host}:{remotepath}".format(filename=filename,
-                                                                              user=self.networkservice.username,
-                                                                              host=self.networkservice.address,
-                                                                              remotepath=remotepath).split(' ')
+            transfer_cmd = "scp {filename} {user}@{host}:{remotepath}".format(
+                filename=filename,
+                user=self.networkservice.username,
+                host=self.networkservice.address,
+                remotepath=remotepath
+            ).split(' ')
         try:
             # FIXME: API change in python3.5 call -> run
-            sub = subprocess.call(transfer_cmd)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            sub = subprocess.call(
+                transfer_cmd
+            )  #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except:
-            raise ExecutionError("error executing command: {}".format(transfer_cmd))
+            raise ExecutionError(
+                "error executing command: {}".format(transfer_cmd)
+            )
         if sub is not 0:
-            raise ExecutionError("error executing command: {}".format(transfer_cmd))
+            raise ExecutionError(
+                "error executing command: {}".format(transfer_cmd)
+            )
 
     def get(self, filename):
         if self.control:
-            transfer_cmd = "scp -o ControlPath={cpath} {user}@{host}:{filename} .".format(cpath=self.control,
-                                                                                        filename=filename,
-                                                                                        user=self.networkservice.username,
-                                                                                        host=self.networkservice.address).split(' ')
+            transfer_cmd = "scp -o ControlPath={cpath} {user}@{host}:{filename} .".format(
+                cpath=self.control,
+                filename=filename,
+                user=self.networkservice.username,
+                host=self.networkservice.address
+            ).split(' ')
         else:
-            transfer_cmd = "scp {user}@{host}:{filename} .".format(filename=filename,
-                                                                 user=self.networkservice.username,
-                                                                 host=self.networkservice.address).split(' ')
+            transfer_cmd = "scp {user}@{host}:{filename} .".format(
+                filename=filename,
+                user=self.networkservice.username,
+                host=self.networkservice.address
+            ).split(' ')
         try:
             # FIXME: API change in python3.5 call -> run
-            sub = subprocess.call(transfer_cmd)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            sub = subprocess.call(
+                transfer_cmd
+            )  #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except:
-            raise ExecutionError("error executing command: {}".format(transfer_cmd))
+            raise ExecutionError(
+                "error executing command: {}".format(transfer_cmd)
+            )
         if sub is not 0:
-            raise ExecutionError("error executing command: {}".format(transfer_cmd))
+            raise ExecutionError(
+                "error executing command: {}".format(transfer_cmd)
+            )
 
     def _cleanup_own_master(self):
-        complete_cmd = "ssh -x -o ControlPath={cpath} -O exit {user}@{host}".format(cpath=self.control,user=self.networkservice.username,
-                                                         host=self.networkservice.address).split(' ')
+        complete_cmd = "ssh -x -o ControlPath={cpath} -O exit {user}@{host}".format(
+            cpath=self.control,
+            user=self.networkservice.username,
+            host=self.networkservice.address
+        ).split(' ')
         # FIXME: API change in python3.5 call -> run
-        res = subprocess.call(complete_cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        res = subprocess.call(
+            complete_cmd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
 
-        if res !=0:
+        if res != 0:
             raise CleanUpError("Could not cleanup ControlMaster")
         shutil.rmtree(self.tmpdir)

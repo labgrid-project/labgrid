@@ -18,18 +18,20 @@ class SerialDriver(ConsoleProtocol):
     target = attr.ib()
 
     def __attrs_post_init__(self):
-        self.port = self.target.get_resource(SerialPort) #pylint: disable=no-member,attribute-defined-outside-init
+        self.port = self.target.get_resource(
+            SerialPort
+        )  #pylint: disable=no-member,attribute-defined-outside-init
         if not self.port:
             raise NoResourceError("Target has no SerialPort Resource")
-        self.serial = serial.Serial() #pylint: disable=attribute-defined-outside-init
+        self.serial = serial.Serial(
+        )  #pylint: disable=attribute-defined-outside-init
         self.serial.port = self.port.port
         self.serial.baudrate = self.port.speed
         self.logger = logging.getLogger("{}({})".format(self, self.target))
-        self.status = 0 #pylint: disable=attribute-defined-outside-init
+        self.status = 0  #pylint: disable=attribute-defined-outside-init
         self.serial.timeout = 30
         self.open()
-        self.target.drivers.append(self) #pylint: disable=no-member
-
+        self.target.drivers.append(self)  #pylint: disable=no-member
 
     def read(self, size: int=1, timeout: int=0):
         """

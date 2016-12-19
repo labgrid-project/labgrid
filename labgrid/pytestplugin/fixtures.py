@@ -2,6 +2,7 @@ import pytest
 
 from .. import Environment
 
+
 def pytest_addoption(parser):
     group = parser.getgroup('labgrid')
     group.addoption(
@@ -10,6 +11,7 @@ def pytest_addoption(parser):
         dest='env_config',
         help='labgrid environment config file.'
     )
+
 
 @pytest.fixture('session')
 def env(request):
@@ -20,6 +22,7 @@ def env(request):
     if env_config is None:
         pytest.skip("missing environemnt config (--env-config)")
     return Environment(request.config.option.env_config)
+
 
 @pytest.fixture('session')
 def target(request, env):

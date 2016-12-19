@@ -4,6 +4,7 @@ import serial
 
 from labgrid.driver import SerialDriver, NoResourceError
 
+
 class TestSerialDriver:
     def test_instanziation_fail_missing_port(self, target):
         with pytest.raises(NoResourceError):
@@ -13,8 +14,8 @@ class TestSerialDriver:
         serial_mock = Mock()
         monkeypatch.setattr(serial, 'Serial', serial_mock)
         s = SerialDriver(serial_port)
-        assert(isinstance(s, SerialDriver))
-        assert(serial_port.drivers[0] == s)
+        assert (isinstance(s, SerialDriver))
+        assert (serial_port.drivers[0] == s)
 
     def test_write(self, monkeypatch, serial_port):
         serial_mock = Mock()
@@ -32,7 +33,7 @@ class TestSerialDriver:
         s = SerialDriver(serial_port)
         s.serial = serial_mock
         s.read()
-        assert(serial_mock.read.called)
+        assert (serial_mock.read.called)
 
     def test_close(self, monkeypatch, serial_port):
         serial_mock = Mock()
@@ -41,4 +42,4 @@ class TestSerialDriver:
         s = SerialDriver(serial_port)
         s.serial = serial_mock
         s.close()
-        assert(serial_mock.close.called)
+        assert (serial_mock.close.called)

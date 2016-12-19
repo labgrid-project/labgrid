@@ -15,16 +15,26 @@ class ShellDriver(CommandProtocol):
     """ShellDriver - Driver to execute commands on the shell"""
     target = attr.ib()
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
-    login_prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
+    login_prompt = attr.ib(
+        default="", validator=attr.validators.instance_of(str)
+    )
 
     def __attrs_post_init__(self):
-        self.console = self.target.get_driver(ConsoleProtocol) #pylint: disable=no-member,attribute-defined-outside-init
+        self.console = self.target.get_driver(
+            ConsoleProtocol
+        )  #pylint: disable=no-member,attribute-defined-outside-init
         if not self.console:
-            raise NoDriverError("Resource has no {} Driver".format(ConsoleProtocol))
-        self.target.drivers.append(self) #pylint: disable=no-member
-        self.expect = PtxExpect(self.console) #pylint: disable=attribute-defined-outside-init
-        self.re_vt100 = re.compile('(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]') #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
-        self._status = 0 #pylint: disable=attribute-defined-outside-init
+            raise NoDriverError(
+                "Resource has no {} Driver".format(ConsoleProtocol)
+            )
+        self.target.drivers.append(self)  #pylint: disable=no-member
+        self.expect = PtxExpect(
+            self.console
+        )  #pylint: disable=attribute-defined-outside-init
+        self.re_vt100 = re.compile(
+            '(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
+        )  #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
+        self._status = 0  #pylint: disable=attribute-defined-outside-init
         self._check_prompt()
         self._inject_run()
 
@@ -41,13 +51,14 @@ class ShellDriver(CommandProtocol):
             self.expect.sendline(cmp_command)
             self.expect.expect(self.prompt)
             # Remove VT100 Codes and split by newline
-            data = self.re_vt100.sub('', self.expect.before.decode('utf-8'),
-                                     count=1000000).split('\r\n')
+            data = self.re_vt100.sub(
+                '', self.expect.before.decode('utf-8'), count=1000000
+            ).split('\r\n')
             # Remove first element, the invoked cmd
             data.remove(cmp_command)
-            del(data[-1])
+            del (data[-1])
             exitcode = int(data[-1])
-            del(data[-1])
+            del (data[-1])
             return (data, [], exitcode)
         else:
             return None

@@ -6,10 +6,13 @@ SERIAL_PORT = '/dev/ttyUSB1'
 PASSWORD = 'password'
 PROMPT = "root@linux:~#"
 
+
 class SerialExpect:
     def __init__(self):
         self.serial = serial.Serial(SERIAL_PORT, 115200)
-        self.expect = fdpexpect.fdspawn(self.serial,logfile=open('expect.log','bw'))
+        self.expect = fdpexpect.fdspawn(
+            self.serial, logfile=open('expect.log', 'bw')
+        )
         self.password = PASSWORD
         self.prompt = PROMPT
         self.logger = logging.getLogger('SerialExpect')
@@ -24,7 +27,9 @@ class SerialExpect:
         self.expect.expect(self.prompt)
 
     def get_ip(self):
-        self.expect.sendline("ip -o -4 addr show dev eth0 | cut -d ' ' -f 7 | cut -f 1 -d '/'")
+        self.expect.sendline(
+            "ip -o -4 addr show dev eth0 | cut -d ' ' -f 7 | cut -f 1 -d '/'"
+        )
         self.expect.expect(self.prompt)
         return self.expect.before.split(b"\r\n")[-2].decode('utf-8')
 

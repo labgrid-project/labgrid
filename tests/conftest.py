@@ -6,14 +6,17 @@ from labgrid.resource import SerialPort
 from labgrid.driver import SerialDriver
 from labgrid.protocol import ConsoleProtocol
 
+
 @pytest.fixture(scope='function')
 def target():
     return Target('Test')
+
 
 @pytest.fixture(scope='function')
 def serial_port(target):
     target.add_resource(SerialPort('/dev/test'))
     return target
+
 
 @pytest.fixture(scope='function')
 def serial_driver(serial_port, monkeypatch):

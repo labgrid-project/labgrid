@@ -48,7 +48,7 @@ class ShellDriver(CommandProtocol):
             del(data[-1])
             exitcode = int(data[-1])
             del(data[-1])
-            return (data, [''], exitcode)
+            return (data, [], exitcode)
         else:
             return None
 

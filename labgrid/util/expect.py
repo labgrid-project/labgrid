@@ -18,6 +18,7 @@ class PtxExpect(pexpect.spawn):
         pexpect.spawn.__init__(
             self, None,
             timeout=timeout,
+            maxread=1,
             cwd=cwd,
             logfile=self.logfile,
         )

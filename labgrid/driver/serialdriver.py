@@ -1,3 +1,6 @@
+import logging
+
+from pexpect import TIMEOUT
 import attr
 import serial
 from ..protocol import ConsoleProtocol
@@ -21,10 +24,11 @@ class SerialDriver(ConsoleProtocol):
         self.serial = serial.Serial() #pylint: disable=attribute-defined-outside-init
         self.serial.port = self.port.port
         self.serial.baudrate = self.port.speed
-        self.target.drivers.append(self) #pylint: disable=no-member
+        self.logger = logging.getLogger("{}({})".format(self, self.target))
         self.status = 0 #pylint: disable=attribute-defined-outside-init
-        self.serial.timeout = 0
+        self.serial.timeout = 30
         self.open()
+        self.target.drivers.append(self) #pylint: disable=no-member
 
 
     def read(self, size: int=1, timeout: int=0):
@@ -34,10 +38,14 @@ class SerialDriver(ConsoleProtocol):
         Keyword Arguments:
         size -- amount of bytes to read, defaults to 1024
         """
-        self.serial.timeout = 0
+        self.logger.debug("Reading %s bytes with %s timeout", size, timeout)
+        if timeout:
+            self.serial.timeout = timeout
         res = self.serial.read(size)
+        self.logger.debug("Read bytes (%s) or timeout reached", res)
         if not res:
-            raise TIMEOUT("Timeout exceed")
+            raise TIMEOUT("Timeout exceeded")
+        return res
 
     def write(self, data: bytes):
         """

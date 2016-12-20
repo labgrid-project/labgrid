@@ -34,7 +34,11 @@ class TestTargetFactory:
                 ]),
                 'drivers': OrderedDict([
                     ('FakeConsoleDriver', {}),
-                    ('ShellDriver', {}),
+                    ('ShellDriver', {
+                        'prompt': '',
+                        'login_prompt': '',
+                        'username': ''
+                    }),
                 ]),
             }
         )

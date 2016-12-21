@@ -111,3 +111,6 @@ class ShellDriver(CommandProtocol):
     def _inject_run(self):
         self.expect.sendline('''run() { sh -c "$@"; echo "$?"; }''')
         self.expect.expect(self.prompt)
+
+    def cleanup(self):
+        self.expect.sendline("exit")

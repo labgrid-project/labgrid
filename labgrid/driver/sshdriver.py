@@ -4,7 +4,6 @@ import os
 import time
 import logging
 import shutil
-import atexit
 
 import attr
 from ..protocol import CommandProtocol, FileTransferProtocol
@@ -60,8 +59,6 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
         self.logger.debug(
             'Connected to {}'.format(self.networkservice.address)
         )
-
-        atexit.register(self._cleanup_own_master)
 
         return control
 
@@ -199,6 +196,7 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
             )
 
     def _cleanup_own_master(self):
+        """Exit the controlmaster and delete the tmpdir"""
         complete_cmd = "ssh -x -o ControlPath={cpath} -O exit {user}@{host}".format(
             cpath=self.control,
             user=self.networkservice.username,
@@ -215,3 +213,8 @@ class SSHDriver(CommandProtocol, FileTransferProtocol):
         if res != 0:
             raise CleanUpError("Could not cleanup ControlMaster")
         shutil.rmtree(self.tmpdir)
+
+    def cleanup(self):
+        """Cleanup function, cleans up the master socket after usage if it was our own"""
+        if self.control:
+            self._cleanup_own_master()

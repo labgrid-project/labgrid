@@ -35,4 +35,4 @@ class Environment:
 
     def cleanup(self):
         for target in self.targets:
-            target.cleanup()
+            self.targets[target].cleanup()

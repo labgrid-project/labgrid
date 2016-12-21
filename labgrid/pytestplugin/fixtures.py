@@ -21,7 +21,9 @@ def env(request):
     env_config = request.config.option.env_config
     if env_config is None:
         pytest.skip("missing environemnt config (--env-config)")
-    return Environment(request.config.option.env_config)
+    env = Environment(request.config.option.env_config)
+    yield env
+    env.cleanup()
 
 
 @pytest.fixture('session')

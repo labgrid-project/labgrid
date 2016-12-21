@@ -68,3 +68,5 @@ class SerialDriver(ConsoleProtocol):
         """Closes the serialport, does nothing if it is already closed"""
         if self.status:
             self.serial.close()
+            self.status = 0
+

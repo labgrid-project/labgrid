@@ -82,3 +82,6 @@ class ExternalConsoleDriver(ConsoleProtocol):
         result = self._child.stdin.write(data)
         self._child.stdin.flush()
         return result
+
+    def cleanup(self):
+        self.close()

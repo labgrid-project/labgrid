@@ -32,3 +32,7 @@ class Environment:
     def get_target(self, role: str='main') -> Target:
         """Returns the specified target."""
         return self.targets[role]
+
+    def cleanup(self):
+        for target in self.targets:
+            target.cleanup()

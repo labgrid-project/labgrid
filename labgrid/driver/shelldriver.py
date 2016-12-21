@@ -1,3 +1,4 @@
+import logging
 import re
 
 import attr
@@ -33,6 +34,7 @@ class ShellDriver(CommandProtocol):
         self.re_vt100 = re.compile(
             '(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
         )  #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
+        self.logger = logging.getLogger("{}:{}".format(self,self.target))
         self._status = 0  #pylint: disable=attribute-defined-outside-init
         self.await_login()
         self._check_prompt()
@@ -54,6 +56,7 @@ class ShellDriver(CommandProtocol):
             data = self.re_vt100.sub(
                 '', self.expect.before.decode('utf-8'), count=1000000
             ).split('\r\n')
+            self.logger.debug("Received Data: %s", data)
             # Remove first element, the invoked cmd
             data.remove(cmp_command)
             del (data[-1])

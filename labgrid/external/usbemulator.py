@@ -1,3 +1,5 @@
+import enum
+
 import subprocess
 
 import attr
@@ -5,6 +7,10 @@ import attr
 from ..protocol import CommandProtocol, FileTransferProtocol
 from ..resource import NetworkService
 
+class USBStatus(enum.Enum):
+    """This class describes the USB Status"""
+    unplugged = 0
+    plugged = 1
 
 @attr.s
 class USBStick(object):
@@ -12,8 +18,6 @@ class USBStick(object):
     image_name = attr.ib(validator=attr.validators.instance_of(str))
     status = attr.ib(default=1)
 
-    _UNPLUGGED = 1
-    _PLUGGED = 2
 
     def __attrs_post_init__(self):
         self.command = self.target.get_driver(
@@ -27,15 +31,18 @@ class USBStick(object):
         # if not self.fileservice:
         #     raise NoDriverError("Target has no {} Driver".format(FileTransferProtocol))
         self.ssh("mount /dev/mmcblk1p1 /mnt")
+        self.status = USBStatus.unplugged
 
     def plug_in(self):
         self.ssh(
             "modprobe g_mass_storage file=/mnt/{image}".
             format(image=self.image_name)
         )
+        self.status = USBStatus.plugged
 
     def eject(self):
         self.ssh("modprobe -r g_mass_storage")
+        self.status = USBStatus.unplugged
 
     def upload_file(self, filename):
         subprocess.call(
@@ -44,9 +51,9 @@ class USBStick(object):
         )
 
     def upload_image(self, image):
-        if not self.status == USBStick._UNPLUGGED:
+        if not self.status == USBStatus.unplugged:
             raise StateError(
-                "Device stioll plugged in, can't insert new image"
+                "Device still plugged in, can't insert new image"
             )
         subprocess.call(
             'scp {filname} {host}:/tmp/{image}'.format(filename=image)
@@ -55,7 +62,7 @@ class USBStick(object):
 
     def ssh(self, cmd):
         try:
-            self.command.run(cmd)
+            self.command.run_check(cmd)
         except:
             raise ExecutionError('Call failed: {}'.format(cmd))
 

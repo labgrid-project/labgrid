@@ -13,4 +13,3 @@ def test_shell(target):
     assert returncode != 0
     assert len(stdout) == 0
     assert len(stderr) == 0
-    console.close()

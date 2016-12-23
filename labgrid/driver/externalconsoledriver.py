@@ -53,8 +53,8 @@ class ExternalConsoleDriver(ConsoleProtocol):
         try:
             outs, errs = self._child.communicate(timeout=1)
         except subprocess.TimeoutExpired:
-            proc.kill()
-            outs, errs = proc.communicate()
+            self._child.kill()
+            outs, errs = self._child.communicate()
 
     def read(self, size: int=1024, timeout: int=0):
         """

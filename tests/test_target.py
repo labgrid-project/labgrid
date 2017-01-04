@@ -1,6 +1,7 @@
 import pytest
-from labgrid.driver import NoResourceError
+
 from labgrid import Target
+from labgrid.driver import NoResourceError
 
 
 class TestTarget:

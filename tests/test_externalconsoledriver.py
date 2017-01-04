@@ -1,5 +1,6 @@
-import pytest
 import time
+
+import pytest
 
 from labgrid.driver import ExternalConsoleDriver
 

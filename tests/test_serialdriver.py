@@ -1,8 +1,9 @@
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock, Mock
+
 import pytest
 import serial
 
-from labgrid.driver import SerialDriver, NoResourceError
+from labgrid.driver import NoResourceError, SerialDriver
 
 
 class TestSerialDriver:

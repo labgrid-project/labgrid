@@ -1,6 +1,7 @@
-import requests as r
 import json
+
 import attr
+import requests as r
 
 HOST = 'localhost'
 PORT = '8080'

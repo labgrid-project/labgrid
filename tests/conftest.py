@@ -1,10 +1,12 @@
+from unittest.mock import MagicMock
+
 import attr
 import pytest
-from unittest.mock import MagicMock
-from labgrid import target_factory, Target
-from labgrid.resource import SerialPort
+
+from labgrid import Target, target_factory
 from labgrid.driver import SerialDriver
 from labgrid.protocol import ConsoleProtocol
+from labgrid.resource import SerialPort
 
 
 @pytest.fixture(scope='function')

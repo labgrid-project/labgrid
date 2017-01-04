@@ -1,6 +1,7 @@
-from pexpect import fdpexpect
-import serial
 import logging
+
+import serial
+from pexpect import fdpexpect
 
 SERIAL_PORT = '/dev/ttyUSB1'
 PASSWORD = 'password'

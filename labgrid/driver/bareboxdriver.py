@@ -1,6 +1,7 @@
 import attr
-from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
+
 from ..factory import target_factory
+from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from .exception import NoDriverError
 
 

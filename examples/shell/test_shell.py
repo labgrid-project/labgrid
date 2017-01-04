@@ -1,4 +1,4 @@
-from labgrid.protocol import ConsoleProtocol, CommandProtocol
+from labgrid.protocol import CommandProtocol, ConsoleProtocol
 
 
 def test_shell(target):

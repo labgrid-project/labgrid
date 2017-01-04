@@ -1,8 +1,10 @@
-import attr
 import subprocess
 import time
-from ..protocol import PowerProtocol
+
+import attr
+
 from ..factory import target_factory
+from ..protocol import PowerProtocol
 from .exception import NoDriverError
 
 

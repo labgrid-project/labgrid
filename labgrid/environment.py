@@ -1,5 +1,6 @@
 import attr
 import yaml
+
 from .exceptions import NoConfigFoundError
 from .target import Target
 

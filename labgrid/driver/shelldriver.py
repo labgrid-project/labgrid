@@ -3,10 +3,11 @@ import re
 
 import attr
 from pexpect import TIMEOUT
+
+from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol
 from ..util import PtxExpect
-from ..factory import target_factory
-from .exception import NoDriverError, ExecutionError
+from .exception import ExecutionError, NoDriverError
 
 
 @target_factory.reg_driver

@@ -1,6 +1,8 @@
 from unittest.mock import MagicMock
+
 import pytest
-from labgrid.driver import SSHDriver, NoResourceError
+
+from labgrid.driver import NoResourceError, SSHDriver
 from labgrid.resource import NetworkService
 
 

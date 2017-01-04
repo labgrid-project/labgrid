@@ -1,15 +1,16 @@
+import logging
+import os
+import shutil
 import subprocess
 import tempfile
-import os
 import time
-import logging
-import shutil
 
 import attr
+
+from ..factory import target_factory
 from ..protocol import CommandProtocol, FileTransferProtocol
 from ..resource import NetworkService
-from ..factory import target_factory
-from .exception import NoResourceError, ExecutionError, CleanUpError
+from .exception import CleanUpError, ExecutionError, NoResourceError
 
 
 @target_factory.reg_driver

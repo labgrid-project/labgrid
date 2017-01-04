@@ -1,8 +1,10 @@
 import subprocess
+
 import attr
-from ..resource import NetworkService
-from ..protocol import CommandProtocol, FileTransferProtocol
+
 from ..driver import NoDriverError
+from ..protocol import CommandProtocol, FileTransferProtocol
+from ..resource import NetworkService
 
 
 @attr.s

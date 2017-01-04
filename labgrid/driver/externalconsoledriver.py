@@ -1,11 +1,13 @@
-import attr
+import fcntl
+import os
 import select
 import shlex
-import os
-import fcntl
 import subprocess
-from ..protocol import ConsoleProtocol
+
+import attr
+
 from ..factory import target_factory
+from ..protocol import ConsoleProtocol
 from .exception import ExecutionError
 
 

@@ -1,7 +1,7 @@
 import pytest
 
 from labgrid.driver import NoResourceError
-from labgrid.driver.powerdriver import ManualPowerDriver, ExternalPowerDriver
+from labgrid.driver.powerdriver import ExternalPowerDriver, ManualPowerDriver
 
 
 class TestManualPowerDriver:

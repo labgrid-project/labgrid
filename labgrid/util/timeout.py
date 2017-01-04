@@ -1,5 +1,6 @@
-import attr
 import time
+
+import attr
 
 
 @attr.s

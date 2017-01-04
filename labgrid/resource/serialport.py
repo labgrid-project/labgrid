@@ -1,4 +1,5 @@
 import attr
+
 from ..factory import target_factory
 from .resource import InfoResource
 

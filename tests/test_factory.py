@@ -1,7 +1,7 @@
-from labgrid import target_factory, Target
-from labgrid.resource import SerialPort
-
 from collections import OrderedDict
+
+from labgrid import Target, target_factory
+from labgrid.resource import SerialPort
 
 
 class TestTargetFactory:

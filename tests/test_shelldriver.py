@@ -1,6 +1,6 @@
 import pytest
 
-from labgrid.driver import ShellDriver, NoDriverError
+from labgrid.driver import NoDriverError, ShellDriver
 
 
 class TestShellDriver:

@@ -1,8 +1,10 @@
 import attr
 import pytest
+
 from labgrid import Target
 from labgrid.driver import BareboxDriver
-from labgrid.protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
+from labgrid.protocol import (CommandProtocol, ConsoleProtocol,
+                              LinuxBootProtocol)
 
 
 @attr.s

@@ -1,11 +1,12 @@
 import logging
 
-from pexpect import TIMEOUT
 import attr
 import serial
+from pexpect import TIMEOUT
+
+from ..factory import target_factory
 from ..protocol import ConsoleProtocol
 from ..resource import SerialPort
-from ..factory import target_factory
 from .exception import NoResourceError
 
 
@@ -69,4 +70,3 @@ class SerialDriver(ConsoleProtocol):
         if self.status:
             self.serial.close()
             self.status = 0
-

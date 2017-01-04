@@ -3,6 +3,9 @@ import pytest
 from .. import Environment
 
 
+# pylint: disable=redefined-outer-name
+
+
 def pytest_addoption(parser):
     group = parser.getgroup('labgrid')
     group.addoption(

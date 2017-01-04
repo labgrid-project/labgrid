@@ -5,14 +5,14 @@ import attr
 
 from ..factory import target_factory
 from ..protocol import PowerProtocol
+from .common import Driver
 from .exception import NoDriverError
 
 
 @target_factory.reg_driver
 @attr.s
-class ManualPowerDriver(PowerProtocol):
+class ManualPowerDriver(Driver, PowerProtocol):
     """ManualPowerDriver - Driver to tell the user to control a target's power"""
-    target = attr.ib()
     name = attr.ib(validator=attr.validators.instance_of(str))
 
     def on(self):
@@ -32,9 +32,8 @@ class ManualPowerDriver(PowerProtocol):
 
 @target_factory.reg_driver
 @attr.s
-class ExternalPowerDriver(PowerProtocol):
+class ExternalPowerDriver(Driver, PowerProtocol):
     """ExternalPowerDriver- Driver using an external command to control a target's power"""
-    target = attr.ib()
     cmd_on = attr.ib(validator=attr.validators.instance_of(str))
     cmd_off = attr.ib(validator=attr.validators.instance_of(str))
     cmd_cycle = attr.ib(

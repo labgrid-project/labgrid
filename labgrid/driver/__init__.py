@@ -5,3 +5,4 @@ from .sshdriver import SSHDriver
 from .externalconsoledriver import ExternalConsoleDriver
 from .exception import NoDriverError, NoResourceError, CleanUpError
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver
+from .common import Driver

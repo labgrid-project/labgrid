@@ -10,14 +10,14 @@ import attr
 from ..factory import target_factory
 from ..protocol import CommandProtocol, FileTransferProtocol
 from ..resource import NetworkService
+from .common import Driver
 from .exception import CleanUpError, ExecutionError, NoResourceError
 
 
 @target_factory.reg_driver
 @attr.s
-class SSHDriver(CommandProtocol, FileTransferProtocol):
+class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
     """SSHDriver - Driver to execute commands via SSH"""
-    target = attr.ib()
 
     def __attrs_post_init__(self):
         self.networkservice = self.target.get_resource(

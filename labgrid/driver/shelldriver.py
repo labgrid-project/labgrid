@@ -7,18 +7,18 @@ from pexpect import TIMEOUT
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol
 from ..util import PtxExpect
+from .common import Driver
 from .exception import ExecutionError, NoDriverError
 
 
 @target_factory.reg_driver
 @attr.s
-class ShellDriver(CommandProtocol):
+class ShellDriver(Driver, CommandProtocol):
     """ShellDriver - Driver to execute commands on the shell"""
-    target = attr.ib()
     prompt = attr.ib(validator=attr.validators.instance_of(str))
     login_prompt = attr.ib(validator=attr.validators.instance_of(str))
     username = attr.ib(validator=attr.validators.instance_of(str))
-    password = attr.ib(default="",validator=attr.validators.instance_of(str))
+    password = attr.ib(default="", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         self.console = self.target.get_driver( #pylint: disable=no-member
@@ -35,7 +35,7 @@ class ShellDriver(CommandProtocol):
         self.re_vt100 = re.compile(
             '(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
         )  #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
-        self.logger = logging.getLogger("{}:{}".format(self,self.target))
+        self.logger = logging.getLogger("{}:{}".format(self, self.target))
         self._status = 0  #pylint: disable=attribute-defined-outside-init
         self.await_login()
         self._check_prompt()

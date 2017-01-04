@@ -2,14 +2,14 @@ import attr
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
+from .common import Driver
 from .exception import NoDriverError
 
 
 @target_factory.reg_driver
 @attr.s
-class BareboxDriver(CommandProtocol, LinuxBootProtocol):
+class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
     """BareboxDriver - Driver to control barebox via the console"""
-    target = attr.ib()
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):

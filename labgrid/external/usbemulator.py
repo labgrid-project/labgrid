@@ -5,12 +5,14 @@ import subprocess
 import attr
 
 from ..protocol import CommandProtocol, FileTransferProtocol
-from ..resource import NetworkService
+
 
 class USBStatus(enum.Enum):
     """This class describes the USB Status"""
     unplugged = 0
     plugged = 1
+    mounted = 2
+
 
 @attr.s
 class USBStick(object):
@@ -23,64 +25,70 @@ class USBStick(object):
         self.command = self.target.get_driver(
             CommandProtocol
         )  #pylint: disable=no-member
+        self.fileservice = self.target.get_driver(FileTransferProtocol)
         if not self.command:
             raise NoDriverError(
                 "Target has no {} Driver".format(CommandProtocol)
             )
-        # self.fileservice = self.target.get_driver(FileTransferProtocol) #pylint: disable=no-member
-        # if not self.fileservice:
-        #     raise NoDriverError("Target has no {} Driver".format(FileTransferProtocol))
-        self.ssh("mount /dev/mmcblk1p1 /mnt")
+        self.fileservice = self.target.get_driver(
+            FileTransferProtocol
+        )  #pylint: disable=no-member
+        if not self.fileservice:
+            raise NoDriverError(
+                "Target has no {} Driver".format(FileTransferProtocol)
+            )
+        self.command.run_check("mount /dev/mmcblk1p1 /mnt")
         self.status = USBStatus.unplugged
 
     def plug_in(self):
-        self.ssh(
-            "modprobe g_mass_storage file=/mnt/{image}".
-            format(image=self.image_name)
-        )
-        self.status = USBStatus.plugged
+        """Insert the USBStick
+
+        This function plugs the virtual USB Stick in, making it available to
+        the connected computer."""
+        if self.status == USBStatus.unplugged:
+            self.command.run_check(
+                "modprobe g_mass_storage file=/mnt/{image}".
+                format(image=self.image_name)
+            )
+            self.status = USBStatus.plugged
 
     def eject(self):
-        self.ssh("modprobe -r g_mass_storage")
-        self.status = USBStatus.unplugged
+        """Eject the USBStick
 
-    def upload_file(self, filename):
-        subprocess.call(
-            'scp {filname} {host}:/tmp/{filename}'.format(filename=filename)
-            .split(' ')
+        Ejects the USBStick from the connected computer, does nothing if it is
+        already connected"""
+        if self.status == USBStatus.plugged:
+            self.command.run_check("modprobe -r g_mass_storage")
+            self.status = USBStatus.unplugged
+
+    def upload_file(self, filename, destination=""):
+        """Upload a file onto the USBStick Image
+
+        Uploads a file onto the USB Stick, raises a StateError if it is not
+        mounted on the host computer."""
+        if self.status != USBStatus.mounted:
+            raise StateError("Device not mounted, can't upload file")
+        self.fileservice.put(
+            filename,
+            "/media/usb/{dest}/{filename}".format(
+                dest=destination, filename=filename
+            )
         )
 
     def upload_image(self, image):
-        if not self.status == USBStatus.unplugged:
-            raise StateError(
-                "Device still plugged in, can't insert new image"
-            )
-        subprocess.call(
-            'scp {filname} {host}:/tmp/{image}'.format(filename=image)
-            .split(' ')
-        )
+        """Upload a complete image as a new USB Stick
 
-    def ssh(self, cmd):
-        try:
-            self.command.run_check(cmd)
-        except:
-            raise ExecutionError('Call failed: {}'.format(cmd))
+        This replaces the current USB Stick image, storing it permanently on
+        the RiotBoard."""
+        if self.status != USBStatus.unplugged:
+            raise StateError("Device still plugged in, can't insert new image")
+        self.fileservice.put(image, "/mnt/backing_store")
 
     def __del__(self):
-        self.ssh("modprobe -r g_mass_storage")
+        self.command.run_check("modprobe -r g_mass_storage")
 
 
-class ExecutionError(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __repr__(self):
-        return "ExecutioError({msg})".format(msg=self.msg)
-
-
+@attr.s
 class StateError(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __repr__(self):
-        return "StatError({msg})".format(msg=self.msg)
+    """Exception which indicates a error in the state handling of the test"""
+    msg = attr.ib()

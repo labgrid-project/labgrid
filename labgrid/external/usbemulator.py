@@ -1,6 +1,6 @@
+"""The USBStick module provides support to interactively use a simulated USB
+device in a test."""
 import enum
-
-import subprocess
 
 import attr
 

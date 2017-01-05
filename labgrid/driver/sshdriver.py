@@ -24,6 +24,9 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         super().__attrs_post_init__()
         self.logger = logging.getLogger("{}({})".format(self, self.target))
         self.control = self._check_master()
+        self.ssh_prefix = "-o ControlPath={}".format(
+            self.control
+        ) if self.control else ""
 
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
@@ -85,19 +88,13 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         returns:
         (stdout, stderr, returncode)
         """
-        if self.control:
-            complete_cmd = "ssh -x -o ControlPath={cpath} {user}@{host} {cmd}".format(
-                cpath=self.control,
-                user=self.networkservice.username,
-                host=self.networkservice.address,
-                cmd=cmd
-            ).split(' ')
-        else:
-            complete_cmd = "ssh -x {user}@{host} {cmd}".format(
-                user=self.networkservice.username,
-                host=self.networkservice.address,
-                cmd=cmd
-            ).split(' ')
+        complete_cmd = "ssh -x {prefix} {user}@{host} {cmd}".format(
+            cpath=self.control,
+            user=self.networkservice.username,
+            host=self.networkservice.address,
+            cmd=cmd,
+            prefix=self.ssh_prefix
+        ).split(' ')
         self.logger.debug("Sending command: %s", complete_cmd)
         try:
             sub = subprocess.Popen(
@@ -133,21 +130,14 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         return 1
 
     def put(self, filename, remotepath=None):
-        if self.control:
-            transfer_cmd = "scp -o ControlPath={cpath} {filename} {user}@{host}:{remotepath}".format(
-                cpath=self.control,
-                filename=filename,
-                user=self.networkservice.username,
-                host=self.networkservice.address,
-                remotepath=remotepath
-            ).split(' ')
-        else:
-            transfer_cmd = "scp {filename} {user}@{host}:{remotepath}".format(
-                filename=filename,
-                user=self.networkservice.username,
-                host=self.networkservice.address,
-                remotepath=remotepath
-            ).split(' ')
+        transfer_cmd = "scp {prefix} {filename} {user}@{host}:{remotepath}".format(
+            cpath=self.control,
+            filename=filename,
+            user=self.networkservice.username,
+            host=self.networkservice.address,
+            remotepath=remotepath,
+            prefix=self.ssh_prefix
+        ).split(' ')
         try:
             # FIXME: API change in python3.5 call -> run
             sub = subprocess.call(
@@ -163,19 +153,13 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
             )
 
     def get(self, filename):
-        if self.control:
-            transfer_cmd = "scp -o ControlPath={cpath} {user}@{host}:{filename} .".format(
-                cpath=self.control,
-                filename=filename,
-                user=self.networkservice.username,
-                host=self.networkservice.address
-            ).split(' ')
-        else:
-            transfer_cmd = "scp {user}@{host}:{filename} .".format(
-                filename=filename,
-                user=self.networkservice.username,
-                host=self.networkservice.address
-            ).split(' ')
+        transfer_cmd = "scp {prefix} {user}@{host}:{filename} .".format(
+            cpath=self.control,
+            filename=filename,
+            user=self.networkservice.username,
+            host=self.networkservice.address,
+            prefix=self.ssh_prefix
+        ).split(' ')
         try:
             # FIXME: API change in python3.5 call -> run
             sub = subprocess.call(
@@ -197,7 +181,6 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
             user=self.networkservice.username,
             host=self.networkservice.address
         ).split(' ')
-        # FIXME: API change in python3.5 call -> run
         res = subprocess.call(
             complete_cmd,
             stdin=subprocess.DEVNULL,

@@ -5,6 +5,7 @@ import subprocess
 import attr
 
 from ..protocol import CommandProtocol, FileTransferProtocol
+from ..exceptions import NoDriverFoundError
 
 
 class USBStatus(enum.Enum):
@@ -22,19 +23,19 @@ class USBStick(object):
 
 
     def __attrs_post_init__(self):
-        self.command = self.target.get_driver(
+        self.command = self.target.get_driver( #pylint: disable=no-member
             CommandProtocol
-        )  #pylint: disable=no-member
-        self.fileservice = self.target.get_driver(FileTransferProtocol)
+        )
+        self.fileservice = self.target.get_driver(FileTransferProtocol) #pylint: disable=no-member
         if not self.command:
-            raise NoDriverError(
+            raise NoDriverFoundError(
                 "Target has no {} Driver".format(CommandProtocol)
             )
-        self.fileservice = self.target.get_driver(
+        self.fileservice = self.target.get_driver( #pylint: disable=no-member
             FileTransferProtocol
         )  #pylint: disable=no-member
         if not self.fileservice:
-            raise NoDriverError(
+            raise NoDriverFoundError(
                 "Target has no {} Driver".format(FileTransferProtocol)
             )
         self.command.run_check("mount /dev/mmcblk1p1 /mnt")

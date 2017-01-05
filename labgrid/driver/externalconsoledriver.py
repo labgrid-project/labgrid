@@ -8,20 +8,20 @@ import attr
 
 from ..factory import target_factory
 from ..protocol import ConsoleProtocol
+from .common import Driver
 from .exception import ExecutionError
 
 
 @target_factory.reg_driver
 @attr.s
-class ExternalConsoleDriver(ConsoleProtocol):
+class ExternalConsoleDriver(Driver, ConsoleProtocol):
     """
     Driver implementing the ConsoleProtocol interface using a subprocess
     """
-    target = attr.ib()
     cmd = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
-        self.target.drivers.append(self)  #pylint: disable=no-member
+        super().__attrs_post_init__()
         self.status = 0  #pylint: disable=attribute-defined-outside-init
         self._child = None
         self.open()

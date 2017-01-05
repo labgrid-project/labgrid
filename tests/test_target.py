@@ -1,7 +1,7 @@
 import pytest
 
 from labgrid import Target
-from labgrid.driver import NoResourceError
+from labgrid.exceptions import NoDriverFoundError, NoResourceFoundError
 
 
 class TestTarget:
@@ -16,30 +16,6 @@ class TestTarget:
         target.resources.append(a())
         assert isinstance(target.get_resource(a), a)
 
-    def test_add_resource(self, target):
-        class a():
-            pass
-
-        target.add_resource(a())
-        assert isinstance(target.get_resource(a), a)
-
-    def test_rm_resource_fail(self, target):
-        class a():
-            pass
-
-        with pytest.raises(NoResourceError):
-            target.rm_resource(a())
-            assert isinstance(target.get_resource(a), a)
-
-    def test_rm_resource(self, target):
-        class a():
-            pass
-
-        k = a()
-        target.resources.append(k)
-        target.rm_resource(k)
-        assert (target.resources == [])
-
     def test_get_driver(self, target):
         class a():
             pass
@@ -48,7 +24,9 @@ class TestTarget:
         assert isinstance(target.get_driver(a), a)
 
     def test_no_resource(self, target):
-        assert target.get_resource(Target) == None
+        with pytest.raises(NoResourceFoundError):
+            target.get_resource(Target)
 
     def test_no_driver(self, target):
-        assert target.get_driver(Target) == None
+        with pytest.raises(NoDriverFoundError):
+            target.get_driver(Target)

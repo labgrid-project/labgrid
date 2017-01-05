@@ -5,7 +5,7 @@ from labgrid.provider.mediafileprovider import MediaFileProvider
 
 class FakeMediaFileProvider(MediaFileProvider):
     def __init__(self):
-        super(FakeMediaFileProvider, self).__init__()
+        super().__init__()
 
         self._add_file('h264', 'sintel.mkv', '/usr/share/video/sintel.mkv')
 

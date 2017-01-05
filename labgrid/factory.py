@@ -24,12 +24,10 @@ class TargetFactory:
         target = Target(name)
         for resource, args in config.get('resources', {}).items():
             assert isinstance(args, dict)
-            r = self.resources[resource](**args)
-            target.add_resource(r)
+            r = self.resources[resource](target, **args)
         for driver, args in config.get('drivers', {}).items():
             assert isinstance(args, dict)
             d = self.drivers[driver](target, **args)
-            target.add_driver(d)
         return target
 
 

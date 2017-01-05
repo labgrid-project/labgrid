@@ -11,23 +11,17 @@ from ..factory import target_factory
 from ..protocol import CommandProtocol, FileTransferProtocol
 from ..resource import NetworkService
 from .common import Driver
-from .exception import CleanUpError, ExecutionError, NoResourceError
+from .exception import CleanUpError, ExecutionError
 
 
 @target_factory.reg_driver
 @attr.s
 class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
     """SSHDriver - Driver to execute commands via SSH"""
+    bindings = {"networkservice": NetworkService, }
 
     def __attrs_post_init__(self):
-        self.networkservice = self.target.get_resource(
-            NetworkService
-        )  #pylint: disable=no-member,attribute-defined-outside-init
-        if not self.networkservice:
-            raise NoResourceError(
-                "Target has no {} Resource".format(NetworkService)
-            )
-        self.target.drivers.append(self)  #pylint: disable=no-member
+        super().__attrs_post_init__()
         self.logger = logging.getLogger("{}({})".format(self, self.target))
         self.control = self._check_master()
 

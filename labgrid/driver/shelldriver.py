@@ -8,27 +8,21 @@ from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol
 from ..util import PtxExpect
 from .common import Driver
-from .exception import ExecutionError, NoDriverError
+from .exception import ExecutionError
 
 
 @target_factory.reg_driver
 @attr.s
 class ShellDriver(Driver, CommandProtocol):
     """ShellDriver - Driver to execute commands on the shell"""
+    bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(validator=attr.validators.instance_of(str))
     login_prompt = attr.ib(validator=attr.validators.instance_of(str))
     username = attr.ib(validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
-        self.console = self.target.get_driver( #pylint: disable=no-member
-            ConsoleProtocol
-        )  #pylint: disable=no-member,attribute-defined-outside-init
-        if not self.console:
-            raise NoDriverError(
-                "Resource has no {} Driver".format(ConsoleProtocol)
-            )
-        self.target.drivers.append(self)  #pylint: disable=no-member
+        super().__attrs_post_init__()
         self.expect = PtxExpect(
             self.console
         )  #pylint: disable=attribute-defined-outside-init

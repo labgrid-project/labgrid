@@ -2,17 +2,18 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from labgrid.driver import NoResourceError, SSHDriver
+from labgrid.driver import SSHDriver
+from labgrid.exceptions import NoResourceFoundError
 from labgrid.resource import NetworkService
 
 
 class TestSSHDriver:
     def test_create_fail_missing_resource(self, target):
-        with pytest.raises(NoResourceError):
+        with pytest.raises(NoResourceFoundError):
             SSHDriver(target)
 
     def test_create(self, target, mocker):
-        target.add_resource(NetworkService("1.2.3.4", "root"))
+        NetworkService(target, "1.2.3.4", "root")
         call = mocker.patch('subprocess.call')
         call.return_value = 0
         popen = mocker.patch('subprocess.Popen', autospec=True)

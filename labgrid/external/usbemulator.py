@@ -2,7 +2,6 @@ import subprocess
 
 import attr
 
-from ..driver import NoDriverError
 from ..protocol import CommandProtocol, FileTransferProtocol
 from ..resource import NetworkService
 
@@ -16,7 +15,7 @@ class USBStick(object):
     _UNPLUGGED = 1
     _PLUGGED = 2
 
-    def __post_attr_init__(self):
+    def __attrs_post_init__(self):
         self.command = self.target.get_driver(
             CommandProtocol
         )  #pylint: disable=no-member

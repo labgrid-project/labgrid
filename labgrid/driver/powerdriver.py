@@ -6,7 +6,6 @@ import attr
 from ..factory import target_factory
 from ..protocol import PowerProtocol
 from .common import Driver
-from .exception import NoDriverError
 
 
 @target_factory.reg_driver

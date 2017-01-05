@@ -17,7 +17,7 @@ class HawkbitTestClient:
         default=1.0, validator=attr.validators.instance_of(float)
     )
 
-    def __attr_post_init__(self):
+    def __attrs_post_init__(self):
         self.auth = (USERNAME, PASSWORD)
         self.url = 'http://{host}:{port}/rest/v1/{endpoint}'
 

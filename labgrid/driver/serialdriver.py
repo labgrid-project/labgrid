@@ -8,7 +8,6 @@ from ..factory import target_factory
 from ..protocol import ConsoleProtocol
 from ..resource import SerialPort
 from .common import Driver
-from .exception import NoResourceError
 
 
 @target_factory.reg_driver
@@ -17,13 +16,10 @@ class SerialDriver(Driver, ConsoleProtocol):
     """
     Driver implementing the ConsoleProtocol interface over a SerialPort connection
     """
+    bindings = {"port": SerialPort, }
 
     def __attrs_post_init__(self):
-        self.port = self.target.get_resource(
-            SerialPort
-        )  #pylint: disable=no-member,attribute-defined-outside-init
-        if not self.port:
-            raise NoResourceError("Target has no SerialPort Resource")
+        super().__attrs_post_init__()
         self.serial = serial.Serial(
         )  #pylint: disable=attribute-defined-outside-init
         self.serial.port = self.port.port

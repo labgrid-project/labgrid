@@ -54,7 +54,7 @@ class ShellDriver(Driver, CommandProtocol):
             ).split('\r\n')
             self.logger.debug("Received Data: %s", data)
             # Remove first element, the invoked cmd
-            data = data[data.index("MARKER")+1:]
+            data = data[data.index("MARKER") + 1:]
             data = data[:data.index("MARKER")]
             exitcode = int(data[-1])
             del (data[-1])
@@ -108,7 +108,9 @@ class ShellDriver(Driver, CommandProtocol):
             self._status = 0
 
     def _inject_run(self):
-        self.expect.sendline('''run() { echo "MARKER"; sh -c "$@"; echo "$?"; echo "MARKER"; }''')
+        self.expect.sendline(
+            '''run() { echo "MARKER"; sh -c "$@"; echo "$?"; echo "MARKER"; }'''
+        )
         self.expect.expect(self.prompt)
 
     def cleanup(self):

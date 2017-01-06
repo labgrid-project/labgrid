@@ -2,7 +2,6 @@ import pytest
 
 from .. import Environment
 
-
 # pylint: disable=redefined-outer-name
 
 

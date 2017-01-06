@@ -9,7 +9,7 @@ from ..exceptions import NoDriverFoundError
 
 
 class USBStatus(enum.Enum):
-    """This class describes the USB Status"""
+    """This class describes the USBStick Status"""
     unplugged = 0
     plugged = 1
     mounted = 2
@@ -17,6 +17,8 @@ class USBStatus(enum.Enum):
 
 @attr.s
 class USBStick(object):
+    """The USBStick class provides an easy to use interface to describe a
+    target as an USB Stick."""
     target = attr.ib()
     image_name = attr.ib(validator=attr.validators.instance_of(str))
     status = attr.ib(default=1)

@@ -1,5 +1,6 @@
 import logging
 import re
+import shlex
 
 import attr
 from pexpect import TIMEOUT
@@ -43,7 +44,7 @@ class ShellDriver(Driver, CommandProtocol):
         cmd - cmd to run on the shell
         """
         # FIXME: Handle pexpect Timeout
-        cmp_command = '''run "{}"'''.format(cmd)
+        cmp_command = '''run {}'''.format(shlex.quote(cmd))
         if self._status == 1:
             self.expect.sendline(cmp_command)
             self.expect.expect(self.prompt)

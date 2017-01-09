@@ -17,3 +17,13 @@ class ConsoleProtocol(abc.ABC):
         Write data to underlying port
         """
         raise NotImplementedError
+
+    class Client(abc.ABC):
+
+        @abc.abstractmethod
+        def get_console_matches(self):
+            raise NotImplementedError
+
+        @abc.abstractmethod
+        def notify_console_match(self, match):
+            raise NotImplementedError

@@ -6,14 +6,14 @@ import attr
 from pexpect import TIMEOUT
 
 from ..factory import target_factory
-from ..protocol import CommandProtocol, ConsoleProtocol
+from ..protocol import CommandProtocol, ConsoleProtocol, InfoProtocol
 from .common import Driver
 from .exception import ExecutionError
 
 
 @target_factory.reg_driver
 @attr.s
-class ShellDriver(Driver, CommandProtocol):
+class ShellDriver(Driver, CommandProtocol, InfoProtocol):
     """ShellDriver - Driver to execute commands on the shell"""
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(validator=attr.validators.instance_of(str))
@@ -24,7 +24,7 @@ class ShellDriver(Driver, CommandProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.re_vt100 = re.compile(
-            '(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
+            r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
         )  #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
         self.logger = logging.getLogger("{}:{}".format(self, self.target))
         self._status = 0  #pylint: disable=attribute-defined-outside-init
@@ -53,7 +53,7 @@ class ShellDriver(Driver, CommandProtocol):
             data = data[data.index("MARKER") + 1:]
             data = data[:data.index("MARKER")]
             exitcode = int(data[-1])
-            del (data[-1])
+            del data[-1]
             return (data, [], exitcode)
         else:
             return None
@@ -110,4 +110,44 @@ class ShellDriver(Driver, CommandProtocol):
         self.console.expect(self.prompt)
 
     def cleanup(self):
+        """Exit the shell on cleanup"""
         self.console.sendline("exit")
+
+    def get_ip(self, interface="eth0"):
+        if self._status == 1:
+            try:
+                ip_string = self.run_check("ip -o -4 addr show")
+            except ExecutionError:
+                self.logger.debug('No ip address found')
+                return None
+
+            regex = re.compile(
+                r"""\d+:       # Match the leading number
+                \s+(?P<if>\w+) # Match whitespace and interfacename
+                \s+inet (?P<ip>[\d.]+) # Match IP Adress
+                /(?P<prefix>\d+) # Match prefix
+                .*global # Match global scope, not host scope""" , re.X
+            )
+            self.logger.debug('IP String: %s', ip_string)
+            result = {}
+            for line in ip_string:
+                match = regex.match(line)
+                if match:
+                    match = match.groupdict()
+                    self.logger.debug("Match dict: %s", match)
+                    result[match['if']] = match['ip']
+            self.logger.debug("Complete result: %s", result)
+            if result:
+                return result[interface]
+            else:
+                return None
+
+    def get_hostname(self):
+        if self._status == 1:
+            try:
+                hostname_string = self.run_check("hostname")
+            except ExecutionError:
+                self.logger.debug('Hostname unavailable')
+                return None
+            self.logger.debug('Hostname String: %s', hostname_string)
+            return hostname_string[0]

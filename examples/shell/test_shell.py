@@ -1,8 +1,7 @@
-from labgrid.protocol import CommandProtocol, ConsoleProtocol
+from labgrid.protocol import CommandProtocol
 
 
 def test_shell(target):
-    console = target.get_driver(ConsoleProtocol)
     command = target.get_driver(CommandProtocol)
     stdout, stderr, returncode = command.run('cat /proc/version')
     assert returncode == 0

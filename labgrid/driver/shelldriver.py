@@ -59,7 +59,7 @@ class ShellDriver(Driver, CommandProtocol):
             return None
 
     def await_login(self):
-        """Awwaits the login prompt and logs the user in"""
+        """Awaits the login prompt and logs the user in"""
         self.console.sendline("")
         try:
             self.console.expect(self.login_prompt)

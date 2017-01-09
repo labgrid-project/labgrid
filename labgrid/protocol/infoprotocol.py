@@ -9,7 +9,3 @@ class InfoProtocol(abc.ABC):
     @abc.abstractmethod
     def get_hostname(self):
         raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_username(self):
-        raise NotImplementedError

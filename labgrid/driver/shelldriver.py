@@ -43,7 +43,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         cmp_command = '''run {}'''.format(shlex.quote(cmd))
         if self._status == 1:
             self.console.sendline(cmp_command)
-            before, _, _ = self.console.expect(self.prompt)
+            _, before, _, _ = self.console.expect(self.prompt)
             # Remove VT100 Codes and split by newline
             data = self.re_vt100.sub(
                 '', before.decode('utf-8'), count=1000000

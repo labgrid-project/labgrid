@@ -26,5 +26,5 @@ class ConsoleExpectMixin:
         self._expect.sendcontrol(char)
 
     def expect(self, pattern):
-        self._expect.expect(pattern)
-        return self._expect.before, self._expect.match, self._expect.after
+        index = self._expect.expect(pattern)
+        return index, self._expect.before, self._expect.match, self._expect.after

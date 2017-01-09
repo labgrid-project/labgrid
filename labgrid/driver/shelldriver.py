@@ -7,7 +7,6 @@ from pexpect import TIMEOUT
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol
-from ..util import PtxExpect
 from .common import Driver
 from .exception import ExecutionError
 
@@ -24,9 +23,6 @@ class ShellDriver(Driver, CommandProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.expect = PtxExpect(
-            self.console
-        )  #pylint: disable=attribute-defined-outside-init
         self.re_vt100 = re.compile(
             '(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
         )  #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
@@ -46,11 +42,11 @@ class ShellDriver(Driver, CommandProtocol):
         # FIXME: Handle pexpect Timeout
         cmp_command = '''run {}'''.format(shlex.quote(cmd))
         if self._status == 1:
-            self.expect.sendline(cmp_command)
-            self.expect.expect(self.prompt)
+            self.console.sendline(cmp_command)
+            before, _, _ = self.console.expect(self.prompt)
             # Remove VT100 Codes and split by newline
             data = self.re_vt100.sub(
-                '', self.expect.before.decode('utf-8'), count=1000000
+                '', before.decode('utf-8'), count=1000000
             ).split('\r\n')
             self.logger.debug("Received Data: %s", data)
             # Remove first element, the invoked cmd
@@ -64,18 +60,18 @@ class ShellDriver(Driver, CommandProtocol):
 
     def await_login(self):
         """Awwaits the login prompt and logs the user in"""
-        self.expect.sendline("")
+        self.console.sendline("")
         try:
-            self.expect.expect(self.login_prompt)
+            self.console.expect(self.login_prompt)
         except TIMEOUT:
             pass
-        self.expect.sendline(self.username)
+        self.console.sendline(self.username)
         if self.password:
             try:
-                self.expect.expect("Password: ")
+                self.console.expect("Password: ")
             except TIMEOUT:
                 pass
-            self.expect.sendline(self.password)
+            self.console.sendline(self.password)
 
     def run_check(self, cmd):
         """
@@ -100,18 +96,18 @@ class ShellDriver(Driver, CommandProtocol):
         """
         Internal function to check if we have a valid prompt
         """
-        self.expect.sendline("")
+        self.console.sendline("")
         try:
-            self.expect.expect(self.prompt)
+            self.console.expect(self.prompt)
             self._status = 1
         except TIMEOUT:
             self._status = 0
 
     def _inject_run(self):
-        self.expect.sendline(
+        self.console.sendline(
             '''run() { echo "MARKER"; sh -c "$@"; echo "$?"; echo "MARKER"; }'''
         )
-        self.expect.expect(self.prompt)
+        self.console.expect(self.prompt)
 
     def cleanup(self):
-        self.expect.sendline("exit")
+        self.console.sendline("exit")

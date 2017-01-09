@@ -3,15 +3,16 @@ import attr
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol
 from .common import Driver
+from .consoleexpectmixin import ConsoleExpectMixin
 
 
 @target_factory.reg_driver
 @attr.s
-class FakeConsoleDriver(Driver, ConsoleProtocol):
-    def read(self, *args):
+class FakeConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
+    def _read(self, *args):
         pass
 
-    def write(self, *args):
+    def _write(self, *args):
         pass
 
     def open(self):

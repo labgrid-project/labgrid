@@ -18,6 +18,15 @@ class ConsoleProtocol(abc.ABC):
         """
         raise NotImplementedError
 
+    def sendline(self, line: str):
+        raise NotImplementedError
+
+    def sendcontrol(self, char: str):
+        raise NotImplementedError
+
+    def expect(self, pattern: str):
+        raise NotImplementedError
+
     class Client(abc.ABC):
 
         @abc.abstractmethod
@@ -25,5 +34,5 @@ class ConsoleProtocol(abc.ABC):
             raise NotImplementedError
 
         @abc.abstractmethod
-        def notify_console_match(self, match):
+        def notify_console_match(self, pattern, match):
             raise NotImplementedError

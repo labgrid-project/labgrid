@@ -8,11 +8,12 @@ from ..factory import target_factory
 from ..protocol import ConsoleProtocol
 from ..resource import SerialPort
 from .common import Driver
+from .consoleexpectmixin import ConsoleExpectMixin
 
 
 @target_factory.reg_driver
 @attr.s
-class SerialDriver(Driver, ConsoleProtocol):
+class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     """
     Driver implementing the ConsoleProtocol interface over a SerialPort connection
     """
@@ -28,9 +29,8 @@ class SerialDriver(Driver, ConsoleProtocol):
         self.status = 0  #pylint: disable=attribute-defined-outside-init
         self.serial.timeout = 30
         self.open()
-        self.target.drivers.append(self)  #pylint: disable=no-member
 
-    def read(self, size: int=1, timeout: int=0):
+    def _read(self, size: int=1, timeout: int=0):
         """
         Reads 'size' bytes from the serialport
 
@@ -46,7 +46,7 @@ class SerialDriver(Driver, ConsoleProtocol):
             raise TIMEOUT("Timeout exceeded")
         return res
 
-    def write(self, data: bytes):
+    def _write(self, data: bytes):
         """
         Writes 'data' to the serialport
 

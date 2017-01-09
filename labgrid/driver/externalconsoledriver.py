@@ -9,12 +9,13 @@ import attr
 from ..factory import target_factory
 from ..protocol import ConsoleProtocol
 from .common import Driver
+from .consoleexpectmixin import ConsoleExpectMixin
 from .exception import ExecutionError
 
 
 @target_factory.reg_driver
 @attr.s
-class ExternalConsoleDriver(Driver, ConsoleProtocol):
+class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     """
     Driver implementing the ConsoleProtocol interface using a subprocess
     """
@@ -58,7 +59,7 @@ class ExternalConsoleDriver(Driver, ConsoleProtocol):
             self._child.kill()
             outs, errs = self._child.communicate()
 
-    def read(self, size: int=1024, timeout: int=0):
+    def _read(self, size: int=1024, timeout: int=0):
         """
         Reads 'size' bytes from the serialport
 
@@ -72,7 +73,7 @@ class ExternalConsoleDriver(Driver, ConsoleProtocol):
         else:
             return b''
 
-    def write(self, data: bytes):
+    def _write(self, data: bytes):
         """
         Writes 'data' to the serialport
 

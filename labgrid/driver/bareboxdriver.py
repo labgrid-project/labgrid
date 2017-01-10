@@ -3,6 +3,7 @@ import re
 import shlex
 
 import attr
+from pexpect import TIMEOUT
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
@@ -19,8 +20,8 @@ class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.re_vt100 = re.compile(
-            '(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
-        )  #pylint: disable=anomalous-backslash-in-string
+            r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
+        )
         self.logger = logging.getLogger("{}:{}".format(self, self.target))
         self._status = 0
         self._check_prompt()
@@ -84,6 +85,7 @@ class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
             self._status = 0
 
     def await_prompt(self):
+        """Await autoboot line and stop it to get to the prompt"""
         self.console.expect(r"[\n]barebox 20\d+")
         index, _, _, _ = self.console.expect([self.prompt, "stop autoboot"])
         if index == 0:

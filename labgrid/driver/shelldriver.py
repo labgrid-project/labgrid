@@ -117,6 +117,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
 
     def cleanup(self):
         """Exit the shell on cleanup"""
+        self.run_check('umount ~/.ssh/authorized_keys')
         self.console.sendline("exit")
 
     def get_ip(self, interface="eth0"):
@@ -166,7 +167,10 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
                 else:
                     raise IOError("Could not parse SSH-Key from file: {}".format(keyfile))
             self.logger.debug("Read Key: %s", new_key)
-            auth_keys = self.run_check("cat ~/.ssh/authorized_keys")
+            auth_keys, _, exitcode = self.run("cat ~/.ssh/authorized_keys")
+            self.logger.debug("Exitcode: %s", exitcode)
+            if exitcode == 1:
+                self.run("touch ~/.ssh/authorized_keys")
             result = []
             for line in auth_keys:
                 match = regex.match(line)
@@ -180,8 +184,11 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
                 if key['key'] == new_key['key']:
                     self.logger.info("Key already on target")
                     return
-            self.logger.info("Key not on target, copying")
-            self.run_check('echo "{}" > ~/.ssh/authorized_keys'.format(keyline))
+            self.logger.info("Key not on target, mounting...")
+            self.run_check('echo "{}" > /tmp/keys'.format(keyline))
+            self.run_check('chmod 600 /tmp/keys')
+            self.run_check('mount --bind /tmp/keys ~/.ssh/authorized_keys')
+            self.run_check('chmod 600 ~/.ssh/authorized_keys')
 
     def get_hostname(self):
         if self._status == 1:

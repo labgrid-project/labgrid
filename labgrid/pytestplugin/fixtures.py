@@ -31,7 +31,7 @@ def env(request):
 
 
 @pytest.fixture('session')
-def target(request, env):
+def target(env):
     """Return the default target `main` configured in the supplied
     configuration file."""
     return env.get_target()

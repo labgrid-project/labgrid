@@ -15,24 +15,24 @@ class ManualPowerDriver(Driver, PowerProtocol):
     name = attr.ib(validator=attr.validators.instance_of(str))
 
     def on(self):
-        input(
+        self.target.interact(
             "Turn the target {name} ON and press enter".format(name=self.name)
         )
 
     def off(self):
-        input(
+        self.target.interact(
             "Turn the target {name} OFF and press enter".
             format(name=self.name)
         )
 
     def cycle(self):
-        input("CYCLE the target {name} and press enter".format(name=self.name))
+        self.target.interact("CYCLE the target {name} and press enter".format(name=self.name))
 
 
 @target_factory.reg_driver
 @attr.s
 class ExternalPowerDriver(Driver, PowerProtocol):
-    """ExternalPowerDriver- Driver using an external command to control a target's power"""
+    """ExternalPowerDriver - Driver using an external command to control a target's power"""
     cmd_on = attr.ib(validator=attr.validators.instance_of(str))
     cmd_off = attr.ib(validator=attr.validators.instance_of(str))
     cmd_cycle = attr.ib(

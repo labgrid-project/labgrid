@@ -11,6 +11,7 @@ class Environment:
     config_file = attr.ib(
         default="config.yaml", validator=attr.validators.instance_of(str)
     )
+    interact = attr.ib(default=input)
 
     def __attrs_post_init__(self):
         from . import load_config
@@ -28,7 +29,9 @@ class Environment:
             )
 
         for name, config in self.config.items():
-            self.targets[name] = target_factory(name, config)
+            target = target_factory(name, config)
+            target.env = self
+            self.targets[name] = target
 
     def get_target(self, role: str='main') -> Target:
         """Returns the specified target."""

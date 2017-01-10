@@ -9,10 +9,17 @@ from .resource import Resource
 @attr.s
 class Target:
     name = attr.ib(validator=attr.validators.instance_of(str))
+    env = attr.ib(default=None)
 
     def __attrs_post_init__(self):
         self.resources = []
         self.drivers = []
+
+    def interact(self, msg):
+        if self.env:
+            self.env.interact("{}: {}".format(self.name, msg))
+        else:
+            input(msg)
 
     def get_resource(self, cls):
         """

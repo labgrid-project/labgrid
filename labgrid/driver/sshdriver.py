@@ -1,9 +1,10 @@
+# pylint: disable=no-member
+"""The SSHDriver uses SSH as a transport to implement CommandProtocol and FileTransferProtocol"""
 import logging
 import os
 import shutil
 import subprocess
 import tempfile
-import time
 
 import attr
 
@@ -54,9 +55,7 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
                 "no control socket to {}".format(self.networkservice.address)
             )
 
-        self.logger.debug(
-            'Connected to {}'.format(self.networkservice.address)
-        )
+        self.logger.debug('Connected to %s', self.networkservice.address)
 
         return control
 
@@ -66,7 +65,6 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
                 self.networkservice.username, self.networkservice.address
             )
         ]
-        # FIXME: API change in python3.5 call -> run
         check = subprocess.call(
             args,
             stdin=subprocess.DEVNULL,
@@ -89,7 +87,6 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         (stdout, stderr, returncode)
         """
         complete_cmd = "ssh -x {prefix} {user}@{host} {cmd}".format(
-            cpath=self.control,
             user=self.networkservice.username,
             host=self.networkservice.address,
             cmd=cmd,
@@ -131,7 +128,6 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
 
     def put(self, filename, remotepath=None):
         transfer_cmd = "scp {prefix} {filename} {user}@{host}:{remotepath}".format(
-            cpath=self.control,
             filename=filename,
             user=self.networkservice.username,
             host=self.networkservice.address,
@@ -139,7 +135,6 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
             prefix=self.ssh_prefix
         ).split(' ')
         try:
-            # FIXME: API change in python3.5 call -> run
             sub = subprocess.call(
                 transfer_cmd
             )  #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -154,14 +149,12 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
 
     def get(self, filename):
         transfer_cmd = "scp {prefix} {user}@{host}:{filename} .".format(
-            cpath=self.control,
             filename=filename,
             user=self.networkservice.username,
             host=self.networkservice.address,
             prefix=self.ssh_prefix
         ).split(' ')
         try:
-            # FIXME: API change in python3.5 call -> run
             sub = subprocess.call(
                 transfer_cmd
             )  #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

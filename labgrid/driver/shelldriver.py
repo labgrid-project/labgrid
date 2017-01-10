@@ -124,9 +124,9 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
             regex = re.compile(
                 r"""\d+:       # Match the leading number
                 \s+(?P<if>\w+) # Match whitespace and interfacename
-                \s+inet (?P<ip>[\d.]+) # Match IP Adress
+                \s+inet\s+(?P<ip>[\d.]+) # Match IP Adress
                 /(?P<prefix>\d+) # Match prefix
-                .*global # Match global scope, not host scope""" , re.X
+                .*global # Match global scope, not host scope""", re.X
             )
             self.logger.debug('IP String: %s', ip_string)
             result = {}

@@ -1,3 +1,6 @@
+# pylint: disable=no-member
+"""The ShellDriver provides the CommandProtocol, ConsoleProtocol and
+ InfoProtocol on top of a SerialPort."""
 import logging
 import re
 import shlex
@@ -20,6 +23,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
     login_prompt = attr.ib(validator=attr.validators.instance_of(str))
     username = attr.ib(validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
+    keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -31,6 +35,8 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         self.await_login()
         self._check_prompt()
         self._inject_run()
+        if self.keyfile:
+            self.put_ssh_key(self.keyfile)
 
     def run(self, cmd):
         """
@@ -114,6 +120,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         self.console.sendline("exit")
 
     def get_ip(self, interface="eth0"):
+        """Returns the IP of the supplied interface"""
         if self._status == 1:
             try:
                 ip_string = self.run_check("ip -o -4 addr show")
@@ -141,6 +148,40 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
                 return result[interface]
             else:
                 return None
+
+    def put_ssh_key(self, key):
+        """Upload an SSH Key to a target"""
+        regex = re.compile(
+            r"""ssh-rsa # Only match RSA Keys
+            \s+(?P<key>[a-zA-Z0-9/+=]+) # Match Keystring
+            \s+(?P<comment>.*) # Match comment""", re.X
+        )
+        if self._status == 1:
+            with open(key) as keyfile:
+                keyline = keyfile.readline()
+                self.logger.debug("Read Keyline: %s", keyline)
+                match = regex.match(keyline)
+                if match:
+                    new_key = match.groupdict()
+                else:
+                    raise IOError("Could not parse SSH-Key from file: {}".format(keyfile))
+            self.logger.debug("Read Key: %s", new_key)
+            auth_keys = self.run_check("cat ~/.ssh/authorized_keys")
+            result = []
+            for line in auth_keys:
+                match = regex.match(line)
+                if match:
+                    match = match.groupdict()
+                    self.logger.debug("Match dict: %s", match)
+                    result.append(match)
+            self.logger.debug("Complete result: %s", result)
+            for key in result:
+                self.logger.debug("Key, newkey: %s,%s", key['key'], new_key['key'])
+                if key['key'] == new_key['key']:
+                    self.logger.info("Key already on target")
+                    return
+            self.logger.info("Key not on target, copying")
+            self.run_check('echo "{}" > ~/.ssh/authorized_keys'.format(keyline))
 
     def get_hostname(self):
         if self._status == 1:

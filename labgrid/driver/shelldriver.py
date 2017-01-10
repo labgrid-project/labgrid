@@ -117,7 +117,6 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
 
     def cleanup(self):
         """Exit the shell on cleanup"""
-        self.run_check('umount ~/.ssh/authorized_keys')
         self.console.sendline("exit")
 
     def get_ip(self, interface="eth0"):

@@ -21,7 +21,7 @@ class USBStick(object):
     target as an USB Stick."""
     target = attr.ib()
     image_name = attr.ib(validator=attr.validators.instance_of(str))
-    status = attr.ib(default=1)
+    image_dir = attr.ib(validator=attr.validators.instance_of(str))
 
 
     def __attrs_post_init__(self):
@@ -40,7 +40,7 @@ class USBStick(object):
             raise NoDriverFoundError(
                 "Target has no {} Driver".format(FileTransferProtocol)
             )
-        self.command.run_check("mount /dev/mmcblk1p1 /mnt")
+        self.command.run_check("mount /dev/mmcblk1p1 /mnt/sd")
         self.status = USBStatus.unplugged
 
     def plug_in(self):
@@ -69,14 +69,20 @@ class USBStick(object):
 
         Uploads a file onto the USB Stick, raises a StateError if it is not
         mounted on the host computer."""
-        if self.status != USBStatus.mounted:
-            raise StateError("Device not mounted, can't upload file")
+        if self.status != USBStatus.unplugged:
+            raise StateError("Device still plugged in, can't upload image")
+        self.command.run_check("losetup -Pf {}/backing_store".format(self.image_dir))
+        self.command.run_check("fsck.vfat -a /dev/loop0p1")
+        self.command.run_check("mount /dev/loop0p1 /mnt/stick")
         self.fileservice.put(
             filename,
-            "/media/usb/{dest}/{filename}".format(
+            "/mnt/stick/{dest}/{filename}".format(
                 dest=destination, filename=filename
             )
         )
+        self.command.run_check("umount /mnt/stick")
+        self.command.run_check("fsck.vfat -a /dev/loop0p1")
+        self.command.run_check("losetup -d /dev/loop0")
 
     def upload_image(self, image):
         """Upload a complete image as a new USB Stick

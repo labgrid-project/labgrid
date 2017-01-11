@@ -1,7 +1,7 @@
 import attr
 
 from ..factory import target_factory
-from ..protocol import CommandProtocol, ConsoleProtocol
+from ..protocol import CommandProtocol, ConsoleProtocol, FileTransferProtocol
 from .common import Driver
 from .consoleexpectmixin import ConsoleExpectMixin
 
@@ -32,4 +32,13 @@ class FakeCommandDriver(Driver, CommandProtocol):
         pass
 
     def get_status(self):
+        pass
+
+@target_factory.reg_driver
+@attr.s
+class FakeFileTransferDriver(Driver, FileTransferProtocol):
+    def get(self, *args):
+        pass
+
+    def put(self, *args):
         pass

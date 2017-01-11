@@ -28,3 +28,9 @@ class ConsoleExpectMixin:
     def expect(self, pattern, timeout=-1):
         index = self._expect.expect(pattern, timeout=timeout)
         return index, self._expect.before, self._expect.match, self._expect.after
+
+    def resolve_conflicts(self, client):
+        for other in self.clients:
+            if other is client:
+                continue
+            self.target.deactivate(other)

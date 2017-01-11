@@ -33,9 +33,11 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         )  #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
         self.logger = logging.getLogger("{}:{}".format(self, self.target))
         self._status = 0  #pylint: disable=attribute-defined-outside-init
-        self.await_login()
-        self._check_prompt()
-        self._inject_run()
+
+    def on_activate(self):
+        if self._status == 0:
+            self.await_login()
+            self._inject_run()
         if self.keyfile:
             self.put_ssh_key(self.keyfile)
 
@@ -71,17 +73,15 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
     def await_login(self):
         """Awaits the login prompt and logs the user in"""
         self.console.sendline("")
-        try:
-            self.console.expect(self.login_prompt)
-        except TIMEOUT:
-            pass
+        index, _, _, _ = self.console.expect([self.prompt, self.login_prompt])
+        if index == 0:
+            self.status = 1
+            return  # already logged in
         self.console.sendline(self.username)
         if self.password:
-            try:
-                self.console.expect("Password: ")
-            except TIMEOUT:
-                pass
+            self.console.expect("Password: ")
             self.console.sendline(self.password)
+        self._check_prompt()
 
     def run_check(self, cmd):
         """

@@ -113,7 +113,7 @@ class Target:
             supplier.clients.add(client)
             client.suppliers.add(supplier)
             client.on_supplier_bound(supplier, name)
-            client.on_client_bound(client)
+            supplier.on_client_bound(client)
         client.state = BindingState.bound
 
     def bind(self, bindable):
@@ -122,13 +122,16 @@ class Target:
         elif isinstance(bindable, Driver):
             return self.bind_driver(bindable)
         else:
-            raise BindingError("invalid base class {}".format(cls))
+            raise BindingError("object {} is not bindable".format(bindable))
 
     def activate(self, client):
         """
         Activate the client by activating all bound suppliers. This may require
         deactivating other clients.
         """
+        if client.state is BindingState.active:
+            return # nothing to do
+
         if client.state is not BindingState.bound:
             raise BindingError(
                 "{} is not in state {}".format(client, BindingState.bound)
@@ -137,8 +140,8 @@ class Target:
         # consistency check
         assert client in self.resources or client in self.drivers
 
-        # resolve activate recursively and resolve conflicts
-        def recurse(supplier, client):
+        # activate recursively and resolve conflicts
+        for supplier in client.suppliers:
             if supplier.state is not BindingState.active:
                 self.activate(supplier)
             supplier.resolve_conflicts(client)
@@ -153,6 +156,9 @@ class Target:
 
         This is needed to ensure that no client has an inactive supplier.
         """
+        if client.state is BindingState.bound:
+            return # nothing to do
+
         if client.state is not BindingState.active:
             raise BindingError(
                 "{} is not in state {}".format(client, BindingState.active)

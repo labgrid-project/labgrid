@@ -25,7 +25,11 @@ class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
         )
         self.logger = logging.getLogger("{}:{}".format(self, self.target))
         self._status = 0
+
+    def on_activate(self):
         self._check_prompt()
+        if self._status == 0:
+            self.await_prompt()
 
     def run(self, cmd):
         """

@@ -49,26 +49,25 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         cmd - cmd to run on the shell
         """
         # FIXME: Handle pexpect Timeout
+        self._check_prompt()
         marker = gen_marker()
-        cmp_command = '''MARKER="{}" run {}'''.format(
-            marker, shlex.quote(cmd)
+        # hide marker from expect
+        cmp_command = '''MARKER='{}''{}' run {}'''.format(
+            marker[:4], marker[4:], shlex.quote(cmd)
         )
-        if self._status == 1:
-            self.console.sendline(cmp_command)
-            _, before, _, _ = self.console.expect(self.prompt)
-            # Remove VT100 Codes and split by newline
-            data = self.re_vt100.sub(
-                '', before.decode('utf-8'), count=1000000
-            ).split('\r\n')
-            self.logger.debug("Received Data: %s", data)
-            # Remove first element, the invoked cmd
-            data = data[data.index(marker) + 1:]
-            data = data[:data.index(marker)]
-            exitcode = int(data[-1])
-            del data[-1]
-            return (data, [], exitcode)
-        else:
-            return None
+        self.console.sendline(cmp_command)
+        _, before, _, _ = self.console.expect(self.prompt)
+        # Remove VT100 Codes and split by newline
+        data = self.re_vt100.sub(
+            '', before.decode('utf-8'), count=1000000
+        ).split('\r\n')
+        self.logger.debug("Received Data: %s", data)
+        # Remove first element, the invoked cmd
+        data = data[data.index(marker) + 1:]
+        data = data[:data.index(marker)]
+        exitcode = int(data[-1])
+        del data[-1]
+        return (data, [], exitcode)
 
     def await_login(self):
         """Awaits the login prompt and logs the user in"""
@@ -81,6 +80,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         if self.password:
             self.console.expect("Password: ")
             self.console.sendline(self.password)
+        self.console.expect(self.prompt, timeout=5)
         self._check_prompt()
 
     def run_check(self, cmd):
@@ -106,12 +106,16 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         """
         Internal function to check if we have a valid prompt
         """
-        self.console.sendline("")
+        marker = gen_marker()
+        # hide marker from expect
+        self.console.sendline("echo '{}''{}'".format(marker[:4], marker[4:]))
         try:
+            self.console.expect("{}".format(marker), timeout=2)
             self.console.expect(self.prompt, timeout=1)
             self._status = 1
         except TIMEOUT:
             self._status = 0
+            raise
 
     def _inject_run(self):
         self.console.sendline(

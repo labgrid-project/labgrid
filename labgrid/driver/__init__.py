@@ -1,4 +1,5 @@
 from .bareboxdriver import BareboxDriver
+from .ubootdriver import UBootDriver
 from .serialdriver import SerialDriver
 from .shelldriver import ShellDriver
 from .sshdriver import SSHDriver

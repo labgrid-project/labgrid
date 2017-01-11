@@ -23,12 +23,13 @@ class USBStick(object):
     image_dir = attr.ib(validator=attr.validators.instance_of(str))
     image_name = attr.ib(validator=attr.validators.instance_of(str))
 
-
     def __attrs_post_init__(self):
         self.command = self.target.get_driver( #pylint: disable=no-member
             CommandProtocol
         )
-        self.fileservice = self.target.get_driver(FileTransferProtocol) #pylint: disable=no-member
+        self.fileservice = self.target.get_driver( #pylint: disable=no-member
+            FileTransferProtocol
+        )
         if not self.command:
             raise NoDriverFoundError(
                 "Target has no {} Driver".format(CommandProtocol)
@@ -49,16 +50,17 @@ class USBStick(object):
         the connected computer."""
         if self.status == USBStatus.unplugged:
             self.command.run_check(
-                "modprobe g_mass_storage file=/mnt/sd/{image}".
-                format(image=self.image_name)
+                "modprobe g_mass_storage file={dir}{image}".format(
+                    dir=self.image_dir, image=self.image_name
+                )
             )
             self.status = USBStatus.plugged
 
-    def eject(self):
-        """Eject the USBStick
+    def plug_out(self):
+        """Plugs out the USBStick
 
-        Ejects the USBStick from the connected computer, does nothing if it is
-        already connected"""
+        Plugs out the USBStick from the connected computer, does nothing if it is
+        already unplugged"""
         if self.status == USBStatus.plugged:
             self.command.run_check("modprobe -r g_mass_storage")
             self.status = USBStatus.unplugged
@@ -70,7 +72,9 @@ class USBStick(object):
         mounted on the host computer."""
         if self.status != USBStatus.unplugged:
             raise StateError("Device still plugged in, can't upload image")
-        self.command.run_check("losetup -Pf {}/backing_store".format(self.image_dir))
+        self.command.run_check(
+            "losetup -Pf {}/backing_store".format(self.image_dir)
+        )
         self.command.run_check("fsck.vfat -a /dev/loop0p1")
         self.command.run_check("mount /dev/loop0p1 /mnt/stick")
         self.fileservice.put(

@@ -10,6 +10,7 @@ from pexpect import TIMEOUT
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, InfoProtocol
+from ..util import gen_marker
 from .common import Driver
 from .exception import ExecutionError
 
@@ -46,7 +47,10 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         cmd - cmd to run on the shell
         """
         # FIXME: Handle pexpect Timeout
-        cmp_command = '''run {}'''.format(shlex.quote(cmd))
+        marker = gen_marker()
+        cmp_command = '''MARKER="{}" run {}'''.format(
+            marker, shlex.quote(cmd)
+        )
         if self._status == 1:
             self.console.sendline(cmp_command)
             _, before, _, _ = self.console.expect(self.prompt)
@@ -56,8 +60,8 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
             ).split('\r\n')
             self.logger.debug("Received Data: %s", data)
             # Remove first element, the invoked cmd
-            data = data[data.index("MARKER") + 1:]
-            data = data[:data.index("MARKER")]
+            data = data[data.index(marker) + 1:]
+            data = data[:data.index(marker)]
             exitcode = int(data[-1])
             del data[-1]
             return (data, [], exitcode)
@@ -111,7 +115,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
 
     def _inject_run(self):
         self.console.sendline(
-            '''run() { echo "MARKER"; sh -c "$@"; echo "$?"; echo "MARKER"; }'''
+            '''run() { echo "$MARKER"; sh -c "$@"; echo "$?"; echo "$MARKER"; }'''
         )
         self.console.expect(self.prompt)
 

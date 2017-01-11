@@ -27,7 +27,7 @@ def test_memory_memtester_short(command):
     except ExecutionError:
         pytest.skip("memtester missing")
 
-    result = command.run_check('memtester 1M 1')
+    result = command.run_check('memtester 128k 1 | tail -n 1')
     result = result[-1].strip()
 
     assert result == "Done."

@@ -20,8 +20,8 @@ class USBStick(object):
     """The USBStick class provides an easy to use interface to describe a
     target as an USB Stick."""
     target = attr.ib()
-    image_name = attr.ib(validator=attr.validators.instance_of(str))
     image_dir = attr.ib(validator=attr.validators.instance_of(str))
+    image_name = attr.ib(validator=attr.validators.instance_of(str))
 
 
     def __attrs_post_init__(self):
@@ -40,7 +40,6 @@ class USBStick(object):
             raise NoDriverFoundError(
                 "Target has no {} Driver".format(FileTransferProtocol)
             )
-        self.command.run_check("mount /dev/mmcblk1p1 /mnt/sd")
         self.status = USBStatus.unplugged
 
     def plug_in(self):
@@ -50,7 +49,7 @@ class USBStick(object):
         the connected computer."""
         if self.status == USBStatus.unplugged:
             self.command.run_check(
-                "modprobe g_mass_storage file=/mnt/{image}".
+                "modprobe g_mass_storage file=/mnt/sd/{image}".
                 format(image=self.image_name)
             )
             self.status = USBStatus.plugged
@@ -92,9 +91,6 @@ class USBStick(object):
         if self.status != USBStatus.unplugged:
             raise StateError("Device still plugged in, can't insert new image")
         self.fileservice.put(image, "/mnt/backing_store")
-
-    def __del__(self):
-        self.command.run_check("modprobe -r g_mass_storage")
 
 
 @attr.s

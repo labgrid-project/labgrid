@@ -11,6 +11,7 @@ from pexpect import TIMEOUT
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, InfoProtocol
 from ..util import gen_marker
+from ..step import step
 from .common import Driver
 from .exception import ExecutionError
 
@@ -41,7 +42,8 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         if self.keyfile:
             self.put_ssh_key(self.keyfile)
 
-    def run(self, cmd):
+    @step("run")
+    def run(self, cmd, *, step):
         """
         Runs the specified cmd on the shell and returns the output.
 

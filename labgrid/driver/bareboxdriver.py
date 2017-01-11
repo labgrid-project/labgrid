@@ -9,6 +9,7 @@ from pexpect import TIMEOUT
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..util import gen_marker
+from ..step import step
 from .exception import ExecutionError
 from .common import Driver
 
@@ -33,7 +34,8 @@ class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
         if self._status == 0:
             self.await_prompt()
 
-    def run(self, cmd):
+    @step("run")
+    def run(self, cmd, *, step):
         """
         Runs the specified cmd on the shell and returns the output.
 

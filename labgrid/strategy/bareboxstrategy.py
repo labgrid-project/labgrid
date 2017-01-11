@@ -5,6 +5,7 @@ import attr
 from ..driver import BareboxDriver, ShellDriver
 from ..protocol import PowerProtocol
 from ..factory import target_factory
+from ..step import step
 from .common import Strategy
 
 
@@ -34,7 +35,8 @@ class BareboxStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
-    def transition(self, status):
+    @step("transition")
+    def transition(self, status, *, step):
         if not isinstance(status, Status):
             status = Status[status]
         if status == Status.unknown:

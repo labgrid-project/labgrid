@@ -25,6 +25,8 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.logger = logging.getLogger("{}({})".format(self, self.target))
+
+    def on_activate(self):
         self.ssh_prefix = "-i {}".format(os.path.abspath(self.keyfile)) if self.keyfile else ""
         self.control = self._check_master()
         self.ssh_prefix += " -o ControlPath={}".format(

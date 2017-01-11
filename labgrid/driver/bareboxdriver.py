@@ -103,4 +103,7 @@ class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
         self.console.expect("Linux version \d")
 
     def boot(self, name):
-        self.console.sendline("boot")
+        if name:
+            self.console.sendline("boot -v {}".format(name))
+        else:
+            self.console.sendline("boot -v")

@@ -26,7 +26,9 @@ class ManualPowerDriver(Driver, PowerProtocol):
         )
 
     def cycle(self):
-        self.target.interact("CYCLE the target {name} and press enter".format(name=self.name))
+        self.target.interact(
+            "CYCLE the target {name} and press enter".format(name=self.name)
+        )
 
 
 @target_factory.reg_driver

@@ -4,8 +4,8 @@ import enum
 
 import attr
 
-from ..protocol import CommandProtocol, FileTransferProtocol
 from ..exceptions import NoDriverFoundError
+from ..protocol import CommandProtocol, FileTransferProtocol
 
 
 class USBStatus(enum.Enum):

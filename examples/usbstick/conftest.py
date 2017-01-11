@@ -1,8 +1,9 @@
 import pytest
 
-from labgrid.protocol import CommandProtocol
-from labgrid.driver import SSHDriver, ShellDriver
+from labgrid.driver import ShellDriver, SSHDriver
 from labgrid.external import USBStick
+from labgrid.protocol import CommandProtocol
+
 
 @pytest.fixture(scope="session")
 def stick(target):
@@ -10,4 +11,4 @@ def stick(target):
     target.activate(shell)
     ssh = target.get_driver(SSHDriver)
     target.activate(ssh)
-    return USBStick(target,'/mnt/sd/','backing_store')
+    return USBStick(target, '/mnt/sd/', 'backing_store')

@@ -9,8 +9,8 @@ from pexpect import TIMEOUT
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..util import gen_marker
-from .exception import ExecutionError
 from .common import Driver
+from .exception import ExecutionError
 
 
 @target_factory.reg_driver
@@ -20,7 +20,7 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
-    init_commands = attr.ib(default=attr.Factory(tuple),convert=tuple)
+    init_commands = attr.ib(default=attr.Factory(tuple), convert=tuple)
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -45,7 +45,11 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
         # FIXME: Handle pexpect Timeout
         marker = gen_marker()
         cmp_command = '''echo '{}''{}'; {}; echo "$?"; echo '{}''{}';'''.format(
-           marker[:4], marker[4:], cmd, marker[:4], marker[4:],
+            marker[:4],
+            marker[4:],
+            cmd,
+            marker[:4],
+            marker[4:],
         )
         if self._status == 1:
             self.console.sendline(cmp_command)
@@ -91,7 +95,7 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
         try:
             self.console.expect(self.prompt, timeout=1)
             self._status = 1
-            for command in self.init_commands: #pylint: disable=not-an-iterable
+            for command in self.init_commands:  #pylint: disable=not-an-iterable
                 self.run_check(command)
         except TIMEOUT:
             self._status = 0
@@ -99,7 +103,9 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
     def await_prompt(self):
         """Await autoboot line and stop it to get to the prompt"""
         self.console.expect(r"[\n]U-Boot 20\d+")
-        index, _, _, _ = self.console.expect([self.prompt, "stop autoboot", "enter Passwort:"])
+        index, _, _, _ = self.console.expect(
+            [self.prompt, "stop autoboot", "enter Passwort:"]
+        )
         if index == 0:
             self._status = 1
         elif index == 2:

@@ -4,6 +4,7 @@ def test_ip_info(info, capsys):
     with capsys.disabled():
         print("\nIP-Adress: {}".format(res))
 
+
 def test_hostname_info(info, capsys):
     res = info.get_hostname()
     assert res != ""

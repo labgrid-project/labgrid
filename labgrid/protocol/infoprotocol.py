@@ -3,6 +3,7 @@ import abc
 
 class InfoProtocol(abc.ABC):
     """Abstract class providing the InfoProtocol interface"""
+
     @abc.abstractmethod
     def get_ip(self, interface: str='eth0'):
         """Implementations should return the IP-adress for the supplied

@@ -1,6 +1,7 @@
 import warnings
-from time import monotonic
 from functools import wraps
+from time import monotonic
+
 
 class Steps:
     def __init__(self):
@@ -10,7 +11,7 @@ class Steps:
         return self._stack[-1] if self._stack else None
 
     def get_new(self, title):
-        step = Step(title, level=len(self._stack)+1)
+        step = Step(title, level=len(self._stack) + 1)
         return step
 
     def push(self, step):
@@ -22,6 +23,8 @@ class Steps:
     def pop(self, step):
         assert self._stack[-1] is step
         self._stack.pop()
+
+
 steps = Steps()
 
 
@@ -35,9 +38,13 @@ class Step:
         self._stop_ts = None
 
     def __repr__(self):
-        result = ["Step(title={!r}, level={}, status={}".format(
-            self.title, self.level, self.status,
-        )]
+        result = [
+            "Step(title={!r}, level={}, status={}".format(
+                self.title,
+                self.level,
+                self.status,
+            )
+        ]
         if self.args != repr(()):
             result.append(", args={}".format(self.args))
         if self.kwargs != repr({}):
@@ -53,7 +60,7 @@ class Step:
         if self._start_ts is None:
             return 0.0
         elif self._stop_ts is None:
-            return monotonic()-self._start_ts
+            return monotonic() - self._start_ts
         else:
             return self._stop_ts - self._start_ts
 
@@ -91,6 +98,7 @@ class Step:
         if not self.is_done:
             warnings.warn("__del__ called before {} was done".format(step))
 
+
 def step(title):
     def decorator(func):
         @wraps(func)
@@ -104,5 +112,7 @@ def step(title):
             finally:
                 step.stop()
             return result
+
         return wrapper
+
     return decorator

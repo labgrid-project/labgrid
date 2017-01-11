@@ -8,10 +8,10 @@ from pexpect import TIMEOUT
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
-from ..util import gen_marker
 from ..step import step
-from .exception import ExecutionError
+from ..util import gen_marker
 from .common import Driver
+from .exception import ExecutionError
 
 
 @target_factory.reg_driver
@@ -45,7 +45,9 @@ class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
         # FIXME: Handle pexpect Timeout
         marker = gen_marker()
         cmp_command = '''echo -o /cmd {}; echo "{}"; sh /cmd; echo "$?"; echo "{}";'''.format(
-            shlex.quote(cmd), marker, marker,
+            shlex.quote(cmd),
+            marker,
+            marker,
         )
         if self._status == 1:
             self.console.sendline(cmp_command)

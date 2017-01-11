@@ -4,8 +4,8 @@ import enum
 
 import attr
 
-from ..protocol import CommandProtocol, FileTransferProtocol
 from ..exceptions import NoDriverFoundError
+from ..protocol import CommandProtocol, FileTransferProtocol
 
 
 class USBStatus(enum.Enum):
@@ -21,12 +21,13 @@ class USBStick(object):
     image_name = attr.ib(validator=attr.validators.instance_of(str))
     status = attr.ib(default=1)
 
-
     def __attrs_post_init__(self):
         self.command = self.target.get_driver( #pylint: disable=no-member
             CommandProtocol
         )
-        self.fileservice = self.target.get_driver(FileTransferProtocol) #pylint: disable=no-member
+        self.fileservice = self.target.get_driver(
+            FileTransferProtocol
+        )  #pylint: disable=no-member
         if not self.command:
             raise NoDriverFoundError(
                 "Target has no {} Driver".format(CommandProtocol)

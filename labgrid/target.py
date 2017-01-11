@@ -130,7 +130,7 @@ class Target:
         deactivating other clients.
         """
         if client.state is BindingState.active:
-            return # nothing to do
+            return  # nothing to do
 
         if client.state is not BindingState.bound:
             raise BindingError(
@@ -157,7 +157,7 @@ class Target:
         This is needed to ensure that no client has an inactive supplier.
         """
         if client.state is BindingState.bound:
-            return # nothing to do
+            return  # nothing to do
 
         if client.state is not BindingState.active:
             raise BindingError(

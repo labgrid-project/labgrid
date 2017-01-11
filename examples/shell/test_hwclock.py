@@ -14,6 +14,7 @@ def test_hwclock_value(command):
 
     If the time is wrong, it is set once and tested again.
     """
+
     def get_time():
         result = command.run_check('hwclock --utc --show')[0].strip()
         return datetime.strptime(result, '%Y-%m-%d %H:%M:%S.%f+0:00')

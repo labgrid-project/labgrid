@@ -1,7 +1,8 @@
 from time import sleep
 
-from labgrid import step, steps
 from pytest import approx
+
+from labgrid import step, steps
 
 
 @step("a")

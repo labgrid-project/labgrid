@@ -2,6 +2,7 @@ import pytest
 
 from .. import Environment
 
+
 # pylint: disable=redefined-outer-name
 
 
@@ -23,9 +24,7 @@ def env(request):
     env_config = request.config.option.env_config
     if env_config is None:
         pytest.skip("missing environemnt config (--env-config)")
-    env = Environment(
-        config_file=request.config.option.env_config,
-    )
+    env = Environment(config_file=request.config.option.env_config, )
     yield env
     env.cleanup()
 

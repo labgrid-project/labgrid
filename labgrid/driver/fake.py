@@ -34,6 +34,7 @@ class FakeCommandDriver(Driver, CommandProtocol):
     def get_status(self):
         pass
 
+
 @target_factory.reg_driver
 @attr.s
 class FakeFileTransferDriver(Driver, FileTransferProtocol):

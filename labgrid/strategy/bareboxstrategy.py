@@ -3,8 +3,8 @@ import enum
 import attr
 
 from ..driver import BareboxDriver, ShellDriver
-from ..protocol import PowerProtocol
 from ..factory import target_factory
+from ..protocol import PowerProtocol
 from ..step import step
 from .common import Strategy
 
@@ -42,7 +42,7 @@ class BareboxStrategy(Strategy):
         if status == Status.unknown:
             raise StrategyError("can not transition to {}".format(status))
         elif status == self.status:
-            return # nothing to do
+            return  # nothing to do
         elif status == Status.barebox:
             # cycle power
             self.power.cycle()
@@ -55,5 +55,8 @@ class BareboxStrategy(Strategy):
             self.barebox.await_boot()
             self.target.activate(self.shell)
         else:
-            raise StrategyError("no transition found from {} to {}".format(self.status, status))
+            raise StrategyError(
+                "no transition found from {} to {}".
+                format(self.status, status)
+            )
         self.status = status

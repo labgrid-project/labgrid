@@ -10,8 +10,8 @@ from pexpect import TIMEOUT
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, InfoProtocol
-from ..util import gen_marker
 from ..step import step
+from ..util import gen_marker
 from .common import Driver
 from .exception import ExecutionError
 
@@ -60,9 +60,8 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         self.console.sendline(cmp_command)
         _, before, _, _ = self.console.expect(self.prompt)
         # Remove VT100 Codes and split by newline
-        data = self.re_vt100.sub(
-            '', before.decode('utf-8'), count=1000000
-        ).split('\r\n')
+        data = self.re_vt100.sub('', before.decode('utf-8'),
+                                 count=1000000).split('\r\n')
         self.logger.debug("Received Data: %s", data)
         # Remove first element, the invoked cmd
         data = data[data.index(marker) + 1:]
@@ -174,7 +173,10 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
                 if match:
                     new_key = match.groupdict()
                 else:
-                    raise IOError("Could not parse SSH-Key from file: {}".format(keyfile))
+                    raise IOError(
+                        "Could not parse SSH-Key from file: {}".
+                        format(keyfile)
+                    )
             self.logger.debug("Read Key: %s", new_key)
             auth_keys, _, exitcode = self.run("cat ~/.ssh/authorized_keys")
             self.logger.debug("Exitcode: %s", exitcode)
@@ -189,7 +191,9 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
                     result.append(match)
             self.logger.debug("Complete result: %s", result)
             for key in result:
-                self.logger.debug("Key, newkey: %s,%s", key['key'], new_key['key'])
+                self.logger.debug(
+                    "Key, newkey: %s,%s", key['key'], new_key['key']
+                )
                 if key['key'] == new_key['key']:
                     self.logger.info("Key already on target")
                     return

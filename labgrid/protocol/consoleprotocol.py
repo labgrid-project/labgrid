@@ -28,7 +28,6 @@ class ConsoleProtocol(abc.ABC):
         raise NotImplementedError
 
     class Client(abc.ABC):
-
         @abc.abstractmethod
         def get_console_matches(self):
             raise NotImplementedError

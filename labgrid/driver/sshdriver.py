@@ -27,7 +27,8 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         self.logger = logging.getLogger("{}({})".format(self, self.target))
 
     def on_activate(self):
-        self.ssh_prefix = "-i {}".format(os.path.abspath(self.keyfile)) if self.keyfile else ""
+        self.ssh_prefix = "-i {}".format(os.path.abspath(self.keyfile)
+                                         ) if self.keyfile else ""
         self.control = self._check_master()
         self.ssh_prefix += " -o ControlPath={}".format(
             self.control
@@ -40,9 +41,9 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
             self.tmpdir, 'control-{}'.format(self.networkservice.address)
         )
         args = "ssh -f {} -x -o ControlPersist=300 -o PasswordAuthentication=no -o StrictHostKeyChecking=no -MN -S {} {}@{}".format(
-                self.ssh_prefix, control, self.networkservice.username,
-                self.networkservice.address
-            ).split(" ")
+            self.ssh_prefix, control, self.networkservice.username,
+            self.networkservice.address
+        ).split(" ")
         self.process = subprocess.Popen(args, )
 
         if self.process.wait(timeout=1) is not 0:

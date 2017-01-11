@@ -20,12 +20,14 @@ from .exception import CleanUpError, ExecutionError
 class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
     """SSHDriver - Driver to execute commands via SSH"""
     bindings = {"networkservice": NetworkService, }
+    keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self.ssh_prefix = "-i {}".format(os.path.abspath(self.keyfile)) if self.keyfile else ""
         self.control = self._check_master()
-        self.ssh_prefix = "-o ControlPath={}".format(
+        self.ssh_prefix += " -o ControlPath={}".format(
             self.control
         ) if self.control else ""
 
@@ -35,13 +37,10 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         control = os.path.join(
             self.tmpdir, 'control-{}'.format(self.networkservice.address)
         )
-        args = [
-            "ssh", "-f", "-x", "-o", "ControlPersist=300", "-o",
-            "PasswordAuthentication=no", "-o", "StrictHostKeyChecking=no",
-            "-MN", "-S", control, '{}@{}'.format(
-                self.networkservice.username, self.networkservice.address
-            )
-        ]
+        args = "ssh -f {} -x -o ControlPersist=300 -o PasswordAuthentication=no -o StrictHostKeyChecking=no -MN -S {} {}@{}".format(
+                self.ssh_prefix, control, self.networkservice.username,
+                self.networkservice.address
+            ).split(" ")
         self.process = subprocess.Popen(args, )
 
         if self.process.wait(timeout=1) is not 0:

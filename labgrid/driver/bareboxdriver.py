@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 import logging
 import re
 import shlex
@@ -8,6 +9,7 @@ from pexpect import TIMEOUT
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..util import gen_marker
+from .exception import ExecutionError
 from .common import Driver
 
 
@@ -41,7 +43,7 @@ class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
         # FIXME: Handle pexpect Timeout
         marker = gen_marker()
         cmp_command = '''echo -o /cmd {}; echo "{}"; sh /cmd; echo "$?"; echo "{}";'''.format(
-            shlex.quote(cmd), marker,  marker,
+            shlex.quote(cmd), marker, marker,
         )
         if self._status == 1:
             self.console.sendline(cmp_command)
@@ -55,7 +57,7 @@ class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
             data = data[data.index(marker) + 1:]
             data = data[:data.index(marker)]
             exitcode = int(data[-1])
-            del (data[-1])
+            del data[-1]
             return (data, [], exitcode)
         else:
             return None
@@ -100,7 +102,7 @@ class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
             self._check_prompt()
 
     def await_boot(self):
-        self.console.expect("Linux version \d")
+        self.console.expect(r"Linux version \d")
 
     def boot(self, name):
         if name:

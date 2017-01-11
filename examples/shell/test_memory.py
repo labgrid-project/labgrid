@@ -3,12 +3,10 @@ import re
 import pytest
 
 from labgrid.driver import ExecutionError
-from labgrid.protocol import CommandProtocol
 
 
-def test_memory_mbw(target):
+def test_memory_mbw(command):
     """Test memcopy bandwidth"""
-    command = target.get_driver(CommandProtocol)
     try:
         command.run_check('which mbw')
     except ExecutionError:
@@ -22,9 +20,8 @@ def test_memory_mbw(target):
     assert bw > 40  # > 40 MiB/second
 
 
-def test_memory_memtester_short(target):
+def test_memory_memtester_short(command):
     """Test RAM for errors"""
-    command = target.get_driver(CommandProtocol)
     try:
         command.run_check('which memtester')
     except ExecutionError:

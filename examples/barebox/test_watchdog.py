@@ -1,20 +1,7 @@
 import pytest
 
-from labgrid.protocol import CommandProtocol, PowerProtocol
 
-
-@pytest.fixture()
-def in_bootloader(target, capsys):
-    power = target.get_driver(PowerProtocol)
-    command = target.get_driver(CommandProtocol)
-    with capsys.disabled():
-        power.cycle()
-    command.await_prompt()
-
-
-def test_watchdog(target, in_bootloader):
-    command = target.get_driver(CommandProtocol)
-
+def test_watchdog(command):
     stdout, stderr, returncode = command.run('wd 1')
     if returncode == 127:
         pytest.skip("wd command not available")
@@ -24,8 +11,6 @@ def test_watchdog(target, in_bootloader):
 
     command.await_prompt()
 
-    stdout, stderr, returncode = command.run('echo ${global.system.reset}')
-    assert returncode == 0
-    assert len(stderr) == 0
+    stdout = command.run_check('echo ${global.system.reset}')
     assert len(stdout) == 1
     assert stdout[0] == 'WDG'

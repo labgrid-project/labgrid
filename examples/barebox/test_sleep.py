@@ -2,12 +2,8 @@ from time import monotonic
 
 from pytest import approx
 
-from labgrid.protocol import CommandProtocol
 
-
-def test_sleep(target):
-    command = target.get_driver(CommandProtocol)
-
+def test_sleep(command):
     # measure the round-trip-time
     timestamp = monotonic()
     stdout, stderr, returncode = command.run('true')

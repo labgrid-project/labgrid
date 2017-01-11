@@ -3,12 +3,10 @@ import re
 import pytest
 
 from labgrid.driver import ExecutionError
-from labgrid.protocol import CommandProtocol
 
 
-def test_rt_cyclictest_short(target):
+def test_rt_cyclictest_short(command):
     """Test a basic cyclictest run"""
-    command = target.get_driver(CommandProtocol)
     try:
         command.run_check('which cyclictest')
     except ExecutionError:
@@ -24,9 +22,8 @@ def test_rt_cyclictest_short(target):
     assert max < 10e6  # max < 10 milliseconds
 
 
-def test_rt_hackbench_short(target):
+def test_rt_hackbench_short(command):
     """Test a basic hackbench run"""
-    command = target.get_driver(CommandProtocol)
     try:
         command.run_check('which hackbench')
     except ExecutionError:

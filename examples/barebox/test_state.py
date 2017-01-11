@@ -1,11 +1,7 @@
 import pytest
 
-from labgrid.protocol import CommandProtocol
 
-
-def test_state(target):
-    command = target.get_driver(CommandProtocol)
-
+def test_state(command):
     stdout, stderr, returncode = command.run('state')
     if returncode == 127:
         pytest.skip("state command not available")

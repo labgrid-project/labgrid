@@ -104,7 +104,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         """
         self.console.sendline("")
         try:
-            self.console.expect(self.prompt)
+            self.console.expect(self.prompt, timeout=1)
             self._status = 1
         except TIMEOUT:
             self._status = 0

@@ -27,7 +27,6 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         self.serial.baudrate = self.port.speed
         self.logger = logging.getLogger("{}({})".format(self, self.target))
         self.status = 0  #pylint: disable=attribute-defined-outside-init
-        self.serial.timeout = 30
         self.open()
 
     def _read(self, size: int=1, timeout: int=0):
@@ -38,8 +37,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         size -- amount of bytes to read, defaults to 1024
         """
         self.logger.debug("Reading %s bytes with %s timeout", size, timeout)
-        if timeout:
-            self.serial.timeout = timeout
+        self.serial.timeout = timeout
         res = self.serial.read(size)
         self.logger.debug("Read bytes (%s) or timeout reached", res)
         if not res:
@@ -53,6 +51,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         Arguments:
         data -- data to write, must be bytes
         """
+        self.logger.debug("Write bytes (%s)", data)
         return self.serial.write(data)
 
     def open(self):

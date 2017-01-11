@@ -11,7 +11,7 @@ class PtxExpect(pexpect.spawn):
     driver: ConsoleProtocol object to be passed in
     """
 
-    def __init__(self, driver, logfile=None, timeout=None, cwd=None):
+    def __init__(self, driver, logfile=None, timeout=30, cwd=None):
         self.driver = driver
         self.logfile = logfile
         self.linesep = b"\n"
@@ -32,6 +32,9 @@ class PtxExpect(pexpect.spawn):
         b = s
         return self.driver._write(b)
 
-    def read_nonblocking(self, size=1, timeout=0):
+    def read_nonblocking(self, size=1, timeout=-1):
         """ Pexpects needs a nonblocking read function, simply use pyserial with a timeout of 0"""
+        assert timeout is not None
+        if timeout == -1:
+            timeout = self.timeout
         return self.driver._read(size=size, timeout=timeout)

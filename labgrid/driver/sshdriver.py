@@ -185,8 +185,3 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         if res != 0:
             raise CleanUpError("Could not cleanup ControlMaster")
         shutil.rmtree(self.tmpdir)
-
-    def cleanup(self):
-        """Cleanup function, cleans up the master socket after usage if it was our own"""
-        if self.control:
-            self._cleanup_own_master()

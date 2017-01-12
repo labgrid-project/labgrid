@@ -118,10 +118,11 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
             self._check_prompt()
 
     def await_boot(self):
+        """Wait for boot line of the linux kernel"""
         self.console.expect(r"Linux version \d")
 
     def boot(self, name):
         if name:
             self.console.sendline("boot -v {}".format(name))
         else:
-            self.console.sendline("boot -v")
+            self.console.sendline("run bootcmd")

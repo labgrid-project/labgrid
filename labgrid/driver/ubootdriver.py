@@ -100,16 +100,16 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
 
     def await_prompt(self):
         """Await autoboot line and stop it to get to the prompt"""
-        self.console.expect(r"[\n]U-Boot 20\d+")
+        self.console.expect(r"U-Boot 20\d+")
         index, _, _, _ = self.console.expect(
-            [self.prompt, "stop autoboot", "enter Passwort:"]
+            [self.prompt, "stop autoboot", "enter Password:"]
         )
         if index == 0:
             self._status = 1
         elif index == 2:
             if self.password:
-                self.console.expect("Password: ")
                 self.console.sendline(self.password)
+                self._check_prompt()
             else:
                 raise Exception("Password entry needed but no password set")
         else:

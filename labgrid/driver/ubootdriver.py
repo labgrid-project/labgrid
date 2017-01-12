@@ -1,7 +1,6 @@
 # pylint: disable=no-member
 import logging
 import re
-import shlex
 
 import attr
 from pexpect import TIMEOUT
@@ -43,8 +42,9 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
         cmd - cmd to run on the shell
         """
         # FIXME: Handle pexpect Timeout
+        # TODO: Shell Escaping for the U-Boot Shell
         marker = gen_marker()
-        cmp_command = '''echo '{}''{}'; {}; echo "$?"; echo '{}''{}';'''.format(
+        cmp_command = """echo '{}''{}'; {}; echo "$?"; echo '{}''{}';""".format(
             marker[:4],
             marker[4:],
             cmd,

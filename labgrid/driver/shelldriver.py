@@ -124,10 +124,6 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         )
         self.console.expect(self.prompt)
 
-    def cleanup(self):
-        """Exit the shell on cleanup"""
-        self.console.sendline("exit")
-
     def get_ip(self, interface="eth0"):
         """Returns the IP of the supplied interface"""
         if self._status == 1:

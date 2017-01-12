@@ -6,7 +6,7 @@ import pytest
 from labgrid import Target, target_factory
 from labgrid.driver import SerialDriver
 from labgrid.protocol import CommandProtocol, ConsoleProtocol
-from labgrid.resource import SerialPort
+from labgrid.resource import RawSerialPort
 
 
 @pytest.fixture(scope='function')
@@ -16,7 +16,7 @@ def target():
 
 @pytest.fixture(scope='function')
 def serial_port(target):
-    return SerialPort(target, '/dev/test')
+    return RawSerialPort(target, '/dev/test')
 
 
 @pytest.fixture(scope='function')

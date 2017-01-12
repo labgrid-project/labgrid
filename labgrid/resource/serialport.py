@@ -2,10 +2,13 @@ import attr
 
 from ..factory import target_factory
 from .common import Resource
+from .base import SerialPort
 
 
 @target_factory.reg_resource
 @attr.s
-class SerialPort(Resource):
-    port = attr.ib(validator=attr.validators.instance_of(str))
-    speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))
+class RawSerialPort(SerialPort, Resource):
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        if self.port is None:
+            ValueError("RawSerialPort must be configured with a port")

@@ -13,7 +13,7 @@ class TestTargetFactory:
         t = target_factory(
             'dummy', {
                 'resources': OrderedDict([
-                    ('SerialPort', {
+                    ('RawSerialPort', {
                         'port': 'foo',
                         'speed': 115200
                     }),
@@ -27,7 +27,7 @@ class TestTargetFactory:
         t = target_factory(
             'dummy', {
                 'resources': OrderedDict([
-                    ('SerialPort', {
+                    ('RawSerialPort', {
                         'port': 'foo',
                         'speed': 115200
                     }),

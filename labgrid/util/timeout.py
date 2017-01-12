@@ -11,7 +11,6 @@ class Timeout(object):
     )
 
     def __attrs_post_init__(self):
-        print(self.timeout)
         if self.timeout <= 0.0:
             raise ValueError("timeout must be positive")
         self._deadline = time.monotonic() + self.timeout

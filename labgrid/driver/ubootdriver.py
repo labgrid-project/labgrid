@@ -95,8 +95,6 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
         try:
             self.console.expect(self.prompt, timeout=1)
             self._status = 1
-            for command in self.init_commands:  #pylint: disable=not-an-iterable
-                self.run_check(command)
         except TIMEOUT:
             self._status = 0
 
@@ -116,6 +114,8 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
                 raise Exception("Password entry needed but no password set")
         else:
             self._check_prompt()
+        for command in self.init_commands:  #pylint: disable=not-an-iterable
+            self.run_check(command)
 
     def await_boot(self):
         """Wait for boot line of the linux kernel"""

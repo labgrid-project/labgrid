@@ -33,6 +33,9 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
         if self._status == 0:
             self.await_prompt()
 
+    def on_deactivate(self):
+        self._status = 0
+
     def run(self, cmd):
         """
         Runs the specified cmd on the shell and returns the output.

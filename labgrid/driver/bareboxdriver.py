@@ -34,6 +34,9 @@ class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
         if self._status == 0:
             self.await_prompt()
 
+    def on_deactivate(self):
+        self._status = 0
+
     @step("run")
     def run(self, cmd, *, step):
         """

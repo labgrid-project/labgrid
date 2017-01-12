@@ -4,6 +4,7 @@ from .binding import BindingError, BindingState
 from .driver import Driver
 from .exceptions import NoDriverFoundError, NoResourceFoundError
 from .resource import Resource
+from .util import Timeout
 
 
 @attr.s
@@ -20,6 +21,16 @@ class Target:
             self.env.interact("{}: {}".format(self.name, msg))
         else:
             input(msg)
+
+    def await_resources(self):
+        timeout = Timeout(2.0)
+        waiting = set(self.resources)
+        while waiting and not timeout.expired:
+            waiting = set(r for r in waiting if not r.avail)
+            for r in waiting:
+                r.poll()
+        if waiting:
+            raise NoResourceFoundError("Not all resources are available: {}".format(waiting))
 
     def get_resource(self, cls):
         """

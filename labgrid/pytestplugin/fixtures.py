@@ -33,4 +33,6 @@ def env(request):
 def target(env):
     """Return the default target `main` configured in the supplied
     configuration file."""
-    return env.get_target()
+    target = env.get_target()
+    target.await_resources()
+    return target

@@ -23,10 +23,12 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         super().__attrs_post_init__()
         self.serial = serial.Serial(
         )  #pylint: disable=attribute-defined-outside-init
+        self.status = 0  #pylint: disable=attribute-defined-outside-init
+        self.logger = logging.getLogger("{}({})".format(self, self.target))
+
+    def on_activate(self):
         self.serial.port = self.port.port
         self.serial.baudrate = self.port.speed
-        self.logger = logging.getLogger("{}({})".format(self, self.target))
-        self.status = 0  #pylint: disable=attribute-defined-outside-init
         self.open()
 
     def _read(self, size: int=1, timeout: int=0):

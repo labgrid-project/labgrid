@@ -1,4 +1,5 @@
 # pylint: disable=no-member
+"""The U-Boot Module contains the UBootDriver"""
 import logging
 import re
 

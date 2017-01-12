@@ -16,6 +16,7 @@ setup(
         'pyserial',
         'pytest',
         'pyyaml',
+        'pyudev',
         'requests',
     ],
     packages=[

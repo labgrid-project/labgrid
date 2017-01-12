@@ -90,12 +90,16 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
         """
         Internal function to check if we have a valid prompt
         """
-        self.console.sendline("")
+        marker = gen_marker()
+        # hide marker from expect
+        self.console.sendline("echo '{}''{}'".format(marker[:4], marker[4:]))
         try:
+            self.console.expect("{}".format(marker), timeout=2)
             self.console.expect(self.prompt, timeout=1)
             self._status = 1
         except TIMEOUT:
             self._status = 0
+            raise
 
     def await_prompt(self):
         """Await autoboot line and stop it to get to the prompt"""

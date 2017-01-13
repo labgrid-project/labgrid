@@ -11,4 +11,7 @@ def stick(target):
     target.activate(shell)
     ssh = target.get_driver(SSHDriver)
     target.activate(ssh)
-    return USBStick(target, '/mnt/sd/', 'backing_store')
+    u = USBStick(target, '/home/',)
+    u.upload_image("backing_store")
+    u.switch_image("backing_store")
+    return u

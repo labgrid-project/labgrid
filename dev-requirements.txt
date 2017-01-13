@@ -1,0 +1,14 @@
+PyYAML
+Sphinx
+attrs>=16.3
+pexpect
+pyserial
+pytest
+pytest-cache
+pytest-cov
+pytest-isort
+pytest-mock
+pytest-pylint
+pytest-runner
+pyudev
+yapf

@@ -23,12 +23,14 @@ class Target:
             input(msg)
 
     def await_resources(self):
+        # TODO: store timeout in managed resources and use maximum
         timeout = Timeout(2.0)
         waiting = set(self.resources)
         while waiting and not timeout.expired:
             waiting = set(r for r in waiting if not r.avail)
             for r in waiting:
                 r.poll()
+            # TODO: sleep if no progress
         if waiting:
             raise NoResourceFoundError("Not all resources are available: {}".format(waiting))
 
@@ -150,6 +152,8 @@ class Target:
 
         # consistency check
         assert client in self.resources or client in self.drivers
+
+        # TODO: wait until resources are available?
 
         # activate recursively and resolve conflicts
         for supplier in client.suppliers:

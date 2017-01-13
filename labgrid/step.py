@@ -3,6 +3,8 @@ from functools import wraps
 from time import monotonic
 
 
+# TODO: collect events from all Steps and combine when possible, only flush
+# after some time
 class Steps:
     def __init__(self):
         self._stack = []
@@ -28,6 +30,7 @@ class Steps:
 steps = Steps()
 
 
+# TODO: allow attaching log information, using a Resource as meta-data
 class Step:
     def __init__(self, title, level):
         self.title = title

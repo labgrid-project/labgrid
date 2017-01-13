@@ -176,7 +176,8 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
             self.logger.debug("Read Key: %s", new_key)
             auth_keys, _, exitcode = self.run("cat ~/.ssh/authorized_keys")
             self.logger.debug("Exitcode: %s", exitcode)
-            if exitcode == 1:
+            if exitcode != 0:
+                self.run("mkdir ~/.ssh")
                 self.run("touch ~/.ssh/authorized_keys")
             result = []
             for line in auth_keys:
@@ -197,7 +198,8 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
             self.run_check('echo "{}" > /tmp/keys'.format(keyline))
             self.run_check('chmod 600 /tmp/keys')
             self.run_check('mount --bind /tmp/keys ~/.ssh/authorized_keys')
-            self.run_check('chmod 600 ~/.ssh/authorized_keys')
+            self.run_check('chmod 700 ~/.ssh')
+            self.run_check('chmod 644 ~/.ssh/authorized_keys')
 
     def get_hostname(self):
         if self._status == 1:

@@ -35,13 +35,14 @@ class BareboxStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
-    @step("transition")
+    @step(args=['status'])
     def transition(self, status, *, step):
         if not isinstance(status, Status):
             status = Status[status]
         if status == Status.unknown:
             raise StrategyError("can not transition to {}".format(status))
         elif status == self.status:
+            step.skip("nothing to do")
             return  # nothing to do
         elif status == Status.barebox:
             # cycle power

@@ -5,12 +5,12 @@ from pytest import approx
 from labgrid import step, steps
 
 
-@step("a")
+@step()
 def step_a(*, step):
     assert steps.get_current() is not None
     return step.level
 
-@step("outer")
+@step()
 def step_outer(*, step):
     assert step.level == 1
     return step_a()
@@ -26,7 +26,7 @@ def test_nested():
     assert steps.get_current() is None
     assert inner_level == 2
 
-@step("timing")
+@step()
 def step_sleep(*, step):
     sleep(0.25)
     return step

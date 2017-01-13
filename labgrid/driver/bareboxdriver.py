@@ -37,7 +37,7 @@ class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
     def on_deactivate(self):
         self._status = 0
 
-    @step("run")
+    @step(args=['cmd'])
     def run(self, cmd, *, step):
         """
         Runs the specified cmd on the shell and returns the output.

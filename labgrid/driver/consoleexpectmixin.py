@@ -1,6 +1,7 @@
 from pexpect import TIMEOUT
 
 from ..util import PtxExpect
+from ..step import step
 
 
 class ConsoleExpectMixin:
@@ -25,6 +26,7 @@ class ConsoleExpectMixin:
     def sendcontrol(self, char):
         self._expect.sendcontrol(char)
 
+    @step(args=['pattern'], result=True)
     def expect(self, pattern, timeout=-1):
         index = self._expect.expect(pattern, timeout=timeout)
         return index, self._expect.before, self._expect.match, self._expect.after

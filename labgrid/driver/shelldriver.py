@@ -42,7 +42,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         if self.keyfile:
             self.put_ssh_key(self.keyfile)
 
-    @step("run")
+    @step(args=['cmd'])
     def run(self, cmd, *, step):
         """
         Runs the specified cmd on the shell and returns the output.

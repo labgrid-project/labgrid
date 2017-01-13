@@ -1,5 +1,7 @@
 import pytest
 
+from ..step import steps
+
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
@@ -7,9 +9,16 @@ def pytest_configure(config):
     if terminalreporter.verbosity > 1:  # enable with -vv
         config.pluginmanager.register(StepReporter(terminalreporter))
 
+
 class StepReporter:
     def __init__(self, terminalreporter):
         self.tr = terminalreporter
+        steps.subscribe(self.notify)
+
+    def notify(self, event):
+        step = event.step
+        indent = '  '*step.level
+        self.tr.writer.line("{}{}".format(indent, event))
 
     @pytest.hookimpl(hookwrapper=True, trylast=True)
     def pytest_runtest_logstart(self):

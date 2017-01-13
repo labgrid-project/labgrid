@@ -5,6 +5,7 @@ from .driver import Driver
 from .exceptions import NoDriverFoundError, NoResourceFoundError
 from .resource import Resource
 from .util import Timeout
+from .step import step
 
 
 @attr.s
@@ -22,6 +23,7 @@ class Target:
         else:
             input(msg)
 
+    @step()
     def await_resources(self):
         # TODO: store timeout in managed resources and use maximum
         timeout = Timeout(2.0)

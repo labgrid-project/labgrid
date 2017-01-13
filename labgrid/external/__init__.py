@@ -1,2 +1,2 @@
 from .hawkbit import *
-from .usbemulator import USBStick
+from .usbstick import USBStick

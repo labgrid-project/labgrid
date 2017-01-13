@@ -1,6 +1,7 @@
 """The USBStick module provides support to interactively use a simulated USB
 device in a test."""
 import enum
+import os
 
 import attr
 
@@ -9,7 +10,7 @@ from ..protocol import CommandProtocol, FileTransferProtocol
 
 
 class USBStatus(enum.Enum):
-    """This class describes the USB Status"""
+    """This class describes the USBStick Status"""
     unplugged = 0
     plugged = 1
     mounted = 2
@@ -17,17 +18,19 @@ class USBStatus(enum.Enum):
 
 @attr.s
 class USBStick(object):
+    """The USBStick class provides an easy to use interface to describe a
+    target as an USB Stick."""
     target = attr.ib()
-    image_name = attr.ib(validator=attr.validators.instance_of(str))
-    status = attr.ib(default=1)
+    image_dir = attr.ib(validator=attr.validators.instance_of(str))
+    image_name = attr.ib(default="", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         self.command = self.target.get_driver( #pylint: disable=no-member
             CommandProtocol
         )
-        self.fileservice = self.target.get_driver(
+        self.fileservice = self.target.get_driver( #pylint: disable=no-member
             FileTransferProtocol
-        )  #pylint: disable=no-member
+        )
         if not self.command:
             raise NoDriverFoundError(
                 "Target has no {} Driver".format(CommandProtocol)
@@ -39,26 +42,31 @@ class USBStick(object):
             raise NoDriverFoundError(
                 "Target has no {} Driver".format(FileTransferProtocol)
             )
-        self.command.run_check("mount /dev/mmcblk1p1 /mnt")
         self.status = USBStatus.unplugged
+        self._images = []
+        if self.image_name:
+            self._images.append(os.path.basename(self.image_name))
 
-    def plug(self):
+    def plug_in(self):
         """Insert the USBStick
 
         This function plugs the virtual USB Stick in, making it available to
         the connected computer."""
+        if not self.image_name:
+            raise StateError("No Image selected, please upload and select an image")
         if self.status == USBStatus.unplugged:
             self.command.run_check(
-                "modprobe g_mass_storage file=/mnt/{image}".
-                format(image=self.image_name)
+                "modprobe g_mass_storage file={dir}{image}".format(
+                    dir=self.image_dir, image=self.image_name
+                )
             )
             self.status = USBStatus.plugged
 
-    def unplug(self):
-        """Eject the USBStick
+    def plug_out(self):
+        """Plugs out the USBStick
 
-        Ejects the USBStick from the connected computer, does nothing if it is
-        already connected"""
+        Plugs out the USBStick from the connected computer, does nothing if it is
+        already unplugged"""
         if self.status == USBStatus.plugged:
             self.command.run_check("modprobe -r g_mass_storage")
             self.status = USBStatus.unplugged
@@ -68,14 +76,22 @@ class USBStick(object):
 
         Uploads a file onto the USB Stick, raises a StateError if it is not
         mounted on the host computer."""
-        if self.status != USBStatus.mounted:
-            raise StateError("Device not mounted, can't upload file")
+        if self.status != USBStatus.unplugged:
+            raise StateError("Device still plugged in, can't upload image")
+        self.command.run_check(
+            "losetup -Pf {}/backing_store".format(self.image_dir)
+        )
+        self.command.run_check("fsck.vfat -a /dev/loop0p1")
+        self.command.run_check("mount /dev/loop0p1 /mnt/")
         self.fileservice.put(
             filename,
-            "/media/usb/{dest}/{filename}".format(
+            "/mnt/{dest}/{filename}".format(
                 dest=destination, filename=filename
             )
         )
+        self.command.run_check("umount /mnt/")
+        self.command.run_check("fsck.vfat -a /dev/loop0p1")
+        self.command.run_check("losetup -d /dev/loop0")
 
     def upload_image(self, image):
         """Upload a complete image as a new USB Stick
@@ -84,10 +100,16 @@ class USBStick(object):
         the RiotBoard."""
         if self.status != USBStatus.unplugged:
             raise StateError("Device still plugged in, can't insert new image")
-        self.fileservice.put(image, "/mnt/backing_store")
+        self.fileservice.put(image, self.image_dir)
+        self._images.append(os.path.basename(image))
 
-    def __del__(self):
-        self.command.run_check("modprobe -r g_mass_storage")
+    def switch_image(self, image_name):
+        """Switch between already uploaded images on the target."""
+        if self.status != USBStatus.unplugged:
+            raise StateError("Device still plugged in, can't switch to different image")
+        if image_name not in self._images:
+            raise StateError("No such Image available")
+        self.image_name = image_name
 
 
 @attr.s

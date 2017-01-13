@@ -7,8 +7,10 @@ from labgrid.strategy import BareboxStrategy
 
 @pytest.fixture()
 def strategy(target):
-    return target.get_driver(BareboxStrategy)
-
+    try:
+        return target.get_driver(BareboxStrategy)
+    except NoDriverFoundError:
+        pytest.skip("strategy not found")
 
 @pytest.fixture(scope="function")
 def in_bootloader(strategy, capsys):

@@ -8,7 +8,10 @@ from labgrid.strategy import UBootStrategy
 
 @pytest.fixture()
 def strategy(target):
-    return target.get_driver(UBootStrategy)
+    try:
+        return target.get_driver(UBootStrategy)
+    except:
+        pytest.skip("strategy not found")
 
 
 @pytest.fixture(scope="function")

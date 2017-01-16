@@ -7,6 +7,7 @@ import attr
 
 from ..exceptions import NoDriverFoundError
 from ..protocol import CommandProtocol, FileTransferProtocol
+from ..step import step
 
 
 class USBStatus(enum.Enum):
@@ -47,6 +48,7 @@ class USBStick(object):
         if self.image_name:
             self._images.append(os.path.basename(self.image_name))
 
+    @step()
     def plug_in(self):
         """Insert the USBStick
 
@@ -62,6 +64,7 @@ class USBStick(object):
             )
             self.status = USBStatus.plugged
 
+    @step()
     def plug_out(self):
         """Plugs out the USBStick
 
@@ -71,6 +74,7 @@ class USBStick(object):
             self.command.run_check("modprobe -r g_mass_storage")
             self.status = USBStatus.unplugged
 
+    @step(args=['filename', 'destination'])
     def upload_file(self, filename, destination=""):
         """Upload a file onto the USBStick Image
 
@@ -93,6 +97,7 @@ class USBStick(object):
         self.command.run_check("fsck.vfat -a /dev/loop0p1")
         self.command.run_check("losetup -d /dev/loop0")
 
+    @step(args=['image'])
     def upload_image(self, image):
         """Upload a complete image as a new USB Stick
 
@@ -103,6 +108,7 @@ class USBStick(object):
         self.fileservice.put(image, self.image_dir)
         self._images.append(os.path.basename(image))
 
+    @step(args=['image_name'])
     def switch_image(self, image_name):
         """Switch between already uploaded images on the target."""
         if self.status != USBStatus.unplugged:

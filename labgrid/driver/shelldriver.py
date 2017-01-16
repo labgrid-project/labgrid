@@ -42,7 +42,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         if self.keyfile:
             self.put_ssh_key(self.keyfile)
 
-    @step(args=['cmd'])
+    @step(args=['cmd'], result=True)
     def run(self, cmd, *, step):
         """
         Runs the specified cmd on the shell and returns the output.
@@ -70,6 +70,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         del data[-1]
         return (data, [], exitcode)
 
+    @step()
     def await_login(self):
         """Awaits the login prompt and logs the user in"""
         self.console.sendline("")
@@ -84,6 +85,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         self.console.expect(self.prompt, timeout=5)
         self._check_prompt()
 
+    @step(args=['cmd'], result=True)
     def run_check(self, cmd):
         """
         Runs the specified cmd on the shell and returns the output if successful,
@@ -97,6 +99,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
             raise ExecutionError(cmd)
         return res[0]
 
+    @step()
     def get_status(self):
         """Returns the status of the shell-driver.
         0 means not connected/found, 1 means shell
@@ -124,6 +127,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         )
         self.console.expect(self.prompt)
 
+    @step(args=['interface'])
     def get_ip(self, interface="eth0"):
         """Returns the IP of the supplied interface"""
         if self._status == 1:
@@ -154,6 +158,14 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
             else:
                 return None
 
+    @step(args=['service'])
+    def get_service_status(self, service):
+        """Returns the IP of the supplied interface"""
+        if self._status == 1:
+            _, _, exitcode = self.run("systemctl --quiet is-active {}".format(service))
+            return exitcode == 0
+
+    @step(args=['key'])
     def put_ssh_key(self, key):
         """Upload an SSH Key to a target"""
         regex = re.compile(
@@ -201,6 +213,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
             self.run_check('chmod 700 ~/.ssh')
             self.run_check('chmod 644 ~/.ssh/authorized_keys')
 
+    @step()
     def get_hostname(self):
         if self._status == 1:
             try:

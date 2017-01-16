@@ -95,10 +95,10 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         Arguments:
         cmd - cmd to run on the shell
         """
-        res = self.run(cmd)
-        if res[2] != 0:
+        out, _, res = self.run(cmd)
+        if res != 0:
             raise ExecutionError(cmd)
-        return res[0]
+        return out
 
     @step()
     def get_status(self):

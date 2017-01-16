@@ -12,6 +12,7 @@ from ..factory import target_factory
 from ..protocol import CommandProtocol, FileTransferProtocol
 from ..resource import NetworkService
 from .common import Driver
+from ..step import step
 from .exception import CleanUpError, ExecutionError
 
 
@@ -78,6 +79,7 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         else:
             return self._start_own_master()
 
+    @step(args=['cmd'])
     def run(self, cmd):
         """Execute `cmd` on the target.
 
@@ -111,6 +113,7 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         stderr.pop()
         return (stdout, stderr, sub.returncode)
 
+    @step(args=['cmd'])
     def run_check(self, cmd):
         """
         Runs the specified cmd on the shell and returns the output if successful,
@@ -128,6 +131,7 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         """The SSHDriver is always connected, return 1"""
         return 1
 
+    @step(args=['filename', 'remotepath'])
     def put(self, filename, remotepath=None):
         transfer_cmd = "scp {prefix} {filename} {user}@{host}:{remotepath}".format(
             filename=filename,
@@ -149,6 +153,7 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
                 "error executing command: {}".format(transfer_cmd)
             )
 
+    @step(args=['filename'])
     def get(self, filename):
         transfer_cmd = "scp {prefix} {user}@{host}:{filename} .".format(
             filename=filename,

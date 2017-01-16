@@ -41,6 +41,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
             self._inject_run()
         if self.keyfile:
             self.put_ssh_key(self.keyfile)
+        self.run("dmesg -n 1") # Turn off Kernel Messages to the console
 
     @step(args=['cmd'], result=True)
     def run(self, cmd, *, step):

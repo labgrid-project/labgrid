@@ -9,6 +9,7 @@ from pexpect import TIMEOUT
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..util import gen_marker
+from ..step import step
 from .common import Driver
 from .exception import ExecutionError
 
@@ -37,6 +38,7 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
     def on_deactivate(self):
         self._status = 0
 
+    @step(args=['cmd'], result=True)
     def run(self, cmd):
         """
         Runs the specified cmd on the shell and returns the output.
@@ -71,6 +73,7 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
         else:
             return None
 
+    @step(args=['cmd'], result=True)
     def run_check(self, cmd):
         """
         Runs the specified cmd on the shell and returns the output if successful,
@@ -105,6 +108,7 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
             self._status = 0
             raise
 
+    @step()
     def await_prompt(self):
         """Await autoboot line and stop it to get to the prompt"""
         self.console.expect(r"U-Boot 20\d+")
@@ -124,10 +128,12 @@ class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
         for command in self.init_commands:  #pylint: disable=not-an-iterable
             self.run_check(command)
 
+    @step()
     def await_boot(self):
         """Wait for boot line of the linux kernel"""
         self.console.expect(r"Linux version \d")
 
+    @step(args=['name'])
     def boot(self, name):
         if name:
             self.console.sendline("boot -v {}".format(name))

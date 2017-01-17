@@ -59,16 +59,14 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
             marker[:4], marker[4:], shlex.quote(cmd)
         )
         self.console.sendline(cmp_command)
-        _, before, _, _ = self.console.expect(self.prompt)
+        _, _, match, _ = self.console.expect(r'{}(.*){}\s+(\d+)\s+{}'.format(
+            marker, marker, self.prompt
+        ))
         # Remove VT100 Codes and split by newline
-        data = self.re_vt100.sub('', before.decode('utf-8'),
-                                 count=1000000).split('\r\n')
+        data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')
         self.logger.debug("Received Data: %s", data)
-        # Remove first element, the invoked cmd
-        data = data[data.index(marker) + 1:]
-        data = data[:data.index(marker)]
-        exitcode = int(data[-1])
-        del data[-1]
+        # Get exit code
+        exitcode = int(match.group(2))
         return (data, [], exitcode)
 
     @step()
@@ -124,7 +122,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
 
     def _inject_run(self):
         self.console.sendline(
-            '''run() { echo "$MARKER"; sh -c "$@"; echo "$?"; echo "$MARKER"; }'''
+            '''run() { echo "$MARKER"; sh -c "$@"; echo "$MARKER $?"; }'''
         )
         self.console.expect(self.prompt)
 

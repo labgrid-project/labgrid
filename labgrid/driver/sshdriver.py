@@ -41,17 +41,23 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         control = os.path.join(
             self.tmpdir, 'control-{}'.format(self.networkservice.address)
         )
-        args = "ssh -f {} -x -o ControlPersist=300 -o PasswordAuthentication=no -o StrictHostKeyChecking=no -MN -S {} {}@{}".format(
+        args = "ssh -f {} -x -o ConnectTimeout=30 -o ControlPersist=300 -o PasswordAuthentication=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -MN -S {} {}@{}".format(
             self.ssh_prefix, control, self.networkservice.username,
             self.networkservice.address
         ).split(" ")
         self.process = subprocess.Popen(args, )
 
-        if self.process.wait(timeout=1) is not 0:
-            raise ExecutionError(
-                "failed to connect to {} with {} and {}".
-                format(self.networkservice.address, args, self.process.wait())
-            )
+        try:
+            if self.process.wait(timeout=30) is not 0:
+                raise ExecutionError(
+                    "failed to connect to {} with {} and {}".
+                    format(self.networkservice.address, args, self.process.wait())
+                )
+        except TimeoutExpired:
+                raise ExecutionError(
+                    "failed to connect to {} with {} and {}".
+                    format(self.networkservice.address, args, self.process.wait())
+                )
 
         if not os.path.exists(control):
             raise ExecutionError(

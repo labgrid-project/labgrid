@@ -83,7 +83,7 @@ class USBStick(object):
         if self.status != USBStatus.unplugged:
             raise StateError("Device still plugged in, can't upload image")
         self.command.run_check(
-            "losetup -Pf {}/backing_store".format(self.image_dir)
+            "losetup -Pf {}/{}".format(self.image_dir, self.image_name)
         )
         self.command.run_check("fsck.vfat -a /dev/loop0p1")
         self.command.run_check("mount /dev/loop0p1 /mnt/")

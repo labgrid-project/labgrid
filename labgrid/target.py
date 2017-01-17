@@ -66,6 +66,22 @@ class Target:
             "no driver matching {} found in target {}".format(cls, self)
         )
 
+    def get_active_driver(self, cls):
+        """
+        Helper function to get the active driver of the target.
+        Returns the active driver found, otherwise None.
+
+        Arguments:
+        cls -- driver-class to return as a resource
+        """
+        for drv in self.drivers:
+            if isinstance(drv, cls):
+                if drv.state == BindingState.active:
+                    return drv
+        raise NoDriverFoundError(
+            "no driver matching {} found in target {}".format(cls, self)
+        )
+
     def get(self, cls):
         if issubclass(cls, Resource):
             return self.get_resource(cls)

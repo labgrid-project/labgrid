@@ -12,7 +12,7 @@ class Environment:
     config_file = attr.ib(
         default="config.yaml", validator=attr.validators.instance_of(str)
     )
-    interact = attr.ib(default=input)
+    interact = attr.ib(default=input, repr=False)
 
     def __attrs_post_init__(self):
         from . import target_factory

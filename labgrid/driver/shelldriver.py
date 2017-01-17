@@ -41,7 +41,7 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
             self._inject_run()
         if self.keyfile:
             self.put_ssh_key(self.keyfile)
-        self.run("dmesg -n 1") # Turn off Kernel Messages to the console
+        self.run("dmesg -n 1")  # Turn off Kernel Messages to the console
 
     @step(args=['cmd'], result=True)
     def run(self, cmd, *, step):
@@ -161,7 +161,9 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
     def get_service_status(self, service):
         """Returns the IP of the supplied interface"""
         if self._status == 1:
-            _, _, exitcode = self.run("systemctl --quiet is-active {}".format(service))
+            _, _, exitcode = self.run(
+                "systemctl --quiet is-active {}".format(service)
+            )
             return exitcode == 0
 
     @step(args=['key'])

@@ -62,8 +62,8 @@ class ShellDriver(Driver, CommandProtocol, InfoProtocol):
         _, _, match, _ = self.console.expect(r'{}(.*){}\s+(\d+)\s+{}'.format(
             marker, marker, self.prompt
         ))
-        # Remove VT100 Codes and split by newline
-        data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')
+        # Remove VT100 Codes, split by newline and remove surrounding newline
+        data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
         self.logger.debug("Received Data: %s", data)
         # Get exit code
         exitcode = int(match.group(2))

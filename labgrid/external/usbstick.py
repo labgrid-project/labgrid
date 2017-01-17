@@ -26,10 +26,10 @@ class USBStick(object):
     image_name = attr.ib(default="", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
-        self.command = self.target.get_driver( #pylint: disable=no-member
+        self.command = self.target.get_active_driver( #pylint: disable=no-member
             CommandProtocol
         )
-        self.fileservice = self.target.get_driver( #pylint: disable=no-member
+        self.fileservice = self.target.get_active_driver( #pylint: disable=no-member
             FileTransferProtocol
         )
         if not self.command:

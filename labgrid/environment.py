@@ -3,6 +3,7 @@ import yaml
 
 from .exceptions import NoConfigFoundError
 from .target import Target
+from .config import Config
 
 
 @attr.s
@@ -14,23 +15,19 @@ class Environment:
     interact = attr.ib(default=input)
 
     def __attrs_post_init__(self):
-        from . import load_config
         from . import target_factory
 
         self.targets = {}  #pylint: disable=attribute-defined-outside-init
 
         try:
-            self.config = load_config(
-                self.config_file
-            )  #pylint: disable=attribute-defined-outside-init
+            self.config = Config(self.config_file)
         except:
             raise NoConfigFoundError(
                 "{} is not a valid yaml file".format(self.config_file)
             )
 
-        for name, config in self.config.items():
-            target = target_factory(name, config)
-            target.env = self
+        for name, config in self.config.get_targets().items():
+            target = target_factory(name, config, env=self)
             self.targets[name] = target
 
     def get_target(self, role: str='main') -> Target:

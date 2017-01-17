@@ -1,0 +1,12 @@
+targets:
+  main:
+    resources:
+      USBSerialPort:
+        match:
+          ID_SERIAL_SHORT: 'P-00-01084'
+    drivers:
+      ManualPowerDriver:
+        name: "example"
+      SerialDriver: {}
+      BareboxDriver:
+        prompt: 'barebox@[^:]+:[^ ]+ '

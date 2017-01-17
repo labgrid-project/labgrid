@@ -12,11 +12,12 @@ class TestEnvironment:
         p = tmpdir.join("config.yaml")
         p.write(
             """
-        test1:
-          drivers: {}
-        test2:
-          role: foo
-          resources: {}
+        targets:
+          test1:
+            drivers: {}
+          test2:
+            role: foo
+            resources: {}
         """
         )
         e = Environment(str(p))
@@ -26,11 +27,12 @@ class TestEnvironment:
         p = tmpdir.join("config.yaml")
         p.write(
             """
-        test1:
-          drivers: {}
-        test2:
-          role: foo
-          resources: {}
+        targets:
+          test1:
+            drivers: {}
+          test2:
+            role: foo
+            resources: {}
         """
         )
         e = Environment(str(p))

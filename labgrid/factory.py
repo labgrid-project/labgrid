@@ -17,11 +17,11 @@ class TargetFactory:
         self.drivers[cls.__name__] = cls
         return cls
 
-    def __call__(self, name, config):
+    def __call__(self, name, config, *, env=None):
         from .target import Target
 
         role = config.get('role', name)
-        target = Target(name)
+        target = Target(name, env=env)
         for resource, args in config.get('resources', {}).items():
             assert isinstance(args, dict)
             r = self.resources[resource](target, **args)

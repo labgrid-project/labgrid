@@ -31,6 +31,7 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
         self.ssh_prefix = "-i {}".format(os.path.abspath(self.keyfile)
                                          ) if self.keyfile else ""
         self.control = self._check_master()
+        self.ssh_prefix += " -F /dev/null"
         self.ssh_prefix += " -o ControlPath={}".format(
             self.control
         ) if self.control else ""

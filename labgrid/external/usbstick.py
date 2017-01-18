@@ -96,6 +96,22 @@ class USBStick(object):
         )
         self.command.run_check("umount /mnt/")
         self.command.run_check("losetup -d /dev/loop0")
+
+    @step(args=['filename'])
+    def get_file(self, filename):
+        """Gets a file from the USBStick Image
+
+        Gets a file from the USB Stick, raises a StateError if it is not
+        mounted on the host computer."""
+        if self.status != USBStatus.unplugged:
+            raise StateError("Device still plugged in, can't upload image")
+        self.command.run_check(
+            "losetup -Pf {}/{}".format(self.image_dir, self.image_name)
+        )
+        self.command.run_check("mount /dev/loop0p1 /mnt/")
+        self.fileservice.get(
+            "/mnt/{filename}".format(
+                filename=filename
             )
         )
         self.command.run_check("umount /mnt/")

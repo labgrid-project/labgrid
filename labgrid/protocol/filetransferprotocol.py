@@ -7,5 +7,5 @@ class FileTransferProtocol(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, filename: str):
+    def get(self, filename: str, destination: str):
         raise NotImplementedError

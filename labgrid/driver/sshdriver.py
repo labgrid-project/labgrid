@@ -160,13 +160,14 @@ class SSHDriver(Driver, CommandProtocol, FileTransferProtocol):
                 "error executing command: {}".format(transfer_cmd)
             )
 
-    @step(args=['filename'])
-    def get(self, filename):
-        transfer_cmd = "scp {prefix} {user}@{host}:{filename} .".format(
+    @step(args=['filename', 'destination'])
+    def get(self, filename, destination="."):
+        transfer_cmd = "scp {prefix} {user}@{host}:{filename} {destination}".format(
             filename=filename,
             user=self.networkservice.username,
             host=self.networkservice.address,
-            prefix=self.ssh_prefix
+            prefix=self.ssh_prefix,
+            destination=destination
         ).split(' ')
         try:
             sub = subprocess.call(

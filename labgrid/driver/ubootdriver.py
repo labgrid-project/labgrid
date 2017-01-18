@@ -11,12 +11,13 @@ from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..util import gen_marker
 from ..step import step
 from .common import Driver
+from .commandmixin import CommandMixin
 from .exception import ExecutionError
 
 
 @target_factory.reg_driver
 @attr.s
-class UBootDriver(Driver, CommandProtocol, LinuxBootProtocol):
+class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     """UBootDriver - Driver to control uboot via the console"""
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))

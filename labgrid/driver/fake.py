@@ -3,6 +3,7 @@ import attr
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, FileTransferProtocol
 from .common import Driver
+from .commandmixin import CommandMixin
 from .consoleexpectmixin import ConsoleExpectMixin
 
 
@@ -24,7 +25,7 @@ class FakeConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 
 @target_factory.reg_driver
 @attr.s
-class FakeCommandDriver(Driver, CommandProtocol):
+class FakeCommandDriver(CommandMixin, Driver, CommandProtocol):
     def run(self, *args):
         pass
 

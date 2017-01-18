@@ -2,6 +2,7 @@
 import logging
 import re
 import shlex
+from time import sleep
 
 import attr
 from pexpect import TIMEOUT
@@ -9,14 +10,15 @@ from pexpect import TIMEOUT
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..step import step
-from ..util import gen_marker
+from ..util import gen_marker, Timeout
 from .common import Driver
+from .commandmixin import CommandMixin
 from .exception import ExecutionError
 
 
 @target_factory.reg_driver
 @attr.s
-class BareboxDriver(Driver, CommandProtocol, LinuxBootProtocol):
+class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     """BareboxDriver - Driver to control barebox via the console"""
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))

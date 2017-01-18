@@ -24,3 +24,11 @@ class CommandProtocol(abc.ABC):
         Get status of the Driver
         """
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def wait_for(self):
+        """
+        Wait for a shell command to return with the specified output
+        """
+        raise NotImplementedError
+

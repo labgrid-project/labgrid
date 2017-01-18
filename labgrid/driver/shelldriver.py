@@ -4,6 +4,7 @@
 import logging
 import re
 import shlex
+from time import sleep
 
 import attr
 from pexpect import TIMEOUT
@@ -11,14 +12,15 @@ from pexpect import TIMEOUT
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, InfoProtocol
 from ..step import step
-from ..util import gen_marker
+from ..util import gen_marker, Timeout
 from .common import Driver
+from .commandmixin import CommandMixin
 from .exception import ExecutionError
 
 
 @target_factory.reg_driver
 @attr.s
-class ShellDriver(Driver, CommandProtocol, InfoProtocol):
+class ShellDriver(CommandMixin, Driver, CommandProtocol, InfoProtocol):
     """ShellDriver - Driver to execute commands on the shell"""
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(validator=attr.validators.instance_of(str))

@@ -1,0 +1,8 @@
+targets:
+  main:
+    resources:
+      USBMassStorage:
+        match:
+          'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0-scsi-0:0:0:3'
+    drivers:
+      USBStorageDriver: {}

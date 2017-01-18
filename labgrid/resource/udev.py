@@ -86,6 +86,22 @@ class USBSerialPort(SerialPort, USBResource):
 
 @target_factory.reg_resource
 @attr.s
+class USBMassStorage(USBResource):
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'block'
+        self.match['DEVTYPE'] = 'disk'
+        self.match['@SUBSYSTEM'] = 'usb'
+        super().__attrs_post_init__()
+
+    def on_device_set(self):
+        self.avail = True
+
+    @property
+    def path(self):
+        return self.device.device_node
+
+@target_factory.reg_resource
+@attr.s
 class IMXUSBLoader(USBResource):
     def try_match(self, device):
         if device.get('ID_VENDOR_ID') != "15a2":

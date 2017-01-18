@@ -7,4 +7,5 @@ from .externalconsoledriver import ExternalConsoleDriver
 from .exception import CleanUpError, ExecutionError
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver
 from .usbloader import MXSUSBDriver, IMXUSBDriver
+from .usbstorage import USBStorageDriver
 from .common import Driver

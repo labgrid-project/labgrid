@@ -94,6 +94,9 @@ class IMXUSBLoader(USBResource):
             return False
         return super().try_match(device)
 
+    def on_device_set(self):
+        self.avail = True
+
     @property
     def busnum(self):
         return int(self.device.get_property('BUSNUM'))
@@ -135,6 +138,9 @@ class AndroidFastboot(USBResource):
         while device.parent and device.parent.driver != 'usb':
             device = device.parent
         return super().try_match(device)
+
+    def on_device_set(self):
+        self.avail = True
 
     @property
     def busnum(self):

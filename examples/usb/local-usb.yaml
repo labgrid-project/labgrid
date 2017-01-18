@@ -1,0 +1,15 @@
+targets:
+  main:
+    resources:
+      MXSUSBLoader:
+        match:
+          '@ID_PATH': 'pci-0000:06:00.0-usb-0:1'
+    drivers:
+      ManualPowerDriver:
+        name: "example"
+      MXSUSBDriver:
+        image: 'barebox-usb'
+tools:
+  mxs-usb-loader: /ptx/work/dude/WORK_CEPH/jlu/mensactrl/bsp/platform-olinuxino-imx233/build-target/barebox-2016.11.0/scripts/mxs-usb-loader
+images:
+  barebox-usb: /ptx/work/dude/WORK_CEPH/jlu/mensactrl/bsp/platform-olinuxino-imx233/images/barebox-olinuxino-imx23-bootstream.img

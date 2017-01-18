@@ -1,3 +1,4 @@
+from .bootstrapprotocol import BootstrapProtocol
 from .commandprotocol import CommandProtocol
 from .consoleprotocol import ConsoleProtocol
 from .linuxbootprotocol import LinuxBootProtocol

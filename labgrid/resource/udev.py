@@ -40,13 +40,22 @@ class USBResource(ManagedResource):
     _device = attr.ib(default=None, hash=False)
 
     def __attrs_post_init__(self):
+        self.match.setdefault('SUBSYSTEM', 'usb')
         super().__attrs_post_init__()
 
     def try_match(self, device):
+        def match_ancestors(key, value):
+            for ancestor in device.ancestors:
+                if ancestor.get(key) == value:
+                    return True
+            return False
         for k, v in self.match.items():
-            if device.get(k) != v:
+            if k.startswith('@') and match_ancestors(k[1:], v):
+                continue
+            elif device.get(k) == v:
+                continue
+            else:
                 return False
-            print("  {}={}".format(k, v))
         print(" found match: {}".format(self))
         self.device = device
         return True
@@ -74,3 +83,63 @@ class USBSerialPort(SerialPort, USBResource):
     def on_device_set(self):
         self.port = self.device.device_node
         self.avail = True
+
+@target_factory.reg_resource
+@attr.s
+class IMXUSBLoader(USBResource):
+    def try_match(self, device):
+        if device.get('ID_VENDOR_ID') != "15a2":
+            return False
+        if device.get('ID_MODEL_ID') not in ["0054", "0061"]:
+            return False
+        return super().try_match(device)
+
+    @property
+    def busnum(self):
+        return int(self.device.get_property('BUSNUM'))
+
+    def devnum(self):
+        return int(self.device.get_property('DEVNUM'))
+
+@target_factory.reg_resource
+@attr.s
+class MXSUSBLoader(USBResource):
+    def try_match(self, device):
+        if device.get('ID_VENDOR_ID') != "066f":
+            return False
+        if device.get('ID_MODEL_ID') not in ["3780"]:
+            return False
+        print('foo', device)
+
+        return super().try_match(device)
+
+    def on_device_set(self):
+        self.avail = True
+
+    @property
+    def busnum(self):
+        return int(self.device.get('BUSNUM'))
+
+    @property
+    def devnum(self):
+        return int(self.device.get('DEVNUM'))
+
+@target_factory.reg_resource
+@attr.s
+class AndroidFastboot(USBResource):
+    def try_match(self, device):
+        if device.get('ID_VENDOR_ID') != "1d6b":
+            return False
+        if device.get('ID_VENDOR_ID') != "0104":
+            return False
+        while device.parent and device.parent.driver != 'usb':
+            device = device.parent
+        return super().try_match(device)
+
+    @property
+    def busnum(self):
+        return int(self.device.get('BUSNUM'))
+
+    @property
+    def devnum(self):
+        return int(self.device.get('DEVNUM'))

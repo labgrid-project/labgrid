@@ -75,26 +75,30 @@ class USBStick(object):
             self.status = USBStatus.unplugged
 
     @step(args=['filename', 'destination'])
-    def upload_file(self, filename, destination=""):
-        """Upload a file onto the USBStick Image
+    def put_file(self, filename, destination=""):
+        """Put a file onto the USBStick Image
 
-        Uploads a file onto the USB Stick, raises a StateError if it is not
+        Puts a file onto the USB Stick, raises a StateError if it is not
         mounted on the host computer."""
+        if not destination:
+            destination = filename
         if self.status != USBStatus.unplugged:
             raise StateError("Device still plugged in, can't upload image")
         self.command.run_check(
             "losetup -Pf {}/{}".format(self.image_dir, self.image_name)
         )
-        self.command.run_check("fsck.vfat -a /dev/loop0p1")
         self.command.run_check("mount /dev/loop0p1 /mnt/")
         self.fileservice.put(
             filename,
-            "/mnt/{dest}/{filename}".format(
-                dest=destination, filename=filename
+            "/mnt/{dest}".format(
+                dest=destination
             )
         )
         self.command.run_check("umount /mnt/")
-        self.command.run_check("fsck.vfat -a /dev/loop0p1")
+        self.command.run_check("losetup -d /dev/loop0")
+            )
+        )
+        self.command.run_check("umount /mnt/")
         self.command.run_check("losetup -d /dev/loop0")
 
     @step(args=['image'])

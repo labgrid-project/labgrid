@@ -2,6 +2,7 @@ from time import sleep
 
 from ..util import Timeout
 from ..step import step
+from .exception import ExecutionError
 
 
 class CommandMixin:
@@ -18,3 +19,5 @@ class CommandMixin:
         timeout = Timeout(timeout)
         while not any(pattern in s for s in self.run_check(cmd)) and not timeout.expired:
             sleep(sleepduration)
+        if timeout.expired:
+            raise ExecutionError("Wait timeout expired")

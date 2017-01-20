@@ -95,7 +95,7 @@ class USBStick(object):
             )
         )
         self.command.run_check("umount /mnt/")
-        self.command.run_check("losetup -d /dev/loop0")
+        self.command.run_check("losetup -D")
 
     @step(args=['filename'])
     def get_file(self, filename):
@@ -115,7 +115,7 @@ class USBStick(object):
             )
         )
         self.command.run_check("umount /mnt/")
-        self.command.run_check("losetup -d /dev/loop0")
+        self.command.run_check("losetup -D")
 
     @step(args=['image'])
     def upload_image(self, image):
@@ -135,6 +135,8 @@ class USBStick(object):
             raise StateError("Device still plugged in, can't switch to different image")
         if image_name not in self._images:
             raise StateError("No such Image available")
+        self.command.run("umount /mnt/")
+        self.command.run("losetup -D")
         self.image_name = image_name
 
 

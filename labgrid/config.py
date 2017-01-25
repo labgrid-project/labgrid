@@ -1,15 +1,7 @@
-from collections import OrderedDict
-
-import yaml
 import attr
 import os
 
-
-def _dict_constructor(loader, node):
-    return OrderedDict(loader.construct_pairs(node))
-yaml.SafeLoader.add_constructor(
-    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _dict_constructor
-)
+from .util.yaml import load
 
 
 @attr.s
@@ -20,7 +12,7 @@ class Config:
         self.base = os.path.dirname(self.filename)
         try:
             with open(self.filename) as file:
-                self.data = yaml.load(file, yaml.SafeLoader)
+                self.data = load(file)
         except FileNotFoundError:
             raise NoConfigFoundError(
                 "{} could not be found".format(self.filename)

@@ -136,4 +136,4 @@ class HawkbiError(Exception):
     msg = attr.ib()
 
     def __repr__(self):
-        return "HawkbiError({msg})".format(msg=self.msg)
+        return "HawkbitError({msg})".format(msg=self.msg)

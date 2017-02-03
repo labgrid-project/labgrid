@@ -17,6 +17,6 @@ class InfoProtocol(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def put_ssh_key(self, key: str):
-        """Implementations should manage the upload of an SSH Key to the target"""
+    def get_service_status(self, service):
+        """Implementations should return the status of a service"""
         raise NotImplementedError

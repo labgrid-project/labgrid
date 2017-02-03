@@ -7,8 +7,7 @@ from .exception import ExecutionError
 
 class CommandMixin:
     """
-    Console driver mixin to implement the read, write, expect and sendline methods. It uses
-    the internal _read and _write methods. 
+    CommandMixin implementing common functions for drivers which support the CommandProtocol
     """
 
     def __attrs_post_init__(self):

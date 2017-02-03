@@ -15,12 +15,13 @@ from ..step import step
 from ..util import gen_marker, Timeout
 from .common import Driver
 from .commandmixin import CommandMixin
+from .infomixin import InfoMixin
 from .exception import ExecutionError
 
 
 @target_factory.reg_driver
 @attr.s
-class ShellDriver(CommandMixin, Driver, CommandProtocol, InfoProtocol):
+class ShellDriver(CommandMixin, InfoMixin, Driver, CommandProtocol, InfoProtocol):
     """ShellDriver - Driver to execute commands on the shell"""
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(validator=attr.validators.instance_of(str))
@@ -131,46 +132,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, InfoProtocol):
         )
         self.console.expect(self.prompt)
 
-    @step(args=['interface'])
-    def get_ip(self, interface="eth0"):
-        """Returns the IP of the supplied interface"""
-        if self._status == 1:
-            try:
-                ip_string = self.run_check("ip -o -4 addr show")
-            except ExecutionError:
-                self.logger.debug('No ip address found')
-                return None
-
-            regex = re.compile(
-                r"""\d+:       # Match the leading number
-                \s+(?P<if>\w+) # Match whitespace and interfacename
-                \s+inet\s+(?P<ip>[\d.]+) # Match IP Adress
-                /(?P<prefix>\d+) # Match prefix
-                .*global # Match global scope, not host scope""", re.X
-            )
-            self.logger.debug('IP String: %s', ip_string)
-            result = {}
-            for line in ip_string:
-                match = regex.match(line)
-                if match:
-                    match = match.groupdict()
-                    self.logger.debug("Match dict: %s", match)
-                    result[match['if']] = match['ip']
-            self.logger.debug("Complete result: %s", result)
-            if result:
-                return result[interface]
-            else:
-                return None
-
-    @step(args=['service'])
-    def get_service_status(self, service):
-        """Returns the IP of the supplied interface"""
-        if self._status == 1:
-            _, _, exitcode = self.run(
-                "systemctl --quiet is-active {}".format(service)
-            )
-            return exitcode == 0
-
     @step(args=['key'])
     def put_ssh_key(self, key):
         """Upload an SSH Key to a target"""
@@ -218,14 +179,3 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, InfoProtocol):
             self.run_check('mount --bind /tmp/keys ~/.ssh/authorized_keys')
             self.run_check('chmod 700 ~/.ssh')
             self.run_check('chmod 644 ~/.ssh/authorized_keys')
-
-    @step()
-    def get_hostname(self):
-        if self._status == 1:
-            try:
-                hostname_string = self.run_check("hostname")
-            except ExecutionError:
-                self.logger.debug('Hostname unavailable')
-                return None
-            self.logger.debug('Hostname String: %s', hostname_string)
-            return hostname_string[0]

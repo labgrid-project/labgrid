@@ -8,4 +8,5 @@ from .exception import CleanUpError, ExecutionError
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver
 from .usbloader import MXSUSBDriver, IMXUSBDriver
 from .usbstorage import USBStorageDriver
+from .infodriver import InfoDriver
 from .common import Driver

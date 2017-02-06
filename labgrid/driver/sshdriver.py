@@ -12,7 +12,6 @@ from ..factory import target_factory
 from ..protocol import CommandProtocol, FileTransferProtocol, InfoProtocol
 from ..resource import NetworkService
 from .commandmixin import CommandMixin
-from .infomixin import InfoMixin
 from ..util import Timeout
 from .common import Driver
 from ..step import step
@@ -21,7 +20,7 @@ from .exception import CleanUpError, ExecutionError
 
 @target_factory.reg_driver
 @attr.s
-class SSHDriver(CommandMixin, InfoMixin, Driver, CommandProtocol, FileTransferProtocol, InfoProtocol):
+class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     """SSHDriver - Driver to execute commands via SSH"""
     bindings = {"networkservice": NetworkService, }
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))

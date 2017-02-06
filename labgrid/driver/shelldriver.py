@@ -15,13 +15,12 @@ from ..step import step
 from ..util import gen_marker, Timeout
 from .common import Driver
 from .commandmixin import CommandMixin
-from .infomixin import InfoMixin
 from .exception import ExecutionError
 
 
 @target_factory.reg_driver
 @attr.s
-class ShellDriver(CommandMixin, InfoMixin, Driver, CommandProtocol, InfoProtocol):
+class ShellDriver(CommandMixin, Driver, CommandProtocol):
     """ShellDriver - Driver to execute commands on the shell"""
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(validator=attr.validators.instance_of(str))

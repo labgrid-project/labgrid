@@ -128,7 +128,6 @@ class MXSUSBLoader(USBResource):
             return False
         if device.get('ID_MODEL_ID') not in ["3780"]:
             return False
-        print('foo', device)
 
         return super().try_match(device)
 

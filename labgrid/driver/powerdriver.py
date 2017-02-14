@@ -87,7 +87,7 @@ class NetworkPowerDriver(Driver, PowerProtocol):
             time.sleep(self.delay)
             self.on()
 
-        cycle = getattr(self.backend, 'cycle') or fallback()
+        cycle = getattr(self.backend, 'cycle', fallback)
         cycle()
 
     def get(self):

@@ -27,6 +27,7 @@ setup(
         'labgrid.provider',
         'labgrid.pytestplugin',
         'labgrid.resource',
+        'labgrid.strategy',
         'labgrid.util',
     ],
     # the following makes a plugin available to pytest

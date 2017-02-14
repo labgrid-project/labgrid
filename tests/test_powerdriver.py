@@ -77,7 +77,7 @@ class TestExternalPowerDriver:
             mocker.call('set -0 foo-board'),
             mocker.call('set -1 foo-board'),
         ]
-        m_sleep.assert_called_once_with(1.0)
+        m_sleep.assert_called_once_with(2.0)
 
     def test_cycle_explicit(self, target, mocker):
         m_sleep = mocker.patch('time.sleep')

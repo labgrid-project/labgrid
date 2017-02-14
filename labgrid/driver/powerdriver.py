@@ -1,10 +1,12 @@
 import subprocess
 import time
+from importlib import import_module
 
 import attr
 
 from ..factory import target_factory
 from ..protocol import PowerProtocol
+from ..resource import NetworkPowerPort
 from .common import Driver
 
 
@@ -41,7 +43,7 @@ class ExternalPowerDriver(Driver, PowerProtocol):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
-    delay = attr.ib(default=1.0, validator=attr.validators.instance_of(float))
+    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
 
     def on(self):
         subprocess.check_call(self.cmd_on)
@@ -56,3 +58,38 @@ class ExternalPowerDriver(Driver, PowerProtocol):
             self.off()
             time.sleep(self.delay)
             self.on()
+
+@target_factory.reg_driver
+@attr.s
+class NetworkPowerDriver(Driver, PowerProtocol):
+    """NetworkPowerDriver - Driver using a networked power switch to control a target's power"""
+    bindings = {"port": NetworkPowerPort, }
+    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
+
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # TODO: allow backends to register models with other names
+        self.backend = import_module(
+            ".power.{}".format(self.port.model),
+            __package__
+        )
+
+    def on(self):
+        self.backend.set(self.port.host, self.port.index, True)
+
+    def off(self):
+        self.backend.set(self.port.host, self.port.index, False)
+
+    def cycle(self):
+        def fallback():
+            self.off()
+            time.sleep(self.delay)
+            self.on()
+
+        cycle = getattr(self.backend, 'cycle') or fallback()
+        cycle()
+
+    def get(self):
+        return self.backend.get(self.port.host, self.port.index)
+

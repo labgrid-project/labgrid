@@ -301,7 +301,7 @@ class ClientSession(ApplicationSession):
         target_config = self._get_target_config(config)
         resource = target_config['resources']['NetworkSerialPort']
         print("Connecting to ", resource)
-        subprocess.Popen([
+        subprocess.call([
             'microcom', '-t',
             "{}:{}".format(resource['host'], resource['port'])
         ])
@@ -311,7 +311,7 @@ class ClientSession(ApplicationSession):
     #    usb_devices = devices['usb_devices']
     #    usb_device = usb_devices[place]
     #    print("Attaching to ", usb_device)
-    #    subprocess.Popen([
+    #    subprocess.call([
     #        'usbip', 'attach', '-r', "{}".format(usb_device['host']), '-b',
     #        "{}".format(usb_device['id'])
     #    ])

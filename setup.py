@@ -26,12 +26,21 @@ setup(
         'labgrid.protocol',
         'labgrid.provider',
         'labgrid.pytestplugin',
+        'labgrid.remote',
         'labgrid.resource',
         'labgrid.strategy',
         'labgrid.util',
     ],
     # the following makes a plugin available to pytest
-    entry_points={'pytest11': ['name_of_plugin = labgrid.pytestplugin', ]},
+    entry_points={
+        'pytest11': [
+            'name_of_plugin = labgrid.pytestplugin',
+        ],
+        'console_scripts': [
+            'labgrid-client = labgrid.remote.client:main',
+            'labgrid-exporter = labgrid.remote.exporter:main',
+        ]
+    },
     # custom PyPI classifier for pytest plugins
     classifiers=["Framework :: Pytest", ],
 )

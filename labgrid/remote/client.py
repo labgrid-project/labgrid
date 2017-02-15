@@ -104,12 +104,16 @@ class ClientSession(ApplicationSession):
                 for resource_name, resource in sorted(group.items()):
                     if not resource.avail:
                         continue
+                    if self.args.acquired and resource.acquired is None:
+                        continue
                     print("    Resource '{}':".format(resource_name))
                     print(indent(pformat(resource.asdict()), prefix="      "))
 
     @asyncio.coroutine
     def places(self):
         for name, place in sorted(self.places.items()):
+            if self.args.acquired and place.acquired is None:
+                continue
             print("Place '{}':".format(name))
             place.show(level=1)
 
@@ -343,6 +347,7 @@ def main():
         place_parser.add_argument('-p', '--place', type=str, required=True)
 
     subparser = subparsers.add_parser('resources')
+    subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.set_defaults(func=ClientSession.resources)
 
     subparser = subparsers.add_parser('places')

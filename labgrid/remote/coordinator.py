@@ -359,13 +359,13 @@ class CoordinatorComponent(ApplicationSession):
             place = self.places[placename]
         except KeyError:
             return False
-        match = PlaceMatch(*pattern.split('/'))
+        match = ResourceMatch(*pattern.split('/'))
         try:
-            place.matches.remove(alias)
+            place.matches.remove(match)
         except ValueError:
             return False
         self.publish(
-            'org.labgrid.coordinator.place_changed', placename, config
+            'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )
         yield from self.save()
         return True

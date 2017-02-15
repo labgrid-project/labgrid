@@ -84,7 +84,7 @@ class ClientSession(ApplicationSession):
         #    resource
         #))
         group = self.resources.setdefault(exporter, {}).setdefault(group_name, {})
-        group[resource_name] = resource
+        group[resource_name] = ResourceEntry(resource)
 
     @asyncio.coroutine
     def on_place_changed(self, name, config):
@@ -102,10 +102,10 @@ class ClientSession(ApplicationSession):
             for group_name, group in sorted(groups.items()):
                 print("  Group '{}':".format(group_name))
                 for resource_name, resource in sorted(group.items()):
-                    if not resource['avail']:
+                    if not resource.avail:
                         continue
                     print("    Resource '{}':".format(resource_name))
-                    print(indent(pformat(resource), prefix="      "))
+                    print(indent(pformat(resource.asdict()), prefix="      "))
 
     @asyncio.coroutine
     def places(self):
@@ -202,7 +202,7 @@ class ClientSession(ApplicationSession):
     def add_match(self):
         place, config = self._get_place()
         pattern = self.args.pattern
-        if config.get('aquired'):
+        if config.aquired:
             raise UserError("can not change aquired place {}".format(place))
         if not (2 <= pattern.count("/") <= 3):
             raise UserError("invalid pattern format '{}' (use 'exporter/group/cls/name')".format(pattern))
@@ -216,13 +216,11 @@ class ClientSession(ApplicationSession):
     @asyncio.coroutine
     def del_match(self):
         place, config = self._get_place()
-        resource = [self.args.kind, self.args.exporter, self.args.name]
-        if config['aquired']:
+        pattern = self.args.pattern
+        if config.aquired:
             raise UserError("can not change aquired place {}".format(place))
-        if resource not in config['resources']:
-            raise UserError(
-                "place {} has no resource {}".format(place, resource)
-            )
+        if not (2 <= pattern.count("/") <= 3):
+            raise UserError("invalid pattern format '{}' (use 'exporter/group/cls/name')".format(pattern))
         res = yield from self.call(
             'org.labgrid.coordinator.del_place_match', place, pattern
         )
@@ -263,7 +261,8 @@ class ClientSession(ApplicationSession):
         resources = config['resources'] = {}
         for (exporter, groupname, cls, resourcename) in place.aquired_resources:
             resource = self.resources[exporter][groupname][resourcename]
-            resources[resourcename] = resource['params']
+            # FIXME handle resourcename here to support multiple resources of the same class
+            resources[resource.cls] = resource.params
         return config
 
     @asyncio.coroutine

@@ -7,6 +7,9 @@ class ResourceEntry:
     data = attr.ib()  # cls, params
     aquired = attr.ib(default=None)
 
+    def __attrs_post_init__(self):
+        self.data.setdefault('avail', False)
+
     @property
     def avail(self):
         return self.data['avail']
@@ -17,10 +20,7 @@ class ResourceEntry:
 
     @property
     def params(self):
-        result = self.data.copy()
-        for k in result.keys() & {'avail', 'cls'}:
-            del result[k]
-        return result
+        return self.data['params']
 
     def asdict(self):
         return {

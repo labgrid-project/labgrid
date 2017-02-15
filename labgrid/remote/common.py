@@ -5,7 +5,7 @@ import attr
 @attr.s
 class ResourceEntry:
     data = attr.ib()  # cls, params
-    aquired = attr.ib(default=None)
+    acquired = attr.ib(default=None)
 
     def __attrs_post_init__(self):
         self.data.setdefault('avail', False)
@@ -26,7 +26,7 @@ class ResourceEntry:
         return {
             'cls': self.cls,
             'params': self.params,
-            'aquired': self.aquired,
+            'acquired': self.acquired,
             'avail': self.avail,
         }
 
@@ -71,8 +71,8 @@ class Place:
     aliases = attr.ib(default=attr.Factory(set))
     comment = attr.ib(default="")
     matches = attr.ib(default=attr.Factory(list))
-    aquired = attr.ib(default=None)
-    aquired_resources = attr.ib(default=attr.Factory(list))
+    acquired = attr.ib(default=None)
+    acquired_resources = attr.ib(default=attr.Factory(list))
 
     def asdict(self):
         result = attr.asdict(self)
@@ -88,9 +88,9 @@ class Place:
         print(indent+"matches:")
         for match in self.matches:
             print(indent+"  {}".format(match))
-        print(indent+"aquired: {}".format(self.aquired))
-        print(indent+"aquired resources:")
-        for resource in self.aquired_resources:
+        print(indent+"acquired: {}".format(self.acquired))
+        print(indent+"acquired resources:")
+        for resource in self.acquired_resources:
             print(indent+"  {}".format('/'.join(resource)))
 
     def hasmatch(self, resource_path):

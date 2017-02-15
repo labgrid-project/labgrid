@@ -79,7 +79,7 @@ class ExporterSession(RemoteSession):
 
 @attr.s
 class ClientSession(RemoteSession):
-    aquired = attr.ib(default=attr.Factory(list), init=False)
+    acquired = attr.ib(default=attr.Factory(list), init=False)
 
 
 class CoordinatorComponent(ApplicationSession):
@@ -141,8 +141,8 @@ class CoordinatorComponent(ApplicationSession):
             self.del_place_match, 'org.labgrid.coordinator.del_place_match'
         )
         yield from self.register(
-            self.aquire_place,
-            'org.labgrid.coordinator.aquire_place',
+            self.acquire_place,
+            'org.labgrid.coordinator.acquire_place',
             options=RegisterOptions(details_arg='details')
         )
         yield from self.register(
@@ -172,10 +172,10 @@ class CoordinatorComponent(ApplicationSession):
             for placename, config in self.places.items():
                 config['name'] = placename
                 # FIXME maybe recover previously acquired places here?
-                if 'aquired' in config:
-                    del config['aquired']
-                if 'aquired_resources' in config:
-                    del config['aquired_resources']
+                if 'acquired' in config:
+                    del config['acquired']
+                if 'acquired_resources' in config:
+                    del config['acquired_resources']
                 config['matches'] = [ResourceMatch(**match) for match in config['matches']]
                 place = Place(**config)
                 self.places[placename] = place
@@ -195,19 +195,19 @@ class CoordinatorComponent(ApplicationSession):
         self.places[name] = place
 
     @asyncio.coroutine
-    def _update_aquired_places(self, action, resource_path):
-        """Update aquired places when resources are added or removed."""
+    def _update_acquired_places(self, action, resource_path):
+        """Update acquired places when resources are added or removed."""
         if action not in [Action.ADD, Action.DEL]:
             return  # currently nothing needed for Action.UPD
         for placename, place in self.places.items():
-            if not place.aquired:
+            if not place.acquired:
                 continue
             if not place.hasmatch(resource_path):
                 continue
             if action is Action.ADD:
-                place.aquired_resources.append(resource_path)
+                place.acquired_resources.append(resource_path)
             else:
-                place.aquired_resources.remove(resource_path)
+                place.acquired_resources.remove(resource_path)
             self.publish(
                 'org.labgrid.coordinator.place_changed', placename, place.asdict()
             )
@@ -237,7 +237,7 @@ class CoordinatorComponent(ApplicationSession):
             for groupname, group in session.groups.items():
                 for resourcename in group.copy():
                     action, resource_path = session.set_resource(groupname, resourcename, {})
-                    yield from self._update_aquired_places(action, resource_path)
+                    yield from self._update_acquired_places(action, resource_path)
         yield from self.save()
 
     @asyncio.coroutine
@@ -252,7 +252,7 @@ class CoordinatorComponent(ApplicationSession):
     def set_resource(self, groupname, resourcename, resource, details=None):
         groupname = str(groupname)
         resourcename = str(resourcename)
-        # TODO check if aquired
+        # TODO check if acquired
         print(details)
         pprint(resource)
         session = self.sessions[details.caller]
@@ -260,7 +260,7 @@ class CoordinatorComponent(ApplicationSession):
         action, resource_path = session.set_resource(groupname, resourcename, resource)
         if action is Action.ADD:
             self._add_default_place(groupname)
-        yield from self._update_aquired_places(action, resource_path)
+        yield from self._update_acquired_places(action, resource_path)
         yield from self.save()
 
     def _get_resources(self):
@@ -371,13 +371,13 @@ class CoordinatorComponent(ApplicationSession):
         return True
 
     @asyncio.coroutine
-    def _aquire_resource(self, kind, exporter, name):
+    def _acquire_resource(self, kind, exporter, name):
         res = yield from self.call(
-            'org.labgrid.exporter.{}.aquire'.format(exporter),
+            'org.labgrid.exporter.{}.acquire'.format(exporter),
             groupname, resourcename
         )
         print(
-            "aquire: {}/{}/{}".format(kind, exporter, groupname, resourcename)
+            "acquire: {}/{}/{}".format(kind, exporter, groupname, resourcename)
         )
         return res
 
@@ -394,25 +394,25 @@ class CoordinatorComponent(ApplicationSession):
         return res
 
     @asyncio.coroutine
-    def aquire_place(self, name, details=None):
+    def acquire_place(self, name, details=None):
         print(details)
         try:
             place = self.places[name]
         except KeyError:
             return False
-        if place.aquired:
+        if place.acquired:
             return False
         # FIXME use the session object instead? or something else which
         # survives disconnecting clients?
-        place.aquired = self.sessions[details.caller].name
+        place.acquired = self.sessions[details.caller].name
         for exporter, groups in self._get_resources().items():
             for group_name, group in sorted(groups.items()):
                 for resource_name, resource in sorted(group.items()):
                     resource_path = (exporter, group_name, resource['cls'], resource_name)
                     if not place.hasmatch(resource_path):
                         continue
-                    place.aquired_resources.append(resource_path)
-                    #yield from self._aquire_resource(
+                    place.acquired_resources.append(resource_path)
+                    #yield from self._acquire_resource(
                     #    kind, exporter, groupname, resourcename
                     #)
         self.publish(
@@ -428,10 +428,10 @@ class CoordinatorComponent(ApplicationSession):
             place = self.places[name]
         except KeyError:
             return False
-        if not place.aquired:
+        if not place.acquired:
             return False
-        place.aquired = None
-        place.aquired_resources = []
+        place.acquired = None
+        place.acquired_resources = []
         #for
             #yield from self._release_resource(
             #    kind, exporter, groupname, resourcename

@@ -202,8 +202,8 @@ class ClientSession(ApplicationSession):
     def add_match(self):
         place, config = self._get_place()
         pattern = self.args.pattern
-        if config.aquired:
-            raise UserError("can not change aquired place {}".format(place))
+        if config.acquired:
+            raise UserError("can not change acquired place {}".format(place))
         if not (2 <= pattern.count("/") <= 3):
             raise UserError("invalid pattern format '{}' (use 'exporter/group/cls/name')".format(pattern))
         res = yield from self.call(
@@ -217,8 +217,8 @@ class ClientSession(ApplicationSession):
     def del_match(self):
         place, config = self._get_place()
         pattern = self.args.pattern
-        if config.aquired:
-            raise UserError("can not change aquired place {}".format(place))
+        if config.acquired:
+            raise UserError("can not change acquired place {}".format(place))
         if not (2 <= pattern.count("/") <= 3):
             raise UserError("invalid pattern format '{}' (use 'exporter/group/cls/name')".format(pattern))
         res = yield from self.call(
@@ -229,23 +229,23 @@ class ClientSession(ApplicationSession):
         return res
 
     @asyncio.coroutine
-    def aquire(self):
+    def acquire(self):
         place, config = self._get_place()
-        if config.aquired:
-            raise UserError("place {} is already aquired by {}".format(place, config.aquired))
+        if config.acquired:
+            raise UserError("place {} is already acquired by {}".format(place, config.acquired))
         res = yield from self.call(
-            'org.labgrid.coordinator.aquire_place', place
+            'org.labgrid.coordinator.acquire_place', place
         )
         if not res:
-            raise ServerError("failed to aquire place {}".format(place))
+            raise ServerError("failed to acquire place {}".format(place))
         else:
-            print("aquired place {}".format(place))
+            print("acquired place {}".format(place))
 
     @asyncio.coroutine
     def release(self):
         place, config = self._get_place()
-        if not config.aquired:
-            raise UserError("place {} is not aquired".format(place))
+        if not config.acquired:
+            raise UserError("place {} is not acquired".format(place))
         res = yield from self.call(
             'org.labgrid.coordinator.release_place', place
         )
@@ -255,11 +255,11 @@ class ClientSession(ApplicationSession):
             print("released place {}".format(place))
 
     def _get_target_config(self, place):
-        if not place.aquired:
-            raise UserError("place {} is not aquired".format(place.name))
+        if not place.acquired:
+            raise UserError("place {} is not acquired".format(place.name))
         config = {}
         resources = config['resources'] = {}
-        for (exporter, groupname, cls, resourcename) in place.aquired_resources:
+        for (exporter, groupname, cls, resourcename) in place.acquired_resources:
             resource = self.resources[exporter][groupname][resourcename]
             # FIXME handle resourcename here to support multiple resources of the same class
             resources[resource.cls] = resource.params
@@ -344,7 +344,7 @@ def main():
     subparser.set_defaults(func=ClientSession.resources)
 
     subparser = subparsers.add_parser('places')
-    subparser.add_argument('-a', '--aquired', action='store_true')
+    subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.set_defaults(func=ClientSession.places)
 
     subparser = subparsers.add_parser('add-place')
@@ -375,8 +375,8 @@ def main():
     subparser.add_argument('pattern')
     subparser.set_defaults(func=ClientSession.del_match)
 
-    subparser = subparsers.add_parser('aquire', parents=[place_parser])
-    subparser.set_defaults(func=ClientSession.aquire)
+    subparser = subparsers.add_parser('acquire', parents=[place_parser])
+    subparser.set_defaults(func=ClientSession.acquire)
 
     subparser = subparsers.add_parser('release', parents=[place_parser])
     subparser.set_defaults(func=ClientSession.release)

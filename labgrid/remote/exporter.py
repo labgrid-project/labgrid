@@ -145,7 +145,7 @@ class ExporterSession(ApplicationSession):
         self.poll_task = self.loop.create_task(self.poll())
 
         prefix = 'org.labgrid.exporter.{}'.format(self.name)
-        yield from self.register(self.aquire, '{}.aquire'.format(prefix))
+        yield from self.register(self.acquire, '{}.acquire'.format(prefix))
         yield from self.register(self.release, '{}.release'.format(prefix))
 
     @asyncio.coroutine
@@ -167,9 +167,9 @@ class ExporterSession(ApplicationSession):
         print("connection lost")
 
     @asyncio.coroutine
-    def aquire(self, group_name, resource_name):
+    def acquire(self, group_name, resource_name):
         resource = self.groups[group_name][resource_name]
-        #resource.aquire()
+        #resource.acquire()
         yield from self.update_resource(group_name, resource_name)
 
     @asyncio.coroutine

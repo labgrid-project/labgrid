@@ -261,6 +261,8 @@ class ClientSession(ApplicationSession):
         resources = config['resources'] = {}
         for (exporter, groupname, cls, resourcename) in place.acquired_resources:
             resource = self.resources[exporter][groupname][resourcename]
+            if not resource.avail:
+                continue
             # FIXME handle resourcename here to support multiple resources of the same class
             resources[resource.cls] = resource.params
         return config

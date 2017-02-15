@@ -105,7 +105,12 @@ class USBSerialPortExport(ResourceExport):
         # stop ser2net
         child = self.child
         self.child = None
-        child.kill()
+        child.terminate()
+        try:
+            child.wait(1.0)
+        except TimeoutExpired:
+            child.kill()
+            child.wait(1.0)
 exports["USBSerialPort"] = USBSerialPortExport
 
 

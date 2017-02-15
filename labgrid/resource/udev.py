@@ -82,7 +82,7 @@ class USBSerialPort(SerialPort, USBResource):
 
     def on_device_set(self):
         self.port = self.device.device_node
-        self.avail = True
+        self.avail = self.device.action in ['add', 'change']
 
 @target_factory.reg_resource
 @attr.s

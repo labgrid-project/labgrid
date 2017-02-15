@@ -300,16 +300,32 @@ class ClientSession(ApplicationSession):
                 place, 'on' if res else 'off',
             ))
 
-    @asyncio.coroutine
-    def connect(self):
-        place, config = self._get_place()
+    def _connect(self, config):
         target_config = self._get_target_config(config)
-        resource = target_config['resources']['NetworkSerialPort']
-        print("Connecting to ", resource)
-        subprocess.call([
+        try:
+            resource = target_config['resources']['NetworkSerialPort']
+        except KeyError:
+            print("resource not found")
+            return False
+        print("connecting to ", resource)
+        res = subprocess.call([
             'microcom', '-t',
             "{}:{}".format(resource['host'], resource['port'])
         ])
+        if res:
+            print("connection lost")
+        return res == 0
+
+    @asyncio.coroutine
+    def connect(self):
+        place, config = self._get_place()
+        while True:
+            res = self._connect(config)
+            if res:
+                break
+            if not self.args.loop:
+                break
+            yield from asyncio.sleep(1.0)
 
     #@asyncio.coroutine
     #def attach(self, place):
@@ -396,6 +412,7 @@ def main():
     subparser.set_defaults(func=ClientSession.power)
 
     subparser = subparsers.add_parser('connect', parents=[place_parser])
+    subparser.add_argument('-l', '--loop', action='store_true')
     subparser.set_defaults(func=ClientSession.connect)
 
     #subparser = subparsers.add_parser('attach', parents=[place_parser])

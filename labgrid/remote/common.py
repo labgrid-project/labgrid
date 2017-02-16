@@ -2,6 +2,7 @@ from fnmatch import fnmatchcase
 
 import attr
 
+
 @attr.s
 class ResourceEntry:
     data = attr.ib()  # cls, params
@@ -41,7 +42,10 @@ class ResourceMatch:
     @classmethod
     def fromstr(cls, pattern):
         if not (2 <= pattern.count("/") <= 3):
-            raise ValueError("invalid pattern format '{}' (use 'exporter/group/cls/name')".format(pattern))
+            raise ValueError(
+                "invalid pattern format '{}' (use 'exporter/group/cls/name')".
+                format(pattern)
+            )
         return cls(*pattern.split("/"))
 
     def __str__(self):
@@ -80,18 +84,16 @@ class Place:
         return result
 
     def show(self, level=0):
-        indent = '  '*level
-        print(indent+"aliases: {}".format(
-            ', '.join(self.aliases)
-        ))
-        print(indent+"comment: {}".format(self.comment))
-        print(indent+"matches:")
+        indent = '  ' * level
+        print(indent + "aliases: {}".format(', '.join(self.aliases)))
+        print(indent + "comment: {}".format(self.comment))
+        print(indent + "matches:")
         for match in self.matches:
-            print(indent+"  {}".format(match))
-        print(indent+"acquired: {}".format(self.acquired))
-        print(indent+"acquired resources:")
+            print(indent + "  {}".format(match))
+        print(indent + "acquired: {}".format(self.acquired))
+        print(indent + "acquired resources:")
         for resource in self.acquired_resources:
-            print(indent+"  {}".format('/'.join(resource)))
+            print(indent + "  {}".format('/'.join(resource)))
 
     def hasmatch(self, resource_path):
         """Return True if this place as a ResourceMatch object for the given resource path.

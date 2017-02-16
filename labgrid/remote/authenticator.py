@@ -8,16 +8,11 @@ from autobahn.wamp.exception import ApplicationError
 
 
 class AuthenticatorSession(ApplicationSession):
+    @inlineCallbacks
+    def onJoin(self, details):
+        def authenticate(realm, authid, details):
+            pprint(details)
+            principal = {'role': 'public', 'extra': {}}
+            return principal
 
-   @inlineCallbacks
-   def onJoin(self, details):
-
-      def authenticate(realm, authid, details):
-         pprint(details)
-         principal = {
-            'role': 'public',
-            'extra': {}
-         }
-         return principal
-
-      yield self.register(authenticate, 'org.labgrid.authenticate')
+        yield self.register(authenticate, 'org.labgrid.authenticate')

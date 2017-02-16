@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 import asyncio
 from collections import defaultdict
 from os import environ
@@ -371,29 +372,6 @@ class CoordinatorComponent(ApplicationSession):
         return True
 
     @asyncio.coroutine
-    def _acquire_resource(self, kind, exporter, name):
-        res = yield from self.call(
-            'org.labgrid.exporter.{}.acquire'.format(exporter),
-            groupname, resourcename
-        )
-        print(
-            "acquire: {}/{}/{}".format(kind, exporter, groupname, resourcename)
-        )
-        return res
-
-    @asyncio.coroutine
-    def _release_resource(self, kind, exporter, name):
-        res = yield from self.call(
-            'org.labgrid.exporter.{}.release'.format(exporter),
-            groupname, resourcename
-        )
-        print(
-            "release: {}/{}/{}".
-            format(kind, exporter, groupname, resourcename)
-        )
-        return res
-
-    @asyncio.coroutine
     def acquire_place(self, name, details=None):
         print(details)
         try:
@@ -412,9 +390,6 @@ class CoordinatorComponent(ApplicationSession):
                     if not place.hasmatch(resource_path):
                         continue
                     place.acquired_resources.append(resource_path)
-                    #yield from self._acquire_resource(
-                    #    kind, exporter, groupname, resourcename
-                    #)
         self.publish(
             'org.labgrid.coordinator.place_changed', name, place.asdict()
         )
@@ -432,10 +407,6 @@ class CoordinatorComponent(ApplicationSession):
             return False
         place.acquired = None
         place.acquired_resources = []
-        #for
-            #yield from self._release_resource(
-            #    kind, exporter, groupname, resourcename
-            #)
         self.publish(
             'org.labgrid.coordinator.place_changed', name, place.asdict()
         )

@@ -3,22 +3,17 @@ import json
 import attr
 import requests as r
 
-HOST = 'localhost'
-PORT = '8080'
-USERNAME = 'admin'
-PASSWORD = 'admin'
-
-
 @attr.s
 class HawkbitTestClient:
     host = attr.ib(validator=attr.validators.instance_of(str))
     port = attr.ib(validator=attr.validators.instance_of(str))
+    username = attr.ib(validator=attr.validators.instance_of(str))
+    password = attr.ib(validator=attr.validators.instance_of(str))
     version = attr.ib(
         default=1.0, validator=attr.validators.instance_of(float)
     )
 
     def __attrs_post_init__(self):
-        self.auth = (USERNAME, PASSWORD)
         self.url = 'http://{host}:{port}/rest/v1/{endpoint}'
 
     def add_target(self, device_address: str, token: str):
@@ -89,7 +84,7 @@ class HawkbitTestClient:
                 endpoint=endpoint, host=self.host, port=self.port
             ),
             headers=headers,
-            auth=self.auth,
+            auth=(self.username, self.password),
             json=data
         )
         if req.status_code != 201:
@@ -105,7 +100,7 @@ class HawkbitTestClient:
             self.url.format(
                 endpoint=endpoint, host=self.host, port=self.port
             ),
-            auth=self.auth,
+            auth=(self.username, self.password),
             files=files
         )
         if req.status_code != 201:
@@ -121,7 +116,7 @@ class HawkbitTestClient:
                 endpoint=endpoint, host=self.host, port=self.port
             ),
             headers=headers,
-            auth=self.auth
+            auth=(self.username, self.password)
         )
         if req.status_code != 200:
             raise HawkbiError(
@@ -134,6 +129,3 @@ class HawkbitTestClient:
 @attr.s
 class HawkbiError(Exception):
     msg = attr.ib()
-
-    def __repr__(self):
-        return "HawkbitError({msg})".format(msg=self.msg)

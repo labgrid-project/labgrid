@@ -1,3 +1,4 @@
+"""The coordinator module coordinates exported resources and clients accessing them."""
 # pylint: disable=no-member
 import asyncio
 from collections import defaultdict
@@ -19,23 +20,29 @@ class Action(Enum):
     DEL = 1
     UPD = 2
 
+
 @attr.s(init=False)
 class RemoteSession:
+    """class encapsulating a session, used by ExporterSession and ClientSession"""
     coordinator = attr.ib()
     session = attr.ib()
     authid = attr.ib()
 
     @property
     def key(self):
+        """Key of the session"""
         return self.session
 
     @property
     def name(self):
+        """Name of the session"""
         return self.authid.split('/', 1)[1]
 
 
 @attr.s
 class ExporterSession(RemoteSession):
+    """An ExporterSession is opened for each Exporter connecting to the
+    coordinator, allowing the Exporter to get and set resources"""
     groups = attr.ib(default=attr.Factory(dict), init=False)
 
     def set_resource(self, groupname, resourcename, resource):
@@ -70,6 +77,7 @@ class ExporterSession(RemoteSession):
             return None, resource_path
 
     def get_resources(self):
+        """Method invoked by the exporter, get a resource from the coordinator"""
         result = {}
         for groupname, group in self.groups.items():
             result_group = result[groupname] = {}

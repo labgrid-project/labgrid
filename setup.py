@@ -37,7 +37,7 @@ setup(
     # the following makes a plugin available to pytest
     entry_points={
         'pytest11': [
-            'name_of_plugin = labgrid.pytestplugin',
+            'labgrid = labgrid.pytestplugin',
         ],
         'console_scripts': [
             'labgrid-client = labgrid.remote.client:main',

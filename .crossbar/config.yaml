@@ -40,7 +40,7 @@ workers:
   - type: web
     endpoint:
       type: tcp
-      port: 8080
+      port: 20408
     paths:
       /:
         type: static
@@ -65,4 +65,4 @@ workers:
     workdir: ..
     env:
       vars:
-        WS: ws://localhost:8080/ws
+        WS: ws://localhost:20408/ws

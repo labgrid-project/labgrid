@@ -275,7 +275,7 @@ def main():
         '--crossbar',
         metavar='URL',
         type=str,
-        default="ws://127.0.0.1:8080/ws",
+        default="ws://127.0.0.1:20408/ws",
         help="crossbar websocket URL"
     )
     parser.add_argument(

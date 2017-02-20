@@ -1,3 +1,5 @@
+"""The remote.exporter module exports resources to the coordinator and makes
+them available to other clients on the same coordinator"""
 import argparse
 import asyncio
 import logging
@@ -20,12 +22,16 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 
+
 def get_free_port():
+    """Helper function to always return an unused port."""
     with closing(socket(AF_INET, SOCK_STREAM)) as s:
         s.bind(('', 0))
         return s.getsockname()[1]
 
+
 exports = {}
+
 
 @attr.s
 class ResourceExport(ResourceEntry):
@@ -71,6 +77,8 @@ class ResourceExport(ResourceEntry):
 
 @attr.s
 class USBSerialPortExport(ResourceExport):
+    """ResourceExport for a USB SerialPort"""
+
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.data['cls'] = "NetworkSerialPort"
@@ -84,23 +92,30 @@ class USBSerialPortExport(ResourceExport):
             self._stop()
 
     def _get_params(self):
+        """Helper function to return parameters"""
         return {
             'host': gethostname(),
             'port': self.port,
         }
 
     def _start(self):
+        """Start ``ser2net`` subprocess"""
         assert self.local.avail
         assert self.child is None
         # start ser2net
         self.port = get_free_port()
         self.child = subprocess.Popen([
-            '/usr/sbin/ser2net', '-d', '-n',
-            '-C', '{}:telnet:0:{}:115200 8DATABITS NONE 1STOPBIT'.format(
-                self.port, self.local.port),
+            '/usr/sbin/ser2net',
+            '-d',
+            '-n',
+            '-C',
+            '{}:telnet:0:{}:115200 8DATABITS NONE 1STOPBIT'.format(
+                self.port, self.local.port
+            ),
         ])
 
     def _stop(self):
+        """Stop spawned subprocess"""
         assert self.child
         # stop ser2net
         child = self.child
@@ -111,11 +126,16 @@ class USBSerialPortExport(ResourceExport):
         except TimeoutExpired:
             child.kill()
             child.wait(1.0)
+
+
 exports["USBSerialPort"] = USBSerialPortExport
 
 
 class ExporterSession(ApplicationSession):
     def onConnect(self):
+        """Set up internal datastructures on successful connection:
+        - Setup loop, name, authid and address
+        - Join the coordinator as an exporter"""
         self.loop = self.config.extra['loop']
         self.name = self.config.extra['name']
         self.authid = "exporter/{}".format(self.name)
@@ -126,10 +146,16 @@ class ExporterSession(ApplicationSession):
         self.join(self.config.realm, ["ticket"], self.authid)
 
     def onChallenge(self, challenge):
+        """Function invoked on received challege, returns just a dummy ticket
+        at the moment, authentication is not supported yet"""
         return "dummy-ticket"
 
     @asyncio.coroutine
     def onJoin(self, details):
+        """On successful join:
+        - export available resources
+        - bail out if we are unsuccessful
+        """
         print(details)
         try:
             resource_config = ResourceConfig(self.config.extra['resources'])
@@ -140,7 +166,9 @@ class ExporterSession(ApplicationSession):
                     if params is None:
                         continue
                     cls = params.pop('cls', resource_name)
-                    yield from self.add_resource(group_name, resource_name, cls, params)
+                    yield from self.add_resource(
+                        group_name, resource_name, cls, params
+                    )
 
         except:
             traceback.print_exc()
@@ -155,6 +183,7 @@ class ExporterSession(ApplicationSession):
 
     @asyncio.coroutine
     def onLeave(self, details):
+        """Cleanup after leaving the coordinator connection"""
         self.poll_task.cancel()
         yield from asyncio.wait([self.poll_task])
         #for resource in self.resources.values():
@@ -183,7 +212,6 @@ class ExporterSession(ApplicationSession):
         #resource.release()
         yield from self.update_resource(group_name, resource_name)
 
-
     @asyncio.coroutine
     def _poll_step(self):
         for group_name, group in self.groups.items():
@@ -195,8 +223,8 @@ class ExporterSession(ApplicationSession):
                     data = resource.asdict()
                     print(data)
                     yield from self.call(
-                        'org.labgrid.coordinator.set_resource',
-                        group_name, resource_name, data
+                        'org.labgrid.coordinator.set_resource', group_name,
+                        resource_name, data
                     )
 
     @asyncio.coroutine
@@ -212,7 +240,11 @@ class ExporterSession(ApplicationSession):
 
     @asyncio.coroutine
     def add_resource(self, group_name, resource_name, cls, params):
-        print("add resource {}/{}: {}/{}".format(group_name, resource_name, cls, params))
+        """Add a resource to the exporter and update status on the coordinator"""
+        print(
+            "add resource {}/{}: {}/{}".
+            format(group_name, resource_name, cls, params)
+        )
         group = self.groups.setdefault(group_name, {})
         assert resource_name not in group
         export_cls = exports.get(cls, ResourceEntry)
@@ -226,11 +258,13 @@ class ExporterSession(ApplicationSession):
 
     @asyncio.coroutine
     def update_resource(self, group_name, resource_name):
+        """Update status on the coordinator"""
         resource = self.groups[group_name][resource_name]
         data = resource.asdict()
         print(data)
         yield from self.call(
-            'org.labgrid.coordinator.set_resource', group_name, resource_name, data
+            'org.labgrid.coordinator.set_resource', group_name, resource_name,
+            data
         )
 
 
@@ -271,5 +305,6 @@ def main():
     runner = ApplicationRunner(url=args.crossbar, realm="realm1", extra=extra)
     runner.run(ExporterSession)
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     main()

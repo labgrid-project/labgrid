@@ -79,7 +79,7 @@ class USBSerialPortExport(ResourceExport):
         self.child = None
         self.port = None
 
-    def __del(self):
+    def __del__(self):
         if self.child is not None:
             self._stop()
 

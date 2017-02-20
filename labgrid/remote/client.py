@@ -1,3 +1,5 @@
+"""The remote.client module contains the functionality to connect to a
+coordinator, acquire a place and interact with the connected resources"""
 import argparse
 import asyncio
 import os
@@ -34,7 +36,11 @@ class ServerError(Error):
 
 
 class ClientSession(ApplicationSession):
+    """The ClientSession encapsulates all the actions a Client can Invoke on
+    the coordinator."""
+
     def onConnect(self):
+        """Actions which are executed if a connection is successfully opened."""
         self.loop = self.config.extra['loop']
         self.args = self.config.extra['args']
         self.join(
@@ -59,9 +65,7 @@ class ClientSession(ApplicationSession):
                         exporter, group_name, resource_name, resource
                     )
 
-        places = yield from self.call(
-            'org.labgrid.coordinator.get_places'
-        )
+        places = yield from self.call('org.labgrid.coordinator.get_places')
         self.places = {}
         for placename, config in places.items():
             yield from self.on_place_changed(placename, config)
@@ -71,8 +75,7 @@ class ClientSession(ApplicationSession):
             'org.labgrid.coordinator.resource_changed'
         )
         yield from self.subscribe(
-            self.on_place_changed,
-            'org.labgrid.coordinator.place_changed'
+            self.on_place_changed, 'org.labgrid.coordinator.place_changed'
         )
         try:
             yield from self.args.func(self)
@@ -90,8 +93,8 @@ class ClientSession(ApplicationSession):
         #    resource_name,
         #    resource
         #))
-        group = self.resources.setdefault(exporter, {}
-                                          ).setdefault(group_name, {})
+        group = self.resources.setdefault(exporter,
+                                          {}).setdefault(group_name, {})
         group[resource_name] = ResourceEntry(resource)
 
     @asyncio.coroutine
@@ -106,6 +109,7 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def print_resources(self):
+        """Print out the resources"""
         for exporter, groups in sorted(self.resources.items()):
             print("Exporter '{}':".format(exporter))
             for group_name, group in sorted(groups.items()):
@@ -120,6 +124,7 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def print_places(self):
+        """Print out the places"""
         for name, place in sorted(self.places.items()):
             if self.args.acquired and place.acquired is None:
                 continue
@@ -150,30 +155,29 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def add_place(self):
+        """Add a place to the coordinator"""
         name = self.args.place
         if name in self.places:
             raise UserError("{} already exists".format(name))
-        res = yield from self.call(
-            'org.labgrid.coordinator.add_place', name
-        )
+        res = yield from self.call('org.labgrid.coordinator.add_place', name)
         if not res:
             raise ServerError("failed to add place {}".format(name))
         return res
 
     @asyncio.coroutine
     def del_place(self):
+        """Delete a place from the coordinator"""
         name = self.args.place
         if name not in self.places:
             raise UserError("{} does not exist".format(name))
-        res = yield from self.call(
-            'org.labgrid.coordinator.del_place', name
-        )
+        res = yield from self.call('org.labgrid.coordinator.del_place', name)
         if not res:
             raise ServerError("failed to delete place {}".format(name))
         return res
 
     @asyncio.coroutine
     def add_alias(self):
+        """Add an alias for a place on the coordinator"""
         place, config = self._get_place()
         alias = self.args.alias
         if alias in config.aliases:
@@ -191,6 +195,7 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def del_alias(self):
+        """Delete an alias for a place from the coordinator"""
         place, config = self._get_place()
         alias = self.args.alias
         if alias not in config.aliases:
@@ -206,11 +211,11 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def set_comment(self):
+        """Set the comment on a place"""
         place, config = self._get_place()
         comment = self.args.comment
         res = yield from self.call(
-            'org.labgrid.coordinator.set_place_comment', place,
-            comment
+            'org.labgrid.coordinator.set_place_comment', place, comment
         )
         if not res:
             raise ServerError(
@@ -220,6 +225,8 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def add_match(self):
+        """Add a match for a place, making fuzzy matching available to the
+        client"""
         place, config = self._get_place()
         pattern = self.args.pattern
         if config.acquired:
@@ -240,6 +247,7 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def del_match(self):
+        """Delete a match for a place"""
         place, config = self._get_place()
         pattern = self.args.pattern
         if config.acquired:
@@ -261,6 +269,7 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def acquire(self):
+        """Acquire a place, marking it unavailable for other clients"""
         place, config = self._get_place()
         if config.acquired:
             raise UserError(
@@ -277,6 +286,7 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def release(self):
+        """Release a previously acquired place"""
         place, config = self._get_place()
         if not config.acquired:
             raise UserError("place {} is not acquired".format(place))
@@ -395,15 +405,11 @@ def main():
 
     subparser = subparsers.add_parser('resources')
     subparser.add_argument('-a', '--acquired', action='store_true')
-    subparser.set_defaults(
-        func=ClientSession.print_resources
-    )
+    subparser.set_defaults(func=ClientSession.print_resources)
 
     subparser = subparsers.add_parser('places')
     subparser.add_argument('-a', '--acquired', action='store_true')
-    subparser.set_defaults(
-        func=ClientSession.print_places
-    )
+    subparser.set_defaults(func=ClientSession.print_places)
 
     subparser = subparsers.add_parser('add-place')
     subparser.set_defaults(func=ClientSession.add_place)

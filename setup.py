@@ -4,13 +4,13 @@ from setuptools import setup
 
 setup(
     name='labgrid',
-    version='0.0.1',
     description='labgrid: lab hardware and software contol layer',
     author='Rouven Czerwinski and Jan Luebbe',
     author_email='entwicklung@pengutronix.de',
     license='LGPL-2.1',
+    use_scm_version=True,
     url='https://github.com/labgrid-project',
-    setup_requires=['pytest-runner', ],
+    setup_requires=['pytest-runner', 'setuptools_scm'],
     tests_require=['pytest-mock', ],
     install_requires=[
         'attrs',

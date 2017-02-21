@@ -9,7 +9,6 @@ def _snmp_get(host, oid):
     out = subprocess.check_output(
         "snmpget -v1 -c private -O qn {} {}".format(host, oid).split()
     ).decode('ascii')
-    print(out)
     out_oid, value = out.strip().split(' ', 1)
     assert oid == out_oid
     if value == "1":

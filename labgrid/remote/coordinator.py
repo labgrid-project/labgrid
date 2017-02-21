@@ -312,7 +312,7 @@ class CoordinatorComponent(ApplicationSession):
             place = self.places[placename]
         except KeyError:
             return False
-        place.aliases.append(alias)
+        place.aliases.add(alias)
         self.publish(
             'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )

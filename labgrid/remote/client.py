@@ -99,6 +99,9 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def on_place_changed(self, name, config):
+        if not config:
+            del self.places[name]
+            return
         config = config.copy()
         config['name'] = name
         config['matches'
@@ -111,6 +114,8 @@ class ClientSession(ApplicationSession):
     def print_resources(self):
         """Print out the resources"""
         for exporter, groups in sorted(self.resources.items()):
+            if self.args.exporter and exporter != self.args.exporter:
+                continue
             print("Exporter '{}':".format(exporter))
             for group_name, group in sorted(groups.items()):
                 print("  Group '{}':".format(group_name))
@@ -152,6 +157,20 @@ class ClientSession(ApplicationSession):
                 format(pattern, ', '.join(places))
             )
         return places[0], self.places[places[0]]
+
+    @asyncio.coroutine
+    def print_place(self):
+        """Print out the current place and related resources"""
+        place, config = self._get_place()
+        print("Place '{}':".format(place))
+        config.show(level=1)
+        for (
+            exporter, groupname, cls, resourcename
+        ) in config.acquired_resources:
+            resource = self.resources[exporter][groupname][resourcename]
+            print("Resource '{}':".format(resourcename))
+            print(indent(pformat(resource.asdict()), prefix="  "))
+
 
     @asyncio.coroutine
     def add_place(self):
@@ -213,7 +232,7 @@ class ClientSession(ApplicationSession):
     def set_comment(self):
         """Set the comment on a place"""
         place, config = self._get_place()
-        comment = self.args.comment
+        comment = ' '.join(self.args.comment)
         res = yield from self.call(
             'org.labgrid.coordinator.set_place_comment', place, comment
         )
@@ -341,7 +360,7 @@ class ClientSession(ApplicationSession):
                 )
             )
 
-    def _connect(self, config):
+    def _console(self, config):
         target_config = self._get_target_config(config)
         try:
             resource = target_config['resources']['NetworkSerialPort']
@@ -358,10 +377,10 @@ class ClientSession(ApplicationSession):
         return res == 0
 
     @asyncio.coroutine
-    def connect(self):
+    def console(self):
         place, config = self._get_place()
         while True:
-            res = self._connect(config)
+            res = self._console(config)
             if res:
                 break
             if not self.args.loop:
@@ -405,11 +424,17 @@ def main():
 
     subparser = subparsers.add_parser('resources')
     subparser.add_argument('-a', '--acquired', action='store_true')
+    subparser.add_argument('-e', '--exporter')
     subparser.set_defaults(func=ClientSession.print_resources)
 
     subparser = subparsers.add_parser('places')
     subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.set_defaults(func=ClientSession.print_places)
+
+    subparser = subparsers.add_parser('show', parents=[place_parser],
+        help="show a place and related resources",
+    )
+    subparser.set_defaults(func=ClientSession.print_place)
 
     subparser = subparsers.add_parser('add-place')
     subparser.set_defaults(func=ClientSession.add_place)
@@ -428,7 +453,7 @@ def main():
     subparser.set_defaults(func=ClientSession.del_alias)
 
     subparser = subparsers.add_parser('set-comment', parents=[place_parser])
-    subparser.add_argument('comment')
+    subparser.add_argument('comment', nargs='+')
     subparser.set_defaults(func=ClientSession.set_comment)
 
     subparser = subparsers.add_parser('add-match', parents=[place_parser])
@@ -452,9 +477,9 @@ def main():
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
     subparser.set_defaults(func=ClientSession.power)
 
-    subparser = subparsers.add_parser('connect', parents=[place_parser])
+    subparser = subparsers.add_parser('console', parents=[place_parser])
     subparser.add_argument('-l', '--loop', action='store_true')
-    subparser.set_defaults(func=ClientSession.connect)
+    subparser.set_defaults(func=ClientSession.console)
 
     #subparser = subparsers.add_parser('attach', parents=[place_parser])
     #subparser.set_defaults(func=ClientSession.attach)

@@ -72,7 +72,7 @@ class ResourceMatch:
 @attr.s
 class Place:
     name = attr.ib()
-    aliases = attr.ib(default=attr.Factory(set))
+    aliases = attr.ib(default=attr.Factory(set), convert=set)
     comment = attr.ib(default="")
     matches = attr.ib(default=attr.Factory(list))
     acquired = attr.ib(default=None)

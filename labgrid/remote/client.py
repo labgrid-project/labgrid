@@ -99,6 +99,9 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def on_place_changed(self, name, config):
+        if not config:
+            del self.places[name]
+            return
         config = config.copy()
         config['name'] = name
         config['matches'

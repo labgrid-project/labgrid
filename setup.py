@@ -25,6 +25,7 @@ setup(
     packages=[
         'labgrid',
         'labgrid.driver',
+        'labgrid.driver.power',
         'labgrid.external',
         'labgrid.protocol',
         'labgrid.provider',

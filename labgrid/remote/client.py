@@ -111,6 +111,8 @@ class ClientSession(ApplicationSession):
     def print_resources(self):
         """Print out the resources"""
         for exporter, groups in sorted(self.resources.items()):
+            if self.args.exporter and exporter != self.args.exporter:
+                continue
             print("Exporter '{}':".format(exporter))
             for group_name, group in sorted(groups.items()):
                 print("  Group '{}':".format(group_name))
@@ -419,6 +421,7 @@ def main():
 
     subparser = subparsers.add_parser('resources')
     subparser.add_argument('-a', '--acquired', action='store_true')
+    subparser.add_argument('-e', '--exporter')
     subparser.set_defaults(func=ClientSession.print_resources)
 
     subparser = subparsers.add_parser('places')

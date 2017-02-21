@@ -154,6 +154,20 @@ class ClientSession(ApplicationSession):
         return places[0], self.places[places[0]]
 
     @asyncio.coroutine
+    def print_place(self):
+        """Print out the current place and related resources"""
+        place, config = self._get_place()
+        print("Place '{}':".format(place))
+        config.show(level=1)
+        for (
+            exporter, groupname, cls, resourcename
+        ) in config.acquired_resources:
+            resource = self.resources[exporter][groupname][resourcename]
+            print("Resource '{}':".format(resourcename))
+            print(indent(pformat(resource.asdict()), prefix="  "))
+
+
+    @asyncio.coroutine
     def add_place(self):
         """Add a place to the coordinator"""
         name = self.args.place
@@ -410,6 +424,11 @@ def main():
     subparser = subparsers.add_parser('places')
     subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.set_defaults(func=ClientSession.print_places)
+
+    subparser = subparsers.add_parser('show', parents=[place_parser],
+        help="show a place and related resources",
+    )
+    subparser.set_defaults(func=ClientSession.print_place)
 
     subparser = subparsers.add_parser('add-place')
     subparser.set_defaults(func=ClientSession.add_place)

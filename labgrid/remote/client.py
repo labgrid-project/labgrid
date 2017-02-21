@@ -227,7 +227,7 @@ class ClientSession(ApplicationSession):
     def set_comment(self):
         """Set the comment on a place"""
         place, config = self._get_place()
-        comment = self.args.comment
+        comment = ' '.join(self.args.comment)
         res = yield from self.call(
             'org.labgrid.coordinator.set_place_comment', place, comment
         )
@@ -447,7 +447,7 @@ def main():
     subparser.set_defaults(func=ClientSession.del_alias)
 
     subparser = subparsers.add_parser('set-comment', parents=[place_parser])
-    subparser.add_argument('comment')
+    subparser.add_argument('comment', nargs='+')
     subparser.set_defaults(func=ClientSession.set_comment)
 
     subparser = subparsers.add_parser('add-match', parents=[place_parser])

@@ -81,7 +81,7 @@ class USBStick(object):
         Puts a file onto the USB Stick, raises a StateError if it is not
         mounted on the host computer."""
         if not destination:
-            destination = filename
+            destination = os.path.basename(filename)
         if self.status != USBStatus.unplugged:
             raise StateError("Device still plugged in, can't upload image")
         self.command.run_check(

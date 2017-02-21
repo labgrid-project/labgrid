@@ -341,7 +341,7 @@ class ClientSession(ApplicationSession):
                 )
             )
 
-    def _connect(self, config):
+    def _console(self, config):
         target_config = self._get_target_config(config)
         try:
             resource = target_config['resources']['NetworkSerialPort']
@@ -358,10 +358,10 @@ class ClientSession(ApplicationSession):
         return res == 0
 
     @asyncio.coroutine
-    def connect(self):
+    def console(self):
         place, config = self._get_place()
         while True:
-            res = self._connect(config)
+            res = self._console(config)
             if res:
                 break
             if not self.args.loop:
@@ -452,9 +452,9 @@ def main():
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
     subparser.set_defaults(func=ClientSession.power)
 
-    subparser = subparsers.add_parser('connect', parents=[place_parser])
+    subparser = subparsers.add_parser('console', parents=[place_parser])
     subparser.add_argument('-l', '--loop', action='store_true')
-    subparser.set_defaults(func=ClientSession.connect)
+    subparser.set_defaults(func=ClientSession.console)
 
     #subparser = subparsers.add_parser('attach', parents=[place_parser])
     #subparser.set_defaults(func=ClientSession.attach)

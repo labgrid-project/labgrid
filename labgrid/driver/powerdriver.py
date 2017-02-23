@@ -8,6 +8,7 @@ from ..factory import target_factory
 from ..protocol import PowerProtocol
 from ..resource import NetworkPowerPort
 from .common import Driver
+from .onewiredriver import OneWirePIODriver
 
 
 @target_factory.reg_driver
@@ -93,3 +94,26 @@ class NetworkPowerDriver(Driver, PowerProtocol):
     def get(self):
         return self.backend.get(self.port.host, self.port.index)
 
+@target_factory.reg_driver
+@attr.s
+class DigitalOutputPowerDriver(Driver, PowerProtocol):
+    """NetworkPowerDriver - Driver using a networked power switch to control a target's power"""
+    bindings = {"onewire": OneWirePIODriver, }
+    delay = attr.ib(default=5.0, validator=attr.validators.instance_of(float))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def on(self):
+        self.onewire.set(False)
+
+    def off(self):
+        self.onewire.set(True)
+
+    def cycle(self):
+        self.off()
+        time.sleep(self.delay)
+        self.on()
+
+    def get(self):
+        return True

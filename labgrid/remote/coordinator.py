@@ -194,6 +194,8 @@ class CoordinatorComponent(ApplicationSession):
     def _add_default_place(self, name):
         if name in self.places:
             return
+        if not name.isdigit():
+            return
         place = Place(name)
         print(place)
         place.matches.append(ResourceMatch(

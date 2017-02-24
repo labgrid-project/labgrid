@@ -1,6 +1,7 @@
 PyYAML
 Sphinx
 attrs>=16.3
+crossbar
 pexpect
 pyserial
 pytest

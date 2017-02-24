@@ -4,6 +4,7 @@ python:
   - "3.5"
 install:
   - pip install --upgrade pytest pytest-mock pytest-cov coveralls
+  - pip install -r dev-requirements.txt
   - pip install -e .
 script:
   - pytest --cov=labgrid

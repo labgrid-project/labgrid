@@ -162,6 +162,7 @@ class CoordinatorComponent(ApplicationSession):
         yield from self.register(
             self.get_places, 'org.labgrid.coordinator.get_places'
         )
+        print("Coordinator ready.")
 
     @asyncio.coroutine
     def save(self):

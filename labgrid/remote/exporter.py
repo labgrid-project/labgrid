@@ -40,6 +40,7 @@ class ResourceExport(ResourceEntry):
     The ResourceEntry attributes contain the information for the client.
     """
     local = attr.ib(init=False)
+    local_params = attr.ib(init=False)
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -129,6 +130,32 @@ class USBSerialPortExport(ResourceExport):
 
 
 exports["USBSerialPort"] = USBSerialPortExport
+
+
+@attr.s
+class USBGenericExport(ResourceExport):
+    """ResourceExport for USB devices accessed directly from userspace"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = "Network{}".format(self.cls)
+        from ..resource import udev
+        local_cls = getattr(udev, local_cls_name)
+        self.local = local_cls(None, **self.local_params)
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': gethostname(),
+            'busnum': self.local.busnum,
+            'devnum': self.local.devnum,
+        }
+
+
+exports["AndroidFastboot"] = USBGenericExport
+exports["IMXUSBLoader"] = USBGenericExport
+exports["MXSUSBLoader"] = USBGenericExport
 
 
 class ExporterSession(ApplicationSession):

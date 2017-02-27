@@ -342,7 +342,7 @@ class ClientSession(ApplicationSession):
     def _get_target(self, place):
         target_config = self._get_target_config(place)
         from ..factory import target_factory
-        return target_factory(place.name, target_config)
+        return target_factory.make_target(place.name, target_config)
 
     @asyncio.coroutine
     def power(self):

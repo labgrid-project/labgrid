@@ -319,7 +319,7 @@ class ClientSession(ApplicationSession):
         else:
             print("released place {}".format(place.name))
 
-    def _get_target_config(self, place):
+    def get_target_config(self, place):
         if not place.acquired:
             raise UserError("place {} is not acquired".format(place.name))
         config = {}
@@ -337,12 +337,12 @@ class ClientSession(ApplicationSession):
     @asyncio.coroutine
     def env(self):
         place = self.get_place()
-        env = {'targets': {place.name: self._get_target_config(place)}}
+        env = {'targets': {place.name: self.get_target_config(place)}}
         import yaml
         print(yaml.dump(env))
 
     def _get_target(self, place):
-        target_config = self._get_target_config(place)
+        target_config = self.get_target_config(place)
         from ..factory import target_factory
         return target_factory.make_target(place.name, target_config)
 
@@ -363,7 +363,7 @@ class ClientSession(ApplicationSession):
             )
 
     def _console(self, config):
-        target_config = self._get_target_config(config)
+        target_config = self.get_target_config(config)
         try:
             resource = target_config['resources']['NetworkSerialPort']
         except KeyError:

@@ -21,12 +21,15 @@ class Resource(BindingMixin):
 
 @attr.s
 class ResourceManager:
-    instance = None
+    instances = {}
 
-    def __new__(cls):
-        if cls.instance is None:
-            cls.instance = super().__new__(cls)
-        return cls.instance
+    @classmethod
+    def get(cls):
+        instance = ResourceManager.instances.get(cls)
+        if instance is None:
+            instance = cls()
+            ResourceManager.instances[cls] = instance
+        return instance
 
     def __attrs_post_init__(self):
         self.resources = []
@@ -54,7 +57,7 @@ class ManagedResource(Resource):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.avail = False
-        self.manager = self.manager_cls()
+        self.manager = self.manager_cls.get()
         self.manager._add_resource(self)
 
     def poll(self):

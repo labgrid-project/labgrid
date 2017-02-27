@@ -42,7 +42,8 @@ class ClientSession(ApplicationSession):
     def onConnect(self):
         """Actions which are executed if a connection is successfully opened."""
         self.loop = self.config.extra['loop']
-        self.args = self.config.extra['args']
+        self.args = self.config.extra.get('args')
+        self.func = self.config.extra.get('func') or self.args.func
         self.join(
             self.config.realm, ["ticket"],
             "client/{}/{}".format(gethostname(), getuser())
@@ -78,10 +79,11 @@ class ClientSession(ApplicationSession):
             self.on_place_changed, 'org.labgrid.coordinator.place_changed'
         )
         try:
-            yield from self.args.func(self)
+            yield from self.func(self)
         except:
             traceback.print_exc()
-        self.loop.stop()
+        if self.args:
+            self.loop.stop()
 
     @asyncio.coroutine
     def on_resource_changed(

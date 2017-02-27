@@ -39,12 +39,15 @@ class Config:
             logging.exception("no path configured for image {}".format(kind))
             raise
 
-    def get_option(self, name):
+    def get_option(self, name, default=None):
         try:
             return str(self.data['options'][name])
         except KeyError:
-            logging.exception("no such option {}".format(name))
-            raise
+            if default is None:
+                logging.exception("no such option {}".format(name))
+                raise
+            else:
+                return default
 
     def get_targets(self):
         return self.data.get('targets', {})

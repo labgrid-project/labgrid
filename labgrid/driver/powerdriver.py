@@ -102,7 +102,7 @@ class DigitalOutputPowerDriver(Driver, PowerProtocol):
     bindings = {"output": DigitalOutputProtocol, }
     cmd_on = attr.ib(validator=attr.validators.instance_of(str))
     cmd_off = attr.ib(validator=attr.validators.instance_of(str))
-    delay = attr.ib(default=5.0, validator=attr.validators.instance_of(float))
+    delay = attr.ib(default=1.0, validator=attr.validators.instance_of(float))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

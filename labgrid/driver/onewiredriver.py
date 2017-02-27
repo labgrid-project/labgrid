@@ -1,5 +1,5 @@
 import logging
-import requests
+import onewire
 
 import attr
 
@@ -16,20 +16,14 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.onewire = onewire.Onewire(self.port.host)
 
     def set(self, status):
         if status == True:
-            payload = { self.port.portname: ["on", 'CHANGE']}
-            r = requests.get(self.port.url, params=payload, stream=True)
-            print(r.url)
-            if r.status_code != 200:
-                raise Exception
+            self.onewire.set(self.port.path, '1')
         else:
-            payload = { self.port.portname: "CHANGE"}
-            r = requests.get(self.port.url, params=payload, stream=True)
-            print(r.url)
-            if r.status_code != 200:
-                raise Exception
+            self.onewire.set(self.port.path, '0')
 
     def get(self):
-        pass
+        status = self.onewire.get(self.port.path)
+        return status == '1'

@@ -72,6 +72,16 @@ class USBResource(ManagedResource):
         self._device = value
         self.on_device_set()
 
+    @property
+    def busnum(self):
+        if self._device:
+            return int(self.device.get('BUSNUM'))
+
+    @property
+    def devnum(self):
+        if self._device:
+            return int(self.device.get('DEVNUM'))
+
 
 @target_factory.reg_resource
 @attr.s
@@ -113,12 +123,6 @@ class IMXUSBLoader(USBResource):
     def on_device_set(self):
         self.avail = True
 
-    @property
-    def busnum(self):
-        return int(self.device.get_property('BUSNUM'))
-
-    def devnum(self):
-        return int(self.device.get_property('DEVNUM'))
 
 @target_factory.reg_resource
 @attr.s
@@ -134,14 +138,6 @@ class MXSUSBLoader(USBResource):
     def on_device_set(self):
         self.avail = True
 
-    @property
-    def busnum(self):
-        return int(self.device.get('BUSNUM'))
-
-    @property
-    def devnum(self):
-        return int(self.device.get('DEVNUM'))
-
 @target_factory.reg_resource
 @attr.s
 class AndroidFastboot(USBResource):
@@ -156,11 +152,3 @@ class AndroidFastboot(USBResource):
 
     def on_device_set(self):
         self.avail = True
-
-    @property
-    def busnum(self):
-        return int(self.device.get('BUSNUM'))
-
-    @property
-    def devnum(self):
-        return int(self.device.get('DEVNUM'))

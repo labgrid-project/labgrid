@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock
+from importlib.util import find_spec
 
 import attr
 import pytest
@@ -32,7 +33,8 @@ def serial_driver(target, serial_port, monkeypatch):
 
 @pytest.fixture(scope='function')
 def crossbar(tmpdir):
-    pytest.importorskip('crossbar')
+    if not find_spec('crossbar'):
+        pytest.skip("crossbar not found")
     local(__name__).dirpath('.crossbar/config.yaml').copy(tmpdir.mkdir('.crossbar'))
     spawn = pexpect.spawn('crossbar start --logformat none', cwd=str(tmpdir))
     spawn.expect('Realm .* started')

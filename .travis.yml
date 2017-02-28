@@ -7,6 +7,6 @@ install:
   - pip install -r dev-requirements.txt
   - pip install -e .
 script:
-  - pytest --cov=labgrid
+  - pytest --cov-config .coveragerc --cov=labgrid
 after_success:
   - coveralls

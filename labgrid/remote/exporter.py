@@ -14,7 +14,7 @@ import attr
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .config import ResourceConfig
-from .common import ResourceEntry
+from .common import ResourceEntry, enable_tcp_nodelay
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -143,6 +143,7 @@ class ExporterSession(ApplicationSession):
 
         self.groups = {}
 
+        enable_tcp_nodelay(self)
         self.join(self.config.realm, ["ticket"], self.authid)
 
     def onChallenge(self, challenge):

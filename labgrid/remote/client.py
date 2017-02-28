@@ -15,7 +15,7 @@ from collections import defaultdict
 
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
-from .common import ResourceEntry, ResourceMatch, Place
+from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -45,6 +45,7 @@ class ClientSession(ApplicationSession):
         self.loop = self.config.extra['loop']
         self.args = self.config.extra.get('args')
         self.func = self.config.extra.get('func') or self.args.func
+        enable_tcp_nodelay(self)
         self.join(
             self.config.realm, ["ticket"],
             "client/{}/{}".format(gethostname(), getuser())

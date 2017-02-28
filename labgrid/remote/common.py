@@ -1,3 +1,4 @@
+import socket
 import time
 from datetime import datetime
 from fnmatch import fnmatchcase
@@ -113,3 +114,11 @@ class Place:
 
     def touch(self):
         self.changed = time.time()
+
+def enable_tcp_nodelay(session):
+    """
+    asyncio/autobahn does not set TCP_NODELAY by default, so we need to do it
+    like this for now.
+    """
+    s = session._transport.transport.get_extra_info('socket')
+    s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)

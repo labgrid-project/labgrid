@@ -207,8 +207,6 @@ class Target:
     def cleanup(self):
         """Clean up conntected drivers and resources in reversed order"""
         for drv in reversed(self.drivers):
-            if hasattr(drv, 'cleanup') and callable(getattr(drv, 'cleanup')):
-                drv.cleanup()
+            self.deactivate(drv)
         for res in reversed(self.resources):
-            if hasattr(res, 'cleanup') and callable(getattr(res, 'cleanup')):
-                res.cleanup()
+            self.deactivate(res)

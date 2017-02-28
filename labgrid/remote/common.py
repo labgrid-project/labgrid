@@ -1,3 +1,5 @@
+import time
+from datetime import datetime
 from fnmatch import fnmatchcase
 
 import attr
@@ -77,6 +79,8 @@ class Place:
     matches = attr.ib(default=attr.Factory(list))
     acquired = attr.ib(default=None)
     acquired_resources = attr.ib(default=attr.Factory(list))
+    created = attr.ib(default=attr.Factory(lambda: time.time()))
+    changed = attr.ib(default=attr.Factory(lambda: time.time()))
 
     def asdict(self):
         result = attr.asdict(self)
@@ -94,6 +98,8 @@ class Place:
         print(indent + "acquired resources:")
         for resource in self.acquired_resources:
             print(indent + "  {}".format('/'.join(resource)))
+        print(indent + "created: {}".format(datetime.fromtimestamp(self.created)))
+        print(indent + "changed: {}".format(datetime.fromtimestamp(self.changed)))
 
     def hasmatch(self, resource_path):
         """Return True if this place as a ResourceMatch object for the given resource path.
@@ -104,3 +110,6 @@ class Place:
             if match.ismatch(resource_path):
                 return True
         return False
+
+    def touch(self):
+        self.changed = time.time()

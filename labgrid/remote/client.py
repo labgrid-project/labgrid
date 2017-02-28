@@ -11,6 +11,7 @@ from pprint import pformat
 from textwrap import indent
 from socket import gethostname
 from getpass import getuser
+from collections import defaultdict
 
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
@@ -115,19 +116,38 @@ class ClientSession(ApplicationSession):
     @asyncio.coroutine
     def print_resources(self):
         """Print out the resources"""
+        match = ResourceMatch.fromstr(self.args.match) if self.args.match else None
+
+        # filter self.resources according to the arguments
+        nested = lambda: defaultdict(nested)
+        filtered = nested()
         for exporter, groups in sorted(self.resources.items()):
             if self.args.exporter and exporter != self.args.exporter:
                 continue
-            print("Exporter '{}':".format(exporter))
             for group_name, group in sorted(groups.items()):
-                print("  Group '{}':".format(group_name))
                 for resource_name, resource in sorted(group.items()):
                     if not resource.avail:
                         continue
                     if self.args.acquired and resource.acquired is None:
                         continue
-                    print("    Resource '{}':".format(resource_name))
-                    print(indent(pformat(resource.asdict()), prefix="      "))
+                    if match and not match.ismatch((exporter, group_name, resource.cls, resource_name)):
+                        continue
+                    filtered[exporter][group_name][resource_name] = resource
+
+        # print the filtered resources
+        if self.args.verbose:
+            for exporter, groups in sorted(filtered.items()):
+                print("Exporter '{}':".format(exporter))
+                for group_name, group in sorted(groups.items()):
+                    print("  Group '{}' ({}/{}/*):".format(group_name, exporter, group_name))
+                    for resource_name, resource in sorted(group.items()):
+                        print("    Resource '{}' ({}/{}/{}[/{}]):".format(resource_name, exporter, group_name, resource.cls, resource_name))
+                        print(indent(pformat(resource.asdict()), prefix="      "))
+        else:
+            for exporter, groups in sorted(filtered.items()):
+                for group_name, group in sorted(groups.items()):
+                    for resource_name, resource in sorted(group.items()):
+                        print("{}/{}/{}".format(exporter, group_name, resource.cls))
 
     @asyncio.coroutine
     def print_places(self):
@@ -427,6 +447,8 @@ def main():
     subparser = subparsers.add_parser('resources')
     subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.add_argument('-e', '--exporter')
+    subparser.add_argument('-v', '--verbose', action='store_true')
+    subparser.add_argument('match', nargs='?')
     subparser.set_defaults(func=ClientSession.print_resources)
 
     subparser = subparsers.add_parser('places')

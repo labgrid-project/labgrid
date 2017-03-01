@@ -7,10 +7,15 @@ class NoConfigFoundError(Exception):
 
 
 @attr.s
-class NoDriverFoundError(Exception):
+class NoSupplierFoundError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
 
 
 @attr.s
-class NoResourceFoundError(Exception):
-    msg = attr.ib(validator=attr.validators.instance_of(str))
+class NoDriverFoundError(NoSupplierFoundError):
+    pass
+
+
+@attr.s
+class NoResourceFoundError(NoSupplierFoundError):
+    pass

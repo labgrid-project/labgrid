@@ -2,7 +2,7 @@ import attr
 
 from .binding import BindingError, BindingState
 from .driver import Driver
-from .exceptions import NoDriverFoundError, NoResourceFoundError
+from .exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
 from .resource import Resource
 from .util import Timeout
 from .step import step
@@ -126,10 +126,30 @@ class Target:
 
         # locate suppliers
         suppliers = []
-        for name, cls in client.bindings.items():
-            supplier = self.get(cls)
-            setattr(client, name, supplier)
-            suppliers.append(supplier)
+        for name, requirements in client.bindings.items():
+            # use sets even for a single requirement
+            if not isinstance(requirements, set):
+                requirements = {requirements}
+            errors = []
+            suppliers = []
+            for requirement in requirements:
+                try:
+                    suppliers.append(self.get(requirement))
+                except NoSupplierFoundError as e:
+                    errors.append(e)
+            if not suppliers:
+                if len(errors) == 1:
+                    raise errors[0]
+                else:
+                    raise NoSupplierFoundError(
+                        "no supplier matching {} found in target {}".format(requirements, self)
+                    )
+            elif len(suppliers) > 1:
+                raise NoSupplierFoundError(
+                    "conflicting suppliers matching {} found in target {}".format(requirements, self)
+                )
+            setattr(client, name, suppliers[0])
+            suppliers.append(suppliers[0])
 
         # consistency checks
         for supplier in suppliers:

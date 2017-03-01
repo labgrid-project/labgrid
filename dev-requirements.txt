@@ -11,6 +11,7 @@ pytest-isort
 pytest-mock
 pytest-pylint
 pytest-runner
+onewire
 pyudev
 yapf
 requests

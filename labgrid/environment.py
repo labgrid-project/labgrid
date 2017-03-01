@@ -27,7 +27,7 @@ class Environment:
             )
 
         for name, config in self.config.get_targets().items():
-            target = target_factory(name, config, env=self)
+            target = target_factory.make_target(name, config, env=self)
             self.targets[name] = target
 
     def get_target(self, role: str='main') -> Target:

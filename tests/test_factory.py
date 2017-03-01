@@ -6,11 +6,11 @@ from labgrid.resource import SerialPort
 
 class TestTargetFactory:
     def test_empty(self):
-        t = target_factory('dummy', {})
+        t = target_factory.make_target('dummy', {})
         assert isinstance(t, Target)
 
     def test_resources(self):
-        t = target_factory(
+        t = target_factory.make_target(
             'dummy', {
                 'resources': OrderedDict([
                     ('RawSerialPort', {
@@ -24,7 +24,7 @@ class TestTargetFactory:
         assert t.get_resource(SerialPort) is not None
 
     def test_drivers(self, mocker):
-        t = target_factory(
+        t = target_factory.make_target(
             'dummy', {
                 'resources': OrderedDict([
                     ('RawSerialPort', {

@@ -202,5 +202,5 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
 
         if res != 0:
-            raise CleanUpError("Could not cleanup ControlMaster")
+            self.logger.info("Socket already closed")
         shutil.rmtree(self.tmpdir)

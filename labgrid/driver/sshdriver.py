@@ -38,6 +38,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self.control
         ) if self.control else ""
 
+    def on_deactivate(self):
+        self._cleanup_own_master()
+
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
         self.tmpdir = tempfile.mkdtemp(prefix='labgrid-ssh-tmp-')
@@ -199,5 +202,5 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
 
         if res != 0:
-            raise CleanUpError("Could not cleanup ControlMaster")
+            self.logger.info("Socket already closed")
         shutil.rmtree(self.tmpdir)

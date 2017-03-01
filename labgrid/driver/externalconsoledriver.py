@@ -86,5 +86,5 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         self._child.stdin.flush()
         return result
 
-    def cleanup(self):
+    def on_deactivate(self):
         self.close()

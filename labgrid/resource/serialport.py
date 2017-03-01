@@ -19,3 +19,4 @@ class RawSerialPort(SerialPort, Resource):
 class NetworkSerialPort(Resource):
     host = attr.ib(validator=attr.validators.instance_of(str))
     port = attr.ib(validator=attr.validators.instance_of(int))
+    speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))

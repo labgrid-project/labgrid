@@ -1,5 +1,5 @@
 from .base import SerialPort
-from .serialport import RawSerialPort
+from .serialport import RawSerialPort, NetworkSerialPort
 from .networkservice import NetworkService
 from .onewireport import OneWirePIO
 from .power import NetworkPowerPort

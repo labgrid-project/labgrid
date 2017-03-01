@@ -32,6 +32,7 @@ class TestSerialDriver:
     def test_read(self, target, monkeypatch, serial_port):
         serial_mock = Mock()
         serial_mock.read = MagicMock()
+        serial_mock.in_waiting = 0
         monkeypatch.setattr(serial, 'Serial', serial_mock)
         s = SerialDriver(target)
         s.serial = serial_mock

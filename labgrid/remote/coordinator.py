@@ -316,6 +316,7 @@ class CoordinatorComponent(ApplicationSession):
         except KeyError:
             return False
         place.aliases.add(alias)
+        place.touch()
         self.publish(
             'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )
@@ -332,6 +333,7 @@ class CoordinatorComponent(ApplicationSession):
             place.aliases.remove(alias)
         except ValueError:
             return False
+        place.touch()
         self.publish(
             'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )
@@ -345,6 +347,7 @@ class CoordinatorComponent(ApplicationSession):
         except KeyError:
             return False
         place.comment = comment
+        place.touch()
         self.publish(
             'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )
@@ -359,6 +362,7 @@ class CoordinatorComponent(ApplicationSession):
             return False
         match = ResourceMatch(*pattern.split('/'))
         place.matches.append(match)
+        place.touch()
         self.publish(
             'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )
@@ -376,6 +380,7 @@ class CoordinatorComponent(ApplicationSession):
             place.matches.remove(match)
         except ValueError:
             return False
+        place.touch()
         self.publish(
             'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )
@@ -401,6 +406,7 @@ class CoordinatorComponent(ApplicationSession):
                     if not place.hasmatch(resource_path):
                         continue
                     place.acquired_resources.append(resource_path)
+        place.touch()
         self.publish(
             'org.labgrid.coordinator.place_changed', name, place.asdict()
         )
@@ -418,6 +424,7 @@ class CoordinatorComponent(ApplicationSession):
             return False
         place.acquired = None
         place.acquired_resources = []
+        place.touch()
         self.publish(
             'org.labgrid.coordinator.place_changed', name, place.asdict()
         )

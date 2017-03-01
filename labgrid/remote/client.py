@@ -11,6 +11,7 @@ from pprint import pformat
 from textwrap import indent
 from socket import gethostname
 from getpass import getuser
+from collections import defaultdict
 
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
@@ -42,7 +43,8 @@ class ClientSession(ApplicationSession):
     def onConnect(self):
         """Actions which are executed if a connection is successfully opened."""
         self.loop = self.config.extra['loop']
-        self.args = self.config.extra['args']
+        self.args = self.config.extra.get('args')
+        self.func = self.config.extra.get('func') or self.args.func
         self.join(
             self.config.realm, ["ticket"],
             "client/{}/{}".format(gethostname(), getuser())
@@ -78,10 +80,11 @@ class ClientSession(ApplicationSession):
             self.on_place_changed, 'org.labgrid.coordinator.place_changed'
         )
         try:
-            yield from self.args.func(self)
+            yield from self.func(self)
         except:
             traceback.print_exc()
-        self.loop.stop()
+        if self.args:
+            self.loop.stop()
 
     @asyncio.coroutine
     def on_resource_changed(
@@ -113,19 +116,38 @@ class ClientSession(ApplicationSession):
     @asyncio.coroutine
     def print_resources(self):
         """Print out the resources"""
+        match = ResourceMatch.fromstr(self.args.match) if self.args.match else None
+
+        # filter self.resources according to the arguments
+        nested = lambda: defaultdict(nested)
+        filtered = nested()
         for exporter, groups in sorted(self.resources.items()):
             if self.args.exporter and exporter != self.args.exporter:
                 continue
-            print("Exporter '{}':".format(exporter))
             for group_name, group in sorted(groups.items()):
-                print("  Group '{}':".format(group_name))
                 for resource_name, resource in sorted(group.items()):
                     if not resource.avail:
                         continue
                     if self.args.acquired and resource.acquired is None:
                         continue
-                    print("    Resource '{}':".format(resource_name))
-                    print(indent(pformat(resource.asdict()), prefix="      "))
+                    if match and not match.ismatch((exporter, group_name, resource.cls, resource_name)):
+                        continue
+                    filtered[exporter][group_name][resource_name] = resource
+
+        # print the filtered resources
+        if self.args.verbose:
+            for exporter, groups in sorted(filtered.items()):
+                print("Exporter '{}':".format(exporter))
+                for group_name, group in sorted(groups.items()):
+                    print("  Group '{}' ({}/{}/*):".format(group_name, exporter, group_name))
+                    for resource_name, resource in sorted(group.items()):
+                        print("    Resource '{}' ({}/{}/{}[/{}]):".format(resource_name, exporter, group_name, resource.cls, resource_name))
+                        print(indent(pformat(resource.asdict()), prefix="      "))
+        else:
+            for exporter, groups in sorted(filtered.items()):
+                for group_name, group in sorted(groups.items()):
+                    for resource_name, resource in sorted(group.items()):
+                        print("{}/{}/{}".format(exporter, group_name, resource.cls))
 
     @asyncio.coroutine
     def print_places(self):
@@ -146,8 +168,8 @@ class ClientSession(ApplicationSession):
                     result.add(name)
         return list(result)
 
-    def _get_place(self):
-        pattern = self.args.place
+    def get_place(self, place=None):
+        pattern = place or self.args.place
         places = self._match_places(pattern)
         if not places:
             raise UserError("pattern {} matches nothing".format(pattern))
@@ -156,17 +178,17 @@ class ClientSession(ApplicationSession):
                 "pattern {} matches multiple places ({})".
                 format(pattern, ', '.join(places))
             )
-        return places[0], self.places[places[0]]
+        return self.places[places[0]]
 
     @asyncio.coroutine
     def print_place(self):
         """Print out the current place and related resources"""
-        place, config = self._get_place()
-        print("Place '{}':".format(place))
-        config.show(level=1)
+        place = self.get_place()
+        print("Place '{}':".format(place.name))
+        place.show(level=1)
         for (
             exporter, groupname, cls, resourcename
-        ) in config.acquired_resources:
+        ) in place.acquired_resources:
             resource = self.resources[exporter][groupname][resourcename]
             print("Resource '{}':".format(resourcename))
             print(indent(pformat(resource.asdict()), prefix="  "))
@@ -197,48 +219,48 @@ class ClientSession(ApplicationSession):
     @asyncio.coroutine
     def add_alias(self):
         """Add an alias for a place on the coordinator"""
-        place, config = self._get_place()
+        place = self.get_place()
         alias = self.args.alias
-        if alias in config.aliases:
+        if alias in place.aliases:
             raise UserError(
-                "place {} already has alias {}".format(place, alias)
+                "place {} already has alias {}".format(place.name, alias)
             )
         res = yield from self.call(
-            'org.labgrid.coordinator.add_place_alias', place, alias
+            'org.labgrid.coordinator.add_place_alias', place.name, alias
         )
         if not res:
             raise ServerError(
-                "failed to add alias {} for place {}".format(alias, place)
+                "failed to add alias {} for place {}".format(alias, place.name)
             )
         return res
 
     @asyncio.coroutine
     def del_alias(self):
         """Delete an alias for a place from the coordinator"""
-        place, config = self._get_place()
+        place = self.get_place()
         alias = self.args.alias
-        if alias not in config.aliases:
-            raise UserError("place {} has no alias {}".format(place, alias))
+        if alias not in place.aliases:
+            raise UserError("place {} has no alias {}".format(place.name, alias))
         res = yield from self.call(
-            'org.labgrid.coordinator.del_place_alias', place, alias
+            'org.labgrid.coordinator.del_place_alias', place.name, alias
         )
         if not res:
             raise ServerError(
-                "failed to delete alias {} for place {}".format(alias, place)
+                "failed to delete alias {} for place {}".format(alias, place.name)
             )
         return res
 
     @asyncio.coroutine
     def set_comment(self):
         """Set the comment on a place"""
-        place, config = self._get_place()
+        place = self.get_place()
         comment = ' '.join(self.args.comment)
         res = yield from self.call(
-            'org.labgrid.coordinator.set_place_comment', place, comment
+            'org.labgrid.coordinator.set_place_comment', place.name, comment
         )
         if not res:
             raise ServerError(
-                "failed to set comment {} for place {}".format(comment, place)
+                "failed to set comment {} for place {}".format(comment, place.name)
             )
         return res
 
@@ -246,78 +268,78 @@ class ClientSession(ApplicationSession):
     def add_match(self):
         """Add a match for a place, making fuzzy matching available to the
         client"""
-        place, config = self._get_place()
+        place = self.get_place()
         pattern = self.args.pattern
-        if config.acquired:
-            raise UserError("can not change acquired place {}".format(place))
+        if place.acquired:
+            raise UserError("can not change acquired place {}".format(place.name))
         if not (2 <= pattern.count("/") <= 3):
             raise UserError(
                 "invalid pattern format '{}' (use 'exporter/group/cls/name')".
                 format(pattern)
             )
         res = yield from self.call(
-            'org.labgrid.coordinator.add_place_match', place, pattern
+            'org.labgrid.coordinator.add_place_match', place.name, pattern
         )
         if not res:
             raise ServerError(
-                "failed to add match {} for place {}".format(pattern, place)
+                "failed to add match {} for place {}".format(pattern, place.name)
             )
         return res
 
     @asyncio.coroutine
     def del_match(self):
         """Delete a match for a place"""
-        place, config = self._get_place()
+        place = self.get_place()
         pattern = self.args.pattern
-        if config.acquired:
-            raise UserError("can not change acquired place {}".format(place))
+        if place.acquired:
+            raise UserError("can not change acquired place {}".format(place.name))
         if not (2 <= pattern.count("/") <= 3):
             raise UserError(
                 "invalid pattern format '{}' (use 'exporter/group/cls/name')".
                 format(pattern)
             )
         res = yield from self.call(
-            'org.labgrid.coordinator.del_place_match', place, pattern
+            'org.labgrid.coordinator.del_place_match', place.name, pattern
         )
         if not res:
             raise ServerError(
                 "failed to delete match {} for place {}".
-                format(pattern, place)
+                format(pattern, place.name)
             )
         return res
 
     @asyncio.coroutine
     def acquire(self):
         """Acquire a place, marking it unavailable for other clients"""
-        place, config = self._get_place()
-        if config.acquired:
+        place = self.get_place()
+        if place.acquired:
             raise UserError(
                 "place {} is already acquired by {}".
-                format(place, config.acquired)
+                format(place, place.acquired)
             )
         res = yield from self.call(
-            'org.labgrid.coordinator.acquire_place', place
+            'org.labgrid.coordinator.acquire_place', place.name
         )
         if not res:
-            raise ServerError("failed to acquire place {}".format(place))
+            raise ServerError("failed to acquire place {}".format(place.name))
         else:
-            print("acquired place {}".format(place))
+            print("acquired place {}".format(place.name))
 
     @asyncio.coroutine
     def release(self):
         """Release a previously acquired place"""
-        place, config = self._get_place()
-        if not config.acquired:
-            raise UserError("place {} is not acquired".format(place))
+        place = self.get_place()
+        if not place.acquired:
+            raise UserError("place {} is not acquired".format(place.name))
         res = yield from self.call(
-            'org.labgrid.coordinator.release_place', place
+            'org.labgrid.coordinator.release_place', place.name
         )
         if not res:
-            raise ServerError("failed to release place {}".format(place))
+            raise ServerError("failed to release place {}".format(place.name))
         else:
-            print("released place {}".format(place))
+            print("released place {}".format(place.name))
 
-    def _get_target_config(self, place):
+    def get_target_config(self, place):
         if not place.acquired:
             raise UserError("place {} is not acquired".format(place.name))
         config = {}
@@ -334,34 +356,34 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def env(self):
-        place, config = self._get_place()
-        env = {'targets': {place: self._get_target_config(config)}}
+        place = self.get_place()
+        env = {'targets': {place.name: self.get_target_config(place)}}
         import yaml
         print(yaml.dump(env))
 
     def _get_target(self, place):
-        target_config = self._get_target_config(place)
+        target_config = self.get_target_config(place)
         from ..factory import target_factory
         return target_factory.make_target(place.name, target_config)
 
     @asyncio.coroutine
     def power(self):
-        place, config = self._get_place()
+        place = self.get_place()
         action = self.args.action
-        target = self._get_target(config)
+        target = self._get_target(place)
         from ..driver.powerdriver import NetworkPowerDriver
         drv = NetworkPowerDriver(target)
         res = getattr(drv, action)()
         if action == 'get':
             print(
                 "power for place {} is {}".format(
-                    place,
+                    place.name,
                     'on' if res else 'off',
                 )
             )
 
     def _console(self, config):
-        target_config = self._get_target_config(config)
+        target_config = self.get_target_config(config)
         try:
             resource = target_config['resources']['NetworkSerialPort']
         except KeyError:
@@ -378,9 +400,9 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def console(self):
-        place, config = self._get_place()
+        place = self.get_place()
         while True:
-            res = self._console(config)
+            res = self._console(place)
             if res:
                 break
             if not self.args.loop:
@@ -425,6 +447,8 @@ def main():
     subparser = subparsers.add_parser('resources')
     subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.add_argument('-e', '--exporter')
+    subparser.add_argument('-v', '--verbose', action='store_true')
+    subparser.add_argument('match', nargs='?')
     subparser.set_defaults(func=ClientSession.print_resources)
 
     subparser = subparsers.add_parser('places')

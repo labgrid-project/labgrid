@@ -27,7 +27,7 @@ class BindingMixin:
     Handles the binding and activation of drivers and their supplying resources
     and drivers.
 
-    One client can be bound to many suppliers, and one supplier can be bound be
+    One client can be bound to many suppliers, and one supplier can be bound by
     many clients.
 
     Conflicting access to one supplier can be avoided by deactivating

@@ -127,7 +127,7 @@ class ClientSession(ApplicationSession):
                 continue
             for group_name, group in sorted(groups.items()):
                 for resource_name, resource in sorted(group.items()):
-                    if not resource.avail:
+                    if not (resource.avail or self.args.verbose >= 2):
                         continue
                     if self.args.acquired and resource.acquired is None:
                         continue
@@ -456,7 +456,7 @@ def main():
     subparser = subparsers.add_parser('resources')
     subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.add_argument('-e', '--exporter')
-    subparser.add_argument('-v', '--verbose', action='store_true')
+    subparser.add_argument('-v', '--verbose', action='count')
     subparser.add_argument('match', nargs='?')
     subparser.set_defaults(func=ClientSession.print_resources)
 

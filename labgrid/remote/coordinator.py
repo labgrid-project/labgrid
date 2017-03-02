@@ -12,7 +12,7 @@ from autobahn import wamp
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 from autobahn.wamp.types import RegisterOptions, SubscribeOptions
 
-from .common import ResourceEntry, ResourceMatch, Place
+from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
 
 
 class Action(Enum):
@@ -99,6 +99,7 @@ class CoordinatorComponent(ApplicationSession):
 
         yield from self.load()
 
+        enable_tcp_nodelay(self)
         self.join(self.config.realm, ["ticket"], "coordinator")
 
     def onChallenge(self, challenge):

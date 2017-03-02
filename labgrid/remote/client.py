@@ -450,7 +450,11 @@ def main():
         default="ws://127.0.0.1:20408/ws",
         help="crossbar websocket URL"
     )
-    subparsers = parser.add_subparsers(dest='command')
+    subparsers = parser.add_subparsers(
+        dest='command',
+        title='available subcommands',
+        metavar="COMMAND",
+    )
 
     place_parser = argparse.ArgumentParser(add_help=False)
     if 'PLACE' in os.environ:
@@ -468,14 +472,16 @@ def main():
     subparser.add_argument('type', choices=['resources', 'places'])
     subparser.set_defaults(func=ClientSession.complete)
 
-    subparser = subparsers.add_parser('resources')
+    subparser = subparsers.add_parser('resources', aliases=('r',),
+                                      help="list available resources")
     subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.add_argument('-e', '--exporter')
     subparser.add_argument('-v', '--verbose', action='count')
     subparser.add_argument('match', nargs='?')
     subparser.set_defaults(func=ClientSession.print_resources)
 
-    subparser = subparsers.add_parser('places')
+    subparser = subparsers.add_parser('places', aliases=('p',),
+                                      help="list available places")
     subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.add_argument('-v', '--verbose', action='store_true')
     subparser.set_defaults(func=ClientSession.print_places)
@@ -485,49 +491,62 @@ def main():
     )
     subparser.set_defaults(func=ClientSession.print_place)
 
-    subparser = subparsers.add_parser('add-place')
+    subparser = subparsers.add_parser('add-place', help="add a new place")
     subparser.set_defaults(func=ClientSession.add_place)
-    subparser.add_argument('place')
+    subparser.add_argument('place', help="place name")
 
-    subparser = subparsers.add_parser('del-place')
+    subparser = subparsers.add_parser('del-place', help="delete an existing place")
     subparser.set_defaults(func=ClientSession.del_place)
-    subparser.add_argument('place')
+    subparser.add_argument('place', help="place name")
 
-    subparser = subparsers.add_parser('add-alias', parents=[place_parser])
+    subparser = subparsers.add_parser('add-alias', parents=[place_parser],
+                                      help="add an alias to a place")
     subparser.add_argument('alias')
     subparser.set_defaults(func=ClientSession.add_alias)
 
-    subparser = subparsers.add_parser('del-alias', parents=[place_parser])
+    subparser = subparsers.add_parser('del-alias', parents=[place_parser],
+                                      help="delete an alias from a place")
     subparser.add_argument('alias')
     subparser.set_defaults(func=ClientSession.del_alias)
 
-    subparser = subparsers.add_parser('set-comment', parents=[place_parser])
+    subparser = subparsers.add_parser('set-comment', parents=[place_parser],
+                                      help="update the place comment")
     subparser.add_argument('comment', nargs='+')
     subparser.set_defaults(func=ClientSession.set_comment)
 
-    subparser = subparsers.add_parser('add-match', parents=[place_parser])
+    subparser = subparsers.add_parser('add-match', parents=[place_parser],
+                                      help="add a match pattern to a place")
     subparser.add_argument('pattern')
     subparser.set_defaults(func=ClientSession.add_match)
 
-    subparser = subparsers.add_parser('del-match', parents=[place_parser])
+    subparser = subparsers.add_parser('del-match', parents=[place_parser],
+                                      help="delete a match pattern from a place")
     subparser.add_argument('pattern')
     subparser.set_defaults(func=ClientSession.del_match)
 
-    subparser = subparsers.add_parser('acquire', parents=[place_parser])
+    subparser = subparsers.add_parser('acquire', parents=[place_parser],
+                                      aliases=('lock',),
+                                      help="acquire a place")
     subparser.set_defaults(func=ClientSession.acquire)
 
-    subparser = subparsers.add_parser('release', parents=[place_parser])
+    subparser = subparsers.add_parser('release', parents=[place_parser],
+                                      aliases=('unlock',),
+                                      help="release a place")
     subparser.set_defaults(func=ClientSession.release)
 
-    subparser = subparsers.add_parser('env', parents=[place_parser])
+    subparser = subparsers.add_parser('env', parents=[place_parser],
+                                      help="generate a labgrid environment file for a place")
     subparser.set_defaults(func=ClientSession.env)
 
-    subparser = subparsers.add_parser('power', parents=[place_parser])
+    subparser = subparsers.add_parser('power', parents=[place_parser],
+                                      help="change (or get) a place's power status")
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
     subparser.set_defaults(func=ClientSession.power)
 
-    subparser = subparsers.add_parser('console', parents=[place_parser])
-    subparser.add_argument('-l', '--loop', action='store_true')
+    subparser = subparsers.add_parser('console', parents=[place_parser],
+                                      help="connect to the console")
+    subparser.add_argument('-l', '--loop', action='store_true',
+                           help="keep trying to connect if the console is unavailable")
     subparser.set_defaults(func=ClientSession.console)
 
     #subparser = subparsers.add_parser('attach', parents=[place_parser])

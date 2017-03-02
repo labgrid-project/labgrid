@@ -21,6 +21,7 @@ setup(
         'pytest',
         'pyyaml',
         'pyudev',
+        'onewire',
         'requests',
     ],
     packages=[

@@ -5,9 +5,10 @@ from importlib import import_module
 import attr
 
 from ..factory import target_factory
-from ..protocol import PowerProtocol
+from ..protocol import PowerProtocol, DigitalOutputProtocol
 from ..resource import NetworkPowerPort
 from .common import Driver
+from .onewiredriver import OneWirePIODriver
 
 
 @target_factory.reg_driver
@@ -93,3 +94,29 @@ class NetworkPowerDriver(Driver, PowerProtocol):
     def get(self):
         return self.backend.get(self.port.host, self.port.index)
 
+@target_factory.reg_driver
+@attr.s
+class DigitalOutputPowerDriver(Driver, PowerProtocol):
+    """DigitalOutputPowerDriver - Driver using a DigitalOutput to reset the target and
+    subprocesses to turn it on and off"""
+    bindings = {"output": DigitalOutputProtocol, }
+    cmd_on = attr.ib(validator=attr.validators.instance_of(str))
+    cmd_off = attr.ib(validator=attr.validators.instance_of(str))
+    delay = attr.ib(default=1.0, validator=attr.validators.instance_of(float))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def on(self):
+        subprocess.check_call(self.cmd_on)
+
+    def off(self):
+        subprocess.check_call(self.cmd_off)
+
+    def cycle(self):
+        self.output.set(True)
+        time.sleep(self.delay)
+        self.output.set(False)
+
+    def get(self):
+        return True

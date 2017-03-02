@@ -31,7 +31,7 @@ def get_free_port():
 
 
 exports = {}
-
+reexec = False
 
 @attr.s
 class ResourceExport(ResourceEntry):
@@ -187,19 +187,17 @@ class ExporterSession(ApplicationSession):
         """Cleanup after leaving the coordinator connection"""
         self.poll_task.cancel()
         yield from asyncio.wait([self.poll_task])
-        #for resource in self.resources.values():
-        #    try:
-        #        resource.invalidate()
-        #    except ResourceStatusError:
-        #        pass
         super().onLeave(details)
 
     @asyncio.coroutine
     def onDisconnect(self):
-        #self.uevent_task.cancel()
-        #yield from asyncio.wait([self.uevent_task])
-        self.loop.stop()
         print("connection lost")
+        global reexec
+        reexec = True
+        self.poll_task.cancel()
+        yield from asyncio.wait([self.poll_task])
+        yield from asyncio.sleep(0.5) # give others a chance to clean up
+        self.loop.stop()
 
     @asyncio.coroutine
     def acquire(self, group_name, resource_name):
@@ -305,6 +303,8 @@ def main():
     #loop.set_debug(True)
     runner = ApplicationRunner(url=args.crossbar, realm="realm1", extra=extra)
     runner.run(ExporterSession)
+    if reexec:
+        exit(100)
 
 
 if __name__ == "__main__":

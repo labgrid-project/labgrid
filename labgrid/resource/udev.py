@@ -177,6 +177,4 @@ class AndroidFastboot(USBResource):
             return False
         if device.get('ID_MODEL_ID') != "0104":
             return False
-        while device.parent and device.parent.driver != 'usb':
-            device = device.parent
         return super().filter_match(device)

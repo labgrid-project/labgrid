@@ -155,8 +155,11 @@ class ClientSession(ApplicationSession):
         for name, place in sorted(self.places.items()):
             if self.args.acquired and place.acquired is None:
                 continue
-            print("Place '{}':".format(name))
-            place.show(level=1)
+            if self.args.verbose:
+                print("Place '{}':".format(name))
+                place.show(level=1)
+            else:
+                print(name)
 
     def _match_places(self, pattern):
         result = set()
@@ -453,6 +456,7 @@ def main():
 
     subparser = subparsers.add_parser('places')
     subparser.add_argument('-a', '--acquired', action='store_true')
+    subparser.add_argument('-v', '--verbose', action='store_true')
     subparser.set_defaults(func=ClientSession.print_places)
 
     subparser = subparsers.add_parser('show', parents=[place_parser],

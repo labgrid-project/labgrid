@@ -115,6 +115,17 @@ class ClientSession(ApplicationSession):
         self.places[name] = place
 
     @asyncio.coroutine
+    def complete(self):
+        if self.args.type == 'resources':
+            for exporter, groups in sorted(self.resources.items()):
+                for group_name, group in sorted(groups.items()):
+                    for resource_name, resource in sorted(group.items()):
+                        print("{}/{}/{}".format(exporter, group_name, resource.cls))
+        elif self.args.type == 'places':
+            for name, place in sorted(self.places.items()):
+                print(name)
+
+    @asyncio.coroutine
     def print_resources(self):
         """Print out the resources"""
         match = ResourceMatch.fromstr(self.args.match) if self.args.match else None
@@ -452,6 +463,10 @@ def main():
         )
     else:
         place_parser.add_argument('-p', '--place', type=str, required=True)
+
+    subparser = subparsers.add_parser('complete')
+    subparser.add_argument('type', choices=['resources', 'places'])
+    subparser.set_defaults(func=ClientSession.complete)
 
     subparser = subparsers.add_parser('resources')
     subparser.add_argument('-a', '--acquired', action='store_true')

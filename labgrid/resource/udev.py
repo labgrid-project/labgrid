@@ -37,50 +37,91 @@ class USBResource(ManagedResource):
     manager_cls = UdevManager
 
     match = attr.ib(validator=attr.validators.instance_of(dict), hash=False)
-    _device = attr.ib(default=None, hash=False)
+    device = attr.ib(default=None, hash=False)
 
     def __attrs_post_init__(self):
         self.match.setdefault('SUBSYSTEM', 'usb')
         super().__attrs_post_init__()
 
-    def try_match(self, device):
-        def match_ancestors(key, value):
-            for ancestor in device.ancestors:
-                if ancestor.get(key) == value:
-                    return True
-            return False
-        for k, v in self.match.items():
-            if k.startswith('@') and match_ancestors(k[1:], v):
-                continue
-            elif device.get(k) == v:
-                continue
-            else:
-                return False
-        print(" found match: {}".format(self))
-        self.device = device
+    def filter_match(self, device):
         return True
 
-    def on_device_set(self):
-        raise NotImplementedError()
+    def try_match(self, device):
+        if self.device:
+            if self.device.sys_path != device.sys_path:
+                return False
+        else: # new device
+            def match_single(dev, key, value):
+                if dev.get(key) == value:
+                    return True
+                elif dev.attributes.get(key) == value:
+                    return True
+                elif getattr(dev, key, None) == value:
+                    return True
+                return False
 
-    @property
-    def device(self):
-        return self._device
+            def match_ancestors(key, value):
+                for ancestor in device.ancestors:
+                    if match_single(ancestor, key, value):
+                        return True
+                return False
 
-    @device.setter
-    def device(self, value):
-        self._device = value
-        self.on_device_set()
+            for k, v in self.match.items():
+                if k.startswith('@'):
+                    if match_ancestors(k[1:], v):
+                        continue
+                elif match_single(device, k, v):
+                    continue
+                else:
+                    return False
+            if not self.filter_match(device):
+                return False
+        print(" found match: {}".format(self))
+        if device.action in [None, 'add', 'change']:
+            self.avail = True
+            self.device = device
+            self.update()
+        else:
+            self.avail = False
+            self.device = None
+        return True
+
+    def update(self):
+        pass
 
     @property
     def busnum(self):
-        if self._device:
+        if self.device:
             return int(self.device.get('BUSNUM'))
 
     @property
     def devnum(self):
-        if self._device:
+        if self.device:
             return int(self.device.get('DEVNUM'))
+
+    def _get_usb_device(self):
+        device = self.device
+        if self.device and (self.device.subsystem != 'usb' or self.device.device_type != 'usb_device'):
+            device = self.device.find_parent('usb', 'usb_device')
+        return device
+
+    @property
+    def path(self):
+        device = self._get_usb_device()
+        if device:
+            return str(device.sys_name)
+
+    @property
+    def vendor_id(self):
+        device = self._get_usb_device()
+        if device:
+            return int(device.get('ID_VENDOR_ID'), 16)
+
+    @property
+    def model_id(self):
+        device = self._get_usb_device()
+        if device:
+            return int(device.get('ID_MODEL_ID'), 16)
 
 
 @target_factory.reg_resource
@@ -90,9 +131,9 @@ class USBSerialPort(SerialPort, USBResource):
         self.match['SUBSYSTEM'] = 'tty'
         super().__attrs_post_init__()
 
-    def on_device_set(self):
+    def update(self):
+        super().update()
         self.port = self.device.device_node
-        self.avail = self.device.action in [None, 'add', 'change']
 
 @target_factory.reg_resource
 @attr.s
@@ -103,9 +144,6 @@ class USBMassStorage(USBResource):
         self.match['@SUBSYSTEM'] = 'usb'
         super().__attrs_post_init__()
 
-    def on_device_set(self):
-        self.avail = True
-
     @property
     def path(self):
         return self.device.device_node
@@ -113,42 +151,32 @@ class USBMassStorage(USBResource):
 @target_factory.reg_resource
 @attr.s
 class IMXUSBLoader(USBResource):
-    def try_match(self, device):
+    def filter_match(self, device):
         if device.get('ID_VENDOR_ID') != "15a2":
             return False
         if device.get('ID_MODEL_ID') not in ["0054", "0061"]:
             return False
-        return super().try_match(device)
-
-    def on_device_set(self):
-        self.avail = True
+        return super().filter_match(device)
 
 
 @target_factory.reg_resource
 @attr.s
 class MXSUSBLoader(USBResource):
-    def try_match(self, device):
+    def filter_match(self, device):
         if device.get('ID_VENDOR_ID') != "066f":
             return False
         if device.get('ID_MODEL_ID') not in ["3780"]:
             return False
-
-        return super().try_match(device)
-
-    def on_device_set(self):
-        self.avail = True
+        return super().filter_match(device)
 
 @target_factory.reg_resource
 @attr.s
 class AndroidFastboot(USBResource):
-    def try_match(self, device):
+    def filter_match(self, device):
         if device.get('ID_VENDOR_ID') != "1d6b":
             return False
-        if device.get('ID_VENDOR_ID') != "0104":
+        if device.get('ID_MODEL_ID') != "0104":
             return False
         while device.parent and device.parent.driver != 'usb':
             device = device.parent
-        return super().try_match(device)
-
-    def on_device_set(self):
-        self.avail = True
+        return super().filter_match(device)

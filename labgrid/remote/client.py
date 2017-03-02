@@ -160,7 +160,12 @@ class ClientSession(ApplicationSession):
                 print("Place '{}':".format(name))
                 place.show(level=1)
             else:
-                print(name)
+                line = "{}".format(name)
+
+                if place.aliases:
+                    line += " ({})".format(' '.join(place.aliases))
+
+                print("{0:<40s} {1}".format(line, place.comment))
 
     def _match_places(self, pattern):
         result = set()

@@ -9,8 +9,8 @@ _arguments "1:Actions:((resources\:'show resources' places\:'show places' show\:
 case "$state" in
     places)
         local -a places
-        places=( $(labgrid-client complete places) )
-        _values -s , 'places' music_files
+        places=( $(labgrid-client -x ws://dude.hi.4.pengutronix.de:20408/ws complete places) )
+        _values 'places' $places
         ;;
 esac
 

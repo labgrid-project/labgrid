@@ -16,6 +16,7 @@ from collections import defaultdict
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
+from ..environment import Environment
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -44,6 +45,7 @@ class ClientSession(ApplicationSession):
         """Actions which are executed if a connection is successfully opened."""
         self.loop = self.config.extra['loop']
         self.args = self.config.extra.get('args')
+        self.env = self.config.extra.get('env', None)
         self.func = self.config.extra.get('func') or self.args.func
         enable_tcp_nodelay(self)
         self.join(
@@ -384,7 +386,7 @@ class ClientSession(ApplicationSession):
     def _get_target(self, place):
         target_config = self.get_target_config(place)
         from ..factory import target_factory
-        return target_factory.make_target(place.name, target_config)
+        return target_factory.make_target(place.name, target_config, env=self.env)
 
     @asyncio.coroutine
     def power(self):
@@ -449,6 +451,12 @@ def main():
         type=str,
         default="ws://127.0.0.1:20408/ws",
         help="crossbar websocket URL"
+    )
+    parser.add_argument(
+        '-c',
+        '--config',
+        type=str,
+        help="config file"
     )
     subparsers = parser.add_subparsers(
         dest='command',
@@ -556,8 +564,13 @@ def main():
 
     args = parser.parse_args()
 
+    env = None
+    if args.config:
+        env = Environment(config_file=args.config)
+
     extra = {
         'args': args,
+        'env': env,
     }
 
     if args.command and args.command != 'help':

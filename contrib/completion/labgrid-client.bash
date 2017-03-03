@@ -6,7 +6,11 @@ _labgrid-client()
 
     case "$prev" in
 	-p)
-	    COMPREPLY=( $( compgen -W "$(labgrid-client complete places)" -- $cur ) )
+	    COMPREPLY=( $( compgen -W "$(labgrid-client -x ws://dude.hi.4.pengutronix.de:20408/ws  complete places)" -- $cur ) )
+	    return 0
+	    ;;
+	power)
+	    COMPREPLY=( $( compgen -W "on off cycle get" -- $cur ) )
 	    return 0
 	    ;;
     esac

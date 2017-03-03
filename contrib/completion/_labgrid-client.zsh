@@ -41,13 +41,19 @@ case "$state" in
 	esac
 	case "$state" in
 	    (places)
-		local -a places
-		places=( $(labgrid-client -x ws://dude.hi.4.pengutronix.de:20408/ws complete places) )
-		_values 'Available places and aliases' $places
+		local -a places mine_places
+		mine_places=('power' 'console' 'release' 'env')
+		if [[ ${mine_places[(i)$line[1]]} -le ${#mine_places} ]];
+		   then places=( $(labgrid-client complete -m places) )
+			_values 'Available places and aliases' $places
+		else
+		    places=( $(labgrid-client complete places) )
+		    _values 'Available places and aliases' $places
+		fi
 		;;
 	    (resources)
 		local -a resources
-		resources=( $(labgrid-client -x ws://dude.hi.4.pengutronix.de:20408/ws complete resources) )
+		resources=( $(labgrid-client complete resources) )
 		_values 'Exported Resources' $resources
 		;;
 	esac

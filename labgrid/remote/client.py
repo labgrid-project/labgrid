@@ -131,9 +131,17 @@ class ClientSession(ApplicationSession):
             for exporter, groups in sorted(self.resources.items()):
                 for group_name, group in sorted(groups.items()):
                     for resource_name, resource in sorted(group.items()):
+                        if self.args.mine and resource.acquired != "{}/{}".format(gethostname(), getuser()):
+                            continue
+                        if self.args.acquired and resource.acquired is None:
+                            continue
                         print("{}/{}/{}".format(exporter, group_name, resource.cls))
         elif self.args.type == 'places':
             for name, place in sorted(self.places.items()):
+                if self.args.mine and place.acquired != "{}/{}".format(gethostname(), getuser()):
+                    continue
+                if self.args.acquired and place.acquired is None:
+                    continue
                 print(name)
 
     @asyncio.coroutine
@@ -643,6 +651,8 @@ def main():
     subparser = subparsers.add_parser('help')
 
     subparser = subparsers.add_parser('complete')
+    subparser.add_argument('-a', '--acquired', action='store_true')
+    subparser.add_argument('-m', '--mine', action='store_true')
     subparser.add_argument('type', choices=['resources', 'places'])
     subparser.set_defaults(func=ClientSession.complete)
 

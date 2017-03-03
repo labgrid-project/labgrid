@@ -14,6 +14,7 @@ class ResourceConfig:
     def __attrs_post_init__(self):
         env = jinja2.Environment(
             line_statement_prefix='#',
+            line_comment_prefix='##',
         )
         try:
             with open(self.filename) as file:

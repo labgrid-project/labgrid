@@ -81,11 +81,11 @@ class RemotePlace(ManagedResource):
 
 @attr.s
 class RemoteUSBResource(NetworkResource):
-    busnum = attr.ib(validator=attr.validators.instance_of(int))
-    devnum = attr.ib(validator=attr.validators.instance_of(int))
-    path = attr.ib(validator=attr.validators.instance_of(str))
-    vendor_id = attr.ib(validator=attr.validators.instance_of(int))
-    model_id = attr.ib(validator=attr.validators.instance_of(int))
+    busnum = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
+    devnum = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
+    path = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
+    vendor_id = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
+    model_id = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
 
 
 @target_factory.reg_resource

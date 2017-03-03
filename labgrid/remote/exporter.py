@@ -150,6 +150,9 @@ class USBGenericExport(ResourceExport):
             'host': gethostname(),
             'busnum': self.local.busnum,
             'devnum': self.local.devnum,
+            'path': self.local.path,
+            'vendor_id': self.local.vendor_id,
+            'model_id': self.local.model_id,
         }
 
 

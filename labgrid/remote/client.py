@@ -431,6 +431,15 @@ class ClientSession(ApplicationSession):
                 break
             yield from asyncio.sleep(1.0)
 
+    @asyncio.coroutine
+    def fastboot(self):
+        place = self.get_place()
+        args = self.args.fastboot_args
+        target = self._get_target(place)
+        from ..driver.fastbootdriver import AndroidFastbootDriver
+        drv = AndroidFastbootDriver(target)
+        res = drv(*args)
+
     #@asyncio.coroutine
     #def attach(self, place):
     #    usb_devices = devices['usb_devices']
@@ -558,6 +567,13 @@ def main():
     subparser.add_argument('-l', '--loop', action='store_true',
                            help="keep trying to connect if the console is unavailable")
     subparser.set_defaults(func=ClientSession.console)
+
+    subparser = subparsers.add_parser('fastboot', parents=[place_parser],
+                                      help="run fastboot")
+    subparser.add_argument('fastboot_args', metavar='ARG', nargs='+',
+                           help='fastboot arguments'
+    )
+    subparser.set_defaults(func=ClientSession.fastboot)
 
     #subparser = subparsers.add_parser('attach', parents=[place_parser])
     #subparser.set_defaults(func=ClientSession.attach)

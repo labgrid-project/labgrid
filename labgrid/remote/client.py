@@ -17,6 +17,7 @@ from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
 from ..environment import Environment
+from ..util.timeout import Timeout
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -440,6 +441,37 @@ class ClientSession(ApplicationSession):
         drv = AndroidFastbootDriver(target)
         res = drv(*args)
 
+    def _bootstrap(self, place):
+        args = self.args.filename
+        target = self._get_target(place)
+        from ..driver.usbloader import IMXUSBDriver, MXSUSBDriver
+        from ..resource.remote import NetworkMXSUSBLoader, NetworkIMXUSBLoader
+        cls = None
+        for resource in target.resources:
+            if isinstance(resource, NetworkIMXUSBLoader):
+                cls = IMXUSBDriver
+                break
+            elif isinstance(resource, NetworkMXSUSBLoader):
+                cls = MXSUSBDriver
+                break
+        if not cls:
+            print("target has no compatible resource available")
+            return False
+        print(cls, resource)
+        drv = cls(target)
+        drv.load(self.args.filename)
+        return True
+
+    @asyncio.coroutine
+    def bootstrap(self):
+        place = self.get_place()
+        timeout = Timeout(self.args.wait)
+        while not timeout.expired:
+            res = self._bootstrap(place)
+            if res:
+                break
+            yield from asyncio.sleep(1.0)
+
     #@asyncio.coroutine
     #def attach(self, place):
     #    usb_devices = devices['usb_devices']
@@ -574,6 +606,12 @@ def main():
                            help='fastboot arguments'
     )
     subparser.set_defaults(func=ClientSession.fastboot)
+
+    subparser = subparsers.add_parser('bootstrap', parents=[place_parser],
+                                      help="start a bootloader")
+    subparser.add_argument('-w', '--wait', type=float, default=10.0)
+    subparser.add_argument('filename', help='filename to boot on the target')
+    subparser.set_defaults(func=ClientSession.bootstrap)
 
     #subparser = subparsers.add_parser('attach', parents=[place_parser])
     #subparser.set_defaults(func=ClientSession.attach)

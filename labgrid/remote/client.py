@@ -402,8 +402,8 @@ class ClientSession(ApplicationSession):
                 )
             )
 
-    def _console(self, config):
-        target_config = self.get_target_config(config)
+    def _console(self, place):
+        target_config = self.get_target_config(place)
         try:
             resource = target_config['resources']['NetworkSerialPort']
         except KeyError:
@@ -468,6 +468,8 @@ def main():
     else:
         place_parser.add_argument('-p', '--place', type=str, required=True)
 
+    subparser = subparsers.add_parser('help')
+
     subparser = subparsers.add_parser('complete')
     subparser.add_argument('type', choices=['resources', 'places'])
     subparser.set_defaults(func=ClientSession.complete)
@@ -476,7 +478,7 @@ def main():
                                       help="list available resources")
     subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.add_argument('-e', '--exporter')
-    subparser.add_argument('-v', '--verbose', action='count')
+    subparser.add_argument('-v', '--verbose', action='count', default=0)
     subparser.add_argument('match', nargs='?')
     subparser.set_defaults(func=ClientSession.print_resources)
 
@@ -558,7 +560,7 @@ def main():
         'args': args,
     }
 
-    if args.command:
+    if args.command and args.command != 'help':
         extra['loop'] = loop = asyncio.get_event_loop()
         #loop.set_debug(True)
         runner = ApplicationRunner(
@@ -566,7 +568,7 @@ def main():
         )
         runner.run(ClientSession)
     else:
-        parser.print_usage()
+        parser.print_help()
 
 
 if __name__ == "__main__":

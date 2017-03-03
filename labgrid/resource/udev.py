@@ -68,12 +68,12 @@ class USBResource(ManagedResource):
 
             for k, v in self.match.items():
                 if k.startswith('@'):
-                    if match_ancestors(k[1:], v):
-                        continue
-                elif match_single(device, k, v):
-                    continue
+                    if not match_ancestors(k[1:], v):
+                        return False
                 else:
-                    return False
+                    if not match_single(device, k, v):
+                        return False
+
             if not self.filter_match(device):
                 return False
         print(" found match: {}".format(self))

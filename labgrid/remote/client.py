@@ -468,6 +468,8 @@ def main():
     else:
         place_parser.add_argument('-p', '--place', type=str, required=True)
 
+    subparser = subparsers.add_parser('help')
+
     subparser = subparsers.add_parser('complete')
     subparser.add_argument('type', choices=['resources', 'places'])
     subparser.set_defaults(func=ClientSession.complete)
@@ -558,7 +560,7 @@ def main():
         'args': args,
     }
 
-    if args.command:
+    if args.command and args.command != 'help':
         extra['loop'] = loop = asyncio.get_event_loop()
         #loop.set_debug(True)
         runner = ApplicationRunner(
@@ -566,7 +568,7 @@ def main():
         )
         runner.run(ClientSession)
     else:
-        parser.print_usage()
+        parser.print_help()
 
 
 if __name__ == "__main__":

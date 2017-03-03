@@ -402,8 +402,8 @@ class ClientSession(ApplicationSession):
                 )
             )
 
-    def _console(self, config):
-        target_config = self.get_target_config(config)
+    def _console(self, place):
+        target_config = self.get_target_config(place)
         try:
             resource = target_config['resources']['NetworkSerialPort']
         except KeyError:

@@ -4,6 +4,7 @@ import subprocess
 
 from ..factory import target_factory
 from ..protocol import BootstrapProtocol
+from ..resource.remote import NetworkMXSUSBLoader, NetworkIMXUSBLoader
 from ..resource.udev import MXSUSBLoader, IMXUSBLoader
 from ..step import step
 from .common import Driver
@@ -13,12 +14,19 @@ from .exception import ExecutionError
 @target_factory.reg_driver
 @attr.s
 class MXSUSBDriver(Driver, BootstrapProtocol):
-    bindings = {"loader": MXSUSBLoader, }
+    bindings = {
+        "loader": {MXSUSBLoader, NetworkMXSUSBLoader},
+    }
 
     image = attr.ib(default=None)
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('mxs-usb-loader') or 'mxs-usb-loader'
+        else:
+            self.tool = 'mxs-usb-loader'
 
     def on_activate(self):
         pass
@@ -30,18 +38,28 @@ class MXSUSBDriver(Driver, BootstrapProtocol):
     def load(self, filename=None):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
-        tool = self.target.env.config.get_tool('mxs-usb-loader')
-        subprocess.check_call([tool, "0", filename])
+        subprocess.check_call(
+            self.loader.command_prefix+[self.tool, "0", filename]
+        )
+
 
 @target_factory.reg_driver
 @attr.s
 class IMXUSBDriver(Driver, BootstrapProtocol):
-    bindings = {"loader": IMXUSBLoader, }
+    bindings = {
+        "loader": {IMXUSBLoader, NetworkIMXUSBLoader},
+    }
 
     image = attr.ib(default=None)
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('imx-usb-loader') or 'imx-usb-loader'
+        else:
+            self.tool = 'imx-usb-loader'
+
 
     def on_activate(self):
         pass
@@ -53,6 +71,6 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
     def load(self, filename=None):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
-        tool = self.target.env.config.get_tool('imx-usb-loader')
-        raise NotImplementedError("implement call to imx-usb-loader")
-        subprocess.check_call([tool, filename])
+        subprocess.check_call(
+            self.loader.command_prefix+[self.tool, "-p", str(self.loader.path), "-c", filename]
+        )

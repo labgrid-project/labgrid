@@ -97,6 +97,9 @@ class USBSerialPortExport(ResourceExport):
         return {
             'host': gethostname(),
             'port': self.port,
+            'extra': {
+                'path': self.local.port,
+            }
         }
 
     def _start(self):

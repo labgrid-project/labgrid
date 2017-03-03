@@ -374,7 +374,9 @@ class ClientSession(ApplicationSession):
             if not resource.avail:
                 continue
             # FIXME handle resourcename here to support multiple resources of the same class
-            resources[resource.cls] = resource.params
+            params = resource.params.copy()
+            params.pop('extra', None)
+            resources[resource.cls] = params
         return config
 
     @asyncio.coroutine

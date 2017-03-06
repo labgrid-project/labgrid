@@ -16,6 +16,7 @@ _arguments -C "1:Actions:((resources\:'show resources'\
                         release\:'release a place'\
                         env\:'print environment'\
                         power\:'power management'\
+                        help\:'show help'\
                         console\:'open console'))" \
 	                '*::arg:->args'
 case "$state" in

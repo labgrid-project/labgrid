@@ -22,6 +22,7 @@ _labgrid-client()
         COMPREPLY=( $( compgen -W "resources\
                                    places\
                                    show\
+				   help\
                                    add-place\
                                    del-place\
                                    add-alias\

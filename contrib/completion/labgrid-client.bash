@@ -6,18 +6,23 @@ _labgrid-client()
 
     case "$prev" in
 	-p)
-	    COMPREPLY=( $( compgen -W "$(labgrid-client -x ws://dude.hi.4.pengutronix.de:20408/ws  complete places)" -- $cur ) )
+	    local mine_places=('power' 'console' 'release' 'env')
+	    if [[ ! -z "${mine_places[${COMP_WORDS[1]}]+_}" ]]; then
+		COMPREPLY=( $( compgen -W "$(labgrid-client complete places -m)" ) )
+	    else
+		COMPREPLY=( $( compgen -W "$(labgrid-client complete places)" ) )
+	    fi
 	    return 0
 	    ;;
 	power)
-	    COMPREPLY=( $( compgen -W "on off cycle get" -- $cur ) )
+	    COMPREPLY=( $( compgen -W "on off cycle get" ) )
 	    return 0
 	    ;;
     esac
 
     # completing an option
     if [[ "$cur" == -* ]]; then
-        COMPREPLY=( $( compgen -W "-p -h -x" -- $cur ) )
+        COMPREPLY=( $( compgen -W "-p -h -x" ) )
     else
         COMPREPLY=( $( compgen -W "resources\
                                    places\
@@ -34,7 +39,7 @@ _labgrid-client()
                                    release\
                                    env\
                                    power\
-                                   console" -- $cur ) )
+                                   console" ) )
     fi
 }
 complete -F _labgrid-client labgrid-client

@@ -193,11 +193,20 @@ class ClientSession(ApplicationSession):
                 print("{0:<40s} {1}".format(line, place.comment))
 
     def _match_places(self, pattern):
+        """search for substring matches of pattern in place names and aliases
+
+        Aliases in the format "namespace:alias" only match if the namespace is
+        the current user name.
+        """
         result = set()
         for name, place in self.places.items():
             if pattern in name:
                 result.add(name)
             for alias in place.aliases:
+                if ':' in alias:
+                    namespace, alias = alias.split(':')
+                    if namespace != getuser():
+                        continue
                 if pattern in alias:
                     result.add(name)
         return list(result)

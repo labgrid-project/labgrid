@@ -204,7 +204,7 @@ class ClientSession(ApplicationSession):
                 result.add(name)
             for alias in place.aliases:
                 if ':' in alias:
-                    namespace, alias = alias.split(':')
+                    namespace, alias = alias.split(':', 1)
                     if namespace != getuser():
                         continue
                 if pattern in alias:

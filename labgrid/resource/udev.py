@@ -80,10 +80,10 @@ class USBResource(ManagedResource):
         if device.action in [None, 'add', 'change']:
             self.avail = True
             self.device = device
-            self.update()
         else:
             self.avail = False
             self.device = None
+        self.update()
         return True
 
     def update(self):

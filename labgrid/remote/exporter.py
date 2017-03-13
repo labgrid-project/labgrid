@@ -134,6 +134,26 @@ class USBSerialPortExport(ResourceExport):
 
 exports["USBSerialPort"] = USBSerialPortExport
 
+@attr.s
+class USBEthernetExport(ResourceExport):
+    """ResourceExport for a USB ethernet interface"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.udev import USBEthernetInterface
+        self.data['cls'] = "EthernetInterface"
+        self.local = USBEthernetInterface(None, **self.local_params)
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'ifname': self.local.ifname,
+            'extra': {
+                'state': self.local.if_state,
+            }
+        }
+
+exports["USBEthernetInterface"] = USBEthernetExport
 
 @attr.s
 class USBGenericExport(ResourceExport):

@@ -1,11 +1,13 @@
 from functools import partial
 
 import attr
+import os
 import pyudev
+import warnings
 
 from ..factory import target_factory
 from .common import ManagedResource, ResourceManager
-from .base import SerialPort
+from .base import SerialPort, EthernetInterface
 
 
 @attr.s
@@ -77,8 +79,12 @@ class USBResource(ManagedResource):
             if not self.filter_match(device):
                 return False
         print(" found match: {}".format(self))
-        if device.action in [None, 'add', 'change']:
+        if device.action in [None, 'add']:
+            if self.avail:
+                warnings.warn("udev device {} is already available".format(device))
             self.avail = True
+            self.device = device
+        elif device.action in ['change', 'move']:
             self.device = device
         else:
             self.avail = False
@@ -123,6 +129,18 @@ class USBResource(ManagedResource):
         if device:
             return int(device.get('ID_MODEL_ID'), 16)
 
+    def read_attr(self, attribute):
+        """read uncached attribute value from sysfs
+
+        pyudev currently supports only cached access to attributes, so we read
+        directly from sysfs.
+        """
+        # FIXME update pyudev to support udev_device_set_sysattr_value(dev,
+        # attr, None) to clear the cache
+        if self.device:
+            with open(os.path.join(self.device.sys_path, attribute), 'rb') as f:
+                return f.read().rstrip(b'\n') # drop trailing newlines
+
 
 @target_factory.reg_resource
 @attr.s
@@ -133,7 +151,10 @@ class USBSerialPort(SerialPort, USBResource):
 
     def update(self):
         super().update()
-        self.port = self.device.device_node
+        if self.device:
+            self.port = self.device.device_node
+        else:
+            self.port = None
 
 @target_factory.reg_resource
 @attr.s
@@ -178,3 +199,25 @@ class AndroidFastboot(USBResource):
         if device.get('ID_MODEL_ID') != "0104":
             return False
         return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s
+class USBEthernetInterface(EthernetInterface, USBResource):
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'net'
+        self.match['@SUBSYSTEM'] = 'usb'
+        super().__attrs_post_init__()
+
+    def update(self):
+        super().update()
+        if self.device:
+            self.ifname = self.device.get('INTERFACE')
+        else:
+            self.ifname = None
+
+    @property
+    def if_state(self):
+        value = self.read_attr('operstate')
+        if value is not None:
+            value = value.decode('ascii')
+        return value

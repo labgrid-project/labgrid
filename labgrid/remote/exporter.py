@@ -230,8 +230,8 @@ class ExporterSession(ApplicationSession):
     def poll(self):
         while True:
             try:
-                yield from self._poll_step()
                 yield from asyncio.sleep(1.0)
+                yield from self._poll_step()
             except asyncio.CancelledError:
                 break
             except:

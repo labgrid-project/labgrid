@@ -1,7 +1,7 @@
 import attr
 
 from ..factory import target_factory
-from .common import Resource
+from .common import Resource, NetworkResource
 from .base import SerialPort
 
 
@@ -16,6 +16,6 @@ class RawSerialPort(SerialPort, Resource):
 # This does not derive from SerialPort because it is not directly accessible
 @target_factory.reg_resource
 @attr.s
-class NetworkSerialPort(Resource):
-    host = attr.ib(validator=attr.validators.instance_of(str))
+class NetworkSerialPort(NetworkResource):
     port = attr.ib(validator=attr.validators.instance_of(int))
+    speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))

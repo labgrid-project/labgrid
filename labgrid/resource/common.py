@@ -18,6 +18,22 @@ class Resource(BindingMixin):
     """
     avail = attr.ib(default=True, init=False, validator=attr.validators.instance_of(bool))
 
+    @property
+    def command_prefix(self):
+        return []
+
+
+@attr.s
+class NetworkResource(Resource):
+    host = attr.ib(validator=attr.validators.instance_of(str))
+
+    @property
+    def command_prefix(self):
+        return ['ssh', '-x',
+                '-o', 'ConnectTimeout=5',
+                '-o', 'PasswordAuthentication=no',
+                self.host, '--']
+
 
 @attr.s
 class ResourceManager:

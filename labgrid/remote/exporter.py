@@ -40,6 +40,7 @@ class ResourceExport(ResourceEntry):
     The ResourceEntry attributes contain the information for the client.
     """
     local = attr.ib(init=False)
+    local_params = attr.ib(init=False)
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -96,6 +97,9 @@ class USBSerialPortExport(ResourceExport):
         return {
             'host': gethostname(),
             'port': self.port,
+            'extra': {
+                'path': self.local.port,
+            }
         }
 
     def _start(self):
@@ -129,6 +133,55 @@ class USBSerialPortExport(ResourceExport):
 
 
 exports["USBSerialPort"] = USBSerialPortExport
+
+@attr.s
+class USBEthernetExport(ResourceExport):
+    """ResourceExport for a USB ethernet interface"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.udev import USBEthernetInterface
+        self.data['cls'] = "EthernetInterface"
+        self.local = USBEthernetInterface(None, **self.local_params)
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'ifname': self.local.ifname,
+            'extra': {
+                'state': self.local.if_state,
+            }
+        }
+
+exports["USBEthernetInterface"] = USBEthernetExport
+
+@attr.s
+class USBGenericExport(ResourceExport):
+    """ResourceExport for USB devices accessed directly from userspace"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = "Network{}".format(self.cls)
+        from ..resource import udev
+        local_cls = getattr(udev, local_cls_name)
+        self.local = local_cls(None, **self.local_params)
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': gethostname(),
+            'busnum': self.local.busnum,
+            'devnum': self.local.devnum,
+            'path': self.local.path,
+            'vendor_id': self.local.vendor_id,
+            'model_id': self.local.model_id,
+        }
+
+
+exports["AndroidFastboot"] = USBGenericExport
+exports["IMXUSBLoader"] = USBGenericExport
+exports["MXSUSBLoader"] = USBGenericExport
 
 
 class ExporterSession(ApplicationSession):
@@ -230,8 +283,8 @@ class ExporterSession(ApplicationSession):
     def poll(self):
         while True:
             try:
-                yield from self._poll_step()
                 yield from asyncio.sleep(1.0)
+                yield from self._poll_step()
             except asyncio.CancelledError:
                 break
             except:

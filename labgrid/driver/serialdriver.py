@@ -2,11 +2,12 @@ import logging
 
 import attr
 import serial
+import serial.rfc2217
 from pexpect import TIMEOUT
 
 from ..factory import target_factory
 from ..protocol import ConsoleProtocol
-from ..resource import SerialPort
+from ..resource import SerialPort, NetworkSerialPort
 from .common import Driver
 from .consoleexpectmixin import ConsoleExpectMixin
 
@@ -17,30 +18,43 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     """
     Driver implementing the ConsoleProtocol interface over a SerialPort connection
     """
-    bindings = {"port": SerialPort, }
+    # pyserial 3.2.1 does not support RFC2217 under Python 3
+    # https://github.com/pyserial/pyserial/pull/183
+    if tuple(int(x) for x in serial.__version__.split('.')) <= (3, 2, 1):
+        bindings = {"port": SerialPort, }
+    else:
+        bindings = {"port": {SerialPort, NetworkSerialPort}, }
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.serial = serial.Serial(
-        )  #pylint: disable=attribute-defined-outside-init
-        self.status = 0  #pylint: disable=attribute-defined-outside-init
+        if isinstance(self.port, SerialPort):
+            self.serial = serial.Serial()
+        else:
+            self.serial = serial.rfc2217.Serial()
+        self.status = 0
         self.logger = logging.getLogger("{}({})".format(self, self.target))
 
     def on_activate(self):
-        self.serial.port = self.port.port
-        self.serial.baudrate = self.port.speed
+        if isinstance(self.port, SerialPort):
+            self.serial.port = self.port.port
+            self.serial.baudrate = self.port.speed
+        else:
+            self.serial.port = "rfc2217://{}:{}/".format(self.port.host, self.port.port)
+            self.serial.baudrate = self.port.speed
         self.open()
 
     def _read(self, size: int=1, timeout: int=0):
         """
-        Reads 'size' bytes from the serialport
+        Reads 'size' or more bytes from the serialport
 
         Keyword Arguments:
-        size -- amount of bytes to read, defaults to 1024
+        size -- amount of bytes to read, defaults to 1
         """
-        self.logger.debug("Reading %s bytes with %s timeout", size, timeout)
+        reading = max(size, self.serial.in_waiting)
+        self.logger.debug("Reading %s (min %s) bytes with %s timeout",
+                          reading, size, timeout)
         self.serial.timeout = timeout
-        res = self.serial.read(size)
+        res = self.serial.read(reading)
         self.logger.debug("Read bytes (%s) or timeout reached", res)
         if not res:
             raise TIMEOUT("Timeout exceeded")

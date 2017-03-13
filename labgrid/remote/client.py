@@ -16,6 +16,8 @@ from collections import defaultdict
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
+from ..environment import Environment
+from ..util.timeout import Timeout
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -36,6 +38,8 @@ class ServerError(Error):
     pass
 
 
+exitcode = 0
+
 class ClientSession(ApplicationSession):
     """The ClientSession encapsulates all the actions a Client can Invoke on
     the coordinator."""
@@ -44,6 +48,8 @@ class ClientSession(ApplicationSession):
         """Actions which are executed if a connection is successfully opened."""
         self.loop = self.config.extra['loop']
         self.args = self.config.extra.get('args')
+        self.env = self.config.extra.get('env', None)
+        self.prog = self.config.extra.get('prog', os.path.basename(sys.argv[0]))
         self.func = self.config.extra.get('func') or self.args.func
         enable_tcp_nodelay(self)
         self.join(
@@ -80,10 +86,18 @@ class ClientSession(ApplicationSession):
         yield from self.subscribe(
             self.on_place_changed, 'org.labgrid.coordinator.place_changed'
         )
+        global exitcode
         try:
             yield from self.func(self)
+        except Error as e:
+            if self.args.debug:
+                traceback.print_exc()
+            else:
+                print("{}: error: {}".format(self.prog, e), file=sys.stderr)
+            exitcode = 1
         except:
             traceback.print_exc()
+            exitcode = 2
         if self.args:
             self.loop.stop()
 
@@ -190,9 +204,11 @@ class ClientSession(ApplicationSession):
 
     def get_place(self, place=None):
         pattern = place or self.args.place
+        if pattern is None:
+            raise UserError("place pattern not specified")
         places = self._match_places(pattern)
         if not places:
-            raise UserError("pattern {} matches nothing".format(pattern))
+            raise UserError("place pattern {} matches nothing".format(pattern))
         if len(places) > 1:
             raise UserError(
                 "pattern {} matches multiple places ({})".
@@ -212,7 +228,6 @@ class ClientSession(ApplicationSession):
             resource = self.resources[exporter][groupname][resourcename]
             print("Resource '{}':".format(resourcename))
             print(indent(pformat(resource.asdict()), prefix="  "))
-
 
     @asyncio.coroutine
     def add_place(self):
@@ -371,7 +386,9 @@ class ClientSession(ApplicationSession):
             if not resource.avail:
                 continue
             # FIXME handle resourcename here to support multiple resources of the same class
-            resources[resource.cls] = resource.params
+            params = resource.params.copy()
+            params.pop('extra', None)
+            resources[resource.cls] = params
         return config
 
     @asyncio.coroutine
@@ -384,7 +401,7 @@ class ClientSession(ApplicationSession):
     def _get_target(self, place):
         target_config = self.get_target_config(place)
         from ..factory import target_factory
-        return target_factory.make_target(place.name, target_config)
+        return target_factory.make_target(place.name, target_config, env=self.env)
 
     @asyncio.coroutine
     def power(self):
@@ -429,6 +446,46 @@ class ClientSession(ApplicationSession):
                 break
             yield from asyncio.sleep(1.0)
 
+    @asyncio.coroutine
+    def fastboot(self):
+        place = self.get_place()
+        args = self.args.fastboot_args
+        target = self._get_target(place)
+        from ..driver.fastbootdriver import AndroidFastbootDriver
+        drv = AndroidFastbootDriver(target)
+        res = drv(*args)
+
+    def _bootstrap(self, place):
+        args = self.args.filename
+        target = self._get_target(place)
+        from ..driver.usbloader import IMXUSBDriver, MXSUSBDriver
+        from ..resource.remote import NetworkMXSUSBLoader, NetworkIMXUSBLoader
+        cls = None
+        for resource in target.resources:
+            if isinstance(resource, NetworkIMXUSBLoader):
+                cls = IMXUSBDriver
+                break
+            elif isinstance(resource, NetworkMXSUSBLoader):
+                cls = MXSUSBDriver
+                break
+        if not cls:
+            print("target has no compatible resource available")
+            return False
+        print(cls, resource)
+        drv = cls(target)
+        drv.load(self.args.filename)
+        return True
+
+    @asyncio.coroutine
+    def bootstrap(self):
+        place = self.get_place()
+        timeout = Timeout(self.args.wait)
+        while not timeout.expired:
+            res = self._bootstrap(place)
+            if res:
+                break
+            yield from asyncio.sleep(1.0)
+
     #@asyncio.coroutine
     #def attach(self, place):
     #    usb_devices = devices['usb_devices']
@@ -441,6 +498,8 @@ class ClientSession(ApplicationSession):
 
 
 def main():
+    place = os.environ.get('PLACE', None)
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-x',
@@ -450,23 +509,31 @@ def main():
         default="ws://127.0.0.1:20408/ws",
         help="crossbar websocket URL"
     )
+    parser.add_argument(
+        '-c',
+        '--config',
+        type=str,
+        help="config file"
+    )
+    parser.add_argument(
+        '-p',
+        '--place',
+        type=str,
+        default=place,
+        help="place name/alias"
+    )
+    parser.add_argument(
+        '-d',
+        '--debug',
+        action='store_true',
+        default=False,
+        help="enable debug mode"
+    )
     subparsers = parser.add_subparsers(
         dest='command',
         title='available subcommands',
         metavar="COMMAND",
     )
-
-    place_parser = argparse.ArgumentParser(add_help=False)
-    if 'PLACE' in os.environ:
-        place_parser.add_argument(
-            '-p',
-            '--place',
-            type=str,
-            required=False,
-            default=os.environ.get('PLACE')
-        )
-    else:
-        place_parser.add_argument('-p', '--place', type=str, required=True)
 
     subparser = subparsers.add_parser('help')
 
@@ -488,76 +555,95 @@ def main():
     subparser.add_argument('-v', '--verbose', action='store_true')
     subparser.set_defaults(func=ClientSession.print_places)
 
-    subparser = subparsers.add_parser('show', parents=[place_parser],
+    subparser = subparsers.add_parser('show',
         help="show a place and related resources",
     )
     subparser.set_defaults(func=ClientSession.print_place)
 
-    subparser = subparsers.add_parser('add-place', help="add a new place")
+    subparser = subparsers.add_parser('create', help="add a new place")
     subparser.set_defaults(func=ClientSession.add_place)
-    subparser.add_argument('place', help="place name")
 
-    subparser = subparsers.add_parser('del-place', help="delete an existing place")
+    subparser = subparsers.add_parser('delete', help="delete an existing place")
     subparser.set_defaults(func=ClientSession.del_place)
-    subparser.add_argument('place', help="place name")
 
-    subparser = subparsers.add_parser('add-alias', parents=[place_parser],
+    subparser = subparsers.add_parser('add-alias',
                                       help="add an alias to a place")
     subparser.add_argument('alias')
     subparser.set_defaults(func=ClientSession.add_alias)
 
-    subparser = subparsers.add_parser('del-alias', parents=[place_parser],
+    subparser = subparsers.add_parser('del-alias',
                                       help="delete an alias from a place")
     subparser.add_argument('alias')
     subparser.set_defaults(func=ClientSession.del_alias)
 
-    subparser = subparsers.add_parser('set-comment', parents=[place_parser],
+    subparser = subparsers.add_parser('set-comment',
                                       help="update the place comment")
     subparser.add_argument('comment', nargs='+')
     subparser.set_defaults(func=ClientSession.set_comment)
 
-    subparser = subparsers.add_parser('add-match', parents=[place_parser],
+    subparser = subparsers.add_parser('add-match',
                                       help="add a match pattern to a place")
     subparser.add_argument('pattern')
     subparser.set_defaults(func=ClientSession.add_match)
 
-    subparser = subparsers.add_parser('del-match', parents=[place_parser],
+    subparser = subparsers.add_parser('del-match',
                                       help="delete a match pattern from a place")
     subparser.add_argument('pattern')
     subparser.set_defaults(func=ClientSession.del_match)
 
-    subparser = subparsers.add_parser('acquire', parents=[place_parser],
+    subparser = subparsers.add_parser('acquire',
                                       aliases=('lock',),
                                       help="acquire a place")
     subparser.set_defaults(func=ClientSession.acquire)
 
-    subparser = subparsers.add_parser('release', parents=[place_parser],
+    subparser = subparsers.add_parser('release',
                                       aliases=('unlock',),
                                       help="release a place")
     subparser.set_defaults(func=ClientSession.release)
 
-    subparser = subparsers.add_parser('env', parents=[place_parser],
+    subparser = subparsers.add_parser('env',
                                       help="generate a labgrid environment file for a place")
     subparser.set_defaults(func=ClientSession.env)
 
-    subparser = subparsers.add_parser('power', parents=[place_parser],
+    subparser = subparsers.add_parser('power',
+                                      aliases=('pw',),
                                       help="change (or get) a place's power status")
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
     subparser.set_defaults(func=ClientSession.power)
 
-    subparser = subparsers.add_parser('console', parents=[place_parser],
+    subparser = subparsers.add_parser('console',
+                                      aliases=('con',),
                                       help="connect to the console")
     subparser.add_argument('-l', '--loop', action='store_true',
                            help="keep trying to connect if the console is unavailable")
     subparser.set_defaults(func=ClientSession.console)
 
-    #subparser = subparsers.add_parser('attach', parents=[place_parser])
+    subparser = subparsers.add_parser('fastboot',
+                                      help="run fastboot")
+    subparser.add_argument('fastboot_args', metavar='ARG', nargs=argparse.REMAINDER,
+                           help='fastboot arguments'
+    )
+    subparser.set_defaults(func=ClientSession.fastboot)
+
+    subparser = subparsers.add_parser('bootstrap',
+                                      help="start a bootloader")
+    subparser.add_argument('-w', '--wait', type=float, default=10.0)
+    subparser.add_argument('filename', help='filename to boot on the target')
+    subparser.set_defaults(func=ClientSession.bootstrap)
+
+    #subparser = subparsers.add_parser('attach')
     #subparser.set_defaults(func=ClientSession.attach)
 
     args = parser.parse_args()
 
+    env = None
+    if args.config:
+        env = Environment(config_file=args.config)
+
     extra = {
         'args': args,
+        'env': env,
+        'prog': parser.prog,
     }
 
     if args.command and args.command != 'help':
@@ -567,6 +653,7 @@ def main():
             url=args.crossbar, realm="realm1", extra=extra
         )
         runner.run(ClientSession)
+        exit(exitcode)
     else:
         parser.print_help()
 

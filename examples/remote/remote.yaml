@@ -1,0 +1,11 @@
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: test
+    drivers:
+      ManualPowerDriver:
+        name: "example"
+      SerialDriver: {}
+      BareboxDriver:
+        prompt: 'barebox@[^:]+:[^ ]+ '

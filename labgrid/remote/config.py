@@ -27,19 +27,3 @@ class ResourceConfig:
         pprint(('rendered', rendered))
         self.data = load(rendered)
         pprint(('loaded', self.data))
-
-
-@attr.s
-class TargetConfig:
-    filename = attr.ib(validator=attr.validators.instance_of(str))
-
-    def __attrs_post_init__(self):
-        try:
-            with open(self.filename) as file:
-                loaded = file.read()
-        except FileNotFoundError:
-            raise NoConfigFoundError(
-                "{} could not be found".format(self.filename)
-            )
-        self.data = load(rendered)
-        pprint(('loaded', self.data))

@@ -216,6 +216,23 @@ class ClientSession(ApplicationSession):
             )
         return self.places[places[0]]
 
+    def get_idle_place(self, place=None):
+        place = self.get_place(place)
+        if place.acquired:
+            raise UserError("place {} is not idle (acquired by {})".format(place.name, place.acquired))
+        return place
+
+    def get_acquired_place(self, place=None):
+        place = self.get_place(place)
+        if not place.acquired:
+            raise UserError("place {} is not acquired".format(place.name))
+        host, user = place.acquired.split('/')
+        if user != getuser():
+            raise UserError(
+                "place {} is acquired by a different user ({})".format(place.name, place.acquired)
+            )
+        return place
+
     @asyncio.coroutine
     def print_place(self):
         """Print out the current place and related resources"""
@@ -254,7 +271,7 @@ class ClientSession(ApplicationSession):
     @asyncio.coroutine
     def add_alias(self):
         """Add an alias for a place on the coordinator"""
-        place = self.get_place()
+        place = self.get_idle_place()
         alias = self.args.alias
         if alias in place.aliases:
             raise UserError(
@@ -272,7 +289,7 @@ class ClientSession(ApplicationSession):
     @asyncio.coroutine
     def del_alias(self):
         """Delete an alias for a place from the coordinator"""
-        place = self.get_place()
+        place = self.get_idle_place()
         alias = self.args.alias
         if alias not in place.aliases:
             raise UserError("place {} has no alias {}".format(place.name, alias))
@@ -303,7 +320,7 @@ class ClientSession(ApplicationSession):
     def add_match(self):
         """Add a match for a place, making fuzzy matching available to the
         client"""
-        place = self.get_place()
+        place = self.get_idle_place()
         pattern = self.args.pattern
         if place.acquired:
             raise UserError("can not change acquired place {}".format(place.name))
@@ -324,7 +341,7 @@ class ClientSession(ApplicationSession):
     @asyncio.coroutine
     def del_match(self):
         """Delete a match for a place"""
-        place = self.get_place()
+        place = self.get_idle_place()
         pattern = self.args.pattern
         if place.acquired:
             raise UserError("can not change acquired place {}".format(place.name))
@@ -350,7 +367,7 @@ class ClientSession(ApplicationSession):
         if place.acquired:
             raise UserError(
                 "place {} is already acquired by {}".
-                format(place, place.acquired)
+                format(place.name, place.acquired)
             )
         res = yield from self.call(
             'org.labgrid.coordinator.acquire_place', place.name
@@ -366,6 +383,13 @@ class ClientSession(ApplicationSession):
         place = self.get_place()
         if not place.acquired:
             raise UserError("place {} is not acquired".format(place.name))
+        host, user = place.acquired.split('/')
+        if user != getuser():
+            if not self.args.kick:
+                raise UserError(
+                    "place {} is acquired by a different user ({}), use --kick if you are sure".format(place.name, place.acquired)
+                )
+            print("warning: kicking user ({})".format(place.acquired))
         res = yield from self.call(
             'org.labgrid.coordinator.release_place', place.name
         )
@@ -375,8 +399,7 @@ class ClientSession(ApplicationSession):
             print("released place {}".format(place.name))
 
     def get_target_config(self, place):
-        if not place.acquired:
-            raise UserError("place {} is not acquired".format(place.name))
+        assert place.acquired
         config = {}
         resources = config['resources'] = {}
         for (
@@ -393,7 +416,7 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def env(self):
-        place = self.get_place()
+        place = self.get_acquired_place()
         env = {'targets': {place.name: self.get_target_config(place)}}
         import yaml
         print(yaml.dump(env))
@@ -405,7 +428,7 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def power(self):
-        place = self.get_place()
+        place = self.get_acquired_place()
         action = self.args.action
         target = self._get_target(place)
         from ..driver.powerdriver import NetworkPowerDriver
@@ -437,7 +460,7 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def console(self):
-        place = self.get_place()
+        place = self.get_acquired_place()
         while True:
             res = self._console(place)
             if res:
@@ -448,7 +471,7 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def fastboot(self):
-        place = self.get_place()
+        place = self.get_acquired_place()
         args = self.args.fastboot_args
         target = self._get_target(place)
         from ..driver.fastbootdriver import AndroidFastbootDriver
@@ -478,7 +501,7 @@ class ClientSession(ApplicationSession):
 
     @asyncio.coroutine
     def bootstrap(self):
-        place = self.get_place()
+        place = self.get_acquired_place()
         timeout = Timeout(self.args.wait)
         while not timeout.expired:
             res = self._bootstrap(place)
@@ -599,6 +622,8 @@ def main():
     subparser = subparsers.add_parser('release',
                                       aliases=('unlock',),
                                       help="release a place")
+    subparser.add_argument('-k', '--kick', action='store_true',
+                           help="release a place even if it is acquired by a different user")
     subparser.set_defaults(func=ClientSession.release)
 
     subparser = subparsers.add_parser('env',

@@ -218,6 +218,8 @@ class ClientSession(ApplicationSession):
         places = self._match_places(pattern)
         if not places:
             raise UserError("place pattern {} matches nothing".format(pattern))
+        if pattern in places:
+            return self.places[pattern]
         if len(places) > 1:
             raise UserError(
                 "pattern {} matches multiple places ({})".

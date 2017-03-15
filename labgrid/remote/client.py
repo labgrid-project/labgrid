@@ -218,6 +218,8 @@ class ClientSession(ApplicationSession):
         places = self._match_places(pattern)
         if not places:
             raise UserError("place pattern {} matches nothing".format(pattern))
+        if pattern in places:
+            return self.places[pattern]
         if len(places) > 1:
             raise UserError(
                 "pattern {} matches multiple places ({})".
@@ -408,7 +410,13 @@ class ClientSession(ApplicationSession):
             print("released place {}".format(place.name))
 
     def get_target_config(self, place):
-        assert place.acquired
+        if not place.acquired:
+            raise UserError("place {} is not acquired".format(place.name))
+        host, user = place.acquired.split('/')
+        if user != getuser():
+            raise UserError("place {} is not acquired by your user, acquired by {}".format(place.name, user))
+        if host != gethostname():
+            raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))
         config = {}
         resources = config['resources'] = {}
         for (

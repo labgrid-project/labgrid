@@ -1,3 +1,8 @@
+"""Config convenience class
+
+This class encapsulates access functions to the environment configuration
+
+"""
 import attr
 import os
 
@@ -19,12 +24,28 @@ class Config:
             )
 
     def resolve_path(self, path):
+        """Resolve an absolute path
+
+        Args:
+            path (str): path to resolve
+
+        Returns:
+            str: the absolute path
+        """
         if os.path.isabs(path):
             return path
         else:
             return os.path.join(self.base, path)
 
     def get_tool(self, tool):
+        """Retrieve an entry from the tools subkey
+
+        Args:
+            tool (str): the tool to retrieve the path for
+
+        Returns:
+            str: path to the requested tools
+        """
         try:
             path = str(self.data['tools'][tool])
             return self.resolve_path(path)
@@ -32,6 +53,18 @@ class Config:
             return None
 
     def get_image_path(self, kind):
+        """Retrieve an entry from the images subkey
+
+        Args:
+            kind (str): the kind of the image to retrieve the path for
+
+        Returns:
+            str: path to the image
+
+        Raises:
+            KeyError: if the requested image can not be found in the
+                configuration
+        """
         try:
             path = str(self.data['images'][kind])
             return self.resolve_path(path)
@@ -40,6 +73,20 @@ class Config:
             raise
 
     def get_option(self, name, default=None):
+        """Retrieve an entry from the options subkey
+
+        Args:
+            name (str): name of the option
+            default (str): A default parameter in case the option can not be
+                found
+
+        Returns:
+            str: value of the option or default parameter
+
+        Raises:
+            KeyError: if the requested image can not be found in the
+            configuration
+        """
         try:
             return str(self.data['options'][name])
         except KeyError:

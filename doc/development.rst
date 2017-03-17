@@ -25,6 +25,12 @@ Install required dependencies:
 
    sudo apt install libow-dev
 
+Install the development requirements:
+
+.. code-block:: bash
+
+   pip install -r dev-requirements.txt
+
 Install labgrid into the virtualenv in editable mode:
 
 .. code-block:: bash

@@ -1,5 +1,41 @@
 Development
 ============
+The first step is to install labgrid into a local virtualenv.
+
+Installation
+------------
+
+Clone the git repository:
+
+.. code-block:: bash
+
+   git clone https://github.com/labgrid-project/labgrid && cd labgrid
+
+Create and activate a virtualenv for labgrid:
+
+.. code-block:: bash
+
+   virtualenv -p python3 venv
+   source venv/bin/activate
+
+
+Install required dependencies:
+
+.. code-block:: bash
+
+   sudo apt install libow-dev
+
+Install labgrid into the virtualenv in editable mode:
+
+.. code-block:: bash
+
+   pip install -e .
+
+Tests can now run via:
+
+.. code-block:: bash
+
+   python -m pytest --env-config=<config>
 
 Writing a driver
 -------------------

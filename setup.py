@@ -23,6 +23,7 @@ setup(
         'pyudev',
         'onewire',
         'requests',
+        'autobahn'
     ],
     packages=[
         'labgrid',

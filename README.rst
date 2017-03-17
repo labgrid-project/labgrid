@@ -29,38 +29,43 @@ Contributing
 
 Quickstart
 ----------
+Install the required libraries:
+
+.. code-block:: bash
+
+   $ sudo apt install libow-dev
 
 Clone the git repository:
 
 .. code-block:: bash
 
-   git clone https://github.com/labgrid-project/labgrid
+   $ git clone https://github.com/labgrid-project/labgrid
 
 Create and activate a virtualenv for labgrid:
 
 .. code-block:: bash
 
-   virtualenv -p python3 venv
-   source venv/bin/activate
+   $ virtualenv -p python3 venv
+   $ source venv/bin/activate
 
 
 Install required dependencies:
 
 .. code-block:: bash
 
-   sudo apt install libow-dev
+   $ sudo apt install libow-dev
 
 Install labgrid into the virtualenv:
 
 .. code-block:: bash
 
-   python setup.py install
+   $ python setup.py install
 
 Tests can now run via:
 
 .. code-block:: bash
 
-   python -m pytest --env-config=<config>
+   $ python -m pytest --env-config=<config>
 
 
 .. |license| image:: https://img.shields.io/badge/license-LGPLv2.1-blue.svg

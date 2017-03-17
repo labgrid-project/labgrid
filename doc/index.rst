@@ -7,6 +7,7 @@ Welcome to labgrid's documentation!
 ===================================
 
 .. toctree::
+   getting_started
    usage
    development
    :maxdepth: 2

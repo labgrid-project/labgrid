@@ -5,55 +5,66 @@
 Resources
 =========
 
-SerialPort
-----------
+.. autoclass:: labgrid.resource.RawSerialPort
+   :members:
+   :show-inheritance:
 
-RawSerialPort
--------------
+.. autoclass:: labgrid.resource.NetworkSerialPort
+   :members:
+   :show-inheritance:
 
-NetworkSerialPort
------------------
+.. autoclass:: labgrid.resource.NetworkService
+   :members:
+   :show-inheritance:
 
-NetworkService
---------------
+.. autoclass:: labgrid.resource.OneWirePIO
+   :members:
+   :show-inheritance:
 
-OneWirePIO
-----------
+.. autoclass:: labgrid.resource.NetworkPowerPort
+   :members:
+   :show-inheritance:
 
-NetworkPowerPort
-----------------
+.. autoclass:: labgrid.resource.RemotePlace
+   :members:
+   :show-inheritance:
 
-RemotePlace
------------
-
-USBSerialPort
--------------
+.. autoclass:: labgrid.resource.USBSerialPort
+   :members:
+   :show-inheritance:
 
 Drivers
 =======
 
-CommandProtocol
-------------
-
 BareboxDriver
 ~~~~~~~~~~~~~
+.. autoclass:: labgrid.driver.BareboxDriver
+   :members:
 
 UBootDriver
 ~~~~~~~~~~~
+.. autoclass:: labgrid.driver.UBootDriver
+   :members:
 
 
 ShellDriver
 ~~~~~~~~~~~
+.. autoclass:: labgrid.driver.ShellDriver
+   :members:
 
 SSHDriver
 ~~~~~~~~~
+.. autoclass:: labgrid.driver.SSHDriver
+   :members:
 
-ConsoleDriver
--------------
+ConsoleProtocol
+---------------
 
 SerialDriver
 ~~~~~~~~~~~~
+
 ExternalConsoleDriver
+~~~~~~~~~~~~~~~~~~~~~
 
 BootProtocol
 ------------
@@ -87,4 +98,10 @@ InfoDriver
 
 Strategies
 ==========
+
+BareboxStrategy
+---------------
+
+UBootStrategy
+-------------
 

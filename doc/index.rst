@@ -15,7 +15,6 @@ Welcome to labgrid's documentation!
    modules/modules
    :maxdepth: 2
    :caption: Contents:
-   
 
 
 Indices and tables

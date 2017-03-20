@@ -10,6 +10,7 @@ Welcome to labgrid's documentation!
    getting_started
    usage
    development
+   design_decisions
    :maxdepth: 2
    :caption: Contents:
    

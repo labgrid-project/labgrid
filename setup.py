@@ -17,7 +17,7 @@ setup(
         'attrs',
         'jinja2',
         'pexpect',
-        'pyserial',
+        'pyserial>=3.3',
         'pytest',
         'pyyaml',
         'pyudev',

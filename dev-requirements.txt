@@ -15,3 +15,4 @@ onewire
 pyudev
 yapf
 requests
+autobahn

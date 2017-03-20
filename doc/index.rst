@@ -7,8 +7,11 @@ Welcome to labgrid's documentation!
 ===================================
 
 .. toctree::
+   getting_started
    usage
    development
+   components
+   design_decisions
    :maxdepth: 2
    :caption: Contents:
    

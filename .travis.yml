@@ -11,5 +11,6 @@ install:
   - pip install -e .
 script:
   - pytest --cov-config .coveragerc --cov=labgrid
+  - python setup.py build_sphinx
 after_success:
   - coveralls

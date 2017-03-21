@@ -21,7 +21,16 @@ from .exception import ExecutionError
 @target_factory.reg_driver
 @attr.s
 class ShellDriver(CommandMixin, Driver, CommandProtocol):
-    """ShellDriver - Driver to execute commands on the shell"""
+    """ShellDriver - Driver to execute commands on the shell
+    ShellDriver binds on top of a ConsoleProtocol.
+
+    Args:
+        prompt (regex): The Linux Prompt to detect
+        login_prompt (regex): The Login Prompt to detect
+        username (str): username to login with
+        password (str): password to login with
+        keyfile (str): keyfile to bind mount over users authorized keys
+    """
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(validator=attr.validators.instance_of(str))
     login_prompt = attr.ib(validator=attr.validators.instance_of(str))

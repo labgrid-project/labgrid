@@ -1,12 +1,13 @@
 # pylint: disable=no-member
 import attr
 import subprocess
+import os.path
 
 from ..factory import target_factory
 from ..resource.remote import NetworkAndroidFastboot
 from ..resource.udev import AndroidFastboot
 from ..step import step
-from .common import Driver
+from .common import Driver, check_file
 from .exception import ExecutionError
 
 
@@ -44,8 +45,12 @@ class AndroidFastbootDriver(Driver):
 
     @step(args=['filename'])
     def boot(self, filename):
+        filename = os.path.abspath(filename)
+        check_file(filename, command_prefix=self.prefix)
         self("boot", filename)
 
     @step(args=['partition', 'filename'])
     def flash(self, partition, filename):
+        filename = os.path.abspath(filename)
+        check_file(filename, command_prefix=self.prefix)
         self("flash", partition, filename)

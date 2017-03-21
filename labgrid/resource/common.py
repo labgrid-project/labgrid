@@ -13,6 +13,7 @@ class Resource(BindingMixin):
     use.
 
     Life cycle:
+
     - create
     - bind (n times)
     """
@@ -25,6 +26,15 @@ class Resource(BindingMixin):
 
 @attr.s
 class NetworkResource(Resource):
+    """
+    Represents a remote Resource available on another computer.
+
+    This stores a command_prefix to describe how to connect to the remote
+    computer.
+
+    Args:
+        host (str): remote host the resource is available on
+    """
     host = attr.ib(validator=attr.validators.instance_of(str))
 
     @property

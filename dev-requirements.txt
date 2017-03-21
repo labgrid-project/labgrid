@@ -1,5 +1,4 @@
 PyYAML
-Sphinx
 attrs>=16.3
 crossbar
 pexpect
@@ -16,5 +15,4 @@ pyudev
 yapf
 requests
 autobahn
-sphinx_rtd_theme
-sphinxcontrib-napoleon
+-r doc-requirements.txt

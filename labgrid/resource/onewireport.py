@@ -9,8 +9,8 @@ from .common import Resource
 class OneWirePIO(Resource):
     """This resource describes a Onewire PIO Port.
 
-    Arguments:
-    host - The hostname of the owserver e.g. localhost:4304
-    path - Path to the port on the owserver e.g. 29.7D6913000000/PIO.0"""
+    Args:
+        host (str): hostname of the owserver e.g. localhost:4304
+        path (str): path to the port on the owserver e.g. 29.7D6913000000/PIO.0"""
     host = attr.ib(validator=attr.validators.instance_of(str))
     path = attr.ib(validator=attr.validators.instance_of(str))

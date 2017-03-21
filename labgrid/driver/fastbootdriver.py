@@ -30,7 +30,7 @@ class AndroidFastbootDriver(Driver):
         self.prefix = self.fastboot.command_prefix+[
             self.tool,
             "-i", hex(self.fastboot.vendor_id),
-            "-p", str(self.fastboot.path),
+            "-s", "usb:{}".format(self.fastboot.path),
         ]
 
     def on_activate(self):

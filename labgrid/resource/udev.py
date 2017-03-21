@@ -42,6 +42,7 @@ class USBResource(ManagedResource):
     device = attr.ib(default=None, hash=False)
 
     def __attrs_post_init__(self):
+        self.timeout = 5.0
         self.match.setdefault('SUBSYSTEM', 'usb')
         super().__attrs_post_init__()
 

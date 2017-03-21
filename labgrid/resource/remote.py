@@ -78,6 +78,9 @@ class RemotePlace(ManagedResource):
 
     name = attr.ib(validator=attr.validators.instance_of(str))
 
+    def __attrs_post_init__(self):
+        self.timeout = 5.0
+        super().__attrs_post_init__()
 
 @attr.s
 class RemoteUSBResource(NetworkResource):

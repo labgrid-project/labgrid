@@ -1,13 +1,14 @@
 # pylint: disable=no-member
 import attr
 import subprocess
+import os.path
 
 from ..factory import target_factory
 from ..protocol import BootstrapProtocol
 from ..resource.remote import NetworkMXSUSBLoader, NetworkIMXUSBLoader
 from ..resource.udev import MXSUSBLoader, IMXUSBLoader
 from ..step import step
-from .common import Driver
+from .common import Driver, check_file
 from .exception import ExecutionError
 
 
@@ -38,6 +39,8 @@ class MXSUSBDriver(Driver, BootstrapProtocol):
     def load(self, filename=None):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
+        filename = os.path.abspath(filename)
+        check_file(filename, command_prefix=self.loader.command_prefix)
         subprocess.check_call(
             self.loader.command_prefix+[self.tool, "0", filename]
         )
@@ -60,7 +63,6 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
         else:
             self.tool = 'imx-usb-loader'
 
-
     def on_activate(self):
         pass
 
@@ -71,6 +73,8 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
     def load(self, filename=None):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
+        filename = os.path.abspath(filename)
+        check_file(filename, command_prefix=self.loader.command_prefix)
         subprocess.check_call(
             self.loader.command_prefix+[self.tool, "-p", str(self.loader.path), "-c", filename]
         )

@@ -25,7 +25,7 @@ class TestSerialDriver:
         monkeypatch.setattr(serial, 'Serial', serial_mock)
         s = SerialDriver(target)
         s.serial = serial_mock
-        s.on_activate()
+        target.activate(s)
         s.write(b"testdata")
         serial_mock.write.assert_called_with(b"testdata")
 
@@ -36,7 +36,7 @@ class TestSerialDriver:
         monkeypatch.setattr(serial, 'Serial', serial_mock)
         s = SerialDriver(target)
         s.serial = serial_mock
-        s.on_activate()
+        target.activate(s)
         s.read()
         assert (serial_mock.read.called)
 
@@ -46,6 +46,6 @@ class TestSerialDriver:
         monkeypatch.setattr(serial, 'Serial', serial_mock)
         s = SerialDriver(target)
         s.serial = serial_mock
-        s.on_activate()
+        target.activate(s)
         s.close()
         assert (serial_mock.close.called)

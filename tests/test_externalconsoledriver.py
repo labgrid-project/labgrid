@@ -13,6 +13,7 @@ class TestExternalConsoleDriver:
     def test_communicate(self, target):
         data = b"test\ndata"
         d = ExternalConsoleDriver(target, 'cat')
+        target.activate(d)
         d.write(data)
         time.sleep(0.1)
         assert d.read() == data

@@ -57,6 +57,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
     def on_deactivate(self):
         self._status = 0
 
+    @Driver.check_active
     @step(args=['cmd'], result=True)
     def _run(self, cmd, *, step):
         """
@@ -83,6 +84,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         exitcode = int(match.group(2))
         return (data, [], exitcode)
 
+    @Driver.check_active
     def run(self, cmd):
         return self._run(cmd)
 
@@ -102,6 +104,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         self.console.expect(self.prompt, timeout=5)
         self._check_prompt()
 
+    @Driver.check_active
     @step(args=['cmd'], result=True)
     def run_check(self, cmd):
         """
@@ -116,6 +119,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
             raise ExecutionError(cmd)
         return out
 
+    @Driver.check_active
     @step()
     def get_status(self):
         """Returns the status of the shell-driver.
@@ -144,6 +148,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         )
         self.console.expect(self.prompt)
 
+    @Driver.check_active
     @step(args=['key'])
     def _put_ssh_key(self, key):
         """Upload an SSH Key to a target"""
@@ -192,5 +197,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
             self.run_check('chmod 700 ~/.ssh')
             self.run_check('chmod 644 ~/.ssh/authorized_keys')
 
+    @Driver.check_active
     def put_ssh_key(self, key):
         self._put_ssh_key(key)

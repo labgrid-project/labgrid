@@ -18,12 +18,14 @@ class ManualPowerDriver(Driver, PowerProtocol):
     """ManualPowerDriver - Driver to tell the user to control a target's power"""
     name = attr.ib(validator=attr.validators.instance_of(str))
 
+    @Driver.check_active
     @step()
     def on(self):
         self.target.interact(
             "Turn the target {name} ON and press enter".format(name=self.name)
         )
 
+    @Driver.check_active
     @step()
     def off(self):
         self.target.interact(
@@ -31,6 +33,7 @@ class ManualPowerDriver(Driver, PowerProtocol):
             format(name=self.name)
         )
 
+    @Driver.check_active
     @step()
     def cycle(self):
         self.target.interact(
@@ -50,14 +53,17 @@ class ExternalPowerDriver(Driver, PowerProtocol):
     )
     delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
 
+    @Driver.check_active
     @step()
     def on(self):
         subprocess.check_call(self.cmd_on)
 
+    @Driver.check_active
     @step()
     def off(self):
         subprocess.check_call(self.cmd_off)
 
+    @Driver.check_active
     @step()
     def cycle(self):
         if self.cmd_cycle is not None:
@@ -83,14 +89,17 @@ class NetworkPowerDriver(Driver, PowerProtocol):
             __package__
         )
 
+    @Driver.check_active
     @step()
     def on(self):
         self.backend.set(self.port.host, self.port.index, True)
 
+    @Driver.check_active
     @step()
     def off(self):
         self.backend.set(self.port.host, self.port.index, False)
 
+    @Driver.check_active
     @step()
     def cycle(self):
         def fallback(host, port):
@@ -101,6 +110,7 @@ class NetworkPowerDriver(Driver, PowerProtocol):
         cycle = getattr(self.backend, 'cycle', fallback)
         cycle(self.port.host, self.port.index)
 
+    @Driver.check_active
     def get(self):
         return self.backend.get(self.port.host, self.port.index)
 
@@ -117,20 +127,24 @@ class DigitalOutputPowerDriver(Driver, PowerProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
+    @Driver.check_active
     @step()
     def on(self):
         subprocess.check_call(self.cmd_on)
 
+    @Driver.check_active
     @step()
     def off(self):
         subprocess.check_call(self.cmd_off)
 
+    @Driver.check_active
     @step()
     def cycle(self):
         self.output.set(True)
         time.sleep(self.delay)
         self.output.set(False)
 
+    @Driver.check_active
     @step()
     def get(self):
-        return True
+        return True # FIXME

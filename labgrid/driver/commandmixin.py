@@ -2,6 +2,7 @@ from time import sleep
 
 from ..util import Timeout
 from ..step import step
+from .common import Driver
 from .exception import ExecutionError
 
 
@@ -13,6 +14,7 @@ class CommandMixin:
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
+    @Driver.check_active
     @step(args=['cmd', 'pattern'])
     def wait_for(self, cmd, pattern, timeout=30.0, sleepduration=1):
         timeout = Timeout(timeout)

@@ -23,6 +23,7 @@ class InfoDriver(Driver, InfoProtocol):
         super().__attrs_post_init__()
         self.logger = logging.getLogger("{}".format(self))
 
+    @Driver.check_active
     @step(args=['interface'])
     def get_ip(self, interface="eth0"):
         """Returns the IP of the supplied interface"""
@@ -53,6 +54,7 @@ class InfoDriver(Driver, InfoProtocol):
         else:
             return None
 
+    @Driver.check_active
     @step(args=['service'])
     def get_service_status(self, service):
         """Returns True if service is active, False in all other cases"""
@@ -61,6 +63,7 @@ class InfoDriver(Driver, InfoProtocol):
         )
         return exitcode == 0
 
+    @Driver.check_active
     @step(result=True)
     def get_hostname(self):
         try:

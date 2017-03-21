@@ -26,12 +26,15 @@ class FakeConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 @target_factory.reg_driver
 @attr.s
 class FakeCommandDriver(CommandMixin, Driver, CommandProtocol):
+    @Driver.check_active
     def run(self, *args):
         pass
 
+    @Driver.check_active
     def run_check(self, *args):
         pass
 
+    @Driver.check_active
     def get_status(self):
         pass
 
@@ -39,20 +42,25 @@ class FakeCommandDriver(CommandMixin, Driver, CommandProtocol):
 @target_factory.reg_driver
 @attr.s
 class FakeFileTransferDriver(Driver, FileTransferProtocol):
+    @Driver.check_active
     def get(self, *args):
         pass
 
+    @Driver.check_active
     def put(self, *args):
         pass
 
 @target_factory.reg_driver
 @attr.s
 class FakePowerDriver(Driver, PowerProtocol):
+    @Driver.check_active
     def on(self, *args):
         pass
 
+    @Driver.check_active
     def off(self, *args):
         pass
 
+    @Driver.check_active
     def cycle(self, *args):
         pass

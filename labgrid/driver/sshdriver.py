@@ -91,6 +91,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         else:
             return self._start_own_master()
 
+    @Driver.check_active
     @step(args=['cmd'])
     def run(self, cmd):
         """Execute `cmd` on the target.
@@ -125,6 +126,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         stderr.pop()
         return (stdout, stderr, sub.returncode)
 
+    @Driver.check_active
     @step(args=['cmd'])
     def run_check(self, cmd):
         """
@@ -143,6 +145,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """The SSHDriver is always connected, return 1"""
         return 1
 
+    @Driver.check_active
     @step(args=['filename', 'remotepath'])
     def put(self, filename, remotepath=None):
         transfer_cmd = "scp {prefix} {filename} {user}@{host}:{remotepath}".format(
@@ -165,6 +168,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 "error executing command: {}".format(transfer_cmd)
             )
 
+    @Driver.check_active
     @step(args=['filename', 'destination'])
     def get(self, filename, destination="."):
         transfer_cmd = "scp {prefix} {user}@{host}:{filename} {destination}".format(

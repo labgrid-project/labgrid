@@ -43,6 +43,7 @@ class UBootStrategy(Strategy):
             return # nothing to do
         elif status == Status.uboot:
             # cycle power
+            self.target.activate(self.power)
             self.power.cycle()
             # interrupt uboot
             self.target.activate(self.uboot)

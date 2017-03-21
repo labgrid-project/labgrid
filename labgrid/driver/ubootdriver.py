@@ -54,6 +54,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self._status = 0
 
+    @Driver.check_active
     @step(args=['cmd'], result=True)
     def run(self, cmd):
         """
@@ -92,6 +93,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         else:
             return None
 
+    @Driver.check_active
     @step(args=['cmd'], result=True)
     def run_check(self, cmd):
         """
@@ -156,6 +158,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         for command in self.init_commands:  #pylint: disable=not-an-iterable
             self.run_check(command)
 
+    @Driver.check_active
     @step()
     def await_boot(self):
         """Wait for the initial Linux version string to verify we succesfully
@@ -163,6 +166,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self.console.expect(r"Linux version \d")
 
+    @Driver.check_active
     @step(args=['name'])
     def boot(self, name):
         """Boot the default or a specific boot entry

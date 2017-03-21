@@ -1,4 +1,5 @@
 import enum
+from functools import wraps
 
 import attr
 
@@ -73,3 +74,16 @@ class BindingMixin:
         clients.
         """
         pass
+
+    @classmethod
+    def check_active(cls, func):
+        @wraps(func)
+        def wrapper(self, *_args, **_kwargs):
+            if self.state is not BindingState.active:
+                raise StateError(
+                    "{} can not be called ({} is in state {})".format(
+                        func.__qualname__, self, self.state.name)
+                )
+            return func(self, *_args, **_kwargs)
+
+        return wrapper

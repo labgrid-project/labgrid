@@ -12,7 +12,8 @@ setup(
     use_scm_version=True,
     url='https://github.com/labgrid-project',
     extras_require={
-        'onewire': ['onewire']
+        'onewire': ['onewire'],
+        'coordinator': ['crossbar']
     },
     setup_requires=['pytest-runner', 'setuptools_scm'],
     tests_require=['pytest-mock', ],

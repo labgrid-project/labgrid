@@ -490,6 +490,16 @@ class ClientSession(ApplicationSession):
     def fastboot(self):
         place = self.get_acquired_place()
         args = self.args.fastboot_args
+        if len(args) < 1:
+            raise UserError("not enough arguments for fastboot")
+        if args[0] == 'flash':
+            if len(args) < 3:
+                raise UserError("not enough arguments for fastboot flash")
+            args[2] = os.path.abspath(args[2])
+        elif args[0] == 'boot':
+            if len(args) < 2:
+                raise UserError("not enough arguments for fastboot boot")
+            args[1:] = map(os.path.abspath, args[1:])
         target = self._get_target(place)
         from ..driver.fastbootdriver import AndroidFastbootDriver
         drv = AndroidFastbootDriver(target)

@@ -156,4 +156,17 @@ texinfo_documents = [
 ]
 
 
+# -- Options for autodoc --------------------------------------------------
 
+autodoc_member_order = 'bysource'
+autodoc_mock_imports = ['onewire', 'txaio']
+
+def run_apidoc(app):
+    from sphinx.apidoc import main
+    module = os.path.abspath(os.path.join(app.srcdir, '..', 'labgrid'))
+    output = os.path.abspath(os.path.join(app.srcdir, 'modules'))
+    cmd = ['sphinx-apidoc', module, '-M', '-H', 'Modules', '-o', output]
+    main(cmd)
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)

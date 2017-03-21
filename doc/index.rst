@@ -12,6 +12,7 @@ Welcome to labgrid's documentation!
    development
    components
    design_decisions
+   modules/modules
    :maxdepth: 2
    :caption: Contents:
    

@@ -11,6 +11,9 @@ setup(
     license='LGPL-2.1',
     use_scm_version=True,
     url='https://github.com/labgrid-project',
+    extras_require={
+        'onewire': ['onewire']
+    },
     setup_requires=['pytest-runner', 'setuptools_scm'],
     tests_require=['pytest-mock', ],
     install_requires=[
@@ -21,7 +24,6 @@ setup(
         'pytest',
         'pyyaml',
         'pyudev',
-        'onewire',
         'requests',
         'autobahn'
     ],

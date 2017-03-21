@@ -18,7 +18,14 @@ from .exception import ExecutionError
 @target_factory.reg_driver
 @attr.s
 class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
-    """UBootDriver - Driver to control uboot via the console"""
+    """UBootDriver - Driver to control uboot via the console.
+    UBootDriver binds on top of a ConsoleProtocol.
+
+    Args:
+        prompt (str): The default UBoot Prompt
+        password (str): optional password to unlock UBoot
+        init_commands (Tuple[str]): a tuple of commands to run after unlock
+    """
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
@@ -33,19 +40,30 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         self._status = 0
 
     def on_activate(self):
+        """Activate the UBootDriver
+
+        This function checks for a prompt and awaits it if not already active
+        """
         if self._status == 0:
             self.await_prompt()
 
     def on_deactivate(self):
+        """Deactivate the UBootDriver
+
+        Simply sets the internal status to 0
+        """
         self._status = 0
 
     @step(args=['cmd'], result=True)
     def run(self, cmd):
         """
-        Runs the specified cmd on the shell and returns the output.
+        Runs the specified command on the shell and returns the output.
 
-        Arguments:
-        cmd - cmd to run on the shell
+        Args:
+            cmd (str): command to run on the shell
+
+        Returns:
+            Tuple[List[str],List[str], int]: if successful, None otherwise
         """
         # FIXME: Handle pexpect Timeout
         # TODO: Shell Escaping for the U-Boot Shell
@@ -77,11 +95,14 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     @step(args=['cmd'], result=True)
     def run_check(self, cmd):
         """
-        Runs the specified cmd on the shell and returns the output if successful,
+        Runs the specified command on the shell and returns the output if successful,
         raises ExecutionError otherwise.
 
-        Arguments:
-        cmd - cmd to run on the shell
+        Args:
+            cmd (str): command to run on the shell
+
+        Returns:
+            List[str]: stdout of the executed command
         """
         res = self.run(cmd)
         if res[2] != 0:
@@ -89,14 +110,18 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         return res[0]
 
     def get_status(self):
-        """Returns the status of the uboot driver.
-        0 means not connected/found, 1 means shell
+        """Retrieve status of the UBootDriver.
+        0 means inactive, 1 means active.
+
+        Returns:
+            int: status of the driver
         """
         return self._status
 
     def _check_prompt(self):
         """
-        Internal function to check if we have a valid prompt
+        Internal function to check if we have a valid prompt.
+        It sets the internal _status to 1 or 0 based on the prompt detection.
         """
         marker = gen_marker()
         # hide marker from expect
@@ -111,7 +136,9 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     @step()
     def await_prompt(self):
-        """Await autoboot line and stop it to get to the prompt"""
+        """Await autoboot line and stop it to get to the prompt, optionally
+        enter the password.
+        """
         self.console.expect(r"U-Boot 20\d+")
         index, _, _, _ = self.console.expect(
             [self.prompt, "stop autoboot", "enter Password:"]
@@ -131,11 +158,17 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     @step()
     def await_boot(self):
-        """Wait for boot line of the linux kernel"""
+        """Wait for the initial Linux version string to verify we succesfully
+        jumped into the kernel.
+        """
         self.console.expect(r"Linux version \d")
 
     @step(args=['name'])
     def boot(self, name):
+        """Boot the default or a specific boot entry
+
+        Args:
+            name (str): name of the entry to boot"""
         if name:
             self.console.sendline("boot -v {}".format(name))
         else:

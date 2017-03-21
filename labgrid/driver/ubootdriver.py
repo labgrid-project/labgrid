@@ -45,7 +45,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         This function checks for a prompt and awaits it if not already active
         """
         if self._status == 0:
-            self.await_prompt()
+            self._await_prompt()
 
     def on_deactivate(self):
         """Deactivate the UBootDriver
@@ -135,7 +135,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             raise
 
     @step()
-    def await_prompt(self):
+    def _await_prompt(self):
         """Await autoboot line and stop it to get to the prompt, optionally
         enter the password.
         """

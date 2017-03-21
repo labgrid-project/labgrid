@@ -43,7 +43,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self._check_prompt()
         if self._status == 0:
-            self.await_prompt()
+            self._await_prompt()
 
     def on_deactivate(self):
         """Deactivate the BareboxDriver
@@ -124,7 +124,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         except TIMEOUT:
             self._status = 0
 
-    def await_prompt(self):
+    def _await_prompt(self):
         """Await autoboot line and stop it to get to the prompt"""
         self.console.expect(r"[\n]barebox 20\d+")
         index, _, _, _ = self.console.expect([self.prompt, "stop autoboot"])

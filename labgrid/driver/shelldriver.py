@@ -48,7 +48,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
 
     def on_activate(self):
         if self._status == 0:
-            self.await_login()
+            self._await_login()
             self._inject_run()
         if self.keyfile:
             self.put_ssh_key(self.keyfile)
@@ -84,7 +84,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         return (data, [], exitcode)
 
     @step()
-    def await_login(self):
+    def _await_login(self):
         """Awaits the login prompt and logs the user in"""
         self.console.sendline("")
         index, _, _, _ = self.console.expect([self.prompt, self.login_prompt])

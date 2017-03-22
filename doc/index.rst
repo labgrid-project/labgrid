@@ -6,6 +6,17 @@
 Welcome to labgrid's documentation!
 ===================================
 
+Labgrid is a embedded board control library which also supports remote exports and management of embedded boards.
+
+It currently supports:
+
+- pytest-plugin to write tests for embedded systems connecting over SSH or Serial
+- remote client-exporter-coordinator infrastructure to make boards available from different computers on a network
+- Power/Reset management via plugins for power switches or onewire PIOs
+- Upload of images via imxusbloader/mxusbloader or fastboot
+- Functions to control external services such as emulated USB-Sticks and the Hawkbit deployment service
+
+
 .. toctree::
    getting_started
    usage

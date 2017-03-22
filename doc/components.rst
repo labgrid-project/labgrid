@@ -1,9 +1,8 @@
-============
- Components
-============
+Components
+==========
 
 Resources
-=========
+---------
 
 .. autoclass:: labgrid.resource.RawSerialPort
    :members:
@@ -34,74 +33,39 @@ Resources
    :show-inheritance:
 
 Drivers
-=======
+-------
 
-BareboxDriver
-~~~~~~~~~~~~~
 .. autoclass:: labgrid.driver.BareboxDriver
    :members:
+   :show-inheritance:
 
-UBootDriver
-~~~~~~~~~~~
 .. autoclass:: labgrid.driver.UBootDriver
    :members:
+   :show-inheritance:
 
-
-ShellDriver
-~~~~~~~~~~~
 .. autoclass:: labgrid.driver.ShellDriver
    :members:
+   :show-inheritance:
 
-SSHDriver
-~~~~~~~~~
 .. autoclass:: labgrid.driver.SSHDriver
    :members:
+   :show-inheritance:
 
-ConsoleProtocol
----------------
+.. autoclass:: labgrid.driver.SerialDriver
+   :members:
+   :show-inheritance:
 
-SerialDriver
-~~~~~~~~~~~~
-
-ExternalConsoleDriver
-~~~~~~~~~~~~~~~~~~~~~
-
-BootProtocol
-------------
-
-AndroidFastbootDriver
-~~~~~~~~~~~~~~~~~~~~~
-
-MXSUSBDriver
-~~~~~~~~~~~~
-
-IMXUSBDriver
-~~~~~~~~~~~~
-
-PowerProtocol
--------------
-
-ManualPowerDriver
-~~~~~~~~~~~~~~~~~
-
-ExternalPowerDriver
-~~~~~~~~~~~~~~~~~~~
-
-DigitalOutputPowerDriver
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-InfoProtocol
-------------
-
-InfoDriver
-~~~~~~~~~~
+.. autoclass:: labgrid.driver.InfoDriver
+   :members:
+   :show-inheritance:
 
 Strategies
-==========
+----------
 
-BareboxStrategy
----------------
+.. autoclass:: labgrid.strategy.UBootStrategy
+   :members:
+   :show-inheritance:
 
-UBootStrategy
--------------
-
+.. autoclass:: labgrid.strategy.BareboxStrategy
+   :members:
+   :show-inheritance:

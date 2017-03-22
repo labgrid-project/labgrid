@@ -29,12 +29,6 @@ Contributing
 
 Quickstart
 ----------
-Install the required libraries:
-
-.. code-block:: bash
-
-   $ sudo apt install libow-dev
-
 Clone the git repository:
 
 .. code-block:: bash
@@ -47,13 +41,6 @@ Create and activate a virtualenv for labgrid:
 
    $ virtualenv -p python3 venv
    $ source venv/bin/activate
-
-
-Install required dependencies:
-
-.. code-block:: bash
-
-   $ sudo apt install libow-dev
 
 Install labgrid into the virtualenv:
 

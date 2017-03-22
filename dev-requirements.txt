@@ -1,5 +1,4 @@
 PyYAML
-Sphinx
 attrs>=16.3
 crossbar
 pexpect
@@ -16,3 +15,4 @@ pyudev
 yapf
 requests
 autobahn
+-r doc-requirements.txt

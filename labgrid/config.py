@@ -85,7 +85,7 @@ class Config:
 
         Raises:
             KeyError: if the requested image can not be found in the
-            configuration
+                configuration
         """
         try:
             return str(self.data['options'][name])

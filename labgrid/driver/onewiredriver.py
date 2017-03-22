@@ -1,5 +1,4 @@
 import logging
-import onewire
 
 import attr
 
@@ -15,6 +14,7 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
     bindings = {"port": OneWirePIO, }
 
     def __attrs_post_init__(self):
+        import onewire
         super().__attrs_post_init__()
         self.onewire = onewire.Onewire(self.port.host)
 

@@ -69,6 +69,8 @@ same machine. The client is used to access functionality provided by an
 exporter. Over the course of this tutorial we will setup a coordinator and
 exporter, and learn how to access the exporter via the client.
 
+Coordinator
+-----------
 To start the coordinator, we will download labgrid and select the coordinator
 extra.
 
@@ -84,12 +86,13 @@ by running ``crossbar`` inside of the repository.
 .. note::  This is possible because the labgrid repository contains a
            description of the coordinator in the ``.crossbar`` folder.
 
+Exporter
+--------
 The exporter needs a configuration file written in YAML syntax, it lists the
 exported resources of the local machine. An entry starts with a name which has a
 resource as a subkey, additionally a location key can be provided. Example to
-export a ``RawSerialPort`` with the name `example-port` and the location
+export a ``RawSerialPort`` with the group name `example-port` and the location
 `example-location`:
-
 
 .. code-block:: yaml
 
@@ -97,6 +100,54 @@ export a ``RawSerialPort`` with the name `example-port` and the location
      location: example-location
      RawSerialPort:
        port: /dev/ttyUSB0
+   example-port-2:
+     location: example-location-2
+     RawSerialPort:
+       port: /dev/ttyUSB1
+
+The exporter can now be started by running:
+
+.. code-block:: bash
+
+    $ labgrid-exporter configuration.yaml
+
+Client
+------
+Finally we can test the client functionality, run:
+
+.. code-block:: bash
+
+    $ labgrid-client resources
+
+To check the available resources listed by the coordinator, `example-port` and
+`example-port-2` should be available there.
+
+You can now add a place with 
+
+.. code-block:: bash
+
+    $ labgrid-client -p `example-place` create
+
+And add resources to this place, for example:
+
+.. code-block:: bash
+
+    $ labgrid-client -p `example-place` add-match */example-port/*
+
+Which adds the previously defined resource from the exporter to the place.
+To interact with this place, it needs to be acquired first, this is done by
+
+.. code-block:: bash
+
+    $ labgrid-client -p `example-place` acquire
+
+Now we can connect to the port via console:
+
+.. code-block:: bash
+
+    $ labgrid-client -p `example-place` console
+
+For a complete reference have a look at the ``labgrid-client(1)`` man page.
 
 
 Udev Matching

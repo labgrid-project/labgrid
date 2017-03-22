@@ -536,15 +536,6 @@ class ClientSession(ApplicationSession):
                 break
             yield from asyncio.sleep(1.0)
 
-    #@asyncio.coroutine
-    #def attach(self, place):
-    #    usb_devices = devices['usb_devices']
-    #    usb_device = usb_devices[place]
-    #    print("Attaching to ", usb_device)
-    #    subprocess.call([
-    #        'usbip', 'attach', '-r', "{}".format(usb_device['host']), '-b',
-    #        "{}".format(usb_device['id'])
-    #    ])
 
 
 def main():
@@ -682,9 +673,6 @@ def main():
     subparser.add_argument('-w', '--wait', type=float, default=10.0)
     subparser.add_argument('filename', help='filename to boot on the target')
     subparser.set_defaults(func=ClientSession.bootstrap)
-
-    #subparser = subparsers.add_parser('attach')
-    #subparser.set_defaults(func=ClientSession.attach)
 
     args = parser.parse_args()
 

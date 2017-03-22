@@ -41,7 +41,7 @@ or to enable both:
 Depending on the used shell settings, they may have to be escaped via ``\``.
 
 Standalone
-------------------
+----------
 
 The Labgrid library consists of a set of fixtures which implement the automatic
 creation of targets, drivers and synchronisation helpers. The configuration file

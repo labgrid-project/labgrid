@@ -43,7 +43,7 @@ successful so far, start by copying the initial example:
 
 connect your embedded board (raspberry pi, riotboard, …) to your computer and
 adjust the ``port`` parameter of the ``RawSerialPort`` resource and ``username``
-and ``password`` of the ShellDrivver drier in ``local.yaml``. You can check
+and ``password`` of the ShellDriver driver in ``local.yaml``. You can check
 which port gets assigned to your USB-Serial converter by unplugging the
 converter, running ``dmesg -w`` and plugging it back in. Boot up your board
 (manually) and run your first test:
@@ -58,7 +58,7 @@ It should return successfully, in case it does not, open an `Issue
 Setting up the distributed infrastructure
 =========================================
 
-The labgrid distributed infrasctructure consists of three components:
+The labgrid distributed infrastructure consists of three components:
 
 #. Coordinator
 #. Exporter

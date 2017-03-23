@@ -1,3 +1,4 @@
+import logging
 import attr
 
 from ..factory import target_factory
@@ -8,6 +9,7 @@ from .common import Resource, NetworkResource, ManagedResource, ResourceManager
 class RemotePlaceManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.logger = logging.getLogger("{}".format(self))
         self.url = None
         self.realm = None
         self.loop = None
@@ -45,6 +47,8 @@ class RemotePlaceManager(ResourceManager):
             new.avail = resource_entry.avail
             new._remote_entry = resource_entry
             expanded.append(new)
+        self.logger.debug("expanded remote resources for place {}: {}".format(
+            remote_place.name, expanded))
         remote_place.avail=True
 
     def poll(self):
@@ -68,9 +72,9 @@ class RemotePlaceManager(ResourceManager):
                 if v_old != v_new:
                     changes.append((k, v_old, v_new))
             if changes:
-                print("changed attributes for {}:".format(resource))
+                self.logger.debug("changed attributes for {}:".format(resource))
                 for k, v_old, v_new in changes:
-                    print("  {}: {} -> {}".format(k, v_old, v_new))
+                    self.logger.debug("  {}: {} -> {}".format(k, v_old, v_new))
 
 
 @target_factory.reg_resource

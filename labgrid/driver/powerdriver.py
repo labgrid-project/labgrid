@@ -83,13 +83,13 @@ class NetworkPowerDriver(Driver, PowerProtocol):
         self.backend.set(self.port.host, self.port.index, False)
 
     def cycle(self):
-        def fallback():
+        def fallback(host, port):
             self.off()
             time.sleep(self.delay)
             self.on()
 
         cycle = getattr(self.backend, 'cycle', fallback)
-        cycle()
+        cycle(self.port.host, self.port.index)
 
     def get(self):
         return self.backend.get(self.port.host, self.port.index)

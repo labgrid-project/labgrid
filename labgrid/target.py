@@ -1,11 +1,13 @@
+from time import monotonic
+
 import attr
 
 from .binding import BindingError, BindingState
 from .driver import Driver
 from .exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
 from .resource import Resource, ManagedResource
+from .strategy import Strategy
 from .util import Timeout
-from .step import step
 
 
 @attr.s
@@ -16,6 +18,7 @@ class Target:
     def __attrs_post_init__(self):
         self.resources = []
         self.drivers = []
+        self.last_update = 0.0
 
     def interact(self, msg):
         if self.env:
@@ -23,49 +26,90 @@ class Target:
         else:
             input(msg)
 
-    @step()
-    def await_resources(self):
-        waiting = set(r for r in self.resources if isinstance(r, ManagedResource))
+    def update_resources(self):
+        """
+        Iterate over all relevant managers and deactivate any active but
+        unavailable resources.
+        """
+        if (monotonic() - self.last_update) < 0.1:
+            return
+        self.last_update = monotonic()
+        resources = (r for r in self.resources if isinstance(r, ManagedResource))
+        managers = set(r.manager for r in resources)
+        for manager in managers:
+            manager.poll()
+        for resource in resources:
+            if not resource.avail and resource.state is BindingState.active:
+                print("deactivating unavailable resource {}".format(resource))
+                self.deactivate(resource)
+
+    def await_resources(self, resources, timeout=None):
+        """
+        Poll the given resources and wait until they are available.
+        """
+        self.update_resources()
+
+        waiting = set(resource for resource in resources if isinstance(resource, ManagedResource))
         if not waiting:
             return
-        timeout = Timeout(max(r.timeout for r in waiting))
+        if timeout is None:
+            timeout = Timeout(max(resource.timeout for resource in waiting))
+        else:
+            timeout = Timeout(timeout)
         while waiting and not timeout.expired:
             waiting = set(r for r in waiting if not r.avail)
-            for r in waiting:
-                r.poll()
+            managers = set(r.manager for r in waiting)
+            for m in managers:
+                m.poll()
             # TODO: sleep if no progress
         if waiting:
             raise NoResourceFoundError("Not all resources are available: {}".format(waiting))
 
-    def get_resource(self, cls):
+    def get_resource(self, cls, *, await=True):
         """
         Helper function to get a resource of the target.
         Returns the first valid resource found, otherwise None.
 
         Arguments:
         cls -- resource-class to return as a resource
+        await -- wait for the resource to become available (default True)
         """
         for res in self.resources:
             if isinstance(res, cls):
+                if await:
+                    self.await_resources([res])
                 return res
         raise NoResourceFoundError(
             "no resource matching {} found in target {}".format(cls, self)
         )
 
-    def get_driver(self, cls):
+    def get_driver(self, cls, *, activate=True):
         """
         Helper function to get a driver of the target.
         Returns the first valid driver found, otherwise None.
 
         Arguments:
         cls -- driver-class to return as a resource
+        activate -- activate the driver (default True)
         """
+        found = []
         for drv in self.drivers:
             if isinstance(drv, cls):
-                return drv
-        raise NoDriverFoundError(
-            "no driver matching {} found in target {}".format(cls, self)
-        )
+                if isinstance(drv, Strategy):
+                    found.append(drv) # don't activate strategies, they have conflicting bindings
+                    continue
+                if activate:
+                    self.activate(drv)
+                found.append(drv)
+        if len(found) == 0:
+            raise NoDriverFoundError(
+                "no driver matching {} found in target {}".format(cls, self)
+            )
+        elif len(found) > 1:
+            raise NoDriverFoundError(
+                "multiple drivers matching {} found in target {}".format(cls, self)
+            )
+        return found[0]
 
     def get_active_driver(self, cls):
         """
@@ -131,12 +175,13 @@ class Target:
                 try:
                     if issubclass(requirement, Resource):
                         suppliers.append(
-                            self.get_resource(requirement),
+                            self.get_resource(requirement, await=False),
                         )
                     else:
                         suppliers.append(
-                            self.get_driver(requirement),
+                            self.get_driver(requirement, activate=False),
                         )
+
                 except NoSupplierFoundError as e:
                     errors.append(e)
             if not suppliers:
@@ -193,7 +238,9 @@ class Target:
         # consistency check
         assert client in self.resources or client in self.drivers
 
-        # TODO: wait until resources are available?
+        # wait until resources are available
+        resources = [resource for resource in client.suppliers if isinstance(resource, Resource)]
+        self.await_resources(resources)
 
         # activate recursively and resolve conflicts
         for supplier in client.suppliers:

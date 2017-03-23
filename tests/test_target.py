@@ -15,18 +15,18 @@ def test_instanziation():
 
 
 def test_get_resource(target):
-    class a():
+    class a(Resource):
         pass
 
-    target.resources.append(a())
+    a(target)
     assert isinstance(target.get_resource(a), a)
 
 
 def test_get_driver(target):
-    class a():
+    class a(Driver):
         pass
 
-    target.drivers.append(a())
+    a(target)
     assert isinstance(target.get_driver(a), a)
 
 

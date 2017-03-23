@@ -187,3 +187,31 @@ in the USB-serial converter. The YAML representation to match this converter:
 
 This section can now be added under the resource key in a environment
 configuration or under its own entry in an exporter configuration file.
+
+Using a strategy
+================
+
+Strategies allow the labgrid library to automatically bring the board into a
+defined state, e.g. boot through the bootloader into the Linux kernel and login
+to a shell. They have a few requirements:
+
+- A driver implementing the ``PowerProtocol``, if no controllable infrastructure
+  is available a ``ManualPowerDriver`` can be used.
+- A driver implementing the ``LinuxBootProtocol``, usually a specific driver for
+  the boards bootloader
+- A driver implementing the ``CommandProtocol``, usually a ``ShellDriver`` with
+  a ``SerialDriver`` below it.
+
+Labgrid ships with two builtin strategies, ``BareboxStrategy`` and
+``UBootStrategy``. These can be used as a reference example for simple
+strategies, more complex tests usually require the implementation of your own
+strategies.
+
+To use a strategy, add it and its dependencies to your configuration YAML,
+retrieve it in your test and call the ``transisition(status)`` function.
+
+::
+   >>> strategy = target.get_driver(strategy)
+   >>> strategy.transition("barebox")
+
+An example using the pytest plugin is provided under `examples/strategy`.

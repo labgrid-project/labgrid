@@ -26,6 +26,18 @@ class ResourceEntry:
     def params(self):
         return self.data['params']
 
+    @property
+    def args(self):
+        """arguments for resource construction"""
+        args = self.data['params'].copy()
+        args.pop('extra', None)
+        return args
+
+    @property
+    def extra(self):
+        """extra resource information"""
+        return self.data['params'].get('extra', {})
+
     def asdict(self):
         return {
             'cls': self.cls,

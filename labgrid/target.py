@@ -83,12 +83,6 @@ class Target:
             "no driver matching {} found in target {}".format(cls, self)
         )
 
-    def get(self, cls):
-        if issubclass(cls, Resource):
-            return self.get_resource(cls)
-        else:
-            return self.get_driver(cls)
-
     def bind_resource(self, resource):
         """
         Bind the resource to this target.
@@ -135,7 +129,14 @@ class Target:
             suppliers = []
             for requirement in requirements:
                 try:
-                    suppliers.append(self.get(requirement))
+                    if issubclass(requirement, Resource):
+                        suppliers.append(
+                            self.get_resource(requirement),
+                        )
+                    else:
+                        suppliers.append(
+                            self.get_driver(requirement),
+                        )
                 except NoSupplierFoundError as e:
                     errors.append(e)
             if not suppliers:

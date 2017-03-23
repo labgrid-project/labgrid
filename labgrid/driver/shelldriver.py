@@ -90,7 +90,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
     def _await_login(self):
         """Awaits the login prompt and logs the user in"""
         self.console.sendline("")
-        index, _, _, _ = self.console.expect([self.prompt, self.login_prompt])
+        # TODO use step timeouts
+        index, _, _, _ = self.console.expect([self.prompt, self.login_prompt], timeout=60)
         if index == 0:
             self.status = 1
             return  # already logged in

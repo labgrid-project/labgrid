@@ -51,14 +51,14 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
             self._await_login()
             self._inject_run()
         if self.keyfile:
-            self.put_ssh_key(self.keyfile)
-        self.run("dmesg -n 1")  # Turn off Kernel Messages to the console
+            self._put_ssh_key(self.keyfile)
+        self._run("dmesg -n 1")  # Turn off Kernel Messages to the console
 
     def on_deactivate(self):
         self._status = 0
 
     @step(args=['cmd'], result=True)
-    def run(self, cmd, *, step):
+    def _run(self, cmd, *, step):
         """
         Runs the specified cmd on the shell and returns the output.
 
@@ -82,6 +82,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         # Get exit code
         exitcode = int(match.group(2))
         return (data, [], exitcode)
+
+    def run(self, cmd):
+        return self._run(cmd)
 
     @step()
     def _await_login(self):
@@ -141,7 +144,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         self.console.expect(self.prompt)
 
     @step(args=['key'])
-    def put_ssh_key(self, key):
+    def _put_ssh_key(self, key):
         """Upload an SSH Key to a target"""
         regex = re.compile(
             r"""ssh-rsa # Only match RSA Keys
@@ -187,3 +190,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
             self.run_check('mount --bind /tmp/keys ~/.ssh/authorized_keys')
             self.run_check('chmod 700 ~/.ssh')
             self.run_check('chmod 644 ~/.ssh/authorized_keys')
+
+    def put_ssh_key(self, key):
+        self._put_ssh_key(key)

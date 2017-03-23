@@ -113,7 +113,12 @@ class ClientSession(ApplicationSession):
         #))
         group = self.resources.setdefault(exporter,
                                           {}).setdefault(group_name, {})
-        group[resource_name] = ResourceEntry(resource)
+        # Do not replace the ResourceEntry object, as other components may keep
+        # a reference to it and want to see changes.
+        if resource_name not in group:
+            group[resource_name] = ResourceEntry(resource)
+        else:
+            group[resource_name].data = resource
 
     @asyncio.coroutine
     def on_place_changed(self, name, config):

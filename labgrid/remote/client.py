@@ -23,7 +23,7 @@ from ..util.timeout import Timeout
 from .. import Target
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(levelname)7s: %(message)s',
     stream=sys.stderr,
 )
@@ -700,6 +700,9 @@ def main():
     subparser.set_defaults(func=ClientSession.bootstrap)
 
     args = parser.parse_args()
+
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     env = None
     if args.config:

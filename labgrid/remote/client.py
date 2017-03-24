@@ -447,9 +447,10 @@ class ClientSession(ApplicationSession):
     def power(self):
         place = self.get_acquired_place()
         action = self.args.action
+        delay = self.args.delay
         target = self._get_target(place)
         from ..driver.powerdriver import NetworkPowerDriver
-        drv = NetworkPowerDriver(target)
+        drv = NetworkPowerDriver(target, delay=delay)
         target.await_resources([drv.port], timeout=1.0)
         target.activate(drv)
         res = getattr(drv, action)()
@@ -676,6 +677,7 @@ def main():
                                       aliases=('pw',),
                                       help="change (or get) a place's power status")
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
+    subparser.add_argument('-t', '--delay', type=float, default=1.0, help='wait time between off and on during cycle')
     subparser.set_defaults(func=ClientSession.power)
 
     subparser = subparsers.add_parser('console',

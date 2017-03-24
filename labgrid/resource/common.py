@@ -80,6 +80,8 @@ class ManagedResource(Resource):
     """
     manager_cls = ResourceManager
 
+    timeout = attr.ib(default=2.0, init=False, validator=attr.validators.instance_of(float))
+
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.avail = False

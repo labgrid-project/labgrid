@@ -7,6 +7,7 @@ import attr
 from ..factory import target_factory
 from ..protocol import PowerProtocol, DigitalOutputProtocol
 from ..resource import NetworkPowerPort
+from ..step import step
 from .common import Driver
 from .onewiredriver import OneWirePIODriver
 
@@ -17,17 +18,20 @@ class ManualPowerDriver(Driver, PowerProtocol):
     """ManualPowerDriver - Driver to tell the user to control a target's power"""
     name = attr.ib(validator=attr.validators.instance_of(str))
 
+    @step()
     def on(self):
         self.target.interact(
             "Turn the target {name} ON and press enter".format(name=self.name)
         )
 
+    @step()
     def off(self):
         self.target.interact(
             "Turn the target {name} OFF and press enter".
             format(name=self.name)
         )
 
+    @step()
     def cycle(self):
         self.target.interact(
             "CYCLE the target {name} and press enter".format(name=self.name)
@@ -46,12 +50,15 @@ class ExternalPowerDriver(Driver, PowerProtocol):
     )
     delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
 
+    @step()
     def on(self):
         subprocess.check_call(self.cmd_on)
 
+    @step()
     def off(self):
         subprocess.check_call(self.cmd_off)
 
+    @step()
     def cycle(self):
         if self.cmd_cycle is not None:
             subprocess.check_call(self.cmd_cycle)
@@ -76,20 +83,23 @@ class NetworkPowerDriver(Driver, PowerProtocol):
             __package__
         )
 
+    @step()
     def on(self):
         self.backend.set(self.port.host, self.port.index, True)
 
+    @step()
     def off(self):
         self.backend.set(self.port.host, self.port.index, False)
 
+    @step()
     def cycle(self):
-        def fallback():
+        def fallback(host, port):
             self.off()
             time.sleep(self.delay)
             self.on()
 
         cycle = getattr(self.backend, 'cycle', fallback)
-        cycle()
+        cycle(self.port.host, self.port.index)
 
     def get(self):
         return self.backend.get(self.port.host, self.port.index)
@@ -107,16 +117,20 @@ class DigitalOutputPowerDriver(Driver, PowerProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
+    @step()
     def on(self):
         subprocess.check_call(self.cmd_on)
 
+    @step()
     def off(self):
         subprocess.check_call(self.cmd_off)
 
+    @step()
     def cycle(self):
         self.output.set(True)
         time.sleep(self.delay)
         self.output.set(False)
 
+    @step()
     def get(self):
         return True

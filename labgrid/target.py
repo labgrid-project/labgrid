@@ -3,7 +3,7 @@ import attr
 from .binding import BindingError, BindingState
 from .driver import Driver
 from .exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
-from .resource import Resource
+from .resource import Resource, ManagedResource
 from .util import Timeout
 from .step import step
 
@@ -25,9 +25,10 @@ class Target:
 
     @step()
     def await_resources(self):
-        # TODO: store timeout in managed resources and use maximum
-        timeout = Timeout(2.0)
-        waiting = set(self.resources)
+        waiting = set(r for r in self.resources if isinstance(r, ManagedResource))
+        if not waiting:
+            return
+        timeout = Timeout(max(r.timeout for r in waiting))
         while waiting and not timeout.expired:
             waiting = set(r for r in waiting if not r.avail)
             for r in waiting:
@@ -82,12 +83,6 @@ class Target:
             "no driver matching {} found in target {}".format(cls, self)
         )
 
-    def get(self, cls):
-        if issubclass(cls, Resource):
-            return self.get_resource(cls)
-        else:
-            return self.get_driver(cls)
-
     def bind_resource(self, resource):
         """
         Bind the resource to this target.
@@ -134,7 +129,14 @@ class Target:
             suppliers = []
             for requirement in requirements:
                 try:
-                    suppliers.append(self.get(requirement))
+                    if issubclass(requirement, Resource):
+                        suppliers.append(
+                            self.get_resource(requirement),
+                        )
+                    else:
+                        suppliers.append(
+                            self.get_driver(requirement),
+                        )
                 except NoSupplierFoundError as e:
                     errors.append(e)
             if not suppliers:

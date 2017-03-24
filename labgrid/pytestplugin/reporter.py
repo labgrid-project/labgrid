@@ -1,7 +1,15 @@
+import logging
+import sys
 import pytest
 from _pytest.capture import safe_text_dupfile
 
 from ..step import steps
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)7s: %(message)s',
+    stream=sys.stderr,
+)
 
 
 def bold(text):
@@ -19,6 +27,8 @@ def pytest_configure(config):
         rewrite = False  # other output would interfere with our rewrites
     if terminalreporter.verbosity > 1:  # enable with -vv
         config.pluginmanager.register(StepReporter(terminalreporter, rewrite=rewrite))
+    if terminalreporter.verbosity > 2:  # enable with -vvv
+        logging.getLogger().setLevel(logging.DEBUG)
 
 
 class StepReporter:

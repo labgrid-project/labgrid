@@ -327,44 +327,48 @@ class ClientSession(ApplicationSession):
         """Add a match for a place, making fuzzy matching available to the
         client"""
         place = self.get_idle_place()
-        pattern = self.args.pattern
         if place.acquired:
             raise UserError("can not change acquired place {}".format(place.name))
-        if not (2 <= pattern.count("/") <= 3):
-            raise UserError(
-                "invalid pattern format '{}' (use 'exporter/group/cls/name')".
-                format(pattern)
+        for pattern in self.args.patterns:
+            if pattern in map(str, place.matches):
+                print("pattern '{}' exists, skipping".format(pattern))
+                continue
+            if not (2 <= pattern.count("/") <= 3):
+                raise UserError(
+                    "invalid pattern format '{}' (use 'exporter/group/cls/name')".
+                    format(pattern)
+                )
+            res = yield from self.call(
+                'org.labgrid.coordinator.add_place_match', place.name, pattern
             )
-        res = yield from self.call(
-            'org.labgrid.coordinator.add_place_match', place.name, pattern
-        )
-        if not res:
-            raise ServerError(
-                "failed to add match {} for place {}".format(pattern, place.name)
-            )
-        return res
+            if not res:
+                raise ServerError(
+                    "failed to add match {} for place {}".format(pattern, place.name)
+                )
 
     @asyncio.coroutine
     def del_match(self):
         """Delete a match for a place"""
         place = self.get_idle_place()
-        pattern = self.args.pattern
         if place.acquired:
             raise UserError("can not change acquired place {}".format(place.name))
-        if not (2 <= pattern.count("/") <= 3):
-            raise UserError(
-                "invalid pattern format '{}' (use 'exporter/group/cls/name')".
-                format(pattern)
+        for pattern in self.args.patterns:
+            if pattern not in map(str, place.matches):
+                print("pattern '{}' not found, skipping".format(pattern))
+                continue
+            if not (2 <= pattern.count("/") <= 3):
+                raise UserError(
+                    "invalid pattern format '{}' (use 'exporter/group/cls/name')".
+                    format(pattern)
+                )
+            res = yield from self.call(
+                'org.labgrid.coordinator.del_place_match', place.name, pattern
             )
-        res = yield from self.call(
-            'org.labgrid.coordinator.del_place_match', place.name, pattern
-        )
-        if not res:
-            raise ServerError(
-                "failed to delete match {} for place {}".
-                format(pattern, place.name)
-            )
-        return res
+            if not res:
+                raise ServerError(
+                    "failed to delete match {} for place {}".
+                    format(pattern, place.name)
+                )
 
     @asyncio.coroutine
     def acquire(self):
@@ -648,13 +652,13 @@ def main():
     subparser.set_defaults(func=ClientSession.set_comment)
 
     subparser = subparsers.add_parser('add-match',
-                                      help="add a match pattern to a place")
-    subparser.add_argument('pattern')
+                                      help="add one (or multiple) match pattern(s) to a place")
+    subparser.add_argument('patterns', metavar='PATTERN', nargs='+')
     subparser.set_defaults(func=ClientSession.add_match)
 
     subparser = subparsers.add_parser('del-match',
-                                      help="delete a match pattern from a place")
-    subparser.add_argument('pattern')
+                                      help="delete one (or multiple) match pattern(s) from a place")
+    subparser.add_argument('patterns', metavar='PATTERN', nargs='+')
     subparser.set_defaults(func=ClientSession.del_match)
 
     subparser = subparsers.add_parser('acquire',

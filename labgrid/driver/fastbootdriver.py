@@ -41,16 +41,19 @@ class AndroidFastbootDriver(Driver):
     def on_deactivate(self):
         pass
 
+    @Driver.check_active
     @step(title='call', args=['args'])
     def __call__(self, *args):
         subprocess.check_call(self._get_fastboot_prefix() + list(args))
 
+    @Driver.check_active
     @step(args=['filename'])
     def boot(self, filename):
         filename = os.path.abspath(filename)
         check_file(filename, command_prefix=self.fastboot.command_prefix)
         self("boot", filename)
 
+    @Driver.check_active
     @step(args=['partition', 'filename'])
     def flash(self, partition, filename):
         filename = os.path.abspath(filename)

@@ -52,6 +52,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self._status = 0
 
+    @Driver.check_active
     @step(args=['cmd'])
     def run(self, cmd: str, *, step):
         """
@@ -87,6 +88,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         else:
             return None
 
+    @Driver.check_active
     def run_check(self, cmd: str):
         """
         Runs the specified command on the shell and returns the output if successful,
@@ -133,12 +135,14 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         else:
             self._check_prompt()
 
+    @Driver.check_active
     def await_boot(self):
         """Wait for the initial Linux version string to verify we succesfully
         jumped into the kernel.
         """
         self.console.expect(r"Linux version \d")
 
+    @Driver.check_active
     def boot(self, name: str):
         """Boot the default or a specific boot entry
 

@@ -12,6 +12,7 @@ class TestManualPowerDriver:
         m = mocker.patch('builtins.input')
 
         d = ManualPowerDriver(target, name='foo-board')
+        target.activate(d)
         d.on()
 
         m.assert_called_once_with(
@@ -22,6 +23,7 @@ class TestManualPowerDriver:
         m = mocker.patch('builtins.input')
 
         d = ManualPowerDriver(target, name='foo-board')
+        target.activate(d)
         d.off()
 
         m.assert_called_once_with(
@@ -32,6 +34,7 @@ class TestManualPowerDriver:
         m = mocker.patch('builtins.input')
 
         d = ManualPowerDriver(target, name='foo-board')
+        target.activate(d)
         d.cycle()
 
         m.assert_called_once_with("CYCLE the target foo-board and press enter")
@@ -50,6 +53,7 @@ class TestExternalPowerDriver:
         d = ExternalPowerDriver(
             target, cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
         )
+        target.activate(d)
         d.on()
 
         m.assert_called_once_with('set -1 foo-board')
@@ -60,6 +64,7 @@ class TestExternalPowerDriver:
         d = ExternalPowerDriver(
             target, cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
         )
+        target.activate(d)
         d.off()
 
         m.assert_called_once_with('set -0 foo-board')
@@ -71,6 +76,7 @@ class TestExternalPowerDriver:
         d = ExternalPowerDriver(
             target, cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
         )
+        target.activate(d)
         d.cycle()
 
         assert m.call_args_list == [
@@ -89,6 +95,7 @@ class TestExternalPowerDriver:
             cmd_off='set -0 foo-board',
             cmd_cycle='set -c foo-board',
         )
+        target.activate(d)
         d.cycle()
 
         m.assert_called_once_with('set -c foo-board')

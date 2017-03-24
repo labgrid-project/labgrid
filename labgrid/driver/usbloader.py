@@ -35,6 +35,7 @@ class MXSUSBDriver(Driver, BootstrapProtocol):
     def on_deactivate(self):
         pass
 
+    @Driver.check_active
     @step(args=['filename'])
     def load(self, filename=None):
         if filename is None and self.image is not None:
@@ -69,6 +70,7 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
     def on_deactivate(self):
         pass
 
+    @Driver.check_active
     @step(args=['filename'])
     def load(self, filename=None):
         if filename is None and self.image is not None:

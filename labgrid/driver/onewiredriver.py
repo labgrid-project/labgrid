@@ -18,12 +18,14 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
         super().__attrs_post_init__()
         self.onewire = onewire.Onewire(self.port.host)
 
+    @Driver.check_active
     def set(self, status):
         if status == True:
             self.onewire.set(self.port.path, '1')
         else:
             self.onewire.set(self.port.path, '0')
 
+    @Driver.check_active
     def get(self):
         status = self.onewire.get(self.port.path)
         return status == '1'

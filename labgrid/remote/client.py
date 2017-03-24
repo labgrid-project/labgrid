@@ -2,6 +2,7 @@
 coordinator, acquire a place and interact with the connected resources"""
 import argparse
 import asyncio
+import txaio
 import os
 import subprocess
 import traceback
@@ -17,7 +18,9 @@ from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
 from ..environment import Environment
+from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util.timeout import Timeout
+from .. import Target
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -25,6 +28,8 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 
+txaio.use_asyncio()
+txaio.config.loop = asyncio.get_event_loop()
 
 class Error(Exception):
     pass
@@ -38,8 +43,6 @@ class ServerError(Error):
     pass
 
 
-exitcode = 0
-
 class ClientSession(ApplicationSession):
     """The ClientSession encapsulates all the actions a Client can Invoke on
     the coordinator."""
@@ -47,10 +50,10 @@ class ClientSession(ApplicationSession):
     def onConnect(self):
         """Actions which are executed if a connection is successfully opened."""
         self.loop = self.config.extra['loop']
+        self.connected = self.config.extra['connected']
         self.args = self.config.extra.get('args')
         self.env = self.config.extra.get('env', None)
         self.prog = self.config.extra.get('prog', os.path.basename(sys.argv[0]))
-        self.func = self.config.extra.get('func') or self.args.func
         enable_tcp_nodelay(self)
         self.join(
             self.config.realm, ["ticket"],
@@ -86,20 +89,7 @@ class ClientSession(ApplicationSession):
         yield from self.subscribe(
             self.on_place_changed, 'org.labgrid.coordinator.place_changed'
         )
-        global exitcode
-        try:
-            yield from self.func(self)
-        except Error as e:
-            if self.args.debug:
-                traceback.print_exc()
-            else:
-                print("{}: error: {}".format(self.prog, e), file=sys.stderr)
-            exitcode = 1
-        except:
-            traceback.print_exc()
-            exitcode = 2
-        if self.args:
-            self.loop.stop()
+        yield from self.connected(self)
 
     @asyncio.coroutine
     def on_resource_changed(
@@ -414,7 +404,7 @@ class ClientSession(ApplicationSession):
         else:
             print("released place {}".format(place.name))
 
-    def get_target_config(self, place):
+    def get_target_resources(self, place):
         if not place.acquired:
             raise UserError("place {} is not acquired".format(place.name))
         host, user = place.acquired.split('/')
@@ -422,39 +412,46 @@ class ClientSession(ApplicationSession):
             raise UserError("place {} is not acquired by your user, acquired by {}".format(place.name, user))
         if host != gethostname():
             raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))
-        config = {}
-        resources = config['resources'] = {}
+        resources = {}
         for (
             exporter, groupname, cls, resourcename
         ) in place.acquired_resources:
-            resource = self.resources[exporter][groupname][resourcename]
-            if not resource.avail:
-                continue
-            # FIXME handle resourcename here to support multiple resources of the same class
-            params = resource.params.copy()
-            params.pop('extra', None)
-            resources[resource.cls] = params
+            resources[resourcename] = self.resources[exporter][groupname][resourcename]
+        return resources
+
+    def get_target_config(self, place):
+        config = {}
+        resources = config['resources'] = {}
+        # FIXME handle resource name here to support multiple resources of the same class
+        for resource in self.get_target_resources(place).values():
+            resources[resource.cls] = resource.args
         return config
 
-    @asyncio.coroutine
     def env(self):
         place = self.get_acquired_place()
         env = {'targets': {place.name: self.get_target_config(place)}}
         import yaml
         print(yaml.dump(env))
 
-    def _get_target(self, place):
-        target_config = self.get_target_config(place)
-        from ..factory import target_factory
-        return target_factory.make_target(place.name, target_config, env=self.env)
+    def _prepare_manager(self):
+        manager = RemotePlaceManager.get()
+        manager.session = self
+        manager.loop = self.loop
 
-    @asyncio.coroutine
+    def _get_target(self, place):
+        self._prepare_manager()
+        target = Target(place.name, env=self.env)
+        RemotePlace(target, name=place.name)
+        return target
+
     def power(self):
         place = self.get_acquired_place()
         action = self.args.action
         target = self._get_target(place)
         from ..driver.powerdriver import NetworkPowerDriver
         drv = NetworkPowerDriver(target)
+        target.await_resources([drv.port], timeout=1.0)
+        target.activate(drv)
         res = getattr(drv, action)()
         if action == 'get':
             print(
@@ -465,22 +462,23 @@ class ClientSession(ApplicationSession):
             )
 
     def _console(self, place):
-        target_config = self.get_target_config(place)
+        target = self._get_target(place)
+        from ..resource import NetworkSerialPort
         try:
-            resource = target_config['resources']['NetworkSerialPort']
+            resource = target.get_resource(NetworkSerialPort)
         except KeyError:
             print("resource not found")
             return False
+
         print("connecting to ", resource)
         res = subprocess.call([
             'microcom', '-t',
-            "{}:{}".format(resource['host'], resource['port'])
+            "{}:{}".format(resource.host, resource.port)
         ])
         if res:
             print("connection lost")
         return res == 0
 
-    @asyncio.coroutine
     def console(self):
         place = self.get_acquired_place()
         while True:
@@ -489,9 +487,7 @@ class ClientSession(ApplicationSession):
                 break
             if not self.args.loop:
                 break
-            yield from asyncio.sleep(1.0)
 
-    @asyncio.coroutine
     def fastboot(self):
         place = self.get_acquired_place()
         args = self.args.fastboot_args
@@ -508,9 +504,12 @@ class ClientSession(ApplicationSession):
         target = self._get_target(place)
         from ..driver.fastbootdriver import AndroidFastbootDriver
         drv = AndroidFastbootDriver(target)
-        res = drv(*args)
+        drv.fastboot.timeout = self.args.wait
+        target.activate(drv)
+        drv(*args)
 
-    def _bootstrap(self, place):
+    def bootstrap(self):
+        place = self.get_acquired_place()
         args = self.args.filename
         target = self._get_target(place)
         from ..driver.usbloader import IMXUSBDriver, MXSUSBDriver
@@ -524,24 +523,44 @@ class ClientSession(ApplicationSession):
                 cls = MXSUSBDriver
                 break
         if not cls:
-            print("target has no compatible resource available")
-            return False
-        print(cls, resource)
+            raise UserError("target has no compatible resource available")
         drv = cls(target)
+        drv.loader.timeout = self.args.wait
+        target.activate(drv)
         drv.load(self.args.filename)
-        return True
+
+
+def start_session(url, realm, extra):
+    from autobahn.wamp import protocol
+    from autobahn.wamp.types import ComponentConfig
+    from autobahn.websocket.util import parse_url
+    from autobahn.asyncio.websocket import WampWebSocketClientFactory
+
+    loop = asyncio.get_event_loop()
+    ready = asyncio.Event()
 
     @asyncio.coroutine
-    def bootstrap(self):
-        place = self.get_acquired_place()
-        timeout = Timeout(self.args.wait)
-        while not timeout.expired:
-            res = self._bootstrap(place)
-            if res:
-                break
-            yield from asyncio.sleep(1.0)
+    def connected(session):
+        ready.set()
 
+    if not extra:
+        extra = {}
+    extra['loop'] = loop
+    extra['connected'] = connected
 
+    session = [None]
+    def create():
+        cfg = ComponentConfig(realm, extra)
+        session[0] = ClientSession(cfg)
+        return session[0]
+
+    transport_factory = WampWebSocketClientFactory(create, url=url)
+    _, host, port, _, _, _ = parse_url(url)
+
+    coro = loop.create_connection(transport_factory, host, port)
+    (transport, protocol) = loop.run_until_complete(coro)
+    loop.run_until_complete(ready.wait())
+    return session[0]
 
 def main():
     place = os.environ.get('PLACE', None)
@@ -671,6 +690,7 @@ def main():
     subparser.add_argument('fastboot_args', metavar='ARG', nargs=argparse.REMAINDER,
                            help='fastboot arguments'
     )
+    subparser.add_argument('--wait', type=float, default=10.0)
     subparser.set_defaults(func=ClientSession.fastboot)
 
     subparser = subparsers.add_parser('bootstrap',
@@ -692,12 +712,22 @@ def main():
     }
 
     if args.command and args.command != 'help':
-        extra['loop'] = loop = asyncio.get_event_loop()
-        #loop.set_debug(True)
-        runner = ApplicationRunner(
-            url=args.crossbar, realm="realm1", extra=extra
-        )
-        runner.run(ClientSession)
+        session = start_session(args.crossbar, "realm1", extra)
+        exitcode = 0
+        try:
+            if asyncio.iscoroutinefunction(args.func):
+                session.loop.run_until_complete(args.func(session))
+            else:
+                args.func(session)
+        except Error as e:
+            if args.debug:
+                traceback.print_exc()
+            else:
+                print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
+            exitcode = 1
+        except:
+            traceback.print_exc()
+            exitcode = 2
         exit(exitcode)
     else:
         parser.print_help()

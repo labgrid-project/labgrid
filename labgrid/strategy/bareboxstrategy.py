@@ -46,6 +46,7 @@ class BareboxStrategy(Strategy):
             return  # nothing to do
         elif status == Status.barebox:
             # cycle power
+            self.target.activate(self.power)
             self.power.cycle()
             # interrupt barebox
             self.target.activate(self.barebox)

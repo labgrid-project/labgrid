@@ -2,6 +2,7 @@ from pexpect import TIMEOUT
 
 from ..util import PtxExpect
 from ..step import step
+from .common import Driver
 
 
 class ConsoleExpectMixin:
@@ -14,18 +15,23 @@ class ConsoleExpectMixin:
         super().__attrs_post_init__()
         self._expect = PtxExpect(self)
 
+    @Driver.check_active
     def read(self):
         return self._read()
 
+    @Driver.check_active
     def write(self, data):
         self._write(data)
 
+    @Driver.check_active
     def sendline(self, line):
         self._expect.sendline(line)
 
+    @Driver.check_active
     def sendcontrol(self, char):
         self._expect.sendcontrol(char)
 
+    @Driver.check_active
     @step(args=['pattern'], result=True)
     def expect(self, pattern, timeout=-1):
         index = self._expect.expect(pattern, timeout=timeout)

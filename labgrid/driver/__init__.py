@@ -6,6 +6,7 @@ from .sshdriver import SSHDriver
 from .externalconsoledriver import ExternalConsoleDriver
 from .exception import CleanUpError, ExecutionError
 from .fastbootdriver import AndroidFastbootDriver
+from .openocddriver import OpenOCDDriver
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver, DigitalOutputPowerDriver
 from .usbloader import MXSUSBDriver, IMXUSBDriver
 from .usbstorage import USBStorageDriver

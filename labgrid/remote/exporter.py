@@ -182,6 +182,7 @@ class USBGenericExport(ResourceExport):
 exports["AndroidFastboot"] = USBGenericExport
 exports["IMXUSBLoader"] = USBGenericExport
 exports["MXSUSBLoader"] = USBGenericExport
+exports["AlteraUSBBlaster"] = USBGenericExport
 
 
 class ExporterSession(ApplicationSession):

@@ -222,3 +222,13 @@ class USBEthernetInterface(EthernetInterface, USBResource):
         if value is not None:
             value = value.decode('ascii')
         return value
+
+@target_factory.reg_resource
+@attr.s
+class AlteraUSBBlaster(USBResource):
+    def filter_match(self, device):
+        if device.get('ID_VENDOR_ID') != "09fb":
+            return False
+        if device.get('ID_MODEL_ID') != "6810":
+            return False
+        return super().filter_match(device)

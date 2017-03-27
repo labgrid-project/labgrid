@@ -520,19 +520,25 @@ class ClientSession(ApplicationSession):
         args = self.args.filename
         target = self._get_target(place)
         from ..driver.usbloader import IMXUSBDriver, MXSUSBDriver
-        from ..resource.remote import NetworkMXSUSBLoader, NetworkIMXUSBLoader
-        cls = None
+        from ..driver.openocddriver import OpenOCDDriver
+        from ..resource.remote import NetworkMXSUSBLoader, NetworkIMXUSBLoader, NetworkAlteraUSBBlaster
+        drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkIMXUSBLoader):
-                cls = IMXUSBDriver
+                drv = IMXUSBDriver(target)
+                drv.loader.timeout = self.args.wait
                 break
             elif isinstance(resource, NetworkMXSUSBLoader):
-                cls = MXSUSBDriver
+                drv = MXSUSBDriver(target)
+                drv.loader.timeout = self.args.wait
                 break
-        if not cls:
+            elif isinstance(resource, NetworkAlteraUSBBlaster):
+                args =dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
+                drv = OpenOCDDriver(target, **args)
+                drv.interface.timeout = self.args.wait
+                break
+        if not drv:
             raise UserError("target has no compatible resource available")
-        drv = cls(target)
-        drv.loader.timeout = self.args.wait
         target.activate(drv)
         drv.load(self.args.filename)
 
@@ -705,6 +711,9 @@ def main():
                                       help="start a bootloader")
     subparser.add_argument('-w', '--wait', type=float, default=10.0)
     subparser.add_argument('filename', help='filename to boot on the target')
+    subparser.add_argument('bootstrap_args', metavar='ARG', nargs=argparse.REMAINDER,
+                           help='extra bootstrap arguments'
+    )
     subparser.set_defaults(func=ClientSession.bootstrap)
 
     args = parser.parse_args()

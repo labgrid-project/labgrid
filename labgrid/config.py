@@ -32,6 +32,8 @@ class Config:
         Returns:
             str: the absolute path
         """
+        path = os.path.expanduser(path)
+        path = os.path.expandvars(path)
         if os.path.isabs(path):
             return path
         else:

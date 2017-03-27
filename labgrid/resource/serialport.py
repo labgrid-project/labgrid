@@ -24,5 +24,5 @@ class NetworkSerialPort(NetworkResource):
     Args:
         port (str): connection string to the port e.g. 'rfc2217://<host>:<port>'
         speed (int): speed of the port e.g. 9800"""
-    port = attr.ib(validator=attr.validators.instance_of(int))
+    port = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
     speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))

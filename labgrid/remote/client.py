@@ -13,6 +13,7 @@ from textwrap import indent
 from socket import gethostname
 from getpass import getuser
 from collections import defaultdict
+from time import sleep
 
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
@@ -492,6 +493,7 @@ class ClientSession(ApplicationSession):
                 break
             if not self.args.loop:
                 break
+            sleep(1.0)
 
     def fastboot(self):
         place = self.get_acquired_place()

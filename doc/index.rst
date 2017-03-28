@@ -19,7 +19,7 @@ It currently supports:
 
 .. toctree::
    getting_started
-   usage
+   overview
    development
    components
    design_decisions

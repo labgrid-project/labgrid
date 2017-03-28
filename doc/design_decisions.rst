@@ -1,12 +1,11 @@
-==================
- Design Decisions
-==================
+Design Decisions
+================
 
 This document outlines the design decisions influencing the development of
 labgrid.
 
 Out of scope
-============
+------------
 
 Out of scope for labgrid are:
 
@@ -14,7 +13,7 @@ Out of scope for labgrid are:
 - no special images for testing
 
 In scope
-========
+--------
 
 - usable as alibrary for hardware provisioning
 - device control via:
@@ -34,7 +33,7 @@ In scope
   - imxusbloader
 
 Further goals
-=============
+-------------
 
 - tests should be equivalent for workstations and servers
 - discoverability of available boards

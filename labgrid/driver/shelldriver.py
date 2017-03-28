@@ -57,7 +57,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
     def on_deactivate(self):
         self._status = 0
 
-    @Driver.check_active
     @step(args=['cmd'], result=True)
     def _run(self, cmd, *, step):
         """

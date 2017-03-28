@@ -13,7 +13,7 @@ It currently supports:
 - pytest-plugin to write tests for embedded systems connecting over SSH or Serial
 - remote client-exporter-coordinator infrastructure to make boards available from different computers on a network
 - Power/Reset management via plugins for power switches or onewire PIOs
-- Upload of images via imxusbloader/mxusbloader or fastboot
+- Upload of binaries via USB: imxusbloader/mxsusbloader (bootloader) or fastboot (kernel)
 - Functions to control external services such as emulated USB-Sticks and the Hawkbit deployment service
 
 

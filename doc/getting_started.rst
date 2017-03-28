@@ -1,12 +1,18 @@
-=================
- Getting started
-=================
+Getting started
+===============
 
-This section of the manual contains introductory tutorials to e.g. run your
-first test or setup the distributed infrastructure.
+This section of the manual contains introductory tutorials for installing
+labgrid, running your first test and setting up the distributed infrastructure.
 
 Running your first test
-=======================
+-----------------------
+
+In many cases, the easiest way is to install labgrid into a virtualenv:
+
+.. code-block:: bash
+
+    $ virtualenv -p python3 labgrid-venv
+    $ labgrid-venv/bin/activate
 
 Start by installing labgrid, either by running:
 
@@ -21,14 +27,12 @@ or by cloning the repository and installing manually:
     $ git clone https://github.com/labgrid-project/labgrid
     $ cd labgrid && python3 setup.py install
 
-
 test your installation by running:
 
 .. code-block:: bash
 
     $ labgrid-client --help
     usage: labgrid-client [-h] [-x URL] [-c CONFIG] [-p PLACE] [-d] COMMAND ...
-
     ...
 
 if the help for labgrid-client does not show up, open an `Issue
@@ -41,12 +45,30 @@ successful so far, start by copying the initial example:
     $ cp examples/shell/* ../first_test/ 
     $ cd ../first_test/
 
-connect your embedded board (raspberry pi, riotboard, …) to your computer and
+Connect your embedded board (raspberry pi, riotboard, …) to your computer and
 adjust the ``port`` parameter of the ``RawSerialPort`` resource and ``username``
-and ``password`` of the ShellDriver driver in ``local.yaml``. You can check
-which port gets assigned to your USB-Serial converter by unplugging the
-converter, running ``dmesg -w`` and plugging it back in. Boot up your board
-(manually) and run your first test:
+and ``password`` of the ShellDriver driver in ``local.yaml``:
+
+.. code-block:: yaml
+
+    targets:
+      main:
+        resources:
+          RawSerialPort:
+            port: "/dev/ttyUSB0"
+        drivers:
+          ManualPowerDriver:
+            name: "example"
+          SerialDriver: {}
+          ShellDriver:
+            prompt: 'root@\w+:[^ ]+ '
+            login_prompt: ' login: '
+            username: 'root'
+
+
+You can check which device name gets assigned to your USB-Serial converter by
+unplugging the converter, running ``dmesg -w`` and plugging it back in. Boot up
+your board (manually) and run your first test:
 
 .. code-block:: bash
 
@@ -56,7 +78,7 @@ It should return successfully, in case it does not, open an `Issue
 <https://github.com/labgrid-project/labgrid/issues>`_.
 
 Setting up the distributed infrastructure
-=========================================
+-----------------------------------------
 
 The labgrid distributed infrastructure consists of three components:
 
@@ -70,40 +92,42 @@ exporter. Over the course of this tutorial we will setup a coordinator and
 exporter, and learn how to access the exporter via the client.
 
 Coordinator
------------
-To start the coordinator, we will download labgrid and select the coordinator
-extra.
+~~~~~~~~~~~
+
+To start the coordinator, we will download labgrid and select the
+``coordinator`` extra. You can reuse the virtualenv created in the previous
+section.
 
 .. code-block:: bash
 
     $ git clone https://github.com/labgrid-project/labgrid
-    $ cd labgrid && pip install -e .[coordinator]
+    $ cd labgrid && pip install labgrid[coordinator]
 
 
 All necessary dependencies should be installed now, we can start the coordinator
-by running ``crossbar`` inside of the repository.
+by running ``crossbar start`` inside of the repository.
 
-.. note::  This is possible because the labgrid repository contains a
-           description of the coordinator in the ``.crossbar`` folder.
+.. note:: This is possible because the labgrid repository contains the crossbar
+          configuration the coordinator in the ``.crossbar`` folder.
 
 Exporter
---------
-The exporter needs a configuration file written in YAML syntax, it lists the
-exported resources of the local machine. An entry starts with a name which has a
-resource as a subkey, additionally a location key can be provided. Example to
-export a ``RawSerialPort`` with the group name `example-port` and the location
-`example-location`:
+~~~~~~~~
+
+The exporter needs a configuration file written in YAML syntax, listing the
+the resources to be exported from the local machine.
+The config file contains one or more named resource groups.
+Each group contains one or more resource declarations and optionally a location
+string (see the configuration reference for details).
+
+For example to export a ``RawSerialPort`` with the group name `example-port` and
+the location `example-location`:
 
 .. code-block:: yaml
 
-   example-port:
+   example-group:
      location: example-location
      RawSerialPort:
        port: /dev/ttyUSB0
-   example-port-2:
-     location: example-location-2
-     RawSerialPort:
-       port: /dev/ttyUSB1
 
 The exporter can now be started by running:
 
@@ -111,54 +135,90 @@ The exporter can now be started by running:
 
     $ labgrid-exporter configuration.yaml
 
+Additional groups and resources can be added:
+
+.. code-block:: yaml
+
+   example-group:
+     location: example-location
+     RawSerialPort:
+       port: /dev/ttyUSB0
+     NetworkPowerPort:
+       model: netio
+       host: netio1
+       index: 3
+   example-group-2:
+     RawSerialPort:
+       port: /dev/ttyUSB1
+
+Restart the exporter to activate the new confutation.
+
 Client
-------
+~~~~~~
+
 Finally we can test the client functionality, run:
 
 .. code-block:: bash
 
     $ labgrid-client resources
+    kiwi/example-group/NetworkPowerPort
+    kiwi/example-group/RawSerialPort
+    kiwi/example-group-2/RawSerialPort
 
-To check the available resources listed by the coordinator, `example-port` and
-`example-port-2` should be available there.
+You can see the available resources listed by the coordinator. The groups
+`example-group` and `example-group-2` should be available there.
 
-You can now add a place with 
-
-.. code-block:: bash
-
-    $ labgrid-client -p `example-place` create
-
-And add resources to this place, for example:
+To show more details on the exported resources, use ``-v`` (or ``-vv``):
 
 .. code-block:: bash
 
-    $ labgrid-client -p `example-place` add-match */example-port/*
+    $ labgrid-client resources -v
+    Exporter 'kiwi':
+      Group 'example-group' (kiwi/example-group/*):
+	Resource 'NetworkPowerPort' (kiwi/example-group/NetworkPowerPort[/NetworkPowerPort]):
+	  {'acquired': None,
+	   'avail': True,
+	   'cls': 'NetworkPowerPort',
+	   'params': {'host': 'netio1', 'index': 3, 'model': 'netio'}}
+    ...
+
+You can now add a place with:
+
+.. code-block:: bash
+
+    $ labgrid-client --place example-place create
+
+And add resources to this place (``-p`` is short for ``--place``):
+
+.. code-block:: bash
+
+    $ labgrid-client -p example-place add-match */example-port/*
 
 Which adds the previously defined resource from the exporter to the place.
 To interact with this place, it needs to be acquired first, this is done by
 
 .. code-block:: bash
 
-    $ labgrid-client -p `example-place` acquire
+    $ labgrid-client -p example-place acquire
 
-Now we can connect to the port via console:
+Now we can connect to the serial console:
 
 .. code-block:: bash
 
-    $ labgrid-client -p `example-place` console
+    $ labgrid-client -p example-place console
 
 For a complete reference have a look at the ``labgrid-client(1)`` man page.
 
+udev Matching
+-------------
 
-Udev Matching
-=============
-
-Labgrid allows the exporter or environment to match resources via udev rules.
+Labgrid allows the exporter (or the client-side environment) to match resources
+via udev rules.
 The udev resources become available to the test/exporter as soon es they are
 plugged into the computer, e.g. allowing an exporter to export all USB ports on
 a specific hub and making a ``NetworkSerialPort`` available as soon as it is
-plugged into one of the ports. The information udev has on a device can be
-viewed by executing:
+plugged into one of the hub's ports.
+The information udev has on a device can be viewed by executing:
 
 .. code-block:: bash
    :emphasize-lines: 9
@@ -176,10 +236,11 @@ viewed by executing:
     ...
 
 In this case the device has an ``ID_SERIAL_SHORT`` key with a unique ID embedded
-in the USB-serial converter. The YAML representation to match this converter:
-
+in the USB-serial converter.
+The resource match configuration for this USB serial converter is:
 
 .. code-block:: yaml
+   :emphasize-lines: 3
 
    USBSerialPort:
      match:
@@ -189,7 +250,7 @@ This section can now be added under the resource key in a environment
 configuration or under its own entry in an exporter configuration file.
 
 Using a strategy
-================
+----------------
 
 Strategies allow the labgrid library to automatically bring the board into a
 defined state, e.g. boot through the bootloader into the Linux kernel and login

@@ -21,7 +21,7 @@ It currently supports:
    getting_started
    overview
    development
-   components
+   configuration
    design_decisions
    modules/modules
    :maxdepth: 2

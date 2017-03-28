@@ -12,5 +12,7 @@ install:
 script:
   - pytest --cov-config .coveragerc --cov=labgrid
   - python setup.py build_sphinx
+  - cd man && make all
+  - git diff-index --quiet HEAD --
 after_success:
   - coveralls

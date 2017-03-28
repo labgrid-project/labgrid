@@ -11,6 +11,9 @@ setup(
     license='LGPL-2.1',
     use_scm_version=True,
     url='https://github.com/labgrid-project',
+    data_files=[('share/man/1', ['man/labgrid-client.1',
+                                 'man/labgrid-exporter.1',
+                                 'man/labgrid-device-config.1'])],
     extras_require={
         'onewire': ['onewire'],
         'coordinator': ['crossbar']

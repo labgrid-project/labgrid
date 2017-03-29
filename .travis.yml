@@ -13,6 +13,7 @@ script:
   - pytest --cov-config .coveragerc --cov=labgrid
   - python setup.py build_sphinx
   - make -C man all
+  - git diff
   - git diff-index --quiet HEAD --
 after_success:
   - coveralls

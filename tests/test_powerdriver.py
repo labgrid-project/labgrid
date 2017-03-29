@@ -1,6 +1,7 @@
 import pytest
 
-from labgrid.driver.powerdriver import ExternalPowerDriver, ManualPowerDriver
+from labgrid.resource import NetworkPowerPort
+from labgrid.driver.powerdriver import ExternalPowerDriver, ManualPowerDriver, NetworkPowerDriver
 
 
 class TestManualPowerDriver:
@@ -100,3 +101,17 @@ class TestExternalPowerDriver:
 
         m.assert_called_once_with('set -c foo-board')
         m_sleep.assert_not_called()
+
+class TestNetworkPowerDriver:
+    def test_create(self, target):
+        r = NetworkPowerPort(target, model='netio', host='dummy', index='1')
+        d = NetworkPowerDriver(target)
+        assert isinstance(d, NetworkPowerDriver)
+
+    def test_import_backends(self):
+        import labgrid.driver.power
+        import labgrid.driver.power.apc
+        import labgrid.driver.power.digipower
+        import labgrid.driver.power.gude
+        import labgrid.driver.power.netio
+

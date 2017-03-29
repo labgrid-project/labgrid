@@ -11,5 +11,6 @@
 /venv*
 /build
 /doc/.build
+/doc/modules
 /.coverage
 /dist

@@ -12,7 +12,7 @@ In many cases, the easiest way is to install labgrid into a virtualenv:
 .. code-block:: bash
 
     $ virtualenv -p python3 labgrid-venv
-    $ labgrid-venv/bin/activate
+    $ source labgrid-venv/bin/activate
 
 Start by installing labgrid, either by running:
 

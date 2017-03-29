@@ -5,7 +5,7 @@ configuration.
 Drivers can depend on resources or other drivers, resources
 have no dependencies.
 
-.. image:: modules/res/config_graph.svg
+.. image:: res/config_graph.svg
    :width: 50%
 
 Here the Resource `RawSerialPort` provides the Information for the

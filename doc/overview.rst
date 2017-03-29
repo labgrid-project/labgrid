@@ -135,7 +135,7 @@ Both bind to a driver implementing the `ConsoleProtocol` and provide the
 `CommandProtocol`.
 Obviously, the board cannot be in the bootloader and in Linux at the same time,
 which is represented in labgrid via the :any:`BindingState` (`bound`/`active`).
-If, during activation of a driver, any other driver in it's bindings is not
+If, during activation of a driver, any other driver in its bindings is not
 active, they are activated as well.
 
 Activating and deactivating `Drivers` is also used to handle `ManagedResources`
@@ -202,17 +202,128 @@ RemotePlace (managed resource)
   When used in a `Target`, the RemotePlace expands to the resources configured
   for the named places.
 
+These components communicate over the `WAMP <http://wamp-proto.org/>`_
+implementation `Autobahn <http://autobahn.ws/>`_ and the `Crossbar
+<http://crossbar.io/>`_ WAMP router.
+
 Coordinator
 ~~~~~~~~~~~
 
+The `Coordinator` is implemented as a Crossbar component and is started by the
+router.
+It provides separate RPC methods for the exporters and clients.
+
+The coordinator keeps a list of all resources for clients and
+notifies them of changes as they occur.
+The resource access from clients does not pass through the coordinator, but is
+instead done directly from client to exporter, avoiding the need to specify new
+interfaces for each resource type.
+
+The coordinator also manages registry of "places".
+These are used to configure which resources belong together from the user's
+point of view.
+A `place` can be a generic rack location, where different boards are connected
+to a static set of interfaces (resources such as power, network, serial
+console, …).
+
+Alternatively, a `place` can also be created for a specific board, for example
+when special interfaces such as GPIO buttons need to be controlled and they are
+not available in the generic locations.
+
+Each place can have aliases to simplify accessing a specific board (which might
+be moved between generic places).
+It also has comment, which is used to store a short description of the
+connected board.
+
+Finally, a place is configured with one or more `resource matches`.
+A resource match pattern has the format ``<exporter>/<group>/<class>``, where
+each component may be replaced with the wildcard ``*``.
+
+Some commonly used match patterns are:
+
+\*/1001/\*
+  Matches all resources in groups named 1001 from all exporters.
+
+\*/1001/NetworkPowerPort
+  Matches only the NetworkPowerPort resource in groups named 1001 from all
+  exporters.
+  This is useful to exclude a NetworkSerialPort in group 1001 in cases where
+  the serial console is connected somewhere else (such as via USB on a
+  different exporter).
+
+exporter1/hub1-port1/\*
+  Matches all resources exported from exporter1 in the group hub1-port1.
+  This is a easy way to match several USB resources related to the same board
+  (such as a USB ROM-Loader interface, Android fastboot and a USB serial gadget
+  in Linux).
+
+To avoid conflicting access to the same resources, a place must be `aquired`
+before it is used and the coordinator also keeps track of which user on which
+client host has currently acquired the place.
+The resource matches are only evaluated while a place is acquired and cannot be
+changed until it is `released` again.
+
 Exporter
 ~~~~~~~~
+An exporters registers all its configured resources when it connects to the
+router and updates the resource parameters when they change (such as
+(dis-)connection of USB devices).
+Internally, the exporter uses the normal :any:`Resource` (and
+:any:`ManagedResource`) classes as the rest of labgrid.
+By using `ManagedResources`, availability and parameters for resources such as
+USB serial ports are tracked and sent to the coordinator.
+
+For some specific resources (such as :any:`USBSerialPorts <USBSerialPort>`),
+the exporter uses external tools to allow access by clients (``ser2net`` in the
+serial port case).
+
+Resources which do not need explicit support in the exporter, are just
+published as declared in the configuration file.
+This is useful to register externally configured resources such as network
+power switches or serial port servers with a labgrid coordinator.
 
 Client
 ~~~~~~
+The client requests the current lists of resources and places from the
+coordinator when it connects to it and then registers for change events.
+Most of its functionality is exposed via the `labgrid-client` CLI tool.
+It is also used by the :any:`RemotePlace` resource (see below).
+
+Besides viewing the list of `resources`, the client is used to configure and
+access `places` on the coordinator.
+For more information on using the CLI, see the manual page for
+:any:`labgrid-client`.
 
 RemotePlace
 ~~~~~~~~~~~
+To use the resources configured for a `place` to control the corresponding
+board (whether in pytest or directly with the labgrid library), the
+:any:`RemotePlace` resource should be used.
+When a `RemotePlace` is configured for a `Target`, it will create a client
+connection to the coordinator, create additional resource objects for those
+configured for that place and keep them updated at runtime.
+
+The additional resource objects can be bound to by drivers as normal and the
+drivers do not need to be aware that they were provided by the coordinator.
+For resource types which do not have an existing, network-transparent protocol
+(such as USB ROM loaders or JTAG interfaces), the driver needs to be aware of
+the mapping done by the exporter.
+
+For generic USB resources, the exporter for example maps a
+:any:`AndroidFastboot` resource to a :any:`NetworkAndroidFastboot` resource and
+adds a hostname property which needs to be used by the client to connect to the
+exporter.
+To avoid the need for additional remote access protocols and authentication,
+labgrid currently expects that the hosts are accessible via SSH and that any
+file names refer to a shared filesystem (such as NFS or SMB).
+
+.. note::
+  Using SSH's session sharing (``ControlMaster auto``, ``ControlPersist``, …)
+  makes `RemotePlaces` easy to use even for exporters with require passwords or
+  more complex login procedures.
+
+  For exporters which are not directly accessible via SSH, add the host to your
+  .ssh/config file, with a ProxyCommand when need.
 
 Standalone
 ----------

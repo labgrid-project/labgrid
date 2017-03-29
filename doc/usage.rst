@@ -229,6 +229,34 @@ is easy::
   Activation and deactivation of drivers is handled by the
   :any:`BareboxStrategy` in this example.
 
+Test Reports
+~~~~~~~~~~~~
+
+pytest-html
+^^^^^^^^^^^
+With the `pytest-html plugin <https://pypi.python.org/pypi/pytest-html>`_, the
+test results can be converted directly to a single-page HTML report:
+
+.. code-block:: bash
+
+  $ pip install pytest-html
+  $ pytest --env-config shell-example.yaml --html=report.html
+
+JUnit XML
+^^^^^^^^^
+JUnit XML reports can be generated directly by pytest and are especially useful for
+use in CI systems such as `Jenkins <https://jenkins.io/>`_ with the `JUnit
+Plugin <https://wiki.jenkins-ci.org/display/JENKINS/JUnit+Plugin>`_.
+
+They can also be converted to other formats, such as HTML with `junit2html tool
+<https://pypi.python.org/pypi/junit2html>`_:
+
+.. code-block:: bash
+
+  $ pip install junit2html
+  $ pytest --env-config shell-example.yaml --junit-xml=report.xml
+  $ junit2html report.xml
+
 Command-Line
 ------------
 

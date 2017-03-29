@@ -73,7 +73,7 @@ The example would search for a USB serial converter with the key
 `ID_SERIAL_SHORT` and the value `P-00-00682` and use it with a baud rate
 of 115200.
 
-- match (str): key and value for a udev match, see `Udev Matching`_
+- match (str): key and value for a udev match, see `udev Matching`_
 - speed (int): baud rate of the serial port
 
 NetworkPowerPort
@@ -126,6 +126,77 @@ server on `example.computer`.
 - host (str): hostname of the remote system running the onewire server
 - path (str): path on the server to the programmable I/O pin
 
+USBMassStorage
+~~~~~~~~~~~~~~
+A USBMassStorage resource describes an USB stick.
+
+.. code-block:: yaml
+
+   USBMassStorage:
+     match:
+       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0-scsi-0:0:0:3'
+
+- match (str): key and value for a udev match, see `udev Matching`_
+
+IMXUSBLoader
+~~~~~~~~~~~~
+An IMXUSBLoader resource describes a USB device in the imx loader state.
+
+.. code-block:: yaml
+
+   IMXUSBLoader:
+     match:
+       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+
+- match (str): key and value for a udev match, see `udev Matching`_
+
+MXSUSBLoader
+~~~~~~~~~~~~
+An MXSUSBLoader resource describes a USB device in the mxs loader state.
+
+.. code-block:: yaml
+
+   MXSUSBLoader:
+     match:
+       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+
+- match (str): key and value for a udev match, see `udev Matching`_
+
+AndroidFastboot
+~~~~~~~~~~~~~~~
+An AndroidFastboot resource describes a USB device in the fastboot state.
+
+.. code-block:: yaml
+
+   AndroidFastboot:
+     match:
+       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+
+- match (str): key and value for a udev match, see `udev Matching`_
+
+USBEthernetInterface
+~~~~~~~~~~~~~~~~~~~~
+An USBEthernetInterface resource describes a USB device Ethernet adapter.
+
+.. code-block:: yaml
+
+   USBEthernetInterface:
+     match:
+       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+
+- match (str): key and value for a udev match, see `udev Matching`_
+
+AlteraUSBBlaster
+~~~~~~~~~~~~~~~~
+An AlteraUSBBlaster resource describes an Altera USB blaster.
+
+.. code-block:: yaml
+
+   AlteraUSBBlaster:
+     match:
+       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+
+- match (str): key and value for a udev match, see `udev Matching`_
 
 RemotePlace
 ~~~~~~~~~~~
@@ -142,9 +213,9 @@ them to the internal environment.
 
 - name (str): name or pattern of the remote place
 
-Udev Matching
+udev Matching
 ~~~~~~~~~~~~~
-Udev matching allows labgrid to identify resources via their udev properties.
+udev matching allows labgrid to identify resources via their udev properties.
 Any udev property key and value can be used, path matching USB devices is
 allowed as well. This allows the export of a specific USB hub port or the
 correct identification of a USB serial converter across computers.
@@ -162,6 +233,10 @@ Binds to:
   - :any:`RawSerialPort`
   - :any:`USBSerialPort`
 
+.. code-block:: yaml
+
+   SerialDriver: {}
+
 Implements:
   - :any:`ConsoleProtocol`
 
@@ -170,12 +245,21 @@ Arguments:
 
 ShellDriver
 ~~~~~~~~~~~
+A ShellDriver binds on top of a `ConsoleProtocol` and is designed to interact
+with a login prompt and a Linux shell.
 
 Binds to:
   - :any:`ConsoleProtocol`
 
 Implements:
   - :any:`CommandProtocol`
+
+.. code-block:: yaml
+
+   ShellDriver:
+     prompt: 'root@\w+:[^ ]+ '
+     login_prompt: ' login: '
+     username: 'root'
 
 Arguments:
   - prompt (regex): prompt to match after logging in 
@@ -184,6 +268,264 @@ Arguments:
   - password (str): password to use during login
   - keyfile (str): optional keyfile to upload after login, making the
     :any:`SSHDriver` usable
+
+SSHDriver
+~~~~~~~~~
+A SSHDriver requires a `NetworkService` resource and allows the execution of
+commands and file upload via network.
+
+Binds to:
+  - :any:`NetworkService`
+
+Implements:
+  - :any:`CommandProtocol`
+  - :any:`FileTransferProtocol`
+
+.. code-block:: yaml
+
+   SSHDriver:
+     keyfile: example.key
+
+Arguments:
+  - keyfile (str): private key to login into the remote system
+
+InfoDriver
+~~~~~~~~~~
+An InfoDriver provides an interface to retrieve system settings and state. It
+requires a `CommandProtocol`.
+
+Binds to:
+  - :any:`CommandProtocol`
+
+Implements:
+  - :any:`InfoProtocol`
+
+.. code-block:: yaml
+
+   InfoDriver: {}
+
+Arguments:
+  - None
+
+UBootDriver
+~~~~~~~~~~~
+An UBootDriver interfaces with a u-boot boot loader via a `ConsoleProtocol`.
+
+Binds to:
+  - :any:`ConsoleProtocol`
+
+Implements:
+  - :any:`CommandProtocol`
+
+.. code-block:: yaml
+
+   UBootDriver:
+     prompt: 'Uboot> '
+
+Arguments:
+  - prompt (regex): u-boot prompt to match
+  - password (str): optional u-boot unlock password
+  - init_commands (tuple): tuple of commands to execute after matching the
+    prompt 
+
+BareboxDriver
+~~~~~~~~~~~~~
+
+An BareboxDriver interfaces with a barebox bootloader via a `ConsoleProtocol`.
+
+Binds to:
+  - :any:`ConsoleProtocol`
+
+Implements:
+  - :any:`CommandProtocol`
+
+.. code-block:: yaml
+
+   BareboxDriver:
+     prompt: 'barebox@[^:]+:[^ ]+ '
+
+Arguments:
+  - prompt (regex): barebox prompt to match
+
+ExternalConsoleDriver
+~~~~~~~~~~~~~~~~~~~~~
+An ExternalConsoleDriver implements the `ConsoleProtocol` on top of a command
+executed on the local computer.
+
+Implements:
+  - :any:`ConsoleProtocol`
+
+.. code-block:: yaml
+
+   ExternalConsoleDriver:
+     cmd: 'microcom /dev/ttyUSB2'
+
+Arguments:
+  - cmd (str): command to execute and then bind to.
+
+AndroidFastbootDriver
+~~~~~~~~~~~~~~~~~~~~~
+An AndroidFastbootDriver allows the upload of images to a device in the USB
+fastboot state.
+
+Implements:
+  - None (yet)
+
+.. code-block:: yaml
+
+   AndroidFastbootDriver:
+     image: mylocal.image
+
+Arguments:
+  - image (str): image to upload to the device
+
+OpenOCDDriver
+~~~~~~~~~~~~~
+An OpenOCDDriver controls OpenOCD to bootstrap a target with a bootloader.
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+Arguments:
+  - config (str): OpenOCD configuration file
+  - search (str): include search path for scripts
+  - image (str): image to bootstrap onto the device
+    
+ManualPowerDriver
+~~~~~~~~~~~~~~~~~
+A ManualPowerDriver requires the user to control the target power states. This
+is required if a strategy is used with the target, but no automatic power
+control is available.
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   ManualPowerDriver:
+     name: 'example-board'
+
+Arguments:
+  - name (str): name of the Driver (will be displayed during interaction)
+
+ExternalPowerDriver
+~~~~~~~~~~~~~~~~~~~
+An ExternalPowerDriver is used to control a targets power state via an external command.
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   ExternalPowerDriver:
+     cmd_on: example_command on
+     cmd_off: example_command off
+     cmd_cycle: example_command cycle
+
+Arguments:
+  - cmd_on (str): command to turn power to the board on
+  - cmd_off (str): command to turn power to the board off
+  - cycle (str): optional command to switch the board off and on
+  - delay (float): configurable delay between off and on if cycle is not set
+
+NetworkPowerDriver
+~~~~~~~~~~~~~~~~~~
+A NetworkPowerDriver controls a `NetworkPowerPort`, allowing control of the
+targets power state without user interaction.
+
+Binds to:
+  - :any:`NetworkPowerPort`
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   NetworkPowerDriver:
+     delay: 5.0
+
+Arguments:
+  - delay (float): optional delay between off and on
+
+DigitalOutputPowerDriver
+~~~~~~~~~~~~~~~~~~~~~~~~
+A DigitalOutputPowerDriver can be used to control a device with external
+commands and a digital output port. The digital output port is used to reset the
+device.
+
+Binds to:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   DigitalOutputPowerDriver:
+     cmd_on: example_command on
+     cmd_off: example_command off
+
+Arguments:
+  - cmd_on (str): command to turn power to the board on
+  - cmd_off (str): command to turn power to the board off
+  - delay (float): configurable delay between off and on if cycle is not set
+
+MXSUSBDriver
+~~~~~~~~~~~~
+A MXUSBDriver is used to upload an image into a device in the mxs USB loader
+state. This is useful to bootstrap a bootloader onto a device.
+
+Binds to:
+  - :any:`MXSUSBLoader`
+  - :any:`NetworkMXSUSBLoader`
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   MXSUSBDriver:
+     image: mybootloader.img
+
+Arguments:
+  - image (str): The image to bootstrap onto the target
+
+IMXUSBDriver
+~~~~~~~~~~~~
+A IMXUSBDriver is used to upload an image into a device in the mxs USB loader
+state. This is useful to bootstrap a bootloader onto a device.
+
+Binds to:
+  - :any:`IMXUSBLoader`
+  - :any:`NetworkIMXUSBLoader`
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   IMXUSBDriver:
+     image: mybootloader.img
+
+
+Arguments:
+  - image (str): The image to bootstrap onto the target
+
+USBStorageDriver
+~~~~~~~~~~~~~~~~
+An USBStorageDriver allows access to a USB Stick via the `USBMassStorage`
+resource.
+
+Binds to:
+  - :any:`USBMassStorage`
+
+Implements:
+  - None (yet)
+
+.. code-block:: yaml
+
+   USBStorageDriver: {}
+
+
+Arguments:
+  - None
 
 Strategies
 ~~~~~~~~~~

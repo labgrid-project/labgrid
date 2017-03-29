@@ -6,7 +6,7 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y libow-dev
 install:
-  - pip install --upgrade pytest pytest-mock pytest-cov coveralls
+  - pip install --upgrade pytest pytest-mock pytest-cov coveralls codecov
   - pip install -r dev-requirements.txt
   - pip install -e .
 script:
@@ -17,3 +17,4 @@ script:
   - git diff-index --quiet HEAD --
 after_success:
   - coveralls
+  - codecov

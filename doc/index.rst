@@ -20,6 +20,7 @@ It currently supports:
 .. toctree::
    getting_started
    overview
+   man
    development
    configuration
    design_decisions

@@ -1,3 +1,4 @@
+import shlex
 import subprocess
 import time
 from importlib import import_module
@@ -56,18 +57,21 @@ class ExternalPowerDriver(Driver, PowerProtocol):
     @Driver.check_active
     @step()
     def on(self):
-        subprocess.check_call(self.cmd_on)
+        cmd = shlex.split(self.cmd_on)
+        subprocess.check_call(cmd)
 
     @Driver.check_active
     @step()
     def off(self):
-        subprocess.check_call(self.cmd_off)
+        cmd = shlex.split(self.cmd_off)
+        subprocess.check_call(cmd)
 
     @Driver.check_active
     @step()
     def cycle(self):
         if self.cmd_cycle is not None:
-            subprocess.check_call(self.cmd_cycle)
+            cmd = shlex.split(self.cmd_cycle)
+            subprocess.check_call(cmd)
         else:
             self.off()
             time.sleep(self.delay)
@@ -130,12 +134,14 @@ class DigitalOutputPowerDriver(Driver, PowerProtocol):
     @Driver.check_active
     @step()
     def on(self):
-        subprocess.check_call(self.cmd_on)
+        cmd = shlex.split(self.cmd_on)
+        subprocess.check_call(cmd)
 
     @Driver.check_active
     @step()
     def off(self):
-        subprocess.check_call(self.cmd_off)
+        cmd = shlex.split(self.cmd_off)
+        subprocess.check_call(cmd)
 
     @Driver.check_active
     @step()

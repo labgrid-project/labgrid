@@ -36,20 +36,20 @@ Install labgrid into the virtualenv in editable mode:
 
    pip install -e .
 
-Tests can now run via:
+Tests can now be run via:
 
 .. code-block:: bash
 
    python -m pytest --env-config=<config>
 
-Writing a driver
--------------------
+Writing a Driver
+----------------
 
 To develop a new driver for labgrid, you need to decide which protocol to
 implement, or implement your own protocol.
 If you are unsure about a new protocol's API, just use the driver directly from
 the client code, as deciding on a good API will be much easier when another
-similiar driver is added.
+similar driver is added.
 
 Labgrid uses the `attrs library <https://attrs.readthedocs.io>`_ for internal
 classes.
@@ -82,7 +82,7 @@ provided by connecting drivers and resources on a given target at runtime.
 The ConsoleExpectMixin is a mixin class to add expect functionality to any
 class supporting the :any:`ConsoleProtocol` and has to be the first item in the
 subclass list.
-Using is mixin class allows sharing common code, which would otherwise need to
+Using the mixin class allows sharing common code, which would otherwise need to
 be added into multiple drivers.
 
 ::
@@ -102,7 +102,7 @@ provide a bindings dictionary, so that the :any:`Target` can resolve
 dependencies on other drivers or resources.
 
 ::
-   
+
     import attr
 
     from labgrid.factory import target_factory
@@ -118,7 +118,7 @@ dependencies on other drivers or resources.
 
 The listed resource :code:`SerialPort` will be bound to :code:`self.port`,
 making it usable in the class.
-Checks are performed that the target the driver binds to has a SerialPort,
+Checks are performed that the target which the driver binds to has a SerialPort,
 otherwise an error will be raised.
 
 If you need to do something during instantiation, you need to add a
@@ -127,7 +127,7 @@ for non-attr-classes).
 The minimum requirement is a call to :code:`super().__attr_post_init__()`.
 
 ::
-   
+
     import attr
 
     from labgrid.factory import target_factory
@@ -146,11 +146,11 @@ The minimum requirement is a call to :code:`super().__attr_post_init__()`.
 All that's left now is to implement the functionality described by the used
 protocol, by using the API of the bound drivers and resources.
 
-Writing a resource
+Writing a Resource
 -------------------
 
-To add a new resource to labgrid we import attr into our new resource file,
-additionally we need the :any:`target_factory` and the common Resource class.
+To add a new resource to labgrid, we import attr into our new resource file.
+Additionally we need the :any:`target_factory` and the common Resource class.
 
 ::
 
@@ -199,7 +199,7 @@ Contributing
 ------------
 
 Thank you for thinking about contributing to labgrid!
-The different backgrounds and use-cases are essential for making labgrid work
+Some different backgrounds and use-cases are essential for making labgrid work
 well for all users.
 
 The following should help you with submitting your changes, but don't let these
@@ -269,7 +269,7 @@ as used for the Linux kernel:
       maintained indefinitely and may be redistributed consistent with
       this project or the open source license(s) involved.
 
-Add then you just add a line saying (using ``git commit -s``):
+Then you just add a line (using ``git commit -s``) saying:
 
   Signed-off-by: Random J Developer <random@developer.example.org>
 

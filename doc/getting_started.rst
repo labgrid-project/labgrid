@@ -1,10 +1,10 @@
-Getting started
+Getting Started
 ===============
 
 This section of the manual contains introductory tutorials for installing
 labgrid, running your first test and setting up the distributed infrastructure.
 
-Running your first test
+Running Your First Test
 -----------------------
 
 In many cases, the easiest way is to install labgrid into a virtualenv:
@@ -27,7 +27,7 @@ or by cloning the repository and installing manually:
     $ git clone https://github.com/labgrid-project/labgrid
     $ cd labgrid && python3 setup.py install
 
-test your installation by running:
+Test your installation by running:
 
 .. code-block:: bash
 
@@ -35,14 +35,14 @@ test your installation by running:
     usage: labgrid-client [-h] [-x URL] [-c CONFIG] [-p PLACE] [-d] COMMAND ...
     ...
 
-if the help for labgrid-client does not show up, open an `Issue
+If the help for labgrid-client does not show up, open an `Issue
 <https://github.com/labgrid-project/labgrid/issues>`_. If everything was
 successful so far, start by copying the initial example:
 
 .. code-block:: bash
 
     $ mkdir ../first_test/
-    $ cp examples/shell/* ../first_test/ 
+    $ cp examples/shell/* ../first_test/
     $ cd ../first_test/
 
 Connect your embedded board (raspberry pi, riotboard, …) to your computer and
@@ -77,7 +77,7 @@ your board (manually) and run your first test:
 It should return successfully, in case it does not, open an `Issue
 <https://github.com/labgrid-project/labgrid/issues>`_.
 
-Setting up the distributed infrastructure
+Setting Up the Distributed Infrastructure
 -----------------------------------------
 
 The labgrid distributed infrastructure consists of three components:
@@ -88,7 +88,7 @@ The labgrid distributed infrastructure consists of three components:
 
 The system needs at least one coordinator and exporter, these can run on the
 same machine. The client is used to access functionality provided by an
-exporter. Over the course of this tutorial we will setup a coordinator and
+exporter. Over the course of this tutorial we will set up a coordinator and
 exporter, and learn how to access the exporter via the client.
 
 Coordinator
@@ -113,13 +113,13 @@ by running ``crossbar start`` inside of the repository.
 Exporter
 ~~~~~~~~
 
-The exporter needs a configuration file written in YAML syntax, listing the
+The exporter needs a configuration file written in YAML syntax, listing
 the resources to be exported from the local machine.
 The config file contains one or more named resource groups.
 Each group contains one or more resource declarations and optionally a location
 string (see the configuration reference for details).
 
-For example to export a ``RawSerialPort`` with the group name `example-port` and
+For example, to export a ``RawSerialPort`` with the group name `example-port` and
 the location `example-location`:
 
 .. code-block:: yaml
@@ -151,7 +151,7 @@ Additional groups and resources can be added:
      RawSerialPort:
        port: /dev/ttyUSB1
 
-Restart the exporter to activate the new confutation.
+Restart the exporter to activate the new configuration.
 
 Client
 ~~~~~~
@@ -244,22 +244,22 @@ The resource match configuration for this USB serial converter is:
 
    USBSerialPort:
      match:
-       ID_SERIAL_SHORT: P-00-00682
+       'ID_SERIAL_SHORT': 'P-00-00682'
 
-This section can now be added under the resource key in a environment
+This section can now be added under the resource key in an environment
 configuration or under its own entry in an exporter configuration file.
 
-Using a strategy
+Using a Strategy
 ----------------
 
 Strategies allow the labgrid library to automatically bring the board into a
-defined state, e.g. boot through the bootloader into the Linux kernel and login
+defined state, e.g. boot through the bootloader into the Linux kernel and log in
 to a shell. They have a few requirements:
 
 - A driver implementing the ``PowerProtocol``, if no controllable infrastructure
   is available a ``ManualPowerDriver`` can be used.
 - A driver implementing the ``LinuxBootProtocol``, usually a specific driver for
-  the boards bootloader
+  the board's bootloader
 - A driver implementing the ``CommandProtocol``, usually a ``ShellDriver`` with
   a ``SerialDriver`` below it.
 
@@ -269,7 +269,7 @@ strategies, more complex tests usually require the implementation of your own
 strategies.
 
 To use a strategy, add it and its dependencies to your configuration YAML,
-retrieve it in your test and call the ``transisition(status)`` function.
+retrieve it in your test and call the ``transition(status)`` function.
 
 ::
    >>> strategy = target.get_driver(strategy)

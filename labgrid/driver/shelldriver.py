@@ -103,8 +103,14 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         self.console.expect(self.prompt, timeout=5)
         self._check_prompt()
 
-    @Driver.check_active
     @step(args=['cmd'], result=True)
+    def _run_check(self, cmd):
+        out, _, res = self._run(cmd)
+        if res != 0:
+            raise ExecutionError(cmd)
+        return out
+
+    @Driver.check_active
     def run_check(self, cmd):
         """
         Runs the specified cmd on the shell and returns the output if successful,
@@ -113,12 +119,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         Arguments:
         cmd - cmd to run on the shell
         """
-        out, _, res = self.run(cmd)
-        if res != 0:
-            raise ExecutionError(cmd)
-        return out
+        return self._run_check(cmd)
 
-    @Driver.check_active
     @step()
     def get_status(self):
         """Returns the status of the shell-driver.
@@ -147,7 +149,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         )
         self.console.expect(self.prompt)
 
-    @Driver.check_active
     @step(args=['key'])
     def _put_ssh_key(self, key):
         """Upload an SSH Key to a target"""
@@ -169,11 +170,11 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
                         format(keyfile)
                     )
             self.logger.debug("Read Key: %s", new_key)
-            auth_keys, _, exitcode = self.run("cat ~/.ssh/authorized_keys")
+            auth_keys, _, exitcode = self._run("cat ~/.ssh/authorized_keys")
             self.logger.debug("Exitcode: %s", exitcode)
             if exitcode != 0:
-                self.run("mkdir ~/.ssh")
-                self.run("touch ~/.ssh/authorized_keys")
+                self._run("mkdir ~/.ssh")
+                self._run("touch ~/.ssh/authorized_keys")
             result = []
             for line in auth_keys:
                 match = regex.match(line)
@@ -190,11 +191,11 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
                     self.logger.info("Key already on target")
                     return
             self.logger.info("Key not on target, mounting...")
-            self.run_check('echo "{}" > /tmp/keys'.format(keyline))
-            self.run_check('chmod 600 /tmp/keys')
-            self.run_check('mount --bind /tmp/keys ~/.ssh/authorized_keys')
-            self.run_check('chmod 700 ~/.ssh')
-            self.run_check('chmod 644 ~/.ssh/authorized_keys')
+            self._run_check('echo "{}" > /tmp/keys'.format(keyline))
+            self._run_check('chmod 600 /tmp/keys')
+            self._run_check('mount --bind /tmp/keys ~/.ssh/authorized_keys')
+            self._run_check('chmod 700 ~/.ssh')
+            self._run_check('chmod 644 ~/.ssh/authorized_keys')
 
     @Driver.check_active
     def put_ssh_key(self, key):

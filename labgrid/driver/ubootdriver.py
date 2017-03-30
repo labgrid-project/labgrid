@@ -54,18 +54,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self._status = 0
 
-    @Driver.check_active
     @step(args=['cmd'], result=True)
-    def run(self, cmd):
-        """
-        Runs the specified command on the shell and returns the output.
-
-        Args:
-            cmd (str): command to run on the shell
-
-        Returns:
-            Tuple[List[str],List[str], int]: if successful, None otherwise
-        """
+    def _run(self, cmd):
         # FIXME: Handle pexpect Timeout
         # TODO: Shell Escaping for the U-Boot Shell
         marker = gen_marker()
@@ -94,7 +84,26 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             return None
 
     @Driver.check_active
+    def run(self, cmd):
+        """
+        Runs the specified command on the shell and returns the output.
+
+        Args:
+            cmd (str): command to run on the shell
+
+        Returns:
+            Tuple[List[str],List[str], int]: if successful, None otherwise
+        """
+        return self._run(cmd)
+
     @step(args=['cmd'], result=True)
+    def _run_check(self, cmd):
+        res = self._run(cmd)
+        if res[2] != 0:
+            raise ExecutionError(cmd)
+        return res[0]
+
+    @Driver.check_active
     def run_check(self, cmd):
         """
         Runs the specified command on the shell and returns the output if successful,
@@ -106,10 +115,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Returns:
             List[str]: stdout of the executed command
         """
-        res = self.run(cmd)
-        if res[2] != 0:
-            raise ExecutionError(cmd)
-        return res[0]
+        return self._run_check
 
     def get_status(self):
         """Retrieve status of the UBootDriver.
@@ -156,7 +162,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         else:
             self._check_prompt()
         for command in self.init_commands:  #pylint: disable=not-an-iterable
-            self.run_check(command)
+            self._run_check(command)
 
     @Driver.check_active
     @step()

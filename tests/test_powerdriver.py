@@ -57,7 +57,7 @@ class TestExternalPowerDriver:
         target.activate(d)
         d.on()
 
-        m.assert_called_once_with('set -1 foo-board')
+        m.assert_called_once_with(['set', '-1', 'foo-board'])
 
     def test_off(self, target, mocker):
         m = mocker.patch('subprocess.check_call')
@@ -68,7 +68,7 @@ class TestExternalPowerDriver:
         target.activate(d)
         d.off()
 
-        m.assert_called_once_with('set -0 foo-board')
+        m.assert_called_once_with(['set', '-0', 'foo-board'])
 
     def test_cycle(self, target, mocker):
         m_sleep = mocker.patch('time.sleep')
@@ -81,8 +81,8 @@ class TestExternalPowerDriver:
         d.cycle()
 
         assert m.call_args_list == [
-            mocker.call('set -0 foo-board'),
-            mocker.call('set -1 foo-board'),
+            mocker.call(['set', '-0', 'foo-board']),
+            mocker.call(['set', '-1', 'foo-board']),
         ]
         m_sleep.assert_called_once_with(2.0)
 
@@ -99,7 +99,7 @@ class TestExternalPowerDriver:
         target.activate(d)
         d.cycle()
 
-        m.assert_called_once_with('set -c foo-board')
+        m.assert_called_once_with(['set', '-c', 'foo-board'])
         m_sleep.assert_not_called()
 
 class TestNetworkPowerDriver:

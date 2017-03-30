@@ -18,7 +18,6 @@ Create and activate a virtualenv for labgrid:
    virtualenv -p python3 venv
    source venv/bin/activate
 
-
 Install required dependencies:
 
 .. code-block:: bash
@@ -47,9 +46,15 @@ Writing a driver
 -------------------
 
 To develop a new driver for labgrid, you need to decide which protocol to
-implement, or implement your own protocol. Labgrid uses attr for internal
-classes, first of all import attr, the protocol and the common driver class into
-your new driver file.
+implement, or implement your own protocol.
+If you are unsure about a new protocol's API, just use the driver directly from
+the client code, as deciding on a good API will be much easier when another
+similiar driver is added.
+
+Labgrid uses the `attrs library <https://attrs.readthedocs.io>`_ for internal
+classes.
+First of all import attr, the protocol and the common driver class
+into your new driver file.
 
 ::
 
@@ -60,6 +65,8 @@ your new driver file.
 
 Next, define your new class and list the protocols as subclasses of the new
 driver class.
+Try to avoid subclassing existing other drivers, as this limits the flexibility
+provided by connecting drivers and resources on a given target at runtime.
 
 ::
 
@@ -72,9 +79,11 @@ driver class.
     class ExampleDriver(Driver, ConsoleProtocol):
 	pass
 
-The ConsoleExpectMixin support a special mixin class to add expect functionality to
-any class supporting the ConsoleProtocol, it has to be the first item in the
+The ConsoleExpectMixin is a mixin class to add expect functionality to any
+class supporting the :any:`ConsoleProtocol` and has to be the first item in the
 subclass list.
+Using is mixin class allows sharing common code, which would otherwise need to
+be added into multiple drivers.
 
 ::
 
@@ -89,8 +98,8 @@ subclass list.
 	pass
 
 Additionally the driver needs to be registered with the target_factory and
-provide a bindings dictionary to resolve dependencies on other drivers or
-resources.
+provide a bindings dictionary, so that the :any:`Target` can resolve
+dependencies on other drivers or resources.
 
 ::
    
@@ -107,11 +116,15 @@ resources.
 	bindings = { "port": SerialPort }
 	pass
 
-The listed resource :code:`SerialPort` will be bound to :code:`self.port` making it usable
-in the class. Checks are performed that the target the driver binds to has a
-SerialPort, otherwise an error will be raised. The last thing to be added is the
-:code:`__attr_post_init__` function, the minimum requirement is a call to
-:code:`super().__attr_post_init__()`.
+The listed resource :code:`SerialPort` will be bound to :code:`self.port`,
+making it usable in the class.
+Checks are performed that the target the driver binds to has a SerialPort,
+otherwise an error will be raised.
+
+If you need to do something during instantiation, you need to add a
+:code:`__attr_post_init__` method (instead of the usual :code:`__init__` used
+for non-attr-classes).
+The minimum requirement is a call to :code:`super().__attr_post_init__()`.
 
 ::
    
@@ -130,13 +143,14 @@ SerialPort, otherwise an error will be raised. The last thing to be added is the
 	def __attr_post_init__(self):
 	    super().__attr_post_init__()
 
-All thats left now is to implement the functionality described by the used protocol.
+All that's left now is to implement the functionality described by the used
+protocol, by using the API of the bound drivers and resources.
 
 Writing a resource
 -------------------
 
 To add a new resource to labgrid we import attr into our new resource file,
-additionaly we need the targetfactory and the common Resource class.
+additionally we need the :any:`target_factory` and the common Resource class.
 
 ::
 
@@ -145,8 +159,8 @@ additionaly we need the targetfactory and the common Resource class.
     from labgrid.factory import target_factory
     from labgrid.driver.common import Resource
 
-Next we add our own resource with the :code:`Resource` common class and register
-it with the target_factory.
+Next we add our own resource with the :code:`Resource` parent class and
+register it with the :any:`target_factory`.
 
 ::
 
@@ -161,7 +175,8 @@ it with the target_factory.
     class ExampleResource(Resource):
         pass
 
-All that is left now is to add variables via :code:`attr.ib()` member variables.
+All that is left now is to add attributes via :code:`attr.ib()` member
+variables.
 
 ::
 
@@ -178,6 +193,4 @@ All that is left now is to add variables via :code:`attr.ib()` member variables.
         examplevar2 = attr.ib()
 
 The :code:`attr.ib()` style of member definition also supports defaults and
-validators, see attrs_.
-
-.. _attrs: https://attrs.readthedocs.io/en/stable/
+validators, see the `attrs documentation <https://attrs.readthedocs.io/en/stable/>`_.

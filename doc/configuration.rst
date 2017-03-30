@@ -2,13 +2,13 @@ Configuration
 =============
 This chapter describes the individual drivers and resources used in a device
 configuration.
-Drivers can depend on resources or other drivers, resources
+Drivers can depend on resources or other drivers, whereas resources
 have no dependencies.
 
 .. image:: res/config_graph.svg
    :width: 50%
 
-Here the Resource `RawSerialPort` provides the Information for the
+Here the resource `RawSerialPort` provides the information for the
 `SerialDriver`, which in turn is needed by the `ShellDriver`.
 Driver dependency resolution is done by searching for the driver which
 implements the dependent protocol, all drivers implement one or more protocols.
@@ -23,7 +23,7 @@ RawSerialPort
 +++++++++++++
 A RawSerialPort is a serial port which is identified via the device path on the
 local computer.
-Take note that re plugging USB serial converters can result in a different
+Take note that re-plugging USB serial converters can result in a different
 enumeration order.
 
 .. code-block:: yaml
@@ -60,14 +60,14 @@ port 53867 and use a baud rate of 115200.
 USBSerialPort
 +++++++++++++
 A USBSerialPort describes a serial port which is connected via USB and is
-dentified by matching udev properties.
-This allows identification through hot plugging or rebooting.
+identified by matching udev properties.
+This allows identification through hot-plugging or rebooting.
 
 .. code-block:: yaml
 
    NetworkSerialPort:
      match:
-       ID_SERIAL_SHORT: P-00-00682
+       'ID_SERIAL_SHORT': 'P-00-00682'
      speed: 115200
 
 The example would search for a USB serial converter with the key
@@ -92,7 +92,7 @@ The example describes port 0 on the remote power switch
 `powerswitch.example.computer`, which is a `gude` model.
 
 - model (str): model of the power switch
-- host (str): hostname of the power switch 
+- host (str): hostname of the power switch
 - index (int): number of the port to switch
 
 NetworkService
@@ -121,7 +121,7 @@ A OneWirePIO describes a onewire programmable I/O pin.
      host: example.computer
      path: /29.7D6913000000/PIO.0
 
-The example describes a `PIO.0` on board `29.7D6913000000` via the onewire
+The example describes a `PIO.0` at device address `29.7D6913000000` via the onewire
 server on `example.computer`.
 
 - host (str): hostname of the remote system running the onewire server
@@ -129,7 +129,7 @@ server on `example.computer`.
 
 USBMassStorage
 ~~~~~~~~~~~~~~
-A USBMassStorage resource describes an USB stick.
+A USBMassStorage resource describes a USB memory stick or similar device.
 
 .. code-block:: yaml
 
@@ -177,7 +177,7 @@ An AndroidFastboot resource describes a USB device in the fastboot state.
 
 USBEthernetInterface
 ~~~~~~~~~~~~~~~~~~~~
-An USBEthernetInterface resource describes a USB device Ethernet adapter.
+A USBEthernetInterface resource describes a USB device Ethernet adapter.
 
 .. code-block:: yaml
 
@@ -210,7 +210,7 @@ A RemotePlace describes a set of resources attached to a labgrid remote place.
 
 The example describes the remote place `example-place`. It will connect to the
 labgrid remote coordinator, wait until the resources become available and expose
-them to the internal environment. 
+them to the internal environment.
 
 - name (str): name or pattern of the remote place
 
@@ -229,7 +229,7 @@ This manager is automatically created when a resource derived from
 :any:`AndroidFastboot`) is instantiated.
 
 To identify the kernel device which corresponds to a configured `USBResource`,
-the each existing (and subsequently added) kernel device is matched against the
+each existing (and subsequently added) kernel device is matched against the
 configured resources.
 This is based on a list of `match entries` which must all be tested
 successfully against the potential kernel device.
@@ -342,7 +342,7 @@ Matching a USB UART by Serial Number
 Most of the USB serial converters in our lab have been programmed with unique
 serial numbers.
 This makes it easy to always match the same one even if the USB topology
-changes or a board is moved between host systems.
+changes or a board has been moved between host systems.
 
 .. code-block:: yaml
 
@@ -399,7 +399,7 @@ Implements:
      username: 'root'
 
 Arguments:
-  - prompt (regex): prompt to match after logging in 
+  - prompt (regex): prompt to match after logging in
   - login_prompt (regex): match for the login prompt
   - username (str): username to use during login
   - password (str): password to use during login
@@ -424,7 +424,7 @@ Implements:
      keyfile: example.key
 
 Arguments:
-  - keyfile (str): private key to login into the remote system
+  - keyfile (str): filename of private key to login into the remote system
 
 InfoDriver
 ~~~~~~~~~~
@@ -446,7 +446,7 @@ Arguments:
 
 UBootDriver
 ~~~~~~~~~~~
-An UBootDriver interfaces with a u-boot boot loader via a `ConsoleProtocol`.
+A UBootDriver interfaces with a u-boot boot loader via a `ConsoleProtocol`.
 
 Binds to:
   - :any:`ConsoleProtocol`
@@ -463,12 +463,12 @@ Arguments:
   - prompt (regex): u-boot prompt to match
   - password (str): optional u-boot unlock password
   - init_commands (tuple): tuple of commands to execute after matching the
-    prompt 
+    prompt
 
 BareboxDriver
 ~~~~~~~~~~~~~
 
-An BareboxDriver interfaces with a barebox bootloader via a `ConsoleProtocol`.
+A BareboxDriver interfaces with a barebox bootloader via a `ConsoleProtocol`.
 
 Binds to:
   - :any:`ConsoleProtocol`
@@ -514,7 +514,7 @@ Implements:
      image: mylocal.image
 
 Arguments:
-  - image (str): image to upload to the device
+  - image (str): filename of the image to upload to the device
 
 OpenOCDDriver
 ~~~~~~~~~~~~~
@@ -526,8 +526,8 @@ Implements:
 Arguments:
   - config (str): OpenOCD configuration file
   - search (str): include search path for scripts
-  - image (str): image to bootstrap onto the device
-    
+  - image (str): filename of image to bootstrap onto the device
+
 ManualPowerDriver
 ~~~~~~~~~~~~~~~~~
 A ManualPowerDriver requires the user to control the target power states. This
@@ -543,11 +543,11 @@ Implements:
      name: 'example-board'
 
 Arguments:
-  - name (str): name of the Driver (will be displayed during interaction)
+  - name (str): name of the driver (will be displayed during interaction)
 
 ExternalPowerDriver
 ~~~~~~~~~~~~~~~~~~~
-An ExternalPowerDriver is used to control a targets power state via an external command.
+An ExternalPowerDriver is used to control a target power state via an external command.
 
 Implements:
   - :any:`PowerProtocol`
@@ -568,7 +568,7 @@ Arguments:
 NetworkPowerDriver
 ~~~~~~~~~~~~~~~~~~
 A NetworkPowerDriver controls a `NetworkPowerPort`, allowing control of the
-targets power state without user interaction.
+target power state without user interaction.
 
 Binds to:
   - :any:`NetworkPowerPort`
@@ -602,7 +602,7 @@ Binds to:
 Arguments:
   - cmd_on (str): command to turn power to the board on
   - cmd_off (str): command to turn power to the board off
-  - delay (float): configurable delay between off and on if cycle is not set
+  - delay (float): configurable delay between off and on
 
 MXSUSBDriver
 ~~~~~~~~~~~~
@@ -626,7 +626,7 @@ Arguments:
 
 IMXUSBDriver
 ~~~~~~~~~~~~
-A IMXUSBDriver is used to upload an image into a device in the mxs USB loader
+A IMXUSBDriver is used to upload an image into a device in the imx USB loader
 state. This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
@@ -647,7 +647,7 @@ Arguments:
 
 USBStorageDriver
 ~~~~~~~~~~~~~~~~
-An USBStorageDriver allows access to a USB Stick via the `USBMassStorage`
+A USBStorageDriver allows access to a USB stick or similar device via the `USBMassStorage`
 resource.
 
 Binds to:

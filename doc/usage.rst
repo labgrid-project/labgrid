@@ -8,7 +8,7 @@ provided by the pytest plugin.
 
 Creating and Configuring Targets
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The labgrid library provides to ways to configure targets with resources and
+The labgrid library provides two ways to configure targets with resources and
 drivers: either create the :any:`Target` directly or use :any:`Environment` to
 load a configuration file.
 
@@ -80,26 +80,26 @@ To access the target's console, the correct driver object can be found by using
   SerialDriver(target=Target(name='example', env=Environment(config_file='example.yaml')), state=<BindingState.active: 2>)
   >>> cp.write(b'test')
 
-In when using the ``get_driver`` method, the driver is automatically activated.
+When using the ``get_driver`` method, the driver is automatically activated.
 The driver activation will also wait for unavailable resources when needed.
 
 pytest Plugin
 -------------
-Labgrid include a `pytest <http://pytest.org>`_ plugin to simplify writing tests which
+Labgrid includes a `pytest <http://pytest.org>`_ plugin to simplify writing tests which
 involve embedded boards.
 The plugin is configured by providing an environment config file (via the
---env-config pytest option) and automatically create the targets described in
+--env-config pytest option) and automatically creates the targets described in
 the environment.
 
 Two `pytest fixtures <http://docs.pytest.org/en/latest/fixture.html>`_ are provided:
 
 env (session scope)
-  Used to access the :any:`Environment` object create from the configuration
+  Used to access the :any:`Environment` object created from the configuration
   file.
   This is mostly used for defining custom fixtures at the test suite level.
 
 target (session scope)
-  Used to access the 'main' :any:`Target` defined in the configure file.
+  Used to access the 'main' :any:`Target` defined in the configuration file.
 
 Simple Example
 ~~~~~~~~~~~~~~
@@ -146,7 +146,7 @@ environment config:
   test_example.py::test_echo PASSED
   =========================== 1 passed in 0.51 seconds ===========================
 
-pytest automatically found the test case and executed it on the target.
+pytest has automatically found the test case and executed it on the target.
 
 Custom Fixture Example
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -205,7 +205,7 @@ useful to define a function scope fixture per state in ``conftest.py``::
   See the corresponding `pytest documentation for details
   <http://doc.pytest.org/en/latest/capture.html#accessing-captured-output-from-a-test-function>`_.
 
-With the fixtures define above, switching between bootloader and linux shells
+With the fixtures defined above, switching between bootloader and linux shells
 is easy::
 
   from labgrid.driver import BareboxDriver, ShellDriver

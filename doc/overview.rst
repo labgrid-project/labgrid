@@ -17,12 +17,12 @@ or by cloning the repository and installing manually:
     $ git clone https://github.com/labgrid-project/labgrid
     $ cd labgrid && python3 setup.py install
 
-Extra requires
-~~~~~~~~~~~~~~
+Extra Requirements
+~~~~~~~~~~~~~~~~~~
 Labgrid supports different extras:
 
 - onewire: install onewire support, requires ``onewire>=0.0.2`` from PyPI and
-  additionally ``libow-dev`` on debian based distributions.
+  additionally ``libow-dev`` on Debian based distributions.
 - coordinator: installs required depencies to start a crossbar coordinator
 
 The extras can be selected by passing them after the package name in square
@@ -97,12 +97,12 @@ As another example, the :any:`ShellDriver` uses any driver implementing the
 The `ConsoleProtocol` allows the `ShellDriver` to work with any specific method
 of accessing the board's console (locally via USB, over the network using a
 console server or even an external program).
-At the `ConsoleProtocol` level, character are send to and received from the
+At the `ConsoleProtocol` level, characters are sent to and received from the
 target, but they are not yet interpreted as specific commands or their output.
 
 The `ShellDriver` implements the higher-level :any:`CommandProtocol`, providing
 actions such as "run" or "run_check".
-Internally, it interacts with Linux shell on the target board.
+Internally, it interacts with the Linux shell on the target board.
 For example, it:
 
 - waits for the login prompt
@@ -136,7 +136,7 @@ Both bind to a driver implementing the `ConsoleProtocol` and provide the
 Obviously, the board cannot be in the bootloader and in Linux at the same time,
 which is represented in labgrid via the :any:`BindingState` (`bound`/`active`).
 If, during activation of a driver, any other driver in its bindings is not
-active, they are activated as well.
+active, they will be activated as well.
 
 Activating and deactivating `Drivers` is also used to handle `ManagedResources`
 becoming available/unavailable at runtime.
@@ -155,7 +155,7 @@ A realistic sequence of activation might look like this:
   :any:`USBSerialPort` resource to be available and log in)
 
 Any `ManagedResources` which become unavailable at runtime will automatically
-deactivate the dependant drivers.
+deactivate the dependent drivers.
 
 Strategies
 ~~~~~~~~~~
@@ -219,7 +219,7 @@ The resource access from clients does not pass through the coordinator, but is
 instead done directly from client to exporter, avoiding the need to specify new
 interfaces for each resource type.
 
-The coordinator also manages registry of "places".
+The coordinator also manages the registry of "places".
 These are used to configure which resources belong together from the user's
 point of view.
 A `place` can be a generic rack location, where different boards are connected
@@ -232,7 +232,7 @@ not available in the generic locations.
 
 Each place can have aliases to simplify accessing a specific board (which might
 be moved between generic places).
-It also has comment, which is used to store a short description of the
+It also has a comment, which is used to store a short description of the
 connected board.
 
 Finally, a place is configured with one or more `resource matches`.
@@ -253,14 +253,14 @@ Some commonly used match patterns are:
 
 exporter1/hub1-port1/\*
   Matches all resources exported from exporter1 in the group hub1-port1.
-  This is a easy way to match several USB resources related to the same board
+  This is an easy way to match several USB resources related to the same board
   (such as a USB ROM-Loader interface, Android fastboot and a USB serial gadget
   in Linux).
 
 To avoid conflicting access to the same resources, a place must be `aquired`
 before it is used and the coordinator also keeps track of which user on which
 client host has currently acquired the place.
-The resource matches are only evaluated while a place is acquired and cannot be
+The resource matches are only evaluated while a place is being acquired and cannot be
 changed until it is `released` again.
 
 Exporter

@@ -22,8 +22,8 @@ It currently supports:
    overview
    usage
    man
-   development
    configuration
+   development
    design_decisions
    modules/modules
    :maxdepth: 2

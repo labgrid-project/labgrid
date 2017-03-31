@@ -2,13 +2,13 @@ Configuration
 =============
 This chapter describes the individual drivers and resources used in a device
 configuration.
-Drivers can depend on resources or other drivers, resources
+Drivers can depend on resources or other drivers, whereas resources
 have no dependencies.
 
 .. image:: res/config_graph.svg
    :width: 50%
 
-Here the Resource `RawSerialPort` provides the Information for the
+Here the resource `RawSerialPort` provides the information for the
 `SerialDriver`, which in turn is needed by the `ShellDriver`.
 Driver dependency resolution is done by searching for the driver which
 implements the dependent protocol, all drivers implement one or more protocols.
@@ -23,7 +23,7 @@ RawSerialPort
 +++++++++++++
 A RawSerialPort is a serial port which is identified via the device path on the
 local computer.
-Take note that re plugging USB serial converters can result in a different
+Take note that re-plugging USB serial converters can result in a different
 enumeration order.
 
 .. code-block:: yaml
@@ -59,14 +59,15 @@ port 53867 and use a baud rate of 115200.
 
 USBSerialPort
 +++++++++++++
-A USBSerialPort describes a serial port which is identified by matching udev
-properties. This allows an identification through hot plugging or rebooting.
+A USBSerialPort describes a serial port which is connected via USB and is
+identified by matching udev properties.
+This allows identification through hot-plugging or rebooting.
 
 .. code-block:: yaml
 
    NetworkSerialPort:
      match:
-       ID_SERIAL_SHORT: P-00-00682
+       'ID_SERIAL_SHORT': 'P-00-00682'
      speed: 115200
 
 The example would search for a USB serial converter with the key
@@ -91,7 +92,7 @@ The example describes port 0 on the remote power switch
 `powerswitch.example.computer`, which is a `gude` model.
 
 - model (str): model of the power switch
-- host (str): hostname of the power switch 
+- host (str): hostname of the power switch
 - index (int): number of the port to switch
 
 NetworkService
@@ -120,7 +121,7 @@ A OneWirePIO describes a onewire programmable I/O pin.
      host: example.computer
      path: /29.7D6913000000/PIO.0
 
-The example describes a `PIO.0` on board `29.7D6913000000` via the onewire
+The example describes a `PIO.0` at device address `29.7D6913000000` via the onewire
 server on `example.computer`.
 
 - host (str): hostname of the remote system running the onewire server
@@ -128,7 +129,7 @@ server on `example.computer`.
 
 USBMassStorage
 ~~~~~~~~~~~~~~
-A USBMassStorage resource describes an USB stick.
+A USBMassStorage resource describes a USB memory stick or similar device.
 
 .. code-block:: yaml
 
@@ -176,7 +177,7 @@ An AndroidFastboot resource describes a USB device in the fastboot state.
 
 USBEthernetInterface
 ~~~~~~~~~~~~~~~~~~~~
-An USBEthernetInterface resource describes a USB device Ethernet adapter.
+A USBEthernetInterface resource describes a USB device Ethernet adapter.
 
 .. code-block:: yaml
 
@@ -209,7 +210,7 @@ A RemotePlace describes a set of resources attached to a labgrid remote place.
 
 The example describes the remote place `example-place`. It will connect to the
 labgrid remote coordinator, wait until the resources become available and expose
-them to the internal environment. 
+them to the internal environment.
 
 - name (str): name or pattern of the remote place
 
@@ -217,8 +218,144 @@ udev Matching
 ~~~~~~~~~~~~~
 udev matching allows labgrid to identify resources via their udev properties.
 Any udev property key and value can be used, path matching USB devices is
-allowed as well. This allows the export of a specific USB hub port or the
-correct identification of a USB serial converter across computers.
+allowed as well.
+This allows exporting a specific USB hub port or the correct identification of
+a USB serial converter across computers.
+
+The initial matching and monitoring for udev events is handled by the
+:any:`UdevManager` class.
+This manager is automatically created when a resource derived from
+:any:`USBResource` (such as :any:`USBSerialPort`, :any:`IMXUSBLoader` or
+:any:`AndroidFastboot`) is instantiated.
+
+To identify the kernel device which corresponds to a configured `USBResource`,
+each existing (and subsequently added) kernel device is matched against the
+configured resources.
+This is based on a list of `match entries` which must all be tested
+successfully against the potential kernel device.
+Match entries starting with an ``@`` are checked against the device's parents
+instead of itself; here one matching parent causes the check to be successful.
+
+A given `USBResource` class has builtin match entries that are checked first,
+for example that the ``SUBSYSTEM`` is ``tty`` as in the case of the
+:any:`USBSerialPort`.
+Only if these succeed, match entries provided by the user for the resource
+instance are considered.
+
+In addition to the properties reported by ``udevadm monitor --udev
+--property``, elements of the ``ATTR(S){}`` dictionary (as shown by ``udevadmin
+info <device> -a``) are useable as match keys.
+Finally ``sys_name`` allows matching against the name of the directory in
+sysfs.
+All match entries must succeed for the device to be accepted.
+
+The following examples show how to use the udev matches for some common
+use-cases.
+
+Matching a USB Serial Converter on a Hub Port
++++++++++++++++++++++++++++++++++++++++++++++
+
+This will match any USB serial converter connected below the hub port 1.2.5.5
+on bus 1.
+The `sys_name` value corresponds to the hierarchy of buses and ports as shown
+with ``lsusb -t`` and is also usually displayed in the kernel log messages when
+new devices are detected.
+
+.. code-block:: yaml
+
+  USBSerialPort:
+    match:
+      '@sys_name': '1-1.2.5.5'
+
+Note the ``@`` in the ``@sys_name`` match, which applies this match to the
+device's parents instead of directly to itself.
+This is necessary for the `USBSerialPort` because we actually want to find the
+``ttyUSB?`` device below the USB serial converter device.
+
+Matching an Android Fastboot Device
++++++++++++++++++++++++++++++++++++
+
+In this case, we want to match the USB device on that port directly, so we
+don't use a parent match.
+
+.. code-block:: yaml
+
+  AndroidFastboot:
+    match:
+      'sys_name': '1-1.2.3'
+
+Matching a Specific UART in a Dual-Port Adapter
++++++++++++++++++++++++++++++++++++++++++++++++
+
+On this board, the serial console is connected to the second port of an
+on-board dual-port USB-UART.
+The board itself is connected to the bus 3 and port path 10.2.2.2.
+The correct value can be shown by running ``udevadm info /dev/ttyUSB9`` in our
+case:
+
+.. code-block:: bash
+  :emphasize-lines: 21
+
+  $ udevadm info /dev/ttyUSB9
+  P: /devices/pci0000:00/0000:00:14.0/usb3/3-10/3-10.2/3-10.2.2/3-10.2.2.2/3-10.2.2.2:1.1/ttyUSB9/tty/ttyUSB9
+  N: ttyUSB9
+  S: serial/by-id/usb-FTDI_Dual_RS232-HS-if01-port0
+  S: serial/by-path/pci-0000:00:14.0-usb-0:10.2.2.2:1.1-port0
+  E: DEVLINKS=/dev/serial/by-id/usb-FTDI_Dual_RS232-HS-if01-port0 /dev/serial/by-path/pci-0000:00:14.0-usb-0:10.2.2.2:1.1-port0
+  E: DEVNAME=/dev/ttyUSB9
+  E: DEVPATH=/devices/pci0000:00/0000:00:14.0/usb3/3-10/3-10.2/3-10.2.2/3-10.2.2.2/3-10.2.2.2:1.1/ttyUSB9/tty/ttyUSB9
+  E: ID_BUS=usb
+  E: ID_MODEL=Dual_RS232-HS
+  E: ID_MODEL_ENC=Dual\x20RS232-HS
+  E: ID_MODEL_FROM_DATABASE=FT2232C Dual USB-UART/FIFO IC
+  E: ID_MODEL_ID=6010
+  E: ID_PATH=pci-0000:00:14.0-usb-0:10.2.2.2:1.1
+  E: ID_PATH_TAG=pci-0000_00_14_0-usb-0_10_2_2_2_1_1
+  E: ID_REVISION=0700
+  E: ID_SERIAL=FTDI_Dual_RS232-HS
+  E: ID_TYPE=generic
+  E: ID_USB_DRIVER=ftdi_sio
+  E: ID_USB_INTERFACES=:ffffff:
+  E: ID_USB_INTERFACE_NUM=01
+  E: ID_VENDOR=FTDI
+  E: ID_VENDOR_ENC=FTDI
+  E: ID_VENDOR_FROM_DATABASE=Future Technology Devices International, Ltd
+  E: ID_VENDOR_ID=0403
+  E: MAJOR=188
+  E: MINOR=9
+  E: SUBSYSTEM=tty
+  E: TAGS=:systemd:
+  E: USEC_INITIALIZED=9129609697
+
+We use the ``ID_USB_INTERFACE_NUM`` to distinguish between the two ports:
+
+.. code-block:: yaml
+
+  USBSerialPort:
+    match:
+      '@sys_name': '3-10.2.2.2'
+      'ID_USB_INTERFACE_NUM': '01'
+
+Matching a USB UART by Serial Number
+++++++++++++++++++++++++++++++++++++
+
+Most of the USB serial converters in our lab have been programmed with unique
+serial numbers.
+This makes it easy to always match the same one even if the USB topology
+changes or a board has been moved between host systems.
+
+.. code-block:: yaml
+
+  USBSerialPort:
+    match:
+      'ID_SERIAL_SHORT': 'P-00-00679'
+
+To check if your device has a serial number, you can use ``udevadm info``:
+
+.. code-block:: bash
+
+  $ udevadm info /dev/ttyUSB5 | grep SERIAL_SHORT
+  E: ID_SERIAL_SHORT=P-00-00679
 
 Drivers
 -------
@@ -262,7 +399,7 @@ Implements:
      username: 'root'
 
 Arguments:
-  - prompt (regex): prompt to match after logging in 
+  - prompt (regex): prompt to match after logging in
   - login_prompt (regex): match for the login prompt
   - username (str): username to use during login
   - password (str): password to use during login
@@ -287,7 +424,7 @@ Implements:
      keyfile: example.key
 
 Arguments:
-  - keyfile (str): private key to login into the remote system
+  - keyfile (str): filename of private key to login into the remote system
 
 InfoDriver
 ~~~~~~~~~~
@@ -309,7 +446,7 @@ Arguments:
 
 UBootDriver
 ~~~~~~~~~~~
-An UBootDriver interfaces with a u-boot boot loader via a `ConsoleProtocol`.
+A UBootDriver interfaces with a u-boot boot loader via a `ConsoleProtocol`.
 
 Binds to:
   - :any:`ConsoleProtocol`
@@ -326,12 +463,12 @@ Arguments:
   - prompt (regex): u-boot prompt to match
   - password (str): optional u-boot unlock password
   - init_commands (tuple): tuple of commands to execute after matching the
-    prompt 
+    prompt
 
 BareboxDriver
 ~~~~~~~~~~~~~
 
-An BareboxDriver interfaces with a barebox bootloader via a `ConsoleProtocol`.
+A BareboxDriver interfaces with a barebox bootloader via a `ConsoleProtocol`.
 
 Binds to:
   - :any:`ConsoleProtocol`
@@ -377,7 +514,7 @@ Implements:
      image: mylocal.image
 
 Arguments:
-  - image (str): image to upload to the device
+  - image (str): filename of the image to upload to the device
 
 OpenOCDDriver
 ~~~~~~~~~~~~~
@@ -389,8 +526,8 @@ Implements:
 Arguments:
   - config (str): OpenOCD configuration file
   - search (str): include search path for scripts
-  - image (str): image to bootstrap onto the device
-    
+  - image (str): filename of image to bootstrap onto the device
+
 ManualPowerDriver
 ~~~~~~~~~~~~~~~~~
 A ManualPowerDriver requires the user to control the target power states. This
@@ -406,11 +543,11 @@ Implements:
      name: 'example-board'
 
 Arguments:
-  - name (str): name of the Driver (will be displayed during interaction)
+  - name (str): name of the driver (will be displayed during interaction)
 
 ExternalPowerDriver
 ~~~~~~~~~~~~~~~~~~~
-An ExternalPowerDriver is used to control a targets power state via an external command.
+An ExternalPowerDriver is used to control a target power state via an external command.
 
 Implements:
   - :any:`PowerProtocol`
@@ -431,7 +568,7 @@ Arguments:
 NetworkPowerDriver
 ~~~~~~~~~~~~~~~~~~
 A NetworkPowerDriver controls a `NetworkPowerPort`, allowing control of the
-targets power state without user interaction.
+target power state without user interaction.
 
 Binds to:
   - :any:`NetworkPowerPort`
@@ -465,7 +602,7 @@ Binds to:
 Arguments:
   - cmd_on (str): command to turn power to the board on
   - cmd_off (str): command to turn power to the board off
-  - delay (float): configurable delay between off and on if cycle is not set
+  - delay (float): configurable delay between off and on
 
 MXSUSBDriver
 ~~~~~~~~~~~~
@@ -489,7 +626,7 @@ Arguments:
 
 IMXUSBDriver
 ~~~~~~~~~~~~
-A IMXUSBDriver is used to upload an image into a device in the mxs USB loader
+A IMXUSBDriver is used to upload an image into a device in the imx USB loader
 state. This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
@@ -510,7 +647,7 @@ Arguments:
 
 USBStorageDriver
 ~~~~~~~~~~~~~~~~
-An USBStorageDriver allows access to a USB Stick via the `USBMassStorage`
+A USBStorageDriver allows access to a USB stick or similar device via the `USBMassStorage`
 resource.
 
 Binds to:

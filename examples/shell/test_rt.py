@@ -15,7 +15,7 @@ def test_rt_cyclictest_short(command):
     result = command.run_check('cyclictest -SN -D 5 -q')
     result = result[-1].strip()
 
-    pattern = r"Min: (?P<min>\w+) Act:\s+\w+\s+Avg:\s+(?P<avg>\w+)\s+Max:\s+(?P<max>\w+)"
+    pattern = r"Min:\s+(?P<min>\w+)\s+Act:\s+\w+\s+Avg:\s+(?P<avg>\w+)\s+Max:\s+(?P<max>\w+)"
     min, avg, max = map(int, re.search(pattern, result).groups())
     assert min <= avg <= max
     assert avg < 1e6  # avg < 1 milliseconds

@@ -58,7 +58,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         self._status = 0
 
     @step(args=['cmd'], result=True)
-    def _run(self, cmd, *, step):
+    def _run(self, cmd, *, step, timeout=30.0):
         """
         Runs the specified cmd on the shell and returns the output.
 
@@ -75,7 +75,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         self.console.sendline(cmp_command)
         _, _, match, _ = self.console.expect(r'{}(.*){}\s+(\d+)\s+{}'.format(
             marker, marker, self.prompt
-        ))
+        ), timeout=timeout)
         # Remove VT100 Codes, split by newline and remove surrounding newline
         data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
         self.logger.debug("Received Data: %s", data)
@@ -84,8 +84,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         return (data, [], exitcode)
 
     @Driver.check_active
-    def run(self, cmd):
-        return self._run(cmd)
+    def run(self, cmd, timeout=30.0):
+        return self._run(cmd, timeout=timeout)
 
     @step()
     def _await_login(self):
@@ -104,14 +104,14 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         self._check_prompt()
 
     @step(args=['cmd'], result=True)
-    def _run_check(self, cmd):
-        out, _, res = self._run(cmd)
+    def _run_check(self, cmd, timeout=30):
+        out, _, res = self._run(cmd, timeout=timeout)
         if res != 0:
             raise ExecutionError(cmd)
         return out
 
     @Driver.check_active
-    def run_check(self, cmd):
+    def run_check(self, cmd, timeout=30):
         """
         Runs the specified cmd on the shell and returns the output if successful,
         raises ExecutionError otherwise.
@@ -119,7 +119,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         Arguments:
         cmd - cmd to run on the shell
         """
-        return self._run_check(cmd)
+        return self._run_check(cmd, timeout=timeout)
 
     @step()
     def get_status(self):

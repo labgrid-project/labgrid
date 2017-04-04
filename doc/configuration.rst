@@ -736,18 +736,92 @@ Arguments:
 Strategies
 ~~~~~~~~~~
 Strategies are used to ensure that the device is in a certain state during a test. 
-Such a state could be the bootloader or a booted linux kernel with shell.
+Such a state could be the boot loader or a booted Linux kernel with shell.
 
 BareboxStrategy
 +++++++++++++++
+A BareboxStrategy has three states:
 
+- unknown
+- barebox
+- shell
+
+
+to transition to the shell state:
+
+::
+
+   t = get_target("main")
+   s = BareboxStrategy(t)
+   s.transition("shell")
+
+
+this command would transition from the boot loader into a Linux shell and
+activate the shelldriver.
 
 UBootStrategy
 +++++++++++++
+A UBootStrategy has three states:
+
+- unknown
+- barebox
+- shell
+
+
+to transition to the shell state:
+
+::
+
+   t = get_target("main")
+   s = UBootStrategy(t)
+   s.transition("shell")
+
+
+this command would transition from the boot loader into a Linux shell and
+activate the shelldriver.
+
 
 Environment Configuration
 -------------------------
+The environment configuration for a test environment consists of a YAML file
+which contains targets, drivers and resources.
+The invocation order of objects is important here since drivers may depend on
+other drivers or resources.
+
+The skeleton for an environment consists of:
+
+.. code-block:: yaml
+
+   <target-1>:
+     resources:
+       <resources>
+     drivers:
+       <drivers>
+   <target-2>:
+     resources:
+       <resources>
+     drivers:
+       <drivers>
+
+If you have a single target environment, name it "main", the ``get_target``
+function defaults to "main".
+
+All the resources and drivers in this chapter have a YAML example snippet which
+can simply be added (at the correct indentation level, one level deeper) to the
+environment configuration.
 
 Exporter Configuration
 ----------------------
+A labgrid exporter is configured by adding resources to groups and exporting
+those groups.
+This allows the exporter to group resources for various usage scenarios, e.g.
+all resources of a specific place or for a specific test architecture.
 
+The exporter configuration skeleton:
+
+.. code-block:: yaml
+
+   <group-1>:
+     <resources>
+   <group-2>:
+     <resources>

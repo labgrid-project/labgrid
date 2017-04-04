@@ -97,10 +97,13 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
             self.status = 1
             return  # already logged in
         self.console.sendline(self.username)
-        if self.password:
-            self.console.expect("Password: ")
-            self.console.sendline(self.password)
-        self.console.expect(self.prompt, timeout=5)
+        index, _, _, _ = self.console.expect([self.prompt, "Password: "], timeout=5)
+        if index == 1:
+            if self.password:
+                self.console.sendline(self.password)
+                self.console.expect(self.prompt, timeout=5)
+            else:
+                raise Exception("Password entry needed but no password set")
         self._check_prompt()
 
     @step(args=['cmd'], result=True)

@@ -664,6 +664,25 @@ Implements:
 Arguments:
   - None
 
+OneWirePIODriver
+~~~~~~~~~~~~~~~~
+A OneWirePIODriver controls a `OneWirePIO` resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  - :any:`OneWirePIO`
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   OneWirePIODriver: {}
+
+
+Arguments:
+  - None
+
 Strategies
 ~~~~~~~~~~
 

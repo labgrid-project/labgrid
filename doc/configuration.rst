@@ -38,6 +38,9 @@ a baud rate of 115200.
 - port (str): path to the serial device
 - speed (int): desired baud rate
 
+Used by:
+  - `SerialDriver`_
+
 NetworkSerialPort
 +++++++++++++++++
 A NetworkSerialPort describes a serial port which is exported over the network,
@@ -56,6 +59,9 @@ port 53867 and use a baud rate of 115200.
 - host (str): hostname of the remote host
 - port (str): TCP port on the remote host to connect to
 - speed (int): baud rate of the serial port
+
+Used by:
+  - `SerialDriver`_
 
 USBSerialPort
 +++++++++++++
@@ -77,6 +83,9 @@ of 115200.
 - match (str): key and value for a udev match, see `udev Matching`_
 - speed (int): baud rate of the serial port
 
+Used by:
+  - `SerialDriver`_
+
 NetworkPowerPort
 ~~~~~~~~~~~~~~~~
 A NetworkPowerPort describes a remotely switchable power port.
@@ -95,6 +104,9 @@ The example describes port 0 on the remote power switch
 - host (str): hostname of the power switch
 - index (int): number of the port to switch
 
+Used by:
+  - `NetworkPowerDriver`_
+
 NetworkService
 ~~~~~~~~~~~~~~
 A NetworkService describes a remote SSH connection.
@@ -110,6 +122,9 @@ with the username `root`.
 
 - address (str): hostname of the remote system
 - username (str): username used by SSH
+
+Used by:
+  - `SSHDriver`_
 
 OneWirePIO
 ~~~~~~~~~~
@@ -127,6 +142,9 @@ server on `example.computer`.
 - host (str): hostname of the remote system running the onewire server
 - path (str): path on the server to the programmable I/O pin
 
+Used by:
+  - `OneWirePIODriver`_
+
 USBMassStorage
 ~~~~~~~~~~~~~~
 A USBMassStorage resource describes a USB memory stick or similar device.
@@ -138,6 +156,9 @@ A USBMassStorage resource describes a USB memory stick or similar device.
        'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0-scsi-0:0:0:3'
 
 - match (str): key and value for a udev match, see `udev Matching`_
+
+Used by:
+  - `USBStorageDriver`_
 
 IMXUSBLoader
 ~~~~~~~~~~~~
@@ -151,6 +172,9 @@ An IMXUSBLoader resource describes a USB device in the imx loader state.
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
+Used by:
+  - `IMXUSBDriver`_
+
 MXSUSBLoader
 ~~~~~~~~~~~~
 An MXSUSBLoader resource describes a USB device in the mxs loader state.
@@ -163,6 +187,17 @@ An MXSUSBLoader resource describes a USB device in the mxs loader state.
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
+Used by:
+  - `MXSUSBDriver`_
+
+NetworkMXSUSBLoader
+~~~~~~~~~~~~~~~~~~~
+A NetworkMXSUSBLoader descibes an `MXSUSBLoader`_ available on a remote computer.
+
+NetworkIMXUSBLoader
+~~~~~~~~~~~~~~~~~~~
+A NetworkIMXUSBLoader descibes an `IMXUSBLoader`_ available on a remote computer.
+
 AndroidFastboot
 ~~~~~~~~~~~~~~~
 An AndroidFastboot resource describes a USB device in the fastboot state.
@@ -174,6 +209,9 @@ An AndroidFastboot resource describes a USB device in the fastboot state.
        'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 - match (str): key and value for a udev match, see `udev Matching`_
+
+Used by:
+  - `AndroidFastbootDriver`_
 
 USBEthernetInterface
 ~~~~~~~~~~~~~~~~~~~~
@@ -199,6 +237,9 @@ An AlteraUSBBlaster resource describes an Altera USB blaster.
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
+Used by:
+  - `OpenOCDDriver`_
+
 RemotePlace
 ~~~~~~~~~~~
 A RemotePlace describes a set of resources attached to a labgrid remote place.
@@ -213,6 +254,9 @@ labgrid remote coordinator, wait until the resources become available and expose
 them to the internal environment.
 
 - name (str): name or pattern of the remote place
+
+Used by:
+  - potentially all drivers
 
 udev Matching
 ~~~~~~~~~~~~~
@@ -366,9 +410,9 @@ A SerialDriver connects to a serial port. It requires one of the serial port
 resources.
 
 Binds to:
-  - :any:`NetworkSerialPort`
-  - :any:`RawSerialPort`
-  - :any:`USBSerialPort`
+  - `NetworkSerialPort`_
+  - `RawSerialPort`_
+  - `USBSerialPort`_
 
 .. code-block:: yaml
 
@@ -386,7 +430,7 @@ A ShellDriver binds on top of a `ConsoleProtocol` and is designed to interact
 with a login prompt and a Linux shell.
 
 Binds to:
-  - :any:`ConsoleProtocol`
+  - :any:`ConsoleProtocol` (see `SerialDriver`_)
 
 Implements:
   - :any:`CommandProtocol`
@@ -404,7 +448,7 @@ Arguments:
   - username (str): username to use during login
   - password (str): password to use during login
   - keyfile (str): optional keyfile to upload after login, making the
-    :any:`SSHDriver` usable
+    `SSHDriver`_ usable
 
 SSHDriver
 ~~~~~~~~~
@@ -412,7 +456,7 @@ A SSHDriver requires a `NetworkService` resource and allows the execution of
 commands and file upload via network.
 
 Binds to:
-  - :any:`NetworkService`
+  - `NetworkService`_
 
 Implements:
   - :any:`CommandProtocol`
@@ -432,7 +476,7 @@ An InfoDriver provides an interface to retrieve system settings and state. It
 requires a `CommandProtocol`.
 
 Binds to:
-  - :any:`CommandProtocol`
+  - :any:`CommandProtocol` (see `ShellDriver`_)
 
 Implements:
   - :any:`InfoProtocol`
@@ -449,7 +493,7 @@ UBootDriver
 A UBootDriver interfaces with a u-boot boot loader via a `ConsoleProtocol`.
 
 Binds to:
-  - :any:`ConsoleProtocol`
+  - :any:`ConsoleProtocol` (see `SerialDriver`_)
 
 Implements:
   - :any:`CommandProtocol`
@@ -471,7 +515,7 @@ BareboxDriver
 A BareboxDriver interfaces with a barebox bootloader via a `ConsoleProtocol`.
 
 Binds to:
-  - :any:`ConsoleProtocol`
+  - :any:`ConsoleProtocol` (see `SerialDriver`_)
 
 Implements:
   - :any:`CommandProtocol`
@@ -505,6 +549,9 @@ AndroidFastbootDriver
 An AndroidFastbootDriver allows the upload of images to a device in the USB
 fastboot state.
 
+Binds to:
+  - `AndroidFastboot`_
+
 Implements:
   - None (yet)
 
@@ -519,6 +566,9 @@ Arguments:
 OpenOCDDriver
 ~~~~~~~~~~~~~
 An OpenOCDDriver controls OpenOCD to bootstrap a target with a bootloader.
+
+Binds to:
+  - `AlteraUSBBlaster`_
 
 Implements:
   - :any:`BootstrapProtocol`
@@ -571,7 +621,7 @@ A NetworkPowerDriver controls a `NetworkPowerPort`, allowing control of the
 target power state without user interaction.
 
 Binds to:
-  - :any:`NetworkPowerPort`
+  - `NetworkPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -610,8 +660,8 @@ A MXUSBDriver is used to upload an image into a device in the mxs USB loader
 state. This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
-  - :any:`MXSUSBLoader`
-  - :any:`NetworkMXSUSBLoader`
+  - `MXSUSBLoader`_
+  - `NetworkMXSUSBLoader`_
 
 Implements:
   - :any:`BootstrapProtocol`
@@ -630,8 +680,8 @@ A IMXUSBDriver is used to upload an image into a device in the imx USB loader
 state. This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
-  - :any:`IMXUSBLoader`
-  - :any:`NetworkIMXUSBLoader`
+  - `IMXUSBLoader`_
+  - `NetworkIMXUSBLoader`_
 
 Implements:
   - :any:`BootstrapProtocol`
@@ -651,7 +701,7 @@ A USBStorageDriver allows access to a USB stick or similar device via the `USBMa
 resource.
 
 Binds to:
-  - :any:`USBMassStorage`
+  - `USBMassStorage`_
 
 Implements:
   - None (yet)
@@ -670,7 +720,7 @@ A OneWirePIODriver controls a `OneWirePIO` resource.
 It can set and get the current state of the resource.
 
 Binds to:
-  - :any:`OneWirePIO`
+  - `OneWirePIO`_
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -685,6 +735,15 @@ Arguments:
 
 Strategies
 ~~~~~~~~~~
+Strategies are used to ensure that the device is in a certain state during a test. 
+Such a state could be the bootloader or a booted linux kernel with shell.
+
+BareboxStrategy
++++++++++++++++
+
+
+UBootStrategy
++++++++++++++
 
 Environment Configuration
 -------------------------

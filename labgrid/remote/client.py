@@ -261,12 +261,24 @@ class ClientSession(ApplicationSession):
         place = self.get_place()
         print("Place '{}':".format(place.name))
         place.show(level=1)
-        for (
-            exporter, groupname, cls, resourcename
-        ) in place.acquired_resources:
-            resource = self.resources[exporter][groupname][resourcename]
-            print("Resource '{}':".format(resourcename))
-            print(indent(pformat(resource.asdict()), prefix="  "))
+        if place.acquired:
+            for (
+                exporter, group_name, cls, resource_name
+            ) in place.acquired_resources:
+                resource = self.resources[exporter][group_name][resource_name]
+                print("Acquired resource '{}' ({}/{}/{}/{}):".format(
+                    resource_name, exporter, group_name, resource.cls, resource_name))
+                print(indent(pformat(resource.asdict()), prefix="  "))
+        else:
+            for exporter, groups in sorted(self.resources.items()):
+                for group_name, group in sorted(groups.items()):
+                    for resource_name, resource in sorted(group.items()):
+                        resource_path = (exporter, group_name, resource.cls, resource_name)
+                        if not place.hasmatch(resource_path):
+                            continue
+                        print("Matching resource '{}' ({}/{}/{}/{}):".format(
+                            resource_name, exporter, group_name, resource.cls, resource_name))
+                        print(indent(pformat(resource.asdict()), prefix="  "))
 
     @asyncio.coroutine
     def add_place(self):

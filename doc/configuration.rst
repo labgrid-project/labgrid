@@ -527,6 +527,8 @@ Implements:
 
 Arguments:
   - prompt (regex): barebox prompt to match
+  - autoboot (regex, default="stop autoboot"): autoboot message to match
+  - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
 
 ExternalConsoleDriver
 ~~~~~~~~~~~~~~~~~~~~~

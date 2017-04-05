@@ -27,6 +27,8 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     """
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
+    autoboot = attr.ib(default="stop autoboot", validator=attr.validators.instance_of(str))
+    interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -129,10 +131,11 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     def _await_prompt(self):
         """Await autoboot line and stop it to get to the prompt"""
         self.console.expect(r"[\n]barebox 20\d+")
-        index, _, _, _ = self.console.expect([self.prompt, "stop autoboot"])
+        index, _, _, _ = self.console.expect([self.prompt, self.autoboot])
         if index == 0:
             self._status = 1
         else:
+            self.console.write(self.interrupt.encode('ASCII'))
             self._check_prompt()
 
     @Driver.check_active

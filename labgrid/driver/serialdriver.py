@@ -51,13 +51,13 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         size -- amount of bytes to read, defaults to 1
         """
         reading = max(size, self.serial.in_waiting)
-        self.logger.debug("Reading %s (min %s) bytes with %s timeout",
-                          reading, size, timeout)
         self.serial.timeout = timeout
         res = self.serial.read(reading)
-        self.logger.debug("Read bytes (%s) or timeout reached", res)
-        if not res:
-            raise TIMEOUT("Timeout exceeded")
+        if res:
+            self.logger.debug("Read %i bytes: %s, timeout %.2f, requested size %i",
+                              len(res), res, timeout, size)
+        else:
+            raise TIMEOUT("Timeout of %.2f seconds exceeded" % timeout)
         return res
 
     def _write(self, data: bytes):
@@ -67,7 +67,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         Arguments:
         data -- data to write, must be bytes
         """
-        self.logger.debug("Write bytes (%s)", data)
+        self.logger.debug("Write %i bytes: %s", len(data), data)
         return self.serial.write(data)
 
     def open(self):

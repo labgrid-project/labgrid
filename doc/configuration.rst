@@ -71,7 +71,7 @@ This allows identification through hot-plugging or rebooting.
 
 .. code-block:: yaml
 
-   NetworkSerialPort:
+   USBSerialPort:
      match:
        'ID_SERIAL_SHORT': 'P-00-00682'
      speed: 115200
@@ -113,7 +113,7 @@ A NetworkService describes a remote SSH connection.
 
 .. code-block:: yaml
 
-   NetworkPowerPort:
+   NetworkService:
      address: example.computer
      username: root
 

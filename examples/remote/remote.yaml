@@ -4,8 +4,6 @@ targets:
       RemotePlace:
         name: test
     drivers:
-      ManualPowerDriver:
-        name: "example"
       SerialDriver: {}
       BareboxDriver:
         prompt: 'barebox@[^:]+:[^ ]+ '

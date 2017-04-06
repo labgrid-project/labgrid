@@ -98,5 +98,15 @@ class Config:
             else:
                 return default
 
+    def set_option(self, name, value):
+        """Set an entry in the options subkey
+
+        Args:
+            name (str): name of the option
+            value (str): the new value
+        """
+        assert isinstance(value, str)
+        self.data.setdefault('options', {})[name] = value
+
     def get_targets(self):
         return self.data.get('targets', {})

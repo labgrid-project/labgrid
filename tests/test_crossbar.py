@@ -72,3 +72,19 @@ def test_place_match(place):
         spawn.close()
         assert spawn.exitstatus == 0
 
+def test_place_aquire(place):
+    with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0
+
+    with pexpect.spawn('python -m labgrid.remote.client who') as spawn:
+        spawn.expect(".*test.*")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test release') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0

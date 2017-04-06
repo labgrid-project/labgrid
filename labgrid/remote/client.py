@@ -14,6 +14,7 @@ from socket import gethostname
 from getpass import getuser
 from collections import defaultdict
 from time import sleep
+from datetime import datetime
 
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
@@ -188,6 +189,20 @@ class ClientSession(ApplicationSession):
 
                 print("{0:<40s} {1}".format(line, place.comment))
 
+    def print_who(self):
+        """Print acquired places by user"""
+        result = [tuple('User Host Place Changed'.split())]
+        for name, place in self.places.items():
+            if place.acquired is None:
+                continue
+            host, user = place.acquired.split('/')
+            result.append((user, host, name, str(datetime.fromtimestamp(place.changed))))
+        result.sort()
+        widths = [max(map(len, c)) for c in zip(*result)]
+        for user, host, name, changed in result:
+            print("{0:<{width[0]}s}  {1:<{width[1]}s}  {2:<{width[2]}s}  {3}".format(
+                user, host, name, changed, width=widths))
+
     def _match_places(self, pattern):
         """search for substring matches of pattern in place names and aliases
 
@@ -246,12 +261,24 @@ class ClientSession(ApplicationSession):
         place = self.get_place()
         print("Place '{}':".format(place.name))
         place.show(level=1)
-        for (
-            exporter, groupname, cls, resourcename
-        ) in place.acquired_resources:
-            resource = self.resources[exporter][groupname][resourcename]
-            print("Resource '{}':".format(resourcename))
-            print(indent(pformat(resource.asdict()), prefix="  "))
+        if place.acquired:
+            for (
+                exporter, group_name, cls, resource_name
+            ) in place.acquired_resources:
+                resource = self.resources[exporter][group_name][resource_name]
+                print("Acquired resource '{}' ({}/{}/{}/{}):".format(
+                    resource_name, exporter, group_name, resource.cls, resource_name))
+                print(indent(pformat(resource.asdict()), prefix="  "))
+        else:
+            for exporter, groups in sorted(self.resources.items()):
+                for group_name, group in sorted(groups.items()):
+                    for resource_name, resource in sorted(group.items()):
+                        resource_path = (exporter, group_name, resource.cls, resource_name)
+                        if not place.hasmatch(resource_path):
+                            continue
+                        print("Matching resource '{}' ({}/{}/{}/{}):".format(
+                            resource_name, exporter, group_name, resource.cls, resource_name))
+                        print(indent(pformat(resource.asdict()), prefix="  "))
 
     @asyncio.coroutine
     def add_place(self):
@@ -632,6 +659,10 @@ def main():
     subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.add_argument('-v', '--verbose', action='store_true')
     subparser.set_defaults(func=ClientSession.print_places)
+
+    subparser = subparsers.add_parser('who',
+                                      help="list acquired places by user")
+    subparser.set_defaults(func=ClientSession.print_who)
 
     subparser = subparsers.add_parser('show',
         help="show a place and related resources",

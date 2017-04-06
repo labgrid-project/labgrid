@@ -15,8 +15,6 @@ class Environment:
     interact = attr.ib(default=input, repr=False)
 
     def __attrs_post_init__(self):
-        from . import target_factory
-
         self.targets = {}  #pylint: disable=attribute-defined-outside-init
 
         try:
@@ -26,12 +24,18 @@ class Environment:
                 "{} is not a valid yaml file".format(self.config_file)
             )
 
-        for name, config in self.config.get_targets().items():
-            target = target_factory.make_target(name, config, env=self)
-            self.targets[name] = target
-
     def get_target(self, role: str='main') -> Target:
-        """Returns the specified target."""
+        """Returns the specified target.
+
+        Each target is initialized as needed.
+        """
+        from . import target_factory
+
+        if not role in self.targets:
+            config = self.config.get_targets()[role]
+            target = target_factory.make_target(role, config, env=self)
+            self.targets[role] = target
+
         return self.targets[role]
 
     def cleanup(self):

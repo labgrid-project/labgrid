@@ -794,19 +794,35 @@ The skeleton for an environment consists of:
 
 .. code-block:: yaml
 
-   <target-1>:
-     resources:
-       <resources>
-     drivers:
-       <drivers>
-   <target-2>:
-     resources:
-       <resources>
-     drivers:
-       <drivers>
+   targets:
+     <target-1>:
+       resources:
+         <resource-1>:
+           <resource-1 parameters>
+         <resource-2>:
+           <resource-2 parameters>
+       drivers:
+         <driver-1>:
+           <driver-1 parameters>
+         <driver-2>: {} # no parameters for driver-2
+     <target-2>:
+       resources:
+         <resources>
+       drivers:
+         <drivers>
+     <more targets>
+   options:
+     <option-1 name>: <value for option-1>
+     <more options>
+   images:
+     <image-1 name>: <absolute or relative path for image-1>
+     <more images>
+   tools:
+     <tool-1 name>: <absolute or relative path for tool-1>
+     <more tools>
 
-If you have a single target environment, name it "main", the ``get_target``
-function defaults to "main".
+If you have a single target in your environment, name it "main", as the
+``get_target`` function defaults to "main".
 
 All the resources and drivers in this chapter have a YAML example snippet which
 can simply be added (at the correct indentation level, one level deeper) to the
@@ -814,12 +830,17 @@ environment configuration.
 
 Exporter Configuration
 ----------------------
-A labgrid exporter is configured by adding resources to groups and exporting
-those groups.
+The exporter is configured by using a YAML file (with a syntax similar to the
+environment configs used for pytest) or by instantiating the :any:`Environment`
+object.
+To configure the exporter, you need to define one or more `resource groups`,
+each containing one or more `resources`.
 This allows the exporter to group resources for various usage scenarios, e.g.
-all resources of a specific place or for a specific test architecture.
+all resources of a specific place or for a specific test setup.
+For information on how the exporter fits into the rest of labgrid, see
+:any:`remote-resources-and-places`.
 
-The exporter configuration skeleton:
+The basic structure of an exporter configuration file is:
 
 .. code-block:: yaml
 
@@ -827,3 +848,39 @@ The exporter configuration skeleton:
      <resources>
    <group-2>:
      <resources>
+
+The simplest case is with one group called "group1" containing a single
+:any:`USBSerialPort`:
+
+.. code-block:: yaml
+
+   group1:
+     USBSerialPort:
+       match:
+         '@sys_name': '3-1.3'
+
+To reduce the amount of repeated declarations when many similar resources
+need to be exported, the `Jinja2 template engine <http://jinja.pocoo.org/>`_
+is used as a preprocessor for the configuration file:
+
+.. code-block:: yaml
+
+   ## Iterate from group 1001 to 1016
+   # for idx in range(1, 17)
+   {{ 1000 + idx }}:
+     NetworkSerialPort:
+       {host: rl1, port: {{ 4000 + idx }}}
+     NetworkPowerPort:
+       # if 1 <= idx <= 8
+       {model: apc, host: apc1, index: {{ idx }}}
+       # elif 9 <= idx <= 12
+       {model: netio, host: netio4, index: {{ idx - 8 }}}
+       # elif 13 <= idx <= 16
+       {model: netio, host: netio5, index: {{ idx - 12 }}}
+       # endif
+   # endfor
+
+Use ``#`` for line statements (like the for loops in the example) and ``##``
+for line comments.
+Statements like ``{{ 4000 + idx }}`` are expanded based on variables in the
+Jinja2 template.

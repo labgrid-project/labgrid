@@ -30,7 +30,6 @@ def serial_driver(target, serial_port, monkeypatch):
     s = SerialDriver(target)
     return s
 
-
 @pytest.fixture(scope='function')
 def crossbar(tmpdir):
     if not find_spec('crossbar'):

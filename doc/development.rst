@@ -40,7 +40,7 @@ Tests can now be run via:
 
 .. code-block:: bash
 
-   python -m pytest --env-config=<config>
+   python -m pytest --lg-env <config>
 
 Writing a Driver
 ----------------
@@ -97,8 +97,8 @@ be added into multiple drivers.
     class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
 	pass
 
-Additionally the driver needs to be registered with the target_factory and
-provide a bindings dictionary, so that the :any:`Target` can resolve
+Additionally the driver needs to be registered with the :any:`target_factory`
+and provide a bindings dictionary, so that the :any:`Target` can resolve
 dependencies on other drivers or resources.
 
 ::

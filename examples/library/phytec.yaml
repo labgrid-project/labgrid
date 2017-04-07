@@ -1,0 +1,15 @@
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: phycore-imx6
+    drivers:
+      NetworkPowerDriver: {}
+      SerialDriver: {}
+      BareboxDriver:
+        prompt: 'barebox@[^:]+:[^ ]+ '
+      ShellDriver:
+        prompt: 'root@\w+:[^ ]+ '
+        login_prompt: ' login: '
+        username: 'root'
+      BareboxStrategy: {}

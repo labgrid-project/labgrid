@@ -35,4 +35,8 @@ class TargetFactory:
         return target
 
 
+#: Global TargetFactory instance
+#:
+#: This instance is used to register Resource and Driver classes so that
+#: Targets can be created automatically from YAML files.
 target_factory = TargetFactory()

@@ -118,10 +118,10 @@ access this board:
           port: '/dev/ttyUSB0'
       drivers:
         SerialDriver: {}
-	ShellDriver:
-	  prompt: 'root@\w+:[^ ]+ '
-	  login_prompt: ' login: '
-	  username: 'root'
+        ShellDriver:
+          prompt: 'root@\w+:[^ ]+ '
+          login_prompt: ' login: '
+          username: 'root'
 
 We then add the following test in a file called ``test_example.py``::
 
@@ -156,6 +156,7 @@ As pytest always executes the ``conftest.py`` file in the test suite directory,
 we can define additional fixtures there::
 
   import pytest
+
   from labgrid.protocol import CommandProtocol
 
   @pytest.fixture(scope='session')
@@ -168,12 +169,13 @@ With this fixture, we can simplify the ``test_example.py`` file to::
       result = command.run_check('echo OK')
       assert 'OK' in result
 
-Stategy Fixtures Example
-~~~~~~~~~~~~~~~~~~~~~~~~
+Stategy Fixture Example
+~~~~~~~~~~~~~~~~~~~~~~~
 When using a :any:`Strategy` to transition the target between states, it is
 useful to define a function scope fixture per state in ``conftest.py``::
 
   import pytest
+
   from labgrid.protocol import CommandProtocol
   from labgrid.strategy import BareboxStrategy
 
@@ -185,17 +187,15 @@ useful to define a function scope fixture per state in ``conftest.py``::
           pytest.skip("strategy not found")
 
   @pytest.fixture(scope='function')
-  def in_bootloader(strategy, capsys):
+  def bootloader_command(target, strategy, capsys):
       with capsys.disabled():
-          strategy.transition("barebox")
+          strategy.transition('barebox')
+      return target.get_active_driver(CommandProtocol)
 
   @pytest.fixture(scope='function')
-  def in_shell(strategy, capsys):
+  def shell_command(target, strategy, capsys):
       with capsys.disabled():
-          strategy.transition("shell")
-
-  @pytest.fixture(scope='function')
-  def active_command(target):
+          strategy.transition('shell')
       return target.get_active_driver(CommandProtocol)
 
 .. note::
@@ -208,26 +208,66 @@ useful to define a function scope fixture per state in ``conftest.py``::
 With the fixtures defined above, switching between bootloader and linux shells
 is easy::
 
-  from labgrid.driver import BareboxDriver, ShellDriver
-
-  def test_barebox_initial(active_command, in_bootloader):
-      stdout = active_command.run_check('version')
+  def test_barebox_initial(bootloader_command):
+      stdout = bootloader_command.run_check('version')
       assert 'barebox' in '\n'.join(stdout)
 
-  def test_shell(active_command, in_shell):
-      stdout = active_command.run_check('cat /proc/version')
+  def test_shell(shell_command):
+      stdout = shell_command.run_check('cat /proc/version')
       assert 'Linux' in stdout[0]
 
-  def test_barebox_after_reboot(active_command, in_bootloader):
-      command = active_command.get_driver(BareboxDriver)
-      command.run_check('true')
+  def test_barebox_after_reboot(bootloader_command):
+      bootloader_command.run_check('true')
 
 .. note::
-  The `active_command` fixture uses :any:`Target.get_active_driver` to get the
-  currently active `CommandProtocol` driver (either :any:`BareboxDriver` or
-  :any:`ShellDriver`).
+  The `bootloader_command` and `shell_command` fixtures use
+  :any:`Target.get_active_driver` to get the currently active `CommandProtocol`
+  driver (either :any:`BareboxDriver` or :any:`ShellDriver`).
   Activation and deactivation of drivers is handled by the
   :any:`BareboxStrategy` in this example.
+
+The `Strategy` needs additional drivers to control the target.
+Adapt the following environment config file (``strategy-example.yaml``) to your
+setup:
+
+.. code-block:: yaml
+
+  targets:
+    main:
+      resources:
+        RawSerialPort:
+          port: '/dev/ttyUSB0'
+      drivers:
+        ManualPowerDriver:
+          name: 'example-board'
+        SerialDriver: {}
+        BareboxDriver:
+          prompt: 'barebox@[^:]+:[^ ]+ '
+        ShellDriver:
+          prompt: 'root@\w+:[^ ]+ '
+          login_prompt: ' login: '
+          username: 'root'
+        BareboxStrategy: {}
+
+For this example, you should get a report similar to this:
+
+.. code-block:: bash
+
+  $ pytest --lg-env strategy-example.yaml -v
+  ============================= test session starts ==============================
+  platform linux -- Python 3.5.3, pytest-3.0.6, py-1.4.32, pluggy-0.4.0
+  …
+  collected 3 items
+
+  test_strategy.py::test_barebox_initial
+  main: CYCLE the target example-board and press enter
+  PASSED
+  test_strategy.py::test_shell PASSED
+  test_strategy.py::test_barebox_after_reboot
+  main: CYCLE the target example-board and press enter
+  PASSED
+
+  ========================== 3 passed in 29.77 seconds ===========================
 
 Test Reports
 ~~~~~~~~~~~~

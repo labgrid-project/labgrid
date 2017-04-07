@@ -52,7 +52,7 @@ Tests can now run via:
 
 .. code-block:: bash
 
-   $ python -m pytest --env-config=<config>
+   $ python -m pytest --lg-env <config>
 
 
 .. |license| image:: https://img.shields.io/badge/license-LGPLv2.1-blue.svg

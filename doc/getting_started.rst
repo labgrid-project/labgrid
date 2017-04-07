@@ -72,7 +72,7 @@ your board (manually) and run your first test:
 
 .. code-block:: bash
 
-    $ pytest --env-config=local.yaml test_shell.py
+    $ pytest --lg-env local.yaml test_shell.py
 
 It should return successfully, in case it does not, open an `Issue
 <https://github.com/labgrid-project/labgrid/issues>`_.

@@ -40,7 +40,7 @@ Tests can now be run via:
 
 .. code-block:: bash
 
-   python -m pytest --env-config=<config>
+   python -m pytest --lg-env <config>
 
 Writing a Driver
 ----------------

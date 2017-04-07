@@ -88,7 +88,7 @@ pytest Plugin
 Labgrid includes a `pytest <http://pytest.org>`_ plugin to simplify writing tests which
 involve embedded boards.
 The plugin is configured by providing an environment config file (via the
---env-config pytest option) and automatically creates the targets described in
+--lg-env pytest option) and automatically creates the targets described in
 the environment.
 
 Two `pytest fixtures <http://docs.pytest.org/en/latest/fixture.html>`_ are provided:
@@ -137,7 +137,7 @@ environment config:
 
 .. code-block:: bash
 
-  $ pytest --env-config shell-example.yaml --verbose
+  $ pytest --lg-env shell-example.yaml --verbose
   ============================= test session starts ==============================
   platform linux -- Python 3.5.3, pytest-3.0.6, py-1.4.32, pluggy-0.4.0
   …
@@ -240,7 +240,7 @@ test results can be converted directly to a single-page HTML report:
 .. code-block:: bash
 
   $ pip install pytest-html
-  $ pytest --env-config shell-example.yaml --html=report.html
+  $ pytest --lg-env shell-example.yaml --html=report.html
 
 JUnit XML
 ^^^^^^^^^
@@ -254,7 +254,7 @@ They can also be converted to other formats, such as HTML with `junit2html tool
 .. code-block:: bash
 
   $ pip install junit2html
-  $ pytest --env-config shell-example.yaml --junit-xml=report.xml
+  $ pytest --lg-env shell-example.yaml --junit-xml=report.xml
   $ junit2html report.xml
 
 Command-Line

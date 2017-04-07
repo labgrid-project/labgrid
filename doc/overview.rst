@@ -178,6 +178,8 @@ See the strategy example (``examples/strategy``) and the included strategies in
 For more information on the reasons behind labgrid's architecture, see
 :doc:`design_decisions`.
 
+.. _remote-resources-and-places:
+
 Remote Resources and Places
 ---------------------------
 
@@ -189,11 +191,11 @@ labgrid-coordinator (crossbar component)
   Clients and exporters connect to the coordinator to publish resources, manage
   place configuration and handle mutual exclusion.
 
-labgrid-exporter (CLI)
+:ref:`labgrid-exporter` (CLI)
   Exports explicitly configured local resources to the coordinator and monitors
   these for changes in availability or parameters.
 
-labgrid-client (CLI)
+:ref:`labgrid-client` (CLI)
   Configures places (consisting of exported resources) and allows command line
   access to some actions (such as power control, bootstrap, fastboot and the
   console).
@@ -292,7 +294,7 @@ It is also used by the :any:`RemotePlace` resource (see below).
 Besides viewing the list of `resources`, the client is used to configure and
 access `places` on the coordinator.
 For more information on using the CLI, see the manual page for
-:any:`labgrid-client`.
+:ref:`labgrid-client`.
 
 RemotePlace
 ~~~~~~~~~~~

@@ -1,4 +1,3 @@
-from unittest.mock import MagicMock
 from importlib.util import find_spec
 
 import attr
@@ -23,8 +22,8 @@ def serial_port(target):
 
 
 @pytest.fixture(scope='function')
-def serial_driver(target, serial_port, monkeypatch):
-    serial_mock = MagicMock
+def serial_driver(target, serial_port, monkeypatch, mocker):
+    serial_mock = mocker.MagicMock
     import serial
     monkeypatch.setattr(serial, 'Serial', serial_mock)
     s = SerialDriver(target)

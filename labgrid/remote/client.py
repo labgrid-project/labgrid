@@ -25,12 +25,6 @@ from ..util.timeout import Timeout
 from ..util.dict import diff_dict, flat_dict
 from .. import Target
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(levelname)7s: %(message)s',
-    stream=sys.stderr,
-)
-
 txaio.use_asyncio()
 txaio.config.loop = asyncio.get_event_loop()
 
@@ -638,6 +632,12 @@ def start_session(url, realm, extra):
     return session[0]
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(levelname)7s: %(message)s',
+        stream=sys.stderr,
+    )
+
     place = os.environ.get('PLACE', None)
 
     parser = argparse.ArgumentParser()

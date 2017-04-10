@@ -16,12 +16,6 @@ from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 from .config import ResourceConfig
 from .common import ResourceEntry, enable_tcp_nodelay
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(levelname)7s: %(message)s',
-    stream=sys.stderr,
-)
-
 
 def get_free_port():
     """Helper function to always return an unused port."""
@@ -322,6 +316,12 @@ class ExporterSession(ApplicationSession):
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(levelname)7s: %(message)s',
+        stream=sys.stderr,
+    )
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-x',
@@ -340,6 +340,13 @@ def main():
         help='public name of this exporter'
     )
     parser.add_argument(
+        '-d',
+        '--debug',
+        action='store_true',
+        default=False,
+        help="enable debug mode"
+    )
+    parser.add_argument(
         'resources',
         metavar='RESOURCES',
         type=str,
@@ -347,6 +354,9 @@ def main():
     )
 
     args = parser.parse_args()
+
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     extra = {
         'name': args.name,

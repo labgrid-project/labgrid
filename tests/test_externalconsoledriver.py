@@ -16,5 +16,5 @@ class TestExternalConsoleDriver:
         target.activate(d)
         d.write(data)
         time.sleep(0.1)
-        assert d.read() == data
+        assert d.read(1024) == data
         d.close()

@@ -1,3 +1,5 @@
+import logging
+
 import attr
 
 from ..factory import target_factory
@@ -10,6 +12,12 @@ from .consoleexpectmixin import ConsoleExpectMixin
 @target_factory.reg_driver
 @attr.s
 class FakeConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
+    txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self.logger = logging.getLogger("{}({})".format(self, self.target))
+
     def _read(self, *args):
         pass
 

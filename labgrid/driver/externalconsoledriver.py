@@ -1,4 +1,5 @@
 import fcntl
+import logging
 import os
 import select
 import shlex
@@ -20,9 +21,11 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     Driver implementing the ConsoleProtocol interface using a subprocess
     """
     cmd = attr.ib(validator=attr.validators.instance_of(str))
+    txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.logger = logging.getLogger("{}({})".format(self, self.target))
         self.status = 0  #pylint: disable=attribute-defined-outside-init
         self._child = None
         self.open()

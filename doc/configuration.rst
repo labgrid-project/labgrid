@@ -416,13 +416,14 @@ Binds to:
 
 .. code-block:: yaml
 
-   SerialDriver: {}
+   SerialDriver:
+     txdelay: 0.05
 
 Implements:
   - :any:`ConsoleProtocol`
 
 Arguments:
-  - None
+  - txdelay (float): time in seconds to wait before sending each byte
 
 ShellDriver
 ~~~~~~~~~~~
@@ -544,9 +545,11 @@ Implements:
 
    ExternalConsoleDriver:
      cmd: 'microcom /dev/ttyUSB2'
+     txdelay: 0.05
 
 Arguments:
   - cmd (str): command to execute and then bind to.
+  - txdelay (float): time in seconds to wait before sending each byte
 
 AndroidFastbootDriver
 ~~~~~~~~~~~~~~~~~~~~~

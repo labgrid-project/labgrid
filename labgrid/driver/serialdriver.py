@@ -25,14 +25,16 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     else:
         bindings = {"port": {SerialPort, NetworkSerialPort}, }
 
+    txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
+
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.logger = logging.getLogger("{}({})".format(self, self.target))
         if isinstance(self.port, SerialPort):
             self.serial = serial.Serial()
         else:
             self.serial = serial.rfc2217.Serial()
         self.status = 0
-        self.logger = logging.getLogger("{}({})".format(self, self.target))
 
     def on_activate(self):
         if isinstance(self.port, SerialPort):
@@ -43,7 +45,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
             self.serial.baudrate = self.port.speed
         self.open()
 
-    def _read(self, size: int=1, timeout: int=0):
+    def _read(self, size: int=1, timeout: float=0.0):
         """
         Reads 'size' or more bytes from the serialport
 
@@ -53,10 +55,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         reading = max(size, self.serial.in_waiting)
         self.serial.timeout = timeout
         res = self.serial.read(reading)
-        if res:
-            self.logger.debug("Read %i bytes: %s, timeout %.2f, requested size %i",
-                              len(res), res, timeout, size)
-        else:
+        if not res:
             raise TIMEOUT("Timeout of %.2f seconds exceeded" % timeout)
         return res
 
@@ -67,7 +66,6 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         Arguments:
         data -- data to write, must be bytes
         """
-        self.logger.debug("Write %i bytes: %s", len(data), data)
         return self.serial.write(data)
 
     def open(self):

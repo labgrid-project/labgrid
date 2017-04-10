@@ -1,3 +1,7 @@
+from time import sleep
+
+import attr
+
 from pexpect import TIMEOUT
 
 from ..util import PtxExpect
@@ -8,7 +12,9 @@ from .common import Driver
 class ConsoleExpectMixin:
     """
     Console driver mixin to implement the read, write, expect and sendline methods. It uses
-    the internal _read and _write methods. 
+    the internal _read and _write methods.
+
+    The class using the ConsoleExpectMixin must provide a logger and a txdelay attribute.
     """
 
     def __attrs_post_init__(self):
@@ -16,12 +22,25 @@ class ConsoleExpectMixin:
         self._expect = PtxExpect(self)
 
     @Driver.check_active
-    def read(self):
-        return self._read()
+    def read(self, size=1, timeout=0.0):
+        res = self._read(size=size, timeout=timeout)
+        self.logger.debug("Read %i bytes: %s, timeout %.2f, requested size %i",
+                            len(res), res, timeout, size)
+        return res
 
     @Driver.check_active
     def write(self, data):
-        self._write(data)
+        if self.txdelay:
+            self.logger.debug("Write %i bytes: %s (with %fs txdelay)",
+                              len(data), data, self.txdelay)
+            count = 0
+            for i in range(len(data)):
+                sleep(self.txdelay)
+                count += self._write(data[i:i+1])
+            return count
+        else:
+            self.logger.debug("Write %i bytes: %s", len(data), data)
+            return self._write(data)
 
     @Driver.check_active
     def sendline(self, line):

@@ -68,24 +68,21 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         # FIXME: Handle pexpect Timeout
         marker = gen_marker()
-        cmp_command = '''echo -o /cmd {}; echo "{}"; sh /cmd; echo "$?"; echo "{}";'''.format(
-            shlex.quote(cmd),
-            marker,
-            marker,
+        # hide marker from expect
+        hidden_marker = '"{}""{}"'.format(marker[:4], marker[4:])
+        cmp_command = '''echo -o /cmd {}; echo {}; sh /cmd; echo {} $?;'''.format(
+            shlex.quote(cmd), hidden_marker, hidden_marker,
         )
         if self._status == 1:
             self.console.sendline(cmp_command)
-            _, before, _, _ = self.console.expect(self.prompt)
+            _, _, match, _ = self.console.expect(r'{}(.*){}\s+(\d+)\s+.*{}'.format(
+                marker, marker, self.prompt
+            ))
             # Remove VT100 Codes and split by newline
-            data = self.re_vt100.sub(
-                '', before.decode('utf-8'), count=1000000
-            ).split('\r\n')
+            data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
             self.logger.debug("Received Data: %s", data)
-            # Remove first element, the invoked cmd
-            data = data[data.index(marker) + 1:]
-            data = data[:data.index(marker)]
-            exitcode = int(data[-1])
-            del data[-1]
+            # Get exit code
+            exitcode = int(match.group(2))
             return (data, [], exitcode)
         else:
             return None

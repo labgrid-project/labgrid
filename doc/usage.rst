@@ -315,9 +315,9 @@ To use a target as an emulated USB stick, several requirements have to be met:
 - losetup from util-linux
 - mount from util-linux
 - A kernel build with `CONFIG_USB_GADGETFS=m`
-- A network connection to the target to use the `SSHDriver`_ for file uploads
+- A network connection to the target to use the :ref:`SSHDriver <conf-sshdriver>` for file uploads
 
-To use USB stick emulation, import `USBStick` from `labgrid.external` and bind
+To use USB stick emulation, import :any:`USBStick` from `labgrid.external` and bind
 it to the desired target:
 
 .. code-block:: python
@@ -346,5 +346,5 @@ This allows a labgrid test to create targets, rollouts and manage deployments.
 
 
 The above code connects to a running hawkbit instance on the local computer and
-uses the default credentials to log in. The `HawkbitTestClient` provides various
+uses the default credentials to log in. The :any:`HawkbitTestClient` provides various
 helper functions to add targets, define distributionssets and assign targets.

@@ -195,6 +195,85 @@ variables.
 The :code:`attr.ib()` style of member definition also supports defaults and
 validators, see the `attrs documentation <https://attrs.readthedocs.io/en/stable/>`_.
 
+Writing a Strategy
+------------------
+
+Labgrid only offers two basic strategies, for complex use cases a customized
+strategy is required.
+Start by creating a strategy skeleton:
+
+::
+
+    import enum
+
+    import attr
+
+    from labgrid.step import step
+    from labgrid.driver.common import Strategy
+
+    class Status(enum.Enum):
+        unknown = 0
+
+    class MyStrategy(Strategy):
+        bindings = {
+        }
+
+        status = attr.ib(default=Status.unknown)
+
+        @step
+        def transition(self, status, *, step):
+            if not isinstance(status, Status):
+                status = Status[status]
+            if status == Status.unknown:
+                raise StrategyError("can not transition to {}".format(status))
+            elif status == self.status:
+                step.skip("nothing to do")
+                return  # nothing to do
+            else:
+                raise StrategyError(
+                    "no transition found from {} to {}".
+                    format(self.status, status)
+                )
+            self.status = status
+
+
+The ``bindings`` variable needs to declare the drivers necessary for the
+strategy, usually one for power, boot loader and shell.
+The ``Status`` class needs to be extended to cover the states of your strategy,
+then for each state an ``elif`` entry in the transition function needs to be
+added.
+
+Lets take a look at the builtin `BareboxStrategy`. The Status enum for Barebox:
+
+::
+
+   class Status(enum.Enum):
+       unknown = 0
+       barebox = 1
+       shell = 2
+
+defines 2 custom states and the `unknown` state as the start point.
+These two states are handled in the transition function:
+
+::
+
+    elif status == Status.barebox:
+        # cycle power
+        self.target.activate(self.power)
+        self.power.cycle()
+        # interrupt barebox
+        self.target.activate(self.barebox)
+    elif status == Status.shell:
+        # tansition to barebox
+        self.transition(Status.barebox)
+        self.barebox.boot("")
+        self.barebox.await_boot()
+        self.target.activate(self.shell)
+
+Here the `barebox` state simply cycles the board and activates the driver, while
+the `shell` state uses the barebox state to cycle the board and than boot the
+linux kernel.
+
 Contributing
 ------------
 

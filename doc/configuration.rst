@@ -450,6 +450,8 @@ Arguments:
   - keyfile (str): optional keyfile to upload after login, making the
     `SSHDriver`_ usable
 
+.. _conf-sshdriver:
+
 SSHDriver
 ~~~~~~~~~
 A SSHDriver requires a `NetworkService` resource and allows the execution of

@@ -331,3 +331,20 @@ the device images. USBStick images can now be uploaded using the `upload_image`
 method. Once an image is selected, files can be uploaded and retrived using the
 `put_file` and `get_file` methods. The `plug_in` and `plug_out` functions plug
 the emulated USB stick in and out.
+
+hawkBit management API
+----------------------
+
+Labgrid provides an interface to the hawkbit management API.
+This allows a labgrid test to create targets, rollouts and manage deployments.
+
+::
+
+   from labgrid.external import HawkbitTestClient
+
+   client = HawkbitTestClient('local', '8080', 'admin', 'admin')
+
+
+The above code connects to a running hawkbit instance on the local computer and
+uses the default credentials to log in. The `HawkbitTestClient` provides various
+helper functions to add targets, define distributionssets and assign targets.

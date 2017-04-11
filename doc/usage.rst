@@ -304,3 +304,30 @@ Labgrid contains some command line tools which are used for remote access to
 resources.
 See :doc:`man/client`, :doc:`man/device-config` and :doc:`man/exporter` for
 more information.
+
+USB stick emulation
+--------------------
+Labgrid makes it posible to use a target as an emulated USB stick, allowing
+upload, modification, plug and unplug events. 
+To use a target as an emulated USB stick, several requirements have to be met:
+
+- OTG support on one of the device USB ports
+- losetup from util-linux
+- mount from util-linux
+- A kernel build with `CONFIG_USB_GADGETFS=m`
+- A network connection to the target to use the `SSHDriver`_ for file uploads
+
+To use USB stick emulation, import `USBStick` from `labgrid.external` and bind
+it to the desired target:
+
+.. code-block:: python
+
+   from labgrid.external import USBStick
+
+   stick = USBStick(target, '/home/')
+
+The above code block creates the stick and uses the `/home` directory to store
+the device images. USBStick images can now be uploaded using the `upload_image`
+method. Once an image is selected, files can be uploaded and retrived using the
+`put_file` and `get_file` methods. The `plug_in` and `plug_out` functions plug
+the emulated USB stick in and out.

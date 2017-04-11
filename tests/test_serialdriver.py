@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock, Mock
-
 import pytest
 import serial
 
@@ -12,16 +10,16 @@ class TestSerialDriver:
         with pytest.raises(NoSupplierFoundError):
             SerialDriver(target)
 
-    def test_instanziation(self, target, serial_port, monkeypatch):
-        serial_mock = Mock()
+    def test_instanziation(self, target, serial_port, monkeypatch, mocker):
+        serial_mock = mocker.Mock()
         monkeypatch.setattr(serial, 'Serial', serial_mock)
         s = SerialDriver(target)
         assert (isinstance(s, SerialDriver))
         assert (target.drivers[0] == s)
 
-    def test_write(self, target, monkeypatch, serial_port):
-        serial_mock = Mock()
-        serial_mock.write = MagicMock()
+    def test_write(self, target, monkeypatch, serial_port, mocker):
+        serial_mock = mocker.Mock()
+        serial_mock.write = mocker.MagicMock()
         monkeypatch.setattr(serial, 'Serial', serial_mock)
         s = SerialDriver(target)
         s.serial = serial_mock
@@ -29,9 +27,9 @@ class TestSerialDriver:
         s.write(b"testdata")
         serial_mock.write.assert_called_with(b"testdata")
 
-    def test_read(self, target, monkeypatch, serial_port):
-        serial_mock = Mock()
-        serial_mock.read = MagicMock()
+    def test_read(self, target, monkeypatch, serial_port, mocker):
+        serial_mock = mocker.Mock()
+        serial_mock.read = mocker.MagicMock()
         serial_mock.in_waiting = 0
         monkeypatch.setattr(serial, 'Serial', serial_mock)
         s = SerialDriver(target)
@@ -40,9 +38,9 @@ class TestSerialDriver:
         s.read()
         assert (serial_mock.read.called)
 
-    def test_close(self, target, monkeypatch, serial_port):
-        serial_mock = Mock()
-        serial_mock.close = MagicMock()
+    def test_close(self, target, monkeypatch, serial_port, mocker):
+        serial_mock = mocker.Mock()
+        serial_mock.close = mocker.MagicMock()
         monkeypatch.setattr(serial, 'Serial', serial_mock)
         s = SerialDriver(target)
         s.serial = serial_mock

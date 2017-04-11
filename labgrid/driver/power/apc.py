@@ -36,13 +36,6 @@ def set(host, index, value):
     _snmp_set(host, "{}.{}".format(OID, index), "int {}".format(value))
 
 
-def cycle(host, index):
-    index = int(index)
-    assert 1 <= index <= 8
-
-    _snmp_set(host, "{}.{}".format(OID, index), "int 3")
-
-
 def get(host, index):
     index = int(index)
     assert 1 <= index <= 8

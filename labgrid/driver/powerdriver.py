@@ -106,13 +106,9 @@ class NetworkPowerDriver(Driver, PowerProtocol):
     @Driver.check_active
     @step()
     def cycle(self):
-        def fallback(host, port):
-            self.off()
-            time.sleep(self.delay)
-            self.on()
-
-        cycle = getattr(self.backend, 'cycle', fallback)
-        cycle(self.port.host, self.port.index)
+        self.off()
+        time.sleep(self.delay)
+        self.on()
 
     @Driver.check_active
     def get(self):

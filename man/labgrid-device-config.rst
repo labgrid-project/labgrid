@@ -8,7 +8,7 @@ labgrid test configuration files
 
 :Author: Rouven Czerwinski <r.czerwinski@pengutronix.de>
 :organization: Labgrid-Project
-:Date:   2016-03-15
+:Date:   2017-04-15
 :Copyright: Copyright (C) 2016-2017 Pengutronix. This library is free software;
             you can redistribute it and/or modify it under the terms of the GNU
             Lesser General Public License as published by the Free Software
@@ -38,11 +38,12 @@ TARGETS
 The ``targets:`` top key configures a ``target``, it's ``drivers`` and ``resources``.
 
 The top level key is the name of the target, it needs both a ``resources`` and
-``drivers`` subkey. The order of instanciated ``resources`` and ``drivers`` is
+``drivers`` subkey. The order of instantiated ``resources`` and ``drivers`` is
 important, since they are parsed as an ordered dictionary and may depend on a
 previous driver.
 
-For a list of available resources and drivers refer to https://labgrid.readthedocs.io/en/latest/components.html.
+For a list of available resources and drivers refer to
+https://labgrid.readthedocs.io/en/latest/configuration.html.
 
 
 OPTIONS
@@ -89,6 +90,23 @@ KEYS
 
 EXAMPLES
 --------
+A sample configuration with one `main` target, accessible via SerialPort
+`/dev/ttyUSB0`, allowing usage of the ShellDriver:
+
+::
+
+   targets:
+     main:
+       resources:
+         RawSerialPort:
+           port: "/dev/ttyUSB0"
+       drivers:
+         SerialDriver: {}
+         ShellDriver:
+           prompt: 'root@\w+:[^ ]+ '
+           login_prompt: ' login: '
+         username: 'root'
+
 
 SEE ALSO
 --------

@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH LABGRID-DEVICE-CONFIG 1 "2016-03-15" "0.0.1" "embedded testing"
+.TH LABGRID-DEVICE-CONFIG 1 "2017-04-15" "0.0.1" "embedded testing"
 .SH NAME
 labgrid-device-config \- labgrid test configuration files
 .
@@ -44,11 +44,12 @@ This manual page is divided into section, each describing one top\-level yaml ke
 The \fBtargets:\fP top key configures a \fBtarget\fP, it\(aqs \fBdrivers\fP and \fBresources\fP\&.
 .sp
 The top level key is the name of the target, it needs both a \fBresources\fP and
-\fBdrivers\fP subkey. The order of instanciated \fBresources\fP and \fBdrivers\fP is
+\fBdrivers\fP subkey. The order of instantiated \fBresources\fP and \fBdrivers\fP is
 important, since they are parsed as an ordered dictionary and may depend on a
 previous driver.
 .sp
-For a list of available resources and drivers refer to \fI\%https://labgrid.readthedocs.io/en/latest/components.html\fP\&.
+For a list of available resources and drivers refer to
+\fI\%https://labgrid.readthedocs.io/en/latest/configuration.html\fP\&.
 .SH OPTIONS
 .sp
 The \fBoptions:\fP top key configures various options such as the crossbar_url.
@@ -87,6 +88,29 @@ Path to the mxs\-usb\-loader binary
 Path to the imx\-usb\-loader binary
 .UNINDENT
 .SH EXAMPLES
+.sp
+A sample configuration with one \fImain\fP target, accessible via SerialPort
+\fI/dev/ttyUSB0\fP, allowing usage of the ShellDriver:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+targets:
+  main:
+    resources:
+      RawSerialPort:
+        port: "/dev/ttyUSB0"
+    drivers:
+      SerialDriver: {}
+      ShellDriver:
+        prompt: \(aqroot@\ew+:[^ ]+ \(aq
+        login_prompt: \(aq login: \(aq
+      username: \(aqroot\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
 .SH SEE ALSO
 .sp
 \fBlabgrid\-client\fP(1), \fBlabgrid\-exporter\fP(1)

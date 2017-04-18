@@ -289,6 +289,8 @@ class CoordinatorComponent(ApplicationSession):
 
     @asyncio.coroutine
     def add_place(self, name, details=None):
+        if not name or not isinstance(name, str):
+            return False
         if name in self.places:
             return False
         place = Place(name)
@@ -301,6 +303,8 @@ class CoordinatorComponent(ApplicationSession):
 
     @asyncio.coroutine
     def del_place(self, name, details=None):
+        if not name or not isinstance(name, str):
+            return False
         if name not in self.places:
             return False
         del self.places[name]

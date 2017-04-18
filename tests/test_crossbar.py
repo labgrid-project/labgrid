@@ -88,3 +88,17 @@ def test_place_aquire(place):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0
+
+def test_place_add_no_name(crossbar):
+    with pexpect.spawn('python -m labgrid.remote.client create') as spawn:
+        spawn.expect("missing place name")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus != 0
+
+def test_place_del_no_name(crossbar):
+    with pexpect.spawn('python -m labgrid.remote.client delete') as spawn:
+        spawn.expect("missing place name")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus != 0

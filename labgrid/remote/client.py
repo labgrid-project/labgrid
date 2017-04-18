@@ -284,6 +284,8 @@ class ClientSession(ApplicationSession):
     def add_place(self):
         """Add a place to the coordinator"""
         name = self.args.place
+        if not name:
+            raise UserError("missing place name")
         if name in self.places:
             raise UserError("{} already exists".format(name))
         res = yield from self.call('org.labgrid.coordinator.add_place', name)
@@ -295,6 +297,8 @@ class ClientSession(ApplicationSession):
     def del_place(self):
         """Delete a place from the coordinator"""
         name = self.args.place
+        if not name:
+            raise UserError("missing place name")
         if name not in self.places:
             raise UserError("{} does not exist".format(name))
         res = yield from self.call('org.labgrid.coordinator.del_place', name)

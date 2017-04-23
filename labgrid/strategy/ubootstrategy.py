@@ -33,6 +33,10 @@ class UBootStrategy(Strategy):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        # Open the ConsoleProtocol to not race the output after reset
+        # FIXME: If we have more than one Driver that implements this protocol
+        # we need to iterate over all of them
+        self.target.activate(self.target.get_driver(ConsoleProtocol))
 
     def transition(self, status):
         if not isinstance(status, Status):

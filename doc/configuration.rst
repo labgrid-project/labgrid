@@ -844,7 +844,7 @@ UBootStrategy
 A UBootStrategy has three states:
 
 - unknown
-- barebox
+- uboot
 - shell
 
 

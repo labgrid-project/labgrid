@@ -169,8 +169,8 @@ With this fixture, we can simplify the ``test_example.py`` file to::
       result = command.run_check('echo OK')
       assert 'OK' in result
 
-Stategy Fixture Example
-~~~~~~~~~~~~~~~~~~~~~~~
+Strategy Fixture Example
+~~~~~~~~~~~~~~~~~~~~~~~~
 When using a :any:`Strategy` to transition the target between states, it is
 useful to define a function scope fixture per state in ``conftest.py``::
 
@@ -205,7 +205,7 @@ useful to define a function scope fixture per state in ``conftest.py``::
   See the corresponding `pytest documentation for details
   <http://doc.pytest.org/en/latest/capture.html#accessing-captured-output-from-a-test-function>`_.
 
-With the fixtures defined above, switching between bootloader and linux shells
+With the fixtures defined above, switching between bootloader and Linux shells
 is easy::
 
   def test_barebox_initial(bootloader_command):
@@ -347,4 +347,4 @@ This allows a labgrid test to create targets, rollouts and manage deployments.
 
 The above code connects to a running hawkbit instance on the local computer and
 uses the default credentials to log in. The :any:`HawkbitTestClient` provides various
-helper functions to add targets, define distributionssets and assign targets.
+helper functions to add targets, define distribution sets and assign targets.

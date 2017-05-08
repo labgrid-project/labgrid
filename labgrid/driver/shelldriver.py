@@ -88,6 +88,16 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         return self._run(cmd, timeout=timeout)
 
     @step()
+    def _send_login(self):
+        self.console.sendline(self.username)
+        index, _, _, _ = self.console.expect([self.prompt, "Password: "], timeout=5)
+        if index == 1:
+            self.console.sendline(self.password)
+            self.console.expect(self.prompt, timeout=5)
+            if not self.password:
+                raise Exception("Password entry needed but no password set")
+
+    @step()
     def _await_login(self):
         """Awaits the login prompt and logs the user in"""
         self.console.sendline("")
@@ -96,14 +106,11 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         if index == 0:
             self.status = 1
             return  # already logged in
-        self.console.sendline(self.username)
-        index, _, _, _ = self.console.expect([self.prompt, "Password: "], timeout=5)
-        if index == 1:
-            if self.password:
-                self.console.sendline(self.password)
-                self.console.expect(self.prompt, timeout=5)
-            else:
-                raise Exception("Password entry needed but no password set")
+        try:
+            self._send_login()
+        except:
+            self.logger.info("Retry login")
+            self._send_login()
         self._check_prompt()
 
     @step(args=['cmd'], result=True)

@@ -247,6 +247,8 @@ class ClientSession(ApplicationSession):
                     namespace, alias = alias.split(':', 1)
                     if namespace != getuser():
                         continue
+                    elif alias == pattern:  # prefer user namespace
+                        return [ name ]
                 if pattern in alias:
                     result.add(name)
         return list(result)

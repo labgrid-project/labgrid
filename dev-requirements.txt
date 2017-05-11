@@ -10,7 +10,7 @@ pytest-isort
 pytest-mock
 pytest-pylint
 pytest-runner
-onewire
+onewire>=0.2
 pyudev
 yapf
 requests

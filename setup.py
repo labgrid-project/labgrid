@@ -15,7 +15,7 @@ setup(
                                  'man/labgrid-exporter.1',
                                  'man/labgrid-device-config.1'])],
     extras_require={
-        'onewire': ['onewire'],
+        'onewire': ['onewire>=0.2'],
         'coordinator': ['crossbar']
     },
     setup_requires=['pytest-runner', 'setuptools_scm'],

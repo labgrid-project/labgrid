@@ -40,6 +40,7 @@ You can also look at :ref:`ideas` for enhancements which are not yet implemented
    configuration
    development
    design_decisions
+   changes
    modules/modules
    :maxdepth: 2
    :caption: Contents

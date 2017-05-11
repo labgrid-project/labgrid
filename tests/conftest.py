@@ -39,8 +39,5 @@ def crossbar(tmpdir):
     spawn.expect('Guest .* started')
     spawn.expect('Coordinator ready')
     yield spawn
-    with pexpect.spawn('crossbar stop', cwd=str(tmpdir)) as stop_spawn:
-        stop_spawn.expect(pexpect.EOF)
-    assert stop_spawn.exitstatus == 0
-    spawn.expect(pexpect.EOF)
-    assert spawn.exitstatus == 0
+    spawn.close(force=True)
+    assert not spawn.isalive()

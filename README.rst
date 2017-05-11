@@ -50,6 +50,11 @@ Contributing
 ------------
 `Development Docs <http://labgrid.readthedocs.io/en/latest/development.html>`_
 
+Background
+----------
+Work on labgrid started at `Pengutronix <http://pengutronix.de/>`_ in late 2016
+and is currently in active use and development.
+
 Quickstart
 ----------
 Clone the git repository:

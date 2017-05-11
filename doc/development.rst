@@ -274,6 +274,8 @@ Here the `barebox` state simply cycles the board and activates the driver, while
 the `shell` state uses the barebox state to cycle the board and than boot the
 linux kernel.
 
+.. _contributing:
+
 Contributing
 ------------
 
@@ -353,3 +355,111 @@ Then you just add a line (using ``git commit -s``) saying:
   Signed-off-by: Random J Developer <random@developer.example.org>
 
 using your real name (sorry, no pseudonyms or anonymous contributions).
+
+.. _ideas:
+
+Ideas
+-----
+
+.. please keep these sorted alphabetically
+
+Auto-Installer Tool
+~~~~~~~~~~~~~~~~~~~
+
+To simplify using labgrid for provisioning several boards in parallel, we should
+add a new tool which reads a YAML file defining several targets and a Python
+script to be run for each board.
+This tool would spawn a child process for each target, which waits until a matching
+resource becomes available and then executes the script.
+
+For example, it would make it simple to load a bootloader via the
+:any:`BootstrapProtocol`, use the :any:`AndroidFastbootDriver` to upload a
+kernel with initramfs and then write the target's eMMC over a USB Mass Storage
+gadget.
+
+Driver Priorities
+~~~~~~~~~~~~~~~~~
+
+In more complex use-cases, we often have multiple drivers implementing the same
+Protocols on the same :any:`Target`. For example:
+
+CommandProtocol (ShellDriver and SSHDriver):
+   The SSHDriver may not be active all the time, but should be preferred when it
+   is.
+
+ResetProtocol (DigitalOutputResetDriver and NetworkPowerPort via power cycling):
+   This will occour when we implement the `ResetProtocol`_ as below.
+   The real reset driver should be preferred in that case.
+
+To avoid a central precedence list (which would be problematic for third-party
+drivers), each driver should declare its precedence per protocol relative other
+drivers by referencing them by class name.
+This way, the Target can sort them at runtime.
+
+File Transfer to Exporters
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Currently, the exporter and client expect to have a shared filesystem (see for
+example how the :any:`AndroidFastbootDriver` works when accessing a
+:any:`NetworkAndroidFastboot` resource).
+To remove this limitation, we should have a common way to make files available
+to the exporter, possibly by generating a hash locally and rsyncing new files to
+the exporter.
+
+Multiple Driver Instances
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For some Protocols, it seems useful to allow multiple instances.
+
+DigitalOutputProtocol:
+   A board may have two jumpers to control the boot mode in addition to a reset
+   GPIO.
+   Currently it's not possible to use these on a single target.
+
+ConsoleProtocol:
+   Some boards have multiple console interfaces or expose a login prompt via a
+   USB serial gadget.
+   In most cases, it would be enough to allow switching between them.
+
+PowerProtocol:
+   In some cases, multiple power ports need to be controled for one Target.
+
+QEMUDriver
+~~~~~~~~~~
+
+A driver controlling a QEMU system emulator would implement at least the
+:any:`PowerProtocol` and :any:`ConsoleProtocol`.
+Even without access to real hardware, this would allow us to run (some) software
+integration tests and also make developing labgrid itself easier by providing a
+realistic Target.
+
+Remote Target Reservation
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For integration with CI systems (like Jenkins), it would help if the CI job
+could reserve and wait for a specific target.
+This could be done by managing a list of waiting users in the coordinator and
+notifying the current user on each invocation of labgrid-client that another
+user is waiting.
+The reservation should expire after some time if it is not used to lock the
+target after it becomes available.
+
+ResetProtocol
+~~~~~~~~~~~~~
+
+Resetting a board is a distinct operation from cycling the power and is often
+triggered by pushing a button (automated via a relais or FET).
+If a real reset is unavailable, power cycling could be used to emulate the reset.
+Currently, the :any:`DigitalOutputPowerDriver` implements the
+:any:`PowerProtocol` instead, mixing the two aspects.
+
+To handle falling back to emulation via the PowerProtocol nicely, we would need
+to implement `Driver Priorities`_
+
+Target Feature Flags
+~~~~~~~~~~~~~~~~~~~~
+
+It would be useful to support configuring feature flags in the target YAML
+definition.
+Then individual tests could be skipped if a required feature is unavailable on
+the current target without manually modifying the test suite.

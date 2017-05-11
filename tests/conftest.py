@@ -35,9 +35,13 @@ def crossbar(tmpdir):
         pytest.skip("crossbar not found")
     local(__name__).dirpath('.crossbar/config.yaml').copy(tmpdir.mkdir('.crossbar'))
     spawn = pexpect.spawn('crossbar start --logformat none', cwd=str(tmpdir))
-    spawn.expect('Realm .* started')
-    spawn.expect('Guest .* started')
-    spawn.expect('Coordinator ready')
+    try:
+        spawn.expect('Realm .* started')
+        spawn.expect('Guest .* started')
+        spawn.expect('Coordinator ready')
+    except:
+        print("crossbar startup failed with {}".format(spawn.before))
+        raise
     yield spawn
     spawn.close(force=True)
     assert not spawn.isalive()

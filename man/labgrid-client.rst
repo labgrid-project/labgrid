@@ -63,6 +63,8 @@ matches anything.
 
 LABGRID-CLIENT COMMANDS
 -----------------------
+``monitor``             Monitor events from the coordinator
+
 ``resources (r)``       List available resources
 
 ``places (p)``          List available places

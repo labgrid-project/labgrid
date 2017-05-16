@@ -740,6 +740,58 @@ Implements:
 Arguments:
   - None
 
+QEMUDriver
+~~~~~~~~~~
+The QEMUDriver allows the usage of a qemu instance as a target. It requires
+several arguments, listed below.
+
+Binds to:
+  - None
+
+.. code-block:: yaml
+
+   QEMUDriver:
+     qemu_bin: qemu
+     machine: vexpress-a9
+     cpu: cortex-a9
+     memory: 512M
+     boot_args: "root=/dev/root console=ttyAMA0,115200"
+     extra_args: ""
+     kernel: kernel
+     rootfs: rootfs
+     dtb: dtb
+
+   tools:
+     qemu_bin: /bin/qemu-system-arm
+   paths:
+     rootfs: /var/images/root
+   images:
+     dtb: /var/images/mydtb.dtb
+     kernel: /var/images/vmlinuz
+     
+
+Implements:
+  - :any:`ConsoleProtocol`
+  - :any:`PowerProtocol`
+
+Arguments:
+  - qemu_bin (str): reference to the tools key
+  - machine (str): QEMU machine type
+  - cpu (str): QEMU cpu type
+  - memory (str): QEMU memory size (ends with M or G)
+  - boot_args (str): kernel boot argument
+  - extra_args (str): extra QEMU arguments, they are passed directly to the QEMU binary
+  - kernel (str): reference to the images key
+  - rootfs (str): reference to the paths key
+  - dtb (str): optional, reference to the image key
+
+The qemudriver also requires the specification of:
+
+- a tool key, this contains the path to the qemu binary 
+- an image key, the path to the kernel image and optionally the dtb key to
+  specify the build device tree
+- a path key, this is the path to the rootfs
+
 Strategies
 ~~~~~~~~~~
 Strategies are used to ensure that the device is in a certain state during a test. 

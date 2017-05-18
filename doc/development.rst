@@ -396,6 +396,18 @@ drivers), each driver should declare its precedence per protocol relative other
 drivers by referencing them by class name.
 This way, the Target can sort them at runtime.
 
+Driver Preemption
+~~~~~~~~~~~~~~~~~
+
+To allow better handling of unexpected reboots or crashes, inactive Drivers
+could register callbacks on their providers (for example the BareboxDriver it's
+ConsoleProtocol).
+These callbacks would look for indications that the Target has changed state
+unexpectedly (by looking for the bootloader startup messages, in this case).
+The inactive Driver could then cause a preemption and would be activated.
+The current caller of the originally active driver would be notified via an
+exception.
+
 File Transfer to Exporters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -448,13 +460,33 @@ ResetProtocol
 ~~~~~~~~~~~~~
 
 Resetting a board is a distinct operation from cycling the power and is often
-triggered by pushing a button (automated via a relais or FET).
+triggered by pushing a button (automated via a relays or FET).
 If a real reset is unavailable, power cycling could be used to emulate the reset.
 Currently, the :any:`DigitalOutputPowerDriver` implements the
 :any:`PowerProtocol` instead, mixing the two aspects.
 
 To handle falling back to emulation via the PowerProtocol nicely, we would need
 to implement `Driver Priorities`_
+
+Step Tracing
+~~~~~~~~~~~~
+
+The Step infrastructure already collects timing and nesting information on
+executed commands, but is currently only used for in pytest or via the
+standalone StepReporter.
+By writing these events to a file (or sqlite database) as a trace, we can
+collect data over multiple runs for later analysis.
+This would become more useful by passing recognized events (stack traces,
+crashes, ...) and benchmark results via the Step infrastructure.
+
+Strategy Support for labgrid-client
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Currently, the client instantiates the Target, Resources and Drivers directly.
+By passing an environment YAML file, we could also instantiate any custom
+Strategy and configure image paths.
+This would allow us to use the Strategy to transition the board to a specific
+state before connecting to the console.
 
 Target Feature Flags
 ~~~~~~~~~~~~~~~~~~~~

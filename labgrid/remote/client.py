@@ -22,6 +22,7 @@ from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
 from ..environment import Environment
 from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util.timeout import Timeout
+from ..util.dict import diff_dict, flat_dict
 from .. import Target
 
 logging.basicConfig(
@@ -56,6 +57,7 @@ class ClientSession(ApplicationSession):
         self.args = self.config.extra.get('args')
         self.env = self.config.extra.get('env', None)
         self.prog = self.config.extra.get('prog', os.path.basename(sys.argv[0]))
+        self.monitor = self.config.extra.get('monitor', False)
         enable_tcp_nodelay(self)
         self.join(
             self.config.realm, ["ticket"],
@@ -97,33 +99,60 @@ class ClientSession(ApplicationSession):
     def on_resource_changed(
         self, exporter, group_name, resource_name, resource
     ):
-        #print("Got resource changed: {}/{}/{}, {}".format(
-        #    exporter,
-        #    group_name,
-        #    resource_name,
-        #    resource
-        #))
         group = self.resources.setdefault(exporter,
                                           {}).setdefault(group_name, {})
         # Do not replace the ResourceEntry object, as other components may keep
         # a reference to it and want to see changes.
         if resource_name not in group:
+            old = None
             group[resource_name] = ResourceEntry(resource)
         else:
+            old = group[resource_name].data
             group[resource_name].data = resource
+        if self.monitor:
+            if resource and not old:
+                print("Resource {}/{}/{} created: {}".format(
+                    exporter, group_name, resource_name, resource
+                ))
+            elif resource and old:
+                print("Resource {}/{}/{} changed:".format(
+                    exporter, group_name, resource_name,
+                ))
+                for k, v_old, v_new in diff_dict(flat_dict(old), flat_dict(resource)):
+                    print("  {}: {} -> {}".format(k, v_old, v_new))
+            else:
+                print("Resource {}/{}/{} deleted".format(
+                    exporter, group_name, resource_name))
 
     @asyncio.coroutine
     def on_place_changed(self, name, config):
         if not config:
             del self.places[name]
+            if self.monitor:
+                print("Place {} deleted".format(name))
             return
         config = config.copy()
         config['name'] = name
         config['matches'
                ] = [ResourceMatch(**match) for match in config['matches']]
         place = Place(**config)
-        #print("Got place changed: {}, {}".format(name, place))
+        if name not in self.places:
+            if self.monitor:
+                print("Place {} created: {}".format(name, place))
+        else:
+            if self.monitor:
+                print("Place {} changed:".format(name))
+                for k, v_old, v_new in diff_dict(
+                        flat_dict(self.places[name].asdict()),
+                        flat_dict(place.asdict())):
+                    print("  {}: {} -> {}".format(k, v_old, v_new))
         self.places[name] = place
+
+    @asyncio.coroutine
+    def monitor(self):
+        self.monitor = True
+        while True:
+            yield from asyncio.sleep(3600.0)
 
     @asyncio.coroutine
     def complete(self):
@@ -649,6 +678,10 @@ def main():
     subparser = subparsers.add_parser('complete')
     subparser.add_argument('type', choices=['resources', 'places'])
     subparser.set_defaults(func=ClientSession.complete)
+
+    subparser = subparsers.add_parser('monitor',
+                                      help="monitor events from the coordinator")
+    subparser.set_defaults(func=ClientSession.monitor)
 
     subparser = subparsers.add_parser('resources', aliases=('r',),
                                       help="list available resources")

@@ -4,7 +4,7 @@ def diff_dict(old, new):
     old_value, new_value).
     None is used for missing values.
     """
-    for key in sorted(old.keys() & new.keys()):
+    for key in sorted(old.keys() | new.keys()):
         v_old = old.get(key)
         v_new = new.get(key)
         if v_old != v_new:

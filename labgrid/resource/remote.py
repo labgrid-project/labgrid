@@ -46,6 +46,7 @@ class RemotePlaceManager(ResourceManager):
                 remote_place.target, resource_entry.cls, resource_name, resource_entry.args)
             new.parent = remote_place
             new.avail = resource_entry.avail
+            new.extra = resource_entry.extra
             new._remote_entry = resource_entry
             if not isinstance(new, ManagedResource):
                 self.unmanaged_resources.append(new)

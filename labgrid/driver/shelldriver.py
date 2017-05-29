@@ -77,7 +77,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
             marker, marker, self.prompt
         ), timeout=timeout)
         # Remove VT100 Codes, split by newline and remove surrounding newline
-        data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
+        data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')
+        if data and not data[-1]:
+            del data[-1]
         self.logger.debug("Received Data: %s", data)
         # Get exit code
         exitcode = int(match.group(2))
@@ -148,7 +150,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
 
     def _inject_run(self):
         self.console.sendline(
-            '''run() { echo "$MARKER"; sh -c "$@"; echo "$MARKER $?"; }'''
+            '''run() { echo -n "$MARKER"; sh -c "$@"; echo "$MARKER $?"; }'''
         )
         self.console.expect(self.prompt)
 

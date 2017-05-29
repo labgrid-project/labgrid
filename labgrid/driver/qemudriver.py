@@ -1,4 +1,5 @@
 """The QEMUDriver implements a driver to use a QEMU target"""
+import atexit
 import logging
 import select
 import shlex
@@ -59,6 +60,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._tempdir = None
         self._socket = None
         self._clientsocket = None
+        atexit.register(self._atexit)
+
+    def _atexit(self):
+        if not self._child:
+            return
+        self._child.terminate()
+        try:
+            self._child.wait(1.0)
+        except TimeoutExpired:
+            self._child.kill()
+            self._child.wait(1.0)
 
     def on_activate(self):
         self._tempdir = tempfile.mkdtemp(prefix="labgrid-qemu-tmp-")
@@ -137,6 +149,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self.monitor_command('quit')
         if self._child.wait() != 0:
             raise IOError
+        self._child = None
         self.status = 0
 
     def cycle(self):

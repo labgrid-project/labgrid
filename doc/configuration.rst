@@ -766,6 +766,27 @@ to transition to the shell state:
 this command would transition from the boot loader into a Linux shell and
 activate the shelldriver.
 
+ShellStrategy
++++++++++++++
+A ShellStrategy has three states:
+
+- unknown
+- off
+- shell
+
+
+to transition to the shell state:
+
+::
+
+   t = get_target("main")
+   s = ShellStrategy(t)
+   s.transition("shell")
+
+
+this command would transition directly into a Linux shell and
+activate the shelldriver.
+
 UBootStrategy
 +++++++++++++
 A UBootStrategy has three states:

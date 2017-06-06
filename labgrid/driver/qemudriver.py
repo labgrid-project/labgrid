@@ -79,22 +79,27 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._socket.bind(sockpath)
         self._socket.listen(0)
 
+        self.qemu_bin = self.target.env.config.get_tool(self.qemu_bin)
+        if self.qemu_bin is None:
+            raise KeyError(
+                "QEMU Binary Path not configured in tools configuration key")
         self._cmd = [self.qemu_bin]
 
-        if self.kernel:
+        if self.kernel is not None:
             self._cmd.append("-kernel")
-            self._cmd.append(self.kernel)
-        if self.rootfs:
+            self._cmd.append(
+                self.target.env.config.get_image_path(self.kernel))
+        if self.rootfs is not None:
             self._cmd.append("-fsdev")
             self._cmd.append(
                 "local,id=rootfs,security_model=none,path={}".format(
-                    self.rootfs))
+                    self.target.env.config.get_path(self.rootfs)))
             self._cmd.append("-device")
             self._cmd.append(
                 "virtio-9p-device,fsdev=rootfs,mount_tag=/dev/root")
-        if self.dtb:
+        if self.dtb is not None:
             self._cmd.append("-dtb")
-            self._cmd.append(self.dtb)
+            self._cmd.append(self.target.env.config.get_image_path(self.dtb))
 
         self._cmd.extend(shlex.split(self.extra_args))
         self._cmd.append("-S")
@@ -106,8 +111,6 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._cmd.append(self.cpu)
         self._cmd.append("-m")
         self._cmd.append(self.memory)
-        self._cmd.append("-kernel")
-        self._cmd.append(self.kernel)
         self._cmd.append("-nographic")
         self._cmd.append("-append")
         self._cmd.append(
@@ -161,7 +164,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
     def monitor_command(self, command):
         """Execute a monitor_command via the QMP"""
         if not self.status:
-            raise ExecutionError("Can't use monitor command on non-running target")
+            raise ExecutionError(
+                "Can't use monitor command on non-running target")
         self.qmp.execute(command)
 
     def _read(self, size=1, timeout=10):

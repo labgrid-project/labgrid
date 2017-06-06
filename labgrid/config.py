@@ -4,6 +4,7 @@ This class encapsulates access functions to the environment configuration
 
 """
 import attr
+import logging
 import os
 
 from .util.yaml import load

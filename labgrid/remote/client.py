@@ -523,6 +523,26 @@ class ClientSession(ApplicationSession):
                 )
             )
 
+    def digital_io(self):
+        place = self.get_acquired_place()
+        action = self.args.action
+        target = self._get_target(place)
+        from ..driver.onewiredriver import OneWirePIODriver
+        drv = OneWirePIODriver(target)
+        target.await_resources([drv.port], timeout=1.0)
+        target.activate(drv)
+        if action == 'get':
+            print(
+                "digital IO for place {} is {}".format(
+                    place.name,
+                    'high' if drv.get() else 'low',
+                )
+            )
+        elif action == 'high':
+            drv.set(True)
+        elif action == 'low':
+            drv.set(False)
+
     def _console(self, place):
         target = self._get_target(place)
         from ..resource import NetworkSerialPort
@@ -761,6 +781,11 @@ def main():
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
     subparser.add_argument('-t', '--delay', type=float, default=1.0, help='wait time between off and on during cycle')
     subparser.set_defaults(func=ClientSession.power)
+
+    subparser = subparsers.add_parser('io',
+                                      help="change (or get) a digital IO status")
+    subparser.add_argument('action', choices=['high', 'low', 'get'])
+    subparser.set_defaults(func=ClientSession.digital_io)
 
     subparser = subparsers.add_parser('console',
                                       aliases=('con',),

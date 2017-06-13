@@ -744,6 +744,8 @@ QEMUDriver
 ~~~~~~~~~~
 The QEMUDriver allows the usage of a qemu instance as a target. It requires
 several arguments, listed below.
+The kernel, flash, rootfs and dtb arguments refer to images and paths declared
+in the environment configuration.
 
 Binds to:
   - None
@@ -751,7 +753,7 @@ Binds to:
 .. code-block:: yaml
 
    QEMUDriver:
-     qemu_bin: qemu
+     qemu_bin: qemu_arm
      machine: vexpress-a9
      cpu: cortex-a9
      memory: 512M
@@ -761,13 +763,15 @@ Binds to:
      rootfs: rootfs
      dtb: dtb
 
+.. code-block:: yaml
+
    tools:
-     qemu_bin: /bin/qemu-system-arm
+     qemu_arm: /bin/qemu-system-arm
    paths:
-     rootfs: /var/images/root
+     rootfs: ../images/root
    images:
-     dtb: /var/images/mydtb.dtb
-     kernel: /var/images/vmlinuz
+     dtb: ../images/mydtb.dtb
+     kernel: ../images/vmlinuz
      
 
 Implements:
@@ -775,15 +779,16 @@ Implements:
   - :any:`PowerProtocol`
 
 Arguments:
-  - qemu_bin (str): reference to the tools key
+  - qemu_bin (str): reference to the tools key for the QEMU binary
   - machine (str): QEMU machine type
   - cpu (str): QEMU cpu type
   - memory (str): QEMU memory size (ends with M or G)
-  - boot_args (str): kernel boot argument
   - extra_args (str): extra QEMU arguments, they are passed directly to the QEMU binary
-  - kernel (str): reference to the images key
-  - rootfs (str): reference to the paths key
-  - dtb (str): optional, reference to the image key
+  - boot_args (str): optional, additional kernel boot argument
+  - kernel (str): optional, reference to the images key for the kernel
+  - flash (str): optional, reference to the images key for the flash image
+  - rootfs (str): optional, reference to the paths key for use as the virtio-9p filesystem
+  - dtb (str): optional, reference to the image key for the device tree
 
 The qemudriver also requires the specification of:
 

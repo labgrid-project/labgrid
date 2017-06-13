@@ -26,28 +26,39 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
     """
     The QEMUDriver implements an interface to start targets as qemu instances.
 
+    The kernel, flash, rootfs and dtb arguments refer to images and paths
+    declared in the environment configuration.
+
     Args:
-        qemu_bin (str): Path to the QEMU binary
+        qemu_bin (str): reference to the tools key for the QEMU binary
         machine (str): QEMU machine type
         cpu (str): QEMU cpu type
         memory (str): QEMU memory size (ends with M or G)
-        boot_args (str): kernel boot argument
-        extra_args (str): extra QEMU arguments, are passed directly to the QEMU binary
-        kernel (str): path to the kernel image
-        rootfs (str): path to the rootfs for the virtio-9p filesystem
-        dtb (str): optional, path to the compiled device tree
+        extra_args (str): extra QEMU arguments, they are passed directly to the QEMU binary
+        boot_args (str): optional, additional kernel boot argument
+        kernel (str): optional, reference to the images key for the kernel
+        flash (str): optional, reference to the images key for the flash image
+        rootfs (str): optional, reference to the paths key for use as the virtio-9p filesystem
+        dtb (str): optional, reference to the image key for the device tree
     """
     qemu_bin = attr.ib(validator=attr.validators.instance_of(str))
     machine = attr.ib(validator=attr.validators.instance_of(str))
     cpu = attr.ib(validator=attr.validators.instance_of(str))
     memory = attr.ib(validator=attr.validators.instance_of(str))
-    boot_args = attr.ib(validator=attr.validators.instance_of(str))
     extra_args = attr.ib(validator=attr.validators.instance_of(str))
+    boot_args = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
     kernel = attr.ib(
+        default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
     rootfs = attr.ib(
+        default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
     dtb = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
+    flash = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
 
@@ -85,6 +96,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 "QEMU Binary Path not configured in tools configuration key")
         self._cmd = [self.qemu_bin]
 
+        boot_args = []
+
         if self.kernel is not None:
             self._cmd.append("-kernel")
             self._cmd.append(
@@ -97,9 +110,15 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self._cmd.append("-device")
             self._cmd.append(
                 "virtio-9p-device,fsdev=rootfs,mount_tag=/dev/root")
+            boot_args.append("root=/dev/root rootfstype=9p rootflags=trans=virtio")
         if self.dtb is not None:
             self._cmd.append("-dtb")
             self._cmd.append(self.target.env.config.get_image_path(self.dtb))
+        if self.flash is not None:
+            self._cmd.append("-drive")
+            self._cmd.append(
+                "if=pflash,format=raw,file={},id=nor0".format(
+                    self.target.env.config.get_image_path(self.flash)))
 
         self._cmd.extend(shlex.split(self.extra_args))
         self._cmd.append("-S")
@@ -112,14 +131,16 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._cmd.append("-m")
         self._cmd.append(self.memory)
         self._cmd.append("-nographic")
-        self._cmd.append("-append")
-        self._cmd.append(
-            "root=/dev/root rootfstype=9p rootflags=trans=virtio {}".format(
-                self.boot_args))
         self._cmd.append("-chardev")
         self._cmd.append("socket,id=serialsocket,path={}".format(sockpath))
         self._cmd.append("-serial")
         self._cmd.append("chardev:serialsocket")
+
+        if self.boot_args is not None:
+            boot_args.append(self.boot_args)
+        if boot_args:
+            self._cmd.append("-append")
+            self._cmd.append(" ".join(boot_args))
 
     def on_deactivate(self):
         if self.status:

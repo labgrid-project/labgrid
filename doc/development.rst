@@ -436,15 +436,6 @@ ConsoleProtocol:
 PowerProtocol:
    In some cases, multiple power ports need to be controled for one Target.
 
-QEMUDriver
-~~~~~~~~~~
-
-A driver controlling a QEMU system emulator would implement at least the
-:any:`PowerProtocol` and :any:`ConsoleProtocol`.
-Even without access to real hardware, this would allow us to run (some) software
-integration tests and also make developing labgrid itself easier by providing a
-realistic Target.
-
 Remote Target Reservation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

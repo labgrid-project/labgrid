@@ -13,3 +13,4 @@ from .usbloader import MXSUSBDriver, IMXUSBDriver
 from .usbstorage import USBStorageDriver
 from .infodriver import InfoDriver
 from .common import Driver
+from .qemudriver import QEMUDriver

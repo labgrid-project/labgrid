@@ -75,6 +75,25 @@ class Config:
             logging.exception("no path configured for image {}".format(kind))
             raise
 
+    def get_path(self, kind):
+        """Retrieve an entry from the paths subkey
+
+        Args:
+            kind (str): the type of path to retrieve the path for
+
+        Returns:
+            str: path to the path
+
+        Raises:
+            KeyError: if the requested image can not be found in the
+                configuration
+        """
+        try:
+            path = str(self.data['paths'][kind])
+            return self.resolve_path(path)
+        except KeyError:
+            logging.exception("no path configured for path {}".format(kind))
+
     def get_option(self, name, default=None):
         """Retrieve an entry from the options subkey
 

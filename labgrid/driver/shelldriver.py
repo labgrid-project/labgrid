@@ -1,7 +1,9 @@
 # pylint: disable=no-member
 """The ShellDriver provides the CommandProtocol, ConsoleProtocol and
  InfoProtocol on top of a SerialPort."""
+import io
 import logging
+import os
 import re
 import shlex
 from time import sleep
@@ -9,18 +11,21 @@ from time import sleep
 import attr
 from pexpect import TIMEOUT
 
+import xmodem
+
 from ..factory import target_factory
-from ..protocol import CommandProtocol, ConsoleProtocol, InfoProtocol
+from ..protocol import (CommandProtocol, ConsoleProtocol, FileTransferProtocol,
+                        InfoProtocol)
 from ..step import step
-from ..util import gen_marker, Timeout
-from .common import Driver
+from ..util import Timeout, gen_marker
 from .commandmixin import CommandMixin
+from .common import Driver
 from .exception import ExecutionError
 
 
 @target_factory.reg_driver
 @attr.s
-class ShellDriver(CommandMixin, Driver, CommandProtocol):
+class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     """ShellDriver - Driver to execute commands on the shell
     ShellDriver binds on top of a ConsoleProtocol.
 
@@ -45,6 +50,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
         )  #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
         self.logger = logging.getLogger("{}:{}".format(self, self.target))
         self._status = 0  #pylint: disable=attribute-defined-outside-init
+
+        self._xmodem_cached_rx_cmd = ""
+        self._xmodem_cached_sx_cmd = ""
 
     def on_activate(self):
         if self._status == 0:
@@ -205,3 +213,271 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol):
     @Driver.check_active
     def put_ssh_key(self, key):
         self._put_ssh_key(key)
+
+    def _xmodem_getc(self, size, timeout=10):
+        """ called by the xmodem.XMODEM instance to read protocol data from the console """
+        try:
+            # use the underlying expect mechanism, which may have already accidentally read
+            # something of the XMODEM protocol data into its internal buffers:
+            xpct = self.console.expect(r'.{%d}' % size, timeout=timeout)
+            s = xpct[2].group()
+            self.logger.debug('XMODEM GETC({}): read {}'.format(size, repr(s)))
+            return s
+        except TIMEOUT:
+            self.logger.debug('XMODEM GETC({}): TIMEOUT after {} seconds' .format(size, timeout))
+            return None
+
+    def _xmodem_putc(self, data, timeout=1):
+        """ called by the xmodem.XMODEM instance to write protocol data to the console """
+        # Note: we ignore the timeout because we cannot pass it through.
+        self.logger.debug('XMODEM PUTC: {}'.format(repr(data)))
+        self.console.write(data)
+        return len(data)
+
+    def _start_xmodem_transfer(self, cmd):
+        """
+        Start transfer command and synchronize until start of XMODEM stream.
+
+        We don't use _run() here because it expects a prompt, but we want to
+        read from the console directly into our XMODEM instance instead.
+        """
+
+        marker = gen_marker()
+        marked_cmd = "echo '{}''{}'; {}".format(marker[:4], marker[4:], cmd)
+        self.console.sendline(marked_cmd)
+        self.console.expect(marker, timeout=30)
+
+    def _get_xmodem_rx_cmd(self, filename):
+        """ Detect which XMODEM receive command can be used on the target, and cache the result. """
+        if not self._xmodem_cached_rx_cmd:
+            if self._run('which rx')[0]:
+                # busybox rx
+                self._xmodem_cached_rx_cmd = "rx '{filename}'"
+            elif self._run('which lrz')[0]:
+                # redirect stderr to prevent lrz from printing "ready to receive
+                # $file", which will confuse the XMODEM instance
+                self._xmodem_cached_rx_cmd = "lrz -X -y -c -b '{filename}' 2>/dev/null"
+            else:
+                raise ExecutionError('No XMODEM receiver (rx, lrz) available on target')
+
+        # use the cached string template to make the full command with parameters
+        return self._xmodem_cached_rx_cmd.format(filename=filename)
+
+    def _get_xmodem_sx_cmd(self, filename):
+        """ Detect which XMODEM send command can be used on the target, and cache the result. """
+        if not self._xmodem_cached_sx_cmd:
+            if self._run('which lsz')[0]:
+                # redirect stderr to prevent lsz from printing "Give XMODEM receive
+                # cmd now", which will confuse the XMODEM instance
+                self._xmodem_cached_sx_cmd = "lsz -b -X -m 1200 -M 10 '{filename}' 2>/dev/null"
+            else:
+                raise ExecutionError('No XMODEM sender (lsz) available on target')
+
+        # use the cached string template to make the full command with parameters
+        return self._xmodem_cached_sx_cmd.format(filename=filename)
+
+    @step(title='put_bytes', args=['remotefile'])
+    def _put_bytes(self, buf: bytes, remotefile: str):
+        # OK, a little explanation on what we're doing here:
+        # XMODEM is a fairly simple, but also a fairly historic protocol. For example, all packets
+        # carry exactly 128 bytes of payload, and if the file being sent is not a multiple of 128
+        # bytes, the last packet will be padded by CPM's EOF, which is 0x1a. There is no file size
+        # or anything in the protocol itself, so we'll have to take care of that and truncate the
+        # file ourselves.
+
+        def _target_cleanup(tmpfile):
+            self._run("rm -f '{}'".format(tmpfile))
+
+        stream = io.BytesIO(buf)
+
+        # We first write to a temp file, which we'll `dd` onto the destination file later
+        tmpfile = self._run_check('mktemp')
+        if not tmpfile:
+            raise ExecutionError('Could not make temporary file on target')
+        tmpfile = tmpfile[0]
+
+        try:
+            rx_cmd = self._get_xmodem_rx_cmd(tmpfile)
+            self.logger.debug('XMODEM receive command on target: ' + rx_cmd)
+        except ExecutionError:
+            _target_cleanup(tmpfile)
+            raise
+
+        self._start_xmodem_transfer(rx_cmd)
+
+        modem = xmodem.XMODEM(self._xmodem_getc, self._xmodem_putc)
+        ret = modem.send(stream)
+        self.logger.debug('xmodem.send() returned %r' % ret)
+
+        self.console.expect(self.prompt, timeout=30)
+
+        # truncate the file to get rid of CPMEOF padding
+        dd_cmd = "dd if='{}' of='{}' bs=1 count={}".format(tmpfile, remotefile, len(buf))
+        self.logger.debug('dd command: ' + dd_cmd)
+        out, _, ret = self._run(dd_cmd)
+
+        _target_cleanup(tmpfile)
+        if ret != 0:
+            raise ExecutionError('Could not truncate destination file: dd returned {}: {}'.
+                    format(ret, out))
+
+    @Driver.check_active
+    def put_bytes(self, buf: bytes, remotefile: str):
+        """ Upload a file to the target.
+        Will silently overwrite the remote file if it already exists.
+
+        Args:
+            buf (bytes): file contents
+            remotefile (str): destination filename on the target
+
+        Raises:
+            IOError: if the provided localfile could not be found
+            ExecutionError: if something else went wrong
+        """
+        return self._put_bytes(buf, remotefile)
+
+    @step(title='put', args=['localfile', 'remotefile'])
+    def _put(self, localfile: str, remotefile: str):
+        with open(localfile, 'rb') as fh:
+            buf = fh.read(None)
+            self._put_bytes(buf, remotefile)
+
+    @Driver.check_active
+    def put(self, localfile: str, remotefile: str):
+        """ Upload a file to the target.
+        Will silently overwrite the remote file if it already exists.
+
+        Args:
+            localfile (str): source filename on the local machine
+            remotefile (str): destination filename on the target
+
+        Raises:
+            IOError: if the provided localfile could not be found
+            ExecutionError: if something else went wrong
+        """
+        self._put_file(localfile, remotefile)
+
+    @step(title='get_bytes', args=['remotefile'])
+    def _get_bytes(self, remotefile: str):
+        buf = io.BytesIO()
+
+        cmd = self._get_xmodem_sx_cmd(remotefile)
+        self.logger.info('XMODEM send command on target: ' + cmd)
+
+        # get file size to remove XMODEM's CPMEOF padding at the end of the last packet
+        out, _, ret = self._run("stat '{}'".format(remotefile))
+        match = re.search(r'Size:\s+(?P<size>\d+)', '\n'.join(out))
+        if ret != 0 or not match or not match.group("size"):
+            raise ExecutionError("Could not stat '{}' on target".format(remotefile))
+
+        file_size = int(match.group('size'))
+        self.logger.debug('file size on target is %d', file_size)
+
+        self._start_xmodem_transfer(cmd)
+
+        modem = xmodem.XMODEM(self._xmodem_getc, self._xmodem_putc)
+        recvd_size = modem.recv(buf)
+        self.logger.debug('xmodem.recv() returned %r' % recvd_size)
+
+        # remove CPMEOF (0x1a) padding
+        if recvd_size < file_size:
+            raise ExecutionError('Only received {} bytes of {} expected'.
+                    format(recvd_size, file_size))
+
+        self.logger.debug('received %d bytes of payload', file_size)
+        buf.truncate(file_size)
+
+        self.console.expect(self.prompt, timeout=30)
+
+        # return everything as bytes
+        buf.seek(0)
+        return buf.read()
+
+    @Driver.check_active
+    def get_bytes(self, remotefile: str):
+        """ Download a file from the target.
+
+        Args:
+            remotefile (str): source filename on the target
+
+        Returns:
+            (bytes) file contents
+
+        Raises:
+            IOError: if localfile could be written
+            ExecutionError: if something went wrong
+        """
+        return self._get_bytes(remotefile)
+
+    @step(title='get', args=['remotefile', 'localfile'])
+    def _get(self, remotefile: str, localfile: str):
+        with open(localfile, 'wb') as fh:
+            buf = self._get_bytes(remotefile)
+            fh.write(buf)
+
+    @Driver.check_active
+    def get(self, remotefile: str, localfile: str):
+        """ Download a file from the target.
+        Will silently overwrite the local file if it already exists.
+
+        Args:
+            remotefile (str): source filename on the target
+            localfile (str): destination filename on the local machine (can be relative)
+
+        Raises:
+            IOError: if localfile could be written
+            ExecutionError: if something went wrong
+        """
+        self._get(remotefile, localfile)
+
+    @step(title='run_script', args=['data', 'timeout'])
+    def _run_script(self, data: bytes, timeout: int=60):
+        hardcoded_remote_file = '/tmp/labgrid-run-script'
+        self._put_bytes(data, hardcoded_remote_file)
+        self._run_check("chmod +x '{}'".format(hardcoded_remote_file))
+        return self._run(hardcoded_remote_file, timeout=timeout)
+
+    @Driver.check_active
+    def run_script(self, data: bytes, timeout: int=60):
+        """ Upload a script to the target and run it.
+
+        Args:
+            data (bytes): script data
+            timeout (int): timeout for the script to finish execution
+
+        Returns:
+            Tuple of (stdout: str, stderr: str, return_value: int)
+
+        Raises:
+            IOError: if the provided localfile could not be found
+            ExecutionError: if something else went wrong
+        """
+        self._run_script(data, timeout)
+
+    @step(title='run_script_file', args=['scriptfile', 'timeout', 'args'])
+    def _run_script_file(self, scriptfile: str, *args, timeout: int=60):
+        hardcoded_remote_file = '/tmp/labgrid-run-script'
+        self._put(scriptfile, hardcoded_remote_file)
+        self._run_check("chmod +x '{}'".format(hardcoded_remote_file))
+
+        shargs = [ shlex.quote(a) for a in args ]
+        cmd = "{} {}".format(hardcoded_remote_file, ' '.join(shargs))
+        return self._run(cmd, timeout=timeout)
+
+    @Driver.check_active
+    def run_script_file(self, scriptfile: str, *args, timeout: int=60):
+        """ Upload a script file to the target and run it.
+
+        Args:
+            scriptfile (str): source file on the local file system to upload to the target
+            *args: (list of str): any arguments for the script as positional arguments
+            timeout (int): timeout for the script to finish execution
+
+        Returns:
+            Tuple of (stdout: str, stderr: str, return_value: int)
+
+        Raises:
+            ExecutionError: if something went wrong
+            IOError: if the provided localfile could not be found
+        """
+        self._run_script_file(scriptfile, *args, timeout=timeout)

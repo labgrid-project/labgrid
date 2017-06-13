@@ -29,6 +29,7 @@ setup(
         'pyyaml',
         'pyudev',
         'requests',
+        'xmodem>=0.4.5',
         'autobahn'
     ],
     packages=[

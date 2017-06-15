@@ -37,6 +37,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         extra_args (str): extra QEMU arguments, they are passed directly to the QEMU binary
         boot_args (str): optional, additional kernel boot argument
         kernel (str): optional, reference to the images key for the kernel
+        disk (str): optional, reference to the images key for the disk image
         flash (str): optional, reference to the images key for the flash image
         rootfs (str): optional, reference to the paths key for use as the virtio-9p filesystem
         dtb (str): optional, reference to the image key for the device tree
@@ -50,6 +51,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
     kernel = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
+    disk = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
     rootfs = attr.ib(
@@ -102,6 +106,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self._cmd.append("-kernel")
             self._cmd.append(
                 self.target.env.config.get_image_path(self.kernel))
+        if self.disk is not None:
+            disk_path = self.target.env.config.get_image_path(self.disk)
+            if self.machine == "vexpress-a9":
+                self._cmd.append("-drive")
+                self._cmd.append(
+                    "if=sd,format=raw,file={},id=mmc0".format(disk_path))
+                boot_args.append("root=/dev/mmcblk0p1 rootfstype=ext4 rootwait")
+            else:
+                raise NotImplementedError(
+                    "QEMU disk image support not implemented for machine '{}'".format(self.machine)
+                )
         if self.rootfs is not None:
             self._cmd.append("-fsdev")
             self._cmd.append(

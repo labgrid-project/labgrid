@@ -21,7 +21,7 @@ class Config:
                 self.data = load(file)
         except FileNotFoundError:
             raise NoConfigFoundError(
-                "{} could not be found".format(self.filename)
+                "configuration file '{}' could not be found".format(self.filename)
             )
 
     def resolve_path(self, path):
@@ -71,9 +71,8 @@ class Config:
         try:
             path = str(self.data['images'][kind])
             return self.resolve_path(path)
-        except KeyError:
-            logging.exception("no path configured for image {}".format(kind))
-            raise
+        except KeyError as e:
+            raise KeyError("no path configured for image '{}'".format(kind)) from e
 
     def get_path(self, kind):
         """Retrieve an entry from the paths subkey
@@ -91,8 +90,8 @@ class Config:
         try:
             path = str(self.data['paths'][kind])
             return self.resolve_path(path)
-        except KeyError:
-            logging.exception("no path configured for path {}".format(kind))
+        except KeyError as e:
+            raise KeyError("no path configured for path '{}'".format(kind)) from e
 
     def get_option(self, name, default=None):
         """Retrieve an entry from the options subkey
@@ -111,10 +110,9 @@ class Config:
         """
         try:
             return str(self.data['options'][name])
-        except KeyError:
+        except KeyError as e:
             if default is None:
-                logging.exception("no such option {}".format(name))
-                raise
+                raise KeyError("no option '{}' found in configuration".format(name))
             else:
                 return default
 

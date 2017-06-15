@@ -153,7 +153,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
         if self.boot_args is not None:
             boot_args.append(self.boot_args)
-        if boot_args:
+        if self.kernel is not None and boot_args:
             self._cmd.append("-append")
             self._cmd.append(" ".join(boot_args))
 

@@ -104,6 +104,15 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             raise ExecutionError(cmd)
         return res[0]
 
+    @Driver.check_active
+    @step()
+    def reset(self):
+        """Reset the board via a CPU reset
+        """
+        self.status = 0
+        self.console.sendline("reset")
+        self._await_prompt()
+
     def get_status(self):
         """Retrieve status of the BareboxDriver
         0 means inactive, 1 means active.

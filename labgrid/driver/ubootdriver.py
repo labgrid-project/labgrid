@@ -142,6 +142,15 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             self._status = 0
             raise
 
+    @Driver.check_active
+    @step()
+    def reset(self):
+        """Reset the board via a CPU reset
+        """
+        self.status = 0
+        self.send("reset\n")
+        self.await_prompt()
+
     @step()
     def _await_prompt(self):
         """Await autoboot line and stop it to get to the prompt, optionally

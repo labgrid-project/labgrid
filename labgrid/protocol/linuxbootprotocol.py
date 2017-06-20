@@ -11,3 +11,7 @@ class LinuxBootProtocol(abc.ABC):
     @abc.abstractmethod
     def await_boot(self):
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def reset(self):
+        raise NotImplementedError

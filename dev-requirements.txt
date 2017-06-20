@@ -15,4 +15,5 @@ pyudev
 yapf
 requests==2.13.0
 autobahn==0.18.1
+xmodem>=0.4.5
 -r doc-requirements.txt

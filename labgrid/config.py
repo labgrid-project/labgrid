@@ -141,3 +141,29 @@ class Config:
             imports.append(self.resolve_path(user_import))
 
         return imports
+
+    def get_paths(self):
+        """Helper function that returns the subdict of all paths
+
+        Returns:
+            Dict: Dictionary containing all path definitions
+        """
+        paths = []
+
+        for path in self.data.get('paths', []):
+            paths.append(self.resolve_path(path))
+
+        return paths
+
+    def get_images(self):
+        """Helper function that returns the subdict of all images
+
+        Returns:
+            Dict: Dictionary containing all image definitions
+        """
+        images = []
+
+        for image in self.data.get('images', []):
+            images.append(self.resolve_path(image))
+
+        return images

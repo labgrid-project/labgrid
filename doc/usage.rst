@@ -297,6 +297,20 @@ They can also be converted to other formats, such as HTML with `junit2html tool
   $ pytest --lg-env shell-example.yaml --junit-xml=report.xml
   $ junit2html report.xml
 
+
+Labgrid adds additional xml properties to a test run, these are:
+
+- ENV_CONFIG: Name of the configuration file
+- TARGETS: List of target names
+- TARGET_{NAME}_REMOTE: optional, if the target uses a RemotePlace
+  resource, its name is recorded here
+- PATH_{NAME}: optional, labgrid records the name and path
+- PATH_{NAME}_GIT_COMMIT: optional, labgrid tries to record git sha1 values for every
+  path 
+- IMAGE_{NAME}: optional, labgrid records the name and path to the image 
+- IMAGE_{NAME}_GIT_COMMIT: optional, labgrid tries to record git sha1 values for every
+  image 
+
 Command-Line
 ------------
 

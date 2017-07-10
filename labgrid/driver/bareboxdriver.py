@@ -29,6 +29,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
     autoboot = attr.ib(default="stop autoboot", validator=attr.validators.instance_of(str))
     interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
+    bootstring = attr.ib(default="Linux version \d", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -149,7 +150,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """Wait for the initial Linux version string to verify we succesfully
         jumped into the kernel.
         """
-        self.console.expect(r"Linux version \d")
+        self.console.expect(self.bootstring)
 
     @Driver.check_active
     def boot(self, name: str):

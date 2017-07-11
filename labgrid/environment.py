@@ -1,4 +1,5 @@
 import attr
+import os
 import yaml
 
 from .exceptions import NoConfigFoundError
@@ -23,6 +24,14 @@ class Environment:
             raise NoConfigFoundError(
                 "{} is not a valid yaml file".format(self.config_file)
             )
+        for user_import in self.config.get_imports():
+            from importlib.machinery import SourceFileLoader
+            import sys
+
+            module_name = os.path.basename(user_import)[:-3]
+
+            module = SourceFileLoader(module_name, user_import).load_module()
+            sys.modules[module_name] = module
 
     def get_target(self, role: str='main') -> Target:
         """Returns the specified target.

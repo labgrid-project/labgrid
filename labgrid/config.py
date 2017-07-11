@@ -128,3 +128,16 @@ class Config:
 
     def get_targets(self):
         return self.data.get('targets', {})
+
+    def get_imports(self):
+        """Helper function that returns the list of all imports
+
+        Returns:
+            list: List of files which should be imported
+        """
+        imports = []
+
+        for user_import in self.data.get('imports', []):
+            imports.append(self.resolve_path(user_import))
+
+        return imports

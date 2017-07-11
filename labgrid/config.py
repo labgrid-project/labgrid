@@ -15,7 +15,7 @@ class Config:
     filename = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
-        self.base = os.path.dirname(self.filename)
+        self.base = os.path.dirname(os.path.abspath(self.filename))
         try:
             with open(self.filename) as file:
                 self.data = load(file)

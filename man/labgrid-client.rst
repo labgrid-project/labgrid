@@ -45,6 +45,10 @@ OPTIONS
 -d, --debug
     enable debugging
 
+CONFIGURATION FILE
+------------------
+The configuration file follows the description in ``labgrid-device-config``\(1).
+
 ENVIRONMENT VARIABLES
 ---------------------
 Various labgrid-client commands use the following environment variable:

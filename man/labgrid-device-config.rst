@@ -45,7 +45,6 @@ previous driver.
 For a list of available resources and drivers refer to
 https://labgrid.readthedocs.io/en/latest/configuration.html.
 
-
 OPTIONS
 -------
 The ``options:`` top key configures various options such as the crossbar_url.
@@ -87,6 +86,12 @@ KEYS
 
 ``imx-usb-loader``
     Path to the imx-usb-loader binary
+
+IMPORTS
+-------
+The ``imports`` key is a list of files which are imported by the environment
+after loading the configuration. Relative paths to the configuration file are
+also supported.
 
 EXAMPLES
 --------

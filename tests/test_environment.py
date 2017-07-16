@@ -50,3 +50,29 @@ class TestEnvironment:
         )
         with pytest.raises(NoConfigFoundError):
             e = Environment(str(p))
+
+    def test_env_imports_yaml(self, tmpdir):
+        import sys
+        i = tmpdir.join("myimport.py")
+        i.write(
+"""
+class Test:
+    pass
+"""
+        )
+        p = tmpdir.join("config.yaml")
+        p.write(
+    """
+targets:
+  main:
+    drivers: {}
+imports:
+  - {}
+""".format("{}",str(i))
+        )
+        e = Environment(str(p))
+        assert (isinstance(e, Environment))
+        assert "myimport" in sys.modules
+        import myimport
+        t = myimport.Test()
+        assert (isinstance(t, myimport.Test))

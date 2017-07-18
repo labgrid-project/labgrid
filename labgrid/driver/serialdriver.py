@@ -13,7 +13,7 @@ from .consoleexpectmixin import ConsoleExpectMixin
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     """
     Driver implementing the ConsoleProtocol interface over a SerialPort connection

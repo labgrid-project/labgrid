@@ -3,7 +3,7 @@ import attr
 from .common import Resource
 
 
-@attr.s
+@attr.s(cmp=False)
 class SerialPort(Resource):
     """The basic SerialPort describes port and speed
 
@@ -14,7 +14,7 @@ class SerialPort(Resource):
     speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))
 
 
-@attr.s
+@attr.s(cmp=False)
 class EthernetInterface(Resource):
     """The basic EthernetInterface contains an interfacename
 

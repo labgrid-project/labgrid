@@ -5,7 +5,7 @@ from ..binding import BindingError, BindingMixin
 from .exception import ExecutionError
 
 
-@attr.s
+@attr.s(cmp=False)
 class Driver(BindingMixin):
     """
     Represents a driver which is used externally or by other drivers. It

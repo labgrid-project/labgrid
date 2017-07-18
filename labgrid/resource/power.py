@@ -5,7 +5,7 @@ from .common import Resource
 
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class NetworkPowerPort(Resource):
     """The NetworkPowerPort describes a remotely switchable PowerPort
 

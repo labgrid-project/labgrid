@@ -9,7 +9,7 @@ from ..step import step
 from .common import Strategy
 
 
-@attr.s
+@attr.s(cmp=False)
 class StrategyError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
 
@@ -21,7 +21,7 @@ class Status(enum.Enum):
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class ShellStrategy(Strategy):
     """ShellStrategy - Strategy to switch to shell"""
     bindings = {

@@ -8,7 +8,7 @@ from ..protocol import DigitalOutputProtocol
 from .common import Driver
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class OneWirePIODriver(Driver, DigitalOutputProtocol):
 
     bindings = {"port": OneWirePIO, }

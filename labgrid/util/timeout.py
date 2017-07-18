@@ -3,7 +3,7 @@ import time
 import attr
 
 
-@attr.s
+@attr.s(cmp=False)
 class Timeout(object):
     """Reperents a timeout (as a deadline)"""
     timeout = attr.ib(

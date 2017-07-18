@@ -14,7 +14,7 @@ from .onewiredriver import OneWirePIODriver
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class ManualPowerDriver(Driver, PowerProtocol):
     """ManualPowerDriver - Driver to tell the user to control a target's power"""
     name = attr.ib(validator=attr.validators.instance_of(str))
@@ -43,7 +43,7 @@ class ManualPowerDriver(Driver, PowerProtocol):
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class ExternalPowerDriver(Driver, PowerProtocol):
     """ExternalPowerDriver - Driver using an external command to control a target's power"""
     cmd_on = attr.ib(validator=attr.validators.instance_of(str))
@@ -78,7 +78,7 @@ class ExternalPowerDriver(Driver, PowerProtocol):
             self.on()
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class NetworkPowerDriver(Driver, PowerProtocol):
     """NetworkPowerDriver - Driver using a networked power switch to control a target's power"""
     bindings = {"port": NetworkPowerPort, }
@@ -115,7 +115,7 @@ class NetworkPowerDriver(Driver, PowerProtocol):
         return self.backend.get(self.port.host, self.port.index)
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class DigitalOutputPowerDriver(Driver, PowerProtocol):
     """DigitalOutputPowerDriver - Driver using a DigitalOutput to reset the target and
     subprocesses to turn it on and off"""

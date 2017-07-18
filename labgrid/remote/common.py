@@ -6,7 +6,7 @@ from fnmatch import fnmatchcase
 import attr
 
 
-@attr.s
+@attr.s(cmp=False)
 class ResourceEntry:
     data = attr.ib()  # cls, params
     acquired = attr.ib(default=None)
@@ -47,7 +47,9 @@ class ResourceEntry:
         }
 
 
-@attr.s
+@attr.s(cmp=True)
+# This class requires cmp=True, since we put the matches into a list and require
+# the cmp functions to be able to remove the matches from the list later on.
 class ResourceMatch:
     exporter = attr.ib()
     group = attr.ib()
@@ -84,7 +86,7 @@ class ResourceMatch:
             return True
 
 
-@attr.s
+@attr.s(cmp=False)
 class Place:
     name = attr.ib()
     aliases = attr.ib(default=attr.Factory(set), convert=set)

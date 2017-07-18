@@ -5,7 +5,7 @@ from ..factory import target_factory
 from .common import Resource, NetworkResource, ManagedResource, ResourceManager
 
 
-@attr.s
+@attr.s(cmp=False)
 class RemotePlaceManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -78,7 +78,7 @@ class RemotePlaceManager(ResourceManager):
 
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class RemotePlace(ManagedResource):
     manager_cls = RemotePlaceManager
 
@@ -88,7 +88,7 @@ class RemotePlace(ManagedResource):
         self.timeout = 5.0
         super().__attrs_post_init__()
 
-@attr.s
+@attr.s(cmp=False)
 class RemoteUSBResource(NetworkResource, ManagedResource):
     manager_cls = RemotePlaceManager
 
@@ -100,7 +100,7 @@ class RemoteUSBResource(NetworkResource, ManagedResource):
 
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class NetworkAndroidFastboot(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
@@ -108,7 +108,7 @@ class NetworkAndroidFastboot(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class NetworkIMXUSBLoader(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
@@ -116,21 +116,21 @@ class NetworkIMXUSBLoader(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class NetworkMXSUSBLoader(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class NetworkMXSUSBLoader(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class NetworkAlteraUSBBlaster(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0

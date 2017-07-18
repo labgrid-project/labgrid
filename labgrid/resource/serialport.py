@@ -6,7 +6,7 @@ from .base import SerialPort
 
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class RawSerialPort(SerialPort, Resource):
     """RawSerialPort describes a serialport which is vailable on the local computer."""
     def __attrs_post_init__(self):
@@ -16,7 +16,7 @@ class RawSerialPort(SerialPort, Resource):
 
 # This does not derive from SerialPort because it is not directly accessible
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class NetworkSerialPort(NetworkResource):
     """A NetworkSerialPort is a remotely accessable serialport, usually
     accessed via rfc2217.

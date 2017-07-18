@@ -1,6 +1,6 @@
 PyYAML
-attrs==16.3.0
-crossbar==17.3.1
+attrs>=16.3.0
+crossbar
 pexpect
 pyserial>=3.3
 pytest
@@ -13,7 +13,7 @@ pytest-runner
 onewire>=0.2
 pyudev
 yapf
-requests==2.13.0
-autobahn==0.18.1
+requests
+autobahn
 xmodem>=0.4.5
 -r doc-requirements.txt

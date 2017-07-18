@@ -1,5 +1,7 @@
 import pytest
 
+pytest.importorskip("onewire")
+
 from labgrid.driver import OneWirePIODriver
 from labgrid.resource import OneWirePIO
 

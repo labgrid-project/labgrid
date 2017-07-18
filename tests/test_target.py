@@ -97,7 +97,7 @@ def test_suppliers_ab_missing(target):
         d = DriverWithAB(target)
 
 # test nested resource creation
-@attr.s
+@attr.s(cmp=False)
 class DiscoveryResource(Resource):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

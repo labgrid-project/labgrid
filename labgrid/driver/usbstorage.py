@@ -11,7 +11,7 @@ from .exception import ExecutionError
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class USBStorageDriver(Driver):
     bindings = {"storage": USBMassStorage, }
 

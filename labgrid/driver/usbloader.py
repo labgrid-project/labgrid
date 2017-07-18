@@ -13,7 +13,7 @@ from .exception import ExecutionError
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class MXSUSBDriver(Driver, BootstrapProtocol):
     bindings = {
         "loader": {MXSUSBLoader, NetworkMXSUSBLoader},
@@ -48,7 +48,7 @@ class MXSUSBDriver(Driver, BootstrapProtocol):
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class IMXUSBDriver(Driver, BootstrapProtocol):
     bindings = {
         "loader": {IMXUSBLoader, NetworkIMXUSBLoader},

@@ -4,12 +4,12 @@ from functools import wraps
 import attr
 
 
-@attr.s
+@attr.s(cmp=False)
 class StateError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
 
 
-@attr.s
+@attr.s(cmp=False)
 class BindingError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
 
@@ -22,7 +22,7 @@ class BindingState(enum.Enum):
     active = 2
 
 
-@attr.s
+@attr.s(cmp=False)
 class BindingMixin:
     """
     Handles the binding and activation of drivers and their supplying resources

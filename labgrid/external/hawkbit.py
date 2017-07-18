@@ -3,7 +3,7 @@ import json
 import attr
 import requests as r
 
-@attr.s
+@attr.s(cmp=False)
 class HawkbitTestClient:
     host = attr.ib(validator=attr.validators.instance_of(str))
     port = attr.ib(validator=attr.validators.instance_of(str))
@@ -126,6 +126,6 @@ class HawkbitTestClient:
         return req.json()
 
 
-@attr.s
+@attr.s(cmp=False)
 class HawkbiError(Exception):
     msg = attr.ib()

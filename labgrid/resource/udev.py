@@ -10,7 +10,7 @@ from .common import ManagedResource, ResourceManager
 from .base import SerialPort, EthernetInterface
 
 
-@attr.s
+@attr.s(cmp=False)
 class UdevManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -34,7 +34,7 @@ class UdevManager(ResourceManager):
                     break
 
 
-@attr.s
+@attr.s(cmp=False)
 class USBResource(ManagedResource):
     manager_cls = UdevManager
 
@@ -144,7 +144,7 @@ class USBResource(ManagedResource):
 
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class USBSerialPort(SerialPort, USBResource):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'tty'
@@ -158,7 +158,7 @@ class USBSerialPort(SerialPort, USBResource):
             self.port = None
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class USBMassStorage(USBResource):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'block'
@@ -171,7 +171,7 @@ class USBMassStorage(USBResource):
         return self.device.device_node
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class IMXUSBLoader(USBResource):
     def filter_match(self, device):
         if device.get('ID_VENDOR_ID') != "15a2":
@@ -182,7 +182,7 @@ class IMXUSBLoader(USBResource):
 
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class MXSUSBLoader(USBResource):
     def filter_match(self, device):
         if device.get('ID_VENDOR_ID') != "066f":
@@ -192,7 +192,7 @@ class MXSUSBLoader(USBResource):
         return super().filter_match(device)
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class AndroidFastboot(USBResource):
     def filter_match(self, device):
         if device.get('ID_VENDOR_ID') != "1d6b":
@@ -202,7 +202,7 @@ class AndroidFastboot(USBResource):
         return super().filter_match(device)
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class USBEthernetInterface(EthernetInterface, USBResource):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'net'
@@ -224,7 +224,7 @@ class USBEthernetInterface(EthernetInterface, USBResource):
         return value
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class AlteraUSBBlaster(USBResource):
     def filter_match(self, device):
         if device.get('ID_VENDOR_ID') != "09fb":

@@ -3,7 +3,7 @@ import attr
 from ..binding import BindingMixin
 
 
-@attr.s
+@attr.s(cmp=False)
 class Resource(BindingMixin):
     """
     Represents a resource which is used by drivers. It only stores information
@@ -24,7 +24,7 @@ class Resource(BindingMixin):
         return []
 
 
-@attr.s
+@attr.s(cmp=False)
 class NetworkResource(Resource):
     """
     Represents a remote Resource available on another computer.
@@ -45,7 +45,7 @@ class NetworkResource(Resource):
                 self.host, '--']
 
 
-@attr.s
+@attr.s(cmp=False)
 class ResourceManager:
     instances = {}
 
@@ -71,7 +71,7 @@ class ResourceManager:
         pass
 
 
-@attr.s
+@attr.s(cmp=False)
 class ManagedResource(Resource):
     """
     Represents a resource which can appear and disappear at runtime. Every

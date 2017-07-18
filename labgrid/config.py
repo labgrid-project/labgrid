@@ -10,7 +10,7 @@ import os
 from .util.yaml import load
 
 
-@attr.s
+@attr.s(cmp=False)
 class Config:
     filename = attr.ib(validator=attr.validators.instance_of(str))
 

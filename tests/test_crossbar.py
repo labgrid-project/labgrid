@@ -3,8 +3,8 @@ from importlib.util import find_spec
 import pytest
 import pexpect
 
-if not find_spec('crossbar'):
-    pytest.skip("crossbar not found")
+pytestmark = pytest.mark.skipif(not find_spec("crossbar"),
+                              reason="crossbar required")
 
 def test_startup(crossbar):
     pass

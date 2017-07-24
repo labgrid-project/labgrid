@@ -532,6 +532,7 @@ Arguments:
   - prompt (regex): barebox prompt to match
   - autoboot (regex, default="stop autoboot"): autoboot message to match
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
+  - bootstring (regex, default="Linux version \d"): succesfully jumped into the kernel 
 
 ExternalConsoleDriver
 ~~~~~~~~~~~~~~~~~~~~~

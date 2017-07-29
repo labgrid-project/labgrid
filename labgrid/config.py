@@ -148,10 +148,10 @@ class Config:
         Returns:
             Dict: Dictionary containing all path definitions
         """
-        paths = []
+        paths = {}
 
-        for path in self.data.get('paths', []):
-            paths.append(self.resolve_path(path))
+        for name, path in self.data.get('paths', {}).items():
+            paths[name] = self.resolve_path(path)
 
         return paths
 
@@ -161,9 +161,9 @@ class Config:
         Returns:
             Dict: Dictionary containing all image definitions
         """
-        images = []
+        images = {}
 
-        for image in self.data.get('images', []):
-            images.append(self.resolve_path(image))
+        for name, image in self.data.get('images', {}).items():
+            images[name] = self.resolve_path(image)
 
         return images

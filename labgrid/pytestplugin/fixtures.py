@@ -53,44 +53,45 @@ def env(request):
     if pytest.config.pluginmanager.hasplugin('junitxml'):
         my_junit = getattr(pytest.config, '_xml', None)
 
-        my_junit.add_global_property('ENV_CONFIG', env.config_file)
-        targets = list(env.config.get_targets().keys())
-        my_junit.add_global_property('TARGETS', targets)
+        if my_junit:
+            my_junit.add_global_property('ENV_CONFIG', env.config_file)
+            targets = list(env.config.get_targets().keys())
+            my_junit.add_global_property('TARGETS', targets)
 
-        for target, config in env.config.get_targets().items():
-            try:
-                remote_name = config['resources']['RemotePlace']['name']
+            for target, config in env.config.get_targets().items():
+                try:
+                    remote_name = config['resources']['RemotePlace']['name']
+                    my_junit.add_global_property(
+                        'TARGET_{}_REMOTE'.format(target.upper()), remote_name)
+                except KeyError:
+                    pass
+
+            for name, path in env.config.get_paths().items():
+                my_junit.add_global_property('PATH_{}'.format(name.upper()), path)
+                try:
+                    sha = subprocess.check_output(
+                        "git rev-parse HEAD".split(), cwd=path)
+                except subprocess.CalledProcessError:
+                    continue
+                except FileNotFoundError:
+                    continue
                 my_junit.add_global_property(
-                    'TARGET_{}_REMOTE'.format(target.upper()), remote_name)
-            except KeyError:
-                pass
+                    'PATH_{}_GIT_COMMIT'.format(name.upper()),
+                    sha.decode("utf-8").strip("\n"))
 
-        for name, path in env.config.get_paths().items():
-            my_junit.add_global_property('PATH_{}'.format(name.upper()), path)
-            try:
-                sha = subprocess.check_output(
-                    "git rev-parse HEAD".split(), cwd=path)
-            except subprocess.CalledProcessError:
-                continue
-            except FileNotFoundError:
-                continue
-            my_junit.add_global_property(
-                'PATH_{}_GIT_COMMIT'.format(name.upper()),
-                sha.decode("utf-8").strip("\n"))
-
-        for name, image in env.config.get_images().items():
-            my_junit.add_global_property(
-                'IMAGE_{}'.format(name.upper()), image)
-            try:
-                sha = subprocess.check_output(
-                    "git rev-parse HEAD".split(), cwd=os.path.dirname(image))
-            except subprocess.CalledProcessError:
-                continue
-            except FileNotFoundError:
-                continue
-            my_junit.add_global_property(
-                'IMAGE_{}_GIT_COMMIT'.format(name.upper()),
-                sha.decode("utf-8").strip("\n"))
+            for name, image in env.config.get_images().items():
+                my_junit.add_global_property(
+                    'IMAGE_{}'.format(name.upper()), image)
+                try:
+                    sha = subprocess.check_output(
+                        "git rev-parse HEAD".split(), cwd=os.path.dirname(image))
+                except subprocess.CalledProcessError:
+                    continue
+                except FileNotFoundError:
+                    continue
+                my_junit.add_global_property(
+                    'IMAGE_{}_GIT_COMMIT'.format(name.upper()),
+                    sha.decode("utf-8").strip("\n"))
 
     yield env
     env.cleanup()

@@ -17,7 +17,7 @@ from .exception import ExecutionError
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     """BareboxDriver - Driver to control barebox via the console.
        BareboxDriver binds on top of a ConsoleProtocol.

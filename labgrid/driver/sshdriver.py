@@ -19,7 +19,7 @@ from .exception import CleanUpError, ExecutionError
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     """SSHDriver - Driver to execute commands via SSH"""
     bindings = {"networkservice": NetworkService, }

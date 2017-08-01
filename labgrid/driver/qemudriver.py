@@ -21,7 +21,7 @@ from .exception import ExecutionError
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
     """
     The QEMUDriver implements an interface to start targets as qemu instances.

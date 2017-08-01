@@ -8,7 +8,7 @@ from ..factory import target_factory
 from .common import Strategy
 
 
-@attr.s
+@attr.s(cmp=False)
 class StrategyError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
 
@@ -20,7 +20,7 @@ class Status(enum.Enum):
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class UBootStrategy(Strategy):
     """UbootStrategy - Strategy to switch to uboot or shell"""
     bindings = {

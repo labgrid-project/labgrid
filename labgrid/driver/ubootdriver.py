@@ -16,7 +16,7 @@ from .exception import ExecutionError
 
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     """UBootDriver - Driver to control uboot via the console.
     UBootDriver binds on top of a ConsoleProtocol.

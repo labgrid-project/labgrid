@@ -9,7 +9,7 @@ from ..protocol import InfoProtocol, CommandProtocol
 from .common import Driver
 
 @target_factory.reg_driver
-@attr.s
+@attr.s(cmp=False)
 class InfoDriver(Driver, InfoProtocol):
     """
     InfoDriver implementing the InfoProtocol on top of CommandProtocol drivers

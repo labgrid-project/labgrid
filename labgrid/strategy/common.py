@@ -4,7 +4,7 @@ from ..binding import BindingError, BindingMixin
 from ..driver import Driver
 
 
-@attr.s
+@attr.s(cmp=False)
 class Strategy(Driver):  # reuse driver handling
     """
     Represents a strategy which places a target into a requested state by

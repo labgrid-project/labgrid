@@ -5,7 +5,7 @@ from .common import Resource
 
 
 @target_factory.reg_resource
-@attr.s
+@attr.s(cmp=False)
 class OneWirePIO(Resource):
     """This resource describes a Onewire PIO Port.
 

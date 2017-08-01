@@ -27,7 +27,7 @@ def get_free_port():
 exports = {}
 reexec = False
 
-@attr.s
+@attr.s(cmp=False)
 class ResourceExport(ResourceEntry):
     """Represents a local resource exported via a specific protocol.
 
@@ -70,7 +70,7 @@ class ResourceExport(ResourceEntry):
         return dirty
 
 
-@attr.s
+@attr.s(cmp=False)
 class USBSerialPortExport(ResourceExport):
     """ResourceExport for a USB SerialPort"""
 
@@ -128,7 +128,7 @@ class USBSerialPortExport(ResourceExport):
 
 exports["USBSerialPort"] = USBSerialPortExport
 
-@attr.s
+@attr.s(cmp=False)
 class USBEthernetExport(ResourceExport):
     """ResourceExport for a USB ethernet interface"""
 
@@ -149,7 +149,7 @@ class USBEthernetExport(ResourceExport):
 
 exports["USBEthernetInterface"] = USBEthernetExport
 
-@attr.s
+@attr.s(cmp=False)
 class USBGenericExport(ResourceExport):
     """ResourceExport for USB devices accessed directly from userspace"""
 

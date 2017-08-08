@@ -723,6 +723,12 @@ def main():
         default=False,
         help="enable debug mode"
     )
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        action='count',
+        default=0
+    )
     subparsers = parser.add_subparsers(
         dest='command',
         title='available subcommands',
@@ -743,14 +749,12 @@ def main():
                                       help="list available resources")
     subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.add_argument('-e', '--exporter')
-    subparser.add_argument('-v', '--verbose', action='count', default=0)
     subparser.add_argument('match', nargs='?')
     subparser.set_defaults(func=ClientSession.print_resources)
 
     subparser = subparsers.add_parser('places', aliases=('p',),
                                       help="list available places")
     subparser.add_argument('-a', '--acquired', action='store_true')
-    subparser.add_argument('-v', '--verbose', action='store_true')
     subparser.set_defaults(func=ClientSession.print_places)
 
     subparser = subparsers.add_parser('who',

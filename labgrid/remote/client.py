@@ -500,6 +500,20 @@ class ClientSession(ApplicationSession):
         manager.loop = self.loop
 
     def _get_target(self, place):
+        target = self.env.get_target(place.name)
+        if target:
+            if self.args.state:
+                if self.args.verbose >= 2:
+                    from labgrid.stepreporter import StepReporter
+                    StepReporter()
+                from labgrid.strategy import Strategy
+                from labgrid.driver import SerialDriver
+                strategy = target.get_driver(Strategy)
+                print("Transitioning into state {}".format(self.args.state))
+                strategy.transition(self.args.state)
+                serial = target.get_active_driver(SerialDriver)
+                target.deactivate(serial)
+            return target
         self._prepare_manager()
         target = Target(place.name, env=self.env)
         RemotePlace(target, name=place.name)
@@ -511,7 +525,9 @@ class ClientSession(ApplicationSession):
         delay = self.args.delay
         target = self._get_target(place)
         from ..driver.powerdriver import NetworkPowerDriver
-        drv = NetworkPowerDriver(target, delay=delay)
+        drv = target.get_driver(NetworkPowerDriver)
+        if not drv:
+            drv = NetworkPowerDriver(target, delay=delay)
         target.await_resources([drv.port], timeout=1.0)
         target.activate(drv)
         res = getattr(drv, action)()
@@ -528,7 +544,9 @@ class ClientSession(ApplicationSession):
         action = self.args.action
         target = self._get_target(place)
         from ..driver.onewiredriver import OneWirePIODriver
-        drv = OneWirePIODriver(target)
+        drv = target.get_driver(OneWirePIODriver)
+        if not drv:
+            drv = OneWirePIODriver(target)
         target.await_resources([drv.port], timeout=1.0)
         target.activate(drv)
         if action == 'get':
@@ -586,7 +604,9 @@ class ClientSession(ApplicationSession):
             args[1:] = map(os.path.abspath, args[1:])
         target = self._get_target(place)
         from ..driver.fastbootdriver import AndroidFastbootDriver
-        drv = AndroidFastbootDriver(target)
+        drv = target.get_driver(AndroidFastbootDriver)
+        if not drv:
+            drv = AndroidFastbootDriver(target)
         drv.fastboot.timeout = self.args.wait
         target.activate(drv)
         drv(*args)
@@ -601,16 +621,22 @@ class ClientSession(ApplicationSession):
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkIMXUSBLoader):
-                drv = IMXUSBDriver(target)
+                drv = target.get_driver(IMXUSBDriver)
+                if not drv:
+                    drv = IMXUSBDriver(target)
                 drv.loader.timeout = self.args.wait
                 break
             elif isinstance(resource, NetworkMXSUSBLoader):
-                drv = MXSUSBDriver(target)
+                drv = target.get_driver(MXUSBDriver)
+                if not drv:
+                    drv = MXSUSBDriver(target)
                 drv.loader.timeout = self.args.wait
                 break
             elif isinstance(resource, NetworkAlteraUSBBlaster):
                 args =dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
-                drv = OpenOCDDriver(target, **args)
+                drv = target.get_driver(OpenOCDDriver)
+                if not drv:
+                    drv = OpenOCDDriver(target, **args)
                 drv.interface.timeout = self.args.wait
                 break
         if not drv:
@@ -659,6 +685,7 @@ def main():
     )
 
     place = os.environ.get('PLACE', None)
+    state = os.environ.get('STATE', None)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -681,6 +708,13 @@ def main():
         type=str,
         default=place,
         help="place name/alias"
+    )
+    parser.add_argument(
+        '-s',
+        '--state',
+        type=str,
+        default=place,
+        help="strategy state to switch into before command"
     )
     parser.add_argument(
         '-d',
@@ -817,6 +851,10 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
 
     env = None
+    if not args.config and args.state:
+        print("Setting the state requires a configuration file")
+        exit(1)
+
     if args.config:
         env = Environment(config_file=args.config)
 

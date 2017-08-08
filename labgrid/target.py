@@ -269,6 +269,9 @@ class Target:
         # consistency check
         assert client in self.resources or client in self.drivers
 
+        for cli in client.clients:
+            self.deactivate(cli)
+
         # update state
         client.on_deactivate()
         client.state = BindingState.bound

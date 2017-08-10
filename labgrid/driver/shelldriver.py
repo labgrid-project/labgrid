@@ -355,7 +355,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             IOError: if the provided localfile could not be found
             ExecutionError: if something else went wrong
         """
-        self._put_file(localfile, remotefile)
+        self._put(localfile, remotefile)
 
     @step(title='get_bytes', args=['remotefile'])
     def _get_bytes(self, remotefile: str):

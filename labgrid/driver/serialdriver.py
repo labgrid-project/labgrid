@@ -45,6 +45,9 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
             self.serial.baudrate = self.port.speed
         self.open()
 
+    def on_deactivate(self):
+        self.close()
+
     def _read(self, size: int=1, timeout: float=0.0):
         """
         Reads 'size' or more bytes from the serialport

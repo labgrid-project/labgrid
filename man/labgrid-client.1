@@ -57,6 +57,10 @@ the crossbar url of the coordinator
 .BI \-c \ CONFIG\fP,\fB \ \-\-config \ CONFIG
 set the configuration file
 .TP
+.BI \-s \ STATE\fP,\fB \ \-\-state \ STATE
+set an initial state before executing a command, requires a configuration
+file and strategy
+.TP
 .B \-d\fP,\fB  \-\-debug
 enable debugging
 .UNINDENT
@@ -69,6 +73,11 @@ Various labgrid\-client commands use the following environment variable:
 .SS PLACE
 .sp
 This variable can be used to specify a place without using the \fB\-p\fP option, the \fB\-p\fP option overrides it.
+.SS STATE
+.sp
+This variable can be used to specify a state which the device transitions into
+before executing a command. Requires a configuration file and a Strategy
+specified for the device.
 .SH MATCHES
 .sp
 Match patterns are used to assign a resource to a specific place. The format is:
@@ -113,6 +122,8 @@ matches anything.
 \fBfastboot\fP            Run fastboot
 .sp
 \fBbootstrap\fP           Start a bootloader
+.sp
+\fBio\fP                  Interact with Onewire devices
 .SH EXAMPLES
 .sp
 To retrieve a list of places run:

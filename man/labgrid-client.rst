@@ -9,10 +9,10 @@ labgrid-client interface to control boards
 :organization: Labgrid-Project
 :Date:   2017-04-15
 :Copyright: Copyright (C) 2016-2017 Pengutronix. This library is free software;
-            you can redistribute it and/or modify it under the terms of the GNU
-            Lesser General Public License as published by the Free Software
-            Foundation; either version 2.1 of the License, or (at your option)
-            any later version.
+	    you can redistribute it and/or modify it under the terms of the GNU
+	    Lesser General Public License as published by the Free Software
+	    Foundation; either version 2.1 of the License, or (at your option)
+	    any later version.
 :Version: 0.0.1
 :Manual section: 1
 :Manual group: embedded testing
@@ -20,11 +20,11 @@ labgrid-client interface to control boards
 SYNOPSIS
 --------
 
-``labgrid-client`` ``--help`` 
+``labgrid-client`` ``--help``
 
 ``labgrid-client`` -p <place> <command>
 
-``labgrid-client`` ``places|resources`` 
+``labgrid-client`` ``places|resources``
 
 DESCRIPTION
 -----------
@@ -42,6 +42,9 @@ OPTIONS
     the crossbar url of the coordinator
 -c CONFIG, --config CONFIG
     set the configuration file
+-s STATE, --state STATE
+    set an initial state before executing a command, requires a configuration
+    file and strategy
 -d, --debug
     enable debugging
 
@@ -56,6 +59,12 @@ Various labgrid-client commands use the following environment variable:
 PLACE
 ~~~~~
 This variable can be used to specify a place without using the ``-p`` option, the ``-p`` option overrides it.
+
+STATE
+~~~~~
+This variable can be used to specify a state which the device transitions into
+before executing a command. Requires a configuration file and a Strategy
+specified for the device.
 
 MATCHES
 -------
@@ -102,6 +111,8 @@ LABGRID-CLIENT COMMANDS
 ``fastboot``            Run fastboot
 
 ``bootstrap``           Start a bootloader
+
+``io``                  Interact with Onewire devices
 
 EXAMPLES
 --------

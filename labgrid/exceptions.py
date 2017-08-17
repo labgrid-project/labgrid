@@ -13,6 +13,11 @@ class NoSupplierFoundError(Exception):
 
 
 @attr.s(cmp=False)
+class InvalidConfigError(Exception):
+    msg = attr.ib(validator=attr.validators.instance_of(str))
+
+
+@attr.s(cmp=False)
 class NoDriverFoundError(NoSupplierFoundError):
     pass
 

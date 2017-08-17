@@ -1,6 +1,7 @@
 import pytest
 
 from labgrid import Environment, NoConfigFoundError
+from labgrid.driver.fake import FakeConsoleDriver, FakePowerDriver
 
 
 class TestEnvironment:
@@ -76,3 +77,49 @@ imports:
         import myimport
         t = myimport.Test()
         assert (isinstance(t, myimport.Test))
+
+    def test_create_named_resources(self, tmpdir):
+        p = tmpdir.join("config.yaml")
+        p.write(
+            """
+        targets:
+          test1:
+            resources:
+            - AndroidFastboot:
+                name: "fastboot"
+                match: {}
+            - RawSerialPort:
+                port: "/dev/ttyUSB0"
+                speed: 115200
+        """
+        )
+        e = Environment(str(p))
+        t = e.get_target("test1")
+
+    def test_create_named_drivers(self, tmpdir):
+        p = tmpdir.join("config.yaml")
+        p.write(
+            """
+        targets:
+          test1:
+            resources:
+            - AndroidFastboot:
+                name: "fastboot"
+                match: {}
+            - RawSerialPort:
+                name: "serial_a"
+                port: "/dev/ttyUSB0"
+                speed: 115200
+            - cls: RawSerialPort
+              name: "serial_b"
+              port: "/dev/ttyUSB0"
+              speed: 115200
+            drivers:
+            - FakeConsoleDriver:
+                name: "serial_a"
+            - FakeConsoleDriver:
+                name: "serial_b"
+        """
+        )
+        e = Environment(str(p))
+        t = e.get_target("test1")

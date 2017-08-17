@@ -22,6 +22,11 @@ class TargetFactory:
         r = self.resources[resource](target, **args)
         return r
 
+    def make_driver(self, target, driver, args):
+        assert isinstance(args, dict)
+        d = self.drivers[driver](target, **args)
+        return d
+
     def make_target(self, name, config, *, env=None):
         from .target import Target
 
@@ -30,8 +35,7 @@ class TargetFactory:
         for resource, args in config.get('resources', {}).items():
             r = self.make_resource(target, resource, args)
         for driver, args in config.get('drivers', {}).items():
-            assert isinstance(args, dict)
-            d = self.drivers[driver](target, **args)
+            d = self.make_driver(target, driver, args)
         return target
 
 

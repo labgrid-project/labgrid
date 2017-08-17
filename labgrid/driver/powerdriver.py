@@ -17,7 +17,6 @@ from .onewiredriver import OneWirePIODriver
 @attr.s(cmp=False)
 class ManualPowerDriver(Driver, PowerProtocol):
     """ManualPowerDriver - Driver to tell the user to control a target's power"""
-    name = attr.ib(validator=attr.validators.instance_of(str))
 
     @Driver.check_active
     @step()

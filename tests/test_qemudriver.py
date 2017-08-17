@@ -31,6 +31,7 @@ def qemu_driver(qemu_target):
     q = QEMUDriver(
         qemu_target,
         "qemu",
+        qemu_bin="qemu",
         machine='',
         cpu='',
         memory='',

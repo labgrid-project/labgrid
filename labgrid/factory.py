@@ -76,17 +76,18 @@ class TargetFactory:
         else:
             raise InvalidConfigError("invalid type {} (should be dict or list)".format(type(data)))
         for item in result:
+            item.setdefault('name', None)
             assert 'cls' in item
         return result
 
-    def make_resource(self, target, resource, args):
+    def make_resource(self, target, resource, name, args):
         assert isinstance(args, dict)
-        r = self.resources[resource](target, **args)
+        r = self.resources[resource](target, name, **args)
         return r
 
-    def make_driver(self, target, driver, args):
+    def make_driver(self, target, driver, name, args):
         assert isinstance(args, dict)
-        d = self.drivers[driver](target, **args)
+        d = self.drivers[driver](target, name, **args)
         return d
 
     def make_target(self, name, config, *, env=None):
@@ -98,12 +99,12 @@ class TargetFactory:
             resource = item.pop('cls')
             name = item.pop('name', None)
             args = item # remaining args
-            r = self.make_resource(target, resource, args)
+            r = self.make_resource(target, resource, name, args)
         for item in self._convert_to_named_list(config.get('drivers', {})):
             driver = item.pop('cls')
             name = item.pop('name', None)
             args = item # remaining args
-            d = self.make_driver(target, driver, args)
+            d = self.make_driver(target, driver, name, args)
         return target
 
 

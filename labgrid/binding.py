@@ -40,6 +40,8 @@ class BindingMixin:
 
     # these are controlled by the Target
     target = attr.ib()
+    name = attr.ib(
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
     state = attr.ib(default=BindingState.idle, init=False)
 
     def __attrs_post_init__(self):

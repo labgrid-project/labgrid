@@ -532,7 +532,7 @@ class ClientSession(ApplicationSession):
         try:
             drv = target.get_driver(NetworkPowerDriver)
         except NoDriverFoundError:
-            drv = NetworkPowerDriver(target, delay=delay)
+            drv = NetworkPowerDriver(target, name=None, delay=delay)
         target.await_resources([drv.port], timeout=1.0)
         target.activate(drv)
         res = getattr(drv, action)()
@@ -552,7 +552,7 @@ class ClientSession(ApplicationSession):
         try:
             drv = target.get_driver(OneWirePIODriver)
         except NoDriverFoundError:
-            drv = OneWirePIODriver(target)
+            drv = OneWirePIODriver(target, name=None)
         target.await_resources([drv.port], timeout=1.0)
         target.activate(drv)
         if action == 'get':
@@ -613,7 +613,7 @@ class ClientSession(ApplicationSession):
         try:
             drv = target.get_driver(AndroidFastbootDriver)
         except NoDriverFoundError:
-            drv = AndroidFastbootDriver(target)
+            drv = AndroidFastbootDriver(target, name=None)
         drv.fastboot.timeout = self.args.wait
         target.activate(drv)
         drv(*args)
@@ -631,14 +631,14 @@ class ClientSession(ApplicationSession):
                 try:
                     drv = target.get_driver(IMXUSBDriver)
                 except NoDriverFoundError:
-                    drv = IMXUSBDriver(target)
+                    drv = IMXUSBDriver(target, name=None)
                 drv.loader.timeout = self.args.wait
                 break
             elif isinstance(resource, NetworkMXSUSBLoader):
                 try:
                     drv = target.get_driver(MXUSBDriver)
                 except NoDriverFoundError:
-                    drv = MXSUSBDriver(target)
+                    drv = MXSUSBDriver(target, name=None)
                 drv.loader.timeout = self.args.wait
                 break
             elif isinstance(resource, NetworkAlteraUSBBlaster):
@@ -646,7 +646,7 @@ class ClientSession(ApplicationSession):
                 try:
                     drv = target.get_driver(OpenOCDDriver)
                 except NoDriverFoundError:
-                    drv = OpenOCDDriver(target, **args)
+                    drv = OpenOCDDriver(target, name=None, **args)
                 drv.interface.timeout = self.args.wait
                 break
         if not drv:

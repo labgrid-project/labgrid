@@ -59,6 +59,7 @@ class TestTargetFactory:
         assert l == [
             {
                 'cls': 'FooPort',
+                'name': None,
             },
             {
                 'cls': 'BarPort',
@@ -76,6 +77,7 @@ class TestTargetFactory:
         assert l == [
             {
                 'cls': 'FooPort',
+                'name': None,
             },
             {
                 'cls': 'BarPort',
@@ -93,6 +95,7 @@ class TestTargetFactory:
         assert l == [
             {
                 'cls': 'FooPort',
+                'name': None,
             },
             {
                 'cls': 'BarPort',

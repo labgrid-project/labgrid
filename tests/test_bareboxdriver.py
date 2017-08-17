@@ -11,8 +11,8 @@ from labgrid.protocol import (CommandProtocol, ConsoleProtocol,
 class TestBareboxDriver:
     def test_create(self):
         t = Target('dummy')
-        cp = FakeConsoleDriver(t)
-        d = BareboxDriver(t)
+        cp = FakeConsoleDriver(t, "console")
+        d = BareboxDriver(t, "barebox")
         assert (isinstance(d, BareboxDriver))
         assert (isinstance(d, CommandProtocol))
         assert (isinstance(d, LinuxBootProtocol))

@@ -104,8 +104,6 @@ class Target:
                 if isinstance(drv, Strategy):
                     found.append(drv) # don't activate strategies, they have conflicting bindings
                     continue
-                if activate:
-                    self.activate(drv)
                 found.append(drv)
         if len(found) == 0:
             raise NoDriverFoundError(
@@ -115,6 +113,8 @@ class Target:
             raise NoDriverFoundError(
                 "multiple drivers matching {} found in target {}".format(cls, self)
             )
+        if activate:
+            self.activate(found[0])
         return found[0]
 
     def get_active_driver(self, cls):

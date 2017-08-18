@@ -1,3 +1,4 @@
+import abc
 import logging
 from time import monotonic
 
@@ -71,40 +72,52 @@ class Target:
                 filter=waiting
             )
 
-    def get_resource(self, cls, *, await=True):
+    def get_resource(self, cls, *, name=None, await=True):
         """
         Helper function to get a resource of the target.
         Returns the first valid resource found, otherwise None.
 
         Arguments:
         cls -- resource-class to return as a resource
+        name -- optional name to use as a filter
         await -- wait for the resource to become available (default True)
         """
+        found = []
         for res in self.resources:
-            if isinstance(res, cls):
-                if await:
-                    self.await_resources([res])
-                return res
-        raise NoResourceFoundError(
-            "no resource matching {} found in target {}".format(cls, self)
-        )
+            if not isinstance(res, cls):
+                continue
+            if name and res.name != name:
+                continue
+            found.append(res)
+        if len(found) == 0:
+            raise NoResourceFoundError(
+                "no resource matching {} found in target {}".format(cls, self)
+            )
+        elif len(found) > 1:
+            raise NoResourceFoundError(
+                "multiple resources matching {} found in target {}".format(cls, self)
+            )
+        if await:
+            self.await_resources(found)
+        return found[0]
 
-    def get_driver(self, cls, *, activate=True):
+    def get_driver(self, cls, *, name=None, activate=True):
         """
         Helper function to get a driver of the target.
         Returns the first valid driver found, otherwise None.
 
         Arguments:
         cls -- driver-class to return as a resource
+        name -- optional name to use as a filter
         activate -- activate the driver (default True)
         """
         found = []
         for drv in self.drivers:
-            if isinstance(drv, cls):
-                if isinstance(drv, Strategy):
-                    found.append(drv) # don't activate strategies, they have conflicting bindings
-                    continue
-                found.append(drv)
+            if not isinstance(drv, cls):
+                continue
+            if name and drv.name != name:
+                continue
+            found.append(drv)
         if len(found) == 0:
             raise NoDriverFoundError(
                 "no driver matching {} found in target {}".format(cls, self)
@@ -117,21 +130,58 @@ class Target:
             self.activate(found[0])
         return found[0]
 
-    def get_active_driver(self, cls):
+    def get_active_driver(self, cls, *, name=None):
         """
         Helper function to get the active driver of the target.
         Returns the active driver found, otherwise None.
 
         Arguments:
         cls -- driver-class to return as a resource
+        name -- optional name to use as a filter
         """
+        found = []
         for drv in self.drivers:
-            if isinstance(drv, cls):
-                if drv.state == BindingState.active:
-                    return drv
-        raise NoDriverFoundError(
-            "no driver matching {} found in target {}".format(cls, self)
-        )
+            if not isinstance(drv, cls):
+                continue
+            if name and drv.name != name:
+                continue
+            if drv.state != BindingState.active:
+                continue
+            found.append(drv)
+        if len(found) == 0:
+            raise NoDriverFoundError(
+                "no driver matching {} found in target {}".format(cls, self)
+            )
+        elif len(found) > 1:
+            raise NoDriverFoundError(
+                "multiple drivers matching {} found in target {}".format(cls, self)
+            )
+        return found[0]
+
+    def __getitem__(self, key):
+        """
+        Syntactic sugar to access drivers by class (optionally filtered by
+        name).
+
+        >>> target = Target('main')
+        >>> console = FakeConsoleDriver(target, 'console')
+        >>> target.activate(console)
+        >>> target[FakeConsoleDriver]
+        FakeConsoleDriver(target=Target(name='main', …), name='console', …)
+        >>> target[FakeConsoleDriver, 'console']
+        FakeConsoleDriver(target=Target(name='main', …), name='console', …)
+        """
+        name = None
+        if not isinstance(key, tuple):
+            cls = key
+        elif len(key) == 2:
+            cls, name = key
+        if not issubclass(cls, (Driver, abc.ABC)): # all Protocols derive from ABC
+            raise NoDriverFoundError(
+                "invalid driver class {}".format(cls)
+            )
+
+        return self.get_active_driver(cls, name=name)
 
     def bind_resource(self, resource):
         """
@@ -233,6 +283,10 @@ class Target:
         Activate the client by activating all bound suppliers. This may require
         deactivating other clients.
         """
+        # don't activate strategies, they usually have conflicting bindings
+        if isinstance(client, Strategy):
+            return
+
         if client.state is BindingState.active:
             return  # nothing to do
 

@@ -1,6 +1,7 @@
-import pytest
+import abc
 
 import attr
+import pytest
 
 from labgrid import Target, target_factory
 from labgrid.resource import Resource
@@ -15,19 +16,46 @@ def test_instanziation():
 
 
 def test_get_resource(target):
-    class a(Resource):
+    class A(Resource):
         pass
 
-    a(target, "aresource")
-    assert isinstance(target.get_resource(a), a)
+    a = A(target, "aresource")
+    assert isinstance(target.get_resource(A), A)
+    assert target.get_resource(A) is a
+    assert target.get_resource(A, name="aresource") is a
 
 
 def test_get_driver(target):
-    class a(Driver):
+    class A(Driver):
         pass
 
-    a(target, "adriver")
-    assert isinstance(target.get_driver(a), a)
+    a = A(target, "adriver")
+    assert isinstance(target.get_driver(A), A)
+    assert target.get_driver(A) is a
+    assert target.get_driver(A, name="adriver") is a
+
+
+def test_getitem(target):
+    class AProtocol(abc.ABC):
+        pass
+
+    class A(Driver, AProtocol):
+        pass
+
+    class B(Driver):
+        pass
+
+    a = A(target, "adriver")
+    target.activate(a)
+    assert isinstance(target[A], A)
+    assert target[A] is a
+    assert target[AProtocol] is a
+    assert target[A, "adriver"] is a
+    assert target[AProtocol, "adriver"] is a
+    with pytest.raises(NoDriverFoundError):
+        target[A, "bdriver"]
+    with pytest.raises(NoDriverFoundError):
+        target[B, "adriver"]
 
 
 def test_no_resource(target):

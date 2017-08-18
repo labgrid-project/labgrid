@@ -1,6 +1,7 @@
 import abc
 import logging
 from time import monotonic
+from collections import Counter
 
 import attr
 
@@ -309,6 +310,12 @@ class Target:
             assert supplier.target is self
             assert client not in supplier.clients
             assert supplier not in client.suppliers
+
+        duplicates = {k for k, c in Counter(bound_suppliers).items() if c > 1}
+        if duplicates:
+            raise BindingError(
+                "duplicate bindings {} found in target {}".format(duplicates, self)
+            )
 
         # update relationship in both directions
         self.drivers.append(client)

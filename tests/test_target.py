@@ -4,6 +4,7 @@ import attr
 import pytest
 
 from labgrid import Target, target_factory
+from labgrid.binding import BindingError
 from labgrid.resource import Resource
 from labgrid.driver import Driver
 from labgrid.exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
@@ -154,10 +155,22 @@ class DriverWithMultiA(Driver):
 
 
 def test_suppliers_multi_a(target):
-    ra = ResourceA(target, "resource1")
+    ra1 = ResourceA(target, "resource1")
+    with pytest.raises(BindingError) as excinfo:
+        DriverWithMultiA(target, "driver")
+    assert "duplicate bindings" in excinfo.value.msg
+
+
+def test_suppliers_multi_a_explict(target):
+    ra1 = ResourceA(target, "resource1")
+    ra2 = ResourceA(target, "resource2")
+    target.set_binding_map({
+        "res1": "resource1",
+        "res2": "resource2",
+    })
     d = DriverWithMultiA(target, "driver")
-    assert d.res1 is ra
-    assert d.res2 is ra
+    assert d.res1 is ra1
+    assert d.res2 is ra2
 
 
 class DriverWithNamedMultiA(Driver):

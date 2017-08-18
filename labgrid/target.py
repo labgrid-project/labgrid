@@ -83,16 +83,24 @@ class Target:
         await -- wait for the resource to become available (default True)
         """
         found = []
+        other_names = []
         for res in self.resources:
             if not isinstance(res, cls):
                 continue
             if name and res.name != name:
+                other_names.append(res.name)
                 continue
             found.append(res)
         if len(found) == 0:
-            raise NoResourceFoundError(
-                "no resource matching {} found in target {}".format(cls, self)
-            )
+            if other_names:
+                raise NoResourceFoundError(
+                    "all resources matching {} found in target {} have other names: {}".format(
+                        cls, self, other_names)
+                )
+            else:
+                raise NoResourceFoundError(
+                    "no resource matching {} found in target {}".format(cls, self)
+                )
         elif len(found) > 1:
             raise NoResourceFoundError(
                 "multiple resources matching {} found in target {}".format(cls, self)
@@ -112,16 +120,24 @@ class Target:
         activate -- activate the driver (default True)
         """
         found = []
+        other_names = []
         for drv in self.drivers:
             if not isinstance(drv, cls):
                 continue
             if name and drv.name != name:
+                other_names.append(drv.name)
                 continue
             found.append(drv)
         if len(found) == 0:
-            raise NoDriverFoundError(
-                "no driver matching {} found in target {}".format(cls, self)
-            )
+            if other_names:
+                raise NoDriverFoundError(
+                    "all drivers matching {} found in target {} have other names: {}".format(
+                        cls, self, other_names)
+                )
+            else:
+                raise NoDriverFoundError(
+                    "no driver matching {} found in target {}".format(cls, self)
+                )
         elif len(found) > 1:
             raise NoDriverFoundError(
                 "multiple drivers matching {} found in target {}".format(cls, self)
@@ -140,21 +156,29 @@ class Target:
         name -- optional name to use as a filter
         """
         found = []
+        other_names = []
         for drv in self.drivers:
             if not isinstance(drv, cls):
                 continue
             if name and drv.name != name:
+                other_names.append(drv.name)
                 continue
             if drv.state != BindingState.active:
                 continue
             found.append(drv)
         if len(found) == 0:
-            raise NoDriverFoundError(
-                "no driver matching {} found in target {}".format(cls, self)
-            )
+            if other_names:
+                raise NoDriverFoundError(
+                    "all active drivers matching {} found in target {} have other names: {}".format(
+                        cls, self, other_names)
+                )
+            else:
+                raise NoDriverFoundError(
+                    "no active driver matching {} found in target {}".format(cls, self)
+                )
         elif len(found) > 1:
             raise NoDriverFoundError(
-                "multiple drivers matching {} found in target {}".format(cls, self)
+                "multiple active drivers matching {} found in target {}".format(cls, self)
             )
         return found[0]
 

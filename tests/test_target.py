@@ -52,10 +52,18 @@ def test_getitem(target):
     assert target[AProtocol] is a
     assert target[A, "adriver"] is a
     assert target[AProtocol, "adriver"] is a
-    with pytest.raises(NoDriverFoundError):
+    with pytest.raises(NoDriverFoundError) as excinfo:
         target[A, "bdriver"]
-    with pytest.raises(NoDriverFoundError):
+    assert "have other names" in excinfo.value.msg
+    with pytest.raises(NoDriverFoundError) as excinfo:
         target[B, "adriver"]
+    assert "no active driver" in excinfo.value.msg
+
+    a2 = A(target, None)
+    target.activate(a2)
+    with pytest.raises(NoDriverFoundError) as excinfo:
+        target[A]
+    assert "multiple active drivers" in excinfo.value.msg
 
 
 def test_no_resource(target):

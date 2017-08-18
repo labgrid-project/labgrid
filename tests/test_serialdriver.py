@@ -52,7 +52,7 @@ class TestSerialDriver:
         serial_mock = mocker.Mock()
         serial_mock.close = mocker.MagicMock()
         monkeypatch.setattr(serial, 'Serial', serial_mock)
-        s = SerialDriver(target)
+        s = SerialDriver(target, "serial")
         s.serial = serial_mock
         target.activate(s)
         target.deactivate(s)
@@ -61,13 +61,13 @@ class TestSerialDriver:
     def test_rfc2711_instanziation(self, target, serial_rfc2711_port, monkeypatch, mocker):
         serial_mock = mocker.Mock()
         monkeypatch.setattr(serial, 'Serial', serial_mock)
-        s = SerialDriver(target)
+        s = SerialDriver(target, "serial")
         assert (isinstance(s, SerialDriver))
         assert (target.drivers[0] == s)
 
     def test_raw_instanziation(self, target, serial_raw_port, monkeypatch, mocker):
         serial_mock = mocker.Mock()
         monkeypatch.setattr(serial, 'Serial', serial_mock)
-        s = SerialDriver(target)
+        s = SerialDriver(target, "serial")
         assert (isinstance(s, SerialDriver))
         assert (target.drivers[0] == s)

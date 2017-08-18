@@ -132,6 +132,53 @@ def test_suppliers_ab_missing(target):
     with pytest.raises(NoSupplierFoundError):
         d = DriverWithAB(target, "driver")
 
+
+class DriverWithNamedA(Driver):
+    bindings = {
+        "res": Driver.NamedBinding(ResourceA),
+    }
+
+
+def test_suppliers_named_a(target):
+    ra = ResourceA(target, "resource")
+    target.set_binding_map({"res": "resource"})
+    d = DriverWithNamedA(target, "driver")
+    assert d.res is ra
+
+
+class DriverWithMultiA(Driver):
+    bindings = {
+        "res1": ResourceA,
+        "res2": ResourceA,
+    }
+
+
+def test_suppliers_multi_a(target):
+    ra = ResourceA(target, "resource1")
+    d = DriverWithMultiA(target, "driver")
+    assert d.res1 is ra
+    assert d.res2 is ra
+
+
+class DriverWithNamedMultiA(Driver):
+    bindings = {
+        "res1": Driver.NamedBinding(ResourceA),
+        "res2": Driver.NamedBinding(ResourceA),
+    }
+
+
+def test_suppliers_multi_named_a(target):
+    ra1 = ResourceA(target, "resource1")
+    ra2 = ResourceA(target, "resource2")
+    target.set_binding_map({
+        "res1": "resource1",
+        "res2": "resource2",
+    })
+    d = DriverWithNamedMultiA(target, "driver")
+    assert d.res1 is ra1
+    assert d.res2 is ra2
+
+
 # test nested resource creation
 @attr.s(cmp=False)
 class DiscoveryResource(Resource):

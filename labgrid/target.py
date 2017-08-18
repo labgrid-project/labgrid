@@ -22,6 +22,11 @@ class Target:
         self.resources = []
         self.drivers = []
         self.last_update = 0.0
+        # This should really be an argument for Drivers, but currently attrs
+        # doesn't support keyword only agruments, so we can't add an optional
+        # argument at the BindingMixin level.
+        # https://github.com/python-attrs/attrs/issues/106
+        self._binding_map = {}
 
     def interact(self, msg):
         if self.env:
@@ -207,6 +212,12 @@ class Target:
 
         return self.get_active_driver(cls, name=name)
 
+    def set_binding_map(self, mapping):
+        """
+        Configure the binding name mapping for the next driver only.
+        """
+        self._binding_map = mapping
+
     def bind_resource(self, resource):
         """
         Bind the resource to this target.
@@ -243,9 +254,22 @@ class Target:
         assert client not in self.drivers
         assert client.target is None
 
+        mapping = self._binding_map
+        self._binding_map = {}
+
         # locate suppliers
         bound_suppliers = []
         for name, requirements in client.bindings.items():
+            explicit = False
+            if isinstance(requirements, Driver.NamedBinding):
+                requirements = requirements.value
+                explicit = True
+            supplier_name = mapping.get(name)
+            if explicit and supplier_name is None:
+                raise BindingError(
+                    "supplier for {} ({}) of {} in target {} requires an explicit name".format(
+                        name, requirements, client, self)
+                )
             # use sets even for a single requirement
             if not isinstance(requirements, set):
                 requirements = {requirements}
@@ -255,13 +279,14 @@ class Target:
                 try:
                     if issubclass(requirement, Resource):
                         suppliers.append(
-                            self.get_resource(requirement, await=False),
+                            self.get_resource(requirement, name=supplier_name, await=False),
+                        )
+                    elif issubclass(requirement, (Driver, abc.ABC)): # all Protocols derive from ABC
+                        suppliers.append(
+                            self.get_driver(requirement, name=supplier_name, activate=False),
                         )
                     else:
-                        suppliers.append(
-                            self.get_driver(requirement, activate=False),
-                        )
-
+                        raise NoSupplierFoundError("invalid binding type {}".format(requirement))
                 except NoSupplierFoundError as e:
                     errors.append(e)
             if not suppliers:
@@ -269,7 +294,8 @@ class Target:
                     raise errors[0]
                 else:
                     raise NoSupplierFoundError(
-                        "no supplier matching {} found in target {}".format(requirements, self)
+                        "no supplier matching {} found in target {} (errors: {})".format(
+                            requirements, self, errors)
                     )
             elif len(suppliers) > 1:
                 raise NoSupplierFoundError(

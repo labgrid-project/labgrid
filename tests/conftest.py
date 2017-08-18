@@ -18,15 +18,15 @@ def target():
 
 @pytest.fixture(scope='function')
 def serial_port(target):
-    return RawSerialPort(target, 'serial' '/dev/test')
+    return RawSerialPort(target, 'serial', '/dev/test')
 
 @pytest.fixture(scope='function')
 def serial_rfc2711_port(target):
-    return NetworkSerialPort(target, host='localhost', port=8888)
+    return NetworkSerialPort(target, 'rfc2711', host='localhost', port=8888)
 
 @pytest.fixture(scope='function')
 def serial_raw_port(target):
-    return NetworkSerialPort(target, host='localhost', port=8888, protocol="raw")
+    return NetworkSerialPort(target, 'serialraw', host='localhost', port=8888, protocol="raw")
 
 
 @pytest.fixture(scope='function')

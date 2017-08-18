@@ -45,6 +45,7 @@ class BindingMixin:
     state = attr.ib(default=BindingState.idle, init=False)
 
     def __attrs_post_init__(self):
+        binding_names = {}
         self.suppliers = set()
         self.clients = set()
         target = self.target
@@ -89,3 +90,13 @@ class BindingMixin:
             return func(self, *_args, **_kwargs)
 
         return wrapper
+
+    class NamedBinding:
+        """
+        Marks a binding (or binding set) as requiring an explicit name.
+        """
+        def __init__(self, value):
+            self.value = value
+
+        def __repr__(self):
+            return "Binding.Named({})".format(repr(self.value))

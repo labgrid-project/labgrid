@@ -103,7 +103,9 @@ class TargetFactory:
         for item in self._convert_to_named_list(config.get('drivers', {})):
             driver = item.pop('cls')
             name = item.pop('name', None)
+            bindings = item.pop('bindings', {})
             args = item # remaining args
+            target.set_binding_map(bindings)
             d = self.make_driver(target, driver, name, args)
         return target
 

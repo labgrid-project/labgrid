@@ -288,22 +288,30 @@ class ClientSession(ApplicationSession):
         print("Place '{}':".format(place.name))
         place.show(level=1)
         if place.acquired:
-            for (
-                exporter, group_name, cls, resource_name
-            ) in place.acquired_resources:
+            for resource_path in place.acquired_resources:
+                (exporter, group_name, cls, resource_name) = resource_path
+                match = place.getmatch(resource_path)
+                name = resource_name
+                if match.rename:
+                    name = match.rename
                 resource = self.resources[exporter][group_name][resource_name]
                 print("Acquired resource '{}' ({}/{}/{}/{}):".format(
-                    resource_name, exporter, group_name, resource.cls, resource_name))
+                    name, exporter, group_name, resource.cls, resource_name))
                 print(indent(pformat(resource.asdict()), prefix="  "))
+                assert resource.cls == cls
         else:
             for exporter, groups in sorted(self.resources.items()):
                 for group_name, group in sorted(groups.items()):
                     for resource_name, resource in sorted(group.items()):
                         resource_path = (exporter, group_name, resource.cls, resource_name)
-                        if not place.hasmatch(resource_path):
+                        match = place.getmatch(resource_path)
+                        if match is None:
                             continue
+                        name = resource_name
+                        if match.rename:
+                            name = match.rename
                         print("Matching resource '{}' ({}/{}/{}/{}):".format(
-                            resource_name, exporter, group_name, resource.cls, resource_name))
+                            name, exporter, group_name, resource.cls, resource_name))
                         print(indent(pformat(resource.asdict()), prefix="  "))
 
     @asyncio.coroutine
@@ -429,6 +437,41 @@ class ClientSession(ApplicationSession):
                 )
 
     @asyncio.coroutine
+    def add_named_match(self):
+        """Add a named match for a place.
+
+        Fuzzy matching is not allowed to avoid accidental names conflicts."""
+        place = self.get_idle_place()
+        if place.acquired:
+            raise UserError("can not change acquired place {}".format(place.name))
+        pattern = self.args.pattern
+        name = self.args.name
+        if pattern in map(repr, place.matches):
+            raise UserError("pattern '{}' exists".format(pattern))
+        if not (2 <= pattern.count("/") <= 3):
+            raise UserError(
+                "invalid pattern format '{}' (use 'exporter/group/cls/name')".
+                format(pattern)
+            )
+        if '*' in pattern:
+            raise UserError(
+                "invalid pattern '{}' ('*' not allowed for named matches)".
+                format(pattern)
+            )
+        if not name:
+            raise UserError(
+                "invalid name '{}'".
+                format(name)
+            )
+        res = yield from self.call(
+            'org.labgrid.coordinator.add_place_match', place.name, pattern, name
+        )
+        if not res:
+            raise ServerError(
+                "failed to add match {} for place {}".format(pattern, place.name)
+            )
+
+    @asyncio.coroutine
     def acquire(self):
         """Acquire a place, marking it unavailable for other clients"""
         place = self.get_place()
@@ -475,10 +518,13 @@ class ClientSession(ApplicationSession):
         if host != gethostname():
             raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))
         resources = {}
-        for (
-            exporter, groupname, cls, resourcename
-        ) in place.acquired_resources:
-            resources[resourcename] = self.resources[exporter][groupname][resourcename]
+        for resource_path in place.acquired_resources:
+            match = place.getmatch(resource_path)
+            (exporter, group_name, resource_cls, resource_name) = resource_path
+            name = resource_name
+            if match.rename:
+                name = match.rename
+            resources[name] = self.resources[exporter][group_name][resource_name]
         return resources
 
     def get_target_config(self, place):
@@ -517,10 +563,9 @@ class ClientSession(ApplicationSession):
                 strategy.transition(self.args.state)
                 serial = target.get_active_driver(SerialDriver)
                 target.deactivate(serial)
-            return target
-        self._prepare_manager()
-        target = Target(place.name, env=self.env)
-        RemotePlace(target, name=place.name)
+        else:
+            target = Target(place.name, env=self.env)
+            RemotePlace(target, name=place.name)
         return target
 
     def power(self):
@@ -806,6 +851,12 @@ def main():
                                       help="delete one (or multiple) match pattern(s) from a place")
     subparser.add_argument('patterns', metavar='PATTERN', nargs='+')
     subparser.set_defaults(func=ClientSession.del_match)
+
+    subparser = subparsers.add_parser('add-named-match',
+                                      help="add one match pattern with a name to a place")
+    subparser.add_argument('pattern', metavar='PATTERN')
+    subparser.add_argument('name', metavar='NAME')
+    subparser.set_defaults(func=ClientSession.add_named_match)
 
     subparser = subparsers.add_parser('acquire',
                                       aliases=('lock',),

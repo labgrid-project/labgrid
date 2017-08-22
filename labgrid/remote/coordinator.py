@@ -360,12 +360,14 @@ class CoordinatorComponent(ApplicationSession):
         return True
 
     @asyncio.coroutine
-    def add_place_match(self, placename, pattern, details=None):
+    def add_place_match(self, placename, pattern, rename=None, details=None):
         try:
             place = self.places[placename]
         except KeyError:
             return False
-        match = ResourceMatch(*pattern.split('/'))
+        match = ResourceMatch(*pattern.split('/'), rename=rename)
+        if match in place.matches:
+            return False
         place.matches.append(match)
         place.touch()
         self.publish(
@@ -375,12 +377,12 @@ class CoordinatorComponent(ApplicationSession):
         return True
 
     @asyncio.coroutine
-    def del_place_match(self, placename, pattern, details=None):
+    def del_place_match(self, placename, pattern, rename=None, details=None):
         try:
             place = self.places[placename]
         except KeyError:
             return False
-        match = ResourceMatch(*pattern.split('/'))
+        match = ResourceMatch(*pattern.split('/'), rename=rename)
         try:
             place.matches.remove(match)
         except ValueError:

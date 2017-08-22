@@ -388,7 +388,7 @@ class ClientSession(ApplicationSession):
         if place.acquired:
             raise UserError("can not change acquired place {}".format(place.name))
         for pattern in self.args.patterns:
-            if pattern in map(str, place.matches):
+            if pattern in map(repr, place.matches):
                 print("pattern '{}' exists, skipping".format(pattern))
                 continue
             if not (2 <= pattern.count("/") <= 3):
@@ -411,7 +411,7 @@ class ClientSession(ApplicationSession):
         if place.acquired:
             raise UserError("can not change acquired place {}".format(place.name))
         for pattern in self.args.patterns:
-            if pattern not in map(str, place.matches):
+            if pattern not in map(repr, place.matches):
                 print("pattern '{}' not found, skipping".format(pattern))
                 continue
             if not (2 <= pattern.count("/") <= 3):

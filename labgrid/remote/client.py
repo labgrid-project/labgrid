@@ -12,7 +12,7 @@ from pprint import pformat
 from textwrap import indent
 from socket import gethostname
 from getpass import getuser
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from time import sleep
 from datetime import datetime
 
@@ -24,6 +24,7 @@ from ..exceptions import NoDriverFoundError
 from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util.timeout import Timeout
 from ..util.dict import diff_dict, flat_dict
+from ..util.yaml import dump
 from .. import Target
 
 txaio.use_asyncio()
@@ -529,17 +530,20 @@ class ClientSession(ApplicationSession):
 
     def get_target_config(self, place):
         config = {}
-        resources = config['resources'] = {}
-        # FIXME handle resource name here to support multiple resources of the same class
-        for resource in self.get_target_resources(place).values():
-            resources[resource.cls] = resource.args
+        resources = config['resources'] = []
+        for name, resource in self.get_target_resources(place).items():
+            args = OrderedDict()
+            if name != resource.cls:
+                args['name'] = name
+            args.update(resource.args)
+            print(args)
+            resources.append({resource.cls: args})
         return config
 
     def env(self):
         place = self.get_acquired_place()
         env = {'targets': {place.name: self.get_target_config(place)}}
-        import yaml
-        print(yaml.dump(env))
+        print(dump(env))
 
     def _prepare_manager(self):
         manager = RemotePlaceManager.get()

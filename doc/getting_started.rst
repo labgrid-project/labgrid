@@ -271,7 +271,8 @@ strategies.
 To use a strategy, add it and its dependencies to your configuration YAML,
 retrieve it in your test and call the ``transition(status)`` function.
 
-::
+.. code-block:: python
+
    >>> strategy = target.get_driver(strategy)
    >>> strategy.transition("barebox")
 

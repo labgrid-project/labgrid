@@ -172,7 +172,7 @@ To show more details on the exported resources, use ``-v`` (or ``-vv``):
 
 .. code-block:: bash
 
-    $ labgrid-client resources -v
+    $ labgrid-client -v resources
     Exporter 'kiwi':
       Group 'example-group' (kiwi/example-group/*):
 	Resource 'NetworkPowerPort' (kiwi/example-group/NetworkPowerPort[/NetworkPowerPort]):

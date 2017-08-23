@@ -20,6 +20,7 @@ from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
 from ..environment import Environment
+from ..exceptions import NoDriverFoundError
 from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util.timeout import Timeout
 from ..util.dict import diff_dict, flat_dict
@@ -500,7 +501,10 @@ class ClientSession(ApplicationSession):
         manager.loop = self.loop
 
     def _get_target(self, place):
-        target = self.env.get_target(place.name)
+        self._prepare_manager()
+        target = None
+        if self.env:
+            target = self.env.get_target(place.name)
         if target:
             if self.args.state:
                 if self.args.verbose >= 2:
@@ -525,8 +529,9 @@ class ClientSession(ApplicationSession):
         delay = self.args.delay
         target = self._get_target(place)
         from ..driver.powerdriver import NetworkPowerDriver
-        drv = target.get_driver(NetworkPowerDriver)
-        if not drv:
+        try:
+            drv = target.get_driver(NetworkPowerDriver)
+        except NoDriverFoundError:
             drv = NetworkPowerDriver(target, delay=delay)
         target.await_resources([drv.port], timeout=1.0)
         target.activate(drv)
@@ -544,8 +549,9 @@ class ClientSession(ApplicationSession):
         action = self.args.action
         target = self._get_target(place)
         from ..driver.onewiredriver import OneWirePIODriver
-        drv = target.get_driver(OneWirePIODriver)
-        if not drv:
+        try:
+            drv = target.get_driver(OneWirePIODriver)
+        except NoDriverFoundError:
             drv = OneWirePIODriver(target)
         target.await_resources([drv.port], timeout=1.0)
         target.activate(drv)
@@ -604,8 +610,9 @@ class ClientSession(ApplicationSession):
             args[1:] = map(os.path.abspath, args[1:])
         target = self._get_target(place)
         from ..driver.fastbootdriver import AndroidFastbootDriver
-        drv = target.get_driver(AndroidFastbootDriver)
-        if not drv:
+        try:
+            drv = target.get_driver(AndroidFastbootDriver)
+        except NoDriverFoundError:
             drv = AndroidFastbootDriver(target)
         drv.fastboot.timeout = self.args.wait
         target.activate(drv)
@@ -621,21 +628,24 @@ class ClientSession(ApplicationSession):
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkIMXUSBLoader):
-                drv = target.get_driver(IMXUSBDriver)
-                if not drv:
+                try:
+                    drv = target.get_driver(IMXUSBDriver)
+                except NoDriverFoundError:
                     drv = IMXUSBDriver(target)
                 drv.loader.timeout = self.args.wait
                 break
             elif isinstance(resource, NetworkMXSUSBLoader):
-                drv = target.get_driver(MXUSBDriver)
-                if not drv:
+                try:
+                    drv = target.get_driver(MXUSBDriver)
+                except NoDriverFoundError:
                     drv = MXSUSBDriver(target)
                 drv.loader.timeout = self.args.wait
                 break
             elif isinstance(resource, NetworkAlteraUSBBlaster):
                 args =dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
-                drv = target.get_driver(OpenOCDDriver)
-                if not drv:
+                try:
+                    drv = target.get_driver(OpenOCDDriver)
+                except NoDriverFoundError:
                     drv = OpenOCDDriver(target, **args)
                 drv.interface.timeout = self.args.wait
                 break

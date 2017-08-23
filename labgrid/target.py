@@ -164,7 +164,7 @@ class Target:
         assert client.target is None
 
         # locate suppliers
-        suppliers = []
+        bound_suppliers = []
         for name, requirements in client.bindings.items():
             # use sets even for a single requirement
             if not isinstance(requirements, set):
@@ -196,10 +196,10 @@ class Target:
                     "conflicting suppliers matching {} found in target {}".format(requirements, self)
                 )
             setattr(client, name, suppliers[0])
-            suppliers.append(suppliers[0])
+            bound_suppliers.append(suppliers[0])
 
         # consistency checks
-        for supplier in suppliers:
+        for supplier in bound_suppliers:
             assert supplier.target is self
             assert client not in supplier.clients
             assert supplier not in client.suppliers
@@ -207,7 +207,7 @@ class Target:
         # update relationship in both directions
         self.drivers.append(client)
         client.target = self
-        for supplier in suppliers:
+        for supplier in bound_suppliers:
             supplier.clients.add(client)
             client.suppliers.add(supplier)
             client.on_supplier_bound(supplier, name)

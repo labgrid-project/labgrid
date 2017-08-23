@@ -34,14 +34,16 @@ class Environment:
             sys.modules[module_name] = module
 
     def get_target(self, role: str='main') -> Target:
-        """Returns the specified target.
+        """Returns the specified target or None if not found.
 
         Each target is initialized as needed.
         """
         from . import target_factory
 
         if not role in self.targets:
-            config = self.config.get_targets()[role]
+            config = self.config.get_targets().get(role)
+            if not config:
+                return None
             target = target_factory.make_target(role, config, env=self)
             self.targets[role] = target
 

@@ -363,20 +363,6 @@ Ideas
 
 .. please keep these sorted alphabetically
 
-Auto-Installer Tool
-~~~~~~~~~~~~~~~~~~~
-
-To simplify using labgrid for provisioning several boards in parallel, we should
-add a new tool which reads a YAML file defining several targets and a Python
-script to be run for each board.
-This tool would spawn a child process for each target, which waits until a matching
-resource becomes available and then executes the script.
-
-For example, it would make it simple to load a bootloader via the
-:any:`BootstrapProtocol`, use the :any:`AndroidFastbootDriver` to upload a
-kernel with initramfs and then write the target's eMMC over a USB Mass Storage
-gadget.
-
 Driver Priorities
 ~~~~~~~~~~~~~~~~~
 

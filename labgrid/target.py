@@ -34,7 +34,7 @@ class Target:
         if (monotonic() - self.last_update) < 0.1:
             return
         self.last_update = monotonic()
-        resources = (r for r in self.resources if isinstance(r, ManagedResource))
+        resources = [r for r in self.resources if isinstance(r, ManagedResource)]
         managers = set(r.manager for r in resources)
         for manager in managers:
             manager.poll()

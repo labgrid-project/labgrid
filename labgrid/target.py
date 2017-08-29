@@ -66,7 +66,10 @@ class Target:
                 m.poll()
             # TODO: sleep if no progress
         if waiting:
-            raise NoResourceFoundError("Not all resources are available: {}".format(waiting))
+            raise NoResourceFoundError(
+                "Not all resources are available: {}".format(waiting),
+                filter=waiting
+            )
 
     def get_resource(self, cls, *, await=True):
         """

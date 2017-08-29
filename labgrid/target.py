@@ -1,3 +1,4 @@
+import logging
 from time import monotonic
 
 import attr
@@ -16,6 +17,7 @@ class Target:
     env = attr.ib(default=None)
 
     def __attrs_post_init__(self):
+        self.log = logging.getLogger("target({})".format(self.name))
         self.resources = []
         self.drivers = []
         self.last_update = 0.0
@@ -40,7 +42,8 @@ class Target:
             manager.poll()
         for resource in resources:
             if not resource.avail and resource.state is BindingState.active:
-                print("deactivating unavailable resource {}".format(resource))
+                self.log.info("deactivating unavailable resource {}".format(
+                    resource.display_name))
                 self.deactivate(resource)
 
     def await_resources(self, resources, timeout=None):

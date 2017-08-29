@@ -1,6 +1,7 @@
 from functools import partial
 
 import attr
+import logging
 import os
 import pyudev
 import warnings
@@ -14,6 +15,7 @@ from .base import SerialPort, EthernetInterface
 class UdevManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.log = logging.getLogger('UdevManager')
         self._context = pyudev.Context()
         self._monitor = pyudev.Monitor.from_netlink(self._context)
         self._monitor.start()
@@ -27,9 +29,9 @@ class UdevManager(ResourceManager):
 
     def poll(self):
         for device in iter(partial(self._monitor.poll, 0), None):
-            print("{0.action}: {0}".format(device))
+            self.log.debug("{0.action}: {0}".format(device))
             for resource in self.resources:
-                print(" {}".format(resource))
+                self.log.debug(" {}".format(resource))
                 if resource.try_match(device):
                     break
 
@@ -43,6 +45,7 @@ class USBResource(ManagedResource):
 
     def __attrs_post_init__(self):
         self.timeout = 5.0
+        self.log = logging.getLogger('USBResource')
         self.match.setdefault('SUBSYSTEM', 'usb')
         super().__attrs_post_init__()
 
@@ -79,7 +82,7 @@ class USBResource(ManagedResource):
 
             if not self.filter_match(device):
                 return False
-        print(" found match: {}".format(self))
+        self.log.debug(" found match: {}".format(self))
         if device.action in [None, 'add']:
             if self.avail:
                 warnings.warn("udev device {} is already available".format(device))

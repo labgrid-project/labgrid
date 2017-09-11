@@ -628,11 +628,12 @@ class ClientSession(ApplicationSession):
         # check for valid resources
         assert resource.port is not None, "Port is not set"
 
-        print("connecting to ", resource)
-        res = subprocess.call([
+        call = [
             'microcom', '-t',
             "{}:{}".format(resource.host, resource.port)
-        ])
+        ]
+        print("connecting to ", resource, "calling ", " ".join(call))
+        res = subprocess.call(call)
         if res:
             print("connection lost")
         return res == 0

@@ -624,6 +624,9 @@ class ClientSession(ApplicationSession):
         except KeyError:
             print("resource not found")
             return False
+        
+        # check for valid resources
+        assert resource.port is not None, "Port is not set"
 
         print("connecting to ", resource)
         res = subprocess.call([

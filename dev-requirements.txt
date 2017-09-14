@@ -1,6 +1,6 @@
 PyYAML
 attrs>=16.3.0
-crossbar
+crossbar==17.8.1.post1
 pexpect
 pyserial>=3.3
 pytest

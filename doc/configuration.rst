@@ -44,7 +44,7 @@ Used by:
 NetworkSerialPort
 +++++++++++++++++
 A NetworkSerialPort describes a serial port which is exported over the network,
-usually using RFC2217.
+usually using RFC2217 or raw tcp.
 
 .. code-block:: yaml
 
@@ -54,11 +54,12 @@ usually using RFC2217.
      speed: 115200
 
 The example would access the serial port on computer remote.example.computer via
-port 53867 and use a baud rate of 115200.
+port 53867 and use a baud rate of 115200 with the RFC2217 protocol.
 
 - host (str): hostname of the remote host
 - port (str): TCP port on the remote host to connect to
 - speed (int): baud rate of the serial port
+- protocol (str): prtocol used for connection: raw or rfc2217 
 
 Used by:
   - `SerialDriver`_

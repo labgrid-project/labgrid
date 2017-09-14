@@ -19,10 +19,13 @@ class RawSerialPort(SerialPort, Resource):
 @attr.s(cmp=False)
 class NetworkSerialPort(NetworkResource):
     """A NetworkSerialPort is a remotely accessable serialport, usually
-    accessed via rfc2217.
+    accessed via rfc2217 or tcp raw.
 
     Args:
-        port (str): connection string to the port e.g. 'rfc2217://<host>:<port>'
-        speed (int): speed of the port e.g. 9800"""
+        port (str): socket port to connect to
+        speed (int): speed of the port e.g. 9800
+        protocol (str): connection protocol: "raw" or "rfc2217"
+    """
     port = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
     speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))
+    protocol = attr.ib(default="rfc2217", validator=attr.validators.instance_of(str))

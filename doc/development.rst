@@ -470,15 +470,6 @@ collect data over multiple runs for later analysis.
 This would become more useful by passing recognized events (stack traces,
 crashes, ...) and benchmark results via the Step infrastructure.
 
-Strategy Support for labgrid-client
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Currently, the client instantiates the Target, Resources and Drivers directly.
-By passing an environment YAML file, we could also instantiate any custom
-Strategy and configure image paths.
-This would allow us to use the Strategy to transition the board to a specific
-state before connecting to the console.
-
 Target Feature Flags
 ~~~~~~~~~~~~~~~~~~~~
 

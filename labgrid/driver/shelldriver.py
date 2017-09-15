@@ -4,6 +4,7 @@
 import io
 import logging
 import os
+import sys
 import re
 import shlex
 from time import sleep
@@ -96,8 +97,12 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         return (data, [], exitcode)
 
     @Driver.check_active
-    def run(self, cmd, timeout=30.0):
-        return self._run(cmd, timeout=timeout)
+    def run(self, cmd, timeout=30.0, print=False):
+        data = self._run(cmd, timeout=timeout)
+        if print:
+            sys.stdout.write("\n".join(data[0]))
+            sys.stderr.write("\n".join(data[1]))
+        return data
 
     @step()
     def _await_login(self):

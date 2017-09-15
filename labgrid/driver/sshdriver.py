@@ -2,6 +2,7 @@
 """The SSHDriver uses SSH as a transport to implement CommandProtocol and FileTransferProtocol"""
 import logging
 import os
+import sys
 import shutil
 import subprocess
 import tempfile
@@ -93,7 +94,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     @step(args=['cmd'])
-    def run(self, cmd):
+    def run(self, cmd, print=False):
         """Execute `cmd` on the target.
 
         This method runs the specified `cmd` as a command on its target.
@@ -124,6 +125,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         stderr = stderr.decode("utf-8").split('\n')
         stdout.pop()
         stderr.pop()
+        if print:
+            sys.stdout.write("\n".join(stdout))
+            sys.stderr.write("\n".join(stderr))
         return (stdout, stderr, sub.returncode)
 
     @Driver.check_active

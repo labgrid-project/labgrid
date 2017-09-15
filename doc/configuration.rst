@@ -444,12 +444,14 @@ Implements:
      username: 'root'
 
 Arguments:
-  - prompt (regex): prompt to match after logging in
+  - prompt (regex): shell prompt to match after logging in
   - login_prompt (regex): match for the login prompt
   - username (str): username to use during login
   - password (str): password to use during login
   - keyfile (str): optional keyfile to upload after login, making the
     `SSHDriver`_ usable
+  - login_timeout (int): optional, timeout for login prompt detection in
+    seconds (default 60)
 
 .. _conf-sshdriver:
 

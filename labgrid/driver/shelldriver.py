@@ -30,11 +30,12 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     ShellDriver binds on top of a ConsoleProtocol.
 
     Args:
-        prompt (regex): The Linux Prompt to detect
-        login_prompt (regex): The Login Prompt to detect
+        prompt (regex): the shell prompt to detect
+        login_prompt (regex): the login prompt to detect
         username (str): username to login with
         password (str): password to login with
         keyfile (str): keyfile to bind mount over users authorized keys
+        login_timeout (int): optional, timeout for login prompt detection
     """
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(validator=attr.validators.instance_of(str))
@@ -42,6 +43,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     username = attr.ib(validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
+    login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -102,7 +104,10 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """Awaits the login prompt and logs the user in"""
         self.console.sendline("")
         # TODO use step timeouts
-        index, _, _, _ = self.console.expect([self.prompt, self.login_prompt], timeout=60)
+        index, _, _, _ = self.console.expect(
+            [self.prompt, self.login_prompt],
+            timeout=self.login_timeout
+        )
         if index == 0:
             self.status = 1
             return  # already logged in

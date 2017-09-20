@@ -18,6 +18,8 @@ class Status(enum.Enum):
     unknown = 0
     barebox = 1
     shell = 2
+    reboot_barebox = 3
+    reboot_shell = 4
 
 
 @target_factory.reg_driver
@@ -41,24 +43,26 @@ class BareboxStrategy(Strategy):
             status = Status[status]
         if status == Status.unknown:
             raise StrategyError("can not transition to {}".format(status))
+            self.status = Status.unknown
         elif status == self.status:
             step.skip("nothing to do")
             return  # nothing to do
-        elif status == Status.barebox:
+        elif status == Status.barebox or status == Status.reboot_barebox:
             # cycle power
             self.target.activate(self.power)
             self.power.cycle()
             # interrupt barebox
             self.target.activate(self.barebox)
-        elif status == Status.shell:
+            self.status = Status.barebox
+        elif status == Status.shell or status == Status.reboot_shell:
             # tansition to barebox
             self.transition(Status.barebox)
             self.barebox.boot("")
             self.barebox.await_boot()
             self.target.activate(self.shell)
+            self.status = Status.shell
         else:
             raise StrategyError(
                 "no transition found from {} to {}".
                 format(self.status, status)
             )
-        self.status = status

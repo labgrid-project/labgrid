@@ -32,6 +32,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def on_activate(self):
         self.ssh_prefix = "-i {}".format(os.path.abspath(self.keyfile)
                                          ) if self.keyfile else ""
+        self.ssh_prefix += " -o LogLevel=ERROR"
         self.control = self._check_master()
         self.ssh_prefix += " -F /dev/null"
         self.ssh_prefix += " -o ControlPath={}".format(

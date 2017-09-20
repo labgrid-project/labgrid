@@ -1,6 +1,7 @@
 # pylint: disable=no-member
 import logging
 import re
+import sys
 import shlex
 from time import sleep
 
@@ -57,7 +58,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     @Driver.check_active
     @step(args=['cmd'])
-    def run(self, cmd: str, *, step):
+    def run(self, cmd: str, *, step, print=False):
         """
         Runs the specified command on the shell and returns the output.
 
@@ -82,6 +83,8 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             # Remove VT100 Codes and split by newline
             data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
             self.logger.debug("Received Data: %s", data)
+            if print:
+                sys.stdout.write("\n".join(data))
             # Get exit code
             exitcode = int(match.group(2))
             return (data, [], exitcode)
@@ -89,7 +92,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             return None
 
     @Driver.check_active
-    def run_check(self, cmd: str):
+    def run_check(self, cmd: str, print=False):
         """
         Runs the specified command on the shell and returns the output if successful,
         raises ExecutionError otherwise.
@@ -100,7 +103,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Returns:
             List[str]: stdout of the executed command
         """
-        res = self.run(cmd)
+        res = self.run(cmd,print=print)
         if res[2] != 0:
             raise ExecutionError(cmd)
         return res[0]

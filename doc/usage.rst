@@ -101,6 +101,13 @@ env (session scope)
 target (session scope)
   Used to access the 'main' :any:`Target` defined in the configuration file.
 
+The pytest plugin also supports the verbosity argument of pytest:
+
+- ``-vv``: activates the step reporting feature, showing function parameters and/or results
+- ``-vvv``: activates debug logging
+
+This allows debugging during the writing of tests and inspection during test runs.
+
 Simple Example
 ~~~~~~~~~~~~~~
 

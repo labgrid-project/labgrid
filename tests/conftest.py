@@ -8,7 +8,7 @@ from py.path import local
 from labgrid import Target, target_factory
 from labgrid.driver import SerialDriver
 from labgrid.protocol import CommandProtocol, ConsoleProtocol
-from labgrid.resource import RawSerialPort
+from labgrid.resource import RawSerialPort, NetworkSerialPort
 
 
 @pytest.fixture(scope='function')
@@ -19,6 +19,14 @@ def target():
 @pytest.fixture(scope='function')
 def serial_port(target):
     return RawSerialPort(target, '/dev/test')
+
+@pytest.fixture(scope='function')
+def serial_rfc2711_port(target):
+    return NetworkSerialPort(target, host='localhost', port=8888)
+
+@pytest.fixture(scope='function')
+def serial_raw_port(target):
+    return NetworkSerialPort(target, host='localhost', port=8888, protocol="raw")
 
 
 @pytest.fixture(scope='function')

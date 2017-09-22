@@ -33,7 +33,12 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         if isinstance(self.port, SerialPort):
             self.serial = serial.Serial()
         else:
-            self.serial = serial.rfc2217.Serial()
+            if self.port.protocol == "rfc2217":
+                self.serial = serial.rfc2217.Serial()
+            elif self.port.protocol == "raw":
+                self.serial = serial.serial_for_url("socket://", do_not_open=True)
+            else:
+                raise Exception("SerialDriver: unknown protocol")
         self.status = 0
 
     def on_activate(self):
@@ -41,7 +46,12 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
             self.serial.port = self.port.port
             self.serial.baudrate = self.port.speed
         else:
-            self.serial.port = "rfc2217://{}:{}/".format(self.port.host, self.port.port)
+            if self.port.protocol == "rfc2217":
+                self.serial.port = "rfc2217://{}:{}/".format(self.port.host, self.port.port)
+            elif self.port.protocol == "raw":
+                self.serial.port = "socket://{}:{}/".format(self.port.host, self.port.port)
+            else:
+                raise Exception("SerialDriver: unknown protocol")
             self.serial.baudrate = self.port.speed
         self.open()
 

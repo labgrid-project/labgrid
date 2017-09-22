@@ -4,6 +4,7 @@
 import io
 import logging
 import os
+import sys
 import re
 import shlex
 from time import sleep
@@ -68,7 +69,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._status = 0
 
     @step(args=['cmd'], result=True)
-    def _run(self, cmd, *, step, timeout=30.0):
+    def _run(self, cmd, *, step, timeout=30.0,print=False):
         """
         Runs the specified cmd on the shell and returns the output.
 
@@ -91,13 +92,15 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if data and not data[-1]:
             del data[-1]
         self.logger.debug("Received Data: %s", data)
+        if print:
+            sys.stdout.write("\n".join(data))
         # Get exit code
         exitcode = int(match.group(2))
         return (data, [], exitcode)
 
     @Driver.check_active
-    def run(self, cmd, timeout=30.0):
-        return self._run(cmd, timeout=timeout)
+    def run(self, cmd, timeout=30.0, print=False):
+        return self._run(cmd, timeout=timeout, print=print)
 
     @step()
     def _await_login(self):
@@ -122,14 +125,14 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._check_prompt()
 
     @step(args=['cmd'], result=True)
-    def _run_check(self, cmd, timeout=30):
-        out, _, res = self._run(cmd, timeout=timeout)
+    def _run_check(self, cmd, timeout=30, print=False):
+        out, _, res = self._run(cmd, timeout=timeout,print=print)
         if res != 0:
             raise ExecutionError(cmd)
         return out
 
     @Driver.check_active
-    def run_check(self, cmd, timeout=30):
+    def run_check(self, cmd, timeout=30, print=False):
         """
         Runs the specified cmd on the shell and returns the output if successful,
         raises ExecutionError otherwise.
@@ -137,7 +140,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         Arguments:
         cmd - cmd to run on the shell
         """
-        return self._run_check(cmd, timeout=timeout)
+        return self._run_check(cmd, timeout=timeout, print=print)
 
     @step()
     def get_status(self):

@@ -5,14 +5,14 @@ class CommandProtocol(abc.ABC):
     """Abstract class for the CommandProtocol"""
 
     @abc.abstractmethod
-    def run(self, command: str):
+    def run(self, command: str, print: bool=False):
         """
         Run a command
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def run_check(self, command: str):
+    def run_check(self, command: str, print: bool=False):
         """
         Run a command, return str if succesful, ExecutionError otherwise
         """

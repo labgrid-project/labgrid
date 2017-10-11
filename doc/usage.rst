@@ -22,18 +22,24 @@ At the lower level, a :any:`Target` can be created directly::
 Next, the required :any:`Resources <Resource>` can be created::
 
   >>> from labgrid.resource import RawSerialPort
-  >>> rsp = RawSerialPort(t, port='/dev/ttyUSB0')
+  >>> rsp = RawSerialPort(t, name=None, port='/dev/ttyUSB0')
+
+.. note::
+   Since we support multiple drivers of the same type, resources and drivers
+   have a required name attribute. If you don't require support for this
+   functionality set the name to `None`.
 
 Then, a :any:`Driver` needs to be created on the `Target`::
 
   >>> from labgrid.driver import SerialDriver
-  >>> sd = SerialDriver(t)
+  >>> sd = SerialDriver(t, name=None)
+
 
 As the `SerialDriver` declares a binding to a SerialPort, the target binds it
 to the resource created above::
 
   >>> sd.port
-  RawSerialPort(target=Target(name='example', env=None), state=<BindingState.active: 2>, avail=True, port='/dev/ttyUSB0', speed=115200)
+  RawSerialPort(target=Target(name='example', env=None), name=None, state=<BindingState.bound: 1>, avail=True, port='/dev/ttyUSB0', speed=115200)
   >>> sd.port is rsp
   True
 
@@ -41,6 +47,17 @@ Before the driver can be used, it needs to be activated::
 
   >>> t.activate(sd)
   >>> sd.write(b'test')
+
+Active drivers can be accessed by class (any `Driver` or `Protocol`) using some
+syntactic sugar::
+
+  >>> target = Target('main')
+  >>> console = FakeConsoleDriver(target, 'console')
+  >>> target.activate(console)
+  >>> target[FakeConsoleDriver]
+  FakeConsoleDriver(target=Target(name='main', …), name='console', …)
+  >>> target[FakeConsoleDriver, 'console']
+  FakeConsoleDriver(target=Target(name='main', …), name='console', …)
 
 Environments
 ^^^^^^^^^^^^
@@ -77,7 +94,7 @@ To access the target's console, the correct driver object can be found by using
   >>> from labgrid.protocol import ConsoleProtocol
   >>> cp = t.get_driver(ConsoleProtocol)
   >>> cp
-  SerialDriver(target=Target(name='example', env=Environment(config_file='example.yaml')), state=<BindingState.active: 2>)
+  SerialDriver(target=Target(name='example', env=Environment(config_file='example.yaml')), name=None, state=<BindingState.active: 2>, txdelay=0.0)
   >>> cp.write(b'test')
 
 When using the ``get_driver`` method, the driver is automatically activated.

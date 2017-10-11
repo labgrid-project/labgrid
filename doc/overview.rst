@@ -157,6 +157,25 @@ A realistic sequence of activation might look like this:
 Any `ManagedResources` which become unavailable at runtime will automatically
 deactivate the dependent drivers.
 
+Multiple Drivers and Names
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each driver and resource can have an optional name. This parameter is required
+for all manual creations of drivers and resources. To manually bind to a
+specific driver set a binding mapping before creating the driver:
+
+  >>> t = Target("Test")
+  >>> SerialPort(t, "First")
+  SerialPort(target=Target(name='Test', env=None), name='First', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
+  >>> SerialPort(t, "Second")
+  SerialPort(target=Target(name='Test', env=None), name='Second', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
+  >>> t.set_binding_map({"port": "Second"})
+  >>> sd = SerialDriver(t, "Driver")
+  >>> sd
+  SerialDriver(target=Target(name='Test', env=None), name='Driver', state=<BindingState.bound: 1>, txdelay=0.0)
+  >>> sd.port
+  SerialPort(target=Target(name='Test', env=None), name='Second', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
+
 Strategies
 ~~~~~~~~~~
 

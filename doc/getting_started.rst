@@ -7,6 +7,14 @@ labgrid, running your first test and setting up the distributed infrastructure.
 Running Your First Test
 -----------------------
 
+Depending on your distribution you need some dependencies. On Debian stretch
+these usually are:
+
+.. code-block:: bash
+
+   $ apt-get install python3 python3-virtualenv python3-pip
+
+
 In many cases, the easiest way is to install labgrid into a virtualenv:
 
 .. code-block:: bash
@@ -18,7 +26,7 @@ Start by installing labgrid, either by running:
 
 .. code-block:: bash
 
-    $ pip install labgrid
+    $ pip3 install labgrid
 
 or by cloning the repository and installing manually:
 

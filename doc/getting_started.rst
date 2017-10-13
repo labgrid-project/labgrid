@@ -7,6 +7,14 @@ labgrid, running your first test and setting up the distributed infrastructure.
 Running Your First Test
 -----------------------
 
+Depending on your distribution you need some dependencies. On Debian stretch
+these usually are:
+
+.. code-block:: bash
+
+   $ apt-get install python3 python3-virtualenv python3-pip
+
+
 In many cases, the easiest way is to install labgrid into a virtualenv:
 
 .. code-block:: bash
@@ -18,7 +26,7 @@ Start by installing labgrid, either by running:
 
 .. code-block:: bash
 
-    $ pip install labgrid
+    $ pip3 install labgrid
 
 or by cloning the repository and installing manually:
 
@@ -172,7 +180,7 @@ To show more details on the exported resources, use ``-v`` (or ``-vv``):
 
 .. code-block:: bash
 
-    $ labgrid-client resources -v
+    $ labgrid-client -v resources
     Exporter 'kiwi':
       Group 'example-group' (kiwi/example-group/*):
 	Resource 'NetworkPowerPort' (kiwi/example-group/NetworkPowerPort[/NetworkPowerPort]):
@@ -271,7 +279,8 @@ strategies.
 To use a strategy, add it and its dependencies to your configuration YAML,
 retrieve it in your test and call the ``transition(status)`` function.
 
-::
+.. code-block:: python
+
    >>> strategy = target.get_driver(strategy)
    >>> strategy.transition("barebox")
 

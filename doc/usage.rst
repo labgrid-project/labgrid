@@ -135,7 +135,7 @@ We then add the following test in a file called ``test_example.py``::
   from labgrid.protocol import CommandProtocol
 
   def test_echo(target):
-      command = t.get_driver(CommandProtocol)
+      command = target.get_driver(CommandProtocol)
       result = command.run_check('echo OK')
       assert 'OK' in result
 

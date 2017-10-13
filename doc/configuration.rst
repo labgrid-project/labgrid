@@ -624,7 +624,7 @@ Arguments:
   - cmd_on (str): command to turn power to the board on
   - cmd_off (str): command to turn power to the board off
   - cycle (str): optional command to switch the board off and on
-  - delay (float): configurable delay between off and on if cycle is not set
+  - delay (float): configurable delay in seconds between off and on if cycle is not set
 
 NetworkPowerDriver
 ~~~~~~~~~~~~~~~~~~
@@ -643,7 +643,7 @@ Implements:
      delay: 5.0
 
 Arguments:
-  - delay (float): optional delay between off and on
+  - delay (float): optional delay in seconds between off and on
 
 DigitalOutputPowerDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -663,7 +663,7 @@ Binds to:
 Arguments:
   - cmd_on (str): command to turn power to the board on
   - cmd_off (str): command to turn power to the board off
-  - delay (float): configurable delay between off and on
+  - delay (float): configurable delay in seconds between off and on
 
 MXSUSBDriver
 ~~~~~~~~~~~~

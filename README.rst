@@ -85,7 +85,7 @@ Tests can now run via:
 
 .. |license| image:: https://img.shields.io/badge/license-LGPLv2.1-blue.svg
     :alt: LGPLv2.1
-    :target: https://raw.githubusercontent.com/labgrid-project/labgrid/master/LICENSE.txt
+    :target: https://raw.githubusercontent.com/labgrid-project/labgrid/master/LICENSE
 
 .. |build-status| image:: https://img.shields.io/travis/labgrid-project/labgrid/master.svg?style=flat
     :alt: build status

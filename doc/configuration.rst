@@ -59,7 +59,7 @@ port 53867 and use a baud rate of 115200 with the RFC2217 protocol.
 - host (str): hostname of the remote host
 - port (str): TCP port on the remote host to connect to
 - speed (int): baud rate of the serial port
-- protocol (str): prtocol used for connection: raw or rfc2217 
+- protocol (str): optional, protocol used for connection: raw or rfc2217
 
 Used by:
   - `SerialDriver`_

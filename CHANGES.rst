@@ -1,3 +1,100 @@
+Release 0.2.0 (unreleased)
+--------------------------
+
+New Features
+~~~~~~~~~~~~
+
+- The new subcommand ``labgrid-client monitor`` shows resource or places
+  changes as they happen, which is useful during development or debugging.
+- The new `QEMUDriver` runs a system image in QEmu and implements the
+  :any:`ConsoleProtocol` and :any:`PowerProtocol`.
+  This allows using labgrid without any real hardware.
+- The bootloader drivers now have a ``reset`` method.
+- The `BareboxDriver`'s boot string is now configurable, which allows it to work
+  with the ``quiet`` Linux boot parameter.
+- The environment yaml file can now list Python files (under the 'imports' key).
+  They are imported before constructing the Targets, which simplifies using
+  custom Resources, Drivers or Strategies.
+- The pytest plugin now stores metadata about the environment yaml file in the
+  junit XML output.
+- The ``labgrid-client`` tool now understands a ``--state`` option to
+  transition to the provided state using a :any:`Strategy`.
+  This requires an environemnt yaml file with a :any:`RemotePlace` `Resource` and
+  matching `Drivers`.
+- Resource matches for places configured in the coordinator can now have a
+  name, allowing multiple resources with the same class.
+- The new `Target.__getitem__` method makes writing using protocols less verbose.
+- The `NetworkPowerDriver` now support the newer NETIO 4 models.
+- The `ShellDriver` now supports configuring the login prompt timeout.
+- The `SerialDriver` now supports using plain TCP instead of RFC 2217, which is
+  needed from some console servers.
+
+Incompatible Changes
+~~~~~~~~~~~~~~~~~~~~
+
+- When using the coordinator, it must be upgrade together with the clients
+  because of the newly introduce match names.
+- `Resources` and `Drivers` now need to be created with an explicit name
+  parameter.
+  It can be ``None`` to keep the old behaviour.
+  See below for details.
+- Classes derived from :any:`Resource` or :any:`Driver` now need to use
+  ``@attr.s(cmp=False)`` instead of ``@attr.s`` because of a change in the
+  attrs module version 17.1.0.
+
+Multiple Driver Instances
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For some Protocols, it is useful to allow multiple instances.
+
+DigitalOutputProtocol:
+   A board may have two jumpers to control the boot mode in addition to a reset
+   GPIO.
+   Previously, it was not possible to use these on a single target.
+
+ConsoleProtocol:
+   Some boards have multiple console interfaces or expose a login prompt via a
+   USB serial gadget.
+
+PowerProtocol:
+   In some cases, multiple power ports need to be controlled for one Target.
+
+To support these use cases, `Resources` and `Drivers` must be created with a
+name parameter.
+When updating your code to this version, you can either simply set the name to
+``None`` to keep the previous behaviour.
+Alternatively, pass a string as the name.
+
+Old:
+
+.. code-block:: python
+
+  >>> t = Target("MyTarget")
+  >>> SerialPort(t)
+  SerialPort(target=Target(name='MyTarget', env=None), state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
+  >>> SerialDriver(t)
+  SerialDriver(target=Target(name='MyTarget', env=None), state=<BindingState.bound: 1>, txdelay=0.0)
+
+New (with name=None):
+
+.. code-block:: python
+
+  >>> t = Target("MyTarget")
+  >>> SerialPort(t, None)
+  SerialPort(target=Target(name='MyTarget', env=None), name=None, state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
+  >>> SerialDriver(t, None)
+  SerialDriver(target=Target(name='MyTarget', env=None), name=None, state=<BindingState.bound: 1>, txdelay=0.0)
+
+New (with real names):
+
+.. code-block:: python
+
+  >>> t = Target("MyTarget")
+  >>> SerialPort(t, "MyPort")
+  SerialPort(target=Target(name='MyTarget', env=None), name='MyPort', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
+  >>> SerialDriver(t, "MyDriver")
+  SerialDriver(target=Target(name='MyTarget', env=None), name='MyDriver', state=<BindingState.bound: 1>, txdelay=0.0)
+
 Release 0.1.0 (released May 11, 2017)
 -------------------------------------
 

@@ -6,9 +6,9 @@ from labgrid.exceptions import NoDriverFoundError
 
 class TestShellDriver:
     def test_instance(self, target, serial_driver):
-        s = ShellDriver(target, "", "", "")
+        s = ShellDriver(target, "shell", "", "", "")
         assert (isinstance(s, ShellDriver))
 
     def test_no_driver(self, target):
         with pytest.raises(NoDriverFoundError):
-            ShellDriver(target, "", "", "")
+            ShellDriver(target, "shell", "", "", "")

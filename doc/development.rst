@@ -418,24 +418,6 @@ To remove this limitation, we should have a common way to make files available
 to the exporter, possibly by generating a hash locally and rsyncing new files to
 the exporter.
 
-Multiple Driver Instances
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For some Protocols, it seems useful to allow multiple instances.
-
-DigitalOutputProtocol:
-   A board may have two jumpers to control the boot mode in addition to a reset
-   GPIO.
-   Currently it's not possible to use these on a single target.
-
-ConsoleProtocol:
-   Some boards have multiple console interfaces or expose a login prompt via a
-   USB serial gadget.
-   In most cases, it would be enough to allow switching between them.
-
-PowerProtocol:
-   In some cases, multiple power ports need to be controled for one Target.
-
 Remote Target Reservation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

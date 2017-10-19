@@ -1,5 +1,7 @@
+import abc
 import logging
 from time import monotonic
+from collections import Counter
 
 import attr
 
@@ -21,6 +23,11 @@ class Target:
         self.resources = []
         self.drivers = []
         self.last_update = 0.0
+        # This should really be an argument for Drivers, but currently attrs
+        # doesn't support keyword only agruments, so we can't add an optional
+        # argument at the BindingMixin level.
+        # https://github.com/python-attrs/attrs/issues/106
+        self._binding_map = {}
 
     def interact(self, msg):
         if self.env:
@@ -71,67 +78,146 @@ class Target:
                 filter=waiting
             )
 
-    def get_resource(self, cls, *, await=True):
+    def get_resource(self, cls, *, name=None, await=True):
         """
         Helper function to get a resource of the target.
         Returns the first valid resource found, otherwise None.
 
         Arguments:
         cls -- resource-class to return as a resource
+        name -- optional name to use as a filter
         await -- wait for the resource to become available (default True)
         """
+        found = []
+        other_names = []
         for res in self.resources:
-            if isinstance(res, cls):
-                if await:
-                    self.await_resources([res])
-                return res
-        raise NoResourceFoundError(
-            "no resource matching {} found in target {}".format(cls, self)
-        )
+            if not isinstance(res, cls):
+                continue
+            if name and res.name != name:
+                other_names.append(res.name)
+                continue
+            found.append(res)
+        if len(found) == 0:
+            if other_names:
+                raise NoResourceFoundError(
+                    "all resources matching {} found in target {} have other names: {}".format(
+                        cls, self, other_names)
+                )
+            else:
+                raise NoResourceFoundError(
+                    "no resource matching {} found in target {}".format(cls, self)
+                )
+        elif len(found) > 1:
+            raise NoResourceFoundError(
+                "multiple resources matching {} found in target {}".format(cls, self)
+            )
+        if await:
+            self.await_resources(found)
+        return found[0]
 
-    def get_driver(self, cls, *, activate=True):
+    def get_driver(self, cls, *, name=None, activate=True):
         """
         Helper function to get a driver of the target.
         Returns the first valid driver found, otherwise None.
 
         Arguments:
         cls -- driver-class to return as a resource
+        name -- optional name to use as a filter
         activate -- activate the driver (default True)
         """
         found = []
+        other_names = []
         for drv in self.drivers:
-            if isinstance(drv, cls):
-                if isinstance(drv, Strategy):
-                    found.append(drv) # don't activate strategies, they have conflicting bindings
-                    continue
-                if activate:
-                    self.activate(drv)
-                found.append(drv)
+            if not isinstance(drv, cls):
+                continue
+            if name and drv.name != name:
+                other_names.append(drv.name)
+                continue
+            found.append(drv)
         if len(found) == 0:
-            raise NoDriverFoundError(
-                "no driver matching {} found in target {}".format(cls, self)
-            )
+            if other_names:
+                raise NoDriverFoundError(
+                    "all drivers matching {} found in target {} have other names: {}".format(
+                        cls, self, other_names)
+                )
+            else:
+                raise NoDriverFoundError(
+                    "no driver matching {} found in target {}".format(cls, self)
+                )
         elif len(found) > 1:
             raise NoDriverFoundError(
                 "multiple drivers matching {} found in target {}".format(cls, self)
             )
+        if activate:
+            self.activate(found[0])
         return found[0]
 
-    def get_active_driver(self, cls):
+    def get_active_driver(self, cls, *, name=None):
         """
         Helper function to get the active driver of the target.
         Returns the active driver found, otherwise None.
 
         Arguments:
         cls -- driver-class to return as a resource
+        name -- optional name to use as a filter
         """
+        found = []
+        other_names = []
         for drv in self.drivers:
-            if isinstance(drv, cls):
-                if drv.state == BindingState.active:
-                    return drv
-        raise NoDriverFoundError(
-            "no driver matching {} found in target {}".format(cls, self)
-        )
+            if not isinstance(drv, cls):
+                continue
+            if name and drv.name != name:
+                other_names.append(drv.name)
+                continue
+            if drv.state != BindingState.active:
+                continue
+            found.append(drv)
+        if len(found) == 0:
+            if other_names:
+                raise NoDriverFoundError(
+                    "all active drivers matching {} found in target {} have other names: {}".format(
+                        cls, self, other_names)
+                )
+            else:
+                raise NoDriverFoundError(
+                    "no active driver matching {} found in target {}".format(cls, self)
+                )
+        elif len(found) > 1:
+            raise NoDriverFoundError(
+                "multiple active drivers matching {} found in target {}".format(cls, self)
+            )
+        return found[0]
+
+    def __getitem__(self, key):
+        """
+        Syntactic sugar to access drivers by class (optionally filtered by
+        name).
+
+        >>> target = Target('main')
+        >>> console = FakeConsoleDriver(target, 'console')
+        >>> target.activate(console)
+        >>> target[FakeConsoleDriver]
+        FakeConsoleDriver(target=Target(name='main', …), name='console', …)
+        >>> target[FakeConsoleDriver, 'console']
+        FakeConsoleDriver(target=Target(name='main', …), name='console', …)
+        """
+        name = None
+        if not isinstance(key, tuple):
+            cls = key
+        elif len(key) == 2:
+            cls, name = key
+        if not issubclass(cls, (Driver, abc.ABC)): # all Protocols derive from ABC
+            raise NoDriverFoundError(
+                "invalid driver class {}".format(cls)
+            )
+
+        return self.get_active_driver(cls, name=name)
+
+    def set_binding_map(self, mapping):
+        """
+        Configure the binding name mapping for the next driver only.
+        """
+        self._binding_map = mapping
 
     def bind_resource(self, resource):
         """
@@ -169,9 +255,22 @@ class Target:
         assert client not in self.drivers
         assert client.target is None
 
+        mapping = self._binding_map
+        self._binding_map = {}
+
         # locate suppliers
         bound_suppliers = []
         for name, requirements in client.bindings.items():
+            explicit = False
+            if isinstance(requirements, Driver.NamedBinding):
+                requirements = requirements.value
+                explicit = True
+            supplier_name = mapping.get(name)
+            if explicit and supplier_name is None:
+                raise BindingError(
+                    "supplier for {} ({}) of {} in target {} requires an explicit name".format(
+                        name, requirements, client, self)
+                )
             # use sets even for a single requirement
             if not isinstance(requirements, set):
                 requirements = {requirements}
@@ -181,13 +280,14 @@ class Target:
                 try:
                     if issubclass(requirement, Resource):
                         suppliers.append(
-                            self.get_resource(requirement, await=False),
+                            self.get_resource(requirement, name=supplier_name, await=False),
+                        )
+                    elif issubclass(requirement, (Driver, abc.ABC)): # all Protocols derive from ABC
+                        suppliers.append(
+                            self.get_driver(requirement, name=supplier_name, activate=False),
                         )
                     else:
-                        suppliers.append(
-                            self.get_driver(requirement, activate=False),
-                        )
-
+                        raise NoSupplierFoundError("invalid binding type {}".format(requirement))
                 except NoSupplierFoundError as e:
                     errors.append(e)
             if not suppliers:
@@ -195,7 +295,8 @@ class Target:
                     raise errors[0]
                 else:
                     raise NoSupplierFoundError(
-                        "no supplier matching {} found in target {}".format(requirements, self)
+                        "no supplier matching {} found in target {} (errors: {})".format(
+                            requirements, self, errors)
                     )
             elif len(suppliers) > 1:
                 raise NoSupplierFoundError(
@@ -209,6 +310,12 @@ class Target:
             assert supplier.target is self
             assert client not in supplier.clients
             assert supplier not in client.suppliers
+
+        duplicates = {k for k, c in Counter(bound_suppliers).items() if c > 1}
+        if duplicates:
+            raise BindingError(
+                "duplicate bindings {} found in target {}".format(duplicates, self)
+            )
 
         # update relationship in both directions
         self.drivers.append(client)
@@ -233,6 +340,10 @@ class Target:
         Activate the client by activating all bound suppliers. This may require
         deactivating other clients.
         """
+        # don't activate strategies, they usually have conflicting bindings
+        if isinstance(client, Strategy):
+            return
+
         if client.state is BindingState.active:
             return  # nothing to do
 

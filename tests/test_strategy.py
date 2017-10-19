@@ -10,11 +10,11 @@ from labgrid.exceptions import NoDriverFoundError
 
 
 def test_create_barebox(target):
-    console = FakeConsoleDriver(target)
-    power = FakePowerDriver(target)
-    barebox = BareboxDriver(target)
-    shell = ShellDriver(target, prompt='root@dummy', login_prompt='login:', username='root')
-    s = BareboxStrategy(target)
+    console = FakeConsoleDriver(target, "console")
+    power = FakePowerDriver(target, "power")
+    barebox = BareboxDriver(target, "barebox")
+    shell = ShellDriver(target, "shell", prompt='root@dummy', login_prompt='login:', username='root')
+    s = BareboxStrategy(target, "strategy")
 
     assert isinstance(s, Strategy)
     assert target.get_driver(BareboxStrategy) is s
@@ -23,11 +23,11 @@ def test_create_barebox(target):
     assert s.state is BindingState.bound
 
 def test_create_uboot(target):
-    console = FakeConsoleDriver(target)
-    power = FakePowerDriver(target)
-    barebox = UBootDriver(target)
-    shell = ShellDriver(target, prompt='root@dummy', login_prompt='login:', username='root')
-    s = UBootStrategy(target)
+    console = FakeConsoleDriver(target, "console")
+    power = FakePowerDriver(target, "power")
+    barebox = UBootDriver(target, "uboot")
+    shell = ShellDriver(target, "shell", prompt='root@dummy', login_prompt='login:', username='root')
+    s = UBootStrategy(target, "strategy")
 
     assert isinstance(s, Strategy)
     assert target.get_driver(UBootStrategy) is s

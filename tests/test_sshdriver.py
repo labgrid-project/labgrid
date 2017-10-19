@@ -8,10 +8,10 @@ from labgrid.resource import NetworkService
 class TestSSHDriver:
     def test_create_fail_missing_resource(self, target):
         with pytest.raises(NoResourceFoundError):
-            SSHDriver(target)
+            SSHDriver(target, "ssh")
 
     def test_create(self, target, mocker):
-        NetworkService(target, "1.2.3.4", "root")
+        NetworkService(target, "service", "1.2.3.4", "root")
         call = mocker.patch('subprocess.call')
         call.return_value = 0
         popen = mocker.patch('subprocess.Popen', autospec=True)
@@ -20,5 +20,5 @@ class TestSSHDriver:
         instance_mock = mocker.MagicMock()
         popen.return_value = instance_mock
         instance_mock.wait = mocker.MagicMock(return_value=0)
-        s = SSHDriver(target)
+        s = SSHDriver(target, "ssh")
         assert (isinstance(s, SSHDriver))

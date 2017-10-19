@@ -39,11 +39,10 @@ class RemotePlaceManager(ResourceManager):
             self._start()
         place = self.session.get_place(remote_place.name)
         resource_entries = self.session.get_target_resources(place)
-        # FIXME handle resource name here to support multiple resources of the same class
         expanded = []
         for resource_name, resource_entry in resource_entries.items():
             new = target_factory.make_resource(
-                remote_place.target, resource_entry.cls, resource_entry.args)
+                remote_place.target, resource_entry.cls, resource_name, resource_entry.args)
             new.avail = resource_entry.avail
             new._remote_entry = resource_entry
             expanded.append(new)
@@ -81,8 +80,6 @@ class RemotePlaceManager(ResourceManager):
 @attr.s(cmp=False)
 class RemotePlace(ManagedResource):
     manager_cls = RemotePlaceManager
-
-    name = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         self.timeout = 5.0

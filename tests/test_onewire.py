@@ -7,7 +7,7 @@ from labgrid.resource import OneWirePIO
 
 @pytest.fixture(scope='function')
 def onewire_port(target):
-    return OneWirePIO(target, "testhost", "path")
+    return OneWirePIO(target, "pio", "testhost", "path")
 
 @pytest.fixture(scope='function')
 def onewire_driver(target, onewire_port, monkeypatch, mocker):
@@ -16,12 +16,12 @@ def onewire_driver(target, onewire_port, monkeypatch, mocker):
     onewire_mock.get = mocker.MagicMock()
     import onewire
     monkeypatch.setattr(onewire, 'Onewire', onewire_mock)
-    s = OneWirePIODriver(target)
+    s = OneWirePIODriver(target, "pio")
     target.activate(s)
     return s
 
 def test_onewire_resource_instance(target):
-    o = OneWirePIO(target, "testhost", "path")
+    o = OneWirePIO(target, "pio", "testhost", "path")
     assert (isinstance(o, OneWirePIO))
 
 def test_onewire_driver_instance(target, onewire_driver):

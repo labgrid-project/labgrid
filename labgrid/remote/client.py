@@ -12,7 +12,7 @@ from pprint import pformat
 from textwrap import indent
 from socket import gethostname
 from getpass import getuser
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from time import sleep
 from datetime import datetime
 
@@ -24,6 +24,7 @@ from ..exceptions import NoDriverFoundError
 from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util.timeout import Timeout
 from ..util.dict import diff_dict, flat_dict
+from ..util.yaml import dump
 from .. import Target
 
 txaio.use_asyncio()
@@ -288,22 +289,30 @@ class ClientSession(ApplicationSession):
         print("Place '{}':".format(place.name))
         place.show(level=1)
         if place.acquired:
-            for (
-                exporter, group_name, cls, resource_name
-            ) in place.acquired_resources:
+            for resource_path in place.acquired_resources:
+                (exporter, group_name, cls, resource_name) = resource_path
+                match = place.getmatch(resource_path)
+                name = resource_name
+                if match.rename:
+                    name = match.rename
                 resource = self.resources[exporter][group_name][resource_name]
                 print("Acquired resource '{}' ({}/{}/{}/{}):".format(
-                    resource_name, exporter, group_name, resource.cls, resource_name))
+                    name, exporter, group_name, resource.cls, resource_name))
                 print(indent(pformat(resource.asdict()), prefix="  "))
+                assert resource.cls == cls
         else:
             for exporter, groups in sorted(self.resources.items()):
                 for group_name, group in sorted(groups.items()):
                     for resource_name, resource in sorted(group.items()):
                         resource_path = (exporter, group_name, resource.cls, resource_name)
-                        if not place.hasmatch(resource_path):
+                        match = place.getmatch(resource_path)
+                        if match is None:
                             continue
+                        name = resource_name
+                        if match.rename:
+                            name = match.rename
                         print("Matching resource '{}' ({}/{}/{}/{}):".format(
-                            resource_name, exporter, group_name, resource.cls, resource_name))
+                            name, exporter, group_name, resource.cls, resource_name))
                         print(indent(pformat(resource.asdict()), prefix="  "))
 
     @asyncio.coroutine
@@ -429,6 +438,41 @@ class ClientSession(ApplicationSession):
                 )
 
     @asyncio.coroutine
+    def add_named_match(self):
+        """Add a named match for a place.
+
+        Fuzzy matching is not allowed to avoid accidental names conflicts."""
+        place = self.get_idle_place()
+        if place.acquired:
+            raise UserError("can not change acquired place {}".format(place.name))
+        pattern = self.args.pattern
+        name = self.args.name
+        if pattern in map(repr, place.matches):
+            raise UserError("pattern '{}' exists".format(pattern))
+        if not (2 <= pattern.count("/") <= 3):
+            raise UserError(
+                "invalid pattern format '{}' (use 'exporter/group/cls/name')".
+                format(pattern)
+            )
+        if '*' in pattern:
+            raise UserError(
+                "invalid pattern '{}' ('*' not allowed for named matches)".
+                format(pattern)
+            )
+        if not name:
+            raise UserError(
+                "invalid name '{}'".
+                format(name)
+            )
+        res = yield from self.call(
+            'org.labgrid.coordinator.add_place_match', place.name, pattern, name
+        )
+        if not res:
+            raise ServerError(
+                "failed to add match {} for place {}".format(pattern, place.name)
+            )
+
+    @asyncio.coroutine
     def acquire(self):
         """Acquire a place, marking it unavailable for other clients"""
         place = self.get_place()
@@ -475,25 +519,31 @@ class ClientSession(ApplicationSession):
         if host != gethostname():
             raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))
         resources = {}
-        for (
-            exporter, groupname, cls, resourcename
-        ) in place.acquired_resources:
-            resources[resourcename] = self.resources[exporter][groupname][resourcename]
+        for resource_path in place.acquired_resources:
+            match = place.getmatch(resource_path)
+            (exporter, group_name, resource_cls, resource_name) = resource_path
+            name = resource_name
+            if match.rename:
+                name = match.rename
+            resources[name] = self.resources[exporter][group_name][resource_name]
         return resources
 
     def get_target_config(self, place):
         config = {}
-        resources = config['resources'] = {}
-        # FIXME handle resource name here to support multiple resources of the same class
-        for resource in self.get_target_resources(place).values():
-            resources[resource.cls] = resource.args
+        resources = config['resources'] = []
+        for name, resource in self.get_target_resources(place).items():
+            args = OrderedDict()
+            if name != resource.cls:
+                args['name'] = name
+            args.update(resource.args)
+            print(args)
+            resources.append({resource.cls: args})
         return config
 
     def env(self):
         place = self.get_acquired_place()
         env = {'targets': {place.name: self.get_target_config(place)}}
-        import yaml
-        print(yaml.dump(env))
+        print(dump(env))
 
     def _prepare_manager(self):
         manager = RemotePlaceManager.get()
@@ -517,10 +567,9 @@ class ClientSession(ApplicationSession):
                 strategy.transition(self.args.state)
                 serial = target.get_active_driver(SerialDriver)
                 target.deactivate(serial)
-            return target
-        self._prepare_manager()
-        target = Target(place.name, env=self.env)
-        RemotePlace(target, name=place.name)
+        else:
+            target = Target(place.name, env=self.env)
+            RemotePlace(target, name=place.name)
         return target
 
     def power(self):
@@ -532,7 +581,7 @@ class ClientSession(ApplicationSession):
         try:
             drv = target.get_driver(NetworkPowerDriver)
         except NoDriverFoundError:
-            drv = NetworkPowerDriver(target, delay=delay)
+            drv = NetworkPowerDriver(target, name=None, delay=delay)
         target.await_resources([drv.port], timeout=1.0)
         target.activate(drv)
         res = getattr(drv, action)()
@@ -552,7 +601,7 @@ class ClientSession(ApplicationSession):
         try:
             drv = target.get_driver(OneWirePIODriver)
         except NoDriverFoundError:
-            drv = OneWirePIODriver(target)
+            drv = OneWirePIODriver(target, name=None)
         target.await_resources([drv.port], timeout=1.0)
         target.activate(drv)
         if action == 'get':
@@ -613,7 +662,7 @@ class ClientSession(ApplicationSession):
         try:
             drv = target.get_driver(AndroidFastbootDriver)
         except NoDriverFoundError:
-            drv = AndroidFastbootDriver(target)
+            drv = AndroidFastbootDriver(target, name=None)
         drv.fastboot.timeout = self.args.wait
         target.activate(drv)
         drv(*args)
@@ -631,14 +680,14 @@ class ClientSession(ApplicationSession):
                 try:
                     drv = target.get_driver(IMXUSBDriver)
                 except NoDriverFoundError:
-                    drv = IMXUSBDriver(target)
+                    drv = IMXUSBDriver(target, name=None)
                 drv.loader.timeout = self.args.wait
                 break
             elif isinstance(resource, NetworkMXSUSBLoader):
                 try:
                     drv = target.get_driver(MXUSBDriver)
                 except NoDriverFoundError:
-                    drv = MXSUSBDriver(target)
+                    drv = MXSUSBDriver(target, name=None)
                 drv.loader.timeout = self.args.wait
                 break
             elif isinstance(resource, NetworkAlteraUSBBlaster):
@@ -646,7 +695,7 @@ class ClientSession(ApplicationSession):
                 try:
                     drv = target.get_driver(OpenOCDDriver)
                 except NoDriverFoundError:
-                    drv = OpenOCDDriver(target, **args)
+                    drv = OpenOCDDriver(target, name=None, **args)
                 drv.interface.timeout = self.args.wait
                 break
         if not drv:
@@ -806,6 +855,12 @@ def main():
                                       help="delete one (or multiple) match pattern(s) from a place")
     subparser.add_argument('patterns', metavar='PATTERN', nargs='+')
     subparser.set_defaults(func=ClientSession.del_match)
+
+    subparser = subparsers.add_parser('add-named-match',
+                                      help="add one match pattern with a name to a place")
+    subparser.add_argument('pattern', metavar='PATTERN')
+    subparser.add_argument('name', metavar='NAME')
+    subparser.set_defaults(func=ClientSession.add_named_match)
 
     subparser = subparsers.add_parser('acquire',
                                       aliases=('lock',),

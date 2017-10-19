@@ -55,6 +55,17 @@ class BindingMixin:
             target.bind(self)
             assert self.target is not None
 
+    @property
+    def display_name(self):
+        if self.name:
+            return "{}(target={}, name={})".format(
+                self.__class__.__name__, self.target.name, self.name
+            )
+        else:
+            return "{}(target={})".format(
+                self.__class__.__name__, self.target.name
+            )
+
     def on_supplier_bound(self, supplier, name):
         """Called by the Target after a new supplier has been bound"""
         pass

@@ -19,7 +19,7 @@ New Features
   junit XML output.
 - The ``labgrid-client`` tool now understands a ``--state`` option to
   transition to the provided state using a :any:`Strategy`.
-  This requires an environemnt yaml file with a :any:`RemotePlace` `Resource` and
+  This requires an environment yaml file with a :any:`RemotePlace` `Resource` and
   matching `Drivers`.
 - Resource matches for places configured in the coordinator can now have a
   name, allowing multiple resources with the same class.
@@ -28,6 +28,7 @@ New Features
 - The `ShellDriver` now supports configuring the login prompt timeout.
 - The `SerialDriver` now supports using plain TCP instead of RFC 2217, which is
   needed from some console servers.
+- Experimental: The labgrid-autoinstall tool was added (see below).
 
 Incompatible Changes
 ~~~~~~~~~~~~~~~~~~~~
@@ -94,6 +95,24 @@ New (with real names):
   SerialPort(target=Target(name='MyTarget', env=None), name='MyPort', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
   >>> SerialDriver(t, "MyDriver")
   SerialDriver(target=Target(name='MyTarget', env=None), name='MyDriver', state=<BindingState.bound: 1>, txdelay=0.0)
+
+Auto-Installer Tool
+~~~~~~~~~~~~~~~~~~~
+
+To simplify using labgrid for provisioning several boards in parallel, the
+``labgrid-autoinstall`` tool was added.
+It reads a YAML file defining several targets and a Python script to be run for
+each board.
+Interally, it spawns a child process for each target, which waits until a matching
+resource becomes available and then executes the script.
+
+For example, this makes it simple to load a bootloader via the
+:any:`BootstrapProtocol`, use the :any:`AndroidFastbootDriver` to upload a
+kernel with initramfs and then write the target's eMMC over a USB Mass Storage
+gadget.
+
+.. note::
+  ``labgrid-autoinstall`` is still experimental and no documentation has been written.
 
 Release 0.1.0 (released May 11, 2017)
 -------------------------------------

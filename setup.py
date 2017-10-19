@@ -34,6 +34,7 @@ setup(
     ],
     packages=[
         'labgrid',
+        'labgrid.autoinstall',
         'labgrid.driver',
         'labgrid.driver.power',
         'labgrid.external',
@@ -53,6 +54,7 @@ setup(
         'console_scripts': [
             'labgrid-client = labgrid.remote.client:main',
             'labgrid-exporter = labgrid.remote.exporter:main',
+            'labgrid-autoinstall = labgrid.autoinstall.main:main',
         ]
     },
     # custom PyPI classifier for pytest plugins

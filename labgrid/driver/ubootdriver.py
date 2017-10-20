@@ -29,6 +29,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
+    interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
     init_commands = attr.ib(default=attr.Factory(tuple), convert=tuple)
 
     def __attrs_post_init__(self):
@@ -169,6 +170,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             else:
                 raise Exception("Password entry needed but no password set")
         else:
+            self.console.write(self.interrupt.encode('ASCII'))
             self._check_prompt()
         for command in self.init_commands:  #pylint: disable=not-an-iterable
             self._run_check(command)

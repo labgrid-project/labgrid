@@ -16,7 +16,7 @@ setup(
                                  'man/labgrid-device-config.1'])],
     extras_require={
         'onewire': ['onewire>=0.2'],
-        'coordinator': ['crossbar']
+        'coordinator': ['crossbar', 'idna==2.5']
     },
     setup_requires=['pytest-runner', 'setuptools_scm'],
     tests_require=['pytest-mock', ],

@@ -85,6 +85,22 @@ your board (manually) and run your first test:
 It should return successfully, in case it does not, open an `Issue
 <https://github.com/labgrid-project/labgrid/issues>`_.
 
+If you want to build documentation you need some more dependencies:
+
+.. code-block:: bash
+
+   $ pip3 install -r doc-requirements.txt
+
+The documentation is inside ``doc/``.  HTML-Documentation is build using:
+
+.. code-block:: bash
+
+   $ cd doc/
+   $ make html
+
+The HTML-documentation is written to ``doc/.build/html/``.
+
+
 Setting Up the Distributed Infrastructure
 -----------------------------------------
 

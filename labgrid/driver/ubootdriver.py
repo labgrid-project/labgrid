@@ -31,6 +31,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
     interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
     init_commands = attr.ib(default=attr.Factory(tuple), convert=tuple)
+    password_prompt = attr.ib(default="enter Password:", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -159,7 +160,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self.console.expect(r"U-Boot 20\d+")
         index, _, _, _ = self.console.expect(
-            [self.prompt, "stop autoboot", "enter Password:"]
+            [self.prompt, "stop autoboot", self.password_prompt]
         )
         if index == 0:
             self._status = 1

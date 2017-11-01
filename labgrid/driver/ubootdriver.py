@@ -2,6 +2,7 @@
 """The U-Boot Module contains the UBootDriver"""
 import logging
 import re
+import time
 
 import attr
 from pexpect import TIMEOUT
@@ -171,6 +172,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 raise Exception("Password entry needed but no password set")
         else:
             self.console.write(self.interrupt.encode('ASCII'))
+            time.sleep(1)
             self._check_prompt()
         for command in self.init_commands:  #pylint: disable=not-an-iterable
             self._run_check(command)

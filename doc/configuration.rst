@@ -108,6 +108,26 @@ The example describes port 0 on the remote power switch
 Used by:
   - `NetworkPowerDriver`_
 
+YKUSHPowerPort
+~~~~~~~~~~~~~~~~
+A YKUSHPowerPort describes a YEPKIT YKUSH USB (HID) switchable USB hub.
+
+.. code-block:: yaml
+
+   YKUSHPowerPort:
+     serial: YK12345
+     index: 1
+
+The example describes port 1 on the YKUSH USB hub with the
+serial "YK12345".
+(use "pykush -l" to get your serial...)
+
+- serial (str): serial number of the YKUSH hub
+- index (int): number of the port to switch
+
+Used by:
+  - `YKUSHPowerDriver`_
+
 NetworkService
 ~~~~~~~~~~~~~~
 A NetworkService describes a remote SSH connection.
@@ -641,6 +661,25 @@ Implements:
 .. code-block:: yaml
 
    NetworkPowerDriver:
+     delay: 5.0
+
+Arguments:
+  - delay (float): optional delay in seconds between off and on
+
+YKUSHPowerDriver
+~~~~~~~~~~~~~~~~~~
+A YKUSHPowerDriver controls a `YKUSHPowerPort`, allowing control of the
+target power state without user interaction.
+
+Binds to:
+  - `YKUSHPowerPort`_
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   YKUSHPowerDriver:
      delay: 5.0
 
 Arguments:

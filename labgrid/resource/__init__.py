@@ -6,3 +6,4 @@ from .power import NetworkPowerPort
 from .remote import RemotePlace
 from .udev import USBSerialPort
 from .common import Resource, ResourceManager, ManagedResource
+from .ykushpowerport import YKUSHPowerPort

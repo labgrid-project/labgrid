@@ -8,7 +8,7 @@ from .exception import CleanUpError, ExecutionError
 from .fastbootdriver import AndroidFastbootDriver
 from .openocddriver import OpenOCDDriver
 from .onewiredriver import OneWirePIODriver
-from .powerdriver import ManualPowerDriver, ExternalPowerDriver, DigitalOutputPowerDriver
+from .powerdriver import ManualPowerDriver, ExternalPowerDriver, DigitalOutputPowerDriver, YKUSHPowerDriver
 from .usbloader import MXSUSBDriver, IMXUSBDriver
 from .usbstorage import USBStorageDriver
 from .infodriver import InfoDriver

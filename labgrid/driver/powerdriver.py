@@ -8,6 +8,7 @@ import attr
 from ..factory import target_factory
 from ..protocol import PowerProtocol, DigitalOutputProtocol
 from ..resource import NetworkPowerPort
+from ..resource import YKUSHPowerPort
 from ..step import step
 from .common import Driver
 from .onewiredriver import OneWirePIODriver
@@ -149,3 +150,40 @@ class DigitalOutputPowerDriver(Driver, PowerProtocol):
     @step()
     def get(self):
         return True # FIXME
+
+@target_factory.reg_driver
+@attr.s(cmp=False)
+class YKUSHPowerDriver(Driver, PowerProtocol):
+    """YKUSHPowerDriver - Driver using a YEPKIT YKUSH switchable USB hub
+        to control a target's power - https://www.yepkit.com/products/ykush"""
+    bindings = {"port": YKUSHPowerPort, }
+    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
+
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # uses the YKUSH pykush interface from here:
+        # https://github.com/Yepkit/pykush
+        self.pykush_mod = import_module('pykush')
+        self.pykush = self.pykush_mod.YKUSH(serial=self.port.serial)
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        self.pykush.set_port_state(self.port.index, self.pykush_mod.YKUSH_PORT_STATE_UP)
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        self.pykush.set_port_state(self.port.index, self.pykush_mod.YKUSH_PORT_STATE_DOWN)
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        self.off()
+        time.sleep(self.delay)
+        self.on()
+
+    @Driver.check_active
+    def get(self):
+        return self.pykush.get_port_state(self.port.index)

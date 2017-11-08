@@ -7,8 +7,8 @@ import attr
 import logging
 import os
 
-from .util.yaml import load
-
+from .exceptions import NoConfigFoundError, InvalidConfigError
+from .util.yaml import load, resolve_templates
 
 @attr.s(cmp=False)
 class Config:
@@ -22,6 +22,23 @@ class Config:
         except FileNotFoundError:
             raise NoConfigFoundError(
                 "configuration file '{}' could not be found".format(self.filename)
+            )
+        substitutions = {
+            'BASE': self.base,
+        }
+        try:
+            resolve_templates(self.data, substitutions)
+        except KeyError as e:
+            raise InvalidConfigError(
+                "configuration file '{}' refers to unknown variable '{}'".format(
+                    self.filename, e.args[0]
+                )
+            )
+        except ValueError as e:
+            raise InvalidConfigError(
+                "configuration file '{}' is invalid: {}".format(
+                    self.filename, e
+                )
             )
 
     def resolve_path(self, path):

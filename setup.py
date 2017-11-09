@@ -21,7 +21,7 @@ setup(
     setup_requires=['pytest-runner', 'setuptools_scm'],
     tests_require=['pytest-mock', ],
     install_requires=[
-        'attrs>=16.3.0',
+        'attrs>=16.3.0,<17.3.0',
         'jinja2',
         'pexpect',
         'pyserial>=3.3',

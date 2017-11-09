@@ -1,5 +1,5 @@
 PyYAML
-attrs>=16.3.0
+attrs>=16.3.0,<17.3.0
 crossbar==17.8.1.post1
 pexpect
 pyserial>=3.3

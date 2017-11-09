@@ -531,10 +531,14 @@ Implements:
 
 Arguments:
   - prompt (regex): u-boot prompt to match
-  - password (str): optional u-boot unlock password
+  - password (str): optional, u-boot unlock password
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
   - init_commands (tuple): tuple of commands to execute after matching the
     prompt
+  - password_prompt (str): optional, regex to match the uboot password prompt,
+    defaults to "enter Password: "
+  - boot_expression (str): optional, regex to match the uboot start string
+    defaults to "U-Boot 20\d+"
 
 BareboxDriver
 ~~~~~~~~~~~~~

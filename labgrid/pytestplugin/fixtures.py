@@ -3,6 +3,8 @@ import pytest
 import subprocess
 
 from .. import Environment
+from ..exceptions import NoResourceFoundError
+from ..resource.remote import RemotePlace
 
 # pylint: disable=redefined-outer-name
 
@@ -58,12 +60,14 @@ def env(request):
             targets = list(env.config.get_targets().keys())
             my_junit.add_global_property('TARGETS', targets)
 
-            for target, config in env.config.get_targets().items():
+            for target_name in targets:
+                target = env.get_target(target_name)
                 try:
-                    remote_name = config['resources']['RemotePlace']['name']
+                    remote_place = target.get_resource(RemotePlace, await=False)
+                    remote_name = remote_place.name
                     my_junit.add_global_property(
-                        'TARGET_{}_REMOTE'.format(target.upper()), remote_name)
-                except KeyError:
+                        'TARGET_{}_REMOTE'.format(target_name.upper()), remote_name)
+                except NoResourceFoundError:
                     pass
 
             for name, path in env.config.get_paths().items():

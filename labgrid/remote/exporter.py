@@ -78,7 +78,8 @@ class USBSerialPortExport(ResourceExport):
         super().__attrs_post_init__()
         self.data['cls'] = "NetworkSerialPort"
         from ..resource.udev import USBSerialPort
-        self.local = USBSerialPort(None, **self.local_params)
+        self.local = USBSerialPort(target=None, name=None,
+                **self.local_params)
         self.child = None
         self.port = None
 
@@ -136,7 +137,8 @@ class USBEthernetExport(ResourceExport):
         super().__attrs_post_init__()
         from ..resource.udev import USBEthernetInterface
         self.data['cls'] = "EthernetInterface"
-        self.local = USBEthernetInterface(None, **self.local_params)
+        self.local = USBEthernetInterface(target=None, name=None,
+                **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
@@ -159,7 +161,8 @@ class USBGenericExport(ResourceExport):
         self.data['cls'] = "Network{}".format(self.cls)
         from ..resource import udev
         local_cls = getattr(udev, local_cls_name)
-        self.local = local_cls(None, **self.local_params)
+        self.local = local_cls(target=None, name=None,
+                **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""

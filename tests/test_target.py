@@ -192,6 +192,55 @@ def test_suppliers_multi_named_a(target):
     assert d.res2 is ra2
 
 
+# test optional bindings
+
+class DriverWithOptionalA(Driver):
+    bindings = {"res": {ResourceA, None}, }
+
+
+class DriverWithOptionalAB(Driver):
+    bindings = {"res": {ResourceA, ResourceB, None}, }
+
+
+def test_suppliers_optional_a(target):
+    ra = ResourceA(target, "resource")
+    d = DriverWithOptionalA(target, "driver")
+    assert d.res is ra
+
+
+def test_suppliers_optional_a_missing(target):
+    rb = ResourceB(target, "resource")
+    d = DriverWithOptionalA(target, "driver")
+    assert d.res is None
+
+
+def test_suppliers_optional_ab_a(target):
+    ra = ResourceA(target, "resource")
+    d = DriverWithOptionalAB(target, "driver")
+    assert d.res is ra
+
+
+class DriverWithOptionalNamedA(Driver):
+    bindings = {
+        "res": Driver.NamedBinding({ResourceA, None}),
+    }
+
+
+def test_suppliers_optional_named_a(target):
+    ra = ResourceA(target, "resource")
+    target.set_binding_map({"res": "resource"})
+    d = DriverWithOptionalNamedA(target, "driver")
+    assert d.res is ra
+
+
+def test_suppliers_optional_named_a_missing(target):
+    rb = ResourceB(target, "resource")
+    target.set_binding_map({"res": "resource"})
+    d = DriverWithOptionalNamedA(target, "driver")
+    assert d.res is None
+
+
+
 # test nested resource creation
 @attr.s(cmp=False)
 class DiscoveryResource(Resource):

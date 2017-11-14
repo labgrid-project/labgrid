@@ -271,9 +271,15 @@ class Target:
                     "supplier for {} ({}) of {} in target {} requires an explicit name".format(
                         name, requirements, client, self)
                 )
-            # use sets even for a single requirement
+            # use sets even for a single requirement and make a local copy
             if not isinstance(requirements, set):
                 requirements = {requirements}
+            else:
+                requirements = requirements.copy()
+            # None indicates that the binding is optional
+            optional = None in requirements
+            requirements.discard(None)
+
             errors = []
             suppliers = []
             for requirement in requirements:
@@ -289,9 +295,12 @@ class Target:
                     else:
                         raise NoSupplierFoundError("invalid binding type {}".format(requirement))
                 except NoSupplierFoundError as e:
+                    print(e)
                     errors.append(e)
             if not suppliers:
-                if len(errors) == 1:
+                if optional:
+                    supplier = None
+                elif len(errors) == 1:
                     raise errors[0]
                 else:
                     raise NoSupplierFoundError(
@@ -302,8 +311,11 @@ class Target:
                 raise NoSupplierFoundError(
                     "conflicting suppliers matching {} found in target {}".format(requirements, self)
                 )
-            setattr(client, name, suppliers[0])
-            bound_suppliers.append(suppliers[0])
+            else:
+                supplier = suppliers[0]
+            setattr(client, name, supplier)
+            if supplier is not None:
+                bound_suppliers.append(supplier)
 
         # consistency checks
         for supplier in bound_suppliers:

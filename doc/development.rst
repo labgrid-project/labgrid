@@ -121,6 +121,15 @@ making it usable in the class.
 Checks are performed that the target which the driver binds to has a SerialPort,
 otherwise an error will be raised.
 
+If your driver can support alternative resources, you can use a set of classes
+instead of a single class::
+
+    bindings = { "port": {SerialPort, NetworkSerialPort}}
+
+Optional bindings can be declared by including ``None`` in the set::
+
+    bindings = { "port": {SerialPort, NetworkSerialPort, None}}
+
 If you need to do something during instantiation, you need to add a
 :code:`__attr_post_init__` method (instead of the usual :code:`__init__` used
 for non-attr-classes).

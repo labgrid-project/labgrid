@@ -175,25 +175,23 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             \s+(?P<key>[a-zA-Z0-9/+=]+) # Match Keystring
             \s+(?P<comment>.*) # Match comment""", re.X
         )
-        if self._status == 1:
-            with open(key) as keyfile:
-                keyline = keyfile.readline()
-                self.logger.debug("Read Keyline: %s", keyline)
-                match = regex.match(keyline)
-                if match:
-                    new_key = match.groupdict()
-                else:
-                    raise IOError(
-                        "Could not parse SSH-Key from file: {}".
-                        format(keyfile)
-                    )
-            self.logger.debug("Read Key: %s", new_key)
-            auth_keys, _, exitcode = self._run("cat ~/.ssh/authorized_keys")
-            self.logger.debug("Exitcode: %s", exitcode)
-            if exitcode != 0:
-                self._run("mkdir ~/.ssh")
-                self._run("touch ~/.ssh/authorized_keys")
-            result = []
+        with open(key) as keyfile:
+            keyline = keyfile.readline()
+            self.logger.debug("Read Keyline: %s", keyline)
+            match = regex.match(keyline)
+            if match:
+                new_key = match.groupdict()
+            else:
+                raise IOError(
+                    "Could not parse SSH-Key from file: {}".
+                    format(keyfile)
+                )
+        self.logger.debug("Read Key: %s", new_key)
+        auth_keys, _, read_keys = self._run("cat ~/.ssh/authorized_keys")
+        self.logger.debug("Exitcode trying to read keys: %s, keys: %s", read_keys, auth_keys)
+        result = []
+        _, _, test_write = self._run("touch ~/.test")
+        if read_keys == 0:
             for line in auth_keys:
                 match = regex.match(line)
                 if match:
@@ -208,12 +206,33 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 if key['key'] == new_key['key']:
                     self.logger.info("Key already on target")
                     return
-            self.logger.info("Key not on target, mounting...")
-            self._run_check('echo "{}" > /tmp/keys'.format(keyline))
-            self._run_check('chmod 600 /tmp/keys')
-            self._run_check('mount --bind /tmp/keys ~/.ssh/authorized_keys')
-            self._run_check('chmod 700 ~/.ssh')
-            self._run_check('chmod 644 ~/.ssh/authorized_keys')
+
+        if test_write == 0 and read_keys == 0:
+            self.logger.debug("Key not on target and writeable, concatenating...")
+            self._run_check('echo "{}" >> ~/.ssh/authorized_keys'.format(keyline))
+            self._run_check("rm ~/.test")
+            return
+
+        if test_write == 0:
+            self.logger.debug("Key not on target, testing for .ssh directory")
+            _, _, ssh_dir = self._run("[ -d ~/.ssh/ ]")
+            if not ssh_dir == 0:
+                self.logger.debug("~/.ssh did not exist, creating")
+                self._run("mkdir ~/.ssh/")
+            self._run_check("chmod 600 ~/.ssh/")
+            self.logger.debug("Creating ~/.ssh/authorized_keys")
+            self._run_check('echo "{}" > ~/.ssh/authorized_keys'.format(keyline))
+            self._run_check("rm ~/.test")
+            return
+
+        self.logger.debug("Key not on target and not writeable, using bind mount...")
+        self._run_check('mkdir -m 700 /tmp/labgrid-ssh/')
+        self._run("cp -a ~/.ssh/* /tmp/labgrid-ssh/")
+        self._run_check('echo "{}" >> /tmp/labgrid-ssh/authorized_keys'.format(keyline))
+        self._run_check('chmod 600 /tmp/labgrid-ssh/authorized_keys')
+        out, err, exitcode = self._run('mount --bind /tmp/labgrid-ssh/ ~/.ssh/')
+        if exitcode != 0:
+            self.logger.warning("Could not bind mount ~/.ssh directory: %s %s", out, err)
 
     @Driver.check_active
     def put_ssh_key(self, key):

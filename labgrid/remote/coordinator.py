@@ -99,8 +99,10 @@ class CoordinatorComponent(ApplicationSession):
         self.sessions = {}
         self.places = {}
         self.poll_task = None
+        self.save_scheduled = False
 
-        yield from self.load()
+        self.load()
+        self.save_later()
 
         enable_tcp_nodelay(self)
         self.join(self.config.realm, ["ticket"], "coordinator")
@@ -173,6 +175,7 @@ class CoordinatorComponent(ApplicationSession):
 
     @asyncio.coroutine
     def onLeave(self, details):
+        self.save()
         if self.poll_task:
             self.poll_task.cancel()
             yield from asyncio.wait([self.poll_task])
@@ -180,6 +183,7 @@ class CoordinatorComponent(ApplicationSession):
 
     @asyncio.coroutine
     def onDisconnect(self):
+        self.save()
         if self.poll_task:
             self.poll_task.cancel()
             yield from asyncio.wait([self.poll_task])
@@ -187,6 +191,10 @@ class CoordinatorComponent(ApplicationSession):
 
     @asyncio.coroutine
     def _poll_step(self):
+        # save changes
+        if self.save_scheduled:
+            self.save()
+        # poll exporters
         for session in list(self.sessions.values()):
             if isinstance(session, ExporterSession):
                 fut = self.call(
@@ -219,8 +227,12 @@ class CoordinatorComponent(ApplicationSession):
             except:
                 traceback.print_exc()
 
-    @asyncio.coroutine
+
+    def save_later(self):
+        self.save_scheduled = True
+
     def save(self):
+        self.save_scheduled = False
         with open('resources.yaml', 'w') as f:
             resources = self._get_resources()
             f.write(yaml.dump(resources, default_flow_style=False))
@@ -228,7 +240,6 @@ class CoordinatorComponent(ApplicationSession):
             places = self._get_places()
             f.write(yaml.dump(places, default_flow_style=False))
 
-    @asyncio.coroutine
     def load(self):
         try:
             self.place = {}
@@ -305,7 +316,7 @@ class CoordinatorComponent(ApplicationSession):
                 for resourcename in group.copy():
                     action, resource_path = session.set_resource(groupname, resourcename, {})
                     yield from self._update_acquired_places(action, resource_path)
-        yield from self.save()
+        self.save_later()
 
     @asyncio.coroutine
     def attach(self, name, details=None):
@@ -331,7 +342,7 @@ class CoordinatorComponent(ApplicationSession):
         if action is Action.ADD:
             self._add_default_place(groupname)
         yield from self._update_acquired_places(action, resource_path)
-        yield from self.save()
+        self.save_later()
 
     def _get_resources(self):
         result = {}
@@ -355,7 +366,7 @@ class CoordinatorComponent(ApplicationSession):
         self.publish(
             'org.labgrid.coordinator.place_changed', name, place.asdict()
         )
-        yield from self.save()
+        self.save_later()
         return True
 
     @asyncio.coroutine
@@ -368,7 +379,7 @@ class CoordinatorComponent(ApplicationSession):
         self.publish(
             'org.labgrid.coordinator.place_changed', name, {}
         )
-        yield from self.save()
+        self.save_later()
         return True
 
     @asyncio.coroutine
@@ -382,7 +393,7 @@ class CoordinatorComponent(ApplicationSession):
         self.publish(
             'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )
-        yield from self.save()
+        self.save_later()
         return True
 
     @asyncio.coroutine
@@ -399,7 +410,7 @@ class CoordinatorComponent(ApplicationSession):
         self.publish(
             'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )
-        yield from self.save()
+        self.save_later()
         return True
 
     @asyncio.coroutine
@@ -413,7 +424,7 @@ class CoordinatorComponent(ApplicationSession):
         self.publish(
             'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )
-        yield from self.save()
+        self.save_later()
         return True
 
     @asyncio.coroutine
@@ -430,7 +441,7 @@ class CoordinatorComponent(ApplicationSession):
         self.publish(
             'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )
-        yield from self.save()
+        self.save_later()
         return True
 
     @asyncio.coroutine
@@ -448,7 +459,7 @@ class CoordinatorComponent(ApplicationSession):
         self.publish(
             'org.labgrid.coordinator.place_changed', placename, place.asdict()
         )
-        yield from self.save()
+        self.save_later()
         return True
 
     @asyncio.coroutine
@@ -474,7 +485,7 @@ class CoordinatorComponent(ApplicationSession):
         self.publish(
             'org.labgrid.coordinator.place_changed', name, place.asdict()
         )
-        yield from self.save()
+        self.save_later()
         return True
 
     @asyncio.coroutine
@@ -492,7 +503,7 @@ class CoordinatorComponent(ApplicationSession):
         self.publish(
             'org.labgrid.coordinator.place_changed', name, place.asdict()
         )
-        yield from self.save()
+        self.save_later()
         return True
 
     def _get_places(self):

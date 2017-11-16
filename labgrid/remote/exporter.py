@@ -16,6 +16,11 @@ from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 from .config import ResourceConfig
 from .common import ResourceEntry, enable_tcp_nodelay
 
+try:
+    import pkg_resources
+    __version__ = pkg_resources.get_distribution('labgrid').version
+except:
+    __version__ = "unknown"
 
 def get_free_port():
     """Helper function to always return an unused port."""
@@ -191,6 +196,7 @@ class ExporterSession(ApplicationSession):
         self.name = self.config.extra['name']
         self.authid = "exporter/{}".format(self.name)
         self.address = self._transport.transport.get_extra_info('sockname')[0]
+        self.poll_task = None
 
         self.groups = {}
 
@@ -232,12 +238,14 @@ class ExporterSession(ApplicationSession):
         prefix = 'org.labgrid.exporter.{}'.format(self.name)
         yield from self.register(self.acquire, '{}.acquire'.format(prefix))
         yield from self.register(self.release, '{}.release'.format(prefix))
+        yield from self.register(self.version, '{}.version'.format(prefix))
 
     @asyncio.coroutine
     def onLeave(self, details):
         """Cleanup after leaving the coordinator connection"""
-        self.poll_task.cancel()
-        yield from asyncio.wait([self.poll_task])
+        if self.poll_task:
+            self.poll_task.cancel()
+            yield from asyncio.wait([self.poll_task])
         super().onLeave(details)
 
     @asyncio.coroutine
@@ -245,9 +253,10 @@ class ExporterSession(ApplicationSession):
         print("connection lost")
         global reexec
         reexec = True
-        self.poll_task.cancel()
-        yield from asyncio.wait([self.poll_task])
-        yield from asyncio.sleep(0.5) # give others a chance to clean up
+        if self.poll_task:
+            self.poll_task.cancel()
+            yield from asyncio.wait([self.poll_task])
+            yield from asyncio.sleep(0.5) # give others a chance to clean up
         self.loop.stop()
 
     @asyncio.coroutine
@@ -261,6 +270,10 @@ class ExporterSession(ApplicationSession):
         resource = self.groups[group_name][resource_name]
         #resource.release()
         yield from self.update_resource(group_name, resource_name)
+
+    @asyncio.coroutine
+    def version(self):
+        return __version__
 
     @asyncio.coroutine
     def _poll_step(self):

@@ -51,10 +51,6 @@ workers:
           ticket:
             type: dynamic
             authenticator: org.labgrid.authenticate
-        options:
-          auto_ping_interval: 1000
-          auto_ping_timeout: 2000
-          auto_ping_size: 4
   components:
   - type: class
     classname: labgrid.remote.authenticator.AuthenticatorSession

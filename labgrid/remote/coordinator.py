@@ -1,6 +1,7 @@
 """The coordinator module coordinates exported resources and clients accessing them."""
 # pylint: disable=no-member
 import asyncio
+import traceback
 from collections import defaultdict
 from os import environ
 from pprint import pprint
@@ -27,6 +28,7 @@ class RemoteSession:
     coordinator = attr.ib()
     session = attr.ib()
     authid = attr.ib()
+    version = attr.ib(default="unknown", init=False)
 
     @property
     def key(self):
@@ -96,6 +98,7 @@ class CoordinatorComponent(ApplicationSession):
     def onConnect(self):
         self.sessions = {}
         self.places = {}
+        self.poll_task = None
 
         yield from self.load()
 
@@ -117,7 +120,7 @@ class CoordinatorComponent(ApplicationSession):
             options=RegisterOptions(details_arg='details')
         )
 
-        # resources 
+        # resources
         yield from self.register(
             self.set_resource,
             'org.labgrid.coordinator.set_resource',
@@ -163,7 +166,58 @@ class CoordinatorComponent(ApplicationSession):
         yield from self.register(
             self.get_places, 'org.labgrid.coordinator.get_places'
         )
+
+        self.poll_task = asyncio.get_event_loop().create_task(self.poll())
+
         print("Coordinator ready.")
+
+    @asyncio.coroutine
+    def onLeave(self, details):
+        if self.poll_task:
+            self.poll_task.cancel()
+            yield from asyncio.wait([self.poll_task])
+        super().onLeave(details)
+
+    @asyncio.coroutine
+    def onDisconnect(self):
+        if self.poll_task:
+            self.poll_task.cancel()
+            yield from asyncio.wait([self.poll_task])
+            yield from asyncio.sleep(0.5) # give others a chance to clean up
+
+    @asyncio.coroutine
+    def _poll_step(self):
+        for session in list(self.sessions.values()):
+            if isinstance(session, ExporterSession):
+                fut = self.call(
+                    'org.labgrid.exporter.{}.version'.format(session.name)
+                )
+                done, pending = yield from asyncio.wait([fut], timeout=5)
+                if not done:
+                    print('kicking exporter ({}/{})'.format(session.key, session.name))
+                    yield from self.on_session_leave(session.key)
+                    continue
+                try:
+                    session.version = done.pop().result()
+                except wamp.exception.ApplicationError as e:
+                    if e.error == "wamp.error.no_such_procedure":
+                        pass # old client
+                    elif e.error == "wamp.error.canceled":
+                        pass # disconnected
+                    else:
+                        raise
+
+    @asyncio.coroutine
+    def poll(self):
+        loop = asyncio.get_event_loop()
+        while not loop.is_closed():
+            try:
+                yield from asyncio.sleep(15.0)
+                yield from self._poll_step()
+            except asyncio.CancelledError:
+                break
+            except:
+                traceback.print_exc()
 
     @asyncio.coroutine
     def save(self):
@@ -241,7 +295,7 @@ class CoordinatorComponent(ApplicationSession):
 
     @asyncio.coroutine
     def on_session_leave(self, session_id):
-        pprint(session_id)
+        print('leave ({})'.format(session_id))
         try:
             session = self.sessions.pop(session_id)
         except KeyError:
@@ -263,13 +317,16 @@ class CoordinatorComponent(ApplicationSession):
 
     @asyncio.coroutine
     def set_resource(self, groupname, resourcename, resource, details=None):
+        session = self.sessions.get(details.caller)
+        if session is None:
+            return
+        assert isinstance(session, ExporterSession)
+
         groupname = str(groupname)
         resourcename = str(resourcename)
         # TODO check if acquired
         print(details)
         pprint(resource)
-        session = self.sessions[details.caller]
-        assert isinstance(session, ExporterSession)
         action, resource_path = session.set_resource(groupname, resourcename, resource)
         if action is Action.ADD:
             self._add_default_place(groupname)

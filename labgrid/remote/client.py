@@ -20,7 +20,7 @@ from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
 from ..environment import Environment
-from ..exceptions import NoDriverFoundError
+from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util.timeout import Timeout
 from ..util.dict import diff_dict, flat_dict
@@ -784,7 +784,7 @@ def main():
         '--debug',
         action='store_true',
         default=False,
-        help="enable debug mode"
+        help="enable debug mode (show python tracebacks)"
     )
     parser.add_argument(
         '-v',
@@ -945,12 +945,43 @@ def main():
                 session.loop.run_until_complete(args.func(session))
             else:
                 args.func(session)
+        except NoResourceFoundError as e:
+            if args.debug:
+                traceback.print_exc()
+            else:
+                print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
+            print('\n'.join(["",
+                "This may be caused by disconnected exporter or wrong match entries.",
+                "You can use the 'show' command to all matching resources.",
+            ]), file=sys.stderr)
+            exitcode = 1
+        except NoDriverFoundError as e:
+            if args.debug:
+                traceback.print_exc()
+            else:
+                print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
+            print('\n'.join(["",
+                "This is likely caused by an error or missing driver in the environment configuration.",
+            ]), file=sys.stderr)
+            exitcode = 1
+        except InvalidConfigError as e:
+            if args.debug:
+                traceback.print_exc()
+            else:
+                print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
+            print('\n'.join(["",
+                "This is likely caused by an error in the environment configuration or invalid",
+                "resource information provided by the coordinator.",
+            ]), file=sys.stderr)
+            exitcode = 1
         except Error as e:
             if args.debug:
                 traceback.print_exc()
             else:
                 print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
             exitcode = 1
+        except KeyboardInterrupt:
+            exitcode = 0
         except:
             traceback.print_exc()
             exitcode = 2

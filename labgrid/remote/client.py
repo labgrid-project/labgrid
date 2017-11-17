@@ -692,7 +692,7 @@ class ClientSession(ApplicationSession):
                 break
             elif isinstance(resource, NetworkMXSUSBLoader):
                 try:
-                    drv = target.get_driver(MXUSBDriver)
+                    drv = target.get_driver(MXSUSBDriver)
                 except NoDriverFoundError:
                     drv = MXSUSBDriver(target, name=None)
                 drv.loader.timeout = self.args.wait
@@ -779,7 +779,7 @@ def main():
         '-s',
         '--state',
         type=str,
-        default=place,
+        default=state,
         help="strategy state to switch into before command"
     )
     parser.add_argument(

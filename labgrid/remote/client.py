@@ -596,17 +596,20 @@ class ClientSession(ApplicationSession):
     def digital_io(self):
         place = self.get_acquired_place()
         action = self.args.action
+        name = self.args.name
         target = self._get_target(place)
         from ..driver.onewiredriver import OneWirePIODriver
         try:
-            drv = target.get_driver(OneWirePIODriver)
+            drv = target.get_driver(OneWirePIODriver, name=name)
         except NoDriverFoundError:
-            drv = OneWirePIODriver(target, name=None)
+            target.set_binding_map({"port": name})
+            drv = OneWirePIODriver(target, name=name)
         target.await_resources([drv.port], timeout=1.0)
         target.activate(drv)
         if action == 'get':
             print(
-                "digital IO for place {} is {}".format(
+                "digital IO {} for place {} is {}".format(
+                    drv.port.name,
                     place.name,
                     'high' if drv.get() else 'low',
                 )
@@ -891,7 +894,8 @@ def main():
 
     subparser = subparsers.add_parser('io',
                                       help="change (or get) a digital IO status")
-    subparser.add_argument('action', choices=['high', 'low', 'get'])
+    subparser.add_argument('action', choices=['high', 'low', 'get'], help="action")
+    subparser.add_argument('name', help="optional resource name", nargs='?')
     subparser.set_defaults(func=ClientSession.digital_io)
 
     subparser = subparsers.add_parser('console',

@@ -77,7 +77,7 @@ provided by connecting drivers and resources on a given target at runtime.
 
     @attr.s(cmp=False)
     class ExampleDriver(Driver, ConsoleProtocol):
-	pass
+        pass
 
 The ConsoleExpectMixin is a mixin class to add expect functionality to any
 class supporting the :any:`ConsoleProtocol` and has to be the first item in the
@@ -95,7 +95,7 @@ be added into multiple drivers.
 
     @attr.s(cmp=False)
     class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
-	pass
+        pass
 
 Additionally the driver needs to be registered with the :any:`target_factory`
 and provide a bindings dictionary, so that the :any:`Target` can resolve
@@ -113,8 +113,8 @@ dependencies on other drivers or resources.
     @target_factory.reg_driver
     @attr.s(cmp=False)
     class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
-	bindings = { "port": SerialPort }
-	pass
+        bindings = { "port": SerialPort }
+        pass
 
 The listed resource :code:`SerialPort` will be bound to :code:`self.port`,
 making it usable in the class.
@@ -147,10 +147,10 @@ The minimum requirement is a call to :code:`super().__attr_post_init__()`.
     @target_factory.reg_driver
     @attr.s(cmp=False)
     class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
-	bindings = { "port": SerialPort }
+        bindings = { "port": SerialPort }
 
-	def __attr_post_init__(self):
-	    super().__attr_post_init__()
+        def __attr_post_init__(self):
+            super().__attr_post_init__()
 
 All that's left now is to implement the functionality described by the used
 protocol, by using the API of the bound drivers and resources.

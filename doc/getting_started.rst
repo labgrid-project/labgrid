@@ -199,11 +199,11 @@ To show more details on the exported resources, use ``-v`` (or ``-vv``):
     $ labgrid-client -v resources
     Exporter 'kiwi':
       Group 'example-group' (kiwi/example-group/*):
-	Resource 'NetworkPowerPort' (kiwi/example-group/NetworkPowerPort[/NetworkPowerPort]):
-	  {'acquired': None,
-	   'avail': True,
-	   'cls': 'NetworkPowerPort',
-	   'params': {'host': 'netio1', 'index': 3, 'model': 'netio'}}
+        Resource 'NetworkPowerPort' (kiwi/example-group/NetworkPowerPort[/NetworkPowerPort]):
+          {'acquired': None,
+           'avail': True,
+           'cls': 'NetworkPowerPort',
+           'params': {'host': 'netio1', 'index': 3, 'model': 'netio'}}
     ...
 
 You can now add a place with:

@@ -16,19 +16,19 @@ from collections import defaultdict, OrderedDict
 from time import sleep
 from datetime import datetime
 
-from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
+from autobahn.asyncio.wamp import ApplicationSession
 
 from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
 from ..environment import Environment
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util.timeout import Timeout
 from ..util.dict import diff_dict, flat_dict
 from ..util.yaml import dump
 from .. import Target
 
 txaio.use_asyncio()
 txaio.config.loop = asyncio.get_event_loop()
+
 
 class Error(Exception):
     pass
@@ -244,7 +244,7 @@ class ClientSession(ApplicationSession):
                     if namespace != getuser():
                         continue
                     elif alias == pattern:  # prefer user namespace
-                        return [ name ]
+                        return [name]
                 if pattern in alias:
                     result.add(name)
         return list(result)
@@ -627,7 +627,7 @@ class ClientSession(ApplicationSession):
         except KeyError:
             print("resource not found")
             return False
-        
+
         # check for valid resources
         assert resource.port is not None, "Port is not set"
 
@@ -692,13 +692,13 @@ class ClientSession(ApplicationSession):
                 break
             elif isinstance(resource, NetworkMXSUSBLoader):
                 try:
-                    drv = target.get_driver(MXUSBDriver)
+                    drv = target.get_driver(MXSUSBDriver)
                 except NoDriverFoundError:
                     drv = MXSUSBDriver(target, name=None)
                 drv.loader.timeout = self.args.wait
                 break
             elif isinstance(resource, NetworkAlteraUSBBlaster):
-                args =dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
+                args = dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
                 try:
                     drv = target.get_driver(OpenOCDDriver)
                 except NoDriverFoundError:
@@ -712,7 +712,6 @@ class ClientSession(ApplicationSession):
 
 
 def start_session(url, realm, extra):
-    from autobahn.wamp import protocol
     from autobahn.wamp.types import ComponentConfig
     from autobahn.websocket.util import parse_url
     from autobahn.asyncio.websocket import WampWebSocketClientFactory
@@ -730,6 +729,7 @@ def start_session(url, realm, extra):
     extra['connected'] = connected
 
     session = [None]
+
     def create():
         cfg = ComponentConfig(realm, extra)
         session[0] = ClientSession(cfg)
@@ -742,6 +742,7 @@ def start_session(url, realm, extra):
     (transport, protocol) = loop.run_until_complete(coro)
     loop.run_until_complete(ready.wait())
     return session[0]
+
 
 def main():
     logging.basicConfig(
@@ -779,7 +780,7 @@ def main():
         '-s',
         '--state',
         type=str,
-        default=place,
+        default=state,
         help="strategy state to switch into before command"
     )
     parser.add_argument(
@@ -828,7 +829,7 @@ def main():
     subparser.set_defaults(func=ClientSession.print_who)
 
     subparser = subparsers.add_parser('show',
-        help="show a place and related resources",
+                                      help="show a place and related resources",
     )
     subparser.set_defaults(func=ClientSession.print_place)
 

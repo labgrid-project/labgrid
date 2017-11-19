@@ -125,3 +125,27 @@ class TestTargetFactory:
             """)
             target_factory._convert_to_named_list(data)
         assert "missing 'cls' key in OrderedDict(" in excinfo.value.msg
+
+    def test_resource_param_error(self):
+        with pytest.raises(InvalidConfigError) as excinfo:
+            target_factory.make_resource(
+                None, 'NetworkSerialPort', 'serial', {'port': None})
+        assert "failed to create" in excinfo.value.msg
+
+    def test_driver_param_error(self):
+        with pytest.raises(InvalidConfigError) as excinfo:
+            target_factory.make_driver(
+                None, 'QEMUDriver', 'qemu', {'cpu': 'arm'})
+        assert "failed to create" in excinfo.value.msg
+
+    def test_resource_class_error(self):
+        with pytest.raises(InvalidConfigError) as excinfo:
+            target_factory.make_resource(
+                None, 'UnknownResource', None, {})
+        assert "unknown resource class" in excinfo.value.msg
+
+    def test_driver_class_error(self):
+        with pytest.raises(InvalidConfigError) as excinfo:
+            target_factory.make_driver(
+                None, 'UnknownDriver', None, {})
+        assert "unknown driver class" in excinfo.value.msg

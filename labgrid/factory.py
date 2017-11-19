@@ -82,12 +82,26 @@ class TargetFactory:
 
     def make_resource(self, target, resource, name, args):
         assert isinstance(args, dict)
-        r = self.resources[resource](target, name, **args)
+        if not resource in self.resources:
+            raise InvalidConfigError("unknown resource class {}".format(resource))
+        try:
+            r = self.resources[resource](target, name, **args)
+        except TypeError as e:
+            raise InvalidConfigError(
+                "failed to create {} for target '{}' using {} ".format(
+                    resource, target, args)) from e
         return r
 
     def make_driver(self, target, driver, name, args):
         assert isinstance(args, dict)
-        d = self.drivers[driver](target, name, **args)
+        if not driver in self.drivers:
+            raise InvalidConfigError("unknown driver class {}".format(driver))
+        try:
+            d = self.drivers[driver](target, name, **args)
+        except TypeError as e:
+            raise InvalidConfigError(
+                "failed to create {} for target '{}' using {} ".format(
+                    driver, target, args)) from e
         return d
 
     def make_target(self, name, config, *, env=None):

@@ -914,6 +914,54 @@ to transition to the shell state:
 this command would transition from the boot loader into a Linux shell and
 activate the shelldriver.
 
+Reporters
+---------
+
+StepReporter
+~~~~~~~~~~~~
+The StepReporter outputs individual labgrid steps to `STDOUT`.
+
+::
+
+    from labgrid.stepreporter import StepReporter
+
+    StepReporter.start()
+
+The Reporter can be stopped with a call to the stop function:
+
+::
+
+    from labgrid.stepreporter import StepReporter
+
+    StepReporter.stop()
+
+Stopping the StepReporter if it has not been started will raise an
+AssertionError, as will starting an already started StepReporter.
+
+ConsoleLoggingReporter
+~~~~~~~~~~~~~~~~~~~~~~
+The ConsoleLoggingReporter outputs read calls from the console transports into
+files. It takes the path as a parameter.
+
+::
+
+    from labgrid.consoleloggingreporter import ConsoleLoggingReporter
+
+    ConsoleLoggingReporter.start(".")
+
+The Reporter can be stopped with a call to the stop function:
+
+::
+
+    from labgrid.consoleloggingreporter import ConsoleLoggingReporter
+
+    ConsoleLoggingReporter.stop()
+
+
+Stopping the ConsoleLoggingReporter if it has not been started will raise an
+AssertionError, as will starting an already started StepReporter.
+
+
 
 Environment Configuration
 -------------------------

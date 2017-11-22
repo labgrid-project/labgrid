@@ -13,6 +13,10 @@ class StepReporter:
         steps.subscribe(self.notify)
 
     def notify(self, event):
+        # ignore tagged events
+        if event.step.tag:
+            return
+
         step = event.step
         indent = '  '*step.level
         print("{}{}".format(indent, event))

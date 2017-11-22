@@ -67,6 +67,10 @@ class StepReporter:
         ]
 
     def notify(self, event):
+        # ignore tagged events
+        if event.step.tag:
+            return
+
         new = not self.rewrite
         if not(self.cur_step is event.step):
             new = True

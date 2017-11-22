@@ -22,6 +22,7 @@ class ConsoleExpectMixin:
         self._expect = PtxExpect(self)
 
     @Driver.check_active
+    @step(result=True, tag='console')
     def read(self, size=1, timeout=0.0):
         res = self._read(size=size, timeout=timeout)
         self.logger.debug("Read %i bytes: %s, timeout %.2f, requested size %i",
@@ -29,6 +30,7 @@ class ConsoleExpectMixin:
         return res
 
     @Driver.check_active
+    @step(args=['data'], tag='console')
     def write(self, data):
         if self.txdelay:
             self.logger.debug("Write %i bytes: %s (with %fs txdelay)",

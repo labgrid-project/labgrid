@@ -4,6 +4,7 @@ import pytest
 from _pytest.capture import safe_text_dupfile
 
 from ..step import steps
+from ..consoleloggingreporter import ConsoleLoggingReporter
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,12 +24,15 @@ def pytest_configure(config):
     terminalreporter = config.pluginmanager.getplugin('terminalreporter')
     capturemanager = config.pluginmanager.getplugin('capturemanager')
     rewrite = True
+    lg_log = config.option.lg_log
     if capturemanager._method == "no":
         rewrite = False  # other output would interfere with our rewrites
     if terminalreporter.verbosity > 1:  # enable with -vv
         config.pluginmanager.register(StepReporter(terminalreporter, rewrite=rewrite))
     if terminalreporter.verbosity > 2:  # enable with -vvv
         logging.getLogger().setLevel(logging.DEBUG)
+    if lg_log:
+        ConsoleLoggingReporter(lg_log)
 
 
 class StepReporter:

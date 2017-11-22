@@ -14,8 +14,8 @@ class Steps:
     def get_current(self):
         return self._stack[-1] if self._stack else None
 
-    def get_new(self, title):
-        step = Step(title, level=len(self._stack) + 1)
+    def get_new(self, title, tag, source):
+        step = Step(title, level=len(self._stack) + 1, tag=tag, source=source)
         return step
 
     def push(self, step):
@@ -91,9 +91,11 @@ class StepEvent:
 
 # TODO: allow attaching log information, using a Resource as meta-data
 class Step:
-    def __init__(self, title, level):
+    def __init__(self, title, level, tag, source):
         self.title = title
         self.level = level
+        self.source = source
+        self.tag = tag
         self.args = None
         self.result = None
         self._start_ts = None
@@ -180,20 +182,25 @@ class Step:
             warnings.warn("__del__ called before {} was done".format(step))
 
 
-def step(*, title=None, args=[], result=False):
+def step(*, title=None, args=[], result=False, tag=None):
     def decorator(func):
+        # resolve default title
+        nonlocal title
+        title = title or func.__name__
+
+        signature = inspect.signature(func)
+
         @wraps(func)
         def wrapper(*_args, **_kwargs):
-            if title is None:
-                step = steps.get_new(func.__name__)
-            else:
-                step = steps.get_new(title)
+            bound = signature.bind_partial(*_args, **_kwargs)
+            bound.apply_defaults()
+            source = bound.arguments.get('self')
+            step = steps.get_new(title, tag, source)
             # optionally pass the step object
-            if 'step' in inspect.signature(func).parameters:
+            if 'step' in signature.parameters:
                 _kwargs['step'] = step
             if args:
-                captured = inspect.getcallargs(func, *_args, **_kwargs)
-                step.args = {k: captured[k] for k in args}
+                step.args = {k: bound.arguments[k] for k in args}
             step.start()
             try:
                 _result = func(*_args, **_kwargs)

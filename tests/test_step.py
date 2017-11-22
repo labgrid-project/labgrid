@@ -52,33 +52,54 @@ class A:
     def method_result_step(self, foo, *, step):
         return step
 
+    @step(tag='dummy')
+    def method_tag_step(self, foo, *, step):
+        return step
+
 def test_method():
     a = A()
     step = a.method_step('foo')
+    assert step.source == a
     assert step.title == 'method_step'
     assert step.args is None
     assert step.result is None
+    assert step.tag is None
 
 def test_method_args():
     a = A()
     step = a.method_args_step('foo')
+    assert step.source == a
     assert step.title == 'method_args_step'
     assert step.args == {'foo': 'foo'}
     assert step.result is None
+    assert step.tag is None
 
 def test_method_title():
     a = A()
     step = a.method_title_step('foo')
+    assert step.source == a
     assert step.title == 'test-title'
     assert step.args is None
     assert step.result is None
+    assert step.tag is None
 
 def test_method_result():
     a = A()
     step = a.method_result_step('foo')
+    assert step.source == a
     assert step.title == 'method_result_step'
     assert step.args is None
     assert step.result is step
+    assert step.tag is None
+
+def test_method_tag():
+    a = A()
+    step = a.method_tag_step('foo')
+    assert step.source == a
+    assert step.title == 'method_tag_step'
+    assert step.args is None
+    assert step.result is None
+    assert step.tag == 'dummy'
 
 @step(args=['default'])
 def step_default_arg(default=None, *, step):

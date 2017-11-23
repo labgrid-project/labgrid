@@ -34,7 +34,10 @@ class Steps:
     def notify(self, event):
         # TODO: buffer and try to merge consecutive events
         for subscriber in self._subscribers:
-            subscriber(event)
+            try:
+                subscriber(event)
+            except Exception as e:
+                warnings.warn("unhandled exception during event notification: {}".format(e))
 
 steps = Steps()
 

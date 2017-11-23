@@ -1,6 +1,6 @@
 from time import sleep
 
-from pytest import approx
+import pytest
 
 from labgrid import step, steps
 
@@ -33,7 +33,7 @@ def step_sleep(*, step):
 
 def test_timing():
     step = step_sleep()
-    assert step.duration == approx(0.25, abs=1e-2)
+    assert step.duration == pytest.approx(0.25, abs=1e-2)
 
 class A:
     @step()
@@ -90,3 +90,11 @@ def test_default_arg():
 
     step = step_default_arg(default='real')
     assert step.args['default'] == 'real'
+
+@step()
+def step_error(default=None, *, step):
+    raise ValueError('dummy')
+
+def test_error():
+    with pytest.raises(ValueError, match=r'dummy'):
+        step = step_error()

@@ -98,3 +98,22 @@ def step_error(default=None, *, step):
 def test_error():
     with pytest.raises(ValueError, match=r'dummy'):
         step = step_error()
+
+@step()
+def step_event_skip(*, step):
+    step.skip('testing')
+
+def test_event():
+    events = []
+    def callback(event):
+        events.append(event)
+
+    steps.subscribe(callback)
+    try:
+        step = step_event_skip()
+    finally:
+        steps.unsubscribe(callback)
+
+    skip_event = [e for e in events if 'skip' in e.data]
+    assert len(skip_event) == 1
+    assert skip_event[0].data['skip'] == 'testing'

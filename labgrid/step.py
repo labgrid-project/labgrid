@@ -31,6 +31,10 @@ class Steps:
     def subscribe(self, callback):
         self._subscribers.append(callback)
 
+    def unsubscribe(self, callback):
+        assert callback in self._subscribers
+        self._subscribers.remove(callback)
+
     def notify(self, event):
         # TODO: buffer and try to merge consecutive events
         for subscriber in self._subscribers:

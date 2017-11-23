@@ -117,3 +117,13 @@ def test_event():
     skip_event = [e for e in events if 'skip' in e.data]
     assert len(skip_event) == 1
     assert skip_event[0].data['skip'] == 'testing'
+
+def test_subscriber_error():
+    events = []
+    def callback(event):
+        raise ValueError('from callback')
+
+    steps.subscribe(callback)
+    with pytest.warns(UserWarning):
+        step = step_event_skip()
+    steps.unsubscribe(callback)

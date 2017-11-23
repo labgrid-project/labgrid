@@ -14,6 +14,7 @@ setup(
     data_files=[('share/man/1', ['man/labgrid-client.1',
                                  'man/labgrid-exporter.1',
                                  'man/labgrid-device-config.1'])],
+    python_requires='>=3.4',
     extras_require={
         'onewire': ['onewire>=0.2'],
         'coordinator': ['crossbar', 'idna==2.5']

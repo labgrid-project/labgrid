@@ -79,3 +79,14 @@ def test_method_result():
     assert step.title == 'method_result_step'
     assert step.args is None
     assert step.result is step
+
+@step(args=['default'])
+def step_default_arg(default=None, *, step):
+    return step
+
+def test_default_arg():
+    step = step_default_arg()
+    assert step.args['default'] == None
+
+    step = step_default_arg(default='real')
+    assert step.args['default'] == 'real'

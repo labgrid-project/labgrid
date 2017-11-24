@@ -30,11 +30,17 @@ def serial_raw_port(target):
 
 
 @pytest.fixture(scope='function')
-def serial_driver(target, serial_port, monkeypatch, mocker):
-    serial_mock = mocker.MagicMock
-    import serial
-    monkeypatch.setattr(serial, 'Serial', serial_mock)
+def serial_driver(target, serial_port, mocker):
+    m = mocker.patch('serial.Serial')
     s = SerialDriver(target, 'serial')
+    target.activate(s)
+    return s
+
+@pytest.fixture(scope='function')
+def serial_driver_no_name(target, serial_port, mocker):
+    m = mocker.patch('serial.Serial')
+    s = SerialDriver(target, None)
+    target.activate(s)
     return s
 
 @pytest.fixture(scope='function')

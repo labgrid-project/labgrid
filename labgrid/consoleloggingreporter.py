@@ -14,15 +14,31 @@ class ConsoleLoggingReporter:
     instance = None
 
     @classmethod
-    def start(cls):
+    def start(cls, path):
         """starts the ConsoleLoggingReporter"""
         assert cls.instance is None
-        cls.instance = cls()
+        cls.instance = cls(path)
+
+    @classmethod
+    def stop(cls):
+        """stops the ConsoleLoggingReporter"""
+        assert cls.instance is not None
+        cls.instance._stop()
+        steps.unsubscribe(cls.instance.notify)
+        cls.instance = None
 
     def __init__(self, logpath):
         self._logcache = {}
         self.logpath = logpath
         steps.subscribe(self.notify)
+
+    def _stop(self):
+        while self._logcache:
+            _, log = self._logcache.popitem()
+            # ignore cache entries for errors
+            if log is None:
+                continue
+            log.close()
 
     def get_logfile(self, event):
         """Returns the correct file handle from cache or creates a new file handle"""

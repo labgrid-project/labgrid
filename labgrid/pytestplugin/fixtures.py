@@ -27,6 +27,14 @@ def pytest_addoption(parser):
         dest='lg_coordinator',
         metavar='CROSSBAR_URL',
         help='labgrid coordinator websocket URL.')
+    group.addoption(
+        '--lg-log',
+        action='store',
+        dest='lg_log',
+        metavar='path to logfiles',
+        nargs='?',
+        default=".",
+        help='path to store logfiles')
 
 
 @pytest.fixture('session')

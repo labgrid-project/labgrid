@@ -128,6 +128,25 @@ serial "YK12345".
 Used by:
   - `YKUSHPowerDriver`_
 
+ModbusTCPCoil
+~~~~~~~~~~~~~
+A ModbusTCPCoil describes a coil accessible via ModbusTCP.
+
+.. code-block:: yaml
+
+   ModbusTCPCoil:
+     host: "192.168.23.42"
+     coil: 1
+
+The example describes the coil with the address 1 on the ModbusTCP device
+`192.168.23.42`.
+
+- host (str): hostname of the Modbus TCP server e.g. "192.168.23.42:502"
+- coil (int): index of the coil e.g. 3
+
+Used by:
+  - `ModbusCoilDriver`_
+
 NetworkService
 ~~~~~~~~~~~~~~
 A NetworkService describes a remote SSH connection.
@@ -722,6 +741,24 @@ Arguments:
   - cmd_on (str): command to turn power to the board on
   - cmd_off (str): command to turn power to the board off
   - delay (float): configurable delay in seconds between off and on
+
+ModbusCoilDriver
+~~~~~~~~~~~~~~~~
+A ModbusCoilDriver controls a `ModbusTCPCoil` resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  - `ModbusTCPCoil`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   ModbusCoilDriver: {}
+
+Arguments:
+  - None
 
 MXSUSBDriver
 ~~~~~~~~~~~~

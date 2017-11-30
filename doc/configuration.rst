@@ -261,6 +261,20 @@ An AlteraUSBBlaster resource describes an Altera USB blaster.
 Used by:
   - `OpenOCDDriver`_
 
+SNMPEthernetPort
+~~~~~~~~~~~~~~~~
+A SNMPEthernetPort resource describes a port on an Ethernet switch, which is
+accessible via SNMP.
+
+.. code-block:: yaml
+
+   SNMPEthernetPort:
+     switch: "switch-012"
+     interface: "17"
+
+- switch (str): host name of the Ethernet switch
+- interface (str): interface name
+
 RemotePlace
 ~~~~~~~~~~~
 A RemotePlace describes a set of resources attached to a labgrid remote place.

@@ -1,6 +1,6 @@
 import abc
 import logging
-from time import monotonic
+from time import monotonic, sleep
 from collections import Counter
 
 import attr
@@ -43,8 +43,8 @@ class Target:
         if (monotonic() - self.last_update) < 0.1:
             return
         self.last_update = monotonic()
-        resources = [r for r in self.resources if isinstance(r, ManagedResource)]
-        managers = set(r.manager for r in resources)
+        resources = [r for r in self.resources if r.get_managed_parent()]
+        managers = set(r.get_managed_parent().manager for r in resources)
         for manager in managers:
             manager.poll()
         for resource in resources:
@@ -53,30 +53,48 @@ class Target:
                     resource.display_name))
                 self.deactivate(resource)
 
-    def await_resources(self, resources, timeout=None):
+    def await_resources(self, resources, timeout=None, avail=True):
         """
-        Poll the given resources and wait until they are available.
+        Poll the given resources and wait until they are (un-)available.
+
+        Args:
+            resources (list): the resources to poll
+            timeout (float): optional timeout
+            avail (bool): optionally wait until the resources are unavailable with avail=False
         """
         self.update_resources()
 
-        waiting = set(resource for resource in resources if isinstance(resource, ManagedResource))
+        waiting = set(r for r in resources if r.avail != avail)
+        static = set(r for r in waiting if r.get_managed_parent() is None)
+        if static:
+            raise NoResourceFoundError("Static resources are not {}: {}".format(
+                "available" if avail else "unavailable", static))
+
         if not waiting:
             return
+
         if timeout is None:
-            timeout = Timeout(max(resource.timeout for resource in waiting))
+            timeout = Timeout(max(resource.get_managed_parent().timeout for resource in waiting))
         else:
             timeout = Timeout(timeout)
+
         while waiting and not timeout.expired:
-            waiting = set(r for r in waiting if not r.avail)
-            managers = set(r.manager for r in waiting)
+            waiting = set(r for r in waiting if r.avail != avail)
+            managers = set(r.get_managed_parent().manager for r in waiting)
             for m in managers:
                 m.poll()
-            # TODO: sleep if no progress
+            if not any(r for r in waiting if r.avail == avail):
+                # sleep if no progress
+                sleep(0.5)
+
         if waiting:
             raise NoResourceFoundError(
-                "Not all resources are available: {}".format(waiting),
+                "Not all resources are {}: {}".format(
+                    "available" if avail else "unavailable", waiting),
                 filter=waiting
             )
+
+        self.update_resources()
 
     def get_resource(self, cls, *, name=None, await=True):
         """

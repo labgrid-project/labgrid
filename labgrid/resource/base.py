@@ -1,5 +1,6 @@
 import attr
 
+from ..factory import target_factory
 from .common import Resource
 
 
@@ -21,3 +22,14 @@ class EthernetInterface(Resource):
     Args:
         ifname (str): name of the interface"""
     ifname = attr.ib(default=None)
+
+@target_factory.reg_resource
+@attr.s
+class EthernetPort(Resource):
+    """The basic EthernetPort describes a switch and interface
+
+    Args:
+        switch (str): name of the switch
+        interface (str): name of the interface"""
+    switch = attr.ib(default=None)
+    interface = attr.ib(default=None)

@@ -15,6 +15,7 @@ class RemotePlaceManager(ResourceManager):
         self.loop = None
         self.session = None
         self.ready = None
+        self.unmanaged_resources = []
 
     def _start(self):
         if self.session:
@@ -43,8 +44,12 @@ class RemotePlaceManager(ResourceManager):
         for resource_name, resource_entry in resource_entries.items():
             new = target_factory.make_resource(
                 remote_place.target, resource_entry.cls, resource_name, resource_entry.args)
+            new.parent = remote_place
             new.avail = resource_entry.avail
+            new.extra = resource_entry.extra
             new._remote_entry = resource_entry
+            if not isinstance(new, ManagedResource):
+                self.unmanaged_resources.append(new)
             expanded.append(new)
         self.logger.debug("expanded remote resources for place {}: {}".format(
             remote_place.name, expanded))
@@ -53,8 +58,8 @@ class RemotePlaceManager(ResourceManager):
     def poll(self):
         import asyncio
         if not self.loop.is_running():
-            self.loop.run_until_complete(asyncio.sleep(0.0))
-        for resource in self.resources:
+            self.loop.run_until_complete(asyncio.sleep(0.1))
+        for resource in self.resources + self.unmanaged_resources:
             if isinstance(resource, RemotePlace):
                 continue
             attrs = resource._remote_entry.args.copy()
@@ -82,7 +87,7 @@ class RemotePlace(ManagedResource):
     manager_cls = RemotePlaceManager
 
     def __attrs_post_init__(self):
-        self.timeout = 5.0
+        self.timeout = 10.0
         super().__attrs_post_init__()
 
 @attr.s(cmp=False)

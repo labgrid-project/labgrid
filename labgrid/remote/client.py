@@ -710,6 +710,53 @@ class ClientSession(ApplicationSession):
         target.activate(drv)
         drv.load(self.args.filename)
 
+    def _get_ip(self, place):
+        target = self._get_target(place)
+        from ..resource import EthernetPort
+        try:
+            resource = target.get_resource(EthernetPort)
+        except KeyError:
+            print("resource not found")
+            return None
+        matches = []
+        for mac, details in resource.extra.get('macs').items():
+            ips = details.get('ips', [])
+            if not ips:
+                continue
+            matches.append((details['timestamp'], ips))
+        matches.sort()
+        newest = matches[-1][1]
+        if len(ips) > 1:
+            print("multiple IPs found: {}".format(ips))
+            return None
+        return newest[0]
+
+    def ssh(self):
+        place = self.get_acquired_place()
+        ip = self._get_ip(place)
+        if not ip:
+            return
+        args = ['ssh',
+                '-l', 'root',
+                '-o', 'StrictHostKeyChecking no',
+                '-o', 'UserKnownHostsFile /dev/null',
+                str(ip),
+        ] + self.args.leftover
+        print('Note: Using dummy known hosts file.')
+        res = subprocess.call(args)
+        if res:
+            print("connection lost")
+
+    def telnet(self):
+        place = self.get_acquired_place()
+        ip = self._get_ip(place)
+        if not ip:
+            return
+        args = ['telnet', str(ip)]
+        res = subprocess.call(args)
+        if res:
+            print("connection lost")
+
 
 def start_session(url, realm, extra):
     from autobahn.wamp.types import ComponentConfig
@@ -923,7 +970,21 @@ def main():
     )
     subparser.set_defaults(func=ClientSession.bootstrap)
 
-    args = parser.parse_args()
+    subparser = subparsers.add_parser('ssh',
+                                      help="connect via ssh (with optional arguments)")
+    subparser.set_defaults(func=ClientSession.ssh)
+
+    subparser = subparsers.add_parser('telnet',
+                                      help="connect via telnet")
+    subparser.set_defaults(func=ClientSession.telnet)
+
+    # make any leftover arguments available for some commands
+    args, leftover = parser.parse_known_args()
+    if args.command not in ['ssh']:
+        args = parser.parse_args()
+    else:
+        args.leftover = leftover
+
 
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)

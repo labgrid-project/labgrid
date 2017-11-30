@@ -187,6 +187,28 @@ exports["MXSUSBLoader"] = USBGenericExport
 exports["AlteraUSBBlaster"] = USBGenericExport
 
 
+@attr.s
+class EthernetPortExport(ResourceExport):
+    """ResourceExport for a ethernet interface"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.ethernetport import SNMPEthernetPort
+        self.data['cls'] = "EthernetPort"
+        self.local = SNMPEthernetPort(target=None, name=None,
+                **self.local_params)
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'switch': self.local.switch,
+            'interface': self.local.interface,
+            'extra': self.local.extra
+        }
+
+exports["SNMPEthernetPort"] = EthernetPortExport
+
+
 class ExporterSession(ApplicationSession):
     def onConnect(self):
         """Set up internal datastructures on successful connection:

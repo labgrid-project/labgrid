@@ -143,6 +143,7 @@ The example describes the coil with the address 1 on the ModbusTCP device
 
 - host (str): hostname of the Modbus TCP server e.g. "192.168.23.42:502"
 - coil (int): index of the coil e.g. 3
+- invert (bool): optional, whether the logic level is be inverted (active-low)
 
 Used by:
   - `ModbusCoilDriver`_
@@ -175,12 +176,14 @@ A OneWirePIO describes a onewire programmable I/O pin.
    OneWirePIO:
      host: example.computer
      path: /29.7D6913000000/PIO.0
+     invert: false
 
 The example describes a `PIO.0` at device address `29.7D6913000000` via the onewire
 server on `example.computer`.
 
 - host (str): hostname of the remote system running the onewire server
 - path (str): path on the server to the programmable I/O pin
+- invert (bool): optional, whether the logic level is be inverted (active-low)
 
 Used by:
   - `OneWirePIODriver`_

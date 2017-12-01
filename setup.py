@@ -19,6 +19,7 @@ setup(
         'onewire': ['onewire>=0.2'],
         'coordinator': ['crossbar', 'idna==2.5'],
         'snmp': ['pysnmp', 'pysnmp-mibs'],
+        'modbus': ['pyModbusTCP'],
     },
     setup_requires=['pytest-runner', 'setuptools_scm'],
     tests_require=['pytest-mock', ],

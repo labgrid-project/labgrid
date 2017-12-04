@@ -110,7 +110,7 @@ A sample configuration with one `main` target, accessible via SerialPort
          ShellDriver:
            prompt: 'root@\w+:[^ ]+ '
            login_prompt: ' login: '
-         username: 'root'
+           username: 'root'
 
 
 SEE ALSO

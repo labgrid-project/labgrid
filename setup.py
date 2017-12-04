@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='labgrid',
-    description='labgrid: lab hardware and software contol layer',
+    description='labgrid: lab hardware and software control layer',
     author='Rouven Czerwinski and Jan Luebbe',
     author_email='entwicklung@pengutronix.de',
     license='LGPL-2.1',

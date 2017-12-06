@@ -313,7 +313,6 @@ class Target:
                     else:
                         raise NoSupplierFoundError("invalid binding type {}".format(requirement))
                 except NoSupplierFoundError as e:
-                    print(e)
                     errors.append(e)
             if not suppliers:
                 if optional:

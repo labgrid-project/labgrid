@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='labgrid',
-    description='labgrid: lab hardware and software contol layer',
+    description='labgrid: lab hardware and software control layer',
     author='Rouven Czerwinski and Jan Luebbe',
     author_email='entwicklung@pengutronix.de',
     license='LGPL-2.1',
@@ -17,7 +17,9 @@ setup(
     python_requires='>=3.4',
     extras_require={
         'onewire': ['onewire>=0.2'],
-        'coordinator': ['crossbar', 'idna==2.5']
+        'coordinator': ['crossbar', 'idna==2.5'],
+        'snmp': ['pysnmp', 'pysnmp-mibs'],
+        'modbus': ['pyModbusTCP'],
     },
     setup_requires=['pytest-runner', 'setuptools_scm'],
     tests_require=['pytest-mock', ],

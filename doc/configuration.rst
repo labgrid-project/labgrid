@@ -128,6 +128,26 @@ serial "YK12345".
 Used by:
   - `YKUSHPowerDriver`_
 
+ModbusTCPCoil
+~~~~~~~~~~~~~
+A ModbusTCPCoil describes a coil accessible via ModbusTCP.
+
+.. code-block:: yaml
+
+   ModbusTCPCoil:
+     host: "192.168.23.42"
+     coil: 1
+
+The example describes the coil with the address 1 on the ModbusTCP device
+`192.168.23.42`.
+
+- host (str): hostname of the Modbus TCP server e.g. "192.168.23.42:502"
+- coil (int): index of the coil e.g. 3
+- invert (bool): optional, whether the logic level is be inverted (active-low)
+
+Used by:
+  - `ModbusCoilDriver`_
+
 NetworkService
 ~~~~~~~~~~~~~~
 A NetworkService describes a remote SSH connection.
@@ -156,12 +176,14 @@ A OneWirePIO describes a onewire programmable I/O pin.
    OneWirePIO:
      host: example.computer
      path: /29.7D6913000000/PIO.0
+     invert: false
 
 The example describes a `PIO.0` at device address `29.7D6913000000` via the onewire
 server on `example.computer`.
 
 - host (str): hostname of the remote system running the onewire server
 - path (str): path on the server to the programmable I/O pin
+- invert (bool): optional, whether the logic level is be inverted (active-low)
 
 Used by:
   - `OneWirePIODriver`_
@@ -260,6 +282,20 @@ An AlteraUSBBlaster resource describes an Altera USB blaster.
 
 Used by:
   - `OpenOCDDriver`_
+
+SNMPEthernetPort
+~~~~~~~~~~~~~~~~
+A SNMPEthernetPort resource describes a port on an Ethernet switch, which is
+accessible via SNMP.
+
+.. code-block:: yaml
+
+   SNMPEthernetPort:
+     switch: "switch-012"
+     interface: "17"
+
+- switch (str): host name of the Ethernet switch
+- interface (str): interface name
 
 RemotePlace
 ~~~~~~~~~~~
@@ -708,6 +744,24 @@ Arguments:
   - cmd_on (str): command to turn power to the board on
   - cmd_off (str): command to turn power to the board off
   - delay (float): configurable delay in seconds between off and on
+
+ModbusCoilDriver
+~~~~~~~~~~~~~~~~
+A ModbusCoilDriver controls a `ModbusTCPCoil` resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  - `ModbusTCPCoil`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   ModbusCoilDriver: {}
+
+Arguments:
+  - None
 
 MXSUSBDriver
 ~~~~~~~~~~~~

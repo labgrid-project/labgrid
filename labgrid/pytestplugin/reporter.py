@@ -39,7 +39,7 @@ class StepReporter:
     def __init__(self, terminalreporter, *, rewrite=False):
         self.tr = terminalreporter
         # copy the original stdout for use with CaptureFixture
-        self.tr.writer._file = safe_text_dupfile(self.tr.writer._file, mode=self.tr.writer._file.mode)
+        self.tr._tw._file = safe_text_dupfile(self.tr._tw._file, mode=self.tr._tw._file.mode)
         self.rewrite = rewrite
         self.__reset()
         steps.subscribe(self.notify)
@@ -51,8 +51,8 @@ class StepReporter:
 
     def __commit(self):
         if self.cur_step and self.rewrite:
-            self.tr.writer.write('\n')
-            self.tr.writer._lastlen = 0
+            self.tr._tw.write('\n')
+            self.tr._tw._lastlen = 0
         self.__reset()
 
     def __merge_element(self, key, value):
@@ -92,15 +92,15 @@ class StepReporter:
             line.append(event.resource)
         line.extend(self.__format_elements())
         if self.rewrite:
-            self.tr.writer.reline(" ".join(line))
+            self.tr._tw.reline(" ".join(line))
         else:
-            self.tr.writer.line(" ".join(line))
+            self.tr._tw.line(" ".join(line))
 
     @pytest.hookimpl(hookwrapper=True, trylast=True)
     def pytest_runtest_logstart(self):
         outcome = yield
-        self.tr.writer.write('\n')
-        self.tr.writer._lastlen = 0
+        self.tr._tw.write('\n')
+        self.tr._tw._lastlen = 0
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_runtest_logreport(self, report):

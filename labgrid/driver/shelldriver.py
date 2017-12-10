@@ -219,7 +219,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             if not ssh_dir == 0:
                 self.logger.debug("~/.ssh did not exist, creating")
                 self._run("mkdir ~/.ssh/")
-            self._run_check("chmod 600 ~/.ssh/")
+            self._run_check("chmod 700 ~/.ssh/")
             self.logger.debug("Creating ~/.ssh/authorized_keys")
             self._run_check('echo "{}" > ~/.ssh/authorized_keys'.format(keyline))
             self._run_check("rm ~/.test")

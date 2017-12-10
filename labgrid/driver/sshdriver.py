@@ -30,9 +30,11 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.logger = logging.getLogger("{}({})".format(self, self.target))
 
     def on_activate(self):
-        self.ssh_prefix = "-i {}".format(os.path.abspath(self.keyfile)
+        self.ssh_prefix = "-o LogLevel=ERROR"
+        self.ssh_prefix += " -i {}".format(os.path.abspath(self.keyfile)
                                          ) if self.keyfile else ""
-        self.ssh_prefix += " -o LogLevel=ERROR"
+        self.ssh_prefix += " -o PasswordAuthentication=no" if (
+                not self.networkservice.password) else ""
         self.control = self._check_master()
         self.ssh_prefix += " -F /dev/null"
         self.ssh_prefix += " -o ControlPath={}".format(
@@ -48,11 +50,19 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         control = os.path.join(
             self.tmpdir, 'control-{}'.format(self.networkservice.address)
         )
-        args = "ssh -f {} -x -o ConnectTimeout=30 -o ControlPersist=300 -o PasswordAuthentication=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -MN -S {} {}@{}".format(
-            self.ssh_prefix, control, self.networkservice.username,
-            self.networkservice.address
+        # use sshpass if we have a password
+        sshpass = "sshpass -e " if self.networkservice.password else ""
+        args = ("{}ssh -f {} -x -o ConnectTimeout=30 -o ControlPersist=300 "
+                "-o UserKnownHostsFile=/dev/null "
+                "-o StrictHostKeyChecking=no -MN -S {} {}@{}").format(
+                    sshpass, self.ssh_prefix, control,
+                    self.networkservice.username, self.networkservice.address
         ).split(" ")
-        self.process = subprocess.Popen(args, )
+
+        env = os.environ.copy()
+        if self.networkservice.password:
+            env['SSHPASS'] = self.networkservice.password
+        self.process = subprocess.Popen(args, env=env)
 
         try:
             if self.process.wait(timeout=30) is not 0:

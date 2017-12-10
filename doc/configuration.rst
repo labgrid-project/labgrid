@@ -160,9 +160,12 @@ A NetworkService describes a remote SSH connection.
 
 The example describes a remote SSH connection to the computer `example.computer`
 with the username `root`.
+Set the optional password password property to make SSH login with a password
+instead of the key file (needs sshpass to be installed)
 
 - address (str): hostname of the remote system
 - username (str): username used by SSH
+- password (str): password used by SSH
 
 Used by:
   - `SSHDriver`_
@@ -531,6 +534,7 @@ Implements:
 
 Arguments:
   - keyfile (str): filename of private key to login into the remote system
+    (only used if password is not set)
 
 InfoDriver
 ~~~~~~~~~~

@@ -59,3 +59,8 @@ class AndroidFastbootDriver(Driver):
         filename = os.path.abspath(filename)
         check_file(filename, command_prefix=self.fastboot.command_prefix)
         self("flash", partition, filename)
+
+    @Driver.check_active
+    @step(title='continue')
+    def continue_boot(self):
+        self("continue")

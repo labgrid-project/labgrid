@@ -83,7 +83,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._child.terminate()
         try:
             self._child.wait(1.0)
-        except TimeoutExpired:
+        except subprocess.TimeoutExpired:
             self._child.kill()
             self._child.wait(1.0)
 

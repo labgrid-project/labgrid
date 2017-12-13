@@ -127,7 +127,7 @@ class USBSerialPortExport(ResourceExport):
         child.terminate()
         try:
             child.wait(1.0)
-        except TimeoutExpired:
+        except subprocess.TimeoutExpired:
             child.kill()
             child.wait(1.0)
 

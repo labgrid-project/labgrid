@@ -70,7 +70,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                     "failed to connect to {} with {} and {}".
                     format(self.networkservice.address, args, self.process.wait())
                 )
-        except TimeoutExpired:
+        except subprocess.TimeoutExpired:
                 raise ExecutionError(
                     "failed to connect to {} with {} and {}".
                     format(self.networkservice.address, args, self.process.wait())

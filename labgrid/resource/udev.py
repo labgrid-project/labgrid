@@ -90,7 +90,7 @@ class USBResource(ManagedResource):
             self.device = device
         elif device.action in ['change', 'move']:
             self.device = device
-        else:
+        elif device.action in ['unbind', 'remove']:
             self.avail = False
             self.device = None
         self.update()

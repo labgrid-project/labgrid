@@ -113,6 +113,11 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 self._cmd.append(
                     "if=sd,format=raw,file={},id=mmc0".format(disk_path))
                 boot_args.append("root=/dev/mmcblk0p1 rootfstype=ext4 rootwait")
+            elif self.machine == "pc":
+                self._cmd.append("-drive")
+                self._cmd.append(
+                    "if=virtio,format=raw,file={}".format(disk_path))
+                boot_args.append("root=/dev/vda rootwait")
             else:
                 raise NotImplementedError(
                     "QEMU disk image support not implemented for machine '{}'".format(self.machine)

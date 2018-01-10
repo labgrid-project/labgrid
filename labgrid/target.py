@@ -28,6 +28,7 @@ class Target:
         # argument at the BindingMixin level.
         # https://github.com/python-attrs/attrs/issues/106
         self._binding_map = {}
+        self._lookup_table = {}
 
     def interact(self, msg):
         if self.env:
@@ -108,6 +109,9 @@ class Target:
         """
         found = []
         other_names = []
+        if type(cls) is str:
+            cls = self._class_from_string(cls)
+
         for res in self.resources:
             if not isinstance(res, cls):
                 continue
@@ -145,6 +149,9 @@ class Target:
         """
         found = []
         other_names = []
+        if type(cls) is str:
+            cls = self._class_from_string(cls)
+
         for drv in self.drivers:
             if not isinstance(drv, cls):
                 continue
@@ -179,6 +186,9 @@ class Target:
         cls -- driver-class to return as a resource
         name -- optional name to use as a filter
         """
+        if type(cls) is str:
+            cls = self._class_from_string(cls)
+
         found = []
         other_names = []
         for drv in self.drivers:
@@ -224,6 +234,8 @@ class Target:
             cls = key
         elif len(key) == 2:
             cls, name = key
+        if type(cls) is str:
+            cls = self._class_from_string(cls)
         if not issubclass(cls, (Driver, abc.ABC)): # all Protocols derive from ABC
             raise NoDriverFoundError(
                 "invalid driver class {}".format(cls)
@@ -254,6 +266,8 @@ class Target:
 
         # update state
         self.resources.append(resource)
+        # update lookup table
+        self._lookup_table[resource.__class__.__name__] = resource.__class__
         resource.target = self
         resource.state = BindingState.bound
 
@@ -348,6 +362,13 @@ class Target:
 
         # update relationship in both directions
         self.drivers.append(client)
+        # update lookup table
+        cls = client.__class__
+        self._lookup_table[cls.__name__] = cls
+        for c in cls.mro():
+            if abc.ABC in c.mro():
+                self._lookup_table[c.__name__] = c
+
         client.target = self
         for supplier in bound_suppliers:
             supplier.clients.add(client)
@@ -404,6 +425,9 @@ class Target:
 
         This is needed to ensure that no client has an inactive supplier.
         """
+        if type(client) is str:
+            client = self._class_from_string(client)
+
         if client.state is BindingState.bound:
             return  # nothing to do
 
@@ -428,3 +452,10 @@ class Target:
             self.deactivate(drv)
         for res in reversed(self.resources):
             self.deactivate(res)
+
+    def _class_from_string(self, string):
+        if type(string) is str:
+            try:
+                return self._lookup_table[string]
+            except KeyError:
+                raise KeyError("No such driver/resource/protocol in lookup table, perhaps not bound?")

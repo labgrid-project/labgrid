@@ -52,7 +52,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
         # use sshpass if we have a password
         sshpass = "sshpass -e " if self.networkservice.password else ""
-        args = ("{}ssh -f {} -x -o ConnectTimeout=30 -o ControlPersist=300 "
+        args = ("{}ssh -n {} -x -o ConnectTimeout=30 -o ControlPersist=300 "
                 "-o UserKnownHostsFile=/dev/null "
                 "-o StrictHostKeyChecking=no -MN -S {} {}@{}").format(
                     sshpass, self.ssh_prefix, control,

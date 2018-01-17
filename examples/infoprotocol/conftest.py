@@ -1,10 +1,10 @@
 import pytest
 
-from labgrid.protocol import InfoProtocol
-
 
 @pytest.fixture(scope='session')
 def info(target):
-    shell = target.get_driver(InfoProtocol)
+    shell = target.get_driver('ShellDriver')
     target.activate(shell)
-    return shell
+    info = target.get_driver('InfoDriver')
+    target.activate(info)
+    return info

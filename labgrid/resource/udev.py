@@ -232,6 +232,6 @@ class AlteraUSBBlaster(USBResource):
     def filter_match(self, device):
         if device.get('ID_VENDOR_ID') != "09fb":
             return False
-        if device.get('ID_MODEL_ID') != "6810":
+        if device.get('ID_MODEL_ID') not in ["6010", "6810"]:
             return False
         return super().filter_match(device)

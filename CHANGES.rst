@@ -4,6 +4,9 @@ Release 0.2.0 (unreleased)
 New Features
 ~~~~~~~~~~~~
 
+- The target now saves it's attached drivers, resources and protocols in a
+  lookup table, avoiding the need of importing many Drivers and Protocols (see
+  :any:`Syntactic sugar for targets`)
 - The new subcommand ``labgrid-client monitor`` shows resource or places
   changes as they happen, which is useful during development or debugging.
 - The new `QEMUDriver` runs a system image in QEmu and implements the
@@ -42,6 +45,27 @@ Incompatible Changes
 - Classes derived from :any:`Resource` or :any:`Driver` now need to use
   ``@attr.s(cmp=False)`` instead of ``@attr.s`` because of a change in the
   attrs module version 17.1.0.
+
+Syntactic sugar for Targets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Targets are now able to retrieve requested drivers, resources or protocols by
+name instead of by class.
+This allows removing many imports, e.g.
+
+::
+
+   from labgrid.driver import ShellDriver
+
+   shell = target.get_driver(ShellDriver)
+
+becomes
+
+::
+
+   shell = target.get_driver("ShellDriver")
+
+Also take a look at the examples, they have been ported to the new syntax as well.
 
 Multiple Driver Instances
 ~~~~~~~~~~~~~~~~~~~~~~~~~

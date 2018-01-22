@@ -273,6 +273,17 @@ The resource match configuration for this USB serial converter is:
 This section can now be added under the resource key in an environment
 configuration or under its own entry in an exporter configuration file.
 
+As the USB bus number can change depending on the kernel driver initialization
+order, it is better to use the ``@ID_PATH`` instead of ``@sys_name`` for USB
+devices.
+In the default udev configuration, the path is not available for all USB
+devices, but that can be changed by creating a udev rules file:
+
+.. code-block::
+
+  SUBSYSTEMS=="usb", IMPORT{builtin}="path_id"
+
+
 Using a Strategy
 ----------------
 

@@ -1,3 +1,5 @@
+import pytest
+
 def test_bootchooser(command):
     stdout, stderr, returncode = command.run('bootchooser -i')
     if returncode == 127:

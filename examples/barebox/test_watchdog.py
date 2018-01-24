@@ -9,7 +9,7 @@ def test_watchdog(command):
     assert len(stderr) == 0
     assert len(stdout) == 0
 
-    command.await_prompt()
+    command._await_prompt()
 
     stdout = command.run_check('echo ${global.system.reset}')
     assert len(stdout) == 1

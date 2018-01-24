@@ -1,15 +1,11 @@
 import pytest
 import logging
 
-from labgrid.driver import UBootDriver, ShellDriver
-from labgrid.protocol import CommandProtocol
-from labgrid.strategy import UBootStrategy
-
 
 @pytest.fixture()
 def strategy(target):
     try:
-        return target.get_driver(UBootStrategy)
+        return target.get_driver('UBootStrategy')
     except:
         pytest.skip("strategy not found")
 
@@ -28,7 +24,7 @@ def in_shell(strategy, capsys):
 
 def test_uboot(target, in_bootloader):
     #command = target.get_driver(CommandProtocol)
-    command = target.get_driver(UBootDriver)
+    command = target.get_driver('UBootDriver')
 
     stdout, stderr, returncode = command.run('version')
     assert returncode == 0
@@ -39,7 +35,7 @@ def test_uboot(target, in_bootloader):
 
 def test_shell(target, in_shell):
     #command = target.get_driver(CommandProtocol)
-    command = target.get_driver(ShellDriver)
+    command = target.get_driver('ShellDriver')
     stdout, stderr, returncode = command.run('cat /proc/version')
     assert returncode == 0
     assert len(stdout) > 0
@@ -48,7 +44,7 @@ def test_shell(target, in_shell):
 
 
 def test_uboot_2(target, in_bootloader):
-    command = target.get_driver(UBootDriver)
+    command = target.get_driver('UBootDriver')
 
     stdout, stderr, returncode = command.run('version')
     assert returncode == 0

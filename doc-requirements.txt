@@ -1,4 +1,4 @@
-sphinxcontrib-napoleon
-Sphinx
-sphinx_rtd_theme
-docutils==0.13.1
+sphinxcontrib-napoleon==0.6.1
+Sphinx==1.6.7
+sphinx_rtd_theme==0.2.4
+docutils==0.14

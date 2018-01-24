@@ -40,7 +40,7 @@ class UdevManager(ResourceManager):
 class USBResource(ManagedResource):
     manager_cls = UdevManager
 
-    match = attr.ib(validator=attr.validators.instance_of(dict), hash=False)
+    match = attr.ib(default={}, validator=attr.validators.instance_of(dict), hash=False)
     device = attr.ib(default=None, hash=False)
 
     def __attrs_post_init__(self):
@@ -197,10 +197,12 @@ class MXSUSBLoader(USBResource):
 @target_factory.reg_resource
 @attr.s(cmp=False)
 class AndroidFastboot(USBResource):
+    usb_vendor_id = attr.ib(default='1d6b', validator=attr.validators.instance_of(str))
+    usb_product_id = attr.ib(default='0104', validator=attr.validators.instance_of(str))
     def filter_match(self, device):
-        if device.get('ID_VENDOR_ID') != "1d6b":
+        if device.get('ID_VENDOR_ID') != self.usb_vendor_id:
             return False
-        if device.get('ID_MODEL_ID') != "0104":
+        if device.get('ID_MODEL_ID') != self.usb_product_id:
             return False
         return super().filter_match(device)
 

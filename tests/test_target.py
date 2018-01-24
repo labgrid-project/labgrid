@@ -252,3 +252,28 @@ def test_nested(target):
     rd = DiscoveryResource(target, "discovery")
     d = DriverWithAB(target, "driver")
     assert isinstance(d.res, ResourceA)
+
+# Test retrieving drivers, resources and protocols by name
+
+def test_get_by_string(target):
+    class AProtocol(abc.ABC):
+        pass
+
+    class A(Driver, AProtocol):
+        pass
+
+    class C(Resource):
+        pass
+
+    a = A(target, None)
+    target.activate(a)
+    assert target.get_driver('A') == a
+    assert target.get_active_driver('A') == a
+
+    c = C(target, None)
+    assert target.get_resource('C') == c
+
+    assert target['AProtocol'] == a
+
+    with pytest.raises(KeyError):
+        target.get_driver("nosuchdriver")

@@ -279,7 +279,7 @@ devices.
 In the default udev configuration, the path is not available for all USB
 devices, but that can be changed by creating a udev rules file:
 
-.. code-block::
+.. code-block:: none
 
   SUBSYSTEMS=="usb", IMPORT{builtin}="path_id"
 

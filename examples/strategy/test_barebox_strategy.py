@@ -1,14 +1,10 @@
 import pytest
 
-from labgrid.driver import BareboxDriver, ShellDriver
-from labgrid.protocol import CommandProtocol
-from labgrid.strategy import BareboxStrategy
-
 
 @pytest.fixture()
 def strategy(target):
     try:
-        return target.get_driver(BareboxStrategy)
+        return target.get_driver('BareboxStrategy')
     except NoDriverFoundError:
         pytest.skip("strategy not found")
 
@@ -25,8 +21,8 @@ def in_shell(strategy, capsys):
 
 
 def test_barebox(target, in_bootloader):
-    #command = target.get_driver(CommandProtocol)
-    command = target.get_driver(BareboxDriver)
+    #command = target['CommandProtocol']
+    command = target['BareboxDriver']
 
     stdout, stderr, returncode = command.run('version')
     assert returncode == 0
@@ -36,8 +32,8 @@ def test_barebox(target, in_bootloader):
 
 
 def test_shell(target, in_shell):
-    #command = target.get_driver(CommandProtocol)
-    command = target.get_driver(ShellDriver)
+    #command = target['CommandProtocol']
+    command = target['ShellDriver']
     stdout, stderr, returncode = command.run('cat /proc/version')
     assert returncode == 0
     assert len(stdout) > 0
@@ -46,7 +42,7 @@ def test_shell(target, in_shell):
 
 
 def test_barebox_2(target, in_bootloader):
-    #command = target.get_driver(CommandProtocol)
-    command = target.get_driver(BareboxDriver)
+    #command = target['CommandProtocol']
+    command = target['BareboxDriver']
 
     command.run_check('true')

@@ -1,8 +1,5 @@
-from labgrid.protocol import CommandProtocol
-
-
 def test_target(target):
-    barebox = target.get_driver(CommandProtocol)
+    barebox = target.get_driver('CommandProtocol')
     target.activate(barebox)
 
     stdout, stderr, returncode = barebox.run('version')

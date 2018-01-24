@@ -354,12 +354,6 @@ class ExporterSession(ApplicationSession):
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(levelname)7s: %(message)s',
-        stream=sys.stderr,
-    )
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-x',
@@ -393,8 +387,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.debug:
-        logging.getLogger().setLevel(logging.DEBUG)
+    level='debug' if args.debug else 'info'
 
     extra = {
         'name': args.name,
@@ -404,7 +397,7 @@ def main():
     extra['loop'] = loop = asyncio.get_event_loop()
     #loop.set_debug(True)
     runner = ApplicationRunner(url=args.crossbar, realm="realm1", extra=extra)
-    runner.run(ExporterSession)
+    runner.run(ExporterSession, log_level=level)
     if reexec:
         exit(100)
 

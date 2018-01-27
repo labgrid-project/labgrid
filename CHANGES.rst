@@ -6,7 +6,7 @@ New Features
 
 - The target now saves it's attached drivers, resources and protocols in a
   lookup table, avoiding the need of importing many Drivers and Protocols (see
-  :any:`Syntactic sugar for targets`)
+  `Syntactic sugar for Targets`_)
 - The new subcommand ``labgrid-client monitor`` shows resource or places
   changes as they happen, which is useful during development or debugging.
 - The new `QEMUDriver` runs a system image in QEmu and implements the
@@ -22,8 +22,8 @@ New Features
   junit XML output.
 - The ``labgrid-client`` tool now understands a ``--state`` option to
   transition to the provided state using a :any:`Strategy`.
-  This requires an environment yaml file with a :any:`RemotePlace` `Resource` and
-  matching `Drivers`.
+  This requires an environment yaml file with a :any:`RemotePlace` Resources and
+  matching Drivers.
 - Resource matches for places configured in the coordinator can now have a
   name, allowing multiple resources with the same class.
 - The new `Target.__getitem__` method makes writing using protocols less verbose.
@@ -38,7 +38,7 @@ Incompatible Changes
 
 - When using the coordinator, it must be upgrade together with the clients
   because of the newly introduce match names.
-- `Resources` and `Drivers` now need to be created with an explicit name
+- Resources and Drivers now need to be created with an explicit name
   parameter.
   It can be ``None`` to keep the old behaviour.
   See below for details.
@@ -84,7 +84,7 @@ ConsoleProtocol:
 PowerProtocol:
    In some cases, multiple power ports need to be controlled for one Target.
 
-To support these use cases, `Resources` and `Drivers` must be created with a
+To support these use cases, Resources and Drivers must be created with a
 name parameter.
 When updating your code to this version, you can either simply set the name to
 ``None`` to keep the previous behaviour.

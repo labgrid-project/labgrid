@@ -5,7 +5,7 @@ Welcome to labgrid
 
 Purpose
 -------
-Labgrid is a embedded board control python library with a focus on testing, development
+Labgrid is an embedded board control python library with a focus on testing, development
 and general automation.
 It includes a remote control layer to control boards connected to other hosts.
 

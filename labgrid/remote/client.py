@@ -632,7 +632,7 @@ class ClientSession(ApplicationSession):
         assert resource.port is not None, "Port is not set"
 
         call = [
-            'microcom', '-t',
+            'microcom', '-s', str(resource.speed), '-t',
             "{}:{}".format(resource.host, resource.port)
         ]
         print("connecting to ", resource, "calling ", " ".join(call))

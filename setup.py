@@ -17,7 +17,6 @@ setup(
     python_requires='>=3.4',
     extras_require={
         'onewire': ['onewire>=0.2'],
-        'coordinator': ['crossbar', 'idna==2.5'],
         'snmp': ['pysnmp', 'pysnmp-mibs'],
         'modbus': ['pyModbusTCP'],
     },

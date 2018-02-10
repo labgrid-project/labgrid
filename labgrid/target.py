@@ -59,7 +59,7 @@ class Target:
         Poll the given resources and wait until they are (un-)available.
 
         Args:
-            resources (list): the resources to poll
+            resources (List): the resources to poll
             timeout (float): optional timeout
             avail (bool): optionally wait until the resources are unavailable with avail=False
         """

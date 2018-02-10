@@ -167,6 +167,7 @@ texinfo_documents = [
 # -- Options for autodoc --------------------------------------------------
 
 autodoc_member_order = 'bysource'
+autodoc_default_flags = ['special-members']
 autodoc_mock_imports = ['onewire',
                         'txaio',
                         'autobahn',
@@ -178,6 +179,10 @@ autodoc_mock_imports = ['onewire',
                         'autobahn.twisted.wamp',
                         'autobahn.wamp.exception',
                         'twisted.internet.defer']
+
+from unittest.mock import Mock
+for mod in autodoc_mock_imports:
+    sys.modules[mod] = Mock()
 
 def run_apidoc(app):
     from sphinx.apidoc import main

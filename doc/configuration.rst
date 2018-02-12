@@ -608,6 +608,10 @@ Arguments:
     `SSHDriver`_ usable
   - login_timeout (int): optional, timeout for login prompt detection in
     seconds (default 60)
+  - await_login_timeout (int): optional, time in seconds of silence that needs
+    to pass before sending a newline to device.
+  - console_ready (regex): optional, pattern used by the kernel to inform
+    the user that a console can be activated by pressing enter.
 
 .. _conf-sshdriver:
 

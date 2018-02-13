@@ -154,6 +154,8 @@ class Config:
         """
         imports = []
 
+        if isinstance(self.data.get('imports', []), str):
+            raise KeyError("imports needs to be list not string")
         for user_import in self.data.get('imports', []):
             imports.append(self.resolve_path(user_import))
 

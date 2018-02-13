@@ -1058,6 +1058,8 @@ The skeleton for an environment consists of:
    tools:
      <tool-1 name>: <absolute or relative path for tool-1>
      <more tools>
+   imports:
+     - <import.py>
 
 If you have a single target in your environment, name it "main", as the
 ``get_target`` function defaults to "main".

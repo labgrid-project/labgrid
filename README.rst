@@ -57,6 +57,10 @@ and is currently in active use and development.
 
 Quickstart
 ----------
+See the `Installation section
+<http://labgrid.readthedocs.io/en/latest/getting_started.html#Installation>`_
+for more details.
+
 Clone the git repository:
 
 .. code-block:: bash
@@ -74,6 +78,7 @@ Install labgrid into the virtualenv:
 
 .. code-block:: bash
 
+   $ pip install -r requirements.txt
    $ python setup.py install
 
 Tests can now run via:

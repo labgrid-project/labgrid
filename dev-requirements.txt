@@ -1,22 +1,12 @@
-PyYAML
-attrs>=16.3.0,<17.3.0
-crossbar==17.8.1.post1
-pexpect
-pyModbusTCP
-pyserial>=3.3
-pysnmp
-pysnmp-mibs
-pytest
-pytest-cache
-pytest-cov
-pytest-isort
-pytest-mock
-pytest-pylint
-pytest-runner
-onewire>=0.2
-pyudev
-yapf
-requests
-autobahn
-xmodem>=0.4.5
+pytest-cache==1.0
+pytest-cov==2.5.1
+pytest-isort==0.1.0
+pytest-mock==1.6.3
+pytest-pylint==0.7.1
+pytest-runner==3.0
+yapf==0.20.1
 -r doc-requirements.txt
+-r crossbar-requirements.txt
+-r onewire-requirements.txt
+-r modbus-requirements.txt
+-r snmp-requirements.txt

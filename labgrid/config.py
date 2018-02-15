@@ -150,7 +150,7 @@ class Config:
         """Helper function that returns the list of all imports
 
         Returns:
-            list: List of files which should be imported
+            List: List of files which should be imported
         """
         imports = []
 

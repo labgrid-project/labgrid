@@ -17,14 +17,13 @@ setup(
     python_requires='>=3.4',
     extras_require={
         'onewire': ['onewire>=0.2'],
-        'coordinator': ['crossbar', 'idna==2.5'],
         'snmp': ['pysnmp', 'pysnmp-mibs'],
         'modbus': ['pyModbusTCP'],
     },
     setup_requires=['pytest-runner', 'setuptools_scm'],
     tests_require=['pytest-mock', ],
     install_requires=[
-        'attrs>=16.3.0,<17.3.0',
+        'attrs>=17.4.0',
         'jinja2',
         'pexpect',
         'pyserial>=3.3',

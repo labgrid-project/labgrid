@@ -4,8 +4,8 @@ Getting Started
 This section of the manual contains introductory tutorials for installing
 labgrid, running your first test and setting up the distributed infrastructure.
 
-Running Your First Test
------------------------
+Installation
+------------
 
 Depending on your distribution you need some dependencies. On Debian stretch
 these usually are:
@@ -22,18 +22,27 @@ In many cases, the easiest way is to install labgrid into a virtualenv:
     $ virtualenv -p python3 labgrid-venv
     $ source labgrid-venv/bin/activate
 
-Start by installing labgrid, either by running:
-
-.. code-block:: bash
-
-    $ pip3 install labgrid
-
-or by cloning the repository and installing manually:
+Start installing labgrid by cloning the repository and installing the
+requirements from the `requirements.txt` file:
 
 .. code-block:: bash
 
     $ git clone https://github.com/labgrid-project/labgrid
-    $ cd labgrid && python3 setup.py install
+    $ cd labgrid && pip install -r requirements.txt
+    $ python3 setup.py install
+
+.. note::
+   Previous documentation recommended the installation as via pip (`pip3 install
+   labgrid`).
+   This lead to broken installations due to unexpected incompatibilities with
+   new releases of the dependencies.
+   Consequently we now recommend using pinned versions from the
+   `requirements.txt` file for most use cases.
+
+   Labgrid also supports the installation as a library via pip, but we only
+   test against library versions specified in the requirements.txt file.
+   Thus when installing directly from pip you have to test compatibility
+   yourself.
 
 Test your installation by running:
 
@@ -45,8 +54,39 @@ Test your installation by running:
 
 If the help for labgrid-client does not show up, open an `Issue
 <https://github.com/labgrid-project/labgrid/issues>`_. If everything was
-successful so far, start by copying the initial example:
+successful so far, proceed to the next section:
 
+Optional Requirements
+~~~~~~~~~~~~~~~~~~~~~
+Labgrid provides optional features which are not included in the default
+`requirements.txt`. The tested library version for each feature is included in a
+seperate requirements file. An example for snmp support is:
+
+.. code-block:: bash
+
+    $ pip install -r snmp-requirements.txt
+
+Onewire
++++++++
+Onewire support requires the `libow` library with headers, installable on debian
+via the `libow-dev` package. Use the `onewire-requirements.txt` file to install
+the correct onewire library version in addition to the normal installation.
+
+SNMP
+++++
+SNMP support requires to additional packages, `pysnmp` and `pysnmpmibs`. They
+are included in the `snmp-requirements.txt` file.
+
+Modbus
+++++++
+Modbus support requires an additional package `pyModbusTCP`. It is included in
+the `modbus-requirements.txt` file.
+
+
+Running Your First Test
+-----------------------
+
+Start by copying the initial example:
 .. code-block:: bash
 
     $ mkdir ../first_test/
@@ -118,15 +158,16 @@ exporter, and learn how to access the exporter via the client.
 Coordinator
 ~~~~~~~~~~~
 
-To start the coordinator, we will download labgrid and select the
-``coordinator`` extra. You can reuse the virtualenv created in the previous
-section.
+To start the coordinator, we will download the labgrid repository, create an
+extra virtualenv and install the dependencies via the requirements file.
 
 .. code-block:: bash
 
     $ git clone https://github.com/labgrid-project/labgrid
-    $ cd labgrid && pip install labgrid[coordinator]
-
+    $ cd labgrid && virtualenv -p python3 crossbar_venv
+    $ source crossbar_venv/bin/activate
+    $ pip install -r crossbar-requirements.txt
+    $ python setup.py install
 
 All necessary dependencies should be installed now, we can start the coordinator
 by running ``crossbar start`` inside of the repository.

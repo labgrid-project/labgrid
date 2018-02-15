@@ -1,0 +1,4 @@
+-r requirements.txt
+crossbar==17.12.1
+# For crossbar
+idna==2.5

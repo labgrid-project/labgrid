@@ -148,7 +148,7 @@ class USBResource(ManagedResource):
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
-class USBSerialPort(SerialPort, USBResource):
+class USBSerialPort(USBResource, SerialPort):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'tty'
         super().__attrs_post_init__()
@@ -208,7 +208,7 @@ class AndroidFastboot(USBResource):
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
-class USBEthernetInterface(EthernetInterface, USBResource):
+class USBEthernetInterface(USBResource, EthernetInterface):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'net'
         self.match['@SUBSYSTEM'] = 'usb'

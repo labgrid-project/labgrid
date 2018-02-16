@@ -1,7 +1,7 @@
 Welcome to labgrid
 ==================
 
-|license| |build-status| |coverage-status| |docs-status|
+|license| |build-status| |coverage-status| |docs-status| |chat|
 
 Purpose
 -------
@@ -49,6 +49,9 @@ Documentation
 Contributing
 ------------
 `Development Docs <http://labgrid.readthedocs.io/en/latest/development.html>`_
+
+IRC channel ``#labgrid`` on freenode (bridged to the `Matrix channel
+#labgrid:matrix.org <https://riot.im/app/#/room/#labgrid:matrix.org>`_)
 
 Background
 ----------
@@ -103,3 +106,7 @@ Tests can now run via:
 .. |docs-status| image:: https://readthedocs.org/projects/labgrid/badge/?version=latest
     :alt: documentation status
     :target: https://labgrid.readthedocs.io/en/latest/?badge=latest
+
+.. |chat| image:: https://matrix.to/img/matrix-badge.svg
+    :alt: chat
+    :target: https://riot.im/app/#/room/#labgrid:matrix.org

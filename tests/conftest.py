@@ -59,3 +59,18 @@ def crossbar(tmpdir):
     yield spawn
     spawn.close(force=True)
     assert not spawn.isalive()
+
+def pytest_addoption(parser):
+    parser.addoption("--sigrok-usb", action="store_true",
+                     help="Run sigrok usb tests with fx2lafw device (0925:3881)")
+
+def pytest_configure(config):
+    # register an additional marker
+    config.addinivalue_line("markers",
+                            "sigrokusb: enable fx2lafw USB tests (0925:3881)")
+
+def pytest_runtest_setup(item):
+    envmarker = item.get_marker("sigrokusb")
+    if envmarker is not None:
+        if item.config.getoption("--sigrok-usb") is False:
+            pytest.skip("sigrok usb tests not enabled (enable with --sigrok-usb)")

@@ -180,11 +180,32 @@ class USBGenericExport(ResourceExport):
             'model_id': self.local.model_id,
         }
 
+@attr.s(cmp=False)
+class USBSigrokExport(USBGenericExport):
+    """ResourceExport for USB devices accessed directly from userspace"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': gethostname(),
+            'busnum': self.local.busnum,
+            'devnum': self.local.devnum,
+            'path': self.local.path,
+            'vendor_id': self.local.vendor_id,
+            'model_id': self.local.model_id,
+            'driver': self.local.driver,
+            'channels': self.local.channels
+        }
+
 
 exports["AndroidFastboot"] = USBGenericExport
 exports["IMXUSBLoader"] = USBGenericExport
 exports["MXSUSBLoader"] = USBGenericExport
 exports["AlteraUSBBlaster"] = USBGenericExport
+exports["SigrokUSBDevice"] = USBSigrokExport
 
 
 @attr.s

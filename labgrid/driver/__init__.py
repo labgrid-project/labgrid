@@ -15,3 +15,4 @@ from .infodriver import InfoDriver
 from .common import Driver
 from .qemudriver import QEMUDriver
 from .modbusdriver import ModbusCoilDriver
+from .sigrokdriver import SigrokDriver

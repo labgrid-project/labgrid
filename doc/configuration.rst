@@ -206,6 +206,23 @@ A USBMassStorage resource describes a USB memory stick or similar device.
 Used by:
   - `USBStorageDriver`_
 
+SigrokDevice
+~~~~~~~~~~~~~~~~
+A SigrokDevice resource describes a sigrok device. To select a specific device
+from all connected supported devices use the `SigrokUSBDevice`_.
+
+.. code-block:: yaml
+
+   SigrokUSBDevice:
+     driver: fx2lafw
+     channel: "D0=CLK,D1=DATA"
+
+- driver (str): name of the sigrok driver to use
+- channel (str): channel mapping as described in the sigrok-cli man page
+
+Used by:
+  - `SigrokDriver`_
+
 IMXUSBLoader
 ~~~~~~~~~~~~
 An IMXUSBLoader resource describes a USB device in the imx loader state.
@@ -281,7 +298,7 @@ An AlteraUSBBlaster resource describes an Altera USB blaster.
      match:
        'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
-- match (str): key and value for a udev match, see `udev Matching`_
+- match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `OpenOCDDriver`_
@@ -299,6 +316,25 @@ accessible via SNMP.
 
 - switch (str): host name of the Ethernet switch
 - interface (str): interface name
+
+SigrokUSBDevice
+~~~~~~~~~~~~~~~~
+A SigrokUSBDevice resource describes a sigrok USB device.
+
+.. code-block:: yaml
+
+   SigrokUSBDevice:
+     driver: fx2lafw
+     channel: "D0=CLK,D1=DATA"
+     match:
+       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+
+- driver (str): name of the sigrok driver to use
+- channel (str): channel mapping as described in the sigrok-cli man page
+- match (str): key and value for a udev match, see `udev Matching`_
+
+Used by:
+  - `SigrokDriver`_
 
 RemotePlace
 ~~~~~~~~~~~
@@ -903,6 +939,17 @@ The qemudriver also requires the specification of:
 - an image key, the path to the kernel image and optionally the dtb key to
   specify the build device tree
 - a path key, this is the path to the rootfs
+
+SigrokDriver
+~~~~~~~~~~~~
+The SigrokDriver uses a SigrokDriver Resource to record samples and provides
+them during test runs.
+
+Implements:
+  - None yet
+
+The driver can be used in test cases by calling the `capture`, `stop` and
+`analyze` functions.
 
 Strategies
 ~~~~~~~~~~

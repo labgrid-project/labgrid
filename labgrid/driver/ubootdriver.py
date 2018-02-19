@@ -25,6 +25,11 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         prompt (str): The default UBoot Prompt
         password (str): optional password to unlock UBoot
         init_commands (Tuple[str]): a tuple of commands to run after unlock
+        interrupt(str): interrupt character to use to go to prompt
+        password_prompt (str): string to detect the password prompt
+        boot_expression (str): string to search for on UBoot start
+        bootstring (str): string that indicates that the Kernel is booting
+
     """
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
@@ -33,6 +38,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     init_commands = attr.ib(default=attr.Factory(tuple), convert=tuple)
     password_prompt = attr.ib(default="enter Password:", validator=attr.validators.instance_of(str))
     boot_expression = attr.ib(default=r"U-Boot 20\d+", validator=attr.validators.instance_of(str))
+    bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -183,7 +189,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """Wait for the initial Linux version string to verify we succesfully
         jumped into the kernel.
         """
-        self.console.expect(r"Linux version \d")
+        self.console.expect(self.bootstring)
 
     @Driver.check_active
     @step(args=['name'])

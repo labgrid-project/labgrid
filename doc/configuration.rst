@@ -891,6 +891,30 @@ Arguments:
   - cmd_off (str): command to turn power to the board off
   - delay (float): configurable delay in seconds between off and on
 
+SerialPortDigitalOutputDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The SerialPortDigitalOutputDriver makes it possible to use a UART
+as a 1-Bit general-purpose digital output.
+
+This driver sits on top of a SerialDriver and uses the it's pyserial-
+port to control the flow control lines.
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   SerialPortDigitalOutputDriver:
+     signal: "DTR"
+     bindings: { serial : "nameOfSerial" }
+
+Arguments:
+  - signal (str): control signal to use: DTR or RTS
+  - bindings (dict): A named ressource of the type SerialDriver to
+    bind against. This is only needed if you have multiple
+    SerialDriver in your environment (what is likely to be the case
+    if you are using this driver).
+
 ModbusCoilDriver
 ~~~~~~~~~~~~~~~~
 A ModbusCoilDriver controls a `ModbusTCPCoil` resource.

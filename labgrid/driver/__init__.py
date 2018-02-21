@@ -21,3 +21,4 @@ from .modbusdriver import ModbusCoilDriver
 from .sigrokdriver import SigrokDriver
 from .networkusbstoragedriver import NetworkUSBStorageDriver
 from .resetdriver import DigitalOutputResetDriver
+from .serialdigitaloutput import SerialPortDigitalOutputDriver

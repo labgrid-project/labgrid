@@ -302,6 +302,7 @@ An AlteraUSBBlaster resource describes an Altera USB blaster.
 
 Used by:
   - `OpenOCDDriver`_
+  - `QuartusHPSDriver`_
 
 SNMPEthernetPort
 ~~~~~~~~~~~~~~~~
@@ -689,6 +690,23 @@ Arguments:
   - config (str): OpenOCD configuration file
   - search (str): include search path for scripts
   - image (str): filename of image to bootstrap onto the device
+
+QuartusHPSDriver
+~~~~~~~~~~~~~~~~
+A QuartusHPSDriver controls the "Quartus Prime Programmer and Tools" to flash
+a target's QSPI.
+
+Binds to:
+  - `AlteraUSBBlaster`_
+
+Implements:
+  - None
+
+Arguments:
+  - image (str): filename of image to flash QSPI
+
+The driver can be used in test cases by calling the `flash` function. An
+example strategy is included in Labgrid.
 
 ManualPowerDriver
 ~~~~~~~~~~~~~~~~~

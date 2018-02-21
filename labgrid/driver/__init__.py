@@ -7,6 +7,7 @@ from .externalconsoledriver import ExternalConsoleDriver
 from .exception import CleanUpError, ExecutionError
 from .fastbootdriver import AndroidFastbootDriver
 from .openocddriver import OpenOCDDriver
+from .quartushpsdriver import QuartusHPSDriver
 from .onewiredriver import OneWirePIODriver
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver, DigitalOutputPowerDriver, YKUSHPowerDriver
 from .usbloader import MXSUSBDriver, IMXUSBDriver

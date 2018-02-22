@@ -23,6 +23,25 @@ def place(crossbar):
         spawn.close()
         assert spawn.exitstatus == 0
 
+@pytest.fixture(scope='function')
+def place_acquire(place, exporter):
+    with pexpect.spawn('python -m labgrid.remote.client -p test add-match */*/*') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0
+
+    yield
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test release') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0
+
 def test_place_show(place):
     with pexpect.spawn('python -m labgrid.remote.client -p test show') as spawn:
         spawn.expect("Place 'test':")
@@ -102,3 +121,20 @@ def test_place_del_no_name(crossbar):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus != 0
+
+def test_remoteplace_target(place_acquire, tmpdir):
+    from labgrid.environment import Environment
+    p = tmpdir.join("config.yaml")
+    p.write(
+        """
+    targets:
+      test1:
+        role: foo
+        resources:
+          RemotePlace:
+            name: test
+    """
+    )
+    e = Environment(str(p))
+    t = e.get_target("test1")
+    t.await_resources(t.resources)

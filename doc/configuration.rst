@@ -566,9 +566,10 @@ A SerialDriver connects to a serial port. It requires one of the serial port
 resources.
 
 Binds to:
-  - `NetworkSerialPort`_
-  - `RawSerialPort`_
-  - `USBSerialPort`_
+  port:
+    - `NetworkSerialPort`_
+    - `RawSerialPort`_
+    - `USBSerialPort`_
 
 .. code-block:: yaml
 
@@ -587,7 +588,8 @@ A ShellDriver binds on top of a `ConsoleProtocol` and is designed to interact
 with a login prompt and a Linux shell.
 
 Binds to:
-  - :any:`ConsoleProtocol` (see `SerialDriver`_)
+  console:
+    - :any:`ConsoleProtocol`
 
 Implements:
   - :any:`CommandProtocol`
@@ -621,7 +623,8 @@ A SSHDriver requires a `NetworkService` resource and allows the execution of
 commands and file upload via network.
 
 Binds to:
-  - `NetworkService`_
+  networkservice:
+    - `NetworkService`_
 
 Implements:
   - :any:`CommandProtocol`
@@ -642,7 +645,8 @@ An InfoDriver provides an interface to retrieve system settings and state. It
 requires a `CommandProtocol`.
 
 Binds to:
-  - :any:`CommandProtocol` (see `ShellDriver`_)
+  command:
+    - :any:`CommandProtocol`
 
 Implements:
   - :any:`InfoProtocol`
@@ -659,7 +663,8 @@ UBootDriver
 A UBootDriver interfaces with a u-boot boot loader via a `ConsoleProtocol`.
 
 Binds to:
-  - :any:`ConsoleProtocol` (see `SerialDriver`_)
+  console:
+    - :any:`ConsoleProtocol`
 
 Implements:
   - :any:`CommandProtocol`
@@ -739,7 +744,8 @@ BareboxDriver
 A BareboxDriver interfaces with a barebox bootloader via a `ConsoleProtocol`.
 
 Binds to:
-  - :any:`ConsoleProtocol` (see `SerialDriver`_)
+  console:
+    - :any:`ConsoleProtocol`
 
 Implements:
   - :any:`CommandProtocol`
@@ -779,7 +785,8 @@ An AndroidFastbootDriver allows the upload of images to a device in the USB
 fastboot state.
 
 Binds to:
-  - `AndroidFastboot`_
+  fastboot:
+    - `AndroidFastboot`_
 
 Implements:
   - None (yet)
@@ -797,7 +804,8 @@ OpenOCDDriver
 An OpenOCDDriver controls OpenOCD to bootstrap a target with a bootloader.
 
 Binds to:
-  - `AlteraUSBBlaster`_
+  interface:
+    - `AlteraUSBBlaster`_
 
 Implements:
   - :any:`BootstrapProtocol`
@@ -867,7 +875,8 @@ A NetworkPowerDriver controls a `NetworkPowerPort`, allowing control of the
 target power state without user interaction.
 
 Binds to:
-  - `NetworkPowerPort`_
+  port:
+    - `NetworkPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -886,7 +895,8 @@ A YKUSHPowerDriver controls a `YKUSHPowerPort`, allowing control of the
 target power state without user interaction.
 
 Binds to:
-  - `YKUSHPowerPort`_
+  port:
+    - `YKUSHPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -908,7 +918,8 @@ Using this driver you probably want an external relay to switch the
 power of your DUT.
 
 Binds to:
-  - :any:`DigitalOutputProtocol`
+  output:
+    - :any:`DigitalOutputProtocol`
 
 .. code-block:: yaml
 
@@ -967,7 +978,8 @@ A ModbusCoilDriver controls a `ModbusTCPCoil` resource.
 It can set and get the current state of the resource.
 
 Binds to:
-  - `ModbusTCPCoil`_
+  coil:
+    - `ModbusTCPCoil`_
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -985,8 +997,9 @@ A MXUSBDriver is used to upload an image into a device in the mxs USB loader
 state. This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
-  - `MXSUSBLoader`_
-  - `NetworkMXSUSBLoader`_
+  loader:
+    - `MXSUSBLoader`_
+    - `NetworkMXSUSBLoader`_
 
 Implements:
   - :any:`BootstrapProtocol`
@@ -1005,8 +1018,9 @@ A IMXUSBDriver is used to upload an image into a device in the imx USB loader
 state. This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
-  - `IMXUSBLoader`_
-  - `NetworkIMXUSBLoader`_
+  loader:
+    - `IMXUSBLoader`_
+    - `NetworkIMXUSBLoader`_
 
 Implements:
   - :any:`BootstrapProtocol`
@@ -1026,7 +1040,8 @@ A USBStorageDriver allows access to a USB stick or similar device via the `USBMa
 resource.
 
 Binds to:
-  - `USBMassStorage`_
+  storage:
+    - `USBMassStorage`_
 
 Implements:
   - None (yet)
@@ -1064,7 +1079,8 @@ A OneWirePIODriver controls a `OneWirePIO` resource.
 It can set and get the current state of the resource.
 
 Binds to:
-  - `OneWirePIO`_
+  port:
+    - `OneWirePIO`_
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -1139,6 +1155,10 @@ SigrokDriver
 ~~~~~~~~~~~~
 The SigrokDriver uses a SigrokDriver Resource to record samples and provides
 them during test runs.
+
+Binds to:
+  sigrok:
+    - `SigrokUSBDevice`_
 
 Implements:
   - None yet

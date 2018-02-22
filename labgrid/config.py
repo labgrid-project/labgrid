@@ -15,6 +15,7 @@ class Config:
     filename = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
+        # load and parse the yaml configuration file
         self.base = os.path.dirname(os.path.abspath(self.filename))
         try:
             with open(self.filename) as file:
@@ -26,6 +27,12 @@ class Config:
         substitutions = {
             'BASE': self.base,
         }
+        # map LG_* variables from OS environment into YAML config file using !template $LG_*
+        # Only map LG_*, to protect from weird things in environment
+        for x in os.environ.keys():
+            if x.startswith( "LG_" ):
+                substitutions[x] = os.environ[x]
+
         try:
             resolve_templates(self.data, substitutions)
         except KeyError as e:

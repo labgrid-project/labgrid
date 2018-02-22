@@ -60,6 +60,26 @@ def crossbar(tmpdir):
     spawn.close(force=True)
     assert not spawn.isalive()
 
+@pytest.fixture(scope='function')
+def exporter(tmpdir):
+    p = tmpdir.join("exports.yaml")
+    p.write(
+        """
+    Testport:
+        NetworkSerialPort:
+          {host: 'localhost', port: 4000}
+    """
+    )
+    spawn = pexpect.spawn('labgrid-exporter exports.yaml', cwd=str(tmpdir))
+    try:
+        spawn.expect('SessionDetails')
+    except:
+        print("exporter startup failed with {}".format(spawn.before))
+        raise
+    yield spawn
+    spawn.close(force=True)
+    assert not spawn.isalive()
+
 def pytest_addoption(parser):
     parser.addoption("--sigrok-usb", action="store_true",
                      help="Run sigrok usb tests with fx2lafw device (0925:3881)")

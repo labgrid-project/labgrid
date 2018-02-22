@@ -66,9 +66,10 @@ class RemotePlaceManager(ResourceManager):
             attrs['avail'] = resource._remote_entry.avail
             # TODO allow the resource to do the update itself?
             changes = []
+            fields = attr.fields(resource.__class__)
             for k, v_new in attrs.items():
                 # check for attr converters
-                attrib = getattr(resource.__class__, k)
+                attrib = getattr(fields, k)
                 if attrib.convert:
                     v_new = attrib.convert(v_new)
                 v_old = getattr(resource, k)

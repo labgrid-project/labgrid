@@ -170,9 +170,23 @@ class Target:
                     "no driver matching {} found in target {}".format(cls, self)
                 )
         elif len(found) > 1:
-            raise NoDriverFoundError(
-                "multiple drivers matching {} found in target {}".format(cls, self)
-            )
+            prio_last = -255
+            prio_found = []
+            for drv in found:
+                prio = drv.get_priority(cls)
+                if prio > prio_last:
+                    prio_found = []
+                    prio_found.append(drv)
+                    prio_last = prio
+                elif prio == prio_last:
+                    prio_found.append(drv)
+
+            if len(prio_found) == 1:
+                found = prio_found
+            else:
+                raise NoDriverFoundError(
+                    "multiple drivers matching {} found in target {} with the same priorities".format(cls, self)
+                   )
         if activate:
             self.activate(found[0])
         return found[0]

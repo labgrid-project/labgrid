@@ -873,9 +873,11 @@ Arguments:
 
 DigitalOutputPowerDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~
-A DigitalOutputPowerDriver can be used to control a device with external
-commands and a digital output port. The digital output port is used to reset the
-device.
+A DigitalOutputPowerDriver can be used to control the power of a
+Device using a DigitalOutputDriver.
+
+Using this driver you probably want an external relay to switch the
+power of your DUT.
 
 Binds to:
   - :any:`DigitalOutputProtocol`
@@ -883,12 +885,9 @@ Binds to:
 .. code-block:: yaml
 
    DigitalOutputPowerDriver:
-     cmd_on: example_command on
-     cmd_off: example_command off
+     delay: Delay for a power cycle
 
 Arguments:
-  - cmd_on (str): command to turn power to the board on
-  - cmd_off (str): command to turn power to the board off
   - delay (float): configurable delay in seconds between off and on
 
 SerialPortDigitalOutputDriver

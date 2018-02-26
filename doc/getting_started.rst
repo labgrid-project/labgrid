@@ -87,6 +87,7 @@ Running Your First Test
 -----------------------
 
 Start by copying the initial example:
+
 .. code-block:: bash
 
     $ mkdir ../first_test/

@@ -807,7 +807,7 @@ def main():
         '--crossbar',
         metavar='URL',
         type=str,
-        default="ws://127.0.0.1:20408/ws",
+        default=os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"),
         help="crossbar websocket URL"
     )
     parser.add_argument(
@@ -1004,7 +1004,8 @@ def main():
     }
 
     if args.command and args.command != 'help':
-        session = start_session(args.crossbar, "realm1", extra)
+        session = start_session(args.crossbar,
+            os.environ.get("LG_CROSSBAR_REALM", "realm1"), extra)
         exitcode = 0
         try:
             if asyncio.iscoroutinefunction(args.func):

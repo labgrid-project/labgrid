@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import logging
 import sys
+import os
 import traceback
 import subprocess
 from socket import gethostname, socket, AF_INET, SOCK_STREAM
@@ -381,7 +382,7 @@ def main():
         '--crossbar',
         metavar='URL',
         type=str,
-        default="ws://127.0.0.1:20408/ws",
+        default=os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"),
         help="crossbar websocket URL"
     )
     parser.add_argument(
@@ -417,7 +418,7 @@ def main():
 
     extra['loop'] = loop = asyncio.get_event_loop()
     #loop.set_debug(True)
-    runner = ApplicationRunner(url=args.crossbar, realm="realm1", extra=extra)
+    runner = ApplicationRunner(url=args.crossbar, realm=os.environ.get("LG_CROSSBAR_REALM", "realm1"), extra=extra)
     runner.run(ExporterSession, log_level=level)
     if reexec:
         exit(100)

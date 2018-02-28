@@ -131,9 +131,9 @@ Optional bindings can be declared by including ``None`` in the set::
     bindings = { "port": {SerialPort, NetworkSerialPort, None}}
 
 If you need to do something during instantiation, you need to add a
-:code:`__attr_post_init__` method (instead of the usual :code:`__init__` used
+:code:`__attrs_post_init__` method (instead of the usual :code:`__init__` used
 for non-attr-classes).
-The minimum requirement is a call to :code:`super().__attr_post_init__()`.
+The minimum requirement is a call to :code:`super().__attrs_post_init__()`.
 
 ::
 
@@ -149,8 +149,8 @@ The minimum requirement is a call to :code:`super().__attr_post_init__()`.
     class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
         bindings = { "port": SerialPort }
 
-        def __attr_post_init__(self):
-            super().__attr_post_init__()
+        def __attrs_post_init__(self):
+            super().__attrs_post_init__()
 
 All that's left now is to implement the functionality described by the used
 protocol, by using the API of the bound drivers and resources.

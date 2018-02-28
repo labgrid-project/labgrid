@@ -1,0 +1,11 @@
+targets:
+  main:
+    resources:
+      USBSDMuxDevice:
+        match:
+          '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+    drivers:
+      USBSDMuxDriver: {}
+
+tools:
+  usbsdmux: /home/enrico/Code/usbsdmux/env/bin/usbsdmux

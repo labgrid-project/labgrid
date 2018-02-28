@@ -178,7 +178,6 @@ register it with the :any:`target_factory`.
     from labgrid.factory import target_factory
     from labgrid.driver.common import Resource
 
-
     @target_factory.reg_resource
     @attr.s(cmp=False)
     class ExampleResource(Resource):
@@ -193,7 +192,6 @@ variables.
 
     from labgrid.factory import target_factory
     from labgrid.driver.common import Resource
-
 
     @target_factory.reg_resource
     @attr.s(cmp=False)

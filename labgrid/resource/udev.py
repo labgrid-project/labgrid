@@ -256,3 +256,52 @@ class SigrokUSBDevice(USBResource):
     def __attrs_post_init__(self):
         self.match['@SUBSYSTEM'] = 'usb'
         super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(cmp=False)
+class USBSDMuxDevice(USBResource):
+    """The USBSDMuxDevice describes an attached USBSDMux device,
+    it is identified via USB using udev
+    """
+    control_path = attr.ib(default=None)
+    def __attrs_post_init__(self):
+        self.match['ID_VENDOR_ID'] = '0424'
+        self.match['ID_MODEL_ID'] = '4041'
+        super().__attrs_post_init__()
+
+    def _get_scsi_dev(self):
+        if not self.device:
+            return None
+        devices = pyudev.Context().list_devices()
+        devices.match_parent(self.device)
+        devices.match_subsystem('scsi_generic')
+        for child in devices:
+            return child
+        return None
+
+    def _get_block_disk_dev(self):
+        if not self.device:
+            return None
+        devices = pyudev.Context().list_devices()
+        devices.match_parent(self.device)
+        devices.match_subsystem('block')
+        devices.match_property('DEVTYPE', 'disk')
+        for child in devices:
+            return child
+        return None
+
+    @property
+    def control_path(self):
+        dev = self._get_scsi_dev()
+        if dev:
+            return dev.device_node
+        else:
+            return None
+
+    @property
+    def path(self):
+        dev = self._get_block_disk_dev()
+        if dev:
+            return dev.device_node
+        else:
+            return None

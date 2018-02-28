@@ -7,5 +7,6 @@ from .onewireport import OneWirePIO
 from .power import NetworkPowerPort
 from .remote import RemotePlace
 from .udev import USBSerialPort
+from .udev import USBSDMuxDevice
 from .common import Resource, ResourceManager, ManagedResource
 from .ykushpowerport import YKUSHPowerPort

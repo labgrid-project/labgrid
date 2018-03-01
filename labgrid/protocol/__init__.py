@@ -8,3 +8,4 @@ from .infoprotocol import InfoProtocol
 from .digitaloutputprotocol import DigitalOutputProtocol
 from .mmioprotocol import MMIOProtocol
 from .filesystemprotocol import FileSystemProtocol
+from .resetprotocol import ResetProtocol

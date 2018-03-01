@@ -710,6 +710,25 @@ class ClientSession(ApplicationSession):
         target.activate(drv)
         drv.load(self.args.filename)
 
+    def sd_mux(self):
+        place = self.get_acquired_place()
+        action = self.args.action
+        target = self._get_target(place)
+        from ..driver.usbsdmuxdriver import USBSDMuxDriver
+        from ..resource.remote import NetworkUSBSDMuxDevice
+        drv = None
+        for resource in target.resources:
+            if isinstance(resource, NetworkUSBSDMuxDevice):
+                try:
+                    drv = target.get_driver(USBSDMuxDriver)
+                except NoDriverFoundError:
+                    drv = USBSDMuxDriver(target, name=None)
+                break
+        if not drv:
+            raise UserError("target has no compatible resource available")
+        target.activate(drv)
+        drv.set_mode(action)
+
     def _get_ip(self, place):
         target = self._get_target(place)
         from ..resource import EthernetPort
@@ -969,6 +988,11 @@ def main():
                            help='extra bootstrap arguments'
     )
     subparser.set_defaults(func=ClientSession.bootstrap)
+
+    subparser = subparsers.add_parser('sd-mux',
+                                      help="Switch USB SD Muxer")
+    subparser.add_argument('action', choices=['dut', 'host', 'off', 'client'])
+    subparser.set_defaults(func=ClientSession.sd_mux)
 
     subparser = subparsers.add_parser('ssh',
                                       help="connect via ssh (with optional arguments)")

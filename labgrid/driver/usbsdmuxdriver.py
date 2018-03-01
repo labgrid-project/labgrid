@@ -5,6 +5,7 @@ import subprocess
 from labgrid.factory import target_factory
 from labgrid.driver.common import Driver
 from ..resource.udev import USBSDMuxDevice
+from ..resource.remote import NetworkUSBSDMuxDevice
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
@@ -17,7 +18,7 @@ class USBSDMuxDriver(Driver):
         bindings (dict): driver to use with usbsdmux
     """
     bindings = {
-        "mux": {USBSDMuxDevice},
+        "mux": {USBSDMuxDevice, NetworkUSBSDMuxDevice},
     }
 
     def __attrs_post_init__(self):
@@ -32,7 +33,7 @@ class USBSDMuxDriver(Driver):
         ''
         if not mode.lower() in ['dut', 'host', 'off', 'client']:
             raise ExecutionError("Setting mode '%s' not supported by USBSDMuxDriver" % mode)
-        cmd = [
+        cmd = self.mux.command_prefix + [
                 self.tool,
                 "-c",
                 self.mux.control_path,

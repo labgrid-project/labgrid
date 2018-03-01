@@ -6,7 +6,7 @@ from importlib import import_module
 import attr
 
 from ..factory import target_factory
-from ..protocol import PowerProtocol, DigitalOutputProtocol
+from ..protocol import PowerProtocol, DigitalOutputProtocol, ResetProtocol
 from ..resource import NetworkPowerPort
 from ..resource import YKUSHPowerPort
 from ..step import step
@@ -14,9 +14,24 @@ from .common import Driver
 from .onewiredriver import OneWirePIODriver
 
 
+@attr.s(cmp=False)
+class PowerResetMixin(ResetProtocol):
+    """
+    ResetMixin implements the ResetProtocol for drivers which support the PowerProtocol
+    """
+    priorities = {ResetProtocol: -10}
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    @Driver.check_active
+    @step()
+    def reset(self):
+        self.cycle()
+
 @target_factory.reg_driver
 @attr.s(cmp=False)
-class ManualPowerDriver(Driver, PowerProtocol):
+class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """ManualPowerDriver - Driver to tell the user to control a target's power"""
 
     @Driver.check_active
@@ -44,7 +59,7 @@ class ManualPowerDriver(Driver, PowerProtocol):
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
-class ExternalPowerDriver(Driver, PowerProtocol):
+class ExternalPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """ExternalPowerDriver - Driver using an external command to control a target's power"""
     cmd_on = attr.ib(validator=attr.validators.instance_of(str))
     cmd_off = attr.ib(validator=attr.validators.instance_of(str))
@@ -79,7 +94,7 @@ class ExternalPowerDriver(Driver, PowerProtocol):
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
-class NetworkPowerDriver(Driver, PowerProtocol):
+class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """NetworkPowerDriver - Driver using a networked power switch to control a target's power"""
     bindings = {"port": NetworkPowerPort, }
     delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))

@@ -116,44 +116,7 @@ class NetworkPowerDriver(Driver, PowerProtocol):
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
-class DigitalOutputPowerDriver(Driver, PowerProtocol):
-    """DigitalOutputPowerDriver - Driver using a DigitalOutput to reset the target and
-    subprocesses to turn it on and off"""
-    bindings = {"output": DigitalOutputProtocol, }
-    cmd_on = attr.ib(validator=attr.validators.instance_of(str))
-    cmd_off = attr.ib(validator=attr.validators.instance_of(str))
-    delay = attr.ib(default=1.0, validator=attr.validators.instance_of(float))
-
-    def __attrs_post_init__(self):
-        super().__attrs_post_init__()
-
-    @Driver.check_active
-    @step()
-    def on(self):
-        cmd = shlex.split(self.cmd_on)
-        subprocess.check_call(cmd)
-
-    @Driver.check_active
-    @step()
-    def off(self):
-        cmd = shlex.split(self.cmd_off)
-        subprocess.check_call(cmd)
-
-    @Driver.check_active
-    @step()
-    def cycle(self):
-        self.output.set(True)
-        time.sleep(self.delay)
-        self.output.set(False)
-
-    @Driver.check_active
-    @step()
-    def get(self):
-        return True # FIXME
-
-@target_factory.reg_driver
-@attr.s(cmp=False)
-class YKUSHPowerDriver(Driver, PowerProtocol):
+class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """YKUSHPowerDriver - Driver using a YEPKIT YKUSH switchable USB hub
         to control a target's power - https://www.yepkit.com/products/ykush"""
     bindings = {"port": YKUSHPowerPort, }

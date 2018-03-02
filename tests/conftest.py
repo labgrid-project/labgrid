@@ -9,12 +9,18 @@ from labgrid import Target, target_factory
 from labgrid.driver import SerialDriver
 from labgrid.protocol import CommandProtocol, ConsoleProtocol
 from labgrid.resource import RawSerialPort, NetworkSerialPort
+from labgrid.driver.fake import FakeConsoleDriver
 
 
 @pytest.fixture(scope='function')
 def target():
     return Target('Test')
 
+@pytest.fixture(scope='function')
+def target_with_fakeconsole():
+    t = Target('dummy')
+    cp = FakeConsoleDriver(t, "console")
+    return t
 
 @pytest.fixture(scope='function')
 def serial_port(target):

@@ -1,6 +1,7 @@
 import pytest
 
-from labgrid import Environment, NoConfigFoundError
+from labgrid import Environment
+from labgrid.exceptions import NoConfigFoundError, InvalidConfigError
 from labgrid.driver.fake import FakeConsoleDriver, FakePowerDriver
 from labgrid.protocol import ConsoleProtocol
 from labgrid.resource import RawSerialPort
@@ -51,7 +52,7 @@ class TestEnvironment:
           cookie
         """
         )
-        with pytest.raises(NoConfigFoundError):
+        with pytest.raises(InvalidConfigError):
             e = Environment(str(p))
 
     def test_env_imports_yaml(self, tmpdir):

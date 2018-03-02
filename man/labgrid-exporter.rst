@@ -32,7 +32,7 @@ DESCRIPTION
 Labgrid is a scalable infrastructure and test architecture for embedded (linux) systems.
 
 This is the man page for the exporter, supporting the export of serial ports,
-usb tools and various other controllers.
+USB devices and various other controllers.
 
 OPTIONS
 -------
@@ -49,6 +49,20 @@ The exporter uses a YAML configuration file which defines groups of releated
 resources.
 Furthermore the exporter can start helper binaries such as ``ser2net`` to
 export local serial ports over the network.
+
+ENVIRONMENT VARIABLES
+---------------------
+The following environment variable can be used to configure labgrid-exporter.
+
+LG_CROSSBAR
+~~~~~~~~~~~
+This variable can be used to set the default crossbar URL (instead of using the
+``-x`` option).
+
+LG_CROSSBAR_REALM
+~~~~~~~~~~~~~~~~~
+This variable can be used to set the default crossbar realm to use instead of
+``realm1``.
 
 EXAMPLES
 --------

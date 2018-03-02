@@ -66,6 +66,16 @@ This variable can be used to specify a state which the device transitions into
 before executing a command. Requires a configuration file and a Strategy
 specified for the device.
 
+LG_CROSSBAR
+~~~~~~~~~~~
+This variable can be used to set the default crossbar URL (instead of using the
+``-x`` option).
+
+LG_CROSSBAR_REALM
+~~~~~~~~~~~~~~~~~
+This variable can be used to set the default crossbar realm to use instead of
+``realm1``.
+
 MATCHES
 -------
 Match patterns are used to assign a resource to a specific place. The format is:

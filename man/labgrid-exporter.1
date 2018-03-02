@@ -40,7 +40,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 Labgrid is a scalable infrastructure and test architecture for embedded (linux) systems.
 .sp
 This is the man page for the exporter, supporting the export of serial ports,
-usb tools and various other controllers.
+USB devices and various other controllers.
 .SH OPTIONS
 .INDENT 0.0
 .TP
@@ -59,6 +59,17 @@ The exporter uses a YAML configuration file which defines groups of releated
 resources.
 Furthermore the exporter can start helper binaries such as \fBser2net\fP to
 export local serial ports over the network.
+.SH ENVIRONMENT VARIABLES
+.sp
+The following environment variable can be used to configure labgrid\-exporter.
+.SS LG_CROSSBAR
+.sp
+This variable can be used to set the default crossbar URL (instead of using the
+\fB\-x\fP option).
+.SS LG_CROSSBAR_REALM
+.sp
+This variable can be used to set the default crossbar realm to use instead of
+\fBrealm1\fP\&.
 .SH EXAMPLES
 .sp
 Start the exporter with the configuration file \fImy\-config.yaml\fP:

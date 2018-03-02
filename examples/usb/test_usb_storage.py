@@ -1,5 +1,5 @@
 def test_usb_storage(target):
-    r = target.get_driver('USBMassStorage')
+    r = target.get_resource('USBMassStorage')
     assert r.path is not None
 
 def test_usb_storage_size(target):

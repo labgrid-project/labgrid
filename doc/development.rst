@@ -370,25 +370,6 @@ Ideas
 
 .. please keep these sorted alphabetically
 
-Driver Priorities
-~~~~~~~~~~~~~~~~~
-
-In more complex use-cases, we often have multiple drivers implementing the same
-Protocols on the same :any:`Target`. For example:
-
-CommandProtocol (ShellDriver and SSHDriver):
-   The SSHDriver may not be active all the time, but should be preferred when it
-   is.
-
-ResetProtocol (DigitalOutputResetDriver and NetworkPowerPort via power cycling):
-   This will occour when we implement the `ResetProtocol`_ as below.
-   The real reset driver should be preferred in that case.
-
-To avoid a central precedence list (which would be problematic for third-party
-drivers), each driver should declare its precedence per protocol relative other
-drivers by referencing them by class name.
-This way, the Target can sort them at runtime.
-
 Driver Preemption
 ~~~~~~~~~~~~~~~~~
 
@@ -421,18 +402,6 @@ notifying the current user on each invocation of labgrid-client that another
 user is waiting.
 The reservation should expire after some time if it is not used to lock the
 target after it becomes available.
-
-ResetProtocol
-~~~~~~~~~~~~~
-
-Resetting a board is a distinct operation from cycling the power and is often
-triggered by pushing a button (automated via a relays or FET).
-If a real reset is unavailable, power cycling could be used to emulate the reset.
-Currently, the :any:`DigitalOutputPowerDriver` implements the
-:any:`PowerProtocol` instead, mixing the two aspects.
-
-To handle falling back to emulation via the PowerProtocol nicely, we would need
-to implement `Driver Priorities`_
 
 Step Tracing
 ~~~~~~~~~~~~

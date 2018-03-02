@@ -373,6 +373,27 @@ A SigrokUSBDevice resource describes a sigrok USB device.
 Used by:
   - `SigrokDriver`_
 
+NetworkSigrokUSBDevice
+~~~~~~~~~~~~~~~~~~~~~~
+A NetworkSigrokUSBDevice resource describes a sigrok USB device connected to a
+host which is exported over the network. The SigrokDriver will access it via SSH.
+
+.. code-block:: yaml
+
+   NetworkSigrokUSBDevice:
+     driver: fx2lafw
+     channel: "D0=CLK,D1=DATA"
+     match:
+       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+     host: remote.example.computer
+
+- driver (str): name of the sigrok driver to use
+- channel (str): channel mapping as described in the sigrok-cli man page
+- match (str): key and value for a udev match, see `udev Matching`_
+
+Used by:
+  - `SigrokDriver`_
+
 USBSDMuxDevice
 ~~~~~~~~~~~~~~
 A :any:`USBSDMuxDevice` resource describes a Pengutronix
@@ -1159,6 +1180,8 @@ them during test runs.
 Binds to:
   sigrok:
     - `SigrokUSBDevice`_
+    - `SigrokDevice`_
+    - `NetworkSigrokUSBDevice`_
 
 Implements:
   - None yet

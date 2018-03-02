@@ -171,7 +171,10 @@ class USBMassStorage(USBResource):
 
     @property
     def path(self):
-        return self.device.device_node
+        if self.device:
+            return self.device.device_node
+        else:
+            return None
 
 @target_factory.reg_resource
 @attr.s(cmp=False)

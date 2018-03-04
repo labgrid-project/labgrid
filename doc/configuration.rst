@@ -205,6 +205,18 @@ A USBMassStorage resource describes a USB memory stick or similar device.
 
 Used by:
   - `USBStorageDriver`_
+  - `NetworkUSBStorageDriver`_
+
+NetworkUSBMassStorage
+~~~~~~~~~~~~~~~~~~~~~
+A NetworkUSBMassStorage resource describes a USB memory stick or similar
+device available on a remote computer.
+
+Used by:
+  - `NetworkUSBStorageDriver`_
+
+The NetworkUSBMassStorage can be used in test cases by calling the
+`write_image()`, and `get_size()` functions.
 
 SigrokDevice
 ~~~~~~~~~~~~
@@ -930,6 +942,25 @@ Implements:
 
    USBStorageDriver: {}
 
+
+Arguments:
+  - None
+
+NetworkUSBStorageDriver
+~~~~~~~~~~~~~~~~~~~~~~~
+A NetworkUSBStorageDriver allows access to a USB stick or similar local or
+remote device.
+
+Binds to:
+  - `USBMassStorage`_
+  - `NetworkUSBMassStorage`_
+
+Implements:
+  - None (yet)
+
+.. code-block:: yaml
+
+   NetworkUSBStorageDriver: {}
 
 Arguments:
   - None

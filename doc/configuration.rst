@@ -366,6 +366,12 @@ device.
 Used by:
   - `USBSDMUXDriver`_
 
+NetworkUSBSDMuxDevice
+~~~~~~~~~~~~~~~~~~~~~
+
+A :any:`NetworkUSBSDMuxDevice` resource descibes a `USBSDMuxDevice`_ available
+on a remote computer.
+
 RemotePlace
 ~~~~~~~~~~~
 A RemotePlace describes a set of resources attached to a labgrid remote place.

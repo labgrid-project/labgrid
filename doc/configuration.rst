@@ -207,7 +207,7 @@ Used by:
   - `USBStorageDriver`_
 
 SigrokDevice
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
 A SigrokDevice resource describes a sigrok device. To select a specific device
 from all connected supported devices use the `SigrokUSBDevice`_.
 

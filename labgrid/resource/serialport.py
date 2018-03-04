@@ -8,7 +8,7 @@ from .base import SerialPort
 @target_factory.reg_resource
 @attr.s(cmp=False)
 class RawSerialPort(SerialPort, Resource):
-    """RawSerialPort describes a serialport which is vailable on the local computer."""
+    """RawSerialPort describes a serialport which is available on the local computer."""
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         if self.port is None:

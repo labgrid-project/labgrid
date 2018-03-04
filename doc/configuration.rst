@@ -971,12 +971,13 @@ The driver can be used in test cases by calling the `capture`, `stop` and
 `analyze` functions.
 
 Strategies
-~~~~~~~~~~
+----------
+
 Strategies are used to ensure that the device is in a certain state during a test. 
 Such a state could be the boot loader or a booted Linux kernel with shell.
 
 BareboxStrategy
-+++++++++++++++
+~~~~~~~~~~~~~~~
 A BareboxStrategy has three states:
 
 - unknown
@@ -997,7 +998,7 @@ this command would transition from the boot loader into a Linux shell and
 activate the shelldriver.
 
 ShellStrategy
-+++++++++++++
+~~~~~~~~~~~~~
 A ShellStrategy has three states:
 
 - unknown
@@ -1018,7 +1019,7 @@ this command would transition directly into a Linux shell and
 activate the shelldriver.
 
 UBootStrategy
-+++++++++++++
+~~~~~~~~~~~~~
 A UBootStrategy has three states:
 
 - unknown

@@ -57,12 +57,13 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     @Driver.check_active
     @step(args=['cmd'])
-    def run(self, cmd: str, *, step):
+    def run(self, cmd: str, *, step, timeout: int = 30):
         """
         Runs the specified command on the shell and returns the output.
 
         Args:
             cmd (str): command to run on the shell
+            timeout (int): optional, timeout in seconds
 
         Returns:
             Tuple[List[str],List[str], int]: if successful, None otherwise
@@ -78,7 +79,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             self.console.sendline(cmp_command)
             _, _, match, _ = self.console.expect(r'{}(.*){}\s+(\d+)\s+.*{}'.format(
                 marker, marker, self.prompt
-            ))
+            ), timeout=timeout)
             # Remove VT100 Codes and split by newline
             data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
             self.logger.debug("Received Data: %s", data)
@@ -89,18 +90,19 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             return None
 
     @Driver.check_active
-    def run_check(self, cmd: str):
+    def run_check(self, cmd: str, timeout: int = 30):
         """
         Runs the specified command on the shell and returns the output if successful,
         raises ExecutionError otherwise.
 
         Args:
             cmd (str): command to run on the shell
+            timeout (int): optional, timeout in seconds
 
         Returns:
             List[str]: stdout of the executed command
         """
-        res = self.run(cmd)
+        res = self.run(cmd, timeout=timeout)
         if res[2] != 0:
             raise ExecutionError(cmd)
         return res[0]

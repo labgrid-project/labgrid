@@ -104,7 +104,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     @step(args=['cmd'])
-    def run(self, cmd):
+    def run(self, cmd, codec="utf-8", decodeerrors="strict"):
         """Execute `cmd` on the target.
 
         This method runs the specified `cmd` as a command on its target.
@@ -131,8 +131,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             )
 
         stdout, stderr = sub.communicate()
-        stdout = stdout.decode("utf-8").split('\n')
-        stderr = stderr.decode("utf-8").split('\n')
+        stdout = stdout.decode(codec, decodeerrors).split('\n')
+        stderr = stderr.decode(codec, decodeerrors).split('\n')
         stdout.pop()
         stderr.pop()
         return (stdout, stderr, sub.returncode)

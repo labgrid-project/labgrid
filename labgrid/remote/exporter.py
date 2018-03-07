@@ -39,6 +39,7 @@ class ResourceExport(ResourceEntry):
 
     The ResourceEntry attributes contain the information for the client.
     """
+    host = attr.ib(default=gethostname(), validator=attr.validators.instance_of(str))
     local = attr.ib(init=False)
     local_params = attr.ib(init=False)
 
@@ -96,7 +97,7 @@ class USBSerialPortExport(ResourceExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': gethostname(),
+            'host': self.host,
             'port': self.port,
             'extra': {
                 'path': self.local.port,
@@ -173,7 +174,7 @@ class USBGenericExport(ResourceExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': gethostname(),
+            'host': self.host,
             'busnum': self.local.busnum,
             'devnum': self.local.devnum,
             'path': self.local.path,
@@ -191,7 +192,7 @@ class USBSigrokExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': gethostname(),
+            'host': self.host,
             'busnum': self.local.busnum,
             'devnum': self.local.devnum,
             'path': self.local.path,
@@ -238,6 +239,7 @@ class ExporterSession(ApplicationSession):
         - Join the coordinator as an exporter"""
         self.loop = self.config.extra['loop']
         self.name = self.config.extra['name']
+        self.hostname = self.config.extra['hostname']
         self.authid = "exporter/{}".format(self.name)
         self.address = self._transport.transport.get_extra_info('sockname')[0]
         self.poll_task = None
@@ -360,7 +362,10 @@ class ExporterSession(ApplicationSession):
             'cls': cls,
             'params': params,
         }
-        group[resource_name] = export_cls(config)
+        if issubclass(export_cls, ResourceExport):
+            group[resource_name] = export_cls(config, host=self.hostname)
+        else:
+            group[resource_name] = export_cls(config)
         yield from self.update_resource(group_name, resource_name)
 
     @asyncio.coroutine
@@ -394,6 +399,13 @@ def main():
         help='public name of this exporter (defaults to the system hostname)'
     )
     parser.add_argument(
+        '--hostname',
+        dest='hostname',
+        type=str,
+        default=None,
+        help='hostname (or IP) published for accessing resources (defaults to the system hostname)'
+    )
+    parser.add_argument(
         '-d',
         '--debug',
         action='store_true',
@@ -413,6 +425,7 @@ def main():
 
     extra = {
         'name': args.name or gethostname(),
+        'hostname': args.hostname or gethostname(),
         'resources': args.resources,
     }
 
@@ -422,6 +435,7 @@ def main():
     print("crossbar URL: {}".format(crossbar_url))
     print("crossbar realm: {}".format(crossbar_realm))
     print("exporter name: {}".format(extra['name']))
+    print("exporter hostname: {}".format(extra['hostname']))
     print("resource config file: {}".format(extra['resources']))
 
     extra['loop'] = loop = asyncio.get_event_loop()

@@ -42,6 +42,23 @@ OPTIONS
     the crossbar url of the coordinator
 -n, --name
     the public name of the exporter
+--hostname
+    hostname (or IP) published for accessing resources
+
+-n / --name
+~~~~~~~~~~~
+This option is used to configure the exporter name under which resources are
+registered with the coordinator, which is useful when running multiple
+exporters on the same host.
+It defaults to the system hostname.
+
+--hostname
+~~~~~~~~~~
+For resources like USBSerialPort, USBGenericExport or USBSigrokExport, the
+exporter needs to provide a host name to set the exported value of the "host"
+key.
+If the system hostname is not resolvable via DNS, this option can be used to
+override this default with another name (or an IP address).
 
 CONFIGURATION
 -------------

@@ -9,8 +9,10 @@ from ..factory import target_factory
 from ..protocol import PowerProtocol, DigitalOutputProtocol, ResetProtocol
 from ..resource import NetworkPowerPort
 from ..resource import YKUSHPowerPort
+from ..resource.udev import USBPowerPort
 from ..step import step
 from .common import Driver
+from .exception import ExecutionError
 from .onewiredriver import OneWirePIODriver
 
 
@@ -201,3 +203,66 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     def get(self):
         return self.pykush.get_port_state(self.port.index)
 
+@target_factory.reg_driver
+@attr.s(cmp=False)
+class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
+    """USBPowerDriver - Driver using a power switchable USB hub and the uhubctl
+    tool (https://github.com/mvp/uhubctl) to control a target's power"""
+
+    bindings = {"hub": USBPowerPort, }
+    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('uhubctl') or 'uhubctl'
+        else:
+            self.tool = 'uhubctl'
+
+    def _switch(self, cmd):
+        cmd = self.hub.command_prefix + [
+                self.tool,
+                "-l", self.hub.path,
+                "-p", str(self.hub.index),
+                "-r", "100", # use 100 retries for now
+                "-a", cmd,
+        ]
+        subprocess.check_call(cmd)
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        self._switch("on")
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        self._switch("off")
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        self.off()
+        time.sleep(self.delay)
+        self.on()
+
+    @Driver.check_active
+    def get(self):
+        cmd = self.hub.command_prefix + [
+                self.tool,
+                "-l", self.hub.path,
+                "-p", str(self.hub.index),
+        ]
+        output = subprocess.check_output(cmd)
+        for line in output.splitlines():
+            if not line or not line.startswith(b' '):
+                continue
+            prefix, status = line.strip().split(b':', 1)
+            if not prefix == b"Port %d" % self.hub.index:
+                continue
+            status = status.split()
+            if b"power" in status:
+                return True
+            elif b"off" in status:
+                return False
+        raise ExecutionError("Did not find port status in uhubctl output ({})".format(repr(output)))

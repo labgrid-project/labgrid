@@ -113,5 +113,6 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.apc
         import labgrid.driver.power.digipower
         import labgrid.driver.power.gude
+        import labgrid.driver.power.gude24
         import labgrid.driver.power.netio
         import labgrid.driver.power.netio_kshell

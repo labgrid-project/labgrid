@@ -390,8 +390,8 @@ def main():
         '--name',
         dest='name',
         type=str,
-        default=gethostname(),
-        help='public name of this exporter'
+        default=None,
+        help='public name of this exporter (defaults to the system hostname)'
     )
     parser.add_argument(
         '-d',
@@ -412,13 +412,21 @@ def main():
     level='debug' if args.debug else 'info'
 
     extra = {
-        'name': args.name,
+        'name': args.name or gethostname(),
         'resources': args.resources,
     }
 
+    crossbar_url = args.crossbar
+    crossbar_realm = os.environ.get("LG_CROSSBAR_REALM", "realm1")
+
+    print("crossbar URL: {}".format(crossbar_url))
+    print("crossbar realm: {}".format(crossbar_realm))
+    print("exporter name: {}".format(extra['name']))
+    print("resource config file: {}".format(extra['resources']))
+
     extra['loop'] = loop = asyncio.get_event_loop()
     #loop.set_debug(True)
-    runner = ApplicationRunner(url=args.crossbar, realm=os.environ.get("LG_CROSSBAR_REALM", "realm1"), extra=extra)
+    runner = ApplicationRunner(url=crossbar_url, realm=crossbar_realm, extra=extra)
     runner.run(ExporterSession, log_level=level)
     if reexec:
         exit(100)

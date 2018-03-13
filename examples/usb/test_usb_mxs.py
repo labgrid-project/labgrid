@@ -1,5 +1,5 @@
 def test_usb(target):
-    r = target.get_driver('MXSUSBLoader')
+    r = target.get_resource('MXSUSBLoader')
     assert r.devnum is not None
     assert r.busnum is not None
 

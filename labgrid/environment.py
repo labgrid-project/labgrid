@@ -2,7 +2,6 @@ import attr
 import os
 import yaml
 
-from .exceptions import NoConfigFoundError
 from .target import Target
 from .config import Config
 
@@ -18,12 +17,8 @@ class Environment:
     def __attrs_post_init__(self):
         self.targets = {}  #pylint: disable=attribute-defined-outside-init
 
-        try:
-            self.config = Config(self.config_file)
-        except:
-            raise NoConfigFoundError(
-                "{} is not a valid yaml file".format(self.config_file)
-            )
+        self.config = Config(self.config_file)
+
         for user_import in self.config.get_imports():
             from importlib.machinery import SourceFileLoader
             import sys

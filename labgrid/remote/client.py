@@ -320,7 +320,7 @@ class ClientSession(ApplicationSession):
         """Add a place to the coordinator"""
         name = self.args.place
         if not name:
-            raise UserError("missing place name")
+            raise UserError("missing place name. Set with -p <place> or via env var $PLACE")
         if name in self.places:
             raise UserError("{} already exists".format(name))
         res = yield from self.call('org.labgrid.coordinator.add_place', name)
@@ -333,7 +333,7 @@ class ClientSession(ApplicationSession):
         """Delete a place from the coordinator"""
         name = self.args.place
         if not name:
-            raise UserError("missing place name")
+            raise UserError("missing place name. Set with -p <place> or via env var $PLACE")
         if name not in self.places:
             raise UserError("{} does not exist".format(name))
         res = yield from self.call('org.labgrid.coordinator.del_place', name)

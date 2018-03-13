@@ -9,6 +9,7 @@ import os
 
 from .exceptions import NoConfigFoundError, InvalidConfigError
 from .util.yaml import load, resolve_templates
+from yaml import YAMLError
 
 @attr.s(cmp=False)
 class Config:
@@ -24,6 +25,9 @@ class Config:
             raise NoConfigFoundError(
                 "configuration file '{}' could not be found".format(self.filename)
             )
+        except YAMLError as err:
+            raise InvalidConfigError("Error in configuration file: {}".format(err))
+
         substitutions = {
             'BASE': self.base,
         }

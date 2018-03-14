@@ -618,6 +618,58 @@ Arguments:
     defaults to "U-Boot 20\d+"
   - bootstring (str): optional, regex to match on Linux Kernel boot
 
+SmallUBootDriver
+~~~~~~~~~~~~~~~~
+A SmallUBootDriver interfaces with stripped-down UBoot variants that are
+sometimes used in cheap consumer electronics.
+
+SmallUBootDriver is meant as a driver for UBoot with only little
+functionality compared to standard a standard UBoot.
+Especially is copes with the following limitations:
+
+- The UBoot does not have a real password-prompt but can be activated by
+  entering a "secret" after a message was displayed.
+- The command line is does not have a build-in echo command. Thus this
+  driver uses 'Unknown Command' messages as marker before and after the
+  output of a command.
+- Since there is no echo we can not return the exit code of the command.
+  Commands will always return 0 unless the command was not found.
+
+This driver needs the following features activated in UBoot to work:
+
+- The UBoot must not have real password prompt. Instead it must be
+  keyword activated.
+  For example it should be activated by a dialog like the following:
+
+  - UBoot: "Autobooting in 1s..."
+  - Labgrid: "secret"
+  - UBoot: <switching to console>
+
+- The UBoot must be able to parse multiple commands in a single
+  line separated by ";".
+- The UBoot must support the "bootm" command to boot from a
+  memory location.
+
+Binds to:
+  - :any:`ConsoleProtocol` (see `SerialDriver`_)
+
+Implements:
+  - :any:`CommandProtocol`
+
+.. code-block:: yaml
+
+   SmallUBootDriver:
+     prompt: 'ap143-2\.0> '
+     boot_expression: 'Autobooting in 1 seconds'
+     boot_secret: "tpl"
+
+Arguments:
+  - prompt (regex): u-boot prompt to match
+  - init_commands (tuple): tuple of commands to execute after matching the
+    prompt
+  - boot_expression (str): optional, regex to match the uboot start string
+    defaults to "U-Boot 20\d+"
+
 BareboxDriver
 ~~~~~~~~~~~~~
 

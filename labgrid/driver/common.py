@@ -25,6 +25,24 @@ class Driver(BindingMixin):
         if self.target is None:
             raise BindingError("Drivers can only be created on a valid target")
 
+    def get_priority(self, protocol):
+        """Retrieve the priority for a given protocol
+
+        Arguments:
+        protocol - protocol to search for in the MRO
+
+        Returns:
+            Int: value of the priority if it is found, 0 otherwise.
+        """
+        for cls in self.__class__.__mro__:
+            prios = getattr(cls, 'priorities', {})
+            # we found a matching parent priorities attribute with the matching protocol
+            if prios and protocol in prios:
+                return prios.get(protocol)
+            # If we find the parent protocol, set the priority to 0
+            if cls.__name__ == protocol.__name__:
+                return 0
+
 
 def check_file(filename, *, command_prefix=[]):
     if subprocess.call(command_prefix + ['test', '-r', filename]) != 0:

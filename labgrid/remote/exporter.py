@@ -202,12 +202,34 @@ class USBSigrokExport(USBGenericExport):
             'channels': self.local.channels
         }
 
+@attr.s(cmp=False)
+class USBSDMuxExport(USBGenericExport):
+    """ResourceExport for USB devices accessed directly from userspace"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': gethostname(),
+            'busnum': self.local.busnum,
+            'devnum': self.local.devnum,
+            'path': self.local.path,
+            'vendor_id': self.local.vendor_id,
+            'model_id': self.local.model_id,
+            'control_path': self.local.control_path,
+        }
+
 
 exports["AndroidFastboot"] = USBGenericExport
 exports["IMXUSBLoader"] = USBGenericExport
 exports["MXSUSBLoader"] = USBGenericExport
 exports["AlteraUSBBlaster"] = USBGenericExport
 exports["SigrokUSBDevice"] = USBSigrokExport
+exports["USBSDMuxDevice"] = USBSDMuxExport
+
+exports["USBMassStorage"] = USBGenericExport
 
 
 @attr.s

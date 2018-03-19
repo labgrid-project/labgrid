@@ -205,6 +205,18 @@ A USBMassStorage resource describes a USB memory stick or similar device.
 
 Used by:
   - `USBStorageDriver`_
+  - `NetworkUSBStorageDriver`_
+
+NetworkUSBMassStorage
+~~~~~~~~~~~~~~~~~~~~~
+A NetworkUSBMassStorage resource describes a USB memory stick or similar
+device available on a remote computer.
+
+Used by:
+  - `NetworkUSBStorageDriver`_
+
+The NetworkUSBMassStorage can be used in test cases by calling the
+`write_image()`, and `get_size()` functions.
 
 SigrokDevice
 ~~~~~~~~~~~~
@@ -336,6 +348,29 @@ A SigrokUSBDevice resource describes a sigrok USB device.
 
 Used by:
   - `SigrokDriver`_
+
+USBSDMuxDevice
+~~~~~~~~~~~~~~
+A :any:`USBSDMuxDevice` resource describes a Pengutronix
+`USB-SD-Mux <https://www.pengutronix.de/de/2017-10-23-usb-sd-mux-automated-sd-card-juggler.html>`_
+device.
+
+.. code-block:: yaml
+
+   USBSDMuxDevice:
+     match:
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+
+- match (str): key and value for a udev match, see `udev Matching`_
+
+Used by:
+  - `USBSDMUXDriver`_
+
+NetworkUSBSDMuxDevice
+~~~~~~~~~~~~~~~~~~~~~
+
+A :any:`NetworkUSBSDMuxDevice` resource descibes a `USBSDMuxDevice`_ available
+on a remote computer.
 
 RemotePlace
 ~~~~~~~~~~~
@@ -934,6 +969,25 @@ Implements:
 Arguments:
   - None
 
+NetworkUSBStorageDriver
+~~~~~~~~~~~~~~~~~~~~~~~
+A NetworkUSBStorageDriver allows access to a USB stick or similar local or
+remote device.
+
+Binds to:
+  - `USBMassStorage`_
+  - `NetworkUSBMassStorage`_
+
+Implements:
+  - None (yet)
+
+.. code-block:: yaml
+
+   NetworkUSBStorageDriver: {}
+
+Arguments:
+  - None
+
 OneWirePIODriver
 ~~~~~~~~~~~~~~~~
 A OneWirePIODriver controls a `OneWirePIO` resource.
@@ -1021,6 +1075,18 @@ Implements:
 
 The driver can be used in test cases by calling the `capture`, `stop` and
 `analyze` functions.
+
+USBSDMuxDriver
+~~~~~~~~~~~~~~
+The :any:`USBSDMuxDriver` uses a USBSDMuxDevice resource to control a
+USB-SD-Mux device via `usbsdmux <https://github.com/pengutronix/usbsdmux>`_
+tool.
+
+Implements:
+  - None yet
+
+The driver can be used in test cases by calling the `set_mode()` function with
+argument being `dut`, `host`, `off`, or `client`.
 
 Strategies
 ----------

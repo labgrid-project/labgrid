@@ -13,8 +13,10 @@ from .onewiredriver import OneWirePIODriver
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver, DigitalOutputPowerDriver, YKUSHPowerDriver
 from .usbloader import MXSUSBDriver, IMXUSBDriver
 from .usbstorage import USBStorageDriver
+from .usbsdmuxdriver import USBSDMuxDriver
 from .infodriver import InfoDriver
 from .common import Driver
 from .qemudriver import QEMUDriver
 from .modbusdriver import ModbusCoilDriver
 from .sigrokdriver import SigrokDriver
+from .networkusbstoragedriver import NetworkUSBStorageDriver

@@ -151,3 +151,20 @@ class NetworkSigrokUSBDevice(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(cmp=False)
+class NetworkUSBMassStorage(RemoteUSBResource):
+    """The NetworkUSBMassStorage describes a remotely accessible USB storage device"""
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(cmp=False)
+class NetworkUSBSDMuxDevice(RemoteUSBResource):
+    """The NetworkUSBSDMuxDevice describes a remotely accessible USBSDMux device"""
+    control_path = attr.ib(default=None, validator=attr.validators.instance_of(str))
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()

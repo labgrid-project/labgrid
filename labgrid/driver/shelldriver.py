@@ -68,7 +68,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._status = 0
 
     @step(args=['cmd'], result=True)
-    def _run(self, cmd, *, step, timeout=30.0):
+    def _run(self, cmd, *, step, timeout=30.0, codec="utf-8", decodeerrors="strict"):
         """
         Runs the specified cmd on the shell and returns the output.
 
@@ -87,7 +87,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             marker, marker, self.prompt
         ), timeout=timeout)
         # Remove VT100 Codes, split by newline and remove surrounding newline
-        data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')
+        data = self.re_vt100.sub('', match.group(1).decode(codec, decodeerrors)).split('\r\n')
         if data and not data[-1]:
             del data[-1]
         self.logger.debug("Received Data: %s", data)
@@ -96,8 +96,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         return (data, [], exitcode)
 
     @Driver.check_active
-    def run(self, cmd, timeout=30.0):
-        return self._run(cmd, timeout=timeout)
+    def run(self, cmd, timeout=30.0, codec="utf-8", decodeerrors="strict"):
+        return self._run(cmd, timeout=timeout, codec=codec, decodeerrors=decodeerrors)
 
     @step()
     def _await_login(self):

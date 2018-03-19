@@ -105,27 +105,6 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         return self._run(cmd)
 
-    @step(args=['cmd'], result=True)
-    def _run_check(self, cmd):
-        res = self._run(cmd)
-        if res[2] != 0:
-            raise ExecutionError(cmd)
-        return res[0]
-
-    @Driver.check_active
-    def run_check(self, cmd):
-        """
-        Runs the specified command on the shell and returns the output if successful,
-        raises ExecutionError otherwise.
-
-        Args:
-            cmd (str): command to run on the shell
-
-        Returns:
-            List[str]: stdout of the executed command
-        """
-        return self._run_check
-
     def get_status(self):
         """Retrieve status of the UBootDriver.
         0 means inactive, 1 means active.

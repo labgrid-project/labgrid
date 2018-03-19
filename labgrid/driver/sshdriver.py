@@ -137,21 +137,6 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         stderr.pop()
         return (stdout, stderr, sub.returncode)
 
-    @Driver.check_active
-    @step(args=['cmd'])
-    def run_check(self, cmd):
-        """
-        Runs the specified cmd on the shell and returns the output if successful,
-        raises ExecutionError otherwise.
-
-        Arguments:
-        cmd - cmd to run on the shell
-        """
-        res = self.run(cmd)
-        if res[2] != 0:
-            raise ExecutionError(cmd)
-        return res[0]
-
     def get_status(self):
         """The SSHDriver is always connected, return 1"""
         return 1

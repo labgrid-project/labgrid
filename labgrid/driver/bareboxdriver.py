@@ -90,24 +90,6 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             return None
 
     @Driver.check_active
-    def run_check(self, cmd: str, timeout: int = 30):
-        """
-        Runs the specified command on the shell and returns the output if successful,
-        raises ExecutionError otherwise.
-
-        Args:
-            cmd (str): command to run on the shell
-            timeout (int): optional, timeout in seconds
-
-        Returns:
-            List[str]: stdout of the executed command
-        """
-        res = self.run(cmd, timeout=timeout)
-        if res[2] != 0:
-            raise ExecutionError(cmd)
-        return res[0]
-
-    @Driver.check_active
     @step()
     def reset(self):
         """Reset the board via a CPU reset

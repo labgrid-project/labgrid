@@ -169,24 +169,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             if time.time() > start + self.login_timeout:
                 raise TIMEOUT("Timeout of {} seconds exceeded during waiting for login".format(self.login_timeout))
 
-    @step(args=['cmd'], result=True)
-    def _run_check(self, cmd, timeout=30):
-        out, _, res = self._run(cmd, timeout=timeout)
-        if res != 0:
-            raise ExecutionError(cmd)
-        return out
-
-    @Driver.check_active
-    def run_check(self, cmd, timeout=30):
-        """
-        Runs the specified cmd on the shell and returns the output if successful,
-        raises ExecutionError otherwise.
-
-        Arguments:
-        cmd - cmd to run on the shell
-        """
-        return self._run_check(cmd, timeout=timeout)
-
     @step()
     def get_status(self):
         """Returns the status of the shell-driver.

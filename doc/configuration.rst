@@ -873,9 +873,11 @@ Arguments:
 
 DigitalOutputPowerDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~
-A DigitalOutputPowerDriver can be used to control a device with external
-commands and a digital output port. The digital output port is used to reset the
-device.
+A DigitalOutputPowerDriver can be used to control the power of a
+Device using a DigitalOutputDriver.
+
+Using this driver you probably want an external relay to switch the
+power of your DUT.
 
 Binds to:
   - :any:`DigitalOutputProtocol`
@@ -883,13 +885,34 @@ Binds to:
 .. code-block:: yaml
 
    DigitalOutputPowerDriver:
-     cmd_on: example_command on
-     cmd_off: example_command off
+     delay: Delay for a power cycle
 
 Arguments:
-  - cmd_on (str): command to turn power to the board on
-  - cmd_off (str): command to turn power to the board off
   - delay (float): configurable delay in seconds between off and on
+
+SerialPortDigitalOutputDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The SerialPortDigitalOutputDriver makes it possible to use a UART
+as a 1-Bit general-purpose digital output.
+
+This driver sits on top of a SerialDriver and uses the it's pyserial-
+port to control the flow control lines.
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   SerialPortDigitalOutputDriver:
+     signal: "DTR"
+     bindings: { serial : "nameOfSerial" }
+
+Arguments:
+  - signal (str): control signal to use: DTR or RTS
+  - bindings (dict): A named ressource of the type SerialDriver to
+    bind against. This is only needed if you have multiple
+    SerialDriver in your environment (what is likely to be the case
+    if you are using this driver).
 
 ModbusCoilDriver
 ~~~~~~~~~~~~~~~~

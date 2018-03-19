@@ -52,7 +52,23 @@ the crossbar url of the coordinator
 .TP
 .B \-n\fP,\fB  \-\-name
 the public name of the exporter
+.TP
+.B \-\-hostname
+hostname (or IP) published for accessing resources
 .UNINDENT
+.SS \-n / \-\-name
+.sp
+This option is used to configure the exporter name under which resources are
+registered with the coordinator, which is useful when running multiple
+exporters on the same host.
+It defaults to the system hostname.
+.SS \-\-hostname
+.sp
+For resources like USBSerialPort, USBGenericExport or USBSigrokExport, the
+exporter needs to provide a host name to set the exported value of the "host"
+key.
+If the system hostname is not resolvable via DNS, this option can be used to
+override this default with another name (or an IP address).
 .SH CONFIGURATION
 .sp
 The exporter uses a YAML configuration file which defines groups of releated

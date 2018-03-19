@@ -11,6 +11,8 @@ from time import sleep
 import attr
 from pexpect import TIMEOUT
 
+import time
+
 import xmodem
 
 from ..factory import target_factory
@@ -44,6 +46,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
+    console_ready = attr.ib(default="", validator=attr.validators.instance_of(str))
+    await_login_timeout = attr.ib(default=2, validator=attr.validators.instance_of(int))
+
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -102,24 +107,67 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @step()
     def _await_login(self):
         """Awaits the login prompt and logs the user in"""
-        self.console.sendline("")
-        # TODO use step timeouts
-        index, _, _, _ = self.console.expect(
-            [self.prompt, self.login_prompt],
-            timeout=self.login_timeout
-        )
-        if index == 0:
-            self.status = 1
-            return  # already logged in
-        self.console.sendline(self.username)
-        index, _, _, _ = self.console.expect([self.prompt, "Password: "], timeout=10)
-        if index == 1:
-            if self.password:
-                self.console.sendline(self.password)
-                self.console.expect(self.prompt, timeout=5)
-            else:
-                raise Exception("Password entry needed but no password set")
-        self._check_prompt()
+
+        start = time.time()
+
+        expectations = [self.prompt, self.login_prompt, TIMEOUT]
+        if self.console_ready != "":
+            expectations.append(self.console_ready)
+
+        # Use console.expect with a short timeout in a loop increases the
+        # chance to split a match into two consecutive chunks of the stream.
+        # This may lead to a missed match.
+        # Hopefully we will recover from all those situations by sending a
+        # newline after self.await_login_timeout.
+
+        # the returned 'before' of the expect will keep all characters.
+        # thus we need to remember what we had seen.
+        last_before = None
+
+        while True:
+            index, before, _, _ = self.console.expect(
+                expectations,
+                timeout=self.await_login_timeout
+            )
+
+            if index == 0:
+                # we got a promt. no need for any further action to activate
+                # this driver.
+                self.status = 1
+                break
+
+            elif index == 1:
+                # we need to login
+                self.console.sendline(self.username)
+                index, _, _, _ = self.console.expect([self.prompt, "Password: "], timeout=10)
+                if index == 1:
+                    if self.password:
+                        self.console.sendline(self.password)
+                        self.console.expect(self.prompt, timeout=5)
+                    else:
+                        raise Exception("Password entry needed but no password set")
+                self._check_prompt()
+                break
+
+            elif index == 2:
+                # expect hit a timeout while waiting for a match
+                if before == last_before:
+                    # we did not receive anything during
+                    # self.await_login_timeout.
+                    # let's assume the target is idle and we can safely issue a
+                    # newline to check the state
+                    self.console.sendline("")
+
+            elif index == 3:
+                # we have just activated a console here
+                # lets start over again and see if login or prompt will appear
+                # now.
+                self.console.sendline("")
+
+            last_before = before
+
+            if time.time() > start + self.login_timeout:
+                raise TIMEOUT("Timeout of {} seconds exceeded during waiting for login".format(self.login_timeout))
 
     @step(args=['cmd'], result=True)
     def _run_check(self, cmd, timeout=30):

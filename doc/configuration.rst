@@ -87,8 +87,11 @@ of 115200.
 Used by:
   - `SerialDriver`_
 
+Power Ports
+~~~~~~~~~~~
+
 NetworkPowerPort
-~~~~~~~~~~~~~~~~
+++++++++++++++++
 A NetworkPowerPort describes a remotely switchable power port.
 
 .. code-block:: yaml
@@ -109,7 +112,7 @@ Used by:
   - `NetworkPowerDriver`_
 
 YKUSHPowerPort
-~~~~~~~~~~~~~~~~
+++++++++++++++
 A YKUSHPowerPort describes a YEPKIT YKUSH USB (HID) switchable USB hub.
 
 .. code-block:: yaml
@@ -127,6 +130,27 @@ serial "YK12345".
 
 Used by:
   - `YKUSHPowerDriver`_
+
+USBPowerPort
+++++++++++++
+A USBPowerPort describes a generic switchable USB hub as supported by
+`uhubctl <https://github.com/mvp/uhubctl>`_.
+
+.. code-block:: yaml
+
+   USBPowerPort:
+     match:
+       ID_PATH: pci-0000:00:14.0-usb-0:2:1.0
+     index: 1
+
+The example describes port 1 on the hub with the ID_PATH
+"pci-0000:00:14.0-usb-0:2:1.0".
+(use "udevadmin info /sys/bus/usb/devices/..." to find the ID_PATH value)
+
+- index (int): number of the port to switch
+
+Used by:
+  - `USBPowerDriver`_
 
 ModbusTCPCoil
 ~~~~~~~~~~~~~
@@ -853,7 +877,7 @@ Arguments:
   - delay (float): optional delay in seconds between off and on
 
 YKUSHPowerDriver
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 A YKUSHPowerDriver controls a `YKUSHPowerPort`, allowing control of the
 target power state without user interaction.
 
@@ -889,6 +913,25 @@ Binds to:
 
 Arguments:
   - delay (float): configurable delay in seconds between off and on
+
+USBPowerDriver
+~~~~~~~~~~~~~~
+A USBPowerDriver controls a `USBPowerPort`, allowing control of the target
+power state without user interaction.
+
+Binds to:
+  - `USBPowerPort`_
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   USBPowerPort:
+     delay: 5.0
+
+Arguments:
+  - delay (float): optional delay in seconds between off and on
 
 SerialPortDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

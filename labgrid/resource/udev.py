@@ -305,3 +305,19 @@ class USBSDMuxDevice(USBResource):
             return dev.device_node
         else:
             return None
+
+@target_factory.reg_resource
+@attr.s(cmp=False)
+class USBPowerPort(USBResource):
+    """The USBPowerPort describes a single port on an USB hub which supports
+    power control.
+
+    Args:
+        index (int): index of the downstream port on the USB hub
+    """
+    index = attr.ib(default=None, validator=attr.validators.instance_of(int))
+    def __attrs_post_init__(self):
+        self.match['DEVTYPE'] = 'usb_interface'
+        self.match['DRIVER'] = 'hub'
+        super().__attrs_post_init__()
+

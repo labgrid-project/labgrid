@@ -277,3 +277,68 @@ def test_get_by_string(target):
 
     with pytest.raises(KeyError):
         target.get_driver("nosuchdriver")
+
+# Test priorities
+
+def test_get_by_diff_priority(target):
+    class AProtocol(abc.ABC):
+        pass
+
+    @attr.s
+    class A(Driver, AProtocol):
+        priorities = {AProtocol: -10}
+
+    @attr.s
+    class C(Driver, AProtocol):
+        priorities = {AProtocol: 10}
+        pass
+
+    a = A(target, None)
+    c = C(target, None)
+    target.activate(a)
+    target.activate(c)
+
+    assert target.get_driver(AProtocol) == c
+
+def test_get_by_same_priority(target):
+    class AProtocol(abc.ABC):
+        pass
+
+    @attr.s
+    class A(Driver, AProtocol):
+        priorities = {AProtocol: 10}
+
+    @attr.s
+    class C(Driver, AProtocol):
+        priorities = {AProtocol: 10}
+        pass
+
+    a = A(target, None)
+    c = C(target, None)
+    target.activate(a)
+    target.activate(c)
+
+    with pytest.raises(NoDriverFoundError) as e_info:
+        target.get_driver(AProtocol)
+    assert "multiple drivers matching" in str(e_info.value)
+
+def test_get_by_default_priority(target):
+    class AProtocol(abc.ABC):
+        pass
+
+    @attr.s
+    class A(Driver, AProtocol):
+        pass
+
+    @attr.s
+    class C(Driver, AProtocol):
+        pass
+
+    a = A(target, None)
+    c = C(target, None)
+    target.activate(a)
+    target.activate(c)
+
+    with pytest.raises(NoDriverFoundError) as e_info:
+        target.get_driver(AProtocol)
+    assert "multiple drivers matching" in str(e_info.value)

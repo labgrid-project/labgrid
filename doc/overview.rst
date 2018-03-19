@@ -137,6 +137,35 @@ specific driver set a binding mapping before creating the driver:
   >>> sd.port
   SerialPort(target=Target(name='Test', env=None), name='Second', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
 
+Priorities
+~~~~~~~~~~
+Each driver supports a priorities class variable.
+This allows drivers which implement the same protocol to add a priority option
+to each of their protocols.
+This way a `NetworkPowerDriver` can implement the `ResetProtocol`, but if another
+`ResetProtocol` driver with a higher protocol is available, it will be selected
+instead.
+
+.. note::
+  Priority resolution only takes place if you have multiple drivers
+  which implement the same protocol and you are not fetching them by
+  name.
+
+The target resolves the driver priority via the Method Resolution Order (MRO)
+of the driver's base classes.
+If a base class has a `priorities` dictionary which contains the requested
+Protocol as a key, that priority is used.
+Otherwise, `0` is returned as the default priority.
+
+To set the priority of a protocol for a driver, add a class variable with the
+name `priorities`, e.g.
+
+.. code-block:: python
+
+   @attr.s
+   class NetworkPowerDriver(Driver, PowerProtocol, ResetProtocol):
+       priorities: {PowerProtocol: -10}
+
 Strategies
 ~~~~~~~~~~
 

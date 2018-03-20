@@ -349,7 +349,12 @@ class ExporterSession(ApplicationSession):
             for resource_name, resource in group.items():
                 if not isinstance(resource, ResourceExport):
                     continue
-                if resource.poll():
+                try:
+                    changed = resource.poll()
+                except:
+                    print("Exception while polling {}".format(resource), file=sys.stderr)
+                    traceback.print_exc()
+                if changed:
                     # resource has changed
                     data = resource.asdict()
                     print(data)

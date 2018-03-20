@@ -1,0 +1,26 @@
+hub-p1:
+  USBPowerPort:
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:2:1.0'
+    index: 1
+hub-p2:
+  USBPowerPort:
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:2:1.0'
+    index: 2
+  USBSerialPort:
+    match:
+      '@ID_PATH': 'pci-0000:00:14.0-usb-0:2.2'
+hub-p3:
+  USBPowerPort:
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:2:1.0'
+    index: 3
+  USBSDMuxDevice:
+    match:
+      '@ID_PATH': 'pci-0000:00:14.0-usb-0:2.3'
+hub-p4:
+  USBPowerPort:
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:2:1.0'
+    index: 4

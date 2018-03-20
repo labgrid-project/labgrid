@@ -9,6 +9,7 @@ from ..factory import target_factory
 from ..protocol import PowerProtocol, DigitalOutputProtocol, ResetProtocol
 from ..resource import NetworkPowerPort
 from ..resource import YKUSHPowerPort
+from ..resource.remote import NetworkUSBPowerPort
 from ..resource.udev import USBPowerPort
 from ..step import step
 from .common import Driver
@@ -209,7 +210,7 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """USBPowerDriver - Driver using a power switchable USB hub and the uhubctl
     tool (https://github.com/mvp/uhubctl) to control a target's power"""
 
-    bindings = {"hub": USBPowerPort, }
+    bindings = {"hub": {USBPowerPort, NetworkUSBPowerPort}, }
     delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
 
     def __attrs_post_init__(self):

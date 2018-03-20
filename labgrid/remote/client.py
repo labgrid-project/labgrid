@@ -577,12 +577,25 @@ class ClientSession(ApplicationSession):
         action = self.args.action
         delay = self.args.delay
         target = self._get_target(place)
-        from ..driver.powerdriver import NetworkPowerDriver
-        try:
-            drv = target.get_driver(NetworkPowerDriver)
-        except NoDriverFoundError:
-            drv = NetworkPowerDriver(target, name=None, delay=delay)
-        target.await_resources([drv.port], timeout=1.0)
+        from ..driver.powerdriver import NetworkPowerDriver, USBPowerDriver
+        from ..resource.power import NetworkPowerPort
+        from ..resource.remote import NetworkUSBPowerPort
+        drv = None
+        for resource in target.resources:
+            if isinstance(resource, NetworkPowerPort):
+                try:
+                    drv = target.get_driver(NetworkPowerDriver)
+                except NoDriverFoundError:
+                    drv = NetworkPowerDriver(target, name=None, delay=delay)
+                break
+            elif isinstance(resource, NetworkUSBPowerPort):
+                try:
+                    drv = target.get_driver(USBPowerDriver)
+                except NoDriverFoundError:
+                    drv = USBPowerDriver(target, name=None, delay=delay)
+                break
+        if not drv:
+            raise UserError("target has no compatible resource available")
         target.activate(drv)
         res = getattr(drv, action)()
         if action == 'get':

@@ -2,10 +2,11 @@
 import attr
 import subprocess
 
-from labgrid.factory import target_factory
-from labgrid.driver.common import Driver
-from ..resource.udev import USBSDMuxDevice
+from .common import Driver
+from ..factory import target_factory
 from ..resource.remote import NetworkUSBSDMuxDevice
+from ..resource.udev import USBSDMuxDevice
+from ..step import step
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
@@ -29,6 +30,7 @@ class USBSDMuxDriver(Driver):
             self.tool = 'usbsdmux'
 
     @Driver.check_active
+    @step(title='sdmux_set', args=['mode'])
     def set_mode(self, mode):
         ''
         if not mode.lower() in ['dut', 'host', 'off', 'client']:

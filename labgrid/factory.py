@@ -80,6 +80,22 @@ class TargetFactory:
             assert 'cls' in item
         return result
 
+    def normalize_config(self, config):
+        resources = {}
+        drivers = {}
+        for item in self._convert_to_named_list(config.get('resources', {})):
+            resource = item.pop('cls')
+            name = item.pop('name', None)
+            args = item # remaining args
+            resources.setdefault(resource, {})[name] = (args, )
+        for item in self._convert_to_named_list(config.get('drivers', {})):
+            driver = item.pop('cls')
+            name = item.pop('name', None)
+            bindings = item.pop('bindings', {})
+            args = item # remaining args
+            drivers.setdefault(resource, {})[name] = (args, bindings)
+        return resources, drivers
+
     def make_resource(self, target, resource, name, args):
         assert isinstance(args, dict)
         if not resource in self.resources:

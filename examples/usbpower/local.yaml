@@ -1,0 +1,26 @@
+targets:
+  main:
+    resources:
+      USBPowerPort:
+        match:
+          'ID_PATH': 'pci-0000:00:14.0-usb-0:2:1.0'
+        index: 1
+      USBSerialPort:
+        match:
+          '@ID_PATH': 'pci-0000:00:14.0-usb-0:2.2'
+      USBSDMuxDevice:
+        match:
+          '@ID_PATH': 'pci-0000:00:14.0-usb-0:2.3'
+    drivers:
+      USBPowerDriver: {}
+      USBSDMuxDriver: {}
+      SerialDriver: {}
+      BareboxDriver:
+        prompt: 'barebox@[^:]+:[^ ]+ '
+      ShellDriver:
+        prompt: 'root@\w+:[^ ]+ '
+        login_prompt: ' login: '
+        username: 'root'
+      ExampleStrategy: {}
+imports:
+- examplestrategy.py

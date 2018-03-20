@@ -101,13 +101,15 @@ class USBResource(ManagedResource):
 
     @property
     def busnum(self):
-        if self.device:
-            return int(self.device.get('BUSNUM'))
+        device = self._get_usb_device()
+        if device:
+            return int(device.get('BUSNUM'))
 
     @property
     def devnum(self):
-        if self.device:
-            return int(self.device.get('DEVNUM'))
+        device = self._get_usb_device()
+        if device:
+            return int(device.get('DEVNUM'))
 
     def _get_usb_device(self):
         device = self.device

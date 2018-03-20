@@ -221,6 +221,25 @@ class USBSDMuxExport(USBGenericExport):
             'control_path': self.local.control_path,
         }
 
+@attr.s(cmp=False)
+class USBPowerPortExport(USBGenericExport):
+    """ResourceExport for ports on switchable USB hubs"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': gethostname(),
+            'busnum': self.local.busnum,
+            'devnum': self.local.devnum,
+            'path': self.local.path,
+            'vendor_id': self.local.vendor_id,
+            'model_id': self.local.model_id,
+            'index': self.local.index,
+        }
+
 
 exports["AndroidFastboot"] = USBGenericExport
 exports["IMXUSBLoader"] = USBGenericExport
@@ -230,6 +249,7 @@ exports["SigrokUSBDevice"] = USBSigrokExport
 exports["USBSDMuxDevice"] = USBSDMuxExport
 
 exports["USBMassStorage"] = USBGenericExport
+exports["USBPowerPort"] = USBPowerPortExport
 
 
 @attr.s
@@ -349,7 +369,12 @@ class ExporterSession(ApplicationSession):
             for resource_name, resource in group.items():
                 if not isinstance(resource, ResourceExport):
                     continue
-                if resource.poll():
+                try:
+                    changed = resource.poll()
+                except:
+                    print("Exception while polling {}".format(resource), file=sys.stderr)
+                    traceback.print_exc()
+                if changed:
                     # resource has changed
                     data = resource.asdict()
                     print(data)

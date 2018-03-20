@@ -1,0 +1,18 @@
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: demo1
+    drivers:
+      USBPowerDriver: {}
+      USBSDMuxDriver: {}
+      SerialDriver: {}
+      BareboxDriver:
+        prompt: 'barebox@[^:]+:[^ ]+ '
+      ShellDriver:
+        prompt: 'root@\w+:[^ ]+ '
+        login_prompt: ' login: '
+        username: 'root'
+      ExampleStrategy: {}
+imports:
+- examplestrategy.py

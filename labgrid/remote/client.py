@@ -24,7 +24,7 @@ from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfig
 from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util.dict import diff_dict, flat_dict
 from ..util.yaml import dump
-from .. import Target
+from .. import Target, target_factory
 
 txaio.use_asyncio()
 txaio.config.loop = asyncio.get_event_loop()
@@ -52,6 +52,7 @@ class ClientSession(ApplicationSession):
         self.connected = self.config.extra['connected']
         self.args = self.config.extra.get('args')
         self.env = self.config.extra.get('env', None)
+        self.role = self.config.extra.get('role', None)
         self.prog = self.config.extra.get('prog', os.path.basename(sys.argv[0]))
         self.monitor = self.config.extra.get('monitor', False)
         enable_tcp_nodelay(self)
@@ -554,7 +555,7 @@ class ClientSession(ApplicationSession):
         self._prepare_manager()
         target = None
         if self.env:
-            target = self.env.get_target(place.name)
+            target = self.env.get_target(self.role)
         if target:
             if self.args.state:
                 if self.args.verbose >= 2:
@@ -577,12 +578,25 @@ class ClientSession(ApplicationSession):
         action = self.args.action
         delay = self.args.delay
         target = self._get_target(place)
-        from ..driver.powerdriver import NetworkPowerDriver
-        try:
-            drv = target.get_driver(NetworkPowerDriver)
-        except NoDriverFoundError:
-            drv = NetworkPowerDriver(target, name=None, delay=delay)
-        target.await_resources([drv.port], timeout=1.0)
+        from ..driver.powerdriver import NetworkPowerDriver, USBPowerDriver
+        from ..resource.power import NetworkPowerPort
+        from ..resource.remote import NetworkUSBPowerPort
+        drv = None
+        for resource in target.resources:
+            if isinstance(resource, NetworkPowerPort):
+                try:
+                    drv = target.get_driver(NetworkPowerDriver)
+                except NoDriverFoundError:
+                    drv = NetworkPowerDriver(target, name=None, delay=delay)
+                break
+            elif isinstance(resource, NetworkUSBPowerPort):
+                try:
+                    drv = target.get_driver(USBPowerDriver)
+                except NoDriverFoundError:
+                    drv = USBPowerDriver(target, name=None, delay=delay)
+                break
+        if not drv:
+            raise UserError("target has no compatible resource available")
         target.activate(drv)
         res = getattr(drv, action)()
         if action == 'get':
@@ -809,6 +823,22 @@ def start_session(url, realm, extra):
     loop.run_until_complete(ready.wait())
     return session[0]
 
+def find_role_by_place(config, place):
+    for role, role_config in config.items():
+        resources, _ = target_factory.normalize_config(role_config)
+        remote_places = resources.get('RemotePlace', {})
+        remote_place = remote_places.get(place)
+        if remote_place:
+            return role
+    return None
+
+def find_any_role_with_place(config):
+    for role, role_config in config.items():
+        resources, _ = target_factory.normalize_config(role_config)
+        remote_places = resources.get('RemotePlace', {})
+        for place in remote_places:
+            return (role, place)
+    return None, None
 
 def main():
     logging.basicConfig(
@@ -1013,17 +1043,33 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    env = None
     if not args.config and args.state:
         print("Setting the state requires a configuration file")
         exit(1)
 
+    env = None
     if args.config:
         env = Environment(config_file=args.config)
+
+    role = None
+    if env and env.config.get_targets():
+        if args.place:
+            role = find_role_by_place(env.config.get_targets(), args.place)
+            if not role:
+                print("RemotePlace {} not found in configuration file".format(args.place), file=sys.stderr)
+                exit(1)
+            print("Selected role {} from configuration file".format(role))
+        else:
+            role, args.place = find_any_role_with_place(env.config.get_targets())
+            if not role:
+                print("No RemotePlace found in configuration file", file=sys.stderr)
+                exit(1)
+            print("Selected role {} and place {} from configuration file".format(role, args.place))
 
     extra = {
         'args': args,
         'env': env,
+        'role': role,
         'prog': parser.prog,
     }
 

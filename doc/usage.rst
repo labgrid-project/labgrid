@@ -100,6 +100,9 @@ To access the target's console, the correct driver object can be found by using
 When using the ``get_driver`` method, the driver is automatically activated.
 The driver activation will also wait for unavailable resources when needed.
 
+For more information on the environment configuration files and the usage of
+multiple drivers, see :ref:`configuration:Environment Configuration`.
+
 pytest Plugin
 -------------
 Labgrid includes a `pytest <http://pytest.org>`_ plugin to simplify writing tests which

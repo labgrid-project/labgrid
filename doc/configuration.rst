@@ -1366,6 +1366,58 @@ All the resources and drivers in this chapter have a YAML example snippet which
 can simply be added (at the correct indentation level, one level deeper) to the
 environment configuration.
 
+If you want to use multiple drivers of the same type, the resources and drivers
+need to be lists, e.g:
+
+.. code-block:: yaml
+
+  resources:
+    RawSerialPort:
+      port: '/dev/ttyS1'
+  drivers:
+    SerialDriver: {}
+
+becomes:
+
+.. code-block:: yaml
+
+  resources:
+  - RawSerialPort:
+      port: '/dev/ttyS1'
+  - RawSerialPort:
+      port: '/dev/ttyS2'
+  drivers:
+  - SerialDriver: {}
+  - SerialDriver: {}
+
+This configuration doesn't specifiy which :any:`RawSerialPort` to use for each
+:any:`SerialDriver`, so it will cause an exception when instantiating the
+:any:`Target`.
+To bind the correct driver to the correct resource, explicit ``name`` and
+``bindings`` properties are used:
+
+.. code-block:: yaml
+
+  resources:
+  - RawSerialPort:
+      name: 'foo'
+      port: '/dev/ttyS1'
+  - RawSerialPort:
+      name: 'bar'
+      port: '/dev/ttyS2'
+  drivers:
+  - SerialDriver:
+      name: 'foo_driver'
+      bindings:
+        port: 'foo'
+  - SerialDriver:
+      name: 'bar_driver'
+      bindings:
+        port: 'bar'
+
+The property name for the binding (e.g. `port` in the example above) is
+documented for each individual driver under this chapter.
+
 Exporter Configuration
 ----------------------
 The exporter is configured by using a YAML file (with a syntax similar to the

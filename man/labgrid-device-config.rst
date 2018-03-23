@@ -49,8 +49,8 @@ OPTIONS
 -------
 The ``options:`` top key configures various options such as the crossbar_url.
 
-KEYS
-~~~~
+OPTIONS KEYS
+~~~~~~~~~~~~
 
 ``crossbar_url``
   takes as parameter the URL of the crossbar (coordinator) to connect to.
@@ -65,8 +65,8 @@ IMAGES
 The ``images:`` top key provides paths to access preconfigured images to flash
 onto the board.
 
-KEYS
-~~~~
+IMAGE KEYS
+~~~~~~~~~~
 
 The subkeys consist of image names as keys and their paths as values. The
 corresponding name can than be used with the appropriate tool found under TOOLS.
@@ -75,8 +75,8 @@ TOOLS
 -----
 The ``tools:`` top key provides paths to binaries such as fastboot.
 
-KEYS
-~~~~
+TOOLS KEYS
+~~~~~~~~~~
 
 ``fastboot``
     Path to the fastboot binary

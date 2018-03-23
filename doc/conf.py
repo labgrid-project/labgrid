@@ -38,7 +38,8 @@ import sphinx_rtd_theme
 extensions = ['sphinx.ext.autodoc',
               'sphinxcontrib.napoleon',
               'sphinx.ext.coverage',
-              'sphinx.ext.viewcode']
+              'sphinx.ext.viewcode',
+              'sphinx.ext.autosectionlabel']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
@@ -179,6 +180,10 @@ autodoc_mock_imports = ['onewire',
                         'autobahn.twisted.wamp',
                         'autobahn.wamp.exception',
                         'twisted.internet.defer']
+
+# -- Options for autosection ----------------------------------------------
+autosectionlabel_prefix_document = True
+
 
 from unittest.mock import Mock
 for mod in autodoc_mock_imports:

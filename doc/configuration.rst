@@ -414,8 +414,41 @@ Used by:
 NetworkUSBSDMuxDevice
 ~~~~~~~~~~~~~~~~~~~~~
 
-A :any:`NetworkUSBSDMuxDevice` resource descibes a `USBSDMuxDevice`_ available
+A :any:`NetworkUSBSDMuxDevice` resource describes a `USBSDMuxDevice`_ available
 on a remote computer.
+
+USBVideo
+~~~~~~~~
+
+A :any:`USBVideo` resource describes a USB video camera which is supported by a
+Video4Linux2 kernel driver.
+
+.. code-block:: yaml
+
+   USBVideo:
+     match:
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+
+USBTMC
+~~~~~~
+
+A :any:`USBTMC` resource describes an oscilloscope connected via the USB TMC
+protocol.
+The low-level communication is handled by the ``usbtmc`` kernel driver.
+
+
+.. code-block:: yaml
+
+   USBTMC:
+     match:
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+
+A udev rules file may be needed to allow access for non-root users:
+
+.. code-block:: none
+
+   DRIVERS=="usbtmc", MODE="0660", GROUP="plugdev"
+
 
 RemotePlace
 ~~~~~~~~~~~

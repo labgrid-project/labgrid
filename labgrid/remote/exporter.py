@@ -249,6 +249,8 @@ exports["SigrokUSBDevice"] = USBSigrokExport
 exports["USBSDMuxDevice"] = USBSDMuxExport
 
 exports["USBMassStorage"] = USBGenericExport
+exports["USBVideo"] = USBGenericExport
+exports["USBTMC"] = USBGenericExport
 exports["USBPowerPort"] = USBPowerPortExport
 
 

@@ -806,6 +806,26 @@ class ClientSession(ApplicationSession):
         if res:
             print("connection lost")
 
+    def video(self):
+        place = self.get_acquired_place()
+        quality = self.args.quality
+        target = self._get_target(place)
+        from ..driver.usbvideodriver import USBVideoDriver
+        from ..resource.remote import NetworkUSBVideo
+        drv = None
+        try:
+            drv = target.get_driver(USBVideoDriver)
+        except NoDriverFoundError:
+            drv = USBVideoDriver(target, name=None)
+        target.activate(drv)
+        if quality == 'list':
+            default, variants = drv.get_caps()
+            for name, caps in variants:
+                mark = '*' if default == name else ' '
+                print("{} {:<10s} {:s}".format(mark, name, caps))
+        else:
+            drv.stream(quality)
+
 
 def start_session(url, realm, extra):
     from autobahn.wamp.types import ComponentConfig
@@ -1047,6 +1067,12 @@ def main():
     subparser = subparsers.add_parser('telnet',
                                       help="connect via telnet")
     subparser.set_defaults(func=ClientSession.telnet)
+
+    subparser = subparsers.add_parser('video',
+                                      help="start a video stream")
+    subparser.add_argument('-q', '--quality', type=str,
+                           help="select a video quality (use 'list' to show options)")
+    subparser.set_defaults(func=ClientSession.video)
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()

@@ -429,6 +429,15 @@ Video4Linux2 kernel driver.
      match:
        '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
 
+Used by:
+  - `USBVideoDriver`_
+
+NetworkUSBVideo
+~~~~~~~~~~~~~~~
+
+A :any:`NetworkUSBVideo` resource describes a :any:`USBVideo` resource available
+on a remote computer.
+
 USBTMC
 ~~~~~~
 
@@ -1234,6 +1243,28 @@ Implements:
 
 The driver can be used in test cases by calling the `set_mode()` function with
 argument being `dut`, `host`, `off`, or `client`.
+
+USBVideoDriver
+~~~~~~~~~~~~~~
+The :any:`USBVideoDriver` is used to show a video stream from a remote USB
+video camera in a local window.
+It uses the GStreamer command line utility ``gst-launch`` on both sides to
+stream the video via an SSH connection to the exporter.
+
+Binds to:
+  video:
+    - `USBVideo`_
+    - `NetworkUSBVideo`_
+
+Implements:
+  - None yet
+
+Although the driver can be used from Python code by calling the `stream()`
+method, it is currenly mainly useful for the ``video`` subcommand of
+``labgrid-client``.
+It supports the `Logitech HD Pro Webcam C920` with the USB ID 046d:082d, but
+other cameras can be added to `get_caps()` in
+``labgrid/driver/usbvideodriver.py``.
 
 Strategies
 ----------

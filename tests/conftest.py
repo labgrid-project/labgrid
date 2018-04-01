@@ -50,10 +50,10 @@ def serial_driver_no_name(target, serial_port, mocker):
     return s
 
 @pytest.fixture(scope='function')
-def crossbar(tmpdir):
+def crossbar(tmpdir, pytestconfig):
     if not find_spec('crossbar'):
         pytest.skip("crossbar not found")
-    local(__name__).dirpath('.crossbar/config.yaml').copy(tmpdir.mkdir('.crossbar'))
+    pytestconfig.rootdir.join('.crossbar/config.yaml').copy(tmpdir.mkdir('.crossbar'))
     spawn = pexpect.spawn('crossbar start --logformat none', cwd=str(tmpdir))
     try:
         spawn.expect('Realm .* started')

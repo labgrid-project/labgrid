@@ -185,3 +185,11 @@ class NetworkUSBVideo(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(cmp=False)
+class NetworkUSBTMC(RemoteUSBResource):
+    """The NetworkUSBTMC describes a remotely accessible USB TMC device"""
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()

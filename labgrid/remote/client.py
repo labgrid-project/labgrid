@@ -826,6 +826,64 @@ class ClientSession(ApplicationSession):
         else:
             drv.stream(quality)
 
+    def _get_tmc(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        from ..driver.usbtmcdriver import USBTMCDriver
+        from ..resource.remote import NetworkUSBTMC
+        drv = None
+        for resource in target.resources:
+            if isinstance(resource, NetworkUSBTMC):
+                try:
+                    drv = target.get_driver(USBTMCDriver)
+                except NoDriverFoundError:
+                    drv = USBTMCDriver(target, name=None)
+                break
+        if not drv:
+            raise UserError("target has no compatible resource available")
+        target.activate(drv)
+        return drv
+
+    def tmc_command(self):
+        drv = self._get_tmc()
+        command = ' '.join(self.args.command)
+        if not command:
+            raise UserError("no command given")
+        if '?' in command:
+            result = drv.query(command)
+            print(result)
+        else:
+            drv.command(command)
+
+    def tmc_query(self):
+        drv = self._get_tmc()
+        query = ' '.join(self.args.query)
+        if not query:
+            raise UserError("no query given")
+        result = drv.query(query)
+        print(result)
+
+    def tmc_screen(self):
+        drv = self._get_tmc()
+        action = self.args.action
+        if action in ['show', 'save']:
+            data = drv.get_screenshot()
+            filename = 'tmc-screen_{0:%Y-%m-%d}_{0:%H:%M:%S}.png'.format(datetime.now())
+            open(filename, 'wb').write(data)
+            print("Saved as {}".format(filename))
+            if action == 'show':
+                subprocess.call(['xdg-open', filename])
+
+    def tmc_channel(self):
+        drv = self._get_tmc()
+        channel = self.args.channel
+        action = self.args.action
+        if action == 'info':
+            data = drv.get_channel_info(channel)
+        elif action == 'values':
+            data = drv.get_channel_values(channel)
+        for k, v in sorted(data.items()):
+            print("{:<16s} {:<10s}".format(k, str(v)))
 
 def start_session(url, realm, extra):
     from autobahn.wamp.types import ComponentConfig
@@ -1073,6 +1131,35 @@ def main():
     subparser.add_argument('-q', '--quality', type=str,
                            help="select a video quality (use 'list' to show options)")
     subparser.set_defaults(func=ClientSession.video)
+
+    subparser = subparsers.add_parser('tmc', help="control a USB TMC device")
+    subparser.set_defaults(func=lambda _: subparser.print_help())
+    tmc_subparsers = subparser.add_subparsers(
+        dest='subcommand',
+        title='available subcommands',
+        metavar="SUBCOMMAND",
+    )
+
+    tmc_subparser = tmc_subparsers.add_parser('cmd',
+                                              aliases=('c',),
+                                              help="execute raw command")
+    tmc_subparser.add_argument('command', nargs='+')
+    tmc_subparser.set_defaults(func=ClientSession.tmc_command)
+
+    tmc_subparser = tmc_subparsers.add_parser('query',
+                                              aliases=('q',),
+                                              help="execute raw query")
+    tmc_subparser.add_argument('query', nargs='+')
+    tmc_subparser.set_defaults(func=ClientSession.tmc_query)
+
+    tmc_subparser = tmc_subparsers.add_parser('screen', help="show or save a screenshot")
+    tmc_subparser.add_argument('action', choices=['show', 'save'])
+    tmc_subparser.set_defaults(func=ClientSession.tmc_screen)
+
+    tmc_subparser = tmc_subparsers.add_parser('channel', help="use a channel")
+    tmc_subparser.add_argument('channel', type=int)
+    tmc_subparser.add_argument('action', choices=['info', 'values'])
+    tmc_subparser.set_defaults(func=ClientSession.tmc_channel)
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()

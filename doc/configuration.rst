@@ -458,6 +458,14 @@ A udev rules file may be needed to allow access for non-root users:
 
    DRIVERS=="usbtmc", MODE="0660", GROUP="plugdev"
 
+Used by:
+  - `USBTMCDriver`_
+
+NetworkUSBTMC
+~~~~~~~~~~~~~
+
+A :any:`NetworkUSBTMC` resource describes a :any:`USBTMC` resource available
+on a remote computer.
 
 RemotePlace
 ~~~~~~~~~~~
@@ -1265,6 +1273,27 @@ method, it is currenly mainly useful for the ``video`` subcommand of
 It supports the `Logitech HD Pro Webcam C920` with the USB ID 046d:082d, but
 other cameras can be added to `get_caps()` in
 ``labgrid/driver/usbvideodriver.py``.
+
+USBTMCDriver
+~~~~~~~~~~~~
+The :any:`USBTMCDriver` is used to control a oscilloscope via the USB TMC
+protocol.
+
+Binds to:
+  tmc:
+    - `USBTMC`_
+    - `NetworkUSBTMC`_
+
+Implements:
+  - None yet
+
+Currently, it can be used by the ``labgrid-client`` ``tmc`` subcommands to show
+(and save) a screenshot, to show per channel measurements and to execute raw
+TMC commands.
+It only supports the `Keysight DSO-X 2000` series (with the USB ID 0957:1798),
+but more devices can be added by extending `on_activate()` in
+``labgrid/driver/usbtmcdriver.py`` and writing a corresponding backend in
+``labgrid/driver/usbtmc/``.
 
 Strategies
 ----------

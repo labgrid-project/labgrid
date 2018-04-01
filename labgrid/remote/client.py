@@ -277,11 +277,12 @@ class ClientSession(ApplicationSession):
         place = self.get_place(place)
         if not place.acquired:
             raise UserError("place {} is not acquired".format(place.name))
-        host, user = place.acquired.split('/')
-        if user != getuser():
-            raise UserError(
-                "place {} is acquired by a different user ({})".format(place.name, place.acquired)
-            )
+        if gethostname()+'/'+getuser() not in place.allowed:
+            host, user = place.acquired.split('/')
+            if user != getuser():
+                raise UserError("place {} is not acquired by your user, acquired by {}".format(place.name, user))
+            if host != gethostname():
+                raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))
         return place
 
     @asyncio.coroutine
@@ -512,14 +513,38 @@ class ClientSession(ApplicationSession):
         else:
             print("released place {}".format(place.name))
 
-    def get_target_resources(self, place):
+    @asyncio.coroutine
+    def allow(self):
+        """Allow another use access to a previously acquired place"""
+        place = self.get_place()
         if not place.acquired:
             raise UserError("place {} is not acquired".format(place.name))
         host, user = place.acquired.split('/')
         if user != getuser():
-            raise UserError("place {} is not acquired by your user, acquired by {}".format(place.name, user))
-        if host != gethostname():
-            raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))
+            raise UserError(
+                "place {} is acquired by a different user ({})".format(place.name)
+            )
+        if not '/' in self.args.user:
+            raise UserError(
+                "user {} must be in <host>/<username> format".format(self.args.user)
+            )
+        res = yield from self.call(
+            'org.labgrid.coordinator.allow_place', place.name, self.args.user
+        )
+        if not res:
+            raise ServerError("failed to allow {} for place {}".format(self.args.user, place.name))
+        else:
+            print("allowed {} for place {}".format(self.args.user, place.name))
+
+    def get_target_resources(self, place):
+        if not place.acquired:
+            raise UserError("place {} is not acquired".format(place.name))
+        if gethostname()+'/'+getuser() not in place.allowed:
+            host, user = place.acquired.split('/')
+            if user != getuser():
+                raise UserError("place {} is not acquired by your user, acquired by {}".format(place.name, user))
+            if host != gethostname():
+                raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))
         resources = {}
         for resource_path in place.acquired_resources:
             match = place.getmatch(resource_path)
@@ -1071,6 +1096,10 @@ def main():
     subparser.add_argument('-k', '--kick', action='store_true',
                            help="release a place even if it is acquired by a different user")
     subparser.set_defaults(func=ClientSession.release)
+
+    subparser = subparsers.add_parser('allow', help="allow another user to access a place")
+    subparser.add_argument('user', help="<host>/<username>")
+    subparser.set_defaults(func=ClientSession.allow)
 
     subparser = subparsers.add_parser('env',
                                       help="generate a labgrid environment file for a place")

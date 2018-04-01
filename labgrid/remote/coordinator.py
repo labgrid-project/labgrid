@@ -166,6 +166,11 @@ class CoordinatorComponent(ApplicationSession):
             options=RegisterOptions(details_arg='details')
         )
         yield from self.register(
+            self.allow_place,
+            'org.labgrid.coordinator.allow_place',
+            options=RegisterOptions(details_arg='details')
+        )
+        yield from self.register(
             self.get_places, 'org.labgrid.coordinator.get_places'
         )
 
@@ -252,6 +257,8 @@ class CoordinatorComponent(ApplicationSession):
                     del config['acquired']
                 if 'acquired_resources' in config:
                     del config['acquired_resources']
+                if 'allowed' in config:
+                    del config['allowed']
                 config['matches'] = [ResourceMatch(**match) for match in config['matches']]
                 place = Place(**config)
                 self.places[placename] = place
@@ -499,6 +506,25 @@ class CoordinatorComponent(ApplicationSession):
             return False
         place.acquired = None
         place.acquired_resources = []
+        place.allowed = set()
+        place.touch()
+        self.publish(
+            'org.labgrid.coordinator.place_changed', name, place.asdict()
+        )
+        self.save_later()
+        return True
+
+    @asyncio.coroutine
+    def allow_place(self, name, user, details=None):
+        try:
+            place = self.places[name]
+        except KeyError:
+            return False
+        if not place.acquired:
+            return False
+        if not place.acquired == self.sessions[details.caller].name:
+            return False
+        place.allowed.add(user)
         place.touch()
         self.publish(
             'org.labgrid.coordinator.place_changed', name, place.asdict()

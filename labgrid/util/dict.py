@@ -1,3 +1,7 @@
+import warnings
+
+import attr
+
 def diff_dict(old, new):
     """
     Compares old and new dictionaries, yielding for each difference (key,
@@ -19,3 +23,16 @@ def flat_dict(d):
             else:
                 yield '.'.join(key), value
     return dict(flatten(d))
+
+def filter_dict(d, cls, warn=False):
+    """
+    Returns a copy a dictionary which only contains the attributes defined on
+    an attrs class.
+    """
+    assert attr.has(cls)
+    fields = set(a.name for a in attr.fields(cls))
+    if warn:
+        remove = set(d) - fields
+        for k in sorted(remove):
+            warnings.warn("unsupported attribute '{}' with value '{}' for class '{}'".format(k, d[k], cls.__name__), stacklevel=2)
+    return {k: v for k, v in d.items() if k in fields}

@@ -15,18 +15,13 @@ from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .config import ResourceConfig
 from .common import ResourceEntry, enable_tcp_nodelay
+from ..util import get_free_port
 
 try:
     import pkg_resources
     __version__ = pkg_resources.get_distribution('labgrid').version
 except pkg_resources.DistributionNotFound:
     __version__ = "unknown"
-
-def get_free_port():
-    """Helper function to always return an unused port."""
-    with closing(socket(AF_INET, SOCK_STREAM)) as s:
-        s.bind(('', 0))
-        return s.getsockname()[1]
 
 
 exports = {}

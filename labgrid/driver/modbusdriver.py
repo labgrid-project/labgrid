@@ -32,6 +32,8 @@ class ModbusCoilDriver(Driver, DigitalOutputProtocol):
     @Driver.check_active
     def get(self):
         status = self.client.read_coils(self.coil.coil)
+        assert len(status) == 1
+        status = status[0]
         if self.coil.invert:
             status = not status
         return status

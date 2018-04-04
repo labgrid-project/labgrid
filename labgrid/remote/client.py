@@ -22,7 +22,7 @@ from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
 from ..environment import Environment
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util.dict import diff_dict, flat_dict
+from ..util.dict import diff_dict, flat_dict, filter_dict
 from ..util.yaml import dump
 from .. import Target, target_factory
 
@@ -132,6 +132,7 @@ class ClientSession(ApplicationSession):
         config['name'] = name
         config['matches'
                ] = [ResourceMatch(**match) for match in config['matches']]
+        config = filter_dict(config, Place, warn=True)
         place = Place(**config)
         if name not in self.places:
             if self.monitor:

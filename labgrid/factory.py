@@ -1,4 +1,5 @@
 from .exceptions import InvalidConfigError
+from .util.dict import filter_dict
 
 class TargetFactory:
     def __init__(self):
@@ -101,7 +102,9 @@ class TargetFactory:
         if not resource in self.resources:
             raise InvalidConfigError("unknown resource class {}".format(resource))
         try:
-            r = self.resources[resource](target, name, **args)
+            cls = self.resources[resource]
+            args = filter_dict(args, cls, warn=True)
+            r = cls(target, name, **args)
         except TypeError as e:
             raise InvalidConfigError(
                 "failed to create {} for target '{}' using {} ".format(
@@ -113,7 +116,9 @@ class TargetFactory:
         if not driver in self.drivers:
             raise InvalidConfigError("unknown driver class {}".format(driver))
         try:
-            d = self.drivers[driver](target, name, **args)
+            cls = self.drivers[driver]
+            args = filter_dict(args, cls, warn=True)
+            d = cls(target, name, **args)
         except TypeError as e:
             raise InvalidConfigError(
                 "failed to create {} for target '{}' using {} ".format(

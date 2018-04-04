@@ -612,18 +612,33 @@ class ClientSession(ApplicationSession):
         action = self.args.action
         name = self.args.name
         target = self._get_target(place)
+        from ..resource.modbus import ModbusTCPCoil
+        from ..resource.onewireport import OneWirePIO
+        from ..driver.modbusdriver import ModbusCoilDriver
         from ..driver.onewiredriver import OneWirePIODriver
-        try:
-            drv = target.get_driver(OneWirePIODriver, name=name)
-        except NoDriverFoundError:
-            target.set_binding_map({"port": name})
-            drv = OneWirePIODriver(target, name=name)
-        target.await_resources([drv.port], timeout=1.0)
+        drv = None
+        for resource in target.resources:
+            if isinstance(resource, ModbusTCPCoil):
+                try:
+                    drv = target.get_driver(ModbusCoilDriver, name=name)
+                except NoDriverFoundError:
+                    target.set_binding_map({"coil": name})
+                    drv = ModbusCoilDriver(target, name=name)
+                break
+            elif isinstance(resource, OneWirePIO):
+                try:
+                    drv = target.get_driver(OneWirePIODriver, name=name)
+                except NoDriverFoundError:
+                    target.set_binding_map({"port": name})
+                    drv = OneWirePIODriver(target, name=name)
+                break
+        if not drv:
+            raise UserError("target has no compatible resource available")
         target.activate(drv)
         if action == 'get':
             print(
                 "digital IO {} for place {} is {}".format(
-                    drv.port.name,
+                    resource.name,
                     place.name,
                     'high' if drv.get() else 'low',
                 )

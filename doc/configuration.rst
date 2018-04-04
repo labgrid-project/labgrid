@@ -1418,6 +1418,28 @@ To bind the correct driver to the correct resource, explicit ``name`` and
 The property name for the binding (e.g. `port` in the example above) is
 documented for each individual driver under this chapter.
 
+The YAML configuration file also supports templating for some substitutions,
+these are:
+
+- LG_* variables, are replaced with their respective LG_* environment variable
+- BASE is substituted with the base directory of the YAML file.
+
+As an example:
+
+.. code-block:: yaml
+
+  targets:
+    main:
+      resources:
+        RemotePlace:
+          name: !template $LG_PLACE
+  tools:
+    qemu_bin: !template "$BASE/bin/qemu-bin"
+
+would resolve the qemu_bin path relative to the BASE dir of the YAML file and
+try to use the RemotePlace with the name set in the LG_PLACE environment
+variable.
+
 Exporter Configuration
 ----------------------
 The exporter is configured by using a YAML file (with a syntax similar to the

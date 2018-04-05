@@ -4,6 +4,7 @@ pytest-isort==0.1.0
 pytest-mock==1.6.3
 pytest-pylint==0.7.1
 pytest-runner==3.0
+pytest-dependency==0.3.2
 yapf==0.20.1
 -r doc-requirements.txt
 -r crossbar-requirements.txt

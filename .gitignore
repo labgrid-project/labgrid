@@ -16,3 +16,4 @@
 /.coverage
 /dist
 /.pytest_cache/
+/htmlcov/

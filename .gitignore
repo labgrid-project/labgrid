@@ -15,3 +15,4 @@
 /doc/modules
 /.coverage
 /dist
+/.pytest_cache/

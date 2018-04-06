@@ -6,12 +6,7 @@ from ..driver import ShellDriver
 from ..factory import target_factory
 from ..protocol import PowerProtocol
 from ..step import step
-from .common import Strategy
-
-
-@attr.s(cmp=False)
-class StrategyError(Exception):
-    msg = attr.ib(validator=attr.validators.instance_of(str))
+from .common import Strategy, StrategyError
 
 
 class Status(enum.Enum):

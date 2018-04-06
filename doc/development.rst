@@ -323,6 +323,13 @@ Documentation
 - Use `semantic linefeeds
   <http://rhodesmill.org/brandon/2012/one-sentence-per-line/>`_ in .rst files.
 
+Run Tests
+~~~~~~~~~
+
+.. code-block:: bash
+
+    $ tox -r
+
 Developer's Certificate of Origin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

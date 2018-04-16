@@ -1,0 +1,20 @@
+Source: labgrid
+Section: python
+Priority: extra
+Maintainer: Jan Lübbe <jlu@pengutronix.de>
+Build-Depends: debhelper (>= 9), python, dh-virtualenv (>= 0.8), libow-dev
+Standards-Version: 3.9.5
+
+Package: labgrid
+Architecture: any
+Pre-Depends: dpkg (>= 1.16.1), python3, ${misc:Pre-Depends}
+Depends: ${python3:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Description: embedded board control python library
+ Labgrid is a embedded board control python library with a focus on testing,
+ development and general automation. It includes a remote control layer to
+ control boards connected to other hosts.
+ .
+ The idea behind labgrid is to create an abstraction of the hardware control
+ layer needed for testing of embedded systems, automatic software installation
+ and automation during development. Labgrid itself is not a testing framework,
+ but is intended to be combined with pytest (and additional pytest plugins).

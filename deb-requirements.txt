@@ -1,0 +1,4 @@
+-r crossbar-requirements.txt
+-r onewire-requirements.txt
+-r modbus-requirements.txt
+-r snmp-requirements.txt

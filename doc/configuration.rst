@@ -780,6 +780,7 @@ Arguments:
   - prompt (regex): barebox prompt to match
   - autoboot (regex, default="stop autoboot"): autoboot message to match
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
+  - startstring (regex, default="[\n]barebox 20\d+"): string that indicates that Barebox is starting
   - bootstring (regex, default="Linux version \d"): succesfully jumped into the kernel 
 
 ExternalConsoleDriver

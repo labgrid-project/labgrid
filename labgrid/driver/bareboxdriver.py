@@ -24,11 +24,14 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     Args:
         prompt (str): The default Barebox Prompt
+        startstring (str): string that indicates that Barebox is starting
+        bootstring (str): string that indicates that the Kernel is booting
     """
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
     autoboot = attr.ib(default="stop autoboot", validator=attr.validators.instance_of(str))
     interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
+    startstring = attr.ib(default=r"[\n]barebox 20\d+", validator=attr.validators.instance_of(str))
     bootstring = attr.ib(default="Linux version \d", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
@@ -121,7 +124,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     def _await_prompt(self):
         """Await autoboot line and stop it to get to the prompt"""
-        self.console.expect(r"[\n]barebox 20\d+")
+        self.console.expect(self.startstring)
         index, _, _, _ = self.console.expect([self.prompt, self.autoboot])
         if index == 0:
             self._status = 1

@@ -1071,6 +1071,34 @@ Arguments:
     SerialDriver in your environment (what is likely to be the case
     if you are using this driver).
 
+
+SysfsDigitalOutputDriver
+------------------------
+The SysfsDigitalOutputDriver makes it possible to use a GPIO that is available
+in the Linux-Sysfs.
+
+The driver takes care of the exporting the pin and setting its direction to
+output. Besides this the user running labgrid on the machine needs the
+correct access-rights to */sys/class/gpio/*.
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   SysfsDigitalOutputDriver:
+     signal: "17"
+     initial_state: False
+     inverted: False
+
+Arguments:
+  - signal (str): Number of the GPIO that should be used.
+  - initial_state (bool): The state in which the GPIO should be initiated after
+    being exported.
+  - inverted (bool): Inverts the values written to this GPIO. Use with caution.
+    Setting this to True can and will confuse you or your colleagues at one
+    point in time.
+
 ModbusCoilDriver
 ~~~~~~~~~~~~~~~~
 A ModbusCoilDriver controls a `ModbusTCPCoil` resource.

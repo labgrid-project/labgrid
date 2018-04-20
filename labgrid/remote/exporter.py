@@ -42,22 +42,50 @@ class ResourceExport(ResourceEntry):
     host = attr.ib(default=gethostname(), validator=attr.validators.instance_of(str))
     local = attr.ib(init=False)
     local_params = attr.ib(init=False)
+    start_params = attr.ib(init=False)
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.logger = logging.getLogger("ResourceExport({})".format(self.cls))
         # move the params to local_params
         self.local_params = self.params.copy()
         for key in self.local_params:
             del self.params[key]
+        self.start_params = None
+
+    def _get_start_params(self):
+        return {}
 
     def _get_params(self):
         return {}
 
-    def _start(self):
+    def _start(self, start_params):
+        """Start exporting the local resource"""
         pass
 
-    def _stop(self):
+    def _stop(self, start_params):
+        """Stop exporting the local resource"""
         pass
+
+    def start(self):
+        start_params = self._get_start_params()
+        self._start(start_params)
+        self.start_params = start_params
+
+    def stop(self):
+        self._stop(self.start_params)
+        self.start_params = None
+
+    def need_restart(self):
+        """
+        Check if the previously used start parameters have changed so that a
+        restart is needed.
+        """
+        start_params = self._get_start_params()
+        if self.start_params != start_params:
+            self.logger.info("restart needed ({} -> {})".format(self.start_params, start_params))
+            return True
+        return False
 
     def poll(self):
         dirty = False
@@ -65,13 +93,16 @@ class ResourceExport(ResourceEntry):
         self.local.poll()
         if self.avail != self.local.avail:
             if self.local.avail:
-                self._start()
+                self.start()
             else:
-                self._stop()
+                self.stop()
             self.data['avail'] = self.local.avail
             dirty = True
         params = self._get_params()
         if self.params != params:
+            if self.local.avail and self.need_restart():
+                self.stop()
+                self.start()
             self.data['params'].update(params)
             dirty = True
         return dirty
@@ -94,6 +125,11 @@ class USBSerialPortExport(ResourceExport):
         if self.child is not None:
             self._stop()
 
+    def _get_start_params(self):
+        return {
+            'path': self.local.port,
+        }
+
     def _get_params(self):
         """Helper function to return parameters"""
         return {
@@ -104,7 +140,7 @@ class USBSerialPortExport(ResourceExport):
             }
         }
 
-    def _start(self):
+    def _start(self, start_params):
         """Start ``ser2net`` subprocess"""
         assert self.local.avail
         assert self.child is None
@@ -116,11 +152,13 @@ class USBSerialPortExport(ResourceExport):
             '-n',
             '-C',
             '{}:telnet:0:{}:115200 8DATABITS NONE 1STOPBIT'.format(
-                self.port, self.local.port
+                self.port, start_params['path']
             ),
         ])
+        self.logger.info("started ser2net for {} on port {}".format(
+            start_params['path'], self.port))
 
-    def _stop(self):
+    def _stop(self, start_params):
         """Stop spawned subprocess"""
         assert self.child
         # stop ser2net
@@ -132,6 +170,8 @@ class USBSerialPortExport(ResourceExport):
         except subprocess.TimeoutExpired:
             child.kill()
             child.wait(1.0)
+        self.logger.info("stopped ser2net for {} on port {}".format(
+            start_params['path'], self.port))
 
 
 exports["USBSerialPort"] = USBSerialPortExport

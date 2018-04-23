@@ -281,6 +281,62 @@ Here the `barebox` state simply cycles the board and activates the driver, while
 the `shell` state uses the barebox state to cycle the board and than boot the
 linux kernel.
 
+Graph Strategies
+----------------
+
+Graph Strategies are made for more complex strategies, with multiple, on each
+other depending, states.
+
+All states **HAVE TO**:
+  1. Be a method of a `GraphStrategy` subclass
+  2. Use this prototype: `def state_$STATENAME(self):`
+  3. Not call `transition()` in its state definition
+
+Every Graph Strategy graph has to have exactly one root state.
+A root state is a state that has no dependencies.
+
+.. code-block:: python
+
+    # conftest.py
+    from labgrid.strategy import GraphStrategy
+
+
+    class TestStrategy(GraphStrategy):
+        def state_Root(self):
+            pass
+
+        @GraphStrategy.depends('Root')
+        def state_A1(self):
+            pass
+
+        @GraphStrategy.depends('Root')
+        def state_A2(self):
+            pass
+
+        @GraphStrategy.depends('A1', 'A2')
+        def state_B(self):
+            pass
+
+
+.. code-block:: python
+
+    # test_feature.py
+    def test_feature(graph_strategy):
+        graph_strategy.transition('B')  #  returns: ['A1', 'B']
+        graph_strategy.transition('B')  #  returns: []
+        graph_strategy.transition('B', via=['A2'])  #  returns: ['Root', 'A2', 'B']
+
+.. code-block:: python
+
+    # render graph to png
+    >>> graph_strategy.graph.render('filename')
+    'filename.png'
+
+.. image:: res/graphstrategy-1.png
+
+.. image:: res/graphstrategy-2.png
+
+
 .. _contributing:
 
 Contributing
@@ -322,6 +378,13 @@ Documentation
 ~~~~~~~~~~~~~
 - Use `semantic linefeeds
   <http://rhodesmill.org/brandon/2012/one-sentence-per-line/>`_ in .rst files.
+
+Run Tests
+~~~~~~~~~
+
+.. code-block:: bash
+
+    $ tox -r
 
 Developer's Certificate of Origin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

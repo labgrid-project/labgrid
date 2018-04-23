@@ -32,7 +32,8 @@ setup(
         'pyudev',
         'requests',
         'xmodem>=0.4.5',
-        'autobahn'
+        'autobahn',
+        'graphviz',
     ],
     packages=[
         'labgrid',

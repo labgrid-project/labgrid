@@ -354,6 +354,34 @@ alternative boot method.
 .. image:: res/graphstrategy-2.png
 
 
+SSHManager
+----------
+
+Labgrid provides a SSHManager to allow connection reuse with control sockets.
+To use the SSHManager in your code, import it from `labgrid.util.ssh`:
+
+.. code-block:: python
+
+   from labgrid.util.ssh import sshmanager
+
+you can now request or remove forwards:
+
+.. code-block:: python
+
+   from labgrid.util.ssh import sshmanager
+
+   localport = sshmanager.request_forward('somehost', 3000)
+
+   sshmanager.remove_forward('somehost', 3000)
+
+or get and put files::
+
+.. code-block:: python
+
+   from labgrid.util.ssh import sshmanager
+
+   sshmanager.put_file('somehost', '/path/to/local/file', '/path/to/remote/file')
+
 .. _contributing:
 
 Contributing

@@ -5,6 +5,11 @@ from ..driver import Driver
 
 
 @attr.s(cmp=False)
+class StrategyError(Exception):
+    msg = attr.ib(validator=attr.validators.instance_of(str))
+
+
+@attr.s(cmp=False)
 class Strategy(Driver):  # reuse driver handling
     """
     Represents a strategy which places a target into a requested state by

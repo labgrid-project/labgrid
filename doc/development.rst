@@ -337,6 +337,34 @@ A root state is a state that has no dependencies.
 .. image:: res/graphstrategy-2.png
 
 
+SSHManager
+----------
+
+Labgrid provides a SSHManager to allow connection reuse with control sockets.
+To use the SSHManager in your code, import it from `labgrid.util.ssh`:
+
+.. code-block:: python
+
+   from labgrid.util.ssh import SSHMANAGER
+
+you can now request or remove forwards:
+
+.. code-block:: python
+
+   from labgrid.util.ssh import SSHMANAGER
+
+   localport = SSHMANAGER.request_forward('somehost', 3000)
+
+   SSHMANAGER.remove_forward('somehost', 3000)
+
+or get and put files::
+
+.. code-block:: python
+
+   from labgrid.util.ssh import SSHMANAGER
+
+   SSHMANAGER.put_file('somehost', '/path/to/local/file', '/path/to/remote/file')
+
 .. _contributing:
 
 Contributing

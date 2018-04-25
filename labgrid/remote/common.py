@@ -102,6 +102,7 @@ class Place:
     matches = attr.ib(default=attr.Factory(list))
     acquired = attr.ib(default=None)
     acquired_resources = attr.ib(default=attr.Factory(list))
+    allowed = attr.ib(default=attr.Factory(set), convert=set)
     created = attr.ib(default=attr.Factory(lambda: time.time()))
     changed = attr.ib(default=attr.Factory(lambda: time.time()))
 
@@ -127,6 +128,7 @@ class Place:
             else:
                 print(indent + "  {}".format(
                     '/'.join(resource_path)))
+        print(indent + "allowed: {}".format(', '.join(self.allowed)))
         print(indent + "created: {}".format(datetime.fromtimestamp(self.created)))
         print(indent + "changed: {}".format(datetime.fromtimestamp(self.changed)))
 

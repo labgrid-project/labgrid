@@ -323,3 +323,33 @@ class USBPowerPort(USBResource):
         self.match['DRIVER'] = 'hub'
         super().__attrs_post_init__()
 
+@target_factory.reg_resource
+@attr.s(cmp=False)
+class USBVideo(USBResource):
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'video4linux'
+        self.match['@SUBSYSTEM'] = 'usb'
+        super().__attrs_post_init__()
+
+    @property
+    def path(self):
+        if self.device:
+            return self.device.device_node
+        else:
+            return None
+
+@target_factory.reg_resource
+@attr.s(cmp=False)
+class USBTMC(USBResource):
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'usbmisc'
+        self.match['@DRIVER'] = 'usbtmc'
+        self.match['@SUBSYSTEM'] = 'usb'
+        super().__attrs_post_init__()
+
+    @property
+    def path(self):
+        if self.device:
+            return self.device.device_node
+        else:
+            return None

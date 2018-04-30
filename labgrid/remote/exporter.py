@@ -376,6 +376,7 @@ class ExporterSession(ApplicationSession):
                 except:
                     print("Exception while polling {}".format(resource), file=sys.stderr)
                     traceback.print_exc()
+                    continue
                 if changed:
                     # resource has changed
                     data = resource.asdict()

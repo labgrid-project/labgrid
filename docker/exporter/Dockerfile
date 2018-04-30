@@ -9,7 +9,8 @@ RUN set -e ;\
     apt update -q=2 ;\
     apt install -q=2 --yes --no-install-recommends ser2net ;\
     apt clean ;\
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* ;\
+    git clone https://github.com/vishnubob/wait-for-it.git /opt/wait-for-it
 
 VOLUME /opt/conf
 

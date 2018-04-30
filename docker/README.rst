@@ -101,3 +101,36 @@ Start it with something like:
 If using ser2net,
 the devices needed must be added to Docker container
 (``docker run --device`` option).
+
+Staging
+-------
+
+The ``staging`` folder contains a docker compose based example setup, where the images described above are used to
+create a setup with the following instances
+
+- **coordinator**
+- **exporter**
+- **client**
+- **dut**
+
+The environment serves both to allow checking if the environment still function after changes, and can act as an example
+how to configure the docker images needed to run a minimal setup.
+
+To use the staging environment to conduct a smoke test first build the images as instructed above:
+
+.. code-block:: bash
+
+   $ ./docker/build.sh
+
+Then use docker compose to start all services except the client:
+
+.. code-block:: bash
+
+   $ cd docker/staging
+   $ CURRENT_UID=$(id -u):$(id -g) docker-compose up -d coordinator exporter dut
+
+To run the smoke test just run the client:
+
+.. code-block:: bash
+
+   $ docker-compose up client

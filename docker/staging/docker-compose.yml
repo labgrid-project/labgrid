@@ -1,0 +1,47 @@
+version: '3.3'
+services:
+  coordinator:
+    image: "labgrid-coordinator"
+    volumes:
+      - "./crossbar:/opt/.crossbar"
+    tty: true
+    network_mode: "host"
+    user: "${CURRENT_UID}"
+    command: bash -c "cp /opt/.crossbar/places_example.yaml /opt/.crossbar/places.yaml &&
+                      crossbar start --config /opt/labgrid/.crossbar/config.yaml"
+  client:
+    image: "labgrid-client"
+    volumes:
+      - "./client:/simple-test"
+    tty: true
+    stdin_open: true
+    network_mode: "host"
+    command: bash -c "set -e &&
+                      /usr/local/bin/labgrid-client -p example-place unlock --kick ||
+                      /usr/local/bin/labgrid-client -p example-place lock &&
+                      cd /simple-test &&
+                      /usr/local/bin/pytest --lg-env remote.yaml  &&
+                      /usr/local/bin/labgrid-client -p example-place unlock"
+    depends_on:
+      - coordinator
+      - exporter
+      - dut
+  exporter:
+    image: "labgrid-exporter"
+    volumes:
+      - "./exporter-conf:/opt/conf"
+    depends_on:
+      - coordinator
+    tty: true
+    network_mode: "host"
+    stdin_open: true
+    command: bash -c "set -e &&
+                      /opt/wait-for-it/wait-for-it.sh 127.0.0.1:20408 -- labgrid-exporter /opt/conf/exporter.yaml"
+
+  dut:
+    build:
+      context: "./dut"
+    network_mode: "host"
+    privileged: true
+    ports:
+      - 2222:2222

@@ -34,7 +34,7 @@ class CommandMixin:
         Returns:
             List[str]: stdout of the executed command
         """
-        stdout, stderr, exitcode = self.run(cmd, timeout=timeout)
+        stdout, stderr, exitcode = self._run(cmd, timeout=timeout)
         if exitcode != 0:
             raise ExecutionError(cmd, stdout, stderr)
         return stdout

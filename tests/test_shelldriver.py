@@ -18,7 +18,7 @@ class TestShellDriver:
         d = ShellDriver(t, "shell", prompt='dummy', login_prompt='dummy', username='dummy')
         d.on_activate = mocker.MagicMock()
         d = t.get_driver('ShellDriver')
-        d.run = mocker.MagicMock(return_value=[['success'],[],0])
+        d._run = mocker.MagicMock(return_value=[['success'],[],0])
         res = d.run_check("test")
         assert res == ['success']
 
@@ -27,7 +27,7 @@ class TestShellDriver:
         d = ShellDriver(t, "shell", prompt='dummy', login_prompt='dummy', username='dummy')
         d.on_activate = mocker.MagicMock()
         d = t.get_driver('ShellDriver')
-        d.run = mocker.MagicMock(return_value=[['error'],[],1])
+        d._run = mocker.MagicMock(return_value=[['error'],[],1])
         with pytest.raises(ExecutionError):
             res = d.run_check("test")
 
@@ -36,6 +36,6 @@ class TestShellDriver:
         d = ShellDriver(t, "shell", prompt='dummy', login_prompt='dummy', username='dummy')
         d.on_activate = mocker.MagicMock()
         d = t.get_driver('ShellDriver')
-        d.run = mocker.MagicMock(return_value=[['success'],[],0])
+        d._run = mocker.MagicMock(return_value=[['success'],[],0])
         res = d.run_check("test", timeout=30.0)
         assert res == ['success']

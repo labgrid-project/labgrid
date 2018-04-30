@@ -1,0 +1,8 @@
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: example-place
+    drivers:
+      - SSHDriver:
+          keyfile: ""

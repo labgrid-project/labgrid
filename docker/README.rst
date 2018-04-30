@@ -86,8 +86,7 @@ labgrid-exporter usage
 The labgrid-exporter image runs a labgrid-exporter
 and optionally an ser2net service.
 
-Configuration is not included,
-but needs to be bind mounted to
+Configuration is not included, but needs to be bind mounted to
 /opt/conf/exporter.yaml and /opt/conf/ser2net.conf (optional).
 
 Start it with something like:
@@ -98,6 +97,39 @@ Start it with something like:
        -v $HOME/exporter-conf:/opt/conf \
 	 labgrid-exporter
 
-If using ser2net,
-the devices needed must be added to Docker container
+If using ser2net or if "exporting" e.g. a serial device, the devices needed must be added to Docker container
 (``docker run --device`` option).
+Moreover, if using udev this must be mounted in as well: ``docker run -v run/udev:/run/udev:ro``.
+
+Staging
+-------
+
+The ``staging`` folder contains a docker compose based example setup, where the images described above are used to
+create a setup with the following instances
+
+- **coordinator**
+- **exporter**
+- **client**
+- **dut**
+
+The environment serves both to allow checking if the environment still function after changes, and can act as an example
+how to configure the docker images needed to run a minimal setup.
+
+To use the staging environment to conduct a smoke test first build the images as instructed below:
+
+.. code-block:: bash
+
+   $ ./docker/build.sh
+
+Then use docker compose to start all services except the client:
+
+.. code-block:: bash
+
+   $ cd docker/staging
+   $ CURRENT_UID=$(id -u):$(id -g) docker-compose up -d coordinator exporter dut
+
+To run the smoke test just run the client:
+
+.. code-block:: bash
+
+   $ docker-compose up client

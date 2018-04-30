@@ -17,3 +17,5 @@
 /dist
 /.pytest_cache/
 /htmlcov/
+/docker/staging/crossbar/*
+!/docker/staging/crossbar/places_example.yaml

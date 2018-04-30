@@ -1,0 +1,16 @@
+example-place:
+  acquired: null
+  acquired_resources: []
+  aliases: []
+  allowed: []
+  changed: 1575386386.3115733
+  comment: ''
+  created: 1575376664.3120446
+  matches:
+  - cls: '*'
+    exporter: '*'
+    group: example-group
+    name: null
+    rename: null
+  reservation: null
+  tags: {}

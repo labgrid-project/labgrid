@@ -190,6 +190,7 @@ instead of the key file (needs sshpass to be installed)
 - address (str): hostname of the remote system
 - username (str): username used by SSH
 - password (str): password used by SSH
+- port (int): optional, port used by SSH (default 22)
 
 Used by:
   - `SSHDriver`_

@@ -193,10 +193,11 @@ class IMXUSBLoader(USBResource):
 @attr.s(cmp=False)
 class MXSUSBLoader(USBResource):
     def filter_match(self, device):
-        if device.get('ID_VENDOR_ID') != "066f":
+        match = (device.get('ID_VENDOR_ID'), device.get('ID_MODEL_ID'))
+
+        if not match in [("066f", "3780"), ("15a2", "004f")]:
             return False
-        if device.get('ID_MODEL_ID') not in ["3780"]:
-            return False
+
         return super().filter_match(device)
 
 @target_factory.reg_resource

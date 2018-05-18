@@ -23,6 +23,21 @@ class CommandMixin:
         if timeout.expired:
             raise ExecutionError("Wait timeout expired")
 
+    @Driver.check_active
+    @step(args=['cmd', 'expected', 'tries', 'timeout', 'sleepduration'])
+    def poll_until_success(self, cmd, *, expected=0, tries=None, timeout=30.0, sleepduration=1):
+        timeout = Timeout(timeout)
+        while not timeout.expired:
+            _, _, exitcode = self.run(cmd, timeout=timeout.remaining)
+            if exitcode == expected:
+                return True
+            sleep(sleepduration)
+            if tries is not None:
+                tries -= 1
+                if tries < 1:
+                    break
+        return False
+
     def _run_check(self, cmd: str, *, timeout=30, codec: str = "utf-8",
                    decodeerrors: str = "strict"):
         """

@@ -6,6 +6,6 @@ def test_state(command):
     if returncode == 127:
         pytest.skip("state command not available")
     assert returncode == 0
-    assert len(stderr) == 0
+    assert not stderr
     assert stdout[0] == 'registered state instances:'
     assert len(stdout) > 1

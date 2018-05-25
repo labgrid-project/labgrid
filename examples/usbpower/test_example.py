@@ -28,16 +28,16 @@ def shell(target, strategy, capsys):
 def test_barebox(bootloader):
     stdout, stderr, returncode = bootloader.run('version')
     assert returncode == 0
-    assert len(stdout) > 0
-    assert len(stderr) == 0
+    assert stdout
+    assert not stderr
     assert 'barebox' in '\n'.join(stdout)
 
 
 def test_shell(shell):
     stdout, stderr, returncode = shell.run('cat /proc/version')
     assert returncode == 0
-    assert len(stdout) > 0
-    assert len(stderr) == 0
+    assert stdout
+    assert not stderr
     assert 'Linux' in stdout[0]
 
 

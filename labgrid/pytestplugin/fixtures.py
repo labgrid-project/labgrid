@@ -71,7 +71,7 @@ def env(request):
             for target_name in targets:
                 target = env.get_target(target_name)
                 try:
-                    remote_place = target.get_resource(RemotePlace, await=False)
+                    remote_place = target.get_resource(RemotePlace, wait_avail=False)
                     remote_name = remote_place.name
                     my_junit.add_global_property(
                         'TARGET_{}_REMOTE'.format(target_name.upper()), remote_name)

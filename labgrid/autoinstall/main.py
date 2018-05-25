@@ -62,7 +62,7 @@ class Handler(multiprocessing.Process):
         if not cls:
             return None
 
-        return self.target.get_resource(self.context[cls], await=False)
+        return self.target.get_resource(self.context[cls], wait_avail=False)
 
     def run(self):
         self.log = logging.getLogger(self.name)

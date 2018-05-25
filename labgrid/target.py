@@ -97,7 +97,7 @@ class Target:
 
         self.update_resources()
 
-    def get_resource(self, cls, *, name=None, await=True):
+    def get_resource(self, cls, *, name=None, wait_avail=True):
         """
         Helper function to get a resource of the target.
         Returns the first valid resource found, otherwise None.
@@ -105,7 +105,7 @@ class Target:
         Arguments:
         cls -- resource-class to return as a resource
         name -- optional name to use as a filter
-        await -- wait for the resource to become available (default True)
+        wait_avail -- wait for the resource to become available (default True)
         """
         found = []
         other_names = []
@@ -133,7 +133,7 @@ class Target:
             raise NoResourceFoundError(
                 "multiple resources matching {} found in target {}".format(cls, self)
             )
-        if await:
+        if wait_avail:
             self.await_resources(found)
         return found[0]
 
@@ -315,7 +315,7 @@ class Target:
                 try:
                     if issubclass(requirement, Resource):
                         suppliers.append(
-                            self.get_resource(requirement, name=supplier_name, await=False),
+                            self.get_resource(requirement, name=supplier_name, wait_avail=False),
                         )
                     elif issubclass(requirement, (Driver, abc.ABC)): # all Protocols derive from ABC
                         suppliers.append(

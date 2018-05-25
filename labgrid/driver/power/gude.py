@@ -1,5 +1,3 @@
-import sys
-
 from ..exception import ExecutionError
 
 import requests

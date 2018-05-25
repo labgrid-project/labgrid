@@ -2,7 +2,6 @@ import pytest
 
 from labgrid import Environment
 from labgrid.exceptions import NoConfigFoundError, InvalidConfigError
-from labgrid.driver.fake import FakeConsoleDriver, FakePowerDriver
 from labgrid.protocol import ConsoleProtocol
 from labgrid.resource import RawSerialPort
 

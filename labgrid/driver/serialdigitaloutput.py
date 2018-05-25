@@ -1,18 +1,10 @@
-import shlex
-import subprocess
-import time
-from importlib import import_module
-import serial
-
 import attr
 
 from ..factory import target_factory
 from ..protocol import DigitalOutputProtocol
 from ..step import step
-from ..resource import SerialPort
 from .common import Driver
 from . import SerialDriver
-from .onewiredriver import OneWirePIODriver
 
 @target_factory.reg_driver
 @attr.s(cmp=False)

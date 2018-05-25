@@ -1,5 +1,3 @@
-import pytest
-
 from labgrid.external import HawkbitTestClient
 
 

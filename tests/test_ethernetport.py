@@ -1,5 +1,3 @@
-import pytest
-
 from labgrid.resource import SNMPEthernetPort
 
 def test_instance(target):

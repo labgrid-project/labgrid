@@ -1,8 +1,5 @@
 import pexpect
 
-from ..protocol import ConsoleProtocol
-from .exceptions import NoValidDriverError
-
 
 class PtxExpect(pexpect.spawn):
     """labgrid Wrapper of the pexpect module.

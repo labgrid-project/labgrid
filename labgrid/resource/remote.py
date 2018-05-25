@@ -3,7 +3,7 @@ import attr
 import os
 
 from ..factory import target_factory
-from .common import Resource, NetworkResource, ManagedResource, ResourceManager
+from .common import NetworkResource, ManagedResource, ResourceManager
 
 
 @attr.s(cmp=False)

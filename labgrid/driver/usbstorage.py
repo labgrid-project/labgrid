@@ -5,11 +5,9 @@ import os
 from time import time
 
 from ..factory import target_factory
-from ..protocol import BootstrapProtocol
 from ..resource.udev import USBMassStorage, USBSDMuxDevice
 from ..step import step
 from .common import Driver
-from .exception import ExecutionError
 
 
 @target_factory.reg_driver

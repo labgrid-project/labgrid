@@ -9,7 +9,6 @@ from ..resource.remote import NetworkMXSUSBLoader, NetworkIMXUSBLoader
 from ..resource.udev import MXSUSBLoader, IMXUSBLoader
 from ..step import step
 from .common import Driver, check_file
-from .exception import ExecutionError
 
 
 @target_factory.reg_driver

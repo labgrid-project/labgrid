@@ -1,8 +1,7 @@
 import json
-import socket
 import attr
 import logging
-from os import close
+
 
 @attr.s(cmp=False)
 class QMPMonitor:

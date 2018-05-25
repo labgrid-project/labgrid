@@ -1,6 +1,5 @@
 # pylint: disable=no-member
 import attr
-import subprocess
 from importlib import import_module
 from decimal import Decimal
 

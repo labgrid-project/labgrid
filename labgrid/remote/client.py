@@ -813,7 +813,6 @@ class ClientSession(ApplicationSession):
         quality = self.args.quality
         target = self._get_target(place)
         from ..driver.usbvideodriver import USBVideoDriver
-        from ..resource.remote import NetworkUSBVideo
         drv = None
         try:
             drv = target.get_driver(USBVideoDriver)

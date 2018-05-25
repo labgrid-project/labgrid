@@ -11,7 +11,7 @@ import attr
 import yaml
 from autobahn import wamp
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
-from autobahn.wamp.types import RegisterOptions, SubscribeOptions
+from autobahn.wamp.types import RegisterOptions
 
 from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
 

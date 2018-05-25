@@ -1,5 +1,3 @@
-import pytest
-
 from labgrid.resource.remote import NetworkUSBVideo
 from labgrid.driver.usbvideodriver import USBVideoDriver
 

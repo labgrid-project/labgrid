@@ -4,7 +4,7 @@ import attr
 from time import time
 
 from ..factory import target_factory
-from .common import Resource, ManagedResource, ResourceManager
+from .common import ManagedResource, ResourceManager
 
 @attr.s
 class SNMPSwitch:

@@ -8,7 +8,7 @@ import attr
 from .binding import BindingError, BindingState
 from .driver import Driver
 from .exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
-from .resource import Resource, ManagedResource
+from .resource import Resource
 from .strategy import Strategy
 from .util import Timeout
 

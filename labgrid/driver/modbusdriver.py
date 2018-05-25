@@ -1,4 +1,3 @@
-import logging
 from importlib import import_module
 
 import attr

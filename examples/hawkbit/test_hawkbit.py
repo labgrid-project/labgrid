@@ -2,7 +2,6 @@ import pytest
 import time
 
 from labgrid.external import HawkbitTestClient
-from labgrid.driver import InfoDriver
 
 @pytest.fixture()
 def hawkbit():

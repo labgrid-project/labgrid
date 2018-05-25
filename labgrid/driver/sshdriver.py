@@ -9,13 +9,12 @@ import tempfile
 import attr
 
 from ..factory import target_factory
-from ..protocol import CommandProtocol, FileTransferProtocol, InfoProtocol
+from ..protocol import CommandProtocol, FileTransferProtocol
 from ..resource import NetworkService
 from .commandmixin import CommandMixin
-from ..util import Timeout
 from .common import Driver
 from ..step import step
-from .exception import CleanUpError, ExecutionError
+from .exception import ExecutionError
 
 
 @target_factory.reg_driver

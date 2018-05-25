@@ -12,7 +12,6 @@ from ..util import gen_marker
 from ..step import step
 from .common import Driver
 from .commandmixin import CommandMixin
-from .exception import ExecutionError
 
 
 @target_factory.reg_driver

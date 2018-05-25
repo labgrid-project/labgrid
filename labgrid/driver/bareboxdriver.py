@@ -2,7 +2,6 @@
 import logging
 import re
 import shlex
-from time import sleep
 
 import attr
 from pexpect import TIMEOUT
@@ -10,10 +9,9 @@ from pexpect import TIMEOUT
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..step import step
-from ..util import gen_marker, Timeout
+from ..util import gen_marker
 from .common import Driver
 from .commandmixin import CommandMixin
-from .exception import ExecutionError
 
 
 @target_factory.reg_driver

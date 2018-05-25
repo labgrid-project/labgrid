@@ -1,5 +1,3 @@
-import json
-
 import attr
 import requests as r
 

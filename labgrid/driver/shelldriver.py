@@ -3,10 +3,8 @@
  InfoProtocol on top of a SerialPort."""
 import io
 import logging
-import os
 import re
 import shlex
-from time import sleep
 
 import attr
 from pexpect import TIMEOUT
@@ -16,10 +14,9 @@ import time
 import xmodem
 
 from ..factory import target_factory
-from ..protocol import (CommandProtocol, ConsoleProtocol, FileTransferProtocol,
-                        InfoProtocol)
+from ..protocol import CommandProtocol, ConsoleProtocol, FileTransferProtocol
 from ..step import step
-from ..util import Timeout, gen_marker
+from ..util import gen_marker
 from .commandmixin import CommandMixin
 from .common import Driver
 from .exception import ExecutionError

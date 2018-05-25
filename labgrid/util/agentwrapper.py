@@ -3,7 +3,6 @@ import hashlib
 import json
 import os.path
 import subprocess
-import time
 
 def b2s(b):
     return base64.b85encode(b).decode('ascii')

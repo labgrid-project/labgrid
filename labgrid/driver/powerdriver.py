@@ -14,7 +14,6 @@ from ..resource.udev import USBPowerPort
 from ..step import step
 from .common import Driver
 from .exception import ExecutionError
-from .onewiredriver import OneWirePIODriver
 
 
 @attr.s(cmp=False)

@@ -1,7 +1,5 @@
 import abc
 
-import attr
-
 
 class LinuxBootProtocol(abc.ABC):
     @abc.abstractmethod

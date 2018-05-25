@@ -1,4 +1,4 @@
-from labgrid.resource import ManagedResource, Resource, ResourceManager
+from labgrid.resource import ManagedResource, Resource
 
 
 def test_create_resource(target):

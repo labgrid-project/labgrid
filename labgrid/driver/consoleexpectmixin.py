@@ -1,9 +1,5 @@
 from time import sleep
 
-import attr
-
-from pexpect import TIMEOUT
-
 from ..util import PtxExpect
 from ..step import step
 from .common import Driver

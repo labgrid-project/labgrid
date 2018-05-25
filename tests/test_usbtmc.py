@@ -1,5 +1,3 @@
-import pytest
-
 from labgrid.resource.remote import NetworkUSBTMC
 from labgrid.driver.usbtmcdriver import USBTMCDriver
 

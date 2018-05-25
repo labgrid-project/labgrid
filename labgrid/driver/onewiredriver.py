@@ -1,5 +1,3 @@
-import logging
-
 import attr
 
 from ..factory import target_factory

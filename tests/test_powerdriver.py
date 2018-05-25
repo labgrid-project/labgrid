@@ -1,5 +1,3 @@
-import pytest
-
 from labgrid.resource import NetworkPowerPort
 from labgrid.driver.powerdriver import ExternalPowerDriver, ManualPowerDriver, NetworkPowerDriver
 

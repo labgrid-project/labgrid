@@ -1,16 +1,9 @@
-import logging
-import re
-
 import attr
-from pexpect import TIMEOUT
 
 from ..factory import target_factory
-from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..util import gen_marker
 from ..step import step
 from .common import Driver
-from .commandmixin import CommandMixin
-from .exception import ExecutionError
 
 from .ubootdriver import UBootDriver
 

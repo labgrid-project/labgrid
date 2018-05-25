@@ -8,7 +8,6 @@ from ..resource.remote import NetworkAndroidFastboot
 from ..resource.udev import AndroidFastboot
 from ..step import step
 from .common import Driver, check_file
-from .exception import ExecutionError
 
 
 @target_factory.reg_driver

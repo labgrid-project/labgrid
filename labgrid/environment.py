@@ -1,6 +1,5 @@
 import attr
 import os
-import yaml
 
 from .target import Target
 from .config import Config

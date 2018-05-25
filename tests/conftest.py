@@ -1,13 +1,10 @@
 from importlib.util import find_spec
 
-import attr
 import pytest
 import pexpect
-from py.path import local
 
-from labgrid import Target, target_factory
+from labgrid import Target
 from labgrid.driver import SerialDriver
-from labgrid.protocol import CommandProtocol, ConsoleProtocol
 from labgrid.resource import RawSerialPort, NetworkSerialPort
 from labgrid.driver.fake import FakeConsoleDriver
 

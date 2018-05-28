@@ -29,6 +29,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         password_prompt (str): string to detect the password prompt
         boot_expression (str): string to search for on UBoot start
         bootstring (str): string that indicates that the Kernel is booting
+        login_timeout (int): optional, timeout for login prompt detection 
 
     """
     bindings = {"console": ConsoleProtocol, }
@@ -39,6 +40,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     password_prompt = attr.ib(default="enter Password:", validator=attr.validators.instance_of(str))
     boot_expression = attr.ib(default=r"U-Boot 20\d+", validator=attr.validators.instance_of(str))
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
+    login_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -144,7 +146,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """Await autoboot line and stop it to get to the prompt, optionally
         enter the password.
         """
-        self.console.expect(self.boot_expression)
+        self.console.expect(self.boot_expression, timeout=self.login_timeout)
         index, _, _, _ = self.console.expect(
             [self.prompt, "stop autoboot", self.password_prompt]
         )

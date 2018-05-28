@@ -756,6 +756,8 @@ Arguments:
   - boot_expression (str): optional, regex to match the uboot start string
     defaults to "U-Boot 20\d+"
   - bootstring (str): optional, regex to match on Linux Kernel boot
+  - login_timeout (int): optional, timeout for login prompt detection in
+    seconds (default 60)
 
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~

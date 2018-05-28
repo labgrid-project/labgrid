@@ -104,7 +104,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     @step(args=['cmd'])
-    def run(self, cmd, codec="utf-8", decodeerrors="strict"):
+    def run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=30):
         """Execute `cmd` on the target.
 
         This method runs the specified `cmd` as a command on its target.

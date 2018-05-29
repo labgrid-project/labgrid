@@ -109,7 +109,7 @@ class Target:
         """
         found = []
         other_names = []
-        if type(cls) is str:
+        if isinstance(cls, str):
             cls = self._class_from_string(cls)
 
         for res in self.resources:
@@ -142,7 +142,7 @@ class Target:
 
         found = []
         other_names = []
-        if type(cls) is str:
+        if isinstance(cls, str):
             cls = self._class_from_string(cls)
 
         for drv in self.drivers:
@@ -231,7 +231,7 @@ class Target:
             cls = key
         elif len(key) == 2:
             cls, name = key
-        if type(cls) is str:
+        if isinstance(cls, str):
             cls = self._class_from_string(cls)
         if not issubclass(cls, (Driver, abc.ABC)): # all Protocols derive from ABC
             raise NoDriverFoundError(
@@ -422,7 +422,7 @@ class Target:
 
         This is needed to ensure that no client has an inactive supplier.
         """
-        if type(client) is str:
+        if isinstance(client, str):
             client = self._class_from_string(client)
 
         if client.state is BindingState.bound:

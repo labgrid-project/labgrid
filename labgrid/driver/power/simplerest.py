@@ -12,12 +12,12 @@
 
 import requests
 
-def set(host, index, value):
+def power_set(host, index, value):
     index = int(index)
     value = 1 if value else 0
     r = requests.get(host.format(value=value,index=index))
 
-def get(host, index):
+def power_get(host, index):
     index = int(index)
     # remove trailing /
     r = requests.get(host.format(value='',index=index).rstrip('/'))

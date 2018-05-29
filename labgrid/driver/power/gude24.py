@@ -12,7 +12,7 @@ import requests
 # Driver has been tested with:
 # * Gude Expert Power Control 8080
 
-def set(host, index, value):
+def power_set(host, index, value):
     # The gude web-interface uses different pages for the three groups of
     # switches. The web-interface always uses the 'correct' page to set a
     # value. But commands for all pages are accepted on all pages.
@@ -26,7 +26,7 @@ def set(host, index, value):
     r.raise_for_status()
 
 
-def get(host, index):
+def power_get(host, index):
     # The status of the ports is made available via a html <meta>-tag using the
     # following format:
     # <meta http-equiv="powerstate" content="Power Port 1,0">

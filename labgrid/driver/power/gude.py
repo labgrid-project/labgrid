@@ -5,7 +5,7 @@ from ..exception import ExecutionError
 import requests
 
 
-def set(host, index, value):
+def power_set(host, index, value):
     index = int(index)
     assert 1 <= index <= 8
     # access the web interface...
@@ -16,7 +16,7 @@ def set(host, index, value):
     r.raise_for_status()
 
 
-def get(host, index):
+def power_get(host, index):
     index = int(index)
     assert 1 <= index <= 8
     # get the contents of the main page

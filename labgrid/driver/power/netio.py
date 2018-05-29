@@ -1,10 +1,9 @@
 import sys
 import re
-
 import requests
 
 
-def set(host, index, value):
+def power_set(host, index, value):
     index = int(index)
     assert 1 <= index <= 4
     # access the web interface...
@@ -19,7 +18,7 @@ def set(host, index, value):
     r.raise_for_status()
 
 
-def get(host, index):
+def power_get(host, index):
     index = int(index)
     assert 1 <= index <= 4
     # get the contents of the main page

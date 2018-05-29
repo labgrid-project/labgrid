@@ -266,7 +266,6 @@ class USBSDMuxDevice(USBResource):
     """The USBSDMuxDevice describes an attached USBSDMux device,
     it is identified via USB using udev
     """
-    control_path = attr.ib(default=None)
     def __attrs_post_init__(self):
         self.match['ID_VENDOR_ID'] = '0424'
         self.match['ID_MODEL_ID'] = '4041'

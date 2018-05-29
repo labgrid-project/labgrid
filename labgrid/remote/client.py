@@ -522,7 +522,7 @@ class ClientSession(ApplicationSession):
         host, user = place.acquired.split('/')
         if user != getuser():
             raise UserError(
-                "place {} is acquired by a different user ({})".format(place.name)
+                "place {} is acquired by a different user ({})".format(place.name, place.acquired)
             )
         if not '/' in self.args.user:
             raise UserError(

@@ -639,13 +639,8 @@ class ClientSession(ApplicationSession):
             raise UserError("target has no compatible resource available")
         target.activate(drv)
         if action == 'get':
-            print(
-                "digital IO {} for place {} is {}".format(
-                    resource.name,
-                    place.name,
-                    'high' if drv.get() else 'low',
-                )
-            )
+            print("digital IO {} for place {} is {}".format(
+                name, place.name, 'high' if drv.get() else 'low'))
         elif action == 'high':
             drv.set(True)
         elif action == 'low':

@@ -129,8 +129,8 @@ class Step:
             return 0.0
         elif self._stop_ts is None:
             return monotonic() - self._start_ts
-        else:
-            return self._stop_ts - self._start_ts
+
+        return self._stop_ts - self._start_ts
 
     @property
     def status(self):
@@ -138,8 +138,8 @@ class Step:
             return 'new'
         elif self._stop_ts is None:
             return 'active'
-        else:
-            return 'done'
+
+        return 'done'
 
     @property
     def is_active(self):

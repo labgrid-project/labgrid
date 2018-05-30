@@ -95,8 +95,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
         if check == 0:
             return ""
-        else:
-            return self._start_own_master()
+
+        return self._start_own_master()
 
     @Driver.check_active
     @step(args=['cmd'])

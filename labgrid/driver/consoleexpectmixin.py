@@ -36,9 +36,9 @@ class ConsoleExpectMixin:
                 sleep(self.txdelay)
                 count += self._write(data[i:i+1])
             return count
-        else:
-            self.logger.debug("Write %i bytes: %s", len(data), data)
-            return self._write(data)
+
+        self.logger.debug("Write %i bytes: %s", len(data), data)
+        return self._write(data)
 
     @Driver.check_active
     def sendline(self, line):

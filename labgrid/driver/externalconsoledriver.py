@@ -78,8 +78,8 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
             raise ExecutionError("child has vanished")
         if self._poll.poll(timeout):
             return self._child.stdout.read(size)
-        else:
-            return b''
+
+        return b''
 
     def _write(self, data: bytes):
         """

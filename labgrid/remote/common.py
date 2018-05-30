@@ -90,8 +90,8 @@ class ResourceMatch:
             return False
         elif self.name and not fnmatchcase(name, self.name):
             return False
-        else:
-            return True
+
+        return True
 
 
 @attr.s(cmp=False)
@@ -140,6 +140,8 @@ class Place:
         for match in self.matches:
             if match.ismatch(resource_path):
                 return match
+
+        return None
 
     def hasmatch(self, resource_path):
         """Return True if this place as a ResourceMatch object for the given resource path.

@@ -90,8 +90,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             exitcode = int(data[-1])
             del data[-1]
             return (data, [], exitcode)
-        else:
-            return None
+
+        return None
 
     @Driver.check_active
     def run(self, cmd):

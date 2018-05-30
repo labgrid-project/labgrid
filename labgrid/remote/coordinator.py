@@ -75,8 +75,8 @@ class ExporterSession(RemoteSession):
             return Action.DEL, resource_path
         elif new:
             return Action.ADD, resource_path
-        else:
-            return None, resource_path
+
+        return None, resource_path
 
     def get_resources(self):
         """Method invoked by the exporter, get a resource from the coordinator"""

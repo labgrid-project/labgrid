@@ -87,8 +87,8 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             # Get exit code
             exitcode = int(match.group(2))
             return (data, [], exitcode)
-        else:
-            return None
+
+        return None
 
     @Driver.check_active
     @step()

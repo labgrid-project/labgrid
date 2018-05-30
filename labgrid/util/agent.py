@@ -60,7 +60,7 @@ def handle_usbtmc(index, cmd, read=False):
     os.write(fd, cmd)
     if not read:
         os.close(fd)
-        return
+        return None
     data = []
     while True:
         data.append(os.read(fd, 4096))

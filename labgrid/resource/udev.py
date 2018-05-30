@@ -104,11 +104,15 @@ class USBResource(ManagedResource):
         if device:
             return int(device.get('BUSNUM'))
 
+        return None
+
     @property
     def devnum(self):
         device = self._get_usb_device()
         if device:
             return int(device.get('DEVNUM'))
+
+        return None
 
     def _get_usb_device(self):
         device = self.device
@@ -123,17 +127,23 @@ class USBResource(ManagedResource):
         if device:
             return str(device.sys_name)
 
+        return None
+
     @property
     def vendor_id(self):
         device = self._get_usb_device()
         if device:
             return int(device.get('ID_VENDOR_ID'), 16)
 
+        return None
+
     @property
     def model_id(self):
         device = self._get_usb_device()
         if device:
             return int(device.get('ID_MODEL_ID'), 16)
+
+        return None
 
     def read_attr(self, attribute):
         """read uncached attribute value from sysfs
@@ -146,6 +156,8 @@ class USBResource(ManagedResource):
         if self.device:
             with open(os.path.join(self.device.sys_path, attribute), 'rb') as f:
                 return f.read().rstrip(b'\n') # drop trailing newlines
+
+        return None
 
 
 @target_factory.reg_resource
@@ -175,8 +187,8 @@ class USBMassStorage(USBResource):
     def path(self):
         if self.device:
             return self.device.device_node
-        else:
-            return None
+
+        return None
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
@@ -297,16 +309,16 @@ class USBSDMuxDevice(USBResource):
         dev = self._get_scsi_dev()
         if dev:
             return dev.device_node
-        else:
-            return None
+
+        return None
 
     @property
     def path(self):
         dev = self._get_block_disk_dev()
         if dev:
             return dev.device_node
-        else:
-            return None
+
+        return None
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
@@ -335,8 +347,8 @@ class USBVideo(USBResource):
     def path(self):
         if self.device:
             return self.device.device_node
-        else:
-            return None
+
+        return None
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
@@ -351,5 +363,5 @@ class USBTMC(USBResource):
     def path(self):
         if self.device:
             return self.device.device_node
-        else:
-            return None
+
+        return None

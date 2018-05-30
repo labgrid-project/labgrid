@@ -43,6 +43,8 @@ class Driver(BindingMixin):
             if cls.__name__ == protocol.__name__:
                 return 0
 
+        return 0
+
 
 def check_file(filename, *, command_prefix=[]):
     if subprocess.call(command_prefix + ['test', '-r', filename]) != 0:

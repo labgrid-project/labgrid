@@ -64,8 +64,8 @@ class Config:
         path = os.path.expandvars(path)
         if os.path.isabs(path):
             return path
-        else:
-            return os.path.join(self.base, path)
+
+        return os.path.join(self.base, path)
 
     def get_tool(self, tool):
         """Retrieve an entry from the tools subkey

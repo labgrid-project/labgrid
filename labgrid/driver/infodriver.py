@@ -52,8 +52,8 @@ class InfoDriver(Driver, InfoProtocol):
         self.logger.debug("Complete result: %s", result)
         if result:
             return result[interface]
-        else:
-            return None
+
+        return None
 
     @Driver.check_active
     @step(args=['service'])

@@ -61,10 +61,10 @@ class BindingMixin:
             return "{}(target={}, name={})".format(
                 self.__class__.__name__, self.target.name, self.name
             )
-        else:
-            return "{}(target={})".format(
-                self.__class__.__name__, self.target.name
-            )
+
+        return "{}(target={})".format(
+            self.__class__.__name__, self.target.name
+        )
 
     def on_supplier_bound(self, supplier):
         """Called by the Target after a new supplier has been bound"""

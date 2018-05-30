@@ -64,9 +64,9 @@ class USBTMCDriver(Driver):
             digits = int(res[1:2], 10)
             count = int(res[2:2+digits], 10)
             return res[2+digits:2+digits+count]
-        else:
-            assert res[-1:] == b'\n'
-            return res[:-1].decode('ASCII')
+
+        assert res[-1:] == b'\n'
+        return res[:-1].decode('ASCII')
 
     @Driver.check_active
     def identify(self):

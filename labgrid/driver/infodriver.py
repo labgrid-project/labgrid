@@ -7,6 +7,7 @@ from ..factory import target_factory
 from ..step import step
 from ..protocol import InfoProtocol, CommandProtocol
 from .common import Driver
+from .exception import ExecutionError
 
 @target_factory.reg_driver
 @attr.s(cmp=False)

@@ -51,6 +51,8 @@ class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
         elif self.signal == "rts":
             return self._p.rts
 
+        raise ValueError("Expected signal to be dtr or rts")
+
     @Driver.check_active
     @step()
     def set(self, value):

@@ -529,7 +529,8 @@ def main():
     print("resource config file: {}".format(extra['resources']))
 
     extra['loop'] = loop = asyncio.get_event_loop()
-    #loop.set_debug(True)
+    if args.debug:
+        loop.set_debug(True)
     runner = ApplicationRunner(url=crossbar_url, realm=crossbar_realm, extra=extra)
     runner.run(ExporterSession, log_level=level)
     if reexec:

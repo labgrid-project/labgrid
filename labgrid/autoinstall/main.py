@@ -71,6 +71,8 @@ class Handler(multiprocessing.Process):
         try:
             self.target = self.env.get_target(self.name)
             self.context['target'] = self.target
+            if self.target is None:
+                raise KeyError
         except:
             self.log.exception("target creation failed")
             return

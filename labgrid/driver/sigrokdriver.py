@@ -229,10 +229,8 @@ class SigrokDriver(Driver):
         args.append("--protocol-decoder-samplenum")
         args.append("-l")
         args.append("4")
-        combined = self._get_sigrok_prefix() + list(args)
-        output = subprocess.check_output(
-            self._get_sigrok_prefix() + list(args),
-        )
+        combined = self._get_sigrok_prefix() + args
+        output = subprocess.check_output(combined)
         return [
             match.groupdict()
             for match in re.finditer(annotation_regex, output.decode("utf-8"))

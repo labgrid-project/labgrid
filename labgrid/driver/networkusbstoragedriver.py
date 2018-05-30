@@ -1,5 +1,6 @@
 # pylint: disable=no-member
 import attr
+import logging
 import subprocess
 import os
 
@@ -16,6 +17,7 @@ class NetworkUSBStorageDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.logger = logging.getLogger("{}:{}".format(self, self.target))
 
     def on_activate(self):
         pass
@@ -27,7 +29,7 @@ class NetworkUSBStorageDriver(Driver):
     def write_image(self, filename):
         filename = os.path.abspath(filename)
         check_file(filename, command_prefix=self.storage.command_prefix)
-        print("pwd: %s" % os.getcwd())
+        self.logger.info("pwd: %s", os.getcwd())
         subprocess.check_call(
           self.storage.command_prefix+["dd", "if=%s" % filename, "of=%s status=progress bs=4M conv=fdatasync" % self.storage.path]
         )

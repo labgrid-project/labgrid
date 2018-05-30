@@ -245,7 +245,7 @@ class EthernetPortManager(ResourceManager):
                     await handler(self)
                 except asyncio.CancelledError:
                     break
-                except:
+                except Exception:  # pylint: disable=broad-except
                     import traceback
                     traceback.print_exc()
 

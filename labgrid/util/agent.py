@@ -30,7 +30,7 @@ class Agent:
 
             try:
                 request = json.loads(line)
-            except:
+            except json.JSONDecodeError:
                 self._send({'error': 'request parsing failed'})
                 break
 

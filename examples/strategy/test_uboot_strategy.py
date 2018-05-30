@@ -5,7 +5,7 @@ import pytest
 def strategy(target):
     try:
         return target.get_driver('UBootStrategy')
-    except:
+    except NoDriverFoundError:
         pytest.skip("strategy not found")
 
 

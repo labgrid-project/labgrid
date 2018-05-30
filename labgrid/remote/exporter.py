@@ -18,7 +18,7 @@ from .common import ResourceEntry, enable_tcp_nodelay
 try:
     import pkg_resources
     __version__ = pkg_resources.get_distribution('labgrid').version
-except:
+except pkg_resources.DistributionNotFound:
     __version__ = "unknown"
 
 def get_free_port():
@@ -351,7 +351,7 @@ class ExporterSession(ApplicationSession):
                         group_name, resource_name, cls, params
                     )
 
-        except:
+        except Exception:  # pylint: disable=broad-except
             traceback.print_exc()
             self.loop.stop()
             return
@@ -400,7 +400,7 @@ class ExporterSession(ApplicationSession):
                     continue
                 try:
                     changed = resource.poll()
-                except:
+                except Exception:  # pylint: disable=broad-except
                     print("Exception while polling {}".format(resource), file=sys.stderr)
                     traceback.print_exc()
                     continue
@@ -420,7 +420,7 @@ class ExporterSession(ApplicationSession):
                 await self._poll_step()
             except asyncio.CancelledError:
                 break
-            except:
+            except Exception:  # pylint: disable=broad-except
                 traceback.print_exc()
 
     async def add_resource(self, group_name, resource_name, cls, params):

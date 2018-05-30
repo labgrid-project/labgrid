@@ -1243,7 +1243,7 @@ def main():
             exitcode = 1
         except KeyboardInterrupt:
             exitcode = 0
-        except:
+        except Exception:  # pylint: disable=broad-except
             traceback.print_exc()
             exitcode = 2
         exit(exitcode)

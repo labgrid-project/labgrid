@@ -223,7 +223,7 @@ class CoordinatorComponent(ApplicationSession):
                 await self._poll_step()
             except asyncio.CancelledError:
                 break
-            except:
+            except Exception:  # pylint: disable=broad-except
                 traceback.print_exc()
 
     def save_later(self):

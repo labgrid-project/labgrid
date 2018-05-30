@@ -40,7 +40,7 @@ class Steps:
         for subscriber in self._subscribers:
             try:
                 subscriber(event)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 warnings.warn("unhandled exception during event notification: {}".format(e))
 
 steps = Steps()

@@ -73,7 +73,7 @@ class Handler(multiprocessing.Process):
             self.context['target'] = self.target
             if self.target is None:
                 raise KeyError
-        except:
+        except Exception:  # pylint: disable=broad-except
             self.log.exception("target creation failed")
             return
 
@@ -123,7 +123,7 @@ class Handler(multiprocessing.Process):
                                  next(iter(e.filter)))
             else:
                 self.log.warning("resource not found, restarting")
-        except:
+        except Exception:  # pylint: disable=broad-except
             self.log.exception("handler failed")
             return False
 

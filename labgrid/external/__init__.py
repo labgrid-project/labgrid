@@ -1,2 +1,2 @@
-from .hawkbit import *
+from .hawkbit import HawkbitTestClient
 from .usbstick import USBStick

@@ -1,6 +1,6 @@
 import json
-import attr
 import logging
+import attr
 
 
 @attr.s(cmp=False)

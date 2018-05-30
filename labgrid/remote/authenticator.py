@@ -1,7 +1,5 @@
 from pprint import pprint
-
 from twisted.internet.defer import inlineCallbacks
-
 from autobahn.twisted.wamp import ApplicationSession
 
 

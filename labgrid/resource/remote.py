@@ -1,6 +1,6 @@
 import logging
-import attr
 import os
+import attr
 
 from ..factory import target_factory
 from .common import NetworkResource, ManagedResource, ResourceManager

@@ -1,8 +1,8 @@
 # pylint: disable=no-member
-import attr
 import logging
 import subprocess
 import os
+import attr
 
 from ..factory import target_factory
 from ..resource.udev import USBMassStorage, USBSDMuxDevice

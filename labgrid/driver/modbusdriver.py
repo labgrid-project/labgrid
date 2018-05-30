@@ -1,5 +1,4 @@
 from importlib import import_module
-
 import attr
 
 from ..factory import target_factory

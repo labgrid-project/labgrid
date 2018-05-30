@@ -1,7 +1,7 @@
 import logging
 import subprocess
-import attr
 from time import time
+import attr
 
 from ..factory import target_factory
 from .common import ManagedResource, ResourceManager

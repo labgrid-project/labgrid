@@ -1,8 +1,8 @@
 # pylint: disable=no-member
-import attr
 import subprocess
 import os.path
 import re
+import attr
 
 from ..factory import target_factory
 from ..resource.remote import NetworkAlteraUSBBlaster

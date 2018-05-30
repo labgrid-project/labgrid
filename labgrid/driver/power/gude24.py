@@ -1,6 +1,7 @@
+import requests
+
 from ..exception import ExecutionError
 
-import requests
 
 # This driver implements a power port for Gude Power Switches with up to
 # 24 ports.

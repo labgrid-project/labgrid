@@ -1,7 +1,7 @@
 # pylint: disable=no-member
-import attr
 import subprocess
 import os.path
+import attr
 
 from ..factory import target_factory
 from ..protocol import BootstrapProtocol

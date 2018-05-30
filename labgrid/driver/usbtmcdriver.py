@@ -1,7 +1,7 @@
 # pylint: disable=no-member
-import attr
 from importlib import import_module
 from decimal import Decimal
+import attr
 
 from .common import Driver
 from ..factory import target_factory

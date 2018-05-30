@@ -1,6 +1,6 @@
 # pylint: disable=no-member
-import attr
 import subprocess
+import attr
 
 from .common import Driver
 from ..factory import target_factory

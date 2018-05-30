@@ -1,5 +1,5 @@
-import attr
 import os
+import attr
 
 from .target import Target
 from .config import Config

@@ -1,8 +1,8 @@
 import os
 import sys
+from datetime import datetime
 
 from .step import steps
-from datetime import datetime
 
 
 class ConsoleLoggingReporter:

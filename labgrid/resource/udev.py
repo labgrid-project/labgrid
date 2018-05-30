@@ -1,10 +1,9 @@
 from functools import partial
-
-import attr
 import logging
 import os
-import pyudev
 import warnings
+import attr
+import pyudev
 
 from ..factory import target_factory
 from .common import ManagedResource, ResourceManager

@@ -2,20 +2,19 @@
 coordinator, acquire a place and interact with the connected resources"""
 import argparse
 import asyncio
-import txaio
 import os
 import subprocess
 import traceback
 import logging
 import sys
-from pprint import pformat
 from textwrap import indent
 from socket import gethostname
 from getpass import getuser
 from collections import defaultdict, OrderedDict
 from time import sleep
 from datetime import datetime
-
+from pprint import pformat
+import txaio
 from autobahn.asyncio.wamp import ApplicationSession
 
 from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
@@ -707,7 +706,8 @@ class ClientSession(ApplicationSession):
         target = self._get_target(place)
         from ..driver.usbloader import IMXUSBDriver, MXSUSBDriver
         from ..driver.openocddriver import OpenOCDDriver
-        from ..resource.remote import NetworkMXSUSBLoader, NetworkIMXUSBLoader, NetworkAlteraUSBBlaster
+        from ..resource.remote import (NetworkMXSUSBLoader, NetworkIMXUSBLoader,
+                                       NetworkAlteraUSBBlaster)
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkIMXUSBLoader):

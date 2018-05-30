@@ -1,6 +1,6 @@
-from ..exception import ExecutionError
-
 import requests
+
+from ..exception import ExecutionError
 
 
 def power_set(host, index, value):

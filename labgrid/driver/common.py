@@ -1,5 +1,5 @@
-import attr
 import subprocess
+import attr
 
 from ..binding import BindingError, BindingMixin
 from .exception import ExecutionError

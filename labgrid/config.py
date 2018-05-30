@@ -3,12 +3,12 @@
 This class encapsulates access functions to the environment configuration
 
 """
-import attr
 import os
+from yaml import YAMLError
+import attr
 
 from .exceptions import NoConfigFoundError, InvalidConfigError
 from .util.yaml import load, resolve_templates
-from yaml import YAMLError
 
 @attr.s(cmp=False)
 class Config:

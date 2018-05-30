@@ -1,6 +1,6 @@
 import os
-import pytest
 import subprocess
+import pytest
 
 from .. import Environment
 from ..exceptions import NoResourceFoundError

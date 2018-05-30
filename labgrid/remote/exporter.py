@@ -9,9 +9,7 @@ import traceback
 import subprocess
 from socket import gethostname, socket, AF_INET, SOCK_STREAM
 from contextlib import closing
-
 import attr
-
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .config import ResourceConfig

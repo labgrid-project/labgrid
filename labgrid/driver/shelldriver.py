@@ -4,13 +4,10 @@
 import io
 import logging
 import re
+import time
 import shlex
-
 import attr
 from pexpect import TIMEOUT
-
-import time
-
 import xmodem
 
 from ..factory import target_factory

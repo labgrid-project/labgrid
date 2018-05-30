@@ -47,7 +47,7 @@ class Handler(multiprocessing.Process):
         context['log'] = self.log.getChild('setup')
         setup = self._get_function('setup', self.context)
         if setup is None:
-            def setup():
+            def setup():  # pylint: disable=function-redefined
                 pass
         return setup
 

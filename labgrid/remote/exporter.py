@@ -1,5 +1,6 @@
 """The remote.exporter module exports resources to the coordinator and makes
 them available to other clients on the same coordinator"""
+# pylint: disable=unsupported-assignment-operation
 import argparse
 import asyncio
 import logging
@@ -101,7 +102,7 @@ class ResourceExport(ResourceEntry):
             if self.local.avail and self.need_restart():
                 self.stop()
                 self.start()
-            self.data['params'].update(params)
+            self.data['params'].update(params)  # pylint: disable=unsubscriptable-object
             dirty = True
         return dirty
 

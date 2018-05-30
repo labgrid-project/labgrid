@@ -1,3 +1,4 @@
+# pylint: disable=unsubscriptable-object
 import socket
 import time
 from datetime import datetime
@@ -116,11 +117,11 @@ class Place:
         print(indent + "aliases: {}".format(', '.join(self.aliases)))
         print(indent + "comment: {}".format(self.comment))
         print(indent + "matches:")
-        for match in self.matches:
+        for match in self.matches:  # pylint: disable=not-an-iterable
             print(indent + "  {}".format(match))
         print(indent + "acquired: {}".format(self.acquired))
         print(indent + "acquired resources:")
-        for resource_path in self.acquired_resources:
+        for resource_path in self.acquired_resources:  # pylint: disable=not-an-iterable
             match = self.getmatch(resource_path)
             if match.rename:
                 print(indent + "  {} → {}".format(
@@ -137,7 +138,7 @@ class Place:
 
         A resource_path has the structure (exporter, group, cls, name).
         """
-        for match in self.matches:
+        for match in self.matches:  # pylint: disable=not-an-iterable
             if match.ismatch(resource_path):
                 return match
 

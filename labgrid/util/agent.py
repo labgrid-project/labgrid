@@ -47,7 +47,7 @@ class Agent:
                 self._send({'exception': repr(e)})
                 break
 
-def handle_test(*args, **kwargs):
+def handle_test(*args, **kwargs):  # pylint: disable=unused-argument
     return args[::-1]
 
 def handle_error(message):

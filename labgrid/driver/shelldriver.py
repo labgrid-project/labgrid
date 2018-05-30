@@ -1,4 +1,4 @@
-# pylint: disable=no-member
+# pylint: disable=no-member,missing-kwoa,unused-argument
 """The ShellDriver provides the CommandProtocol, ConsoleProtocol and
  InfoProtocol on top of a SerialPort."""
 import io
@@ -61,7 +61,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self._inject_run()
         if self.keyfile:
             self._put_ssh_key(self.keyfile)
-        self._run("dmesg -n 1")  # Turn off Kernel Messages to the console
+        # Turn off Kernel Messages to the console
+        self._run("dmesg -n 1")
 
     def on_deactivate(self):
         self._status = 0
@@ -161,7 +162,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             last_before = before
 
             if time.time() > start + self.login_timeout:
-                raise TIMEOUT("Timeout of {} seconds exceeded during waiting for login".format(self.login_timeout))
+                raise TIMEOUT("Timeout of {} seconds exceeded during waiting for login".format(self.login_timeout))  # pylint: disable=line-too-long
 
     @step()
     def get_status(self):

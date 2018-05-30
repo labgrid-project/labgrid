@@ -1,5 +1,5 @@
 """The coordinator module coordinates exported resources and clients accessing them."""
-# pylint: disable=no-member
+# pylint: disable=no-member,unused-argument
 import asyncio
 import traceback
 from collections import defaultdict
@@ -332,7 +332,7 @@ class CoordinatorComponent(ApplicationSession):
         action, resource_path = session.set_resource(groupname, resourcename, resource)
         if action is Action.ADD:
             self._add_default_place(groupname)
-        await self._update_acquired_places(action, resource_path)
+        await self._update_acquired_places(action, resource_path)  # pylint: disable=not-an-iterable
         self.save_later()
 
     def _get_resources(self):

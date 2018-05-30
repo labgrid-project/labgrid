@@ -182,7 +182,7 @@ class Step:
             warnings.warn("__del__ called before {} was done".format(step))
 
 
-def step(*, title=None, args=[], result=False, tag=None):
+def step(*, title=None, args=[], result=False, tag=None):  # pylint: disable=unused-argument
     def decorator(func):
         # resolve default title
         nonlocal title

@@ -1,3 +1,4 @@
+# pylint: disable=unsupported-assignment-operation
 from functools import partial
 import logging
 import os
@@ -48,7 +49,7 @@ class USBResource(ManagedResource):
         self.match.setdefault('SUBSYSTEM', 'usb')
         super().__attrs_post_init__()
 
-    def filter_match(self, device):
+    def filter_match(self, device):  # pylint: disable=unused-argument
         return True
 
     def try_match(self, device):

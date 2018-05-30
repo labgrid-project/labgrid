@@ -128,12 +128,6 @@ class NetworkMXSUSBLoader(RemoteUSBResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
-@target_factory.reg_resource
-@attr.s(cmp=False)
-class NetworkMXSUSBLoader(RemoteUSBResource):
-    def __attrs_post_init__(self):
-        self.timeout = 10.0
-        super().__attrs_post_init__()
 
 @target_factory.reg_resource
 @attr.s(cmp=False)

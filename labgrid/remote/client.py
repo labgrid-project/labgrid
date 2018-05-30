@@ -149,10 +149,10 @@ class ClientSession(ApplicationSession):
         if self.args.type == 'resources':
             for exporter, groups in sorted(self.resources.items()):
                 for group_name, group in sorted(groups.items()):
-                    for resource_name, resource in sorted(group.items()):
+                    for _, resource in sorted(group.items()):
                         print("{}/{}/{}".format(exporter, group_name, resource.cls))
         elif self.args.type == 'places':
-            for name, place in sorted(self.places.items()):
+            for name in sorted(self.places.keys()):
                 print(name)
 
     async def print_resources(self):
@@ -483,7 +483,7 @@ class ClientSession(ApplicationSession):
         place = self.get_place()
         if not place.acquired:
             raise UserError("place {} is not acquired".format(place.name))
-        host, user = place.acquired.split('/')
+        _, user = place.acquired.split('/')
         if user != getuser():
             if not self.args.kick:
                 raise UserError("place {} is acquired by a different user ({}), use --kick if you are sure".format(place.name, place.acquired))  # pylint: disable=line-too-long
@@ -501,7 +501,7 @@ class ClientSession(ApplicationSession):
         place = self.get_place()
         if not place.acquired:
             raise UserError("place {} is not acquired".format(place.name))
-        host, user = place.acquired.split('/')
+        _, user = place.acquired.split('/')
         if user != getuser():
             raise UserError(
                 "place {} is acquired by a different user ({})".format(place.name, place.acquired)
@@ -528,7 +528,7 @@ class ClientSession(ApplicationSession):
         resources = {}
         for resource_path in place.acquired_resources:
             match = place.getmatch(resource_path)
-            (exporter, group_name, resource_cls, resource_name) = resource_path
+            (exporter, group_name, _, resource_name) = resource_path
             name = resource_name
             if match.rename:
                 name = match.rename
@@ -769,7 +769,7 @@ class ClientSession(ApplicationSession):
             print("resource not found")
             return None
         matches = []
-        for mac, details in resource.extra.get('macs').items():
+        for details in resource.extra.get('macs').values():
             ips = details.get('ips', [])
             if not ips:
                 continue
@@ -914,7 +914,7 @@ def start_session(url, realm, extra):
     _, host, port, _, _, _ = parse_url(url)
 
     coro = loop.create_connection(transport_factory, host, port)
-    (transport, protocol) = loop.run_until_complete(coro)
+    loop.run_until_complete(coro)
     loop.run_until_complete(ready.wait())
     return session[0]
 

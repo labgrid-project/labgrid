@@ -22,7 +22,7 @@ class SNMPSwitch:
     def _autodetect(self):
         from pysnmp import hlapi
 
-        for (errorIndication, errorStatus, errorIndex, varBindTable) in hlapi.getCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in hlapi.getCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 hlapi.UdpTransportTarget((self.hostname, 161)),
@@ -64,7 +64,7 @@ class SNMPSwitch:
         ]
         ports = {}
 
-        for (errorIndication, errorStatus, errorIndex, varBindTable) in hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in hlapi.bulkCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 hlapi.UdpTransportTarget((self.hostname, 161)),
@@ -78,7 +78,7 @@ class SNMPSwitch:
                 Exception("snmp error {}".format(errorStatus))
             else:
                 port = {}
-                for (key, val), (base, label) in zip(varBindTable, variables):
+                for (_, val), (_, label) in zip(varBindTable, variables):
                     val = val.prettyPrint()
                     if label == 'status':
                         val = val.strip("'")
@@ -97,7 +97,7 @@ class SNMPSwitch:
 
         ports = {}
 
-        for (errorIndication, errorStatus, errorIndex, varBindTable) in hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in hlapi.bulkCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 hlapi.UdpTransportTarget((self.hostname, 161)),
@@ -130,7 +130,7 @@ class SNMPSwitch:
 
         ports = {}
 
-        for (errorIndication, errorStatus, errorIndex, varBindTable) in hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in hlapi.bulkCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 hlapi.UdpTransportTarget((self.hostname, 161)),
@@ -266,10 +266,8 @@ class EthernetPortManager(ResourceManager):
             line = line.decode('ascii').strip().split()
             addr = line.pop(0)
             if line[0] == 'dev':
-                line.pop(0)
-                dev = line.pop(0)
-            else:
-                dev = None
+                line.pop(0) # "dev"
+                line.pop(0) # actual dev
             if line[0] == 'lladdr':
                 line.pop(0)
                 lladdr = line.pop(0)
@@ -277,7 +275,7 @@ class EthernetPortManager(ResourceManager):
                 lladdr = None
             if line[0] == 'router':
                 line.pop()
-            state = line.pop(0)
+            line.pop(0) # state
             assert not line
             # TODO: check if we could use the device and state information
             neighbors.setdefault(lladdr, []).append(addr)

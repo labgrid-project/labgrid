@@ -45,7 +45,6 @@ class BindingMixin:
     state = attr.ib(default=BindingState.idle, init=False)
 
     def __attrs_post_init__(self):
-        binding_names = {}
         self.suppliers = set()
         self.clients = set()
         target = self.target

@@ -137,7 +137,7 @@ class Config:
         """
         try:
             return str(self.data['options'][name])
-        except KeyError as e:
+        except KeyError:
             if default is None:
                 raise KeyError("no option '{}' found in configuration".format(name))
             else:

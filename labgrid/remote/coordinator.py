@@ -200,7 +200,7 @@ class CoordinatorComponent(ApplicationSession):
                 fut = self.call(
                     'org.labgrid.exporter.{}.version'.format(session.name)
                 )
-                done, pending = await asyncio.wait([fut], timeout=5)
+                done, _ = await asyncio.wait([fut], timeout=5)
                 if not done:
                     print('kicking exporter ({}/{})'.format(session.key, session.name))
                     await self.on_session_leave(session.key)

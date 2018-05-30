@@ -98,7 +98,7 @@ class StepReporter:
 
     @pytest.hookimpl(hookwrapper=True, trylast=True)
     def pytest_runtest_logstart(self):
-        outcome = yield
+        yield
         self.tr._tw.write('\n')
         self.tr._tw._lastlen = 0
 

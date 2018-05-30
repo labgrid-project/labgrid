@@ -218,15 +218,13 @@ class EthernetPortManager(ResourceManager):
         if self.poll_tasks:
             return
 
-        @asyncio.coroutine
-        def poll_neighbour(self):
+        async def poll_neighbour(self):
             self.logger.debug("polling neighbor table")
             self.neighbors = self._get_neigh()
 
-            yield from asyncio.sleep(1.0)
+            await asyncio.sleep(1.0)
 
-        @asyncio.coroutine
-        def poll_switches(self):
+        async def poll_switches(self):
             current = set(resource.switch for resource in self.resources)
             removed = set(self.switches) - current
             new = current - set(self.switches)
@@ -236,16 +234,15 @@ class EthernetPortManager(ResourceManager):
                 self.switches[switch] = SNMPSwitch(switch)
             for switch in current:
                 self.switches[switch].update()
-                yield from asyncio.sleep(1.0)
+                await asyncio.sleep(1.0)
 
-            yield from asyncio.sleep(2.0)
+            await asyncio.sleep(2.0)
 
-        @asyncio.coroutine
-        def poll(self, handler):
+        async def poll(self, handler):
             while True:
                 try:
-                    yield from asyncio.sleep(1.0)
-                    yield from handler(self)
+                    await asyncio.sleep(1.0)
+                    await handler(self)
                 except asyncio.CancelledError:
                     break
                 except:

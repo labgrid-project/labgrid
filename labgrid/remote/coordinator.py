@@ -94,8 +94,7 @@ class ClientSession(RemoteSession):
 
 
 class CoordinatorComponent(ApplicationSession):
-    @asyncio.coroutine
-    def onConnect(self):
+    async def onConnect(self):
         self.sessions = {}
         self.places = {}
         self.poll_task = None
@@ -110,67 +109,66 @@ class CoordinatorComponent(ApplicationSession):
     def onChallenge(self, challenge):
         return "dummy-ticket"
 
-    @asyncio.coroutine
-    def onJoin(self, details):
-        yield from self.subscribe(self.on_session_join, 'wamp.session.on_join')
-        yield from self.subscribe(
+    async def onJoin(self, details):
+        await self.subscribe(self.on_session_join, 'wamp.session.on_join')
+        await self.subscribe(
             self.on_session_leave, 'wamp.session.on_leave'
         )
-        yield from self.register(
+        await self.register(
             self.attach,
             'org.labgrid.coordinator.attach',
             options=RegisterOptions(details_arg='details')
         )
 
         # resources
-        yield from self.register(
+        await self.register(
             self.set_resource,
             'org.labgrid.coordinator.set_resource',
             options=RegisterOptions(details_arg='details')
         )
-        yield from self.register(
+        await self.register(
             self.get_resources,
             'org.labgrid.coordinator.get_resources'
         )
 
         # places
-        yield from self.register(
+        await self.register(
             self.add_place, 'org.labgrid.coordinator.add_place'
         )
-        yield from self.register(
+        await self.register(
             self.del_place, 'org.labgrid.coordinator.del_place'
         )
-        yield from self.register(
+        await self.register(
             self.add_place_alias, 'org.labgrid.coordinator.add_place_alias'
         )
-        yield from self.register(
+        await self.register(
             self.del_place_alias, 'org.labgrid.coordinator.del_place_alias'
         )
-        yield from self.register(
+        await self.register(
             self.set_place_comment, 'org.labgrid.coordinator.set_place_comment'
         )
-        yield from self.register(
+        await self.register(
             self.add_place_match, 'org.labgrid.coordinator.add_place_match'
         )
-        yield from self.register(
+        await self.register(
             self.del_place_match, 'org.labgrid.coordinator.del_place_match'
         )
-        yield from self.register(
+        await self.register(
             self.acquire_place,
             'org.labgrid.coordinator.acquire_place',
             options=RegisterOptions(details_arg='details')
         )
-        yield from self.register(
+        await self.register(
             self.release_place,
             'org.labgrid.coordinator.release_place',
             options=RegisterOptions(details_arg='details')
         )
-        yield from self.register(
+        await self.register(
             self.allow_place,
             'org.labgrid.coordinator.allow_place',
             options=RegisterOptions(details_arg='details')
         )
-        yield from self.register(
+        await self.register(
             self.get_places, 'org.labgrid.coordinator.get_places'
         )
 
@@ -178,24 +176,21 @@ class CoordinatorComponent(ApplicationSession):
 
         print("Coordinator ready.")
 
-    @asyncio.coroutine
-    def onLeave(self, details):
+    async def onLeave(self, details):
         self.save()
         if self.poll_task:
             self.poll_task.cancel()
-            yield from asyncio.wait([self.poll_task])
+            await asyncio.wait([self.poll_task])
         super().onLeave(details)
 
-    @asyncio.coroutine
-    def onDisconnect(self):
+    async def onDisconnect(self):
         self.save()
         if self.poll_task:
             self.poll_task.cancel()
-            yield from asyncio.wait([self.poll_task])
-            yield from asyncio.sleep(0.5) # give others a chance to clean up
+            await asyncio.wait([self.poll_task])
+            await asyncio.sleep(0.5) # give others a chance to clean up
 
-    @asyncio.coroutine
-    def _poll_step(self):
+    async def _poll_step(self):
         # save changes
         if self.save_scheduled:
             self.save()
@@ -205,10 +200,10 @@ class CoordinatorComponent(ApplicationSession):
                 fut = self.call(
                     'org.labgrid.exporter.{}.version'.format(session.name)
                 )
-                done, pending = yield from asyncio.wait([fut], timeout=5)
+                done, pending = await asyncio.wait([fut], timeout=5)
                 if not done:
                     print('kicking exporter ({}/{})'.format(session.key, session.name))
-                    yield from self.on_session_leave(session.key)
+                    await self.on_session_leave(session.key)
                     continue
                 try:
                     session.version = done.pop().result()
@@ -220,13 +215,12 @@ class CoordinatorComponent(ApplicationSession):
                     else:
                         raise
 
-    @asyncio.coroutine
-    def poll(self):
+    async def poll(self):
         loop = asyncio.get_event_loop()
         while not loop.is_closed():
             try:
-                yield from asyncio.sleep(15.0)
-                yield from self._poll_step()
+                await asyncio.sleep(15.0)
+                await self._poll_step()
             except asyncio.CancelledError:
                 break
             except:
@@ -279,8 +273,7 @@ class CoordinatorComponent(ApplicationSession):
         ))
         self.places[name] = place
 
-    @asyncio.coroutine
-    def _update_acquired_places(self, action, resource_path):
+    async def _update_acquired_places(self, action, resource_path):
         """Update acquired places when resources are added or removed."""
         if action not in [Action.ADD, Action.DEL]:
             return  # currently nothing needed for Action.UPD
@@ -297,8 +290,7 @@ class CoordinatorComponent(ApplicationSession):
                 'org.labgrid.coordinator.place_changed', placename, place.asdict()
             )
 
-    @asyncio.coroutine
-    def on_session_join(self, session_details):
+    async def on_session_join(self, session_details):
         print('join')
         pprint(session_details)
         session = session_details['session']
@@ -311,8 +303,7 @@ class CoordinatorComponent(ApplicationSession):
             return
         self.sessions[session.key] = session
 
-    @asyncio.coroutine
-    def on_session_leave(self, session_id):
+    async def on_session_leave(self, session_id):
         print('leave ({})'.format(session_id))
         try:
             session = self.sessions.pop(session_id)
@@ -322,19 +313,17 @@ class CoordinatorComponent(ApplicationSession):
             for groupname, group in session.groups.items():
                 for resourcename in group.copy():
                     action, resource_path = session.set_resource(groupname, resourcename, {})
-                    yield from self._update_acquired_places(action, resource_path)
+                    await self._update_acquired_places(action, resource_path)  # pylint: disable=not-an-iterable
         self.save_later()
 
-    @asyncio.coroutine
-    def attach(self, name, details=None):
+    async def attach(self, name, details=None):
         # TODO check if name is in use
         session = self.sessions[details.caller]
         session_details = self.sessions[session]
         session_details['name'] = name
         self.exporters[name] = defaultdict(dict)
 
-    @asyncio.coroutine
-    def set_resource(self, groupname, resourcename, resource, details=None):
+    async def set_resource(self, groupname, resourcename, resource, details=None):
         session = self.sessions.get(details.caller)
         if session is None:
             return
@@ -348,7 +337,7 @@ class CoordinatorComponent(ApplicationSession):
         action, resource_path = session.set_resource(groupname, resourcename, resource)
         if action is Action.ADD:
             self._add_default_place(groupname)
-        yield from self._update_acquired_places(action, resource_path)
+        await self._update_acquired_places(action, resource_path)
         self.save_later()
 
     def _get_resources(self):
@@ -358,12 +347,10 @@ class CoordinatorComponent(ApplicationSession):
                 result[session.name] = session.get_resources()
         return result
 
-    @asyncio.coroutine
-    def get_resources(self, details=None):
+    async def get_resources(self, details=None):
         return self._get_resources()
 
-    @asyncio.coroutine
-    def add_place(self, name, details=None):
+    async def add_place(self, name, details=None):
         if not name or not isinstance(name, str):
             return False
         if name in self.places:
@@ -376,8 +363,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
-    @asyncio.coroutine
-    def del_place(self, name, details=None):
+    async def del_place(self, name, details=None):
         if not name or not isinstance(name, str):
             return False
         if name not in self.places:
@@ -389,8 +375,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
-    @asyncio.coroutine
-    def add_place_alias(self, placename, alias, details=None):
+    async def add_place_alias(self, placename, alias, details=None):
         try:
             place = self.places[placename]
         except KeyError:
@@ -403,8 +388,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
-    @asyncio.coroutine
-    def del_place_alias(self, placename, alias, details=None):
+    async def del_place_alias(self, placename, alias, details=None):
         try:
             place = self.places[placename]
         except KeyError:
@@ -420,8 +404,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
-    @asyncio.coroutine
-    def set_place_comment(self, placename, comment, details=None):
+    async def set_place_comment(self, placename, comment, details=None):
         try:
             place = self.places[placename]
         except KeyError:
@@ -434,8 +417,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
-    @asyncio.coroutine
-    def add_place_match(self, placename, pattern, rename=None, details=None):
+    async def add_place_match(self, placename, pattern, rename=None, details=None):
         try:
             place = self.places[placename]
         except KeyError:
@@ -451,8 +433,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
-    @asyncio.coroutine
-    def del_place_match(self, placename, pattern, rename=None, details=None):
+    async def del_place_match(self, placename, pattern, rename=None, details=None):
         try:
             place = self.places[placename]
         except KeyError:
@@ -469,8 +450,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
-    @asyncio.coroutine
-    def acquire_place(self, name, details=None):
+    async def acquire_place(self, name, details=None):
         print(details)
         try:
             place = self.places[name]
@@ -495,8 +475,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
-    @asyncio.coroutine
-    def release_place(self, name, details=None):
+    async def release_place(self, name, details=None):
         print(details)
         try:
             place = self.places[name]
@@ -514,8 +493,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
-    @asyncio.coroutine
-    def allow_place(self, name, user, details=None):
+    async def allow_place(self, name, user, details=None):
         try:
             place = self.places[name]
         except KeyError:
@@ -535,8 +513,7 @@ class CoordinatorComponent(ApplicationSession):
     def _get_places(self):
         return {k: v.asdict() for k, v in self.places.items()}
 
-    @asyncio.coroutine
-    def get_places(self, details=None):
+    async def get_places(self, details=None):
         return self._get_places()
 
 

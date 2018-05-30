@@ -193,10 +193,7 @@ def step(*, title=None, args=[], result=False, tag=None):
         @wraps(func)
         def wrapper(*_args, **_kwargs):
             bound = signature.bind_partial(*_args, **_kwargs)
-            # TODO: replace this by bound.apply_defaults() when deprecating
-            # python3.4 support
-            for name, param in signature.parameters.items():
-                bound.arguments.setdefault(name, param.default)
+            bound.apply_defaults()
             source = bound.arguments.get('self')
             step = steps.get_new(title, tag, source)
             # optionally pass the step object

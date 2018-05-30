@@ -338,8 +338,7 @@ class ExporterSession(ApplicationSession):
         at the moment, authentication is not supported yet"""
         return "dummy-ticket"
 
-    @asyncio.coroutine
-    def onJoin(self, details):
+    async def onJoin(self, details):
         """On successful join:
         - export available resources
         - bail out if we are unsuccessful
@@ -354,7 +353,7 @@ class ExporterSession(ApplicationSession):
                     if params is None:
                         continue
                     cls = params.pop('cls', resource_name)
-                    yield from self.add_resource(
+                    await self.add_resource(
                         group_name, resource_name, cls, params
                     )
 
@@ -366,47 +365,41 @@ class ExporterSession(ApplicationSession):
         self.poll_task = self.loop.create_task(self.poll())
 
         prefix = 'org.labgrid.exporter.{}'.format(self.name)
-        yield from self.register(self.acquire, '{}.acquire'.format(prefix))
-        yield from self.register(self.release, '{}.release'.format(prefix))
-        yield from self.register(self.version, '{}.version'.format(prefix))
+        await self.register(self.acquire, '{}.acquire'.format(prefix))
+        await self.register(self.release, '{}.release'.format(prefix))
+        await self.register(self.version, '{}.version'.format(prefix))
 
-    @asyncio.coroutine
-    def onLeave(self, details):
+    async def onLeave(self, details):
         """Cleanup after leaving the coordinator connection"""
         if self.poll_task:
             self.poll_task.cancel()
-            yield from asyncio.wait([self.poll_task])
+            await asyncio.wait([self.poll_task])
         super().onLeave(details)
 
-    @asyncio.coroutine
-    def onDisconnect(self):
+    async def onDisconnect(self):
         print("connection lost")
         global reexec
         reexec = True
         if self.poll_task:
             self.poll_task.cancel()
-            yield from asyncio.wait([self.poll_task])
-            yield from asyncio.sleep(0.5) # give others a chance to clean up
+            await asyncio.wait([self.poll_task])
+            await asyncio.sleep(0.5) # give others a chance to clean up
         self.loop.stop()
 
-    @asyncio.coroutine
-    def acquire(self, group_name, resource_name):
+    async def acquire(self, group_name, resource_name):
         resource = self.groups[group_name][resource_name]
         #resource.acquire()
-        yield from self.update_resource(group_name, resource_name)
+        await self.update_resource(group_name, resource_name)
 
-    @asyncio.coroutine
-    def release(self, group_name, resource_name):
+    async def release(self, group_name, resource_name):
         resource = self.groups[group_name][resource_name]
         #resource.release()
-        yield from self.update_resource(group_name, resource_name)
+        await self.update_resource(group_name, resource_name)
 
-    @asyncio.coroutine
-    def version(self):
+    async def version(self):
         return __version__
 
-    @asyncio.coroutine
-    def _poll_step(self):
+    async def _poll_step(self):
         for group_name, group in self.groups.items():
             for resource_name, resource in group.items():
                 if not isinstance(resource, ResourceExport):
@@ -421,24 +414,22 @@ class ExporterSession(ApplicationSession):
                     # resource has changed
                     data = resource.asdict()
                     print(data)
-                    yield from self.call(
+                    await self.call(
                         'org.labgrid.coordinator.set_resource', group_name,
                         resource_name, data
                     )
 
-    @asyncio.coroutine
-    def poll(self):
+    async def poll(self):
         while True:
             try:
-                yield from asyncio.sleep(1.0)
-                yield from self._poll_step()
+                await asyncio.sleep(1.0)
+                await self._poll_step()
             except asyncio.CancelledError:
                 break
             except:
                 traceback.print_exc()
 
-    @asyncio.coroutine
-    def add_resource(self, group_name, resource_name, cls, params):
+    async def add_resource(self, group_name, resource_name, cls, params):
         """Add a resource to the exporter and update status on the coordinator"""
         print(
             "add resource {}/{}: {}/{}".
@@ -456,15 +447,14 @@ class ExporterSession(ApplicationSession):
             group[resource_name] = export_cls(config, host=self.hostname)
         else:
             group[resource_name] = export_cls(config)
-        yield from self.update_resource(group_name, resource_name)
+        await self.update_resource(group_name, resource_name)
 
-    @asyncio.coroutine
-    def update_resource(self, group_name, resource_name):
+    async def update_resource(self, group_name, resource_name):
         """Update status on the coordinator"""
         resource = self.groups[group_name][resource_name]
         data = resource.asdict()
         print(data)
-        yield from self.call(
+        await self.call(
             'org.labgrid.coordinator.set_resource', group_name, resource_name,
             data
         )

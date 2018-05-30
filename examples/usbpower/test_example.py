@@ -1,5 +1,7 @@
 import pytest
 
+from labgrid.exceptions import NoDriverFoundError
+
 
 @pytest.fixture()
 def strategy(target):

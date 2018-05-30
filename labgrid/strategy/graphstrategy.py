@@ -99,7 +99,8 @@ class GraphStrategy(Strategy):
         self.path = []
 
     @step(args=['state'])
-    def transition(self, state, via=[]):
+    def transition(self, state, via=None):
+        via = via or []
         try:
             # check if another transition is running
             if self.__transition_running:
@@ -144,7 +145,8 @@ class GraphStrategy(Strategy):
             # unlock transition
             self.__transition_running = False
 
-    def find_abs_path(self, state, via=[]):
+    def find_abs_path(self, state, via=None):
+        via = via or []
         via = via[::-1]
         path = [state, ]
         current_state = self.states[state]

@@ -930,6 +930,7 @@ def start_session(url, realm, extra):
     session = [None]
 
     def create():
+        nonlocal session
         cfg = ComponentConfig(realm, extra)
         session[0] = ClientSession(cfg)
         return session[0]

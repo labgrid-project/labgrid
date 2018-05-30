@@ -134,7 +134,7 @@ class HawkbitTestClient:
             auth=(self.username, self.password),
         )
         if req.status_code != 200 and req.status_code != 201:
-            raise HawkbiError(
+            raise HawkbitError(
                 'Wrong statuscode, got {} instead of 200/201'.
                 format(req.status_code)
             )
@@ -150,7 +150,7 @@ class HawkbitTestClient:
             json=data
         )
         if req.status_code != 200 and req.status_code != 201:
-            raise HawkbiError(
+            raise HawkbitError(
                 'Wrong statuscode, got {} instead of 200/201, with error {}'.
                 format(req.status_code, req.json())
             )
@@ -166,7 +166,7 @@ class HawkbitTestClient:
             files=files
         )
         if req.status_code != 201:
-            raise HawkbiError(
+            raise HawkbitError(
                 'Wrong statuscode, got {} instead of 201, with error {}'.
                 format(req.status_code, req.json())
             )
@@ -180,7 +180,7 @@ class HawkbitTestClient:
             auth=(self.username, self.password),
         )
         if req.status_code != 200:
-            raise HawkbiError(
+            raise HawkbitError(
                 'Wrong statuscode, got {} instead of 200, with error {}'.
                 format(req.status_code, req.json())
             )
@@ -195,7 +195,7 @@ class HawkbitTestClient:
             auth=(self.username, self.password)
         )
         if req.status_code != 200:
-            raise HawkbiError(
+            raise HawkbitError(
                 'Wrong statuscode, got {} instead of 200, with error {}'.
                 format(req.status_code, req.json())
             )
@@ -203,5 +203,5 @@ class HawkbitTestClient:
 
 
 @attr.s(cmp=False)
-class HawkbiError(Exception):
+class HawkbitError(Exception):
     msg = attr.ib()

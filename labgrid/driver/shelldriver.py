@@ -197,15 +197,15 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
         self.console.expect(self.prompt)
 
-    @step(args=['key'])
-    def _put_ssh_key(self, key):
+    @step(args=['keyfile_path'])
+    def _put_ssh_key(self, keyfile_path):
         """Upload an SSH Key to a target"""
         regex = re.compile(
             r"""ssh-rsa # Only match RSA Keys
             \s+(?P<key>[a-zA-Z0-9/+=]+) # Match Keystring
             \s+(?P<comment>.*) # Match comment""", re.X
         )
-        with open(key) as keyfile:
+        with open(keyfile_path) as keyfile:
             keyline = keyfile.readline()
             self.logger.debug("Read Keyline: %s", keyline)
             match = regex.match(keyline)
@@ -265,8 +265,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self.logger.warning("Could not bind mount ~/.ssh directory: %s %s", out, err)
 
     @Driver.check_active
-    def put_ssh_key(self, key):
-        self._put_ssh_key(key)
+    def put_ssh_key(self, keyfile_path):
+        self._put_ssh_key(keyfile_path)
 
     def _xmodem_getc(self, size, timeout=10):
         """ called by the xmodem.XMODEM instance to read protocol data from the console """

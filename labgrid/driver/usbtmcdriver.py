@@ -49,7 +49,7 @@ class USBTMCDriver(Driver):
         self.backend = None
 
     @Driver.check_active
-    def command(self, cmd, binary=False):
+    def command(self, cmd):
         assert isinstance(cmd, str)
         cmd = b2s(cmd.encode('ASCII')+b'\n')
         self.wrapper.usbtmc(self.index, cmd, read=False)

@@ -42,8 +42,7 @@ class SNMPSwitch:
         else:
             Exception("unsupported switch {}".format(sysDescr))
 
-        self.logger.debug("autodetected switch{}: {} {}".format(
-            sysDescr, self._get_ports, self._get_fdb))
+        self.logger.debug("autodetected switch%s: %s %s", sysDescr, self._get_ports, self._get_fdb)
 
     def _get_ports(self):
         """Fetch ports and their values via SNMP
@@ -307,7 +306,7 @@ class EthernetPortManager(ResourceManager):
             extra.update(switch.ports.get(resource.interface, {}))
             if resource.extra != extra:
                 resource.extra = extra
-                self.logger.debug("new information for {}: {}".format(resource, extra))
+                self.logger.debug("new information for %s: %s", resource, extra)
 
 
 @target_factory.reg_resource

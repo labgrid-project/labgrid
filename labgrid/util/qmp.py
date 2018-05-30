@@ -27,7 +27,7 @@ class QMPMonitor:
 
     def _read_parse_json(self):
         line = self.monitor_out.readline().decode('utf-8')
-        self.logger.debug("Received line:{}".format(line))
+        self.logger.debug("Received line: %s", line)
         return json.loads(line)
 
     def execute(self, command):

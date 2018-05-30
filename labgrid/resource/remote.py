@@ -56,8 +56,7 @@ class RemotePlaceManager(ResourceManager):
             if not isinstance(new, ManagedResource):
                 self.unmanaged_resources.append(new)
             expanded.append(new)
-        self.logger.debug("expanded remote resources for place {}: {}".format(
-            remote_place.name, expanded))
+        self.logger.debug("expanded remote resources for place %s: %s", remote_place.name, expanded)
         remote_place.avail = True
 
     def poll(self):
@@ -82,9 +81,9 @@ class RemotePlaceManager(ResourceManager):
                 if v_old != v_new:
                     changes.append((k, v_old, v_new))
             if changes:
-                self.logger.debug("changed attributes for {}:".format(resource))
+                self.logger.debug("changed attributes for %s:", resource)
                 for k, v_old, v_new in changes:
-                    self.logger.debug("  {}: {} -> {}".format(k, v_old, v_new))
+                    self.logger.debug("  %s: %s -> %s", k, v_old, v_new)
 
 
 @target_factory.reg_resource

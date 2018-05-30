@@ -50,8 +50,7 @@ class Target:
             manager.poll()
         for resource in resources:
             if not resource.avail and resource.state is BindingState.active:
-                self.log.info("deactivating unavailable resource {}".format(
-                    resource.display_name))
+                self.log.info("deactivating unavailable resource %s", resource.display_name)  # pylint: disable=line-too-long
                 self.deactivate(resource)
 
     def await_resources(self, resources, timeout=None, avail=True):

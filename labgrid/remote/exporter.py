@@ -81,7 +81,7 @@ class ResourceExport(ResourceEntry):
         """
         start_params = self._get_start_params()
         if self.start_params != start_params:
-            self.logger.info("restart needed ({} -> {})".format(self.start_params, start_params))
+            self.logger.info("restart needed (%s -> %s)", self.start_params, start_params)
             return True
         return False
 
@@ -152,8 +152,7 @@ class USBSerialPortExport(ResourceExport):
                 self.port, start_params['path']
             ),
         ])
-        self.logger.info("started ser2net for {} on port {}".format(
-            start_params['path'], self.port))
+        self.logger.info("started ser2net for %s on port %d", start_params['path'], self.port)
 
     def _stop(self, start_params):
         """Stop spawned subprocess"""
@@ -167,8 +166,7 @@ class USBSerialPortExport(ResourceExport):
         except subprocess.TimeoutExpired:
             child.kill()
             child.wait(1.0)
-        self.logger.info("stopped ser2net for {} on port {}".format(
-            start_params['path'], self.port))
+        self.logger.info("stopped ser2net for %s on port %d", start_params['path'], self.port)
 
 
 exports["USBSerialPort"] = USBSerialPortExport

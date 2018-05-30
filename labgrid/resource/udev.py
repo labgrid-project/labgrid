@@ -28,9 +28,9 @@ class UdevManager(ResourceManager):
 
     def poll(self):
         for device in iter(partial(self._monitor.poll, 0), None):
-            self.log.debug("{0.action}: {0}".format(device))
+            self.log.debug("%s: %s", device.action, device)
             for resource in self.resources:
-                self.log.debug(" {}".format(resource))
+                self.log.debug(" %s", resource)
                 if resource.try_match(device):
                     break
 
@@ -81,7 +81,7 @@ class USBResource(ManagedResource):
 
             if not self.filter_match(device):
                 return False
-        self.log.debug(" found match: {}".format(self))
+        self.log.debug(" found match: %s", self)
         if device.action in [None, 'add']:
             if self.avail:
                 warnings.warn("udev device {} is already available".format(device))

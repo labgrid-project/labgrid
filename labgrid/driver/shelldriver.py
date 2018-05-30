@@ -269,16 +269,16 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             # something of the XMODEM protocol data into its internal buffers:
             xpct = self.console.expect(r'.{%d}' % size, timeout=timeout)
             s = xpct[2].group()
-            self.logger.debug('XMODEM GETC({}): read {}'.format(size, repr(s)))
+            self.logger.debug('XMODEM GETC(%d): read %r', size, s)
             return s
         except TIMEOUT:
-            self.logger.debug('XMODEM GETC({}): TIMEOUT after {} seconds' .format(size, timeout))
+            self.logger.debug('XMODEM GETC(%s): TIMEOUT after %d seconds', size, timeout)
             return None
 
     def _xmodem_putc(self, data, timeout=1):
         """ called by the xmodem.XMODEM instance to write protocol data to the console """
         # Note: we ignore the timeout because we cannot pass it through.
-        self.logger.debug('XMODEM PUTC: {}'.format(repr(data)))
+        self.logger.debug('XMODEM PUTC: %r', data)
         self.console.write(data)
         return len(data)
 
@@ -346,7 +346,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         try:
             rx_cmd = self._get_xmodem_rx_cmd(tmpfile)
-            self.logger.debug('XMODEM receive command on target: ' + rx_cmd)
+            self.logger.debug('XMODEM receive command on target: %s', rx_cmd)
         except ExecutionError:
             _target_cleanup(tmpfile)
             raise
@@ -355,13 +355,13 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         modem = xmodem.XMODEM(self._xmodem_getc, self._xmodem_putc)
         ret = modem.send(stream)
-        self.logger.debug('xmodem.send() returned %r' % ret)
+        self.logger.debug('xmodem.send() returned %r', ret)
 
         self.console.expect(self.prompt, timeout=30)
 
         # truncate the file to get rid of CPMEOF padding
         dd_cmd = "dd if='{}' of='{}' bs=1 count={}".format(tmpfile, remotefile, len(buf))
-        self.logger.debug('dd command: ' + dd_cmd)
+        self.logger.debug('dd command: %s', dd_cmd)
         out, _, ret = self._run(dd_cmd)
 
         _target_cleanup(tmpfile)
@@ -410,7 +410,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         buf = io.BytesIO()
 
         cmd = self._get_xmodem_sx_cmd(remotefile)
-        self.logger.info('XMODEM send command on target: ' + cmd)
+        self.logger.info('XMODEM send command on target: %s', cmd)
 
         # get file size to remove XMODEM's CPMEOF padding at the end of the last packet
         out, _, ret = self._run("stat '{}'".format(remotefile))
@@ -425,7 +425,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         modem = xmodem.XMODEM(self._xmodem_getc, self._xmodem_putc)
         recvd_size = modem.recv(buf)
-        self.logger.debug('xmodem.recv() returned %r' % recvd_size)
+        self.logger.debug('xmodem.recv() returned %r', recvd_size)
 
         # remove CPMEOF (0x1a) padding
         if recvd_size < file_size:

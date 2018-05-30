@@ -53,7 +53,7 @@ class SNMPSwitch:
         """
         from pysnmp import hlapi
 
-        vars = [
+        variables = [
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifIndex')),'index'),
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifDescr')), 'descr'),
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifSpeed')), 'speed'),
@@ -70,7 +70,7 @@ class SNMPSwitch:
                 hlapi.UdpTransportTarget((self.hostname, 161)),
                 hlapi.ContextData(),
                 0, 20,
-                *[x[0] for x in vars],
+                *[x[0] for x in variables],
                 lexicographicMode=False):
             if errorIndication:
                 Exception("snmp error {}".format(errorIndication))
@@ -78,8 +78,7 @@ class SNMPSwitch:
                 Exception("snmp error {}".format(errorStatus))
             else:
                 port = {}
-                for (key, val), (base, label) in zip(varBindTable, vars):
-                    index = key.getMibSymbol()[-1][0].prettyPrint()
+                for (key, val), (base, label) in zip(varBindTable, variables):
                     val = val.prettyPrint()
                     if label == 'status':
                         val = val.strip("'")

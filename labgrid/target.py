@@ -336,9 +336,7 @@ class Target:
                             requirements, self, errors)
                     )
             elif len(suppliers) > 1:
-                raise NoSupplierFoundError(
-                    "conflicting suppliers matching {} found in target {}".format(requirements, self)
-                )
+                raise NoSupplierFoundError("conflicting suppliers matching {} found in target {}".format(requirements, self))  # pylint: disable=line-too-long
             else:
                 supplier = suppliers[0]
             setattr(client, name, supplier)

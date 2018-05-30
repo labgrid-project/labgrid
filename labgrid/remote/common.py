@@ -60,7 +60,7 @@ class ResourceMatch:
 
     @classmethod
     def fromstr(cls, pattern):
-        if not (2 <= pattern.count("/") <= 3):
+        if not 2 <= pattern.count("/") <= 3:
             raise ValueError(
                 "invalid pattern format '{}' (use 'exporter/group/cls/name')".
                 format(pattern)
@@ -80,8 +80,8 @@ class ResourceMatch:
         return result
 
     def ismatch(self, resource_path):
-        exporter, group, cls, name = resource_path
         """Return True if this matches the given resource"""
+        exporter, group, cls, name = resource_path
         if not fnmatchcase(exporter, self.exporter):
             return False
         elif not fnmatchcase(group, self.group):

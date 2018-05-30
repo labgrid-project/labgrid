@@ -48,9 +48,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         super().__attrs_post_init__()
         self.re_vt100 = re.compile(
             r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
-        )  #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
+        )  # pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
         self.logger = logging.getLogger("{}:{}".format(self, self.target))
-        self._status = 0  #pylint: disable=attribute-defined-outside-init
+        self._status = 0  # pylint: disable=attribute-defined-outside-init
 
         self._xmodem_cached_rx_cmd = ""
         self._xmodem_cached_sx_cmd = ""
@@ -240,7 +240,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if test_write == 0:
             self.logger.debug("Key not on target, testing for .ssh directory")
             _, _, ssh_dir = self._run("[ -d ~/.ssh/ ]")
-            if not ssh_dir == 0:
+            if ssh_dir != 0:
                 self.logger.debug("~/.ssh did not exist, creating")
                 self._run("mkdir ~/.ssh/")
             self._run_check("chmod 700 ~/.ssh/")
@@ -367,7 +367,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         _target_cleanup(tmpfile)
         if ret != 0:
             raise ExecutionError('Could not truncate destination file: dd returned {}: {}'.
-                    format(ret, out))
+                                 format(ret, out))
 
     @Driver.check_active
     def put_bytes(self, buf: bytes, remotefile: str):
@@ -430,7 +430,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # remove CPMEOF (0x1a) padding
         if recvd_size < file_size:
             raise ExecutionError('Only received {} bytes of {} expected'.
-                    format(recvd_size, file_size))
+                                 format(recvd_size, file_size))
 
         self.logger.debug('received %d bytes of payload', file_size)
         buf.truncate(file_size)
@@ -479,14 +479,14 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._get(remotefile, localfile)
 
     @step(title='run_script', args=['data', 'timeout'])
-    def _run_script(self, data: bytes, timeout: int=60):
+    def _run_script(self, data: bytes, timeout: int = 60):
         hardcoded_remote_file = '/tmp/labgrid-run-script'
         self._put_bytes(data, hardcoded_remote_file)
         self._run_check("chmod +x '{}'".format(hardcoded_remote_file))
         return self._run(hardcoded_remote_file, timeout=timeout)
 
     @Driver.check_active
-    def run_script(self, data: bytes, timeout: int=60):
+    def run_script(self, data: bytes, timeout: int = 60):
         """ Upload a script to the target and run it.
 
         Args:
@@ -503,17 +503,17 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._run_script(data, timeout)
 
     @step(title='run_script_file', args=['scriptfile', 'timeout', 'args'])
-    def _run_script_file(self, scriptfile: str, *args, timeout: int=60):
+    def _run_script_file(self, scriptfile: str, *args, timeout: int = 60):
         hardcoded_remote_file = '/tmp/labgrid-run-script'
         self._put(scriptfile, hardcoded_remote_file)
         self._run_check("chmod +x '{}'".format(hardcoded_remote_file))
 
-        shargs = [ shlex.quote(a) for a in args ]
+        shargs = [shlex.quote(a) for a in args]
         cmd = "{} {}".format(hardcoded_remote_file, ' '.join(shargs))
         return self._run(cmd, timeout=timeout)
 
     @Driver.check_active
-    def run_script_file(self, scriptfile: str, *args, timeout: int=60):
+    def run_script_file(self, scriptfile: str, *args, timeout: int = 60):
         """ Upload a script file to the target and run it.
 
         Args:

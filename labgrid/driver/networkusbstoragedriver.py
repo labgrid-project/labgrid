@@ -13,7 +13,14 @@ from .common import Driver, check_file
 @target_factory.reg_driver
 @attr.s(cmp=False)
 class NetworkUSBStorageDriver(Driver):
-    bindings = {"storage": {USBMassStorage, NetworkUSBMassStorage, USBSDMuxDevice, NetworkUSBSDMuxDevice}, }
+    bindings = {
+        "storage": {
+            USBMassStorage,
+            NetworkUSBMassStorage,
+            USBSDMuxDevice,
+            NetworkUSBSDMuxDevice
+        },
+    }
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -30,13 +37,18 @@ class NetworkUSBStorageDriver(Driver):
         filename = os.path.abspath(filename)
         check_file(filename, command_prefix=self.storage.command_prefix)
         self.logger.info("pwd: %s", os.getcwd())
+        args = (
+            "dd",
+            "if={}".format(filename),
+            "of={} status=progress bs=4M conv=fdatasync"
+            .format(self.storage.path)
+        )
         subprocess.check_call(
-          self.storage.command_prefix+["dd", "if=%s" % filename, "of=%s status=progress bs=4M conv=fdatasync" % self.storage.path]
+            self.storage.command_prefix + args
         )
 
     @step(result=True)
     def get_size(self):
-        size = subprocess.check_output(
-          self.storage.command_prefix+["cat", "/sys/class/block/%s/size" % self.storage.path[5:]]
-        )
+        args = ("cat", "/sys/class/block/{}/size" % self.storage.path[5:])
+        size = subprocess.check_output(self.storage.command_prefix + args)
         return int(size)

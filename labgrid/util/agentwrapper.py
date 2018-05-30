@@ -83,4 +83,3 @@ class AgentWrapper:
         self.agent.stdin.flush()
         self.agent.wait()
         self.agent = None
-

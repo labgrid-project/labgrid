@@ -6,4 +6,3 @@ def test_usb(target):
 def test_mxs_load(target):
     bp = target.get_driver('BootstrapProtocol')
     bp.load()
-

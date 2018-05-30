@@ -43,7 +43,7 @@ class Agent:
             try:
                 response = self.methods[name](*args, **kwargs)
                 self._send({'result': response})
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 self._send({'exception': repr(e)})
                 break
 
@@ -76,5 +76,5 @@ def main():
     a.register('usbtmc', handle_usbtmc)
     a.run()
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

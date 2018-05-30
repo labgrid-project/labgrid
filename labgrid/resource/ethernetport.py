@@ -54,7 +54,7 @@ class SNMPSwitch:
         from pysnmp import hlapi
 
         variables = [
-            (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifIndex')),'index'),
+            (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifIndex')), 'index'),
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifDescr')), 'descr'),
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifSpeed')), 'speed'),
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifOperStatus')), 'status'),
@@ -204,7 +204,7 @@ class EthernetPortManager(ResourceManager):
         if not isinstance(resource, SNMPEthernetPort):
             return
         self._start()
-        resource.avail=True
+        resource.avail = True
 
     def _start(self):
         """Internal function to register as task and attach/start the event

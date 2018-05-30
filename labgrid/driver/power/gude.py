@@ -21,8 +21,9 @@ def power_get(host, index):
     r = requests.get("http://{}/".format(host))
     r.raise_for_status()
     for line in r.text.splitlines():
-        if line.find("Power Port {}</td>".format(index)
-                     ) > 0 or line.find("SwitchPort {}</td>".format(index)) > 0:
+        power_pattern = "Power Port {}</td>".format(index)
+        switch_patern = "SwitchPort {}</td>".format(index)
+        if line.find(power_pattern) > 0 or line.find(switch_patern) > 0:
             if line.find("OFF") > 0:
                 return False
             elif line.find("ON") > 0:

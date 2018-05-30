@@ -52,4 +52,4 @@ class CommandMixin:
         Returns:
             List[str]: stdout of the executed command
         """
-        return self._run_check(cmd,timeout)
+        return self._run_check(cmd, timeout)

@@ -18,7 +18,7 @@ class InfoDriver(Driver, InfoProtocol):
 
     # TODO: rework CommandProtocol binding to select correct underlying driver
     # (No UBoot/BareboxDriver, SSH > Serial,…)
-    bindings = { 'command': CommandProtocol }
+    bindings = {'command': CommandProtocol}
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

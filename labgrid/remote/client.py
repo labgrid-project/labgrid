@@ -124,8 +124,8 @@ class ClientSession(ApplicationSession):
             return
         config = config.copy()
         config['name'] = name
-        config['matches'
-               ] = [ResourceMatch(**match) for match in config['matches']]
+        config['matches'] = [ResourceMatch(**match) \
+            for match in config['matches']]
         config = filter_dict(config, Place, warn=True)
         place = Place(**config)
         if name not in self.places:
@@ -171,8 +171,10 @@ class ClientSession(ApplicationSession):
                         continue
                     if self.args.acquired and resource.acquired is None:
                         continue
-                    if match and not match.ismatch((exporter, group_name, resource.cls, resource_name)):
+                    if match and not match.ismatch((exporter, group_name,
+                                                    resource.cls, resource_name)):
                         continue
+
                     filtered[exporter][group_name][resource_name] = resource
 
         # print the filtered resources
@@ -182,7 +184,8 @@ class ClientSession(ApplicationSession):
                 for group_name, group in sorted(groups.items()):
                     print("  Group '{}' ({}/{}/*):".format(group_name, exporter, group_name))
                     for resource_name, resource in sorted(group.items()):
-                        print("    Resource '{}' ({}/{}/{}[/{}]):".format(resource_name, exporter, group_name, resource.cls, resource_name))
+                        print("    Resource '{}' ({}/{}/{}[/{}]):".format(
+                            resource_name, exporter, group_name, resource.cls, resource_name))
                         print(indent(pformat(resource.asdict()), prefix="      "))
         else:
             for exporter, groups in sorted(filtered.items()):
@@ -260,7 +263,8 @@ class ClientSession(ApplicationSession):
     def get_idle_place(self, place=None):
         place = self.get_place(place)
         if place.acquired:
-            raise UserError("place {} is not idle (acquired by {})".format(place.name, place.acquired))
+            raise UserError("place {} is not idle (acquired by {})".format(
+                place.name, place.acquired))
         return place
 
     def get_acquired_place(self, place=None):
@@ -270,9 +274,11 @@ class ClientSession(ApplicationSession):
         if gethostname()+'/'+getuser() not in place.allowed:
             host, user = place.acquired.split('/')
             if user != getuser():
-                raise UserError("place {} is not acquired by your user, acquired by {}".format(place.name, user))
+                raise UserError("place {} is not acquired by your user, acquired by {}".format(
+                    place.name, user))
             if host != gethostname():
-                raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))
+                raise UserError("place {} is not acquired on this computer, acquired on {}".format(
+                    place.name, host))
         return place
 
     async def print_place(self):
@@ -386,7 +392,7 @@ class ClientSession(ApplicationSession):
             if pattern in map(repr, place.matches):
                 print("pattern '{}' exists, skipping".format(pattern))
                 continue
-            if not (2 <= pattern.count("/") <= 3):
+            if not 2 <= pattern.count("/") <= 3:
                 raise UserError(
                     "invalid pattern format '{}' (use 'exporter/group/cls/name')".
                     format(pattern)
@@ -408,7 +414,7 @@ class ClientSession(ApplicationSession):
             if pattern not in map(repr, place.matches):
                 print("pattern '{}' not found, skipping".format(pattern))
                 continue
-            if not (2 <= pattern.count("/") <= 3):
+            if not 2 <= pattern.count("/") <= 3:
                 raise UserError(
                     "invalid pattern format '{}' (use 'exporter/group/cls/name')".
                     format(pattern)
@@ -433,7 +439,7 @@ class ClientSession(ApplicationSession):
         name = self.args.name
         if pattern in map(repr, place.matches):
             raise UserError("pattern '{}' exists".format(pattern))
-        if not (2 <= pattern.count("/") <= 3):
+        if not 2 <= pattern.count("/") <= 3:
             raise UserError(
                 "invalid pattern format '{}' (use 'exporter/group/cls/name')".
                 format(pattern)
@@ -480,9 +486,7 @@ class ClientSession(ApplicationSession):
         host, user = place.acquired.split('/')
         if user != getuser():
             if not self.args.kick:
-                raise UserError(
-                    "place {} is acquired by a different user ({}), use --kick if you are sure".format(place.name, place.acquired)
-                )
+                raise UserError("place {} is acquired by a different user ({}), use --kick if you are sure".format(place.name, place.acquired))  # pylint: disable=line-too-long
             print("warning: kicking user ({})".format(place.acquired))
         res = await self.call(
             'org.labgrid.coordinator.release_place', place.name
@@ -518,9 +522,9 @@ class ClientSession(ApplicationSession):
         if gethostname()+'/'+getuser() not in place.allowed:
             host, user = place.acquired.split('/')
             if user != getuser():
-                raise UserError("place {} is not acquired by your user, acquired by {}".format(place.name, user))
+                raise UserError("place {} is not acquired by your user, acquired by {}".format(place.name, user))  # pylint: disable=line-too-long
             if host != gethostname():
-                raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))
+                raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))  # pylint: disable=line-too-long
         resources = {}
         for resource_path in place.acquired_resources:
             match = place.getmatch(resource_path)
@@ -782,11 +786,12 @@ class ClientSession(ApplicationSession):
         ip = self._get_ip(place)
         if not ip:
             return
-        args = ['ssh',
-                '-l', 'root',
-                '-o', 'StrictHostKeyChecking no',
-                '-o', 'UserKnownHostsFile /dev/null',
-                str(ip),
+        args = [
+            'ssh',
+            '-l', 'root',
+            '-o', 'StrictHostKeyChecking no',
+            '-o', 'UserKnownHostsFile /dev/null',
+            str(ip),
         ] + self.args.leftover
         print('Note: Using dummy known hosts file.')
         res = subprocess.call(args)
@@ -1015,8 +1020,7 @@ def main():
     subparser.set_defaults(func=ClientSession.print_who)
 
     subparser = subparsers.add_parser('show',
-                                      help="show a place and related resources",
-    )
+                                      help="show a place and related resources")
     subparser.set_defaults(func=ClientSession.print_place)
 
     subparser = subparsers.add_parser('create', help="add a new place")
@@ -1080,7 +1084,8 @@ def main():
                                       aliases=('pw',),
                                       help="change (or get) a place's power status")
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
-    subparser.add_argument('-t', '--delay', type=float, default=1.0, help='wait time between off and on during cycle')
+    subparser.add_argument('-t', '--delay', type=float, default=1.0,
+                           help='wait time between off and on during cycle')
     subparser.set_defaults(func=ClientSession.power)
 
     subparser = subparsers.add_parser('io',
@@ -1099,8 +1104,7 @@ def main():
     subparser = subparsers.add_parser('fastboot',
                                       help="run fastboot")
     subparser.add_argument('fastboot_args', metavar='ARG', nargs=argparse.REMAINDER,
-                           help='fastboot arguments'
-    )
+                           help='fastboot arguments')
     subparser.add_argument('--wait', type=float, default=10.0)
     subparser.set_defaults(func=ClientSession.fastboot)
 
@@ -1109,8 +1113,7 @@ def main():
     subparser.add_argument('-w', '--wait', type=float, default=10.0)
     subparser.add_argument('filename', help='filename to boot on the target')
     subparser.add_argument('bootstrap_args', metavar='ARG', nargs=argparse.REMAINDER,
-                           help='extra bootstrap arguments'
-    )
+                           help='extra bootstrap arguments')
     subparser.set_defaults(func=ClientSession.bootstrap)
 
     subparser = subparsers.add_parser('sd-mux',
@@ -1185,7 +1188,8 @@ def main():
         if args.place:
             role = find_role_by_place(env.config.get_targets(), args.place)
             if not role:
-                print("RemotePlace {} not found in configuration file".format(args.place), file=sys.stderr)
+                print("RemotePlace {} not found in configuration file".format(args.place),
+                      file=sys.stderr)
                 exit(1)
             print("Selected role {} from configuration file".format(role))
         else:
@@ -1203,8 +1207,7 @@ def main():
     }
 
     if args.command and args.command != 'help':
-        session = start_session(args.crossbar,
-            os.environ.get("LG_CROSSBAR_REALM", "realm1"), extra)
+        session = start_session(args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"), extra)
         exitcode = 0
         try:
             if asyncio.iscoroutinefunction(args.func):
@@ -1216,29 +1219,21 @@ def main():
                 traceback.print_exc()
             else:
                 print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
-            print('\n'.join(["",
-                "This may be caused by disconnected exporter or wrong match entries.",
-                "You can use the 'show' command to all matching resources.",
-            ]), file=sys.stderr)
+            print("This may be caused by disconnected exporter or wrong match entries.\nYou can use the 'show' command to all matching resources.", file=sys.stderr)  # pylint: disable=line-too-long
             exitcode = 1
         except NoDriverFoundError as e:
             if args.debug:
                 traceback.print_exc()
             else:
                 print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
-            print('\n'.join(["",
-                "This is likely caused by an error or missing driver in the environment configuration.",
-            ]), file=sys.stderr)
+            print("This is likely caused by an error or missing driver in the environment configuration.", file=sys.stderr)  # pylint: disable=line-too-long
             exitcode = 1
         except InvalidConfigError as e:
             if args.debug:
                 traceback.print_exc()
             else:
                 print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
-            print('\n'.join(["",
-                "This is likely caused by an error in the environment configuration or invalid",
-                "resource information provided by the coordinator.",
-            ]), file=sys.stderr)
+            print("This is likely caused by an error in the environment configuration or invalid\nresource information provided by the coordinator.", file=sys.stderr)  # pylint: disable=line-too-long
             exitcode = 1
         except Error as e:
             if args.debug:

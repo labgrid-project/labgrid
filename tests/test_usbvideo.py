@@ -1,6 +1,7 @@
 from labgrid.resource.remote import NetworkUSBVideo
 from labgrid.driver.usbvideodriver import USBVideoDriver
 
+
 def test_usbvideo_create(target):
     r = NetworkUSBVideo(target,
             name=None,

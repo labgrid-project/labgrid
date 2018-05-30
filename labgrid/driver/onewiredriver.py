@@ -20,7 +20,7 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
     def set(self, status):
         if self.port.invert:
             status = not status
-        if status == True:
+        if status:
             self.onewire.set(self.port.path, '1')
         else:
             self.onewire.set(self.port.path, '0')

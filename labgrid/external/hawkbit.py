@@ -70,7 +70,7 @@ class HawkbitTestClient:
         }]
 
         self.distribution_id = self.post_json('distributionsets',
-                                             testdata)[0]['id']
+                                              testdata)[0]['id']
         return self.distribution_id
 
     def delete_distributionset(self, distset_id: str):

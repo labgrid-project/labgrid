@@ -36,9 +36,11 @@ class RemotePlaceManager(ResourceManager):
         if not self.session:
             self.env = remote_place.target.env
             config = self.env.config
-            self.url = config.get_option('crossbar_url',
+            self.url = config.get_option(
+                'crossbar_url',
                 os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"))
-            self.realm = config.get_option('crossbar_realm',
+            self.realm = config.get_option(
+                'crossbar_realm',
                 os.environ.get("LG_CROSSBAR_REALM", "realm1"))
             self._start()
         place = self.session.get_place(remote_place.name)
@@ -56,7 +58,7 @@ class RemotePlaceManager(ResourceManager):
             expanded.append(new)
         self.logger.debug("expanded remote resources for place {}: {}".format(
             remote_place.name, expanded))
-        remote_place.avail=True
+        remote_place.avail = True
 
     def poll(self):
         import asyncio
@@ -136,6 +138,7 @@ class NetworkAlteraUSBBlaster(RemoteUSBResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
+
 @target_factory.reg_resource
 @attr.s(cmp=False)
 class NetworkSigrokUSBDevice(RemoteUSBResource):
@@ -146,6 +149,7 @@ class NetworkSigrokUSBDevice(RemoteUSBResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
+
 @target_factory.reg_resource
 @attr.s(cmp=False)
 class NetworkUSBMassStorage(RemoteUSBResource):
@@ -153,6 +157,7 @@ class NetworkUSBMassStorage(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
+
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
@@ -163,6 +168,7 @@ class NetworkUSBSDMuxDevice(RemoteUSBResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
+
 @target_factory.reg_resource
 @attr.s(cmp=False)
 class NetworkUSBPowerPort(RemoteUSBResource):
@@ -172,6 +178,7 @@ class NetworkUSBPowerPort(RemoteUSBResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
+
 @target_factory.reg_resource
 @attr.s(cmp=False)
 class NetworkUSBVideo(RemoteUSBResource):
@@ -179,6 +186,7 @@ class NetworkUSBVideo(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
+
 
 @target_factory.reg_resource
 @attr.s(cmp=False)

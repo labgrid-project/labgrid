@@ -3,13 +3,14 @@ import pytest
 
 from labgrid.external import HawkbitTestClient
 
+
 @pytest.fixture()
 def hawkbit():
     # Requires a hawkbit server instance to be running.
     # See: https://github.com/eclipse/hawkbit on how to set up
     # a test instance of hawkbit
     client = HawkbitTestClient("localhost", "8080", "admin", "admin")
-    assert(isinstance(client, HawkbitTestClient))
+    assert isinstance(client, HawkbitTestClient)
     return client
 
 def test_upgrade(hawkbit):

@@ -33,7 +33,7 @@ class Config:
         # map LG_* variables from OS environment into YAML config file using !template $LG_*
         # Only map LG_*, to protect from weird things in environment
         for x in os.environ.keys():
-            if x.startswith( "LG_" ):
+            if x.startswith("LG_"):
                 substitutions[x] = os.environ[x]
 
         try:

@@ -112,7 +112,8 @@ class USBResource(ManagedResource):
 
     def _get_usb_device(self):
         device = self.device
-        if self.device and (self.device.subsystem != 'usb' or self.device.device_type != 'usb_device'):
+        if self.device and (self.device.subsystem != 'usb'
+                            or self.device.device_type != 'usb_device'):
             device = self.device.find_parent('usb', 'usb_device')
         return device
 
@@ -194,7 +195,7 @@ class MXSUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.get('ID_VENDOR_ID'), device.get('ID_MODEL_ID'))
 
-        if not match in [("066f", "3780"), ("15a2", "004f")]:
+        if match not in [("066f", "3780"), ("15a2", "004f")]:
             return False
 
         return super().filter_match(device)

@@ -43,14 +43,16 @@ class USBVideoDriver(Driver):
         rx_cmd = ["gst-launch-1.0"]
         rx_cmd += "fdsrc ! h264parse ! avdec_h264 ! glimagesink sync=false".split()
 
-        tx = subprocess.Popen(tx_cmd,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                )
-        rx = subprocess.Popen(rx_cmd,
-                stdin=tx.stdout,
-                stdout=subprocess.DEVNULL,
-                )
+        tx = subprocess.Popen(
+            tx_cmd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+        )
+        rx = subprocess.Popen(
+            rx_cmd,
+            stdin=tx.stdout,
+            stdout=subprocess.DEVNULL,
+        )
 
         # wait until one subprocess has termianted
         while True:

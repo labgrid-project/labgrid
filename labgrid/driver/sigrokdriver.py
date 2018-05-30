@@ -141,20 +141,16 @@ class SigrokDriver(Driver):
         filename = os.path.join(self._tmpdir, self._basename)
         cmd.append(filename)
         self._call_with_driver(*cmd)
-        while subprocess.call(
-            self.sigrok.command_prefix + [
-                'test',
-                '-e',
-                filename,
-            ]
-        ):
+        args = self.sigrok.command_prefix + ['test', '-e', filename]
+
+        while subprocess.call(args):
             sleep(0.1)
 
         self._running = True
 
     @Driver.check_active
     def stop(self):
-        assert self._running == True
+        assert self._running
         self._running = False
         fnames = ['time']
         fnames.extend(self.sigrok.channels.split(','))
@@ -214,9 +210,7 @@ class SigrokDriver(Driver):
 
     @Driver.check_active
     def analyze(self, args, filename=None):
-        annotation_regex = re.compile(
-            r'(?P<startnum>\d+)-(?P<endnum>\d+) (?P<decoder>[\w\-]+): (?P<annotation>[\w\-]+): (?P<data>".*)'
-        )
+        annotation_regex = re.compile(r'(?P<startnum>\d+)-(?P<endnum>\d+) (?P<decoder>[\w\-]+): (?P<annotation>[\w\-]+): (?P<data>".*)')  # pylint: disable=line-too-long
         if not filename and self._filename:
             filename = self._filename
         else:

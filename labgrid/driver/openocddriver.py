@@ -19,8 +19,14 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
     }
 
     config = attr.ib(validator=attr.validators.instance_of(str))
-    search = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
-    image = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    search = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+    image = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

@@ -18,8 +18,8 @@ class ModbusCoilDriver(Driver, DigitalOutputProtocol):
         host = self.coil.host
         if ':' in host:
             host, port = host.split(':', 1)
-        self.client = self._module.ModbusClient(host=host,
-                port=int(port), auto_open=True, auto_close=True)
+        self.client = self._module.ModbusClient(
+            host=host, port=int(port), auto_open=True, auto_close=True)
 
     @Driver.check_active
     def set(self, status):

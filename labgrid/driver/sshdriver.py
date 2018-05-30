@@ -31,9 +31,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def on_activate(self):
         self.ssh_prefix = "-o LogLevel=ERROR"
         self.ssh_prefix += " -i {}".format(os.path.abspath(self.keyfile)
-                                         ) if self.keyfile else ""
+                                          ) if self.keyfile else ""
         self.ssh_prefix += " -o PasswordAuthentication=no" if (
-                not self.networkservice.password) else ""
+            not self.networkservice.password) else ""
         self.control = self._check_master()
         self.ssh_prefix += " -F /dev/null"
         self.ssh_prefix += " -o ControlPath={}".format(
@@ -51,12 +51,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
         # use sshpass if we have a password
         sshpass = "sshpass -e " if self.networkservice.password else ""
-        args = ("{}ssh -n {} -x -o ConnectTimeout=30 -o ControlPersist=300 "
-                "-o UserKnownHostsFile=/dev/null "
-                "-o StrictHostKeyChecking=no -MN -S {} {}@{}").format(
-                    sshpass, self.ssh_prefix, control,
-                    self.networkservice.username, self.networkservice.address
-        ).split(" ")
+        args = ("{}ssh -n {} -x -o ConnectTimeout=30 -o ControlPersist=300 -o UserKnownHostsFile=/dev/null " "-o StrictHostKeyChecking=no -MN -S {} {}@{}").format(  # pylint: disable=line-too-long
+            sshpass, self.ssh_prefix, control, self.networkservice.username,
+            self.networkservice.address).split(" ")
 
         env = os.environ.copy()
         if self.networkservice.password:
@@ -70,9 +67,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                     format(self.networkservice.address, args, self.process.wait())
                 )
         except subprocess.TimeoutExpired:
-                raise ExecutionError(
-                    "failed to connect to {} with {} and {}".
-                    format(self.networkservice.address, args, self.process.wait())
+            raise ExecutionError(
+                "failed to connect to {} with {} and {}".
+                format(self.networkservice.address, args, self.process.wait())
                 )
 
         if not os.path.exists(control):

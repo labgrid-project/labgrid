@@ -6,7 +6,7 @@ import attr
 @attr.s(cmp=False)
 class QMPMonitor:
     monitor_out = attr.ib()
-    monitor_in  = attr.ib()
+    monitor_in = attr.ib()
 
     def __attrs_post_init__(self):
         self.logger = logging.getLogger("{}:".format(self))

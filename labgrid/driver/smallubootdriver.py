@@ -90,7 +90,7 @@ class SmallUBootDriver(UBootDriver):
 
         data = self.re_vt100.sub(
             '', before.decode('utf-8'), count=1000000
-        ).replace("\r","").split("\n")
+        ).replace("\r", "").split("\n")
         data = data[1:]
         data = data[data.index("Unknown command 'echo{}' - try 'help'".format(marker)) +1 :]
         data = data[:data.index("Unknown command 'echo{}' - try 'help'".format(marker))]

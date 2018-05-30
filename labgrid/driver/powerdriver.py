@@ -221,11 +221,11 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 
     def _switch(self, cmd):
         cmd = self.hub.command_prefix + [
-                self.tool,
-                "-l", self.hub.path,
-                "-p", str(self.hub.index),
-                "-r", "100", # use 100 retries for now
-                "-a", cmd,
+            self.tool,
+            "-l", self.hub.path,
+            "-p", str(self.hub.index),
+            "-r", "100", # use 100 retries for now
+            "-a", cmd,
         ]
         subprocess.check_call(cmd)
 
@@ -249,9 +249,9 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     @Driver.check_active
     def get(self):
         cmd = self.hub.command_prefix + [
-                self.tool,
-                "-l", self.hub.path,
-                "-p", str(self.hub.index),
+            self.tool,
+            "-l", self.hub.path,
+            "-p", str(self.hub.index),
         ]
         output = subprocess.check_output(cmd)
         for line in output.splitlines():

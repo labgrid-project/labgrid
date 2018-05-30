@@ -226,7 +226,6 @@ class CoordinatorComponent(ApplicationSession):
             except:
                 traceback.print_exc()
 
-
     def save_later(self):
         self.save_scheduled = True
 
@@ -266,11 +265,7 @@ class CoordinatorComponent(ApplicationSession):
             return
         place = Place(name)
         print(place)
-        place.matches.append(ResourceMatch(
-            exporter = "*",
-            group = name,
-            cls = "*",
-        ))
+        place.matches.append(ResourceMatch(exporter="*", group=name, cls="*"))
         self.places[name] = place
 
     async def _update_acquired_places(self, action, resource_path):

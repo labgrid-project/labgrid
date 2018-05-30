@@ -23,7 +23,7 @@ class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
     """
 
     bindings = {'serial': SerialDriver}
-    signal= attr.ib(validator=attr.validators.instance_of(str))
+    signal = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -38,7 +38,7 @@ class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
     @Driver.check_active
     @step()
     def get(self):
-        if self.signal ==  "dtr":
+        if self.signal == "dtr":
             return self._p.dtr
         elif self.signal == "rts":
             return self._p.rts

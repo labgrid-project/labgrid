@@ -30,7 +30,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     autoboot = attr.ib(default="stop autoboot", validator=attr.validators.instance_of(str))
     interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
     startstring = attr.ib(default=r"[\n]barebox 20\d+", validator=attr.validators.instance_of(str))
-    bootstring = attr.ib(default="Linux version \d", validator=attr.validators.instance_of(str))
+    bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

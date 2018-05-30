@@ -1,6 +1,7 @@
 from labgrid.resource.remote import NetworkUSBTMC
 from labgrid.driver.usbtmcdriver import USBTMCDriver
 
+
 def test_usbtmc_create(target):
     r = NetworkUSBTMC(target,
             name=None,

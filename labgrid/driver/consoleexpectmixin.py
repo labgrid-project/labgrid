@@ -22,7 +22,7 @@ class ConsoleExpectMixin:
     def read(self, size=1, timeout=0.0):
         res = self._read(size=size, timeout=timeout)
         self.logger.debug("Read %i bytes: %s, timeout %.2f, requested size %i",
-                            len(res), res, timeout, size)
+                          len(res), res, timeout, size)
         return res
 
     @Driver.check_active

@@ -27,7 +27,7 @@ def power_get(host, index):
     tn.read_until(b"250 OK\r\n", 0.5)
     tn.write("port {}\n".format(index).encode())
     read = tn.read_until(b"\r\n", 0.5)
-    m = re.match(".*250 (\d).*", read.decode())
+    m = re.match(r".*250 (\d).*", read.decode())
     if m is None:
         raise Exception("NetIO: could not match response")
     value = m.group(1)

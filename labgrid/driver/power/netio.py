@@ -23,7 +23,7 @@ def power_get(host, index):
     # get the contents of the main page
     r = requests.get("http://" + host + "/tgi/control.tgi?l=p:admin:admin&p=l")
     r.raise_for_status()
-    m = re.match(".*(\d) (\d) (\d) (\d).*", r.text)
+    m = re.match(r".*(\d) (\d) (\d) (\d).*", r.text)
     states = {"0": False, "1": True}
     value = m.group(index)
     return states[value]

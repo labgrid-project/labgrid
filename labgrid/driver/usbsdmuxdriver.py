@@ -7,6 +7,7 @@ from ..factory import target_factory
 from ..resource.remote import NetworkUSBSDMuxDevice
 from ..resource.udev import USBSDMuxDevice
 from ..step import step
+from .exception import ExecutionError
 
 @target_factory.reg_driver
 @attr.s(cmp=False)

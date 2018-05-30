@@ -1,6 +1,7 @@
 # pylint: disable=no-member
 import attr
 import os
+from time import time
 
 from ..factory import target_factory
 from ..protocol import BootstrapProtocol

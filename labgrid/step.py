@@ -67,7 +67,7 @@ class StepEvent:
         self.ts = None
         self.step = None
         self.data = None
-        self.resource = resource
+        self.resource = None
         self.stream = None
 
     def merge(self, other):

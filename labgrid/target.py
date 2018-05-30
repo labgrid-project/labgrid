@@ -450,9 +450,8 @@ class Target:
         for res in reversed(self.resources):
             self.deactivate(res)
 
-    def _class_from_string(self, string):
-        if type(string) is str:
-            try:
-                return self._lookup_table[string]
-            except KeyError:
-                raise KeyError("No such driver/resource/protocol in lookup table, perhaps not bound?")
+    def _class_from_string(self, string: str):
+        try:
+            return self._lookup_table[string]
+        except KeyError:
+            raise KeyError("No such driver/resource/protocol in lookup table, perhaps not bound?")

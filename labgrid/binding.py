@@ -66,7 +66,7 @@ class BindingMixin:
                 self.__class__.__name__, self.target.name
             )
 
-    def on_supplier_bound(self, supplier, name):
+    def on_supplier_bound(self, supplier):
         """Called by the Target after a new supplier has been bound"""
         pass
 

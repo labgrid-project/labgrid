@@ -370,7 +370,7 @@ class Target:
         for supplier in bound_suppliers:
             supplier.clients.add(client)
             client.suppliers.add(supplier)
-            client.on_supplier_bound(supplier, name)
+            client.on_supplier_bound(supplier)
             supplier.on_client_bound(client)
         client.state = BindingState.bound
 

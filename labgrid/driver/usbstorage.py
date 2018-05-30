@@ -1,4 +1,5 @@
 # pylint: disable=no-member
+import logging
 import attr
 import os
 from time import time
@@ -18,6 +19,7 @@ class USBStorageDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.logger = logging.getLogger("{}:{}".format(self, self.target))
 
     def on_activate(self):
         pass
@@ -45,7 +47,7 @@ class USBStorageDriver(Driver):
                 count += len(data)
                 if time() > stat:
                     stat += 3
-                    print("writing image {:.0%}".format(count/size))
+                    self.logger.info("writing image %.0f%%", count*100/size)
             dst.flush()
             os.fsync(dst.fileno())
 

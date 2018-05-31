@@ -147,7 +147,7 @@ class ClientSession(ApplicationSession):
         self.places[name] = place
 
     @asyncio.coroutine
-    def monitor(self):
+    def do_monitor(self):
         self.monitor = True
         while True:
             yield from asyncio.sleep(3600.0)
@@ -1026,7 +1026,7 @@ def main():
 
     subparser = subparsers.add_parser('monitor',
                                       help="monitor events from the coordinator")
-    subparser.set_defaults(func=ClientSession.monitor)
+    subparser.set_defaults(func=ClientSession.do_monitor)
 
     subparser = subparsers.add_parser('resources', aliases=('r',),
                                       help="list available resources")

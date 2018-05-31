@@ -567,7 +567,7 @@ class ClientSession(ApplicationSession):
             resources.append({resource.cls: args})
         return config
 
-    def env(self):
+    def print_env(self):
         place = self.get_acquired_place()
         env = {'targets': {place.name: self.get_target_config(place)}}
         print(dump(env))
@@ -1104,7 +1104,7 @@ def main():
 
     subparser = subparsers.add_parser('env',
                                       help="generate a labgrid environment file for a place")
-    subparser.set_defaults(func=ClientSession.env)
+    subparser.set_defaults(func=ClientSession.print_env)
 
     subparser = subparsers.add_parser('power',
                                       aliases=('pw',),

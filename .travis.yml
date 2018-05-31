@@ -6,9 +6,7 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y libow-dev
 install:
-  - pip install --upgrade setuptools
-  - pip install --upgrade pytest pytest-mock pytest-cov coveralls codecov
-  - pip install -r dev-requirements.txt
+  - pip install -r travis-requirements.txt
   - pip install -e .
 script:
   - pytest --cov-config .coveragerc --cov=labgrid

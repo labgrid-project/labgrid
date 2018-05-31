@@ -94,7 +94,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         return None
 
     @Driver.check_active
-    def run(self, cmd):
+    def run(self, cmd, timeout=None): # pylint: disable=unused-argument
         """
         Runs the specified command on the shell and returns the output.
 

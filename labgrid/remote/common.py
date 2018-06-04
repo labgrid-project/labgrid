@@ -103,8 +103,8 @@ class Place:
     acquired = attr.ib(default=None)
     acquired_resources = attr.ib(default=attr.Factory(list))
     allowed = attr.ib(default=attr.Factory(set), convert=set)
-    created = attr.ib(default=attr.Factory(lambda: time.time()))
-    changed = attr.ib(default=attr.Factory(lambda: time.time()))
+    created = attr.ib(default=attr.Factory(time.time))
+    changed = attr.ib(default=attr.Factory(time.time))
 
     def asdict(self):
         result = attr.asdict(self)

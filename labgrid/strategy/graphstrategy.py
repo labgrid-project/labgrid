@@ -208,7 +208,7 @@ class GraphStrategy(Strategy):
 
         dg.attr('edge', style='dashed', arrowhead='empty')
 
-        for node_name in self.states.keys():
+        for node_name in self.states:
             if node_name not in self.path:
                 dg.node(node_name)
 

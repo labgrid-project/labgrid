@@ -1,4 +1,5 @@
 import logging
+import re
 
 import attr
 
@@ -17,12 +18,19 @@ class FakeConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self.rxq = []
+        self.txq = []
 
-    def _read(self, *args):
-        pass
+    def _read(self, *args, **kwargs):
+        if self.rxq:
+            return self.rxq.pop()
+        return b''
 
-    def _write(self, *args):
-        pass
+    def _write(self, data, *args):
+        self.txq.append(data)
+        mo = re.match(rb'^echo "(\w+)""(\w+)"\n$', data)
+        if mo:
+            self.rxq.insert(0, b''.join(mo.groups())+b'\n')
 
     def open(self):
         pass

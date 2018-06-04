@@ -109,14 +109,11 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if self.console_ready != "":
             expectations.append(self.console_ready)
 
-        # Use console.expect with a short timeout in a loop increases the
-        # chance to split a match into two consecutive chunks of the stream.
-        # This may lead to a missed match.
-        # Hopefully we will recover from all those situations by sending a
-        # newline after self.await_login_timeout.
-
-        # the returned 'before' of the expect will keep all characters.
-        # thus we need to remember what we had seen.
+        # We call console.expect with a short timeout here to detect if the
+        # console is idle, which results in a timeout without any changes to
+        # the before property. So we store the last before value we've seen.
+        # Because pexpect keeps any read data in it's buffer when a timeout
+        # occours, we can't lose any data this way.
         last_before = None
 
         while True:

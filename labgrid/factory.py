@@ -48,6 +48,7 @@ class TargetFactory:
         """
 
         # resolve syntactic sugar (list of dicts each containing a dict of key -> args)
+        result = []
         if isinstance(data, list):
             for idx, item in enumerate(data):
                 if not isinstance(item, dict):
@@ -55,22 +56,21 @@ class TargetFactory:
                         "invalid list item type {} (should be dict)".format(type(item)))
                 if len(item) < 1:
                     raise InvalidConfigError("invalid empty dict as list item")
-                if len(item) > 1:
+                elif len(item) > 1:
                     if 'cls' in item:
-                        continue
+                        item = item.copy()
                     else:
                         raise InvalidConfigError("missing 'cls' key in {}".format(item))
-                # only one pair left
-                (key, value), = item.items()
-                if key == 'cls':
-                    continue
                 else:
-                    item.clear()
-                    item['cls'] = key
-                    item.update(value)
-            result = data
+                    # only one pair left
+                    (key, value), = item.items()
+                    if key == 'cls':
+                        item = item.copy()
+                    else:
+                        item = {'cls':  key}
+                        item.update(value)
+                result.append(item)
         elif isinstance(data, dict):
-            result = []
             for cls, args in data.items():
                 args.setdefault('cls', cls)
                 result.append(args)
@@ -94,7 +94,7 @@ class TargetFactory:
             name = item.pop('name', None)
             bindings = item.pop('bindings', {})
             args = item # remaining args
-            drivers.setdefault(resource, {})[name] = (args, bindings)
+            drivers.setdefault(driver, {})[name] = (args, bindings)
         return resources, drivers
 
     def make_resource(self, target, resource, name, args):

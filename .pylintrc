@@ -65,7 +65,7 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=next-method-called,import-star-module-level,dict-view-method,basestring-builtin,unpacking-in-except,map-builtin-not-iterating,input-builtin,coerce-builtin,xrange-builtin,backtick,indexing-exception,unichr-builtin,suppressed-message,parameter-unpacking,execfile-builtin,standarderror-builtin,filter-builtin-not-iterating,reload-builtin,attribute-defined-outside-init,raising-string,print-statement,hex-method,useless-suppression,long-suffix,reduce-builtin,cmp-builtin,intern-builtin,delslice-method,coerce-method,raw_input-builtin,oct-method,setslice-method,buffer-builtin,range-builtin-not-iterating,cmp-method,dict-iter-method,no-absolute-import,old-octal-literal,apply-builtin,file-builtin,zip-builtin-not-iterating,getslice-method,long-builtin,unicode-builtin,round-builtin,nonzero-method,metaclass-assignment,old-division,old-ne-operator,old-raise-syntax,using-cmp-argument
+disable=next-method-called,import-star-module-level,dict-view-method,basestring-builtin,unpacking-in-except,map-builtin-not-iterating,input-builtin,coerce-builtin,xrange-builtin,backtick,indexing-exception,unichr-builtin,suppressed-message,parameter-unpacking,execfile-builtin,standarderror-builtin,filter-builtin-not-iterating,reload-builtin,attribute-defined-outside-init,raising-string,print-statement,hex-method,useless-suppression,long-suffix,reduce-builtin,cmp-builtin,intern-builtin,delslice-method,coerce-method,raw_input-builtin,oct-method,setslice-method,buffer-builtin,range-builtin-not-iterating,cmp-method,dict-iter-method,no-absolute-import,old-octal-literal,apply-builtin,file-builtin,zip-builtin-not-iterating,getslice-method,long-builtin,unicode-builtin,round-builtin,nonzero-method,metaclass-assignment,old-division,old-ne-operator,old-raise-syntax,using-cmp-argument,useless-super-delegation,duplicate-code,no-member
 
 
 [REPORTS]
@@ -369,13 +369,13 @@ max-branches=12
 max-statements=50
 
 # Maximum number of parents for a class (see R0901).
-max-parents=7
+max-parents=10
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=7
+max-attributes=10
 
 # Minimum number of public methods for a class (see R0903).
-min-public-methods=2
+min-public-methods=0
 
 # Maximum number of public methods for a class (see R0904).
 max-public-methods=20

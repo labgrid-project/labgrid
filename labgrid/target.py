@@ -137,16 +137,9 @@ class Target:
             self.await_resources(found)
         return found[0]
 
-    def get_driver(self, cls, *, name=None, activate=True):
-        """
-        Helper function to get a driver of the target.
-        Returns the first valid driver found, otherwise None.
+    def _get_driver(self, cls, *, name=None, activate=True, active=False):
+        assert not (activate == True and active == True)
 
-        Arguments:
-        cls -- driver-class to return as a resource
-        name -- optional name to use as a filter
-        activate -- activate the driver (default True)
-        """
         found = []
         other_names = []
         if type(cls) is str:
@@ -158,16 +151,21 @@ class Target:
             if name and drv.name != name:
                 other_names.append(drv.name)
                 continue
+            if active and drv.state != BindingState.active:
+                continue
             found.append(drv)
         if len(found) == 0:
             if other_names:
                 raise NoDriverFoundError(
-                    "all drivers matching {} found in target {} have other names: {}".format(
+                    "all {}drivers matching {} found in target {} have other names: {}".format(
+                        "active " if active else "",
                         cls, self, other_names)
                 )
             else:
                 raise NoDriverFoundError(
-                    "no driver matching {} found in target {}".format(cls, self)
+                    "no {}driver matching {} found in target {}".format(
+                        "active " if active else "", cls, self
+                    )
                 )
         elif len(found) > 1:
             prio_last = -255
@@ -185,8 +183,9 @@ class Target:
                 found = prio_found
             else:
                 raise NoDriverFoundError(
-                    "multiple drivers matching {} found in target {} with the same priorities".format(cls, self)
-                   )
+                    "multiple {}drivers matching {} found in target {} with the same priorities".
+                    format("active " if active else "", cls, self)
+                )
         if activate:
             self.activate(found[0])
         return found[0]
@@ -200,35 +199,19 @@ class Target:
         cls -- driver-class to return as a resource
         name -- optional name to use as a filter
         """
-        if type(cls) is str:
-            cls = self._class_from_string(cls)
+        return self._get_driver(cls, name=name, activate=False, active=True)
 
-        found = []
-        other_names = []
-        for drv in self.drivers:
-            if not isinstance(drv, cls):
-                continue
-            if name and drv.name != name:
-                other_names.append(drv.name)
-                continue
-            if drv.state != BindingState.active:
-                continue
-            found.append(drv)
-        if len(found) == 0:
-            if other_names:
-                raise NoDriverFoundError(
-                    "all active drivers matching {} found in target {} have other names: {}".format(
-                        cls, self, other_names)
-                )
-            else:
-                raise NoDriverFoundError(
-                    "no active driver matching {} found in target {}".format(cls, self)
-                )
-        elif len(found) > 1:
-            raise NoDriverFoundError(
-                "multiple active drivers matching {} found in target {}".format(cls, self)
-            )
-        return found[0]
+    def get_driver(self, cls, *, name=None, activate=True):
+        """
+        Helper function to get a driver of the target.
+        Returns the first valid driver found, otherwise None.
+
+        Arguments:
+        cls -- driver-class to return as a resource
+        name -- optional name to use as a filter
+        activate -- activate the driver (default True)
+        """
+        return self._get_driver(cls, name=name, activate=activate)
 
     def __getitem__(self, key):
         """

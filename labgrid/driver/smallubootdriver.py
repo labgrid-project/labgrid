@@ -58,7 +58,6 @@ class SmallUBootDriver(UBootDriver):
         # wait until UBoot has reached it's prompt
         self.console.expect(self.prompt)
 
-    @step(args=['cmd'], result=True)
     def _run(self, cmd):
         """
         If Uboot is in Command-Line mode: Run command cmd and return it's

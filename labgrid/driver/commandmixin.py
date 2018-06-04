@@ -40,6 +40,7 @@ class CommandMixin:
         return stdout
 
     @Driver.check_active
+    @step(args=['cmd'], result=True)
     def run_check(self, cmd: str, timeout=30):
         """
         External run_check function, only available if the driver is active.

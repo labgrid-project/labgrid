@@ -64,7 +64,6 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self._status = 0
 
-    @step(args=['cmd'], result=True)
     def _run(self, cmd):
         # FIXME: Handle pexpect Timeout
         # TODO: Shell Escaping for the U-Boot Shell
@@ -94,6 +93,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         return None
 
     @Driver.check_active
+    @step(args=['cmd'], result=True)
     def run(self, cmd, timeout=None): # pylint: disable=unused-argument
         """
         Runs the specified command on the shell and returns the output.

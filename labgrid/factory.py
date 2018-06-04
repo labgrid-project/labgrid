@@ -94,7 +94,7 @@ class TargetFactory:
             name = item.pop('name', None)
             bindings = item.pop('bindings', {})
             args = item # remaining args
-            drivers.setdefault(resource, {})[name] = (args, bindings)
+            drivers.setdefault(driver, {})[name] = (args, bindings)
         return resources, drivers
 
     def make_resource(self, target, resource, name, args):

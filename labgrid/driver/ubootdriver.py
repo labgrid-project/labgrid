@@ -12,7 +12,6 @@ from ..util import gen_marker
 from ..step import step
 from .common import Driver
 from .commandmixin import CommandMixin
-from .exception import ExecutionError
 
 
 @target_factory.reg_driver
@@ -83,7 +82,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             # Remove VT100 Codes and split by newline
             data = self.re_vt100.sub(
                 '', before.decode('utf-8'), count=1000000
-            ).replace("\r","").split("\n")
+            ).replace("\r", "").split("\n")
             self.logger.debug("Received Data: %s", data)
             # Remove first element, the invoked cmd
             data = data[data.index(marker) + 1:]
@@ -91,8 +90,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             exitcode = int(data[-1])
             del data[-1]
             return (data, [], exitcode)
-        else:
-            return None
+
+        return None
 
     @Driver.check_active
     def run(self, cmd):

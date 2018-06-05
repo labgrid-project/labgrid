@@ -1,10 +1,10 @@
+# pylint: disable=unsupported-assignment-operation
 from functools import partial
-
-import attr
 import logging
 import os
-import pyudev
 import warnings
+import attr
+import pyudev
 
 from ..factory import target_factory
 from .common import ManagedResource, ResourceManager
@@ -29,9 +29,9 @@ class UdevManager(ResourceManager):
 
     def poll(self):
         for device in iter(partial(self._monitor.poll, 0), None):
-            self.log.debug("{0.action}: {0}".format(device))
+            self.log.debug("%s: %s", device.action, device)
             for resource in self.resources:
-                self.log.debug(" {}".format(resource))
+                self.log.debug(" %s", resource)
                 if resource.try_match(device):
                     break
 
@@ -49,7 +49,7 @@ class USBResource(ManagedResource):
         self.match.setdefault('SUBSYSTEM', 'usb')
         super().__attrs_post_init__()
 
-    def filter_match(self, device):
+    def filter_match(self, device):  # pylint: disable=unused-argument
         return True
 
     def try_match(self, device):
@@ -82,7 +82,7 @@ class USBResource(ManagedResource):
 
             if not self.filter_match(device):
                 return False
-        self.log.debug(" found match: {}".format(self))
+        self.log.debug(" found match: %s", self)
         if device.action in [None, 'add']:
             if self.avail:
                 warnings.warn("udev device {} is already available".format(device))
@@ -105,15 +105,20 @@ class USBResource(ManagedResource):
         if device:
             return int(device.get('BUSNUM'))
 
+        return None
+
     @property
     def devnum(self):
         device = self._get_usb_device()
         if device:
             return int(device.get('DEVNUM'))
 
+        return None
+
     def _get_usb_device(self):
         device = self.device
-        if self.device and (self.device.subsystem != 'usb' or self.device.device_type != 'usb_device'):
+        if self.device and (self.device.subsystem != 'usb'
+                            or self.device.device_type != 'usb_device'):
             device = self.device.find_parent('usb', 'usb_device')
         return device
 
@@ -123,17 +128,23 @@ class USBResource(ManagedResource):
         if device:
             return str(device.sys_name)
 
+        return None
+
     @property
     def vendor_id(self):
         device = self._get_usb_device()
         if device:
             return int(device.get('ID_VENDOR_ID'), 16)
 
+        return None
+
     @property
     def model_id(self):
         device = self._get_usb_device()
         if device:
             return int(device.get('ID_MODEL_ID'), 16)
+
+        return None
 
     def read_attr(self, attribute):
         """read uncached attribute value from sysfs
@@ -146,6 +157,8 @@ class USBResource(ManagedResource):
         if self.device:
             with open(os.path.join(self.device.sys_path, attribute), 'rb') as f:
                 return f.read().rstrip(b'\n') # drop trailing newlines
+
+        return None
 
 
 @target_factory.reg_resource
@@ -175,8 +188,8 @@ class USBMassStorage(USBResource):
     def path(self):
         if self.device:
             return self.device.device_node
-        else:
-            return None
+
+        return None
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
@@ -195,7 +208,7 @@ class MXSUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.get('ID_VENDOR_ID'), device.get('ID_MODEL_ID'))
 
-        if not match in [("066f", "3780"), ("15a2", "004f")]:
+        if match not in [("066f", "3780"), ("15a2", "004f")]:
             return False
 
         return super().filter_match(device)
@@ -266,7 +279,6 @@ class USBSDMuxDevice(USBResource):
     """The USBSDMuxDevice describes an attached USBSDMux device,
     it is identified via USB using udev
     """
-    control_path = attr.ib(default=None)
     def __attrs_post_init__(self):
         self.match['ID_VENDOR_ID'] = '0424'
         self.match['ID_MODEL_ID'] = '4041'
@@ -298,16 +310,16 @@ class USBSDMuxDevice(USBResource):
         dev = self._get_scsi_dev()
         if dev:
             return dev.device_node
-        else:
-            return None
+
+        return None
 
     @property
     def path(self):
         dev = self._get_block_disk_dev()
         if dev:
             return dev.device_node
-        else:
-            return None
+
+        return None
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
@@ -336,8 +348,8 @@ class USBVideo(USBResource):
     def path(self):
         if self.device:
             return self.device.device_node
-        else:
-            return None
+
+        return None
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
@@ -352,5 +364,5 @@ class USBTMC(USBResource):
     def path(self):
         if self.device:
             return self.device.device_node
-        else:
-            return None
+
+        return None

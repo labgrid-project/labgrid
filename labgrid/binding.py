@@ -45,7 +45,6 @@ class BindingMixin:
     state = attr.ib(default=BindingState.idle, init=False)
 
     def __attrs_post_init__(self):
-        binding_names = {}
         self.suppliers = set()
         self.clients = set()
         target = self.target
@@ -61,12 +60,12 @@ class BindingMixin:
             return "{}(target={}, name={})".format(
                 self.__class__.__name__, self.target.name, self.name
             )
-        else:
-            return "{}(target={})".format(
-                self.__class__.__name__, self.target.name
-            )
 
-    def on_supplier_bound(self, supplier, name):
+        return "{}(target={})".format(
+            self.__class__.__name__, self.target.name
+        )
+
+    def on_supplier_bound(self, supplier):
         """Called by the Target after a new supplier has been bound"""
         pass
 

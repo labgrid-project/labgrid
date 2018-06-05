@@ -1,8 +1,8 @@
-import pytest
 import time
+import pytest
 
 from labgrid.external import HawkbitTestClient
-from labgrid.driver import InfoDriver
+
 
 @pytest.fixture()
 def hawkbit():
@@ -10,7 +10,7 @@ def hawkbit():
     # See: https://github.com/eclipse/hawkbit on how to set up
     # a test instance of hawkbit
     client = HawkbitTestClient("localhost", "8080", "admin", "admin")
-    assert(isinstance(client, HawkbitTestClient))
+    assert isinstance(client, HawkbitTestClient)
     return client
 
 def test_upgrade(hawkbit):

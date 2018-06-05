@@ -50,7 +50,7 @@ class TargetFactory:
         # resolve syntactic sugar (list of dicts each containing a dict of key -> args)
         result = []
         if isinstance(data, list):
-            for idx, item in enumerate(data):
+            for item in data:
                 if not isinstance(item, dict):
                     raise InvalidConfigError(
                         "invalid list item type {} (should be dict)".format(type(item)))
@@ -128,20 +128,19 @@ class TargetFactory:
     def make_target(self, name, config, *, env=None):
         from .target import Target
 
-        role = config.get('role', name)
         target = Target(name, env=env)
         for item in self._convert_to_named_list(config.get('resources', {})):
             resource = item.pop('cls')
             name = item.pop('name', None)
             args = item # remaining args
-            r = self.make_resource(target, resource, name, args)
+            self.make_resource(target, resource, name, args)
         for item in self._convert_to_named_list(config.get('drivers', {})):
             driver = item.pop('cls')
             name = item.pop('name', None)
             bindings = item.pop('bindings', {})
             args = item # remaining args
             target.set_binding_map(bindings)
-            d = self.make_driver(target, driver, name, args)
+            self.make_driver(target, driver, name, args)
         return target
 
 

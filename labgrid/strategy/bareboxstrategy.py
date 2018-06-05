@@ -47,7 +47,7 @@ class BareboxStrategy(Strategy):
             self.target.activate(self.barebox)
         elif status == Status.shell:
             # tansition to barebox
-            self.transition(Status.barebox)
+            self.transition(Status.barebox)  # pylint: disable=missing-kwoa
             self.barebox.boot("")
             self.barebox.await_boot()
             self.target.activate(self.shell)

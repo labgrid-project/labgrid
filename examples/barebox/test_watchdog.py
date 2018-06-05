@@ -6,8 +6,8 @@ def test_watchdog(command):
     if returncode == 127:
         pytest.skip("wd command not available")
     assert returncode == 0
-    assert len(stderr) == 0
-    assert len(stdout) == 0
+    assert not stderr
+    assert not stdout
 
     command._await_prompt()
 

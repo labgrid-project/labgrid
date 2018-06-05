@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import fastentrypoints
 
 from setuptools import setup
 
@@ -14,7 +13,7 @@ setup(
     data_files=[('share/man/1', ['man/labgrid-client.1',
                                  'man/labgrid-exporter.1',
                                  'man/labgrid-device-config.1'])],
-    python_requires='>=3.4',
+    python_requires='>=3.5',
     extras_require={
         'onewire': ['onewire>=0.2'],
         'snmp': ['pysnmp', 'pysnmp-mibs'],
@@ -61,6 +60,12 @@ setup(
             'labgrid-autoinstall = labgrid.autoinstall.main:main',
         ]
     },
-    # custom PyPI classifier for pytest plugins
-    classifiers=["Framework :: Pytest", ],
+    # custom PyPI classifiers
+    classifiers=[
+        "Topic :: Software Development :: Testing",
+        "Framework :: Pytest",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+    ],
 )

@@ -3,7 +3,7 @@ import abc
 import attr
 import pytest
 
-from labgrid import Target, target_factory
+from labgrid import Target
 from labgrid.binding import BindingError
 from labgrid.resource import Resource
 from labgrid.driver import Driver

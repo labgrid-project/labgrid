@@ -1,10 +1,10 @@
 import logging
 import subprocess
-import attr
 from time import time
+import attr
 
 from ..factory import target_factory
-from .common import Resource, ManagedResource, ResourceManager
+from .common import ManagedResource, ResourceManager
 
 @attr.s
 class SNMPSwitch:
@@ -22,7 +22,7 @@ class SNMPSwitch:
     def _autodetect(self):
         from pysnmp import hlapi
 
-        for (errorIndication, errorStatus, errorIndex, varBindTable) in hlapi.getCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in hlapi.getCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 hlapi.UdpTransportTarget((self.hostname, 161)),
@@ -42,8 +42,7 @@ class SNMPSwitch:
         else:
             Exception("unsupported switch {}".format(sysDescr))
 
-        self.logger.debug("autodetected switch{}: {} {}".format(
-            sysDescr, self._get_ports, self._get_fdb))
+        self.logger.debug("autodetected switch%s: %s %s", sysDescr, self._get_ports, self._get_fdb)
 
     def _get_ports(self):
         """Fetch ports and their values via SNMP
@@ -53,8 +52,8 @@ class SNMPSwitch:
         """
         from pysnmp import hlapi
 
-        vars = [
-            (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifIndex')),'index'),
+        variables = [
+            (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifIndex')), 'index'),
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifDescr')), 'descr'),
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifSpeed')), 'speed'),
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifOperStatus')), 'status'),
@@ -64,13 +63,13 @@ class SNMPSwitch:
         ]
         ports = {}
 
-        for (errorIndication, errorStatus, errorIndex, varBindTable) in hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in hlapi.bulkCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 hlapi.UdpTransportTarget((self.hostname, 161)),
                 hlapi.ContextData(),
                 0, 20,
-                *[x[0] for x in vars],
+                *[x[0] for x in variables],
                 lexicographicMode=False):
             if errorIndication:
                 Exception("snmp error {}".format(errorIndication))
@@ -78,8 +77,7 @@ class SNMPSwitch:
                 Exception("snmp error {}".format(errorStatus))
             else:
                 port = {}
-                for (key, val), (base, label) in zip(varBindTable, vars):
-                    index = key.getMibSymbol()[-1][0].prettyPrint()
+                for (_, val), (_, label) in zip(varBindTable, variables):
                     val = val.prettyPrint()
                     if label == 'status':
                         val = val.strip("'")
@@ -98,7 +96,7 @@ class SNMPSwitch:
 
         ports = {}
 
-        for (errorIndication, errorStatus, errorIndex, varBindTable) in hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in hlapi.bulkCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 hlapi.UdpTransportTarget((self.hostname, 161)),
@@ -131,7 +129,7 @@ class SNMPSwitch:
 
         ports = {}
 
-        for (errorIndication, errorStatus, errorIndex, varBindTable) in hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in hlapi.bulkCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 hlapi.UdpTransportTarget((self.hostname, 161)),
@@ -205,7 +203,7 @@ class EthernetPortManager(ResourceManager):
         if not isinstance(resource, SNMPEthernetPort):
             return
         self._start()
-        resource.avail=True
+        resource.avail = True
 
     def _start(self):
         """Internal function to register as task and attach/start the event
@@ -219,15 +217,13 @@ class EthernetPortManager(ResourceManager):
         if self.poll_tasks:
             return
 
-        @asyncio.coroutine
-        def poll_neighbour(self):
+        async def poll_neighbour(self):
             self.logger.debug("polling neighbor table")
             self.neighbors = self._get_neigh()
 
-            yield from asyncio.sleep(1.0)
+            await asyncio.sleep(1.0)
 
-        @asyncio.coroutine
-        def poll_switches(self):
+        async def poll_switches(self):
             current = set(resource.switch for resource in self.resources)
             removed = set(self.switches) - current
             new = current - set(self.switches)
@@ -237,19 +233,18 @@ class EthernetPortManager(ResourceManager):
                 self.switches[switch] = SNMPSwitch(switch)
             for switch in current:
                 self.switches[switch].update()
-                yield from asyncio.sleep(1.0)
+                await asyncio.sleep(1.0)
 
-            yield from asyncio.sleep(2.0)
+            await asyncio.sleep(2.0)
 
-        @asyncio.coroutine
-        def poll(self, handler):
+        async def poll(self, handler):
             while True:
                 try:
-                    yield from asyncio.sleep(1.0)
-                    yield from handler(self)
+                    await asyncio.sleep(1.0)
+                    await handler(self)
                 except asyncio.CancelledError:
                     break
-                except:
+                except Exception:  # pylint: disable=broad-except
                     import traceback
                     traceback.print_exc()
 
@@ -270,10 +265,8 @@ class EthernetPortManager(ResourceManager):
             line = line.decode('ascii').strip().split()
             addr = line.pop(0)
             if line[0] == 'dev':
-                line.pop(0)
-                dev = line.pop(0)
-            else:
-                dev = None
+                line.pop(0) # "dev"
+                line.pop(0) # actual dev
             if line[0] == 'lladdr':
                 line.pop(0)
                 lladdr = line.pop(0)
@@ -281,7 +274,7 @@ class EthernetPortManager(ResourceManager):
                 lladdr = None
             if line[0] == 'router':
                 line.pop()
-            state = line.pop(0)
+            line.pop(0) # state
             assert not line
             # TODO: check if we could use the device and state information
             neighbors.setdefault(lladdr, []).append(addr)
@@ -313,7 +306,7 @@ class EthernetPortManager(ResourceManager):
             extra.update(switch.ports.get(resource.interface, {}))
             if resource.extra != extra:
                 resource.extra = extra
-                self.logger.debug("new information for {}: {}".format(resource, extra))
+                self.logger.debug("new information for %s: %s", resource, extra)
 
 
 @target_factory.reg_resource

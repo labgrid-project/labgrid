@@ -1,5 +1,5 @@
-import pytest
 import pexpect
+
 
 def test_autoinstall_help():
     with pexpect.spawn('python -m labgrid.autoinstall.main --help') as spawn:

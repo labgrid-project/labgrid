@@ -2,12 +2,13 @@
 """Power-cycle a target until the /dev/nand0 device is missing."""
 
 import sys
+import logging
 
 from labgrid import Environment, StepReporter
 from labgrid.strategy.bareboxstrategy import Status
 
+
 # enable debug logging
-import logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(levelname)7s: %(message)s',

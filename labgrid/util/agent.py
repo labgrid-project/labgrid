@@ -30,7 +30,7 @@ class Agent:
 
             try:
                 request = json.loads(line)
-            except:
+            except json.JSONDecodeError:
                 self._send({'error': 'request parsing failed'})
                 break
 
@@ -43,11 +43,11 @@ class Agent:
             try:
                 response = self.methods[name](*args, **kwargs)
                 self._send({'result': response})
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 self._send({'exception': repr(e)})
                 break
 
-def handle_test(*args, **kwargs):
+def handle_test(*args, **kwargs):  # pylint: disable=unused-argument
     return args[::-1]
 
 def handle_error(message):
@@ -60,7 +60,7 @@ def handle_usbtmc(index, cmd, read=False):
     os.write(fd, cmd)
     if not read:
         os.close(fd)
-        return
+        return None
     data = []
     while True:
         data.append(os.read(fd, 4096))
@@ -76,5 +76,5 @@ def main():
     a.register('usbtmc', handle_usbtmc)
     a.run()
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

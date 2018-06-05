@@ -7,6 +7,7 @@ from ..factory import target_factory
 from ..step import step
 from ..protocol import InfoProtocol, CommandProtocol
 from .common import Driver
+from .exception import ExecutionError
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
@@ -17,7 +18,7 @@ class InfoDriver(Driver, InfoProtocol):
 
     # TODO: rework CommandProtocol binding to select correct underlying driver
     # (No UBoot/BareboxDriver, SSH > Serial,…)
-    bindings = { 'command': CommandProtocol }
+    bindings = {'command': CommandProtocol}
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -51,8 +52,8 @@ class InfoDriver(Driver, InfoProtocol):
         self.logger.debug("Complete result: %s", result)
         if result:
             return result[interface]
-        else:
-            return None
+
+        return None
 
     @Driver.check_active
     @step(args=['service'])

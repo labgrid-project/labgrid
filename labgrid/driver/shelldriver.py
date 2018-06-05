@@ -1,25 +1,19 @@
-# pylint: disable=no-member
+# pylint: disable=no-member,missing-kwoa,unused-argument
 """The ShellDriver provides the CommandProtocol, ConsoleProtocol and
  InfoProtocol on top of a SerialPort."""
 import io
 import logging
-import os
 import re
+import time
 import shlex
-from time import sleep
-
 import attr
 from pexpect import TIMEOUT
-
-import time
-
 import xmodem
 
 from ..factory import target_factory
-from ..protocol import (CommandProtocol, ConsoleProtocol, FileTransferProtocol,
-                        InfoProtocol)
+from ..protocol import CommandProtocol, ConsoleProtocol, FileTransferProtocol
 from ..step import step
-from ..util import Timeout, gen_marker
+from ..util import gen_marker
 from .commandmixin import CommandMixin
 from .common import Driver
 from .exception import ExecutionError
@@ -54,9 +48,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         super().__attrs_post_init__()
         self.re_vt100 = re.compile(
             r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
-        )  #pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
+        )  # pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
         self.logger = logging.getLogger("{}:{}".format(self, self.target))
-        self._status = 0  #pylint: disable=attribute-defined-outside-init
+        self._status = 0  # pylint: disable=attribute-defined-outside-init
 
         self._xmodem_cached_rx_cmd = ""
         self._xmodem_cached_sx_cmd = ""
@@ -67,7 +61,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self._inject_run()
         if self.keyfile:
             self._put_ssh_key(self.keyfile)
-        self._run("dmesg -n 1")  # Turn off Kernel Messages to the console
+        # Turn off Kernel Messages to the console
+        self._run("dmesg -n 1")
 
     def on_deactivate(self):
         self._status = 0
@@ -167,7 +162,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             last_before = before
 
             if time.time() > start + self.login_timeout:
-                raise TIMEOUT("Timeout of {} seconds exceeded during waiting for login".format(self.login_timeout))
+                raise TIMEOUT("Timeout of {} seconds exceeded during waiting for login".format(self.login_timeout))  # pylint: disable=line-too-long
 
     @step()
     def get_status(self):
@@ -197,15 +192,15 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
         self.console.expect(self.prompt)
 
-    @step(args=['key'])
-    def _put_ssh_key(self, key):
+    @step(args=['keyfile_path'])
+    def _put_ssh_key(self, keyfile_path):
         """Upload an SSH Key to a target"""
         regex = re.compile(
             r"""ssh-rsa # Only match RSA Keys
             \s+(?P<key>[a-zA-Z0-9/+=]+) # Match Keystring
             \s+(?P<comment>.*) # Match comment""", re.X
         )
-        with open(key) as keyfile:
+        with open(keyfile_path) as keyfile:
             keyline = keyfile.readline()
             self.logger.debug("Read Keyline: %s", keyline)
             match = regex.match(keyline)
@@ -246,7 +241,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if test_write == 0:
             self.logger.debug("Key not on target, testing for .ssh directory")
             _, _, ssh_dir = self._run("[ -d ~/.ssh/ ]")
-            if not ssh_dir == 0:
+            if ssh_dir != 0:
                 self.logger.debug("~/.ssh did not exist, creating")
                 self._run("mkdir ~/.ssh/")
             self._run_check("chmod 700 ~/.ssh/")
@@ -265,8 +260,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self.logger.warning("Could not bind mount ~/.ssh directory: %s %s", out, err)
 
     @Driver.check_active
-    def put_ssh_key(self, key):
-        self._put_ssh_key(key)
+    def put_ssh_key(self, keyfile_path):
+        self._put_ssh_key(keyfile_path)
 
     def _xmodem_getc(self, size, timeout=10):
         """ called by the xmodem.XMODEM instance to read protocol data from the console """
@@ -275,16 +270,16 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             # something of the XMODEM protocol data into its internal buffers:
             xpct = self.console.expect(r'.{%d}' % size, timeout=timeout)
             s = xpct[2].group()
-            self.logger.debug('XMODEM GETC({}): read {}'.format(size, repr(s)))
+            self.logger.debug('XMODEM GETC(%d): read %r', size, s)
             return s
         except TIMEOUT:
-            self.logger.debug('XMODEM GETC({}): TIMEOUT after {} seconds' .format(size, timeout))
+            self.logger.debug('XMODEM GETC(%s): TIMEOUT after %d seconds', size, timeout)
             return None
 
     def _xmodem_putc(self, data, timeout=1):
         """ called by the xmodem.XMODEM instance to write protocol data to the console """
         # Note: we ignore the timeout because we cannot pass it through.
-        self.logger.debug('XMODEM PUTC: {}'.format(repr(data)))
+        self.logger.debug('XMODEM PUTC: %r', data)
         self.console.write(data)
         return len(data)
 
@@ -352,7 +347,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         try:
             rx_cmd = self._get_xmodem_rx_cmd(tmpfile)
-            self.logger.debug('XMODEM receive command on target: ' + rx_cmd)
+            self.logger.debug('XMODEM receive command on target: %s', rx_cmd)
         except ExecutionError:
             _target_cleanup(tmpfile)
             raise
@@ -361,19 +356,19 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         modem = xmodem.XMODEM(self._xmodem_getc, self._xmodem_putc)
         ret = modem.send(stream)
-        self.logger.debug('xmodem.send() returned %r' % ret)
+        self.logger.debug('xmodem.send() returned %r', ret)
 
         self.console.expect(self.prompt, timeout=30)
 
         # truncate the file to get rid of CPMEOF padding
         dd_cmd = "dd if='{}' of='{}' bs=1 count={}".format(tmpfile, remotefile, len(buf))
-        self.logger.debug('dd command: ' + dd_cmd)
+        self.logger.debug('dd command: %s', dd_cmd)
         out, _, ret = self._run(dd_cmd)
 
         _target_cleanup(tmpfile)
         if ret != 0:
             raise ExecutionError('Could not truncate destination file: dd returned {}: {}'.
-                    format(ret, out))
+                                 format(ret, out))
 
     @Driver.check_active
     def put_bytes(self, buf: bytes, remotefile: str):
@@ -416,7 +411,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         buf = io.BytesIO()
 
         cmd = self._get_xmodem_sx_cmd(remotefile)
-        self.logger.info('XMODEM send command on target: ' + cmd)
+        self.logger.info('XMODEM send command on target: %s', cmd)
 
         # get file size to remove XMODEM's CPMEOF padding at the end of the last packet
         out, _, ret = self._run("stat '{}'".format(remotefile))
@@ -431,12 +426,12 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         modem = xmodem.XMODEM(self._xmodem_getc, self._xmodem_putc)
         recvd_size = modem.recv(buf)
-        self.logger.debug('xmodem.recv() returned %r' % recvd_size)
+        self.logger.debug('xmodem.recv() returned %r', recvd_size)
 
         # remove CPMEOF (0x1a) padding
         if recvd_size < file_size:
             raise ExecutionError('Only received {} bytes of {} expected'.
-                    format(recvd_size, file_size))
+                                 format(recvd_size, file_size))
 
         self.logger.debug('received %d bytes of payload', file_size)
         buf.truncate(file_size)
@@ -485,14 +480,14 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._get(remotefile, localfile)
 
     @step(title='run_script', args=['data', 'timeout'])
-    def _run_script(self, data: bytes, timeout: int=60):
+    def _run_script(self, data: bytes, timeout: int = 60):
         hardcoded_remote_file = '/tmp/labgrid-run-script'
         self._put_bytes(data, hardcoded_remote_file)
         self._run_check("chmod +x '{}'".format(hardcoded_remote_file))
         return self._run(hardcoded_remote_file, timeout=timeout)
 
     @Driver.check_active
-    def run_script(self, data: bytes, timeout: int=60):
+    def run_script(self, data: bytes, timeout: int = 60):
         """ Upload a script to the target and run it.
 
         Args:
@@ -509,17 +504,17 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._run_script(data, timeout)
 
     @step(title='run_script_file', args=['scriptfile', 'timeout', 'args'])
-    def _run_script_file(self, scriptfile: str, *args, timeout: int=60):
+    def _run_script_file(self, scriptfile: str, *args, timeout: int = 60):
         hardcoded_remote_file = '/tmp/labgrid-run-script'
         self._put(scriptfile, hardcoded_remote_file)
         self._run_check("chmod +x '{}'".format(hardcoded_remote_file))
 
-        shargs = [ shlex.quote(a) for a in args ]
+        shargs = [shlex.quote(a) for a in args]
         cmd = "{} {}".format(hardcoded_remote_file, ' '.join(shargs))
         return self._run(cmd, timeout=timeout)
 
     @Driver.check_active
-    def run_script_file(self, scriptfile: str, *args, timeout: int=60):
+    def run_script_file(self, scriptfile: str, *args, timeout: int = 60):
         """ Upload a script file to the target and run it.
 
         Args:

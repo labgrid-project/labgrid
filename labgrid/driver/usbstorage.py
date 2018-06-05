@@ -1,13 +1,13 @@
 # pylint: disable=no-member
-import attr
+import logging
 import os
+from time import time
+import attr
 
 from ..factory import target_factory
-from ..protocol import BootstrapProtocol
 from ..resource.udev import USBMassStorage, USBSDMuxDevice
 from ..step import step
 from .common import Driver
-from .exception import ExecutionError
 
 
 @target_factory.reg_driver
@@ -17,6 +17,7 @@ class USBStorageDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.logger = logging.getLogger("{}:{}".format(self, self.target))
 
     def on_activate(self):
         pass
@@ -44,7 +45,7 @@ class USBStorageDriver(Driver):
                 count += len(data)
                 if time() > stat:
                     stat += 3
-                    print("writing image {:.0%}".format(count/size))
+                    self.logger.info("writing image %.0f%%", count*100/size)
             dst.flush()
             os.fsync(dst.fileno())
 

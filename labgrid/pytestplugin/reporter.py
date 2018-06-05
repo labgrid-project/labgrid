@@ -72,7 +72,7 @@ class StepReporter:
             return
 
         new = not self.rewrite
-        if not(self.cur_step is event.step):
+        if self.cur_step is not event.step:
             new = True
         if self.cur_resource is not event.resource:
             new = True
@@ -98,7 +98,7 @@ class StepReporter:
 
     @pytest.hookimpl(hookwrapper=True, trylast=True)
     def pytest_runtest_logstart(self):
-        outcome = yield
+        yield
         self.tr._tw.write('\n')
         self.tr._tw._lastlen = 0
 

@@ -1,12 +1,13 @@
 # pylint: disable=no-member
-import attr
 import subprocess
+import attr
 
 from .common import Driver
 from ..factory import target_factory
 from ..resource.remote import NetworkUSBSDMuxDevice
 from ..resource.udev import USBSDMuxDevice
 from ..step import step
+from .exception import ExecutionError
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
@@ -32,13 +33,12 @@ class USBSDMuxDriver(Driver):
     @Driver.check_active
     @step(title='sdmux_set', args=['mode'])
     def set_mode(self, mode):
-        ''
         if not mode.lower() in ['dut', 'host', 'off', 'client']:
             raise ExecutionError("Setting mode '%s' not supported by USBSDMuxDriver" % mode)
         cmd = self.mux.command_prefix + [
-                self.tool,
-                "-c",
-                self.mux.control_path,
-                mode.lower()
+            self.tool,
+            "-c",
+            self.mux.control_path,
+            mode.lower()
         ]
         subprocess.check_call(cmd)

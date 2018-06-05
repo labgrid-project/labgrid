@@ -1,4 +1,3 @@
-import sys
 import subprocess
 
 from ..exception import ExecutionError
@@ -28,7 +27,7 @@ def _snmp_set(host, oid, value):
         raise ExecutionError("failed to set SNMP value") from e
 
 
-def set(host, index, value):
+def power_set(host, index, value):
     index = int(index)
     value = 1 if value else 2
     assert 1 <= index <= 8
@@ -36,7 +35,7 @@ def set(host, index, value):
     _snmp_set(host, "{}.{}".format(OID, index), "int {}".format(value))
 
 
-def get(host, index):
+def power_get(host, index):
     index = int(index)
     assert 1 <= index <= 8
 

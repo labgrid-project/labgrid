@@ -1,5 +1,5 @@
-import attr
 import subprocess
+import attr
 
 from ..binding import BindingError, BindingMixin
 from .exception import ExecutionError
@@ -42,6 +42,8 @@ class Driver(BindingMixin):
             # If we find the parent protocol, set the priority to 0
             if cls.__name__ == protocol.__name__:
                 return 0
+
+        return 0
 
 
 def check_file(filename, *, command_prefix=[]):

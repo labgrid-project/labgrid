@@ -3,13 +3,12 @@
 This class encapsulates access functions to the environment configuration
 
 """
-import attr
-import logging
 import os
+from yaml import YAMLError
+import attr
 
 from .exceptions import NoConfigFoundError, InvalidConfigError
 from .util.yaml import load, resolve_templates
-from yaml import YAMLError
 
 @attr.s(cmp=False)
 class Config:
@@ -34,7 +33,7 @@ class Config:
         # map LG_* variables from OS environment into YAML config file using !template $LG_*
         # Only map LG_*, to protect from weird things in environment
         for x in os.environ.keys():
-            if x.startswith( "LG_" ):
+            if x.startswith("LG_"):
                 substitutions[x] = os.environ[x]
 
         try:
@@ -65,8 +64,8 @@ class Config:
         path = os.path.expandvars(path)
         if os.path.isabs(path):
             return path
-        else:
-            return os.path.join(self.base, path)
+
+        return os.path.join(self.base, path)
 
     def get_tool(self, tool):
         """Retrieve an entry from the tools subkey
@@ -138,7 +137,7 @@ class Config:
         """
         try:
             return str(self.data['options'][name])
-        except KeyError as e:
+        except KeyError:
             if default is None:
                 raise KeyError("no option '{}' found in configuration".format(name))
             else:

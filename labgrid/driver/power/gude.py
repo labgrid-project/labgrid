@@ -1,11 +1,9 @@
-import sys
+import requests
 
 from ..exception import ExecutionError
 
-import requests
 
-
-def set(host, index, value):
+def power_set(host, index, value):
     index = int(index)
     assert 1 <= index <= 8
     # access the web interface...
@@ -16,15 +14,16 @@ def set(host, index, value):
     r.raise_for_status()
 
 
-def get(host, index):
+def power_get(host, index):
     index = int(index)
     assert 1 <= index <= 8
     # get the contents of the main page
     r = requests.get("http://{}/".format(host))
     r.raise_for_status()
     for line in r.text.splitlines():
-        if line.find("Power Port {}</td>".format(index)
-                     ) > 0 or line.find("SwitchPort {}</td>".format(index)) > 0:
+        power_pattern = "Power Port {}</td>".format(index)
+        switch_patern = "SwitchPort {}</td>".format(index)
+        if line.find(power_pattern) > 0 or line.find(switch_patern) > 0:
             if line.find("OFF") > 0:
                 return False
             elif line.find("ON") > 0:

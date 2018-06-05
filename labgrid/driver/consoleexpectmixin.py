@@ -1,9 +1,5 @@
 from time import sleep
 
-import attr
-
-from pexpect import TIMEOUT
-
 from ..util import PtxExpect
 from ..step import step
 from .common import Driver
@@ -26,7 +22,7 @@ class ConsoleExpectMixin:
     def read(self, size=1, timeout=0.0):
         res = self._read(size=size, timeout=timeout)
         self.logger.debug("Read %i bytes: %s, timeout %.2f, requested size %i",
-                            len(res), res, timeout, size)
+                          len(res), res, timeout, size)
         return res
 
     @Driver.check_active
@@ -40,9 +36,9 @@ class ConsoleExpectMixin:
                 sleep(self.txdelay)
                 count += self._write(data[i:i+1])
             return count
-        else:
-            self.logger.debug("Write %i bytes: %s", len(data), data)
-            return self._write(data)
+
+        self.logger.debug("Write %i bytes: %s", len(data), data)
+        return self._write(data)
 
     @Driver.check_active
     def sendline(self, line):

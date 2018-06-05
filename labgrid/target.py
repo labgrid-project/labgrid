@@ -8,7 +8,7 @@ import attr
 from .binding import BindingError, BindingState
 from .driver import Driver
 from .exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
-from .resource import Resource, ManagedResource
+from .resource import Resource
 from .strategy import Strategy
 from .util import Timeout
 
@@ -50,8 +50,7 @@ class Target:
             manager.poll()
         for resource in resources:
             if not resource.avail and resource.state is BindingState.active:
-                self.log.info("deactivating unavailable resource {}".format(
-                    resource.display_name))
+                self.log.info("deactivating unavailable resource %s", resource.display_name)  # pylint: disable=line-too-long
                 self.deactivate(resource)
 
     def await_resources(self, resources, timeout=None, avail=True):
@@ -97,7 +96,7 @@ class Target:
 
         self.update_resources()
 
-    def get_resource(self, cls, *, name=None, await=True):
+    def get_resource(self, cls, *, name=None, wait_avail=True):
         """
         Helper function to get a resource of the target.
         Returns the first valid resource found, otherwise None.
@@ -105,11 +104,11 @@ class Target:
         Arguments:
         cls -- resource-class to return as a resource
         name -- optional name to use as a filter
-        await -- wait for the resource to become available (default True)
+        wait_avail -- wait for the resource to become available (default True)
         """
         found = []
         other_names = []
-        if type(cls) is str:
+        if isinstance(cls, str):
             cls = self._class_from_string(cls)
 
         for res in self.resources:
@@ -119,7 +118,7 @@ class Target:
                 other_names.append(res.name)
                 continue
             found.append(res)
-        if len(found) == 0:
+        if not found:
             if other_names:
                 raise NoResourceFoundError(
                     "all resources matching {} found in target {} have other names: {}".format(
@@ -133,7 +132,7 @@ class Target:
             raise NoResourceFoundError(
                 "multiple resources matching {} found in target {}".format(cls, self)
             )
-        if await:
+        if wait_avail:
             self.await_resources(found)
         return found[0]
 
@@ -142,7 +141,7 @@ class Target:
 
         found = []
         other_names = []
-        if type(cls) is str:
+        if isinstance(cls, str):
             cls = self._class_from_string(cls)
 
         for drv in self.drivers:
@@ -154,7 +153,7 @@ class Target:
             if active and drv.state != BindingState.active:
                 continue
             found.append(drv)
-        if len(found) == 0:
+        if not found:
             if other_names:
                 raise NoDriverFoundError(
                     "all {}drivers matching {} found in target {} have other names: {}".format(
@@ -231,7 +230,7 @@ class Target:
             cls = key
         elif len(key) == 2:
             cls, name = key
-        if type(cls) is str:
+        if isinstance(cls, str):
             cls = self._class_from_string(cls)
         if not issubclass(cls, (Driver, abc.ABC)): # all Protocols derive from ABC
             raise NoDriverFoundError(
@@ -315,7 +314,7 @@ class Target:
                 try:
                     if issubclass(requirement, Resource):
                         suppliers.append(
-                            self.get_resource(requirement, name=supplier_name, await=False),
+                            self.get_resource(requirement, name=supplier_name, wait_avail=False),
                         )
                     elif issubclass(requirement, (Driver, abc.ABC)): # all Protocols derive from ABC
                         suppliers.append(
@@ -336,9 +335,7 @@ class Target:
                             requirements, self, errors)
                     )
             elif len(suppliers) > 1:
-                raise NoSupplierFoundError(
-                    "conflicting suppliers matching {} found in target {}".format(requirements, self)
-                )
+                raise NoSupplierFoundError("conflicting suppliers matching {} found in target {}".format(requirements, self))  # pylint: disable=line-too-long
             else:
                 supplier = suppliers[0]
             setattr(client, name, supplier)
@@ -370,7 +367,7 @@ class Target:
         for supplier in bound_suppliers:
             supplier.clients.add(client)
             client.suppliers.add(supplier)
-            client.on_supplier_bound(supplier, name)
+            client.on_supplier_bound(supplier)
             supplier.on_client_bound(client)
         client.state = BindingState.bound
 
@@ -422,7 +419,7 @@ class Target:
 
         This is needed to ensure that no client has an inactive supplier.
         """
-        if type(client) is str:
+        if isinstance(client, str):
             client = self._class_from_string(client)
 
         if client.state is BindingState.bound:
@@ -450,9 +447,8 @@ class Target:
         for res in reversed(self.resources):
             self.deactivate(res)
 
-    def _class_from_string(self, string):
-        if type(string) is str:
-            try:
-                return self._lookup_table[string]
-            except KeyError:
-                raise KeyError("No such driver/resource/protocol in lookup table, perhaps not bound?")
+    def _class_from_string(self, string: str):
+        try:
+            return self._lookup_table[string]
+        except KeyError:
+            raise KeyError("No such driver/resource/protocol in lookup table, perhaps not bound?")

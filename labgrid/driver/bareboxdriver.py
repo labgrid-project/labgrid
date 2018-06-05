@@ -2,7 +2,6 @@
 import logging
 import re
 import shlex
-from time import sleep
 
 import attr
 from pexpect import TIMEOUT
@@ -10,10 +9,9 @@ from pexpect import TIMEOUT
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..step import step
-from ..util import gen_marker, Timeout
+from ..util import gen_marker
 from .common import Driver
 from .commandmixin import CommandMixin
-from .exception import ExecutionError
 
 
 @target_factory.reg_driver
@@ -32,7 +30,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     autoboot = attr.ib(default="stop autoboot", validator=attr.validators.instance_of(str))
     interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
     startstring = attr.ib(default=r"[\n]barebox 20\d+", validator=attr.validators.instance_of(str))
-    bootstring = attr.ib(default="Linux version \d", validator=attr.validators.instance_of(str))
+    bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -60,7 +58,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     @Driver.check_active
     @step(args=['cmd'])
-    def run(self, cmd: str, *, step, timeout: int = 30):
+    def run(self, cmd: str, *, step, timeout: int = 30):  # pylint: disable=unused-argument
         """
         Runs the specified command on the shell and returns the output.
 
@@ -89,8 +87,8 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             # Get exit code
             exitcode = int(match.group(2))
             return (data, [], exitcode)
-        else:
-            return None
+
+        return None
 
     @Driver.check_active
     @step()

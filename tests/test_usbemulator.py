@@ -1,5 +1,3 @@
-import pytest
-
 from labgrid.driver.fake import FakeCommandDriver, FakeFileTransferDriver
 from labgrid.external import USBStick
 

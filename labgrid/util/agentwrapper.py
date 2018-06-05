@@ -3,7 +3,6 @@ import hashlib
 import json
 import os.path
 import subprocess
-import time
 
 def b2s(b):
     return base64.b85encode(b).decode('ascii')
@@ -84,4 +83,3 @@ class AgentWrapper:
         self.agent.stdin.flush()
         self.agent.wait()
         self.agent = None
-

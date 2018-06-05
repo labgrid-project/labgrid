@@ -12,7 +12,7 @@ class MediaFileProvider(FileProvider):
         group[remote_path] = local_path
 
     def get(self, name):
-        return self.groups[name]
+        return self.groups[name]  # pylint: disable=unsubscriptable-object
 
     def list(self):
         return list(self.groups.keys())

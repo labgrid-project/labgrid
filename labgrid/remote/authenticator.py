@@ -1,16 +1,12 @@
-import os
 from pprint import pprint
-
 from twisted.internet.defer import inlineCallbacks
-
 from autobahn.twisted.wamp import ApplicationSession
-from autobahn.wamp.exception import ApplicationError
 
 
 class AuthenticatorSession(ApplicationSession):
     @inlineCallbacks
     def onJoin(self, details):
-        def authenticate(realm, authid, details):
+        def authenticate(realm, authid, details):  # pylint: disable=unused-argument
             pprint(details)
             principal = {'role': 'public', 'extra': {}}
             return principal

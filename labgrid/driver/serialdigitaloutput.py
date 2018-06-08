@@ -1,18 +1,10 @@
-import shlex
-import subprocess
-import time
-from importlib import import_module
-import serial
-
 import attr
 
 from ..factory import target_factory
 from ..protocol import DigitalOutputProtocol
 from ..step import step
-from ..resource import SerialPort
 from .common import Driver
 from . import SerialDriver
-from .onewiredriver import OneWirePIODriver
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
@@ -31,7 +23,7 @@ class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
     """
 
     bindings = {'serial': SerialDriver}
-    signal= attr.ib(validator=attr.validators.instance_of(str))
+    signal = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -46,10 +38,12 @@ class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
     @Driver.check_active
     @step()
     def get(self):
-        if self.signal ==  "dtr":
+        if self.signal == "dtr":
             return self._p.dtr
         elif self.signal == "rts":
             return self._p.rts
+
+        raise ValueError("Expected signal to be dtr or rts")
 
     @Driver.check_active
     @step()

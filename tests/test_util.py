@@ -30,7 +30,7 @@ def test_filter_dict():
 
     with pytest.warns(None) as record:
         d_filtered = filter_dict(d_orig, A)
-    assert len(record) == 0
+    assert not record
     assert d_filtered is not d_orig
     assert d_filtered == {'foo': 1}
 

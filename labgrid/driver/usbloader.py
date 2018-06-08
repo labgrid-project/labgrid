@@ -1,7 +1,7 @@
 # pylint: disable=no-member
-import attr
 import subprocess
 import os.path
+import attr
 
 from ..factory import target_factory
 from ..protocol import BootstrapProtocol
@@ -9,7 +9,6 @@ from ..resource.remote import NetworkMXSUSBLoader, NetworkIMXUSBLoader
 from ..resource.udev import MXSUSBLoader, IMXUSBLoader
 from ..step import step
 from .common import Driver, check_file
-from .exception import ExecutionError
 
 
 @target_factory.reg_driver

@@ -62,7 +62,12 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
             self._child.kill()
             outs, errs = self._child.communicate()
 
-    def _read(self, size: int=1024, timeout: int=0):
+        if outs:
+            self.logger.info("child stdout while closing: %s", outs)
+        if errs:
+            self.logger.warning("child error while closing: %s", errs)
+
+    def _read(self, size: int = 1024, timeout: int = 0):
         """
         Reads 'size' bytes from the serialport
 
@@ -73,8 +78,8 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
             raise ExecutionError("child has vanished")
         if self._poll.poll(timeout):
             return self._child.stdout.read(size)
-        else:
-            return b''
+
+        return b''
 
     def _write(self, data: bytes):
         """

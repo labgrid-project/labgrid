@@ -1,3 +1,4 @@
+# pylint: disable=unsubscriptable-object
 import socket
 import time
 from datetime import datetime
@@ -60,7 +61,7 @@ class ResourceMatch:
 
     @classmethod
     def fromstr(cls, pattern):
-        if not (2 <= pattern.count("/") <= 3):
+        if not 2 <= pattern.count("/") <= 3:
             raise ValueError(
                 "invalid pattern format '{}' (use 'exporter/group/cls/name')".
                 format(pattern)
@@ -80,8 +81,8 @@ class ResourceMatch:
         return result
 
     def ismatch(self, resource_path):
-        exporter, group, cls, name = resource_path
         """Return True if this matches the given resource"""
+        exporter, group, cls, name = resource_path
         if not fnmatchcase(exporter, self.exporter):
             return False
         elif not fnmatchcase(group, self.group):
@@ -90,8 +91,8 @@ class ResourceMatch:
             return False
         elif self.name and not fnmatchcase(name, self.name):
             return False
-        else:
-            return True
+
+        return True
 
 
 @attr.s(cmp=False)
@@ -103,8 +104,8 @@ class Place:
     acquired = attr.ib(default=None)
     acquired_resources = attr.ib(default=attr.Factory(list))
     allowed = attr.ib(default=attr.Factory(set), convert=set)
-    created = attr.ib(default=attr.Factory(lambda: time.time()))
-    changed = attr.ib(default=attr.Factory(lambda: time.time()))
+    created = attr.ib(default=attr.Factory(time.time))
+    changed = attr.ib(default=attr.Factory(time.time))
 
     def asdict(self):
         result = attr.asdict(self)
@@ -116,11 +117,11 @@ class Place:
         print(indent + "aliases: {}".format(', '.join(self.aliases)))
         print(indent + "comment: {}".format(self.comment))
         print(indent + "matches:")
-        for match in self.matches:
+        for match in self.matches:  # pylint: disable=not-an-iterable
             print(indent + "  {}".format(match))
         print(indent + "acquired: {}".format(self.acquired))
         print(indent + "acquired resources:")
-        for resource_path in self.acquired_resources:
+        for resource_path in self.acquired_resources:  # pylint: disable=not-an-iterable
             match = self.getmatch(resource_path)
             if match.rename:
                 print(indent + "  {} → {}".format(
@@ -137,9 +138,11 @@ class Place:
 
         A resource_path has the structure (exporter, group, cls, name).
         """
-        for match in self.matches:
+        for match in self.matches:  # pylint: disable=not-an-iterable
             if match.ismatch(resource_path):
                 return match
+
+        return None
 
     def hasmatch(self, resource_path):
         """Return True if this place as a ResourceMatch object for the given resource path.

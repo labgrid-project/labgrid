@@ -14,7 +14,6 @@ from ..resource.udev import USBPowerPort
 from ..step import step
 from .common import Driver
 from .exception import ExecutionError
-from .onewiredriver import OneWirePIODriver
 
 
 @attr.s(cmp=False)
@@ -114,12 +113,12 @@ class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     @Driver.check_active
     @step()
     def on(self):
-        self.backend.set(self.port.host, self.port.index, True)
+        self.backend.power_set(self.port.host, self.port.index, True)
 
     @Driver.check_active
     @step()
     def off(self):
-        self.backend.set(self.port.host, self.port.index, False)
+        self.backend.power_set(self.port.host, self.port.index, False)
 
     @Driver.check_active
     @step()
@@ -130,7 +129,7 @@ class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 
     @Driver.check_active
     def get(self):
-        return self.backend.get(self.port.host, self.port.index)
+        return self.backend.power_get(self.port.host, self.port.index)
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
@@ -222,11 +221,11 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 
     def _switch(self, cmd):
         cmd = self.hub.command_prefix + [
-                self.tool,
-                "-l", self.hub.path,
-                "-p", str(self.hub.index),
-                "-r", "100", # use 100 retries for now
-                "-a", cmd,
+            self.tool,
+            "-l", self.hub.path,
+            "-p", str(self.hub.index),
+            "-r", "100", # use 100 retries for now
+            "-a", cmd,
         ]
         subprocess.check_call(cmd)
 
@@ -250,9 +249,9 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     @Driver.check_active
     def get(self):
         cmd = self.hub.command_prefix + [
-                self.tool,
-                "-l", self.hub.path,
-                "-p", str(self.hub.index),
+            self.tool,
+            "-l", self.hub.path,
+            "-p", str(self.hub.index),
         ]
         output = subprocess.check_output(cmd)
         for line in output.splitlines():

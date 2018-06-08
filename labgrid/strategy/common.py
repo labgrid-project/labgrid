@@ -1,6 +1,6 @@
 import attr
 
-from ..binding import BindingError, BindingMixin
+from ..binding import BindingError
 from ..driver import Driver
 
 

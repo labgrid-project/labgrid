@@ -12,7 +12,6 @@ from ..util import gen_marker
 from ..step import step
 from .common import Driver
 from .commandmixin import CommandMixin
-from .exception import ExecutionError
 
 
 @target_factory.reg_driver
@@ -29,6 +28,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         password_prompt (str): string to detect the password prompt
         boot_expression (str): string to search for on UBoot start
         bootstring (str): string that indicates that the Kernel is booting
+        login_timeout (int): optional, timeout for login prompt detection 
 
     """
     bindings = {"console": ConsoleProtocol, }
@@ -39,6 +39,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     password_prompt = attr.ib(default="enter Password:", validator=attr.validators.instance_of(str))
     boot_expression = attr.ib(default=r"U-Boot 20\d+", validator=attr.validators.instance_of(str))
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
+    login_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -81,7 +82,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             # Remove VT100 Codes and split by newline
             data = self.re_vt100.sub(
                 '', before.decode('utf-8'), count=1000000
-            ).replace("\r","").split("\n")
+            ).replace("\r", "").split("\n")
             self.logger.debug("Received Data: %s", data)
             # Remove first element, the invoked cmd
             data = data[data.index(marker) + 1:]
@@ -89,8 +90,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             exitcode = int(data[-1])
             del data[-1]
             return (data, [], exitcode)
-        else:
-            return None
+
+        return None
 
     @Driver.check_active
     def run(self, cmd, timeout=None): # pylint: disable=unused-argument
@@ -144,7 +145,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """Await autoboot line and stop it to get to the prompt, optionally
         enter the password.
         """
-        self.console.expect(self.boot_expression)
+        self.console.expect(self.boot_expression, timeout=self.login_timeout)
         index, _, _, _ = self.console.expect(
             [self.prompt, "stop autoboot", self.password_prompt]
         )

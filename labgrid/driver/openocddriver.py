@@ -1,7 +1,7 @@
 # pylint: disable=no-member
-import attr
 import subprocess
 import os.path
+import attr
 
 from ..factory import target_factory
 from ..protocol import BootstrapProtocol
@@ -9,7 +9,6 @@ from ..resource.remote import NetworkAlteraUSBBlaster
 from ..resource.udev import AlteraUSBBlaster
 from ..step import step
 from .common import Driver, check_file
-from .exception import ExecutionError
 
 
 @target_factory.reg_driver
@@ -20,8 +19,14 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
     }
 
     config = attr.ib(validator=attr.validators.instance_of(str))
-    search = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
-    image = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    search = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+    image = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

@@ -40,7 +40,7 @@ class Steps:
         for subscriber in self._subscribers:
             try:
                 subscriber(event)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 warnings.warn("unhandled exception during event notification: {}".format(e))
 
 steps = Steps()
@@ -67,7 +67,7 @@ class StepEvent:
         self.ts = None
         self.step = None
         self.data = None
-        self.resource = resource
+        self.resource = None
         self.stream = None
 
     def merge(self, other):
@@ -129,8 +129,8 @@ class Step:
             return 0.0
         elif self._stop_ts is None:
             return monotonic() - self._start_ts
-        else:
-            return self._stop_ts - self._start_ts
+
+        return self._stop_ts - self._start_ts
 
     @property
     def status(self):
@@ -138,8 +138,8 @@ class Step:
             return 'new'
         elif self._stop_ts is None:
             return 'active'
-        else:
-            return 'done'
+
+        return 'done'
 
     @property
     def is_active(self):
@@ -182,7 +182,7 @@ class Step:
             warnings.warn("__del__ called before {} was done".format(step))
 
 
-def step(*, title=None, args=[], result=False, tag=None):
+def step(*, title=None, args=[], result=False, tag=None):  # pylint: disable=unused-argument
     def decorator(func):
         # resolve default title
         nonlocal title
@@ -193,10 +193,7 @@ def step(*, title=None, args=[], result=False, tag=None):
         @wraps(func)
         def wrapper(*_args, **_kwargs):
             bound = signature.bind_partial(*_args, **_kwargs)
-            # TODO: replace this by bound.apply_defaults() when deprecating
-            # python3.4 support
-            for name, param in signature.parameters.items():
-                bound.arguments.setdefault(name, param.default)
+            bound.apply_defaults()
             source = bound.arguments.get('self')
             step = steps.get_new(title, tag, source)
             # optionally pass the step object

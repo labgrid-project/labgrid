@@ -9,15 +9,15 @@ def test_sleep(command):
     stdout, stderr, returncode = command.run('true')
     elapsed_true = monotonic() - timestamp
     assert returncode == 0
-    assert len(stdout) == 0
-    assert len(stderr) == 0
+    assert not stdout
+    assert not stderr
 
     timestamp = monotonic()
     stdout, stderr, returncode = command.run('sleep 1')
     elapsed_sleep = monotonic() - timestamp
     assert returncode == 0
-    assert len(stdout) == 0
-    assert len(stderr) == 0
+    assert not stdout
+    assert not stderr
 
     assert elapsed_true < elapsed_sleep
 

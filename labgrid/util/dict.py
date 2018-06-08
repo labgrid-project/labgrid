@@ -34,5 +34,6 @@ def filter_dict(d, cls, warn=False):
     if warn:
         remove = set(d) - fields
         for k in sorted(remove):
-            warnings.warn("unsupported attribute '{}' with value '{}' for class '{}'".format(k, d[k], cls.__name__), stacklevel=2)
+            warnings.warn("unsupported attribute '{}' with value '{}' for class '{}'".format(
+                k, d[k], cls.__name__), stacklevel=2)
     return {k: v for k, v in d.items() if k in fields}

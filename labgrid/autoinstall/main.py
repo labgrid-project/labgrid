@@ -47,7 +47,7 @@ class Handler(multiprocessing.Process):
         context['log'] = self.log.getChild('setup')
         setup = self._get_function('setup', self.context)
         if setup is None:
-            def setup():
+            def setup():  # pylint: disable=function-redefined
                 pass
         return setup
 
@@ -62,7 +62,7 @@ class Handler(multiprocessing.Process):
         if not cls:
             return None
 
-        return self.target.get_resource(self.context[cls], await=False)
+        return self.target.get_resource(self.context[cls], wait_avail=False)
 
     def run(self):
         self.log = logging.getLogger(self.name)
@@ -71,7 +71,9 @@ class Handler(multiprocessing.Process):
         try:
             self.target = self.env.get_target(self.name)
             self.context['target'] = self.target
-        except:
+            if self.target is None:
+                raise KeyError
+        except Exception:  # pylint: disable=broad-except
             self.log.exception("target creation failed")
             return
 
@@ -88,7 +90,7 @@ class Handler(multiprocessing.Process):
         try:
             if self.initial_resource:
                 self.log.info("waiting until %s is available",
-                        self.initial_resource.display_name)
+                              self.initial_resource.display_name)
                 while True:
                     self.target.update_resources()
                     if self.initial_resource.avail:
@@ -99,13 +101,13 @@ class Handler(multiprocessing.Process):
             self.target.update_resources()
             result = self.handler()
             if result is not None:
-                self.log.warn("unexpected return value from handler: %s",
-                        repr(result))
+                self.log.warning("unexpected return value from handler: %s",
+                                 repr(result))
             self.log.info("completed handler")
 
             if self.initial_resource:
                 self.log.info("waiting until %s is unavailable",
-                    self.initial_resource.display_name)
+                              self.initial_resource.display_name)
                 while True:
                     self.target.update_resources()
                     if not self.initial_resource.avail:
@@ -115,13 +117,13 @@ class Handler(multiprocessing.Process):
         except NoResourceFoundError as e:
             if e.filter and len(e.filter) > 1:
                 self.log.warning("resources %s not found, restarting",
-                        e.filter)
+                                 e.filter)
             elif e.filter:
                 self.log.warning("resource %s not found, restarting",
-                        next(iter(e.filter)))
+                                 next(iter(e.filter)))
             else:
                 self.log.warning("resource not found, restarting")
-        except:
+        except Exception:  # pylint: disable=broad-except
             self.log.exception("handler failed")
             return False
 
@@ -142,22 +144,22 @@ class Manager:
     def configure(self):
         if not 'autoinstall' in self.env.config.data:
             self.log.error("no 'autoinstall' section found in '%s'",
-                    self.env.config_file)
+                           self.env.config_file)
             return False
 
         if not 'handler' in self.env.config.data['autoinstall']:
             self.log.error("no 'handler' definition found in '%s'",
-                    self.env.config_file)
+                           self.env.config_file)
             return False
 
         self.handlers = {}
         for target_name in self.config.data.get('targets', {}).keys():
             self.handlers[target_name] = Handler(self.env, self.args,
-                    target_name)
+                                                 target_name)
 
         if not self.handlers:
             self.log.error("no targets found in '%s'",
-                    self.env.config_file)
+                           self.env.config_file)
             return False
 
         return True

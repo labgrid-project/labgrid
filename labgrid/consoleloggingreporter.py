@@ -1,8 +1,8 @@
 import os
 import sys
+from datetime import datetime
 
 from .step import steps
-from datetime import datetime
 
 
 class ConsoleLoggingReporter:
@@ -52,9 +52,8 @@ class ConsoleLoggingReporter:
                 name = 'console_{}'.format(source.target.name)
             name = os.path.join(self.logpath, name)
             try:
-                log = self._logcache[source] = open(
-                        name, mode='ab', buffering=0
-                )
+                log = self._logcache[source] = open(name, mode='ab',
+                                                    buffering=0)
             except PermissionError:
                 print("failed to open log file {}".format(name), file=sys.stderr)
                 log = self._logcache[source] = None

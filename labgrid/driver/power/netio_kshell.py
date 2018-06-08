@@ -4,7 +4,7 @@ import re
 import telnetlib
 
 
-def set(host, index, value):
+def power_set(host, index, value):
     index = int(index)
     assert 1 <= index <= 4
     value = "1" if value else "0"
@@ -18,7 +18,7 @@ def set(host, index, value):
     tn.close()
 
 
-def get(host, index):
+def power_get(host, index):
     index = int(index)
     assert 1 <= index <= 4
     tn = telnetlib.Telnet(host, 1234, 1)
@@ -27,7 +27,7 @@ def get(host, index):
     tn.read_until(b"250 OK\r\n", 0.5)
     tn.write("port {}\n".format(index).encode())
     read = tn.read_until(b"\r\n", 0.5)
-    m = re.match(".*250 (\d).*", read.decode())
+    m = re.match(r".*250 (\d).*", read.decode())
     if m is None:
         raise Exception("NetIO: could not match response")
     value = m.group(1)

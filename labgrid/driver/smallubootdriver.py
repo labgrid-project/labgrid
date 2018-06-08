@@ -1,16 +1,9 @@
-import logging
-import re
-
 import attr
-from pexpect import TIMEOUT
 
 from ..factory import target_factory
-from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..util import gen_marker
 from ..step import step
 from .common import Driver
-from .commandmixin import CommandMixin
-from .exception import ExecutionError
 
 from .ubootdriver import UBootDriver
 
@@ -97,7 +90,7 @@ class SmallUBootDriver(UBootDriver):
 
         data = self.re_vt100.sub(
             '', before.decode('utf-8'), count=1000000
-        ).replace("\r","").split("\n")
+        ).replace("\r", "").split("\n")
         data = data[1:]
         data = data[data.index("Unknown command 'echo{}' - try 'help'".format(marker)) +1 :]
         data = data[:data.index("Unknown command 'echo{}' - try 'help'".format(marker))]

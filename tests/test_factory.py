@@ -3,7 +3,6 @@ from collections import OrderedDict
 import pytest
 
 from labgrid import Target, target_factory
-from labgrid.driver.fake import FakeConsoleDriver
 from labgrid.exceptions import InvalidConfigError
 from labgrid.resource import SerialPort
 from labgrid.util.yaml import load

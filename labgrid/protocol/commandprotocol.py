@@ -31,4 +31,3 @@ class CommandProtocol(abc.ABC):
         Wait for a shell command to return with the specified output
         """
         raise NotImplementedError
-

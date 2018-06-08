@@ -756,6 +756,8 @@ Arguments:
   - boot_expression (str): optional, regex to match the uboot start string
     defaults to "U-Boot 20\d+"
   - bootstring (str): optional, regex to match on Linux Kernel boot
+  - login_timeout (int): optional, timeout for login prompt detection in
+    seconds (default 60)
 
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~
@@ -832,6 +834,8 @@ Arguments:
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
   - startstring (regex, default="[\n]barebox 20\d+"): string that indicates that Barebox is starting
   - bootstring (regex, default="Linux version \d"): succesfully jumped into the kernel 
+  - password (str): optional, password to use for access to the shell
+  - login_timeout (int): optional, timeout for access to the shell
 
 ExternalConsoleDriver
 ~~~~~~~~~~~~~~~~~~~~~

@@ -24,7 +24,7 @@ class Status(enum.Enum):
 @attr.s(cmp=False)
 class BareboxRebootStrategy(Strategy):
     """A Strategy to switch to barebox or shell and back via reboot
-    
+
     In your env.yaml, simply instantiate the strategy without parameters, for example:
 
     .. code-block:: yaml

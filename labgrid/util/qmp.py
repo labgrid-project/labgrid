@@ -1,13 +1,12 @@
 import json
-import socket
-import attr
 import logging
-from os import close
+import attr
+
 
 @attr.s(cmp=False)
 class QMPMonitor:
     monitor_out = attr.ib()
-    monitor_in  = attr.ib()
+    monitor_in = attr.ib()
 
     def __attrs_post_init__(self):
         self.logger = logging.getLogger("{}:".format(self))
@@ -28,7 +27,7 @@ class QMPMonitor:
 
     def _read_parse_json(self):
         line = self.monitor_out.readline().decode('utf-8')
-        self.logger.debug("Received line:{}".format(line))
+        self.logger.debug("Received line: %s", line)
         return json.loads(line)
 
     def execute(self, command):

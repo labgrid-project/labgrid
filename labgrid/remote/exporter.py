@@ -1,5 +1,6 @@
 """The remote.exporter module exports resources to the coordinator and makes
 them available to other clients on the same coordinator"""
+# pylint: disable=unsupported-assignment-operation
 import argparse
 import asyncio
 import logging
@@ -9,9 +10,7 @@ import traceback
 import subprocess
 from socket import gethostname, socket, AF_INET, SOCK_STREAM
 from contextlib import closing
-
 import attr
-
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .config import ResourceConfig
@@ -20,7 +19,7 @@ from .common import ResourceEntry, enable_tcp_nodelay
 try:
     import pkg_resources
     __version__ = pkg_resources.get_distribution('labgrid').version
-except:
+except pkg_resources.DistributionNotFound:
     __version__ = "unknown"
 
 def get_free_port():
@@ -83,7 +82,7 @@ class ResourceExport(ResourceEntry):
         """
         start_params = self._get_start_params()
         if self.start_params != start_params:
-            self.logger.info("restart needed ({} -> {})".format(self.start_params, start_params))
+            self.logger.info("restart needed (%s -> %s)", self.start_params, start_params)
             return True
         return False
 
@@ -103,7 +102,7 @@ class ResourceExport(ResourceEntry):
             if self.local.avail and self.need_restart():
                 self.stop()
                 self.start()
-            self.data['params'].update(params)
+            self.data['params'].update(params)  # pylint: disable=unsubscriptable-object
             dirty = True
         return dirty
 
@@ -116,8 +115,7 @@ class USBSerialPortExport(ResourceExport):
         super().__attrs_post_init__()
         self.data['cls'] = "NetworkSerialPort"
         from ..resource.udev import USBSerialPort
-        self.local = USBSerialPort(target=None, name=None,
-                **self.local_params)
+        self.local = USBSerialPort(target=None, name=None, **self.local_params)
         self.child = None
         self.port = None
 
@@ -155,8 +153,7 @@ class USBSerialPortExport(ResourceExport):
                 self.port, start_params['path']
             ),
         ])
-        self.logger.info("started ser2net for {} on port {}".format(
-            start_params['path'], self.port))
+        self.logger.info("started ser2net for %s on port %d", start_params['path'], self.port)
 
     def _stop(self, start_params):
         """Stop spawned subprocess"""
@@ -170,8 +167,7 @@ class USBSerialPortExport(ResourceExport):
         except subprocess.TimeoutExpired:
             child.kill()
             child.wait(1.0)
-        self.logger.info("stopped ser2net for {} on port {}".format(
-            start_params['path'], self.port))
+        self.logger.info("stopped ser2net for %s on port %d", start_params['path'], self.port)
 
 
 exports["USBSerialPort"] = USBSerialPortExport
@@ -184,8 +180,7 @@ class USBEthernetExport(ResourceExport):
         super().__attrs_post_init__()
         from ..resource.udev import USBEthernetInterface
         self.data['cls'] = "EthernetInterface"
-        self.local = USBEthernetInterface(target=None, name=None,
-                **self.local_params)
+        self.local = USBEthernetInterface(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
@@ -208,8 +203,7 @@ class USBGenericExport(ResourceExport):
         self.data['cls'] = "Network{}".format(self.cls)
         from ..resource import udev
         local_cls = getattr(udev, local_cls_name)
-        self.local = local_cls(target=None, name=None,
-                **self.local_params)
+        self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
@@ -302,8 +296,7 @@ class EthernetPortExport(ResourceExport):
         super().__attrs_post_init__()
         from ..resource.ethernetport import SNMPEthernetPort
         self.data['cls'] = "EthernetPort"
-        self.local = SNMPEthernetPort(target=None, name=None,
-                **self.local_params)
+        self.local = SNMPEthernetPort(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
@@ -338,8 +331,7 @@ class ExporterSession(ApplicationSession):
         at the moment, authentication is not supported yet"""
         return "dummy-ticket"
 
-    @asyncio.coroutine
-    def onJoin(self, details):
+    async def onJoin(self, details):
         """On successful join:
         - export available resources
         - bail out if we are unsuccessful
@@ -354,11 +346,11 @@ class ExporterSession(ApplicationSession):
                     if params is None:
                         continue
                     cls = params.pop('cls', resource_name)
-                    yield from self.add_resource(
+                    await self.add_resource(
                         group_name, resource_name, cls, params
                     )
 
-        except:
+        except Exception:  # pylint: disable=broad-except
             traceback.print_exc()
             self.loop.stop()
             return
@@ -366,54 +358,50 @@ class ExporterSession(ApplicationSession):
         self.poll_task = self.loop.create_task(self.poll())
 
         prefix = 'org.labgrid.exporter.{}'.format(self.name)
-        yield from self.register(self.acquire, '{}.acquire'.format(prefix))
-        yield from self.register(self.release, '{}.release'.format(prefix))
-        yield from self.register(self.version, '{}.version'.format(prefix))
+        await self.register(self.acquire, '{}.acquire'.format(prefix))
+        await self.register(self.release, '{}.release'.format(prefix))
+        await self.register(self.version, '{}.version'.format(prefix))
 
-    @asyncio.coroutine
-    def onLeave(self, details):
+    async def onLeave(self, details):
         """Cleanup after leaving the coordinator connection"""
         if self.poll_task:
             self.poll_task.cancel()
-            yield from asyncio.wait([self.poll_task])
+            await asyncio.wait([self.poll_task])
         super().onLeave(details)
 
-    @asyncio.coroutine
-    def onDisconnect(self):
+    async def onDisconnect(self):
         print("connection lost")
         global reexec
         reexec = True
         if self.poll_task:
             self.poll_task.cancel()
-            yield from asyncio.wait([self.poll_task])
-            yield from asyncio.sleep(0.5) # give others a chance to clean up
+            await asyncio.wait([self.poll_task])
+            await asyncio.sleep(0.5) # give others a chance to clean up
         self.loop.stop()
 
-    @asyncio.coroutine
-    def acquire(self, group_name, resource_name):
-        resource = self.groups[group_name][resource_name]
+    async def acquire(self, group_name, resource_name):
+        # TODO: perform local actions when a resource is acquired
+        #resource = self.groups[group_name][resource_name]
         #resource.acquire()
-        yield from self.update_resource(group_name, resource_name)
+        await self.update_resource(group_name, resource_name)
 
-    @asyncio.coroutine
-    def release(self, group_name, resource_name):
-        resource = self.groups[group_name][resource_name]
+    async def release(self, group_name, resource_name):
+        # TODO: perform local actions when a resource is released
+        #resource = self.groups[group_name][resource_name]
         #resource.release()
-        yield from self.update_resource(group_name, resource_name)
+        await self.update_resource(group_name, resource_name)
 
-    @asyncio.coroutine
-    def version(self):
+    async def version(self):
         return __version__
 
-    @asyncio.coroutine
-    def _poll_step(self):
+    async def _poll_step(self):
         for group_name, group in self.groups.items():
             for resource_name, resource in group.items():
                 if not isinstance(resource, ResourceExport):
                     continue
                 try:
                     changed = resource.poll()
-                except:
+                except Exception:  # pylint: disable=broad-except
                     print("Exception while polling {}".format(resource), file=sys.stderr)
                     traceback.print_exc()
                     continue
@@ -421,24 +409,22 @@ class ExporterSession(ApplicationSession):
                     # resource has changed
                     data = resource.asdict()
                     print(data)
-                    yield from self.call(
+                    await self.call(
                         'org.labgrid.coordinator.set_resource', group_name,
                         resource_name, data
                     )
 
-    @asyncio.coroutine
-    def poll(self):
+    async def poll(self):
         while True:
             try:
-                yield from asyncio.sleep(1.0)
-                yield from self._poll_step()
+                await asyncio.sleep(1.0)
+                await self._poll_step()
             except asyncio.CancelledError:
                 break
-            except:
+            except Exception:  # pylint: disable=broad-except
                 traceback.print_exc()
 
-    @asyncio.coroutine
-    def add_resource(self, group_name, resource_name, cls, params):
+    async def add_resource(self, group_name, resource_name, cls, params):
         """Add a resource to the exporter and update status on the coordinator"""
         print(
             "add resource {}/{}: {}/{}".
@@ -456,15 +442,14 @@ class ExporterSession(ApplicationSession):
             group[resource_name] = export_cls(config, host=self.hostname)
         else:
             group[resource_name] = export_cls(config)
-        yield from self.update_resource(group_name, resource_name)
+        await self.update_resource(group_name, resource_name)
 
-    @asyncio.coroutine
-    def update_resource(self, group_name, resource_name):
+    async def update_resource(self, group_name, resource_name):
         """Update status on the coordinator"""
         resource = self.groups[group_name][resource_name]
         data = resource.asdict()
         print(data)
-        yield from self.call(
+        await self.call(
             'org.labgrid.coordinator.set_resource', group_name, resource_name,
             data
         )
@@ -511,7 +496,7 @@ def main():
 
     args = parser.parse_args()
 
-    level='debug' if args.debug else 'info'
+    level = 'debug' if args.debug else 'info'
 
     extra = {
         'name': args.name or gethostname(),
@@ -529,7 +514,8 @@ def main():
     print("resource config file: {}".format(extra['resources']))
 
     extra['loop'] = loop = asyncio.get_event_loop()
-    #loop.set_debug(True)
+    if args.debug:
+        loop.set_debug(True)
     runner = ApplicationRunner(url=crossbar_url, realm=crossbar_realm, extra=extra)
     runner.run(ExporterSession, log_level=level)
     if reexec:

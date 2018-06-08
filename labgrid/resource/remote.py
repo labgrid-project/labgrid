@@ -1,9 +1,9 @@
 import logging
-import attr
 import os
+import attr
 
 from ..factory import target_factory
-from .common import Resource, NetworkResource, ManagedResource, ResourceManager
+from .common import NetworkResource, ManagedResource, ResourceManager
 
 
 @attr.s(cmp=False)
@@ -36,9 +36,11 @@ class RemotePlaceManager(ResourceManager):
         if not self.session:
             self.env = remote_place.target.env
             config = self.env.config
-            self.url = config.get_option('crossbar_url',
+            self.url = config.get_option(
+                'crossbar_url',
                 os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"))
-            self.realm = config.get_option('crossbar_realm',
+            self.realm = config.get_option(
+                'crossbar_realm',
                 os.environ.get("LG_CROSSBAR_REALM", "realm1"))
             self._start()
         place = self.session.get_place(remote_place.name)
@@ -54,9 +56,8 @@ class RemotePlaceManager(ResourceManager):
             if not isinstance(new, ManagedResource):
                 self.unmanaged_resources.append(new)
             expanded.append(new)
-        self.logger.debug("expanded remote resources for place {}: {}".format(
-            remote_place.name, expanded))
-        remote_place.avail=True
+        self.logger.debug("expanded remote resources for place %s: %s", remote_place.name, expanded)
+        remote_place.avail = True
 
     def poll(self):
         import asyncio
@@ -80,9 +81,9 @@ class RemotePlaceManager(ResourceManager):
                 if v_old != v_new:
                     changes.append((k, v_old, v_new))
             if changes:
-                self.logger.debug("changed attributes for {}:".format(resource))
+                self.logger.debug("changed attributes for %s:", resource)
                 for k, v_old, v_new in changes:
-                    self.logger.debug("  {}: {} -> {}".format(k, v_old, v_new))
+                    self.logger.debug("  %s: %s -> %s", k, v_old, v_new)
 
 
 @target_factory.reg_resource
@@ -128,12 +129,6 @@ class NetworkMXSUSBLoader(RemoteUSBResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
-@target_factory.reg_resource
-@attr.s(cmp=False)
-class NetworkMXSUSBLoader(RemoteUSBResource):
-    def __attrs_post_init__(self):
-        self.timeout = 10.0
-        super().__attrs_post_init__()
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
@@ -141,6 +136,7 @@ class NetworkAlteraUSBBlaster(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
+
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
@@ -152,6 +148,7 @@ class NetworkSigrokUSBDevice(RemoteUSBResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
+
 @target_factory.reg_resource
 @attr.s(cmp=False)
 class NetworkUSBMassStorage(RemoteUSBResource):
@@ -159,6 +156,7 @@ class NetworkUSBMassStorage(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
+
 
 @target_factory.reg_resource
 @attr.s(cmp=False)
@@ -169,6 +167,7 @@ class NetworkUSBSDMuxDevice(RemoteUSBResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
+
 @target_factory.reg_resource
 @attr.s(cmp=False)
 class NetworkUSBPowerPort(RemoteUSBResource):
@@ -178,6 +177,7 @@ class NetworkUSBPowerPort(RemoteUSBResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
+
 @target_factory.reg_resource
 @attr.s(cmp=False)
 class NetworkUSBVideo(RemoteUSBResource):
@@ -185,6 +185,7 @@ class NetworkUSBVideo(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
+
 
 @target_factory.reg_resource
 @attr.s(cmp=False)

@@ -1,8 +1,7 @@
 # pylint: disable=no-member
-import attr
-import subprocess
 from importlib import import_module
 from decimal import Decimal
+import attr
 
 from .common import Driver
 from ..factory import target_factory
@@ -50,7 +49,7 @@ class USBTMCDriver(Driver):
         self.backend = None
 
     @Driver.check_active
-    def command(self, cmd, binary=False):
+    def command(self, cmd):
         assert isinstance(cmd, str)
         cmd = b2s(cmd.encode('ASCII')+b'\n')
         self.wrapper.usbtmc(self.index, cmd, read=False)
@@ -65,9 +64,9 @@ class USBTMCDriver(Driver):
             digits = int(res[1:2], 10)
             count = int(res[2:2+digits], 10)
             return res[2+digits:2+digits+count]
-        else:
-            assert res[-1:] == b'\n'
-            return res[:-1].decode('ASCII')
+
+        assert res[-1:] == b'\n'
+        return res[:-1].decode('ASCII')
 
     @Driver.check_active
     def identify(self):

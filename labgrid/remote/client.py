@@ -708,34 +708,38 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         args = self.args.filename
         target = self._get_target(place)
+        from ..protocol.bootstrapprotocol import BootstrapProtocol
         from ..driver.usbloader import IMXUSBDriver, MXSUSBDriver
         from ..driver.openocddriver import OpenOCDDriver
         from ..resource.remote import (NetworkMXSUSBLoader, NetworkIMXUSBLoader,
                                        NetworkAlteraUSBBlaster)
         drv = None
-        for resource in target.resources:
-            if isinstance(resource, NetworkIMXUSBLoader):
-                try:
-                    drv = target.get_driver(IMXUSBDriver)
-                except NoDriverFoundError:
-                    drv = IMXUSBDriver(target, name=None)
-                drv.loader.timeout = self.args.wait
-                break
-            elif isinstance(resource, NetworkMXSUSBLoader):
-                try:
-                    drv = target.get_driver(MXSUSBDriver)
-                except NoDriverFoundError:
-                    drv = MXSUSBDriver(target, name=None)
-                drv.loader.timeout = self.args.wait
-                break
-            elif isinstance(resource, NetworkAlteraUSBBlaster):
-                args = dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
-                try:
-                    drv = target.get_driver(OpenOCDDriver)
-                except NoDriverFoundError:
-                    drv = OpenOCDDriver(target, name=None, **args)
-                drv.interface.timeout = self.args.wait
-                break
+        try:
+            drv = target.get_driver(BootstrapProtocol)
+        except NoDriverFoundError:
+            for resource in target.resources:
+                if isinstance(resource, NetworkIMXUSBLoader):
+                    try:
+                        drv = target.get_driver(IMXUSBDriver)
+                    except NoDriverFoundError:
+                        drv = IMXUSBDriver(target, name=None)
+                    drv.loader.timeout = self.args.wait
+                    break
+                elif isinstance(resource, NetworkMXSUSBLoader):
+                    try:
+                        drv = target.get_driver(MXSUSBDriver)
+                    except NoDriverFoundError:
+                        drv = MXSUSBDriver(target, name=None)
+                    drv.loader.timeout = self.args.wait
+                    break
+                elif isinstance(resource, NetworkAlteraUSBBlaster):
+                    args = dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
+                    try:
+                        drv = target.get_driver(OpenOCDDriver)
+                    except NoDriverFoundError:
+                        drv = OpenOCDDriver(target, name=None, **args)
+                    drv.interface.timeout = self.args.wait
+                    break
         if not drv:
             raise UserError("target has no compatible resource available")
         target.activate(drv)

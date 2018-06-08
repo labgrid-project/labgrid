@@ -15,7 +15,8 @@ class Agent:
     def __init__(self):
         self.methods = {}
 
-    def _send(self, data):
+    @staticmethod
+    def _send(data):
         sys.stdout.write(json.dumps(data)+'\n')
         sys.stdout.flush()
 
@@ -31,7 +32,7 @@ class Agent:
             try:
                 request = json.loads(line)
             except json.JSONDecodeError:
-                self._send({'error': 'request parsing failed'})
+                Agent._send({'error': 'request parsing failed'})
                 break
 
             if request.get('close', False):
@@ -42,9 +43,9 @@ class Agent:
             kwargs = request['kwargs']
             try:
                 response = self.methods[name](*args, **kwargs)
-                self._send({'result': response})
+                Agent._send({'result': response})
             except Exception as e:  # pylint: disable=broad-except
-                self._send({'exception': repr(e)})
+                Agent._send({'exception': repr(e)})
                 break
 
 def handle_test(*args, **kwargs):  # pylint: disable=unused-argument

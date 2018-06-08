@@ -20,7 +20,8 @@ class TargetFactory:
         self.drivers[cls.__name__] = cls
         return cls
 
-    def _convert_to_named_list(self, data):
+    @staticmethod
+    def _convert_to_named_list(data):
         """Convert a tree of resources or drivers to a named list.
 
         When using named resources or drivers, the config file uses a list of
@@ -84,12 +85,12 @@ class TargetFactory:
     def normalize_config(self, config):
         resources = {}
         drivers = {}
-        for item in self._convert_to_named_list(config.get('resources', {})):
+        for item in TargetFactory._convert_to_named_list(config.get('resources', {})):
             resource = item.pop('cls')
             name = item.pop('name', None)
             args = item # remaining args
             resources.setdefault(resource, {})[name] = (args, )
-        for item in self._convert_to_named_list(config.get('drivers', {})):
+        for item in TargetFactory._convert_to_named_list(config.get('drivers', {})):
             driver = item.pop('cls')
             name = item.pop('name', None)
             bindings = item.pop('bindings', {})
@@ -129,12 +130,12 @@ class TargetFactory:
         from .target import Target
 
         target = Target(name, env=env)
-        for item in self._convert_to_named_list(config.get('resources', {})):
+        for item in TargetFactory._convert_to_named_list(config.get('resources', {})):
             resource = item.pop('cls')
             name = item.pop('name', None)
             args = item # remaining args
             self.make_resource(target, resource, name, args)
-        for item in self._convert_to_named_list(config.get('drivers', {})):
+        for item in TargetFactory._convert_to_named_list(config.get('drivers', {})):
             driver = item.pop('cls')
             name = item.pop('name', None)
             bindings = item.pop('bindings', {})

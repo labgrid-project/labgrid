@@ -50,7 +50,7 @@ class MXSUSBDriver(Driver, BootstrapProtocol):
 @attr.s(cmp=False)
 class IMXUSBDriver(Driver, BootstrapProtocol):
     bindings = {
-        "loader": {IMXUSBLoader, NetworkIMXUSBLoader},
+        "loader": {IMXUSBLoader, NetworkIMXUSBLoader, MXSUSBLoader, NetworkMXSUSBLoader},
     }
 
     image = attr.ib(default=None)

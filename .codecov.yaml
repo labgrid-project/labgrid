@@ -1,0 +1,3 @@
+coverage:
+  precision: 1
+  range: "50..70"

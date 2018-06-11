@@ -99,9 +99,9 @@ Tests can now run via:
     :alt: build status
     :target: https://travis-ci.org/labgrid-project/labgrid
 
-.. |coverage-status| image:: https://img.shields.io/coveralls/labgrid-project/labgrid/master.svg
+.. |coverage-status| image:: https://codecov.io/gh/labgrid-project/labgrid/branch/master/graph/badge.svg
     :alt: coverage status
-    :target: https://coveralls.io/r/labgrid-project/labgrid
+    :target: https://codecov.io/gh/labgrid-project/labgrid
 
 .. |docs-status| image:: https://readthedocs.org/projects/labgrid/badge/?version=latest
     :alt: documentation status

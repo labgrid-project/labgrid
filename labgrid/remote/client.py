@@ -650,10 +650,11 @@ class ClientSession(ApplicationSession):
             drv.set(False)
 
     def _console(self, place):
+        name = self.args.name
         target = self._get_target(place)
         from ..resource import NetworkSerialPort
         try:
-            resource = target.get_resource(NetworkSerialPort)
+            resource = target.get_resource(NetworkSerialPort, name=name)
         except KeyError:
             print("resource not found")
             return False
@@ -1099,6 +1100,7 @@ def main():
                                       help="connect to the console")
     subparser.add_argument('-l', '--loop', action='store_true',
                            help="keep trying to connect if the console is unavailable")
+    subparser.add_argument('name', help="optional resource name", nargs='?')
     subparser.set_defaults(func=ClientSession.console)
 
     subparser = subparsers.add_parser('fastboot',

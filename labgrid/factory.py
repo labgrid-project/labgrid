@@ -82,7 +82,8 @@ class TargetFactory:
             assert 'cls' in item
         return result
 
-    def normalize_config(self, config):
+    @staticmethod
+    def normalize_config(config):
         resources = {}
         drivers = {}
         for item in TargetFactory._convert_to_named_list(config.get('resources', {})):

@@ -197,7 +197,7 @@ class IMXUSBLoader(USBResource):
     def filter_match(self, device):
         if device.get('ID_VENDOR_ID') != "15a2":
             return False
-        if device.get('ID_MODEL_ID') not in ["0054", "0061", "007d", "003a"]:
+        if device.get('ID_MODEL_ID') not in ["0054", "0061", "0071", "007d", "003a"]:
             return False
         return super().filter_match(device)
 

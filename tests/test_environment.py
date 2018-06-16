@@ -1,4 +1,5 @@
 import pytest
+import warnings
 
 from labgrid import Environment
 from labgrid.exceptions import NoConfigFoundError, InvalidConfigError
@@ -163,3 +164,38 @@ imports:
 
         assert d_a.port is r_a
         assert d_b.port is r_b
+
+    def test_usbserialport_warning(self, tmpdir):
+        p = tmpdir.join("config.yaml")
+        p.write(
+            """
+        targets:
+          test1:
+            resources:
+            - USBSerialPort:
+                port: /dev/ttyS0
+            drivers:
+            - SerialDriver: {}
+        """
+        )
+        e = Environment(str(p))
+        with pytest.warns(UserWarning):
+            t = e.get_target("test1")
+
+    def test_usbserialport_no_warning(self, tmpdir):
+        p = tmpdir.join("config.yaml")
+        p.write(
+            """
+        targets:
+          test1:
+            resources:
+            - USBSerialPort: {}
+            drivers:
+            - SerialDriver: {}
+        """
+        )
+        e = Environment(str(p))
+        with pytest.warns(None) as record:
+            t = e.get_target("test1")
+        for i in record.list:
+            assert i.category != 'UserWarning'

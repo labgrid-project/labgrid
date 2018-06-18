@@ -2,6 +2,7 @@
 import subprocess
 import os.path
 import logging
+from itertools import chain
 import attr
 
 from ..factory import target_factory
@@ -19,7 +20,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         "interface": {AlteraUSBBlaster, NetworkAlteraUSBBlaster},
     }
 
-    config = attr.ib(validator=attr.validators.instance_of(str))
+    config = attr.ib(validator=attr.validators.instance_of((str, list)))
     search = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
@@ -32,14 +33,28 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.logger = logging.getLogger("{}:{}".format(self, self.target))
+        self.config = self.resolve_path_str_or_list(self.config)
+
         # FIXME make sure we always have an environment or config
         if self.target.env:
             self.tool = self.target.env.config.get_tool('openocd') or 'openocd'
-            self.config = self.target.env.config.resolve_path(self.config)
             if self.search:
                 self.search = self.target.env.config.resolve_path(self.search)
         else:
             self.tool = 'openocd'
+
+    def resolve_path_str_or_list(self, path):
+        if isinstance(path, str):
+            if self.target.env:
+                return [self.target.env.config.resolve_path(path)]
+            return [path]
+
+        elif isinstance(path, list):
+            if self.target.env:
+                return [self.target.env.config.resolve_path(p) for p in path]
+            # fall-through
+
+        return path
 
     @Driver.check_active
     @step(args=['filename'])
@@ -47,13 +62,16 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
         filename = os.path.abspath(os.path.expanduser(filename))
-        check_file(self.config, command_prefix=self.interface.command_prefix)
+
         check_file(filename, command_prefix=self.interface.command_prefix)
+        for config in self.config:
+            check_file(config, command_prefix=self.interface.command_prefix)
+
         cmd = self.interface.command_prefix+[self.tool]
         if self.search:
             cmd += ["--search", self.search]
+        cmd += chain.from_iterable(("--file", path) for path in self.config)
         cmd += [
-            "--file", self.config,
             "--command", "'init'",
             "--command", "'bootstrap {}'".format(filename),
             "--command", "'shutdown'",

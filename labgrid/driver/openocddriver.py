@@ -22,8 +22,8 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
 
     config = attr.ib(validator=attr.validators.instance_of((str, list)))
     search = attr.ib(
-        default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(str))
+        default=[],
+        validator=attr.validators.optional(attr.validators.instance_of((str, list)))
     )
     image = attr.ib(
         default=None,
@@ -34,12 +34,11 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         super().__attrs_post_init__()
         self.logger = logging.getLogger("{}:{}".format(self, self.target))
         self.config = self.resolve_path_str_or_list(self.config)
+        self.search = self.resolve_path_str_or_list(self.search)
 
         # FIXME make sure we always have an environment or config
         if self.target.env:
             self.tool = self.target.env.config.get_tool('openocd') or 'openocd'
-            if self.search:
-                self.search = self.target.env.config.resolve_path(self.search)
         else:
             self.tool = 'openocd'
 
@@ -68,8 +67,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
             check_file(config, command_prefix=self.interface.command_prefix)
 
         cmd = self.interface.command_prefix+[self.tool]
-        if self.search:
-            cmd += ["--search", self.search]
+        cmd += chain.from_iterable(("--search", path) for path in self.search)
         cmd += chain.from_iterable(("--file", path) for path in self.config)
         cmd += [
             "--command", "'init'",

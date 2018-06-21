@@ -49,7 +49,7 @@ class GraphStrategy(Strategy):
             state_name = '_'.join(state_name.split('_')[1:])
 
             self.states[state_name] = {
-                'method': method,
+                'method': step()(method),
                 'dependencies': getattr(method, 'dependencies', []),
             }
 

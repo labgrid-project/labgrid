@@ -37,12 +37,12 @@ class NetworkUSBStorageDriver(Driver):
         filename = os.path.abspath(filename)
         check_file(filename, command_prefix=self.storage.command_prefix)
         self.logger.info("pwd: %s", os.getcwd())
-        args = (
+        args = [
             "dd",
             "if={}".format(filename),
             "of={} status=progress bs=4M conv=fdatasync"
             .format(self.storage.path)
-        )
+        ]
         subprocess.check_call(
             self.storage.command_prefix + args
         )

@@ -1,3 +1,4 @@
+import os
 import pexpect
 import pytest
 
@@ -37,6 +38,14 @@ def test_env_fixture(short_env, short_test):
 def test_env_old_fixture(short_env, short_test):
     with pexpect.spawn('pytest --env-config {} {}'.format(short_env,short_test)) as spawn:
         spawn.expect("deprecated option")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0
+
+def test_env_env_fixture(short_env, short_test):
+    env=os.environ.copy()
+    env['LG_ENV'] = short_env
+    with pexpect.spawn('pytest {}'.format(short_test)) as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0

@@ -55,6 +55,8 @@ def env(request):
             lg_env = env_config
 
     if lg_env is None:
+        lg_env = os.environ.get('LG_ENV')
+    if lg_env is None:
         pytest.skip("missing environment config (use --lg-env)")
     env = Environment(config_file=lg_env)
     if lg_coordinator is not None:

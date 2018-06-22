@@ -107,9 +107,9 @@ pytest Plugin
 -------------
 Labgrid includes a `pytest <http://pytest.org>`_ plugin to simplify writing tests which
 involve embedded boards.
-The plugin is configured by providing an environment config file (via the
---lg-env pytest option) and automatically creates the targets described in
-the environment.
+The plugin is configured by providing an environment config file
+(via the --lg-env pytest option, or the LG_ENV environment variable)
+and automatically creates the targets described in the environment.
 
 Two `pytest fixtures <http://docs.pytest.org/en/latest/fixture.html>`_ are provided:
 

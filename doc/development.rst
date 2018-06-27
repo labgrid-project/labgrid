@@ -317,6 +317,11 @@ A root state is a state that has no dependencies.
         def state_B(self):
             pass
 
+Graph Stategies allow to specify multiple paths to states.
+The first argument of `@GraphStrategy.depends()` becomes part of the default
+path.
+If a different path should be followed the keyword argument `via` can be used
+on `transition()`.
 
 .. code-block:: python
 
@@ -325,6 +330,11 @@ A root state is a state that has no dependencies.
         graph_strategy.transition('B')  #  returns: ['A1', 'B']
         graph_strategy.transition('B')  #  returns: []
         graph_strategy.transition('B', via=['A2'])  #  returns: ['Root', 'A2', 'B']
+
+`pytest fixtures <https://docs.pytest.org/en/latest/fixture.html>`_ can be used
+to `transition()` into the designated state before a test is executed.
+Use `transition('my_state', via=...)` to follow a (non-default) path, e.g. an
+alternative boot method.
 
 .. code-block:: python
 

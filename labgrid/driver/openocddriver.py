@@ -75,3 +75,15 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
             "--command", "'shutdown'",
         ]
         subprocess.check_call(cmd)
+
+    @Driver.check_active
+    @step(args=['commands'])
+    def execute(self, commands: list):
+        for config in self.config:
+            check_file(config, command_prefix=self.interface.command_prefix)
+
+        cmd = self.interface.command_prefix+[self.tool]
+        cmd += chain.from_iterable(("--search", path) for path in self.search)
+        cmd += chain.from_iterable(("--file", conf) for conf in self.config)
+        cmd += chain.from_iterable(("--command", "'{}'".format(command)) for command in commands)
+        subprocess.check_call(cmd)

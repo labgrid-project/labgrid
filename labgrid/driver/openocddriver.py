@@ -1,6 +1,7 @@
 # pylint: disable=no-member
 import subprocess
 import os.path
+import logging
 import attr
 
 from ..factory import target_factory
@@ -30,6 +31,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.logger = logging.getLogger("{}:{}".format(self, self.target))
         # FIXME make sure we always have an environment or config
         if self.target.env:
             self.tool = self.target.env.config.get_tool('openocd') or 'openocd'

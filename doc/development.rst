@@ -294,6 +294,7 @@ All states **HAVE TO**:
 
 Every Graph Strategy graph has to have exactly one root state.
 A root state is a state that has no dependencies.
+If `invalidate()` is overridden the super method must be called.
 
 .. code-block:: python
 

@@ -1,6 +1,8 @@
 from tempfile import TemporaryDirectory
 import os
+import traceback
 
+import pytest
 from .common import Strategy, StrategyError
 from ..step import step
 
@@ -132,10 +134,9 @@ class GraphStrategy(Strategy):
                 try:
                     self.states[state_name]['method']()
 
-                except Exception:
-                    self.invalidate()
-
-                    raise
+                except Exception as e:
+                    traceback.print_exc()
+                    pytest.exit(e)
 
             self.path = abs_path
 

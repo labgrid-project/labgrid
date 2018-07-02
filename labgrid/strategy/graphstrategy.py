@@ -171,6 +171,15 @@ class GraphStrategy(Strategy):
             path.insert(0, next_state)
             current_state = self.states[next_state]
 
+        # no via states should be left now
+        if via:
+            raise GraphStrategyRuntimeError(
+                "Path to '{}' via {} does not exist".format(
+                    state, ', '.join(["'{}'".format(v) for v in via])
+                )
+            )
+
+
         return path
 
     def find_rel_path(self, path):

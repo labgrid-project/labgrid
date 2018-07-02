@@ -151,6 +151,15 @@ class GraphStrategy(Strategy):
         path = [state, ]
         current_state = self.states[state]
 
+        for via_state in via:
+            if via_state not in self.states.keys():
+                raise GraphStrategyRuntimeError(
+                    "Unknown state '{}' in via. State names are: {}".format(
+                        via_state,
+                        ', '.join(self.states.keys()),
+                    )
+                )
+
         while current_state['dependencies']:
             next_state = current_state['dependencies'][0]
 

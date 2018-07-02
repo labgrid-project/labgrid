@@ -23,10 +23,6 @@ class QuartusHPSDriver(Driver):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
-    cable_number = attr.ib(
-        default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(str))
-    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -35,10 +31,6 @@ class QuartusHPSDriver(Driver):
             self.tool = self.target.env.config.get_tool('quartus_hps') or 'quartus_hps'
         else:
             self.tool = 'quartus_hps'
-
-    def on_deactivate(self):
-        # forget cable number as it might change
-        self.cable_number = None
 
     def _get_cable_number(self):
         """Returns the JTAG cable numer for the USB path of the device"""
@@ -76,12 +68,10 @@ class QuartusHPSDriver(Driver):
 
         assert isinstance(address, int)
 
-        if self.cable_number is None:
-            self.cable_number = self._get_cable_number()
-
+        cable_number = self._get_cable_number()
         cmd = self.interface.command_prefix + [self.tool]
         cmd += [
-            "--cable={}".format(self.cable_number),
+            "--cable={}".format(cable_number),
             "--addr=0x{:X}".format(address),
             "--operation=P {}".format(filename),
         ]

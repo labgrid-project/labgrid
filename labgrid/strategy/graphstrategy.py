@@ -98,6 +98,10 @@ class GraphStrategy(Strategy):
     def invalidate(self):
         self.path = []
 
+        # deactivate all drivers to restore initial state
+        for driver in self.target.drivers:
+            self.target.deactivate(driver)
+
     @step(args=['state'])
     def transition(self, state, via=None):
         via = via or []

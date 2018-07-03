@@ -219,7 +219,7 @@ class EthernetPortManager(ResourceManager):
 
         async def poll_neighbour(self):
             self.logger.debug("polling neighbor table")
-            self.neighbors = self._get_neigh()
+            self.neighbors = EthernetPortManager._get_neigh()
 
             await asyncio.sleep(1.0)
 
@@ -252,7 +252,8 @@ class EthernetPortManager(ResourceManager):
         self.poll_tasks.append(self.loop.create_task(poll(self, poll_neighbour)))
         self.poll_tasks.append(self.loop.create_task(poll(self, poll_switches)))
 
-    def _get_neigh(self):
+    @staticmethod
+    def _get_neigh():
         """Internal function to retrieve the neighbors on the test machine
 
         Returns:

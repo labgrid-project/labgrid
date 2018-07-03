@@ -52,10 +52,10 @@ class ResourceExport(ResourceEntry):
             del self.params[key]
         self.start_params = None
 
-    def _get_start_params(self):
+    def _get_start_params(self):  # pylint: disable=no-self-use
         return {}
 
-    def _get_params(self):
+    def _get_params(self):  # pylint: disable=no-self-use
         return {}
 
     def _start(self, start_params):

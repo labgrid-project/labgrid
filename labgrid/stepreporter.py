@@ -14,13 +14,14 @@ class StepReporter:
     def stop(cls):
         """stops the StepReporter"""
         assert cls.instance is not None
-        steps.unsubscribe(cls.instance.notify)
+        steps.unsubscribe(cls.notify)
         cls.instance = None
 
     def __init__(self):
-        steps.subscribe(self.notify)
+        steps.subscribe(StepReporter.notify)
 
-    def notify(self, event):
+    @staticmethod
+    def notify(event):
         # ignore tagged events
         if event.step.tag:
             return

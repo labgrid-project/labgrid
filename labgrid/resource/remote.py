@@ -23,7 +23,11 @@ class RemotePlaceManager(ResourceManager):
             return
 
         from ..remote.client import start_session
-        self.session = start_session(self.url, self.realm, {'env': self.env})
+        try:
+            self.session = start_session(self.url, self.realm, {'env': self.env})
+        except ConnectionRefusedError as e:
+            raise ConnectionRefusedError("Could not connect to coordinator {}".format(self.url)) from e
+
         self.loop = self.session.loop
 
     def on_resource_added(self, resource):

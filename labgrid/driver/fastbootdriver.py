@@ -60,6 +60,11 @@ class AndroidFastbootDriver(Driver):
         self("flash", partition, filename)
 
     @Driver.check_active
+    @step(args=['cmd'])
+    def run(self, cmd):
+        self("oem", "exec", "--", cmd)
+
+    @Driver.check_active
     @step(title='continue')
     def continue_boot(self):
         self("continue")

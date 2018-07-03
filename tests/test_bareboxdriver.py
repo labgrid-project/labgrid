@@ -20,14 +20,18 @@ class TestBareboxDriver:
         t = target_with_fakeconsole
         d = BareboxDriver(t, "barebox")
         d = t.get_driver(BareboxDriver)
-        d.run = mocker.MagicMock(return_value=[['success'],[],0])
+        d._run = mocker.MagicMock(return_value=(['success'], [], 0))
         res = d.run_check("test")
         assert res == ['success']
+        res = d.run("test")
+        assert res == (['success'], [], 0)
 
     def test_barebox_run_error(self, target_with_fakeconsole, mocker):
         t = target_with_fakeconsole
         d = BareboxDriver(t, "barebox")
         d = t.get_driver(BareboxDriver)
-        d.run = mocker.MagicMock(return_value=[['error'],[],1])
+        d._run = mocker.MagicMock(return_value=(['error'], [], 1))
         with pytest.raises(ExecutionError):
             res = d.run_check("test")
+        res = d.run("test")
+        assert res == (['error'], [], 1)

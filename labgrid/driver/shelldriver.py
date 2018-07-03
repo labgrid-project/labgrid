@@ -67,7 +67,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def on_deactivate(self):
         self._status = 0
 
-    @step(args=['cmd'], result=True)
     def _run(self, cmd, *, step, timeout=30.0, codec="utf-8", decodeerrors="strict"):
         """
         Runs the specified cmd on the shell and returns the output.
@@ -96,6 +95,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         return (data, [], exitcode)
 
     @Driver.check_active
+    @step(args=['cmd'], result=True)
     def run(self, cmd, timeout=30.0, codec="utf-8", decodeerrors="strict"):
         return self._run(cmd, timeout=timeout, codec=codec, decodeerrors=decodeerrors)
 

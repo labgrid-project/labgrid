@@ -39,12 +39,16 @@ class TestSSHDriver:
 
     def test_run_check(self, ssh_driver_mocked_and_activated, mocker):
         s = ssh_driver_mocked_and_activated
-        s.run = mocker.MagicMock(return_value=[['success'],[],0])
+        s._run = mocker.MagicMock(return_value=(['success'], [], 0))
         res = s.run_check("test")
         assert res == ['success']
+        res = s.run("test")
+        assert res == (['success'], [], 0)
 
     def test_run_check_raise(self, ssh_driver_mocked_and_activated, mocker):
         s = ssh_driver_mocked_and_activated
-        s.run = mocker.MagicMock(return_value=[['error'],[],1])
+        s._run = mocker.MagicMock(return_value=(['error'], [], 1))
         with pytest.raises(ExecutionError):
             res = s.run_check("test")
+        res = s.run("test")
+        assert res == (['error'], [], 1)

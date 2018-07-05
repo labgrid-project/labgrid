@@ -1,0 +1,6 @@
+default-group:
+  location: default
+  NetworkSerialPort:
+    host: exporter
+    port: 3001
+    speed: 115200

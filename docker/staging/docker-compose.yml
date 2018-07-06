@@ -30,6 +30,7 @@ services:
     image: "labgrid-exporter"
     volumes:
       - "./exporter-conf:/opt/conf"
+      - "/run/udev:/run/udev:ro"
     depends_on:
       - coordinator
     tty: true

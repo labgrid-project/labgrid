@@ -50,12 +50,23 @@ display command line help
 .B \-x\fP,\fB  \-\-crossbar\-url
 the crossbar url of the coordinator
 .TP
+.B \-i\fP,\fB  \-\-isolated
+enable isolated mode (always request SSH forwards)
+.TP
 .B \-n\fP,\fB  \-\-name
 the public name of the exporter
 .TP
 .B \-\-hostname
 hostname (or IP) published for accessing resources
 .UNINDENT
+.SS \-i / \-\-isolated
+.sp
+This option enables isolated mode, which causes all exported resources marked
+as requiring SSH connection forwarding.
+Isolated mode is useful when resources (such as NetworkSerialPorts) are not
+directly accessible from the clients.
+The client will then use SSH to create a port forward to the resource when
+needed.
 .SS \-n / \-\-name
 .sp
 This option is used to configure the exporter name under which resources are

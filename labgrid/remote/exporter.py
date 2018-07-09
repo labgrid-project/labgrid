@@ -8,7 +8,7 @@ import sys
 import os
 import traceback
 import subprocess
-from socket import gethostname, socket, AF_INET, SOCK_STREAM
+from socket import gethostname, getfqdn, socket, AF_INET, SOCK_STREAM
 from contextlib import closing
 import attr
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
@@ -312,6 +312,7 @@ class ExporterSession(ApplicationSession):
         self.loop = self.config.extra['loop']
         self.name = self.config.extra['name']
         self.hostname = self.config.extra['hostname']
+        self.isolated = self.config.extra['isolated']
         self.authid = "exporter/{}".format(self.name)
         self.address = self._transport.transport.get_extra_info('sockname')[0]
         self.poll_task = None
@@ -341,6 +342,7 @@ class ExporterSession(ApplicationSession):
                     if params is None:
                         continue
                     cls = params.pop('cls', resource_name)
+
                     await self.add_resource(
                         group_name, resource_name, cls, params
                     )
@@ -483,6 +485,13 @@ def main():
         help="enable debug mode"
     )
     parser.add_argument(
+        '-i',
+        '--isolated',
+        action='store_true',
+        default=False,
+        help="enable isolated mode (always request SSH forwards)"
+    )
+    parser.add_argument(
         'resources',
         metavar='RESOURCES',
         type=str,
@@ -497,6 +506,7 @@ def main():
         'name': args.name or gethostname(),
         'hostname': args.hostname or gethostname(),
         'resources': args.resources,
+        'isolated': args.isolated
     }
 
     crossbar_url = args.crossbar

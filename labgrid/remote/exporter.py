@@ -149,7 +149,7 @@ class USBSerialPortExport(ResourceExport):
             '-d',
             '-n',
             '-C',
-            '{}:telnet:0:{}:115200 8DATABITS NONE 1STOPBIT'.format(
+            '{}:telnet:0:{}:115200 8DATABITS NONE 1STOPBIT LOCAL'.format(
                 self.port, start_params['path']
             ),
         ])

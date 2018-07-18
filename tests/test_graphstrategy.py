@@ -210,6 +210,13 @@ def test_transition_via(graph_strategy):
     assert graph_strategy.transition('D', via=['A2']) == ['Root', 'A2', 'B', 'C1', 'D']
     assert graph_strategy.path == ['Root', 'A2', 'B', 'C1', 'D']
 
+    graph_strategy.invalidate()
+
+    assert graph_strategy.transition('D:A2') == ['Root', 'A2', 'B', 'C1', 'D']
+    assert graph_strategy.path == ['Root', 'A2', 'B', 'C1', 'D']
+
+    assert graph_strategy.transition('D:C2,A2') == ['Root', 'A2', 'B', 'C2', 'D']
+    assert graph_strategy.path == ['Root', 'A2', 'B', 'C2', 'D']
 
 @pytest.mark.dependency(depends=['api-works',
                                  'test_transition',

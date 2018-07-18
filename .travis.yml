@@ -1,10 +1,21 @@
 language: python
+
+addons:
+  apt:
+    packages:
+      libow-dev
+      openssh-server
+      openssh-client
+
 python:
   - "3.5"
   - "3.6"
 before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -y libow-dev
+  - ssh-keygen -f ~/.ssh/localkey -t ed25519 -N ""
+  - cat ~/.ssh/localkey.pub > ~/.ssh/authorized_keys
+  - echo -e "Host localhost\n  Identityfile ~/.ssh/localkey" > ~/.ssh/config
+  - cat ~/.ssh/config
+  - ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null localhost -- echo "Hello"
 install:
   - pip install -r travis-requirements.txt
   - pip install -e .

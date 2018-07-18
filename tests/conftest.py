@@ -86,14 +86,22 @@ def exporter(tmpdir):
 def pytest_addoption(parser):
     parser.addoption("--sigrok-usb", action="store_true",
                      help="Run sigrok usb tests with fx2lafw device (0925:3881)")
+    parser.addoption("--local-sshmanager", action="store_true",
+                     help="Run SSHManager tests against localhost")
 
 def pytest_configure(config):
     # register an additional marker
     config.addinivalue_line("markers",
                             "sigrokusb: enable fx2lafw USB tests (0925:3881)")
+    config.addinivalue_line("markers",
+                            "localsshmanager: test SSHManager against Localhost")
 
 def pytest_runtest_setup(item):
     envmarker = item.get_marker("sigrokusb")
     if envmarker is not None:
         if item.config.getoption("--sigrok-usb") is False:
             pytest.skip("sigrok usb tests not enabled (enable with --sigrok-usb)")
+    envmarker = item.get_marker("localsshmanager")
+    if envmarker is not None:
+        if item.config.getoption("--local-sshmanager") is False:
+            pytest.skip("SSHManager tests against localhost not enabled (enable with --local-sshmanager)")

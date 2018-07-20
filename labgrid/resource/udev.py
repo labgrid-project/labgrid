@@ -336,10 +336,16 @@ class USBPowerPort(USBResource):
         index (int): index of the downstream port on the USB hub
     """
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
-    def __attrs_post_init__(self):
-        self.match['DEVTYPE'] = 'usb_interface'
-        self.match['DRIVER'] = 'hub'
-        super().__attrs_post_init__()
+    def filter_match(self, device):
+        try:
+            devclass = device.attributes.asstring('bDeviceClass')
+            if devclass != '09':
+                return False
+        except UnicodeDecodeError:
+            pass
+        except KeyError:
+            pass
+        return super().filter_match(device)
 
 @target_factory.reg_resource
 @attr.s(cmp=False)

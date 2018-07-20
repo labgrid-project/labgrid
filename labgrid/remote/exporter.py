@@ -246,7 +246,7 @@ class USBSDMuxExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': gethostname(),
+            'host': self.host,
             'busnum': self.local.busnum,
             'devnum': self.local.devnum,
             'path': self.local.path,
@@ -265,7 +265,7 @@ class USBPowerPortExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': gethostname(),
+            'host': self.host,
             'busnum': self.local.busnum,
             'devnum': self.local.devnum,
             'path': self.local.path,

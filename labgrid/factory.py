@@ -69,6 +69,8 @@ class TargetFactory:
                         item = item.copy()
                     else:
                         item = {'cls':  key}
+                        if value is None:
+                            raise InvalidConfigError("invalid list item, add empty dict for no arguments")
                         item.update(value)
                 result.append(item)
         elif isinstance(data, dict):

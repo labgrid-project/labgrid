@@ -6,9 +6,10 @@ import attr
 import pytest
 
 from labgrid.util import diff_dict, flat_dict, filter_dict
-from labgrid.util.ssh import ForwardError
-from labgrid.util.ssh import SSHConnection
+from labgrid.util.ssh import ForwardError, SSHConnection, sshmanager
+from labgrid.util.proxy import proxymanager
 from labgrid.driver.exception import ExecutionError
+from labgrid.resource.serialport import NetworkSerialPort
 
 @pytest.fixture
 def connection_localhost():
@@ -179,3 +180,34 @@ def test_sshmanager_remove_raise():
     con = SSHConnection("nosuchhost.notavailable")
     with pytest.raises(ExecutionError):
         con.connect()
+
+def test_proxymanager_no_proxy(target):
+    host = 'localhost'
+    port = 5000
+    nr = NetworkSerialPort(target, host=host, port=port, name=None)
+    nr.proxy = ''
+    nr.proxy_required = False
+
+    assert (host, port) == proxymanager.get_host_and_port(nr)
+
+def test_proxymanager_remote_forced_proxy(target):
+    sshmanager.close_all()
+    host = 'localhost'
+    port = 5000
+    nr = NetworkSerialPort(target, host=host, port=port, name=None)
+    extras = { 'proxy': 'localhost', 'proxy_required': True }
+    nr.extra = extras
+    nhost, nport = proxymanager.get_host_and_port(nr)
+
+    assert (host, port) != (nhost, nport)
+    sshmanager.close_all()
+
+def test_proxymanager_local_forced_proxy(target):
+    host = 'localhost'
+    port = 5000
+    nr = NetworkSerialPort(target, host=host, port=port, name=None)
+    extras = { 'proxy': 'localhost', 'proxy_required': True }
+    nr.extra = extras
+    nhost, nport = proxymanager.get_host_and_port(nr)
+
+    assert (host, port) != (nhost, nport)

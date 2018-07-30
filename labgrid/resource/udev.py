@@ -292,44 +292,24 @@ class USBSDMuxDevice(USBResource):
     def __attrs_post_init__(self):
         self.match['ID_VENDOR_ID'] = '0424'
         self.match['ID_MODEL_ID'] = '4041'
+        self.control_path = None
+        self.disk_path = None
         super().__attrs_post_init__()
 
-    def _get_scsi_dev(self):
+    def update(self):
+        super().update()
         if not self.device:
-            return None
-        devices = pyudev.Context().list_devices()
-        devices.match_parent(self.device)
-        devices.match_subsystem('scsi_generic')
-        for child in devices:
-            return child
-        return None
-
-    def _get_block_disk_dev(self):
-        if not self.device:
-            return None
-        devices = pyudev.Context().list_devices()
-        devices.match_parent(self.device)
-        devices.match_subsystem('block')
-        devices.match_property('DEVTYPE', 'disk')
-        for child in devices:
-            return child
-        return None
-
-    @property
-    def control_path(self):
-        dev = self._get_scsi_dev()
-        if dev:
-            return dev.device_node
-
-        return None
+            self.control_path = None
+            self.path = None
+        for child in self.device.children:
+            if child.subsystem == 'block':
+                self.disk_path = child.device_node
+            elif child.subsystem == 'scsi_generic':
+                self.control_path = child.device_node
 
     @property
     def path(self):
-        dev = self._get_block_disk_dev()
-        if dev:
-            return dev.device_node
-
-        return None
+        return self.disk_path
 
 @target_factory.reg_resource
 @attr.s(cmp=False)

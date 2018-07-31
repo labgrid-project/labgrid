@@ -16,6 +16,7 @@ services:
     tty: true
     stdin_open: true
     network_mode: "host"
+    tmpfs: "/tmp"
     command: bash -c "set -e &&
                       /usr/local/bin/labgrid-client -p example-place unlock --kick ||
                       /usr/local/bin/labgrid-client -p example-place lock &&

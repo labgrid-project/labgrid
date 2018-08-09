@@ -468,6 +468,19 @@ NetworkUSBTMC
 A :any:`NetworkUSBTMC` resource describes a :any:`USBTMC` resource available
 on a remote computer.
 
+XenaManager
+~~~~~~~~~~~
+A XenaManager resource describe a Xena Manager instance which is the instance the
+Xena Driver must connect to in order to configure a Xena chassis.
+
+.. code-block:: yaml
+
+   XenaManager:
+     hostname: "example.computer"
+
+Used by:
+  - `XenaDriver`_
+
 RemotePlace
 ~~~~~~~~~~~
 A RemotePlace describes a set of resources attached to a labgrid remote place.
@@ -1311,6 +1324,18 @@ It only supports the `Keysight DSO-X 2000` series (with the USB ID 0957:1798),
 but more devices can be added by extending `on_activate()` in
 ``labgrid/driver/usbtmcdriver.py`` and writing a corresponding backend in
 ``labgrid/driver/usbtmc/``.
+
+XenaDriver
+~~~~~~~~~~
+The XenaDriver allows to use Xena networking tests equipment. Using the xenavalkyrie library
+a full API to control the tester is available.
+
+Binds to:
+  xena_manager:
+    - `XenaManager`_
+
+The driver is supposed to work with all Xena products from the "Valkyrie Layer 2-3 Test platform"
+Currently tested on a `XenaCompact` chassis equipped with a `1 GE test module`.
 
 Strategies
 ----------

@@ -11,3 +11,4 @@ from .udev import USBSDMuxDevice
 from .udev import USBPowerPort
 from .common import Resource, ResourceManager, ManagedResource
 from .ykushpowerport import YKUSHPowerPort
+from .xenamanager import XenaManager

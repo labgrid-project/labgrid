@@ -384,6 +384,45 @@ or get and put files::
 
 .. _contributing:
 
+ManagedFile
+-----------
+While the `SSHManager` exposes a lower level interface to use SSH Connections,
+the ManagedFile provides a higher level interface for file upload to another
+host. It is meant to be used in conjunction with a remote resource, and store
+the file on the remote host with the following pattern:
+
+.. code-block:: bash
+
+   /tmp/labgrid/<username>/<md5sum>/<filename>
+
+Additionally it provides `get_remote_path()` to retrieve the complete file path,
+to easily employ it for driver implementations.
+To use it in conjunction with a `Resource` and a file:
+
+.. ::
+   from labgrid.util.managedfile import ManagedFile
+
+   mf = ManagedFile(<your-file>, <your-resource>)
+   mf.sync_to_resource()
+   path = mf.get_remote_path()
+
+ProxyManager
+------------
+The proxymanager is used to open connections across proxies via an attribute in
+the resource. This allows gated testing networks by always using the exporter as
+an SSH gateway to proxy the connections using SSH Forwarding. Currently this is
+used in the `SerialDriver` for proxy connections.
+
+Usage:
+
+.. code-block:: python
+
+   from labgrid.util.proxy import proxymanager
+
+   proxymanager.get_host_and_port(<resource>)
+
+
+
 Contributing
 ------------
 

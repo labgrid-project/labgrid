@@ -8,6 +8,7 @@ from ..factory import target_factory
 from ..resource.udev import USBMassStorage, USBSDMuxDevice
 from ..resource.remote import NetworkUSBMassStorage, NetworkUSBSDMuxDevice
 from ..step import step
+from ..util.managedfile import ManagedFile
 from .common import Driver, check_file
 
 @target_factory.reg_driver
@@ -34,12 +35,12 @@ class NetworkUSBStorageDriver(Driver):
 
     @step(args=['filename'])
     def write_image(self, filename):
-        filename = os.path.abspath(filename)
-        check_file(filename, command_prefix=self.storage.command_prefix)
+        mf = ManagedFile(filename, self.storage)
+        mf.sync_to_resource()
         self.logger.info("pwd: %s", os.getcwd())
         args = [
             "dd",
-            "if={}".format(filename),
+            "if={}".format(mf.get_remote_path()),
             "of={} status=progress bs=4M conv=fdatasync"
             .format(self.storage.path)
         ]

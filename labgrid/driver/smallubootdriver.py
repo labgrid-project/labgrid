@@ -58,7 +58,7 @@ class SmallUBootDriver(UBootDriver):
         # wait until UBoot has reached it's prompt
         self.console.expect(self.prompt)
 
-    def _run(self, cmd):
+    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
         """
         If Uboot is in Command-Line mode: Run command cmd and return it's
         output.
@@ -66,6 +66,7 @@ class SmallUBootDriver(UBootDriver):
         Arguments:
         cmd - Command to run
         """
+        # TODO: use codec, decodeerrors
 
         # Check if Uboot is in command line mode
         if self._status != 1:
@@ -85,7 +86,7 @@ class SmallUBootDriver(UBootDriver):
         )
 
         self.console.sendline(cmp_command)
-        _, before, _, _ = self.console.expect(self.prompt)
+        _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
 
         data = self.re_vt100.sub(
             '', before.decode('utf-8'), count=1000000

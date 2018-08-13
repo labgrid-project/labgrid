@@ -64,7 +64,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     def run(self, cmd: str, *, timeout: int = 30):  # pylint: disable=unused-argument
         return self._run(cmd, timeout=timeout)
 
-    def _run(self, cmd: str, *, timeout: int = 30):  # pylint: disable=unused-argument
+    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
         """
         Runs the specified command on the shell and returns the output.
 
@@ -75,7 +75,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Returns:
             Tuple[List[str],List[str], int]: if successful, None otherwise
         """
-        # FIXME: Handle pexpect Timeout
+        # FIXME: use codec, decodeerrors
         marker = gen_marker()
         # hide marker from expect
         hidden_marker = '"{}""{}"'.format(marker[:4], marker[4:])

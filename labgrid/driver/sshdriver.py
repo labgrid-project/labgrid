@@ -51,9 +51,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
         # use sshpass if we have a password
         sshpass = "sshpass -e " if self.networkservice.password else ""
-        args = ("{}ssh -n {} -x -o ConnectTimeout=30 -o ControlPersist=300 -o UserKnownHostsFile=/dev/null " "-o StrictHostKeyChecking=no -MN -S {} {}@{}").format(  # pylint: disable=line-too-long
-            sshpass, self.ssh_prefix, control, self.networkservice.username,
-            self.networkservice.address).split(" ")
+        args = ("{}ssh -n {} -x -o ConnectTimeout=30 -o ControlPersist=300 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -MN -S {} -p {} {}@{}").format( # pylint: disable=line-too-long
+                    sshpass, self.ssh_prefix, control, self.networkservice.port,
+                    self.networkservice.username, self.networkservice.address).split(" ")
 
         env = os.environ.copy()
         if self.networkservice.password:
@@ -101,9 +101,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['cmd'], result=True)
     def run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
-        return self._run(cmd, codec=codec, decodererrors=decodeerrors)
+        return self._run(cmd, codec=codec, decodeerrors=decodeerrors)
 
-    def _run(self, cmd, codec, decodeerrors): # pylint: disable=unused-argument
+    def _run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
         """Execute `cmd` on the target.
 
         This method runs the specified `cmd` as a command on its target.
@@ -113,11 +113,12 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         returns:
         (stdout, stderr, returncode)
         """
-        complete_cmd = "ssh -x {prefix} {user}@{host} {cmd}".format(
+        complete_cmd = "ssh -x {prefix} -p {port} {user}@{host} {cmd}".format(
             user=self.networkservice.username,
             host=self.networkservice.address,
             cmd=cmd,
-            prefix=self.ssh_prefix
+            prefix=self.ssh_prefix,
+            port=self.networkservice.port
         ).split(' ')
         self.logger.debug("Sending command: %s", complete_cmd)
         try:
@@ -142,13 +143,14 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     @step(args=['filename', 'remotepath'])
-    def put(self, filename, remotepath=None):
-        transfer_cmd = "scp {prefix} {filename} {user}@{host}:{remotepath}".format(
+    def put(self, filename, remotepath=''):
+        transfer_cmd = "scp {prefix} -P {port} {filename} {user}@{host}:{remotepath}".format(
             filename=filename,
             user=self.networkservice.username,
             host=self.networkservice.address,
             remotepath=remotepath,
-            prefix=self.ssh_prefix
+            prefix=self.ssh_prefix,
+            port=self.networkservice.port
         ).split(' ')
         try:
             sub = subprocess.call(
@@ -166,11 +168,12 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['filename', 'destination'])
     def get(self, filename, destination="."):
-        transfer_cmd = "scp {prefix} {user}@{host}:{filename} {destination}".format(
+        transfer_cmd = "scp {prefix} -P {port} {user}@{host}:{filename} {destination}".format(
             filename=filename,
             user=self.networkservice.username,
             host=self.networkservice.address,
             prefix=self.ssh_prefix,
+            port=self.networkservice.port,
             destination=destination
         ).split(' ')
         try:
@@ -188,8 +191,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _cleanup_own_master(self):
         """Exit the controlmaster and delete the tmpdir"""
-        complete_cmd = "ssh -x -o ControlPath={cpath} -O exit {user}@{host}".format(
+        complete_cmd = "ssh -x -o ControlPath={cpath} -O exit -p {port} {user}@{host}".format(
             cpath=self.control,
+            port=self.networkservice.port,
             user=self.networkservice.username,
             host=self.networkservice.address
         ).split(' ')

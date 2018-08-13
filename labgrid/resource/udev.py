@@ -200,10 +200,15 @@ class USBMassStorage(USBResource):
 @attr.s(cmp=False)
 class IMXUSBLoader(USBResource):
     def filter_match(self, device):
-        if device.get('ID_VENDOR_ID') != "15a2":
+        match = (device.get('ID_VENDOR_ID'), device.get('ID_MODEL_ID'))
+
+        if match not in [("15a2", "0054"), ("15a2", "0061"),
+                         ("15a2", "0063"), ("15a2", "0071"),
+                         ("15a2", "007d"), ("15a2", "0076"),
+                         ("15a2", "0080"), ("15a2", "003a"),
+                         ("1fc9", "0128"), ("1fc9", "0126")]:
             return False
-        if device.get('ID_MODEL_ID') not in ["0054", "0061", "0071", "007d", "003a"]:
-            return False
+
         return super().filter_match(device)
 
 

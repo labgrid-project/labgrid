@@ -43,6 +43,15 @@ class Environment:
 
         return self.targets[role]
 
+    def get_features(self):
+        return self.config.get_features()
+
+    def get_target_features(self):
+        flags = set()
+        for target, value in self.config.get_targets().items():
+            flags = flags | set(value.get('features', {}))
+        return flags
+
     def cleanup(self):
         for target in self.targets:
             self.targets[target].cleanup()

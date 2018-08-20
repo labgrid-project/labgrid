@@ -196,3 +196,6 @@ class Config:
             images[name] = self.resolve_path(image)
 
         return images
+
+    def get_features(self):
+        return set(self.data.get('features', {}))

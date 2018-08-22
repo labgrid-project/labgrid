@@ -1083,11 +1083,17 @@ Implements:
 
 .. code-block:: yaml
 
-   MXSUSBDriver:
-     image: mybootloader.img
+   targets:
+     main:
+       drivers:
+         MXSUSBDriver:
+           image: mybootloaderkey
+
+   images:
+     mybootloaderkey: path/to/mybootloader.img
 
 Arguments:
-  - image (str): The image to bootstrap onto the target
+  - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
 
 IMXUSBDriver
 ~~~~~~~~~~~~
@@ -1104,12 +1110,17 @@ Implements:
 
 .. code-block:: yaml
 
-   IMXUSBDriver:
-     image: mybootloader.img
+   targets:
+     main:
+       drivers:
+         IMXUSBDriver:
+           image: mybootloaderkey
 
+   images:
+     mybootloaderkey: path/to/mybootloader.img
 
 Arguments:
-  - image (str): The image to bootstrap onto the target
+  - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
 
 USBStorageDriver
 ~~~~~~~~~~~~~~~~

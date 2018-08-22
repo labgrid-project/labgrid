@@ -60,6 +60,8 @@ OPTIONS KEYS
   takes as parameter the realm of the crossbar (coordinator) to connect to.
   Defaults to 'realm1'.
 
+.. _labgrid-device-config-images:
+
 IMAGES
 ------
 The ``images:`` top key provides paths to access preconfigured images to flash

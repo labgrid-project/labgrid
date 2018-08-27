@@ -1,8 +1,10 @@
 import logging
 import sys
 import pytest
+import os
 from _pytest.capture import safe_text_dupfile
 
+from .. import Environment
 from ..step import steps
 from ..consoleloggingreporter import ConsoleLoggingReporter
 
@@ -33,6 +35,26 @@ def pytest_configure(config):
         logging.getLogger().setLevel(logging.DEBUG)
     if lg_log:
         ConsoleLoggingReporter(lg_log)
+    env_config = config.option.env_config
+    lg_env = config.option.lg_env
+    lg_coordinator = config.option.lg_coordinator
+
+    if lg_env is None:
+        if env_config is not None:
+            config.warn(
+                'LG-C1',
+                "deprecated option --env-config (use --lg-env instead)",
+                __file__)
+            lg_env = env_config
+
+    env = None
+    if lg_env is None:
+        lg_env = os.environ.get('LG_ENV')
+    if lg_env is not None:
+        env = Environment(config_file=lg_env)
+    if lg_coordinator is not None:
+        env.config.set_option('crossbar_url', lg_coordinator)
+    config._labgrid_env = env
 
 
 class StepReporter:

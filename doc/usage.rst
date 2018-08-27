@@ -301,6 +301,69 @@ For this example, you should get a report similar to this:
 
   ========================== 3 passed in 29.77 seconds ===========================
 
+Feature Flags
+~~~~~~~~~~~~~
+Labgrid includes support for feature flags on a global and target scope.
+They will be concatenated and compared to a pytest mark on the test to decide
+whether the test can run with the available features.::
+
+   import pytest
+
+   @pytest.mark.lg_feature("camera")
+   def test_camera(target):
+      [...]
+
+together with an example environment configuration:
+
+.. code-block:: yaml
+
+  targets:
+    main:
+      features:
+        - camera
+      resources: {}
+      drivers: {}
+
+would run the above test, however the following configuration would skip the
+test because of the missing feature:
+
+.. code-block:: yaml
+
+  targets:
+    main:
+      features:
+        - console
+      resources: {}
+      drivers: {}
+
+This is also reported in the pytest execution as a skipped test with the reason
+being the missing feature.
+
+For tests with multiple required features, pass them as a list to pytest:::
+
+   import pytest
+
+   @pytest.mark.lg_feature(["camera", "console"])
+   def test_camera(target):
+      [...]
+
+Features do not have to be set per target, they can also be set via the global
+features key:
+
+.. code-block:: yaml
+
+  features:
+    - camera
+  targets:
+    main:
+      features:
+        - console
+      resources: {}
+      drivers: {}
+
+This yaml would combine both the global and the target features.
+
+
 Test Reports
 ~~~~~~~~~~~~
 

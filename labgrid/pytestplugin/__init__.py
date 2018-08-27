@@ -1,2 +1,2 @@
 from .fixtures import pytest_addoption, env, target
-from .reporter import pytest_configure
+from .hooks import pytest_configure, pytest_collection_modifyitems

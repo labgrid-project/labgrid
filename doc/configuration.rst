@@ -545,6 +545,37 @@ them to the internal environment.
 Used by:
   - potentially all drivers
 
+DockerDaemon
+~~~~~~~~~~~~
+A DockerDaemon describes where to contact a docker daemon process.
+DockerDaemon also participates in managing `NetworkService` instances
+created through interaction with that daemon.
+
+.. code-block:: yaml
+
+   DockerDaemon:
+     docker_daemon_url: 'unix://var/run/docker.sock'
+
+The example describes a docker daemon accessible via the
+'/var/run/docker.sock' unix socket. When used by a `DockerDriver`, the
+`DockerDriver` will first create a docker container which the
+DockerDaemon resource will subsequently use to create one/more
+`NetworkService` instances - as specified by `DockerDriver` configuration.
+Each `NetworkService` instance corresponds to a network service running inside
+the container.
+
+Moreover, DockerDaemon will remove any hanging containers if
+DockerDaemon is used several times in a row - as is the case when
+executing test suites. Normally `DockerDriver` - when deactivated -
+cleans up the created docker container; programming errors, keyboard
+interrupts or unix kill signals may lead to hanging containers, however;
+therefore auto-cleanup is important.
+
+- docker_daemon_url (str): The url of the daemon to use for this target.
+
+Used by:
+  - `DockerDriver`_
+
 udev Matching
 ~~~~~~~~~~~~~
 udev matching allows labgrid to identify resources via their udev properties.
@@ -1488,6 +1519,42 @@ Binds to:
 The driver is supposed to work with all Xena products from the "Valkyrie Layer 2-3 Test platform"
 Currently tested on a `XenaCompact` chassis equipped with a `1 GE test module`.
 
+DockerDriver
+~~~~~~~~~~~~
+A DockerDriver binds to a `DockerDaemon` and is used to create and control one
+docker container.
+
+| The driver uses the docker python module to interact with the docker daemon.
+| For more information on the parameters see:
+| https://docker-py.readthedocs.io/en/stable/containers.html#container-objects
+
+Binds to:
+  docker_daemon:
+    - `DockerDaemon`_
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   DockerDriver:
+     image_uri: "rastasheep/ubuntu-sshd:16.04"
+     container_name: "ubuntu-lg-example"
+     host_config: {"network_mode":"bridge"}
+     network_services: [{"port":22,"username":"root","password":"root"}]
+
+Arguments:
+  - image_uri (str): identifier of the docker image to use (may have a tag suffix)
+  - command (str): command to run in the container (optional, depends on image)
+  - volumes (list): list to configure volumes mounted inside the container (optional)
+  - container_name (str): name of the container
+  - environment (list): list of environment variables (optional)
+  - host_config (dict): dictionary of host configurations
+  - network_services (list): dictionaries that describe individual `NetworkService`_
+    instances that come alive when the container is created. The "address" argument
+    which `NetworkService`_ also requires will be derived automatically upon container
+    creation.
+
 Strategies
 ----------
 
@@ -1558,6 +1625,33 @@ to transition to the shell state:
 
 this command would transition from the boot loader into a Linux shell and
 activate the shelldriver.
+
+DockerShellStrategy
+~~~~~~~~~~~~~~~~~~~
+A DockerShellStrategy has three states:
+
+- unknown
+- off
+- shell
+
+
+To transition to the shell state:
+
+::
+
+   t = get_target("main")
+   s = DockerShellStrategy(t)
+   s.transition("shell")
+
+
+These commands would activate the docker driver which creates and starts
+a docker container. This will subsequently make `NetworkService`_ instance(s)
+available which can be used for e.g. ssh access.
+
+Note: Transitioning to the "off" state will make any `NetworkService`_
+instance(s) unresponsive - which may in turn invalidate ssh connection
+sharing. Therefore, during automated test suites, refrain from transitioning
+to the "off" state.
 
 Reporters
 ---------

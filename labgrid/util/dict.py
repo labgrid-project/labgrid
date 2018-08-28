@@ -37,3 +37,19 @@ def filter_dict(d, cls, warn=False):
             warnings.warn("unsupported attribute '{}' with value '{}' for class '{}'".format(
                 k, d[k], cls.__name__), stacklevel=2)
     return {k: v for k, v in d.items() if k in fields}
+
+def find(d, key):
+    """
+    Recursively search for a key in a dictionary
+
+    Args:
+        d (dict): The dictionary to recursively search through
+        key (str): The key to search for
+    """
+    if key in d and not isinstance(d[key], dict) and d[key]!="":
+        return d[key]
+    for k, v in d.items():
+        if isinstance(v,dict):
+            value = find(v,key)
+            if value is not None:
+                return value

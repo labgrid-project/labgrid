@@ -11,3 +11,4 @@ yapf==0.20.1
 -r onewire-requirements.txt
 -r modbus-requirements.txt
 -r snmp-requirements.txt
+-r docker-requirements.txt

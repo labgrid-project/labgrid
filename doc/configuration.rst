@@ -629,8 +629,78 @@ To check if your device has a serial number, you can use ``udevadm info``:
   $ udevadm info /dev/ttyUSB5 | grep SERIAL_SHORT
   E: ID_SERIAL_SHORT=P-00-00679
 
+DockerNetworkService
+~~~~~~~~~~~~~~~~~~~~
+A DockerNetworkService describes a network service served from a docker 
+container.
+
+.. code-block:: yaml
+
+   DockerNetworkService:
+     container_name: example_container
+     username: root
+
+The example describes a remote SSH connection to the docker container running 
+with the name `example_container` using the username `root`.
+
+- container_name (str): the name of the docker container the service is served 
+                        from
+- username (str): username used by SSH
+- password (str): password used by SSH
+- port (int): optional, port used by SSH (default 22)
+
+Used by:
+  - `SSHDriver`_
+
+DockerDaemon
+~~~~~~~~~~~~
+A DockerDaemon describes the location of a docker daemon.
+
+.. code-block:: yaml
+
+   DockerDaemon:
+     docker_daemon_url: 'unix://var/run/docker.sock'
+
+The example describes a docker daemon accessible via the '/var/run/docker.sock'
+unix socket.
+
+- docker_daemon_url (str): The url of the daemon to use for this target.
+
+Used by:
+  - `DockerNetworkService`_
+  - `DockerDriver`_
+
 Drivers
 -------
+
+DockerDriver
+~~~~~~~~~~~~
+A DockerDriver connects to a DockerDaemon and is used to create and control one
+docker container.
+
+The driver uses the Docker SDK for python to interact with the docker daemon.
+For more information on the parameters see
+https://docker-py.readthedocs.io/en/3.3.0/api.html#module-docker.api.container
+
+Binds to:
+  port:
+    - `DockerDaemon`_
+
+.. code-block:: yaml
+
+   DockerDriver:
+     image_uri: "rastasheep/ubuntu-sshd:16.04"
+     container_name: "ubuntu-lg-example"
+     host_config: {"network_mode":"bridge"}
+
+Arguments:
+  - image_uri (str): uri of a docker image and tag
+  - command (str): the command to run in the container
+  - volumes (list): a list to configure volumes mounted inside the container
+  - container_name (str): the name of the container
+  - entry_point (str): the entrypoint for the container
+  - environment (list): a list of environment variables
+  - host_config (dict): a dictionary of host configurations
 
 SerialDriver
 ~~~~~~~~~~~~
@@ -1379,6 +1449,27 @@ to transition to the shell state:
 
 this command would transition from the boot loader into a Linux shell and
 activate the shelldriver.
+
+DockerShellStrategy
+~~~~~~~~~~~~~~~~~~~
+A DockerShellStrategy has three states:
+
+- unknown
+- off
+- shell
+
+
+to transition to the shell state:
+
+::
+
+   t = get_target("main")
+   s = ShellStrategy(t)
+   s.transition("shell")
+
+
+these commands would activate the docker driver which creates a docker container,
+and start the container which could make it available for sshaccess etc.
 
 Reporters
 ---------

@@ -36,6 +36,11 @@ class UBootStrategy(Strategy):
             raise StrategyError("can not transition to {}".format(status))
         elif status == self.status:
             return # nothing to do
+        elif self.status == Status.shell and status == Status.uboot:
+            # in shell: we can simply reboot to get U-boot
+            # make sure run() reads the shell prompt and returns
+            self.shell.run("(sleep 1;reboot)&")
+            self.target.activate(self.uboot)
         elif status == Status.uboot:
             # cycle power
             self.target.activate(self.power)

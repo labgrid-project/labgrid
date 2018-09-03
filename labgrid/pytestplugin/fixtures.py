@@ -34,7 +34,7 @@ def pytest_addoption(parser):
         dest='lg_log',
         metavar='path to logfiles',
         nargs='?',
-        default=".",
+        const=".",
         help='path to store logfiles')
 
 

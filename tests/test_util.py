@@ -8,8 +8,10 @@ import pytest
 from labgrid.util import diff_dict, flat_dict, filter_dict
 from labgrid.util.ssh import ForwardError, SSHConnection, sshmanager
 from labgrid.util.proxy import proxymanager
+from labgrid.util.managedfile import ManagedFile
 from labgrid.driver.exception import ExecutionError
 from labgrid.resource.serialport import NetworkSerialPort
+from labgrid.resource.common import Resource, NetworkResource
 
 @pytest.fixture
 def connection_localhost():
@@ -211,3 +213,39 @@ def test_proxymanager_local_forced_proxy(target):
     nhost, nport = proxymanager.get_host_and_port(nr)
 
     assert (host, port) != (nhost, nport)
+
+def test_remote_managedfile(target, tmpdir):
+    import hashlib
+    import getpass
+
+    res = NetworkResource(target, "test", "localhost")
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+    hash = hashlib.sha256(t.read().encode("utf-8")).hexdigest()
+    mf = ManagedFile(t, res)
+    mf.sync_to_resource()
+
+    assert os.path.isfile("/tmp/labgrid/{}/{}/test".format(getpass.getuser(), hash))
+    assert hash == mf.get_hash()
+    assert "/tmp/labgrid/{}/{}/test".format(getpass.getuser(), hash) == mf.get_remote_path()
+
+def test_local_managedfile(target, tmpdir):
+    import hashlib
+
+    res = Resource(target, "test")
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+    hash = hashlib.sha256(t.read().encode("utf-8")).hexdigest()
+    mf = ManagedFile(t, res)
+    mf.sync_to_resource()
+
+    assert hash == mf.get_hash()
+    assert str(t) == mf.get_remote_path()

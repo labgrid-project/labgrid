@@ -4,6 +4,9 @@ Release 0.2.0 (unreleased)
 New Features
 ~~~~~~~~~~~~
 
+- `SSHDriver` and `NetworkService` timeout is now configurable.
+- `NetworkService` now accepts extra SSH-specific options through
+  the ``NetworkService.options`` attribute.
 - The target now saves it's attached drivers, resources and protocols in a
   lookup table, avoiding the need of importing many Drivers and Protocols (see
   `Syntactic sugar for Targets`_)

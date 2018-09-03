@@ -29,19 +29,30 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.logger = logging.getLogger("{}({})".format(self, self.target))
 
     def on_activate(self):
-        self.ssh_prefix = "-o LogLevel=ERROR"
-        self.ssh_prefix += " -i {}".format(os.path.abspath(self.keyfile)
+        self.ssh_opts = "-o LogLevel=ERROR"
+        self.ssh_opts += " -i {}".format(os.path.abspath(self.keyfile)
                                           ) if self.keyfile else ""
-        self.ssh_prefix += " -o PasswordAuthentication=no" if (
+        self.ssh_opts += " -o PasswordAuthentication=no" if (
             not self.networkservice.password) else ""
-        self.control = self._check_master()
-        self.ssh_prefix += " -F /dev/null"
-        self.ssh_prefix += " -o ControlPath={}".format(
+        if self.networkservice.options:
+            self.ssh_opts += " " + self.networkservice.options
+
+        self.env = os.environ.copy()
+        if self.networkservice.password:
+            self.sshpass = "sshpass -e "
+            self.env['SSHPASS'] = self.networkservice.password
+        else:
+            self.sshpass = ""
+
+        self.control = self._check_master() if self.networkservice.shared else ""
+        self.ssh_opts += " -F /dev/null"
+        self.ssh_opts += " -o ControlPath={}".format(
             self.control
         ) if self.control else ""
 
     def on_deactivate(self):
-        self._cleanup_own_master()
+        if self.networkservice.shared:
+            self._cleanup_own_master()
 
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
@@ -50,25 +61,23 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self.tmpdir, 'control-{}'.format(self.networkservice.address)
         )
         # use sshpass if we have a password
-        sshpass = "sshpass -e " if self.networkservice.password else ""
-        args = ("{}ssh -n {} -x -o ConnectTimeout=30 -o ControlPersist=300 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -MN -S {} -p {} {}@{}").format( # pylint: disable=line-too-long
-                    sshpass, self.ssh_prefix, control, self.networkservice.port,
-                    self.networkservice.username, self.networkservice.address).split(" ")
+        args = ("{sshpass}ssh -n -x -o ConnectTimeout={timeout} -o ControlPersist=300 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"  # pylint: disable=line-too-long
+                " -MN -S {control} -p {port} {opts} {user}@{addr}").format(
+                    sshpass=self.sshpass, timeout=self.networkservice.timeout, control=control,
+                    port=self.networkservice.port, opts=self.ssh_opts,
+                    user=self.networkservice.username, addr=self.networkservice.address).split(" ")
 
-        env = os.environ.copy()
-        if self.networkservice.password:
-            env['SSHPASS'] = self.networkservice.password
-        self.process = subprocess.Popen(args, env=env)
+        self.process = subprocess.Popen(args, env=self.env)
 
         try:
-            if self.process.wait(timeout=30) is not 0:
+            if self.process.wait(timeout=self.networkservice.timeout) is not 0:
                 raise ExecutionError(
                     "failed to connect to {} with {} and {}".
                     format(self.networkservice.address, args, self.process.wait())
                 )
         except subprocess.TimeoutExpired:
             raise ExecutionError(
-                "failed to connect to {} with {} and {}".
+                "failed to connect to {} with {} and {} due to timeout".
                 format(self.networkservice.address, args, self.process.wait())
                 )
 
@@ -100,10 +109,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     @step(args=['cmd'], result=True)
-    def run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
-        return self._run(cmd, codec=codec, decodeerrors=decodeerrors)
+    def run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=30):
+        return self._run(cmd, codec=codec, decodeerrors=decodeerrors, timeout=timeout)
 
-    def _run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
+    def _run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None):
         """Execute `cmd` on the target.
 
         This method runs the specified `cmd` as a command on its target.
@@ -113,17 +122,19 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         returns:
         (stdout, stderr, returncode)
         """
-        complete_cmd = "ssh -x {prefix} -p {port} {user}@{host} {cmd}".format(
+        complete_cmd = "{sshpass}ssh -x -o ConnectTimeout={timeout} {opts} -p {port} {user}@{host} {cmd}".format(
+            sshpass=self.sshpass,
+            timeout=timeout if timeout is not None else self.networkservice.timeout,
+            opts=self.ssh_opts,
             user=self.networkservice.username,
             host=self.networkservice.address,
             cmd=cmd,
-            prefix=self.ssh_prefix,
             port=self.networkservice.port
         ).split(' ')
         self.logger.debug("Sending command: %s", complete_cmd)
         try:
             sub = subprocess.Popen(
-                complete_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                complete_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=self.env
             )
         except:
             raise ExecutionError(
@@ -135,6 +146,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         stderr = stderr.decode(codec, decodeerrors).split('\n')
         stdout.pop()
         stderr.pop()
+        self.logger.debug('Successfully connected to %s', self.networkservice.address)
         return (stdout, stderr, sub.returncode)
 
     def get_status(self):
@@ -144,12 +156,13 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['filename', 'remotepath'])
     def put(self, filename, remotepath=''):
-        transfer_cmd = "scp {prefix} -P {port} {filename} {user}@{host}:{remotepath}".format(
+        transfer_cmd = "{sshpass}scp {opts} -P {port} {filename} {user}@{host}:{remotepath}".format(
+            sshpass=self.sshpass,
             filename=filename,
             user=self.networkservice.username,
             host=self.networkservice.address,
             remotepath=remotepath,
-            prefix=self.ssh_prefix,
+            opts=self.ssh_opts,
             port=self.networkservice.port
         ).split(' ')
         try:
@@ -168,13 +181,14 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['filename', 'destination'])
     def get(self, filename, destination="."):
-        transfer_cmd = "scp {prefix} -P {port} {user}@{host}:{filename} {destination}".format(
+        transfer_cmd = "{sshpass}scp {opts} -P {port} {user}@{host}:{filename} {dest}".format(
+            sshpass=self.sshpass,
             filename=filename,
             user=self.networkservice.username,
             host=self.networkservice.address,
-            prefix=self.ssh_prefix,
+            opts=self.ssh_opts,
             port=self.networkservice.port,
-            destination=destination
+            dest=destination
         ).split(' ')
         try:
             sub = subprocess.call(

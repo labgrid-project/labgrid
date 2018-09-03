@@ -11,3 +11,6 @@ class NetworkService(Resource):
     username = attr.ib(validator=attr.validators.instance_of(str))
     password = attr.ib(default='', validator=attr.validators.instance_of(str))
     port = attr.ib(default=22, validator=attr.validators.instance_of(int))
+    options = attr.ib(default='', validator=attr.validators.instance_of(str))
+    timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
+    shared = attr.ib(default=True, validator=attr.validators.instance_of(bool))

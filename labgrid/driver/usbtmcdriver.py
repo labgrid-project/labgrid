@@ -33,6 +33,8 @@ class USBTMCDriver(Driver):
         match = (self.tmc.vendor_id, self.tmc.model_id)
         if match == (0x0957, 0x1798):
             model = 'keysight_dsox2000'
+        elif match == (0x0699, 0x0368):
+            model = 'tektronix_tds2000'
         else:
             raise InvalidConfigError("Unkown USB TMC device {:04x}:{:04x}".format(*match))
 
@@ -55,10 +57,14 @@ class USBTMCDriver(Driver):
         self.wrapper.usbtmc(self.index, cmd, read=False)
 
     @Driver.check_active
-    def query(self, cmd, binary=False):
+    def query(self, cmd, binary=False, raw=False):
         assert isinstance(cmd, str)
         cmd = b2s(cmd.encode('ASCII')+b'\n')
         res = s2b(self.wrapper.usbtmc(self.index, cmd, read=True))
+
+        if raw:
+            return res
+
         if binary:
             assert res[0:1] == b'#'
             digits = int(res[1:2], 10)
@@ -82,7 +88,14 @@ class USBTMCDriver(Driver):
 
     @Driver.check_active
     def get_screenshot(self):
-        return self.backend.get_screenshot_png(self)
+        png = getattr(self.backend, 'get_screenshot_png', None)
+        tiff = getattr(self.backend, 'get_screenshot_tiff', None)
+        if png:
+            return 'png', png(self)
+        elif tiff:
+            return 'tiff', tiff(self)
+        else:
+            raise InvalidConfigError("get_screenshot_png/_tiff not implemented")
 
     @Driver.check_active
     def get_bool(self, cmd):

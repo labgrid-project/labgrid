@@ -873,8 +873,8 @@ class ClientSession(ApplicationSession):
         drv = self._get_tmc()
         action = self.args.action
         if action in ['show', 'save']:
-            data = drv.get_screenshot()
-            filename = 'tmc-screen_{0:%Y-%m-%d}_{0:%H:%M:%S}.png'.format(datetime.now())
+            format, data = drv.get_screenshot()
+            filename = 'tmc-screen_{0:%Y-%m-%d}_{0:%H:%M:%S}.{1}'.format(datetime.now(), format)
             open(filename, 'wb').write(data)
             print("Saved as {}".format(filename))
             if action == 'show':

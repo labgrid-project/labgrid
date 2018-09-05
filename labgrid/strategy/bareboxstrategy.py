@@ -11,8 +11,9 @@ from .common import Strategy, StrategyError
 
 class Status(enum.Enum):
     unknown = 0
-    barebox = 1
-    shell = 2
+    off = 1
+    barebox = 2
+    shell = 3
 
 
 @target_factory.reg_driver
@@ -39,9 +40,14 @@ class BareboxStrategy(Strategy):
         elif status == self.status:
             step.skip("nothing to do")
             return  # nothing to do
-        elif status == Status.barebox:
-            # cycle power
+        elif status == Status.off:
+            self.target.deactivate(self.barebox)
+            self.target.deactivate(self.shell)
             self.target.activate(self.power)
+            self.power.off()
+        elif status == Status.barebox:
+            self.transition(Status.off)  # pylint: disable=missing-kwoa
+            # cycle power
             self.power.cycle()
             # interrupt barebox
             self.target.activate(self.barebox)

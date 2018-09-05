@@ -1320,9 +1320,10 @@ Such a state could be the boot loader or a booted Linux kernel with shell.
 
 BareboxStrategy
 ~~~~~~~~~~~~~~~
-A BareboxStrategy has three states:
+A BareboxStrategy has four states:
 
 - unknown
+- off
 - barebox
 - shell
 
@@ -1362,9 +1363,10 @@ activate the shelldriver.
 
 UBootStrategy
 ~~~~~~~~~~~~~
-A UBootStrategy has three states:
+A UBootStrategy has four states:
 
 - unknown
+- off
 - uboot
 - shell
 

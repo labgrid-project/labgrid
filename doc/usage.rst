@@ -214,6 +214,11 @@ useful to define a function scope fixture per state in ``conftest.py``::
           pytest.skip("strategy not found")
 
   @pytest.fixture(scope='function')
+  def switch_off(target, strategy, capsys):
+      with capsys.disabled():
+          strategy.transition('off')
+
+  @pytest.fixture(scope='function')
   def bootloader_command(target, strategy, capsys):
       with capsys.disabled():
           strategy.transition('barebox')

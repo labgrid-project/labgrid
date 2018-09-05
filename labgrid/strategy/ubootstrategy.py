@@ -10,8 +10,9 @@ from .common import Strategy, StrategyError
 
 class Status(enum.Enum):
     unknown = 0
-    uboot = 1
-    shell = 2
+    off = 1
+    uboot = 2
+    shell = 3
 
 
 @target_factory.reg_driver
@@ -36,9 +37,14 @@ class UBootStrategy(Strategy):
             raise StrategyError("can not transition to {}".format(status))
         elif status == self.status:
             return # nothing to do
-        elif status == Status.uboot:
-            # cycle power
+        elif status == Status.off:
+            self.target.deactivate(self.barebox)
+            self.target.deactivate(self.shell)
             self.target.activate(self.power)
+            self.power.off()
+        elif status == Status.uboot:
+            self.transition(Status.off)  # pylint: disable=missing-kwoa
+            # cycle power
             self.power.cycle()
             # interrupt uboot
             self.target.activate(self.uboot)

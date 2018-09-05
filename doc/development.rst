@@ -256,17 +256,23 @@ Lets take a look at the builtin `BareboxStrategy`. The Status enum for Barebox:
 
    class Status(enum.Enum):
        unknown = 0
-       barebox = 1
-       shell = 2
+       off = 1
+       barebox = 2
+       shell = 3
 
-defines 2 custom states and the `unknown` state as the start point.
-These two states are handled in the transition function:
+defines 3 custom states and the `unknown` state as the start point.
+These three states are handled in the transition function:
 
 ::
 
-    elif status == Status.barebox:
-        # cycle power
+    elif status == Status.off:
+        self.target.deactivate(self.barebox)
+        self.target.deactivate(self.shell)
         self.target.activate(self.power)
+        self.power.off()
+    elif status == Status.barebox:
+        self.transition(Status.off)
+        # cycle power
         self.power.cycle()
         # interrupt barebox
         self.target.activate(self.barebox)
@@ -279,7 +285,7 @@ These two states are handled in the transition function:
 
 Here the `barebox` state simply cycles the board and activates the driver, while
 the `shell` state uses the barebox state to cycle the board and than boot the
-linux kernel.
+linux kernel. The `off` states switch the power off.
 
 Graph Strategies
 ----------------

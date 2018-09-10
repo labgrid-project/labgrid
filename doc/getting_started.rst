@@ -44,6 +44,22 @@ requirements from the `requirements.txt` file:
    Thus when installing directly from pip you have to test compatibility
    yourself.
 
+.. note::
+   If you are installing via pip and intend to use Serial over IP (RFC2217),
+   it is highly recommended to uninstall pyserial after installation and replace
+   it with the pyserial version from the labgrid project:
+
+      .. code-block:: bash
+
+          $ pip uninstall pyserial
+          $ pip install https://github.com/labgrid-project/pyserial/archive/v3.4.0.1.zip#egg=pyserial
+
+   This pyserial version has two fixes for an Issue we found with Serial over IP
+   multiplexers. Additionally it reduces the Serial over IP traffic considerably
+   since the port is not reconfigured when labgrid changes the timeout (which is
+   done inside the library a lot).
+
+
 Test your installation by running:
 
 .. code-block:: bash

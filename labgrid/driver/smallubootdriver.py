@@ -42,6 +42,7 @@ class SmallUBootDriver(UBootDriver):
     """
 
     boot_secret = attr.ib(default="a", validator=attr.validators.instance_of(str))
+    login_timeout = attr.ib(default=60.0, validator=attr.validators.instance_of(float))
 
     @step()
     def _await_prompt(self):
@@ -51,7 +52,7 @@ class SmallUBootDriver(UBootDriver):
         """
 
         # wait for boot expression. Afterwards enter secret
-        self.console.expect(self.boot_expression)
+        self.console.expect(self.boot_expression, timeout=self.login_timeout)
         self.console.sendline(self.boot_secret)
         self._status = 1
 

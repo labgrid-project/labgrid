@@ -811,6 +811,7 @@ Arguments:
     prompt
   - boot_expression (str): optional, regex to match the uboot start string
     defaults to "U-Boot 20\d+"
+  - login_timeout (str): optional, timeout for the password/login detection
 
 BareboxDriver
 ~~~~~~~~~~~~~

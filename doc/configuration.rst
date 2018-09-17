@@ -191,6 +191,11 @@ instead of the key file (needs sshpass to be installed)
 - username (str): username used by SSH
 - password (str): password used by SSH
 - port (int): optional, port used by SSH (default 22)
+- options (str): optional, :manpage:`ssh(1)` options to pass through to SSH
+- timeout (int): optional, equivalent to
+                 `options: -o ConnectionTimeout=<timeout>` (default 30)
+- shared (str): optional, specifies whether SSH multiplexing (`ControlMaster` in
+                :manpage:`ssh_config(5)`) is used (default `true`)
 
 Used by:
   - `SSHDriver`_

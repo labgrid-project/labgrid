@@ -338,13 +338,15 @@ class USBPowerPort(USBResource):
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
     def filter_match(self, device):
         try:
-            devclass = device.attributes.asstring('bDeviceClass')
-            if devclass != '09':
+            devclass = device.attributes.asint('bDeviceClass')
+            if devclass != 9:
                 return False
         except UnicodeDecodeError:
-            pass
+            return False
         except KeyError:
-            pass
+            return False
+        except ValueError:
+            return False
         return super().filter_match(device)
 
 @target_factory.reg_resource

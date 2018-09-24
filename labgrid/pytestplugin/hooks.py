@@ -40,3 +40,35 @@ def pytest_configure(config):
     if lg_coordinator is not None:
         env.config.set_option('crossbar_url', lg_coordinator)
     config._labgrid_env = env
+
+@pytest.hookimpl()
+def pytest_collection_modifyitems(config, items):
+    """This function matches function feature flags with those found in the
+    environment and disables the item if no match is found"""
+    have_feature = []
+    env = config._labgrid_env
+
+    if not env:
+        return
+
+    have_feature = env.get_features() | env.get_target_features()
+
+    for item in items:
+        marker = item.get_marker("lg_feature")
+        if not marker:
+            continue
+        else:
+            arg = marker.args[0]
+            if isinstance(arg, str):
+                want_feature = set([arg])
+            elif isinstance(arg, list):
+                want_feature = set(arg)
+            else:
+                raise Exception("Unsupported feature argument type")
+        missing_feature = want_feature - have_feature
+        if missing_feature:
+            if len(missing_feature) == 1:
+                skip = pytest.mark.skip(reason="Skipping because feature \"{}\" is not supported".format(missing_feature))
+            else:
+                skip = pytest.mark.skip(reason="Skipping because features \"{}\" are not supported".format(missing_feature))
+            item.add_marker(skip)

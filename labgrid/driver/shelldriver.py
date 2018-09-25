@@ -168,7 +168,14 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """
         return self._status
 
-    def _check_prompt(self):
+    @step(args=['marker_timeout','prompt_timeout'])
+    def check_prompt(self, marker_timeout=2, prompt_timeout=1):
+        """
+            Check if we have a valid prompt
+        """
+        return self._check_prompt(marker_timeout, prompt_timeout)
+
+    def _check_prompt(self, marker_timeout=2, prompt_timeout=1):
         """
         Internal function to check if we have a valid prompt
         """
@@ -176,8 +183,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # hide marker from expect
         self.console.sendline("echo '{}''{}'".format(marker[:4], marker[4:]))
         try:
-            self.console.expect("{}".format(marker), timeout=2)
-            self.console.expect(self.prompt, timeout=1)
+            self.console.expect("{}".format(marker), timeout=marker_timeout)
+            self.console.expect(self.prompt, timeout=prompt_timeout)
             self._status = 1
         except TIMEOUT:
             self._status = 0

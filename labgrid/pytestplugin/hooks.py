@@ -57,7 +57,7 @@ def pytest_collection_modifyitems(config, items):
     have_feature = env.get_features() | env.get_target_features()
 
     for item in items:
-        marker = item.get_marker("lg_feature")
+        marker = item.get_closest_marker("lg_feature")
         if not marker:
             continue
         else:

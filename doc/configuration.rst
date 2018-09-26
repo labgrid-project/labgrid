@@ -706,6 +706,12 @@ SSHDriver
 ~~~~~~~~~
 A SSHDriver requires a `NetworkService` resource and allows the execution of
 commands and file upload via network.
+It uses SSH's ServerAliveInterval option to detect failed connections.
+
+If a shared SSH connection to the target is already open, it will reuse it when
+running commands.
+In that case, ServerAliveInterval should be set outside of labgrid, as it
+cannot be enabled for an existing connection.
 
 Binds to:
   networkservice:

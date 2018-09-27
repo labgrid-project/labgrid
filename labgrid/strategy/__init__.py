@@ -1,4 +1,4 @@
-from .common import Strategy
+from .common import Strategy, StrategyError
 from .bareboxstrategy import BareboxStrategy
 from .shellstrategy import ShellStrategy
 from .ubootstrategy import UBootStrategy

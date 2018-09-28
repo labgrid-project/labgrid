@@ -78,8 +78,8 @@ class RemotePlaceManager(ResourceManager):
             for k, v_new in attrs.items():
                 # check for attr converters
                 attrib = getattr(fields, k)
-                if attrib.convert:
-                    v_new = attrib.convert(v_new)
+                if attrib.converter:
+                    v_new = attrib.converter(v_new)
                 v_old = getattr(resource, k)
                 setattr(resource, k, v_new)
                 if v_old != v_new:

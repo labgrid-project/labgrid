@@ -114,7 +114,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # the before property. So we store the last before value we've seen.
         # Because pexpect keeps any read data in it's buffer when a timeout
         # occours, we can't lose any data this way.
-        last_before = None
+        last_before = b''
 
         while True:
             index, before, _, _ = self.console.expect(

@@ -66,6 +66,12 @@ This variable can be used to specify a state which the device transitions into
 before executing a command. Requires a configuration file and a Strategy
 specified for the device.
 
+LG_ENV
+~~~~~~
+
+This variable can be used to specify the configuration file to use without
+using the ``--config`` option, the ``--config`` option overrides it.
+
 LG_CROSSBAR
 ~~~~~~~~~~~
 This variable can be used to set the default crossbar URL (instead of using the

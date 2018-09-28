@@ -963,6 +963,7 @@ def main():
         '-c',
         '--config',
         type=str,
+        default=os.environ.get("LG_ENV"),
         help="config file"
     )
     parser.add_argument(

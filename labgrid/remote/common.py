@@ -98,12 +98,12 @@ class ResourceMatch:
 @attr.s(cmp=False)
 class Place:
     name = attr.ib()
-    aliases = attr.ib(default=attr.Factory(set), convert=set)
+    aliases = attr.ib(default=attr.Factory(set), converter=set)
     comment = attr.ib(default="")
     matches = attr.ib(default=attr.Factory(list))
     acquired = attr.ib(default=None)
     acquired_resources = attr.ib(default=attr.Factory(list))
-    allowed = attr.ib(default=attr.Factory(set), convert=set)
+    allowed = attr.ib(default=attr.Factory(set), converter=set)
     created = attr.ib(default=attr.Factory(time.time))
     changed = attr.ib(default=attr.Factory(time.time))
 

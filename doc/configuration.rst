@@ -729,6 +729,8 @@ Implements:
 Arguments:
   - keyfile (str): filename of private key to login into the remote system
     (only used if password is not set)
+  - stderr_merge (bool): set to True to make `run()` return stderr merged with
+      stdout, and an empty list as second element.
 
 InfoDriver
 ~~~~~~~~~~

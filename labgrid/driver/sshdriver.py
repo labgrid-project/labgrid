@@ -22,6 +22,7 @@ from .exception import ExecutionError
 class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     """SSHDriver - Driver to execute commands via SSH"""
     bindings = {"networkservice": NetworkService, }
+    priorities = {CommandProtocol: 10, FileTransferProtocol: 10}
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     stderr_merge = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 

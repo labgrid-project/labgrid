@@ -1,0 +1,43 @@
+version: '3.3'
+services:
+  coordinator:
+    build:
+      context: "../../"
+      dockerfile: "docker/Dockerfile"
+    networks:
+      - labgrid_net
+    tty: true
+    command: "crossbar start"
+  client:
+    build:
+      context: "../../"
+      dockerfile: "docker/Dockerfile"
+    networks:
+      - labgrid_net
+    tty: true
+    stdin_open: true
+    command: "/bin/bash"
+  exporter:
+    build:
+      context: "../../"
+      dockerfile: "docker/Dockerfile"
+    volumes:
+      - "./exporter-conf:/opt/exporter-conf"
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+    networks:
+      - labgrid_net
+    command: /opt/exporter-conf/entrypoint.sh
+    depends_on:
+      - coordinator
+    tty: true
+    stdin_open: true
+    privileged: true
+
+networks:
+  labgrid_net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: labgrid_bridge
+    ipam:
+      driver: default

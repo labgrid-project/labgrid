@@ -16,7 +16,7 @@ class Config:
 
     def __attrs_post_init__(self):
         # load and parse the yaml configuration file
-        self.base = os.path.dirname(os.path.abspath(self.filename))
+        self.base = os.path.dirname(os.path.realpath(self.filename))
         try:
             with open(self.filename) as file:
                 self.data = load(file)

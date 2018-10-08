@@ -18,6 +18,7 @@ setup(
         'onewire': ['onewire>=0.2'],
         'snmp': ['pysnmp', 'pysnmp-mibs'],
         'modbus': ['pyModbusTCP'],
+        'graph': ['graphviz'],
     },
     setup_requires=['pytest-runner', 'setuptools_scm'],
     tests_require=['pytest-mock', ],
@@ -32,7 +33,6 @@ setup(
         'requests',
         'xmodem>=0.4.5',
         'autobahn',
-        'graphviz',
     ],
     packages=[
         'labgrid',

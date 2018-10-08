@@ -34,6 +34,8 @@ class ResourceExport(ResourceEntry):
     The ResourceEntry attributes contain the information for the client.
     """
     host = attr.ib(default=gethostname(), validator=attr.validators.instance_of(str))
+    proxy = attr.ib(default=None)
+    proxy_required = attr.ib(default=False)
     local = attr.ib(init=False)
     local_params = attr.ib(init=False)
     start_params = attr.ib(init=False)
@@ -93,6 +95,10 @@ class ResourceExport(ResourceEntry):
             self.data['avail'] = self.local.avail
             dirty = True
         params = self._get_params()
+        if not params.get('extra'):
+            params['extra'] = {}
+        params['extra']['proxy_required'] = self.proxy_required
+        params['extra']['proxy'] = self.proxy
         if self.params != params:
             if self.local.avail and self.need_restart():
                 self.stop()
@@ -435,10 +441,11 @@ class ExporterSession(ApplicationSession):
             'cls': cls,
             'params': params,
         }
+        proxy_req = True if self.isolated else False
         if issubclass(export_cls, ResourceExport):
-            group[resource_name] = export_cls(config, host=self.hostname)
+            group[resource_name] = export_cls(config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req)
         else:
-            group[resource_name] = export_cls(config)
+            group[resource_name] = export_cls(config, proxy=getfqdn(), proxy_required=proxy_req)
         await self.update_resource(group_name, resource_name)
 
     async def update_resource(self, group_name, resource_name):

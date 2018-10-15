@@ -167,7 +167,13 @@ class Config:
         if isinstance(self.data.get('imports', []), str):
             raise KeyError("imports needs to be list not string")
         for user_import in self.data.get('imports', []):
-            imports.append(self.resolve_path(user_import))
+            # Try to resolve the import to a .py file
+            import_path = self.resolve_path(user_import)
+            if import_path.endswith('.py'):
+                imports.append(import_path)
+            else:
+                # Fallback to importing module if not a .py file path
+                imports.append(user_import)
 
         return imports
 

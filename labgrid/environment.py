@@ -19,12 +19,16 @@ class Environment:
         self.config = Config(self.config_file)
 
         for user_import in self.config.get_imports():
+            import importlib
             from importlib.machinery import SourceFileLoader
             import sys
 
-            module_name = os.path.basename(user_import)[:-3]
-
-            module = SourceFileLoader(module_name, user_import).load_module()
+            if user_import.endswith('.py'):
+                module_name = os.path.basename(user_import)[:-3]
+                module = SourceFileLoader(module_name, user_import).load_module()
+            else:
+                module_name = user_import
+                module = importlib.import_module(user_import)
             sys.modules[module_name] = module
 
     def get_target(self, role: str = 'main') -> Target:

@@ -1502,6 +1502,7 @@ The skeleton for an environment consists of:
      <more tools>
    imports:
      - <import.py>
+     - <python module>
 
 If you have a single target in your environment, name it "main", as the
 ``get_target`` function defaults to "main".

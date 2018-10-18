@@ -5,6 +5,7 @@ import pytest
 from ..exceptions import NoResourceFoundError
 from ..remote.client import UserError
 from ..resource.remote import RemotePlace
+from ..util.ssh import sshmanager
 
 # pylint: disable=redefined-outer-name
 
@@ -94,6 +95,7 @@ def env(request):
 
     yield env
     env.cleanup()
+    sshmanager.close_all()
 
 
 @pytest.fixture('session')

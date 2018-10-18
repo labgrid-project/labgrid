@@ -24,6 +24,7 @@ from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util.dict import diff_dict, flat_dict, filter_dict
 from ..util.yaml import dump
 from .. import Target, target_factory
+from ..util.proxy import proxymanager
 
 txaio.use_asyncio()
 txaio.config.loop = asyncio.get_event_loop()
@@ -659,12 +660,14 @@ class ClientSession(ApplicationSession):
             print("resource not found")
             return False
 
+        host, port = proxymanager.get_host_and_port(resource, self.args.proxy)
+
         # check for valid resources
-        assert resource.port is not None, "Port is not set"
+        assert port is not None, "Port is not set"
 
         call = [
             'microcom', '-s', str(resource.speed), '-t',
-            "{}:{}".format(resource.host, resource.port)
+            "{}:{}".format(host, port)
         ]
         print("connecting to ", resource, "calling ", " ".join(call))
         res = subprocess.call(call)
@@ -992,6 +995,13 @@ def main():
         '--verbose',
         action='count',
         default=0
+    )
+    parser.add_argument(
+        '-P',
+        '--proxy',
+        type=bool,
+        default=False,
+        help="proxy connections over ssh"
     )
     subparsers = parser.add_subparsers(
         dest='command',

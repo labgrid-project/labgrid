@@ -155,7 +155,7 @@ The documentation is inside ``doc/``.  HTML-Documentation is build using:
    $ cd doc/
    $ make html
 
-The HTML-documentation is written to ``doc/.build/html/``.
+The HTML documentation is written to ``doc/.build/html/``.
 
 
 Setting Up the Distributed Infrastructure

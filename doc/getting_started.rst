@@ -201,7 +201,7 @@ The exporter needs a configuration file written in YAML syntax, listing
 the resources to be exported from the local machine.
 The config file contains one or more named resource groups.
 Each group contains one or more resource declarations and optionally a location
-string (see the configuration reference for details).
+string (see the :doc:`configuration reference <configuration>` for details).
 
 For example, to export a ``RawSerialPort`` with the group name `example-port` and
 the location `example-location`:
@@ -298,7 +298,8 @@ Now we can connect to the serial console:
 
     $ labgrid-client -p example-place console
 
-For a complete reference have a look at the ``labgrid-client(1)`` man page.
+For a complete reference have a look at the :doc:`labgrid-client(1) <man/client>`
+man page.
 
 udev Matching
 -------------

@@ -191,6 +191,8 @@ by running ``crossbar start`` inside of the repository.
 
 .. note:: This is possible because the labgrid repository contains the crossbar
           configuration the coordinator in the ``.crossbar`` folder.
+          crossbar is a network messaging framework for building distributed
+          applications, which labgrid plugs into.
 
 Exporter
 ~~~~~~~~

@@ -235,6 +235,13 @@ Additional groups and resources can be added:
 
 Restart the exporter to activate the new configuration.
 
+.. Attention::
+   The `ManagedFile` will create temporary uploads in the exporters ``/tmp``
+   filesystem. It is recommended to install a cron job or systemd timer to
+   remove old temporary files. All uploads done by labgrid are stored in the
+   ``/tmp/labgrid`` directory.
+
+
 Client
 ~~~~~~
 

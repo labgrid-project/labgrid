@@ -4,6 +4,12 @@ Release 0.2.0 (unreleased)
 New Features
 ~~~~~~~~~~~~
 
+- ManagedFile: the managedfile takes a local file and synchronizes it to a
+  resource on a remote host. If the resource is not a `NetworkResource`, the
+  local file is used instead.
+- ProxyManager: a class to automatically create ssh forwardings to proxy
+  connections over the exporter
+- SSHManager: a global sshmanager to multiplex connections to different exporters
 - The target now saves it's attached drivers, resources and protocols in a
   lookup table, avoiding the need of importing many Drivers and Protocols (see
   `Syntactic sugar for Targets`_)

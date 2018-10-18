@@ -9,6 +9,7 @@ from ..resource.remote import NetworkMXSUSBLoader, NetworkIMXUSBLoader
 from ..resource.udev import MXSUSBLoader, IMXUSBLoader
 from ..step import step
 from .common import Driver, check_file
+from ..util.managedfile import ManagedFile
 
 
 @target_factory.reg_driver
@@ -39,10 +40,11 @@ class MXSUSBDriver(Driver, BootstrapProtocol):
     def load(self, filename=None):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
-        filename = os.path.abspath(filename)
-        check_file(filename, command_prefix=self.loader.command_prefix)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
         subprocess.check_call(
-            self.loader.command_prefix+[self.tool, "0", filename]
+            self.loader.command_prefix+[self.tool, "0", mf.get_remote_path()]
         )
 
 
@@ -74,8 +76,9 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
     def load(self, filename=None):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
-        filename = os.path.abspath(filename)
-        check_file(filename, command_prefix=self.loader.command_prefix)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
         subprocess.check_call(
-            self.loader.command_prefix+[self.tool, "-p", str(self.loader.path), "-c", filename]
+            self.loader.command_prefix+[self.tool, "-p", str(self.loader.path), "-c", mf.get_remote_path()]
         )

@@ -14,7 +14,7 @@ class ProxyManager:
 
         Args:
             res (Resource): The resource to retrieve the proxy for
-            proxy (:obj:`bool`, optional): whether to always proxy the
+            force_proxy (:obj:`bool`, optional): whether to always proxy the
                 connection, defaults to False
 
         Returns:

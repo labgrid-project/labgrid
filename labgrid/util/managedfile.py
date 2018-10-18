@@ -42,7 +42,7 @@ class ManagedFile:
             for block in iter(lambda: f.read(1048576), b''):
                 hasher.update(block)
         self.hash = hasher.hexdigest()
-        self.rpath = "/tmp/labgrid/{user}/{hash}/".format(
+        self.rpath = "/tmp/labgrid-{user}/{hash}/".format(
             user=username, hash=self.hash
         )
 

@@ -393,7 +393,7 @@ the file on the remote host with the following pattern:
 
 .. code-block:: bash
 
-   /tmp/labgrid/<username>/<md5sum>/<filename>
+   /tmp/labgrid-<username>/<md5sum>/<filename>
 
 Additionally it provides `get_remote_path()` to retrieve the complete file path,
 to easily employ it for driver implementations.

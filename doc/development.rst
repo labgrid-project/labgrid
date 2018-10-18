@@ -374,15 +374,13 @@ you can now request or remove forwards:
 
    sshmanager.remove_forward('somehost', 3000)
 
-or get and put files::
+or get and put files:
 
 .. code-block:: python
 
    from labgrid.util.ssh import sshmanager
 
    sshmanager.put_file('somehost', '/path/to/local/file', '/path/to/remote/file')
-
-.. _contributing:
 
 ManagedFile
 -----------
@@ -399,7 +397,8 @@ Additionally it provides `get_remote_path()` to retrieve the complete file path,
 to easily employ it for driver implementations.
 To use it in conjunction with a `Resource` and a file:
 
-.. ::
+.. code-block:: python
+
    from labgrid.util.managedfile import ManagedFile
 
    mf = ManagedFile(<your-file>, <your-resource>)
@@ -422,6 +421,7 @@ Usage:
    proxymanager.get_host_and_port(<resource>)
 
 
+.. _contributing:
 
 Contributing
 ------------

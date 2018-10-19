@@ -67,8 +67,8 @@ class ManagedFile:
         """
         if isinstance(self.resource, NetworkResource):
             return "{}{}".format(self.rpath, os.path.basename(self.local_path))
-        else:
-            return self.local_path
+
+        return self.local_path
 
     def get_hash(self):
         """Retrieve the hash of the file

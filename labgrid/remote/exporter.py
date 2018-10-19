@@ -445,7 +445,7 @@ class ExporterSession(ApplicationSession):
         if issubclass(export_cls, ResourceExport):
             group[resource_name] = export_cls(config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req)
         else:
-            group[resource_name] = export_cls(config, proxy=getfqdn(), proxy_required=proxy_req)
+            group[resource_name] = export_cls(config)
         await self.update_resource(group_name, resource_name)
 
     async def update_resource(self, group_name, resource_name):

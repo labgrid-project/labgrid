@@ -54,8 +54,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # use sshpass if we have a password
         sshpass = "sshpass -e " if self.networkservice.password else ""
         args = ("{}ssh -n {} -x -o ConnectTimeout=30 -o ControlPersist=300 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=15 -MN -S {} -p {} {}@{}").format( # pylint: disable=line-too-long
-                    sshpass, self.ssh_prefix, control, self.networkservice.port,
-                    self.networkservice.username, self.networkservice.address).split(" ")
+            sshpass, self.ssh_prefix, control, self.networkservice.port,
+            self.networkservice.username, self.networkservice.address).split(" ")
 
         env = os.environ.copy()
         if self.networkservice.password:

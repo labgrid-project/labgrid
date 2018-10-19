@@ -1,6 +1,4 @@
-import tempfile
 import hashlib
-import subprocess
 import os
 
 import attr

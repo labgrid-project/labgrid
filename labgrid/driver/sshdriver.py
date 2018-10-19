@@ -143,7 +143,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             stderr = []
         else:
             stderr = stderr.decode(codec, decodeerrors).split('\n')
-            foo = stderr.pop()
+            stderr.pop()
         return (stdout, stderr, sub.returncode)
 
     def get_status(self):

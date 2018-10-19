@@ -291,14 +291,14 @@ class SSHConnection:
         try:
             if self.process.wait(timeout=30) is not 0:
                 raise ExecutionError(
-                    "failed to connect to {} with {} and {} [{}],[{}] ".format(
+                    "failed to connect to {} with args {}, returncode={} [{}],[{}] ".format(
                         self.host, args, self.process.wait(), self.process.stdout.readlines(), self.process.stderr.readlines()
                     )
                 )
         except subprocess.TimeoutExpired:
             raise ExecutionError(
-                "failed to connect to {} with {} and {} [{}],[{}]".format(
-                    self.host, args, self.process.readlines(), self.process.readlines()
+                "failed to connect (timeout) to {} with args {} [{}],[{}]".format(
+                    self.host, args, self.process.stdout.readlines(), self.process.stderr.readlines()
                 )
             )
 

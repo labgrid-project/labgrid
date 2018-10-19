@@ -261,9 +261,9 @@ class USBEthernetInterface(USBResource, EthernetInterface):
 @attr.s(cmp=False)
 class AlteraUSBBlaster(USBResource):
     def filter_match(self, device):
-        if device.properties().get('ID_VENDOR_ID') != "09fb":
+        if device.properties.get('ID_VENDOR_ID') != "09fb":
             return False
-        if device.properties().get('ID_MODEL_ID') not in ["6010", "6810"]:
+        if device.properties.get('ID_MODEL_ID') not in ["6010", "6810"]:
             return False
         return super().filter_match(device)
 

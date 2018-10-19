@@ -1,28 +1,27 @@
-"""
-    RemoteTmpdir is a class that maintains a temporary directory on a
-    remote linux system.
-    Ex. when copying a test script or binary to DUT, RemoteTmpdir assists
-    to prevent pollution of the target.
-
-    RemoteTmpdir is to be created in a fixture, which can take care of a
-    testmodule in a subdirectory. Recommended scope is function, to avoid
-    polution between tests.
-
-    See examples/remote_tmpdir
-"""
-
 import os
+import os.path
 
 
 class RemoteTmpdir:
+    """ RemoteTmpdir - A class that maintains a temporary directory on a remote
+    linux system.
+    E.g. when copying a test script or binary to DUT, RemoteTmpdir assists to
+    prevent pollution of the target.
 
-    # shell   A driver able to do run on target.
-    # basedir A directory relative to pytest root
-    # filetransfer Defaults to shell, but only needs to be able to do filetransfer
-    #              Used if a more efficient filetransfer is used
+    RemoteTmpdir is to be created in a fixture, which can take care of a
+    test module in a subdirectory. Recommended scope is function to avoid
+    polution between tests.
+
+    See examples/remote_tmpdir.
+
+    Args:
+        shell (Driver): driver instance implementing CommandProtocol
+        basedir (str): directory relative to pytest root
+        filetransfer (Driver): driver instance implementing
+            FileTransferProtocol (defaults to shell)
+    """
     def __init__(self, shell, basedir=None, filetransfer=None):
-        stdout = shell.run_check("mktemp -d")
-        assert len(stdout) == 1
+        stdout = shell.run_check('mktemp -d')
         self.path = stdout[0] + '/'
         if filetransfer is None:
             filetransfer = shell
@@ -30,13 +29,17 @@ class RemoteTmpdir:
         self.shell = shell
         self.basedir = basedir
 
-        if self.basedir is not None and os.path.isfile(self.basedir):
-            raise Exception("RemoteTmpdir: {} is not a directory".format(
-                            self.basedir))
+        if self.basedir is not None and not os.path.isdir(self.basedir):
+            raise Exception('RemoteTmpdir: {} is not a directory'.format(
+                self.basedir))
 
-    ## Copy a file or contents of directory the created tmdir
-    # path   file or directory to copy
-    #        does not create sub directories, but copies all files
+    """
+    Copy a file or contents of directory to the created tmpdir.
+
+    Args:
+        items (list):  files or directories to copy (does not create sub
+            directories, but copies all files)
+    """
     def put(self, *items):
         for path in items:
             # resolve relative paths
@@ -57,14 +60,14 @@ class RemoteTmpdir:
     def get(self, *files, localdir=None):
         for path in files:
             remotepath = self.path + str(path)
-            assert localdir or self.basedir, "RemoteTmpdir does not have basedir set, use localdir= in get"
+            assert localdir or self.basedir, 'RemoteTmpdir does not have basedir set, use localdir= in get'
             self.filetransfer.get(remotepath, localdir or self.basedir)
 
-    # Remove the directory again on target.
+    """Remove the directory again on target."""
     def cleanup(self):
-        # Usually teardown code, thus failure ignored but returned
+        # usual teardown code, thus failure ignored but returned
         try:
-            self.shell.run_check("rm -r {}".format(self.path))
+            self.shell.run_check('rm -r {}'.format(self.path))
             return True
-        except:
+        except Exception:
             return False

@@ -23,7 +23,7 @@ def ssh_driver_mocked_and_activated(target, mocker):
                         return b'', b''
             return xx
         return Popen
-    NetworkService(target, "service", "1.2.3.4", "root")
+    NetworkService(target, 'service', '1.2.3.4', 'root')
     call = mocker.patch('subprocess.call')
     call.return_value = 0
     popen = mocker.patch('subprocess.Popen', new_callable=dummy)
@@ -32,13 +32,12 @@ def ssh_driver_mocked_and_activated(target, mocker):
     instance_mock = mocker.MagicMock()
     popen.return_value = instance_mock
     instance_mock.wait = mocker.MagicMock(return_value=0)
-    SSHDriver(target, "ssh")
-    s = target.get_driver("SSHDriver")
+    SSHDriver(target, 'ssh')
+    s = target.get_driver('SSHDriver')
     return s
 
 
 class TestTmpdir:
-
     def test_create(self, ssh_driver_mocked_and_activated, mocker):
         s = ssh_driver_mocked_and_activated
         s.run = mocker.MagicMock(return_value=[['/tmp/mock.dir'], [], 0])
@@ -61,5 +60,5 @@ class TestTmpdir:
         remote.put(__file__)
         remote.put(os.path.basename(__file__))
         remote.put(__file__,__file__)
-        remote.get("remotefile", "localfile")
-        remote.get("remotefile")
+        remote.get('remotefile', 'localfile')
+        remote.get('remotefile')

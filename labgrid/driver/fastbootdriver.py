@@ -1,13 +1,12 @@
 # pylint: disable=no-member
 import subprocess
-import os.path
 import attr
 
 from ..factory import target_factory
 from ..resource.remote import NetworkAndroidFastboot
 from ..resource.udev import AndroidFastboot
 from ..step import step
-from .common import Driver, check_file
+from .common import Driver
 from ..util.managedfile import ManagedFile
 
 

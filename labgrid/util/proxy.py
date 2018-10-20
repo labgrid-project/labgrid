@@ -31,13 +31,15 @@ class ProxyManager:
         if not res.extra.get('proxy') or not res.extra.get("proxy_required"):
             return res.host, res.port
 
-        if isinstance(res, NetworkResource):
-            proxy_required = res.extra['proxy_required']
-            proxy = res.extra['proxy']
-            if proxy_required or force_proxy:
-                port = sshmanager.request_forward(proxy, res.host, res.port)
-                host = 'localhost'
-                return host, port
-            return res.host, res.port
+        # res must be a NetworkResource now
+        assert isinstance(res, NetworkResource)
+
+        proxy_required = res.extra['proxy_required']
+        proxy = res.extra['proxy']
+        if proxy_required or force_proxy:
+            port = sshmanager.request_forward(proxy, res.host, res.port)
+            host = 'localhost'
+            return host, port
+        return res.host, res.port
 
 proxymanager = ProxyManager()

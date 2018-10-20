@@ -28,7 +28,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         password_prompt (str): string to detect the password prompt
         boot_expression (str): string to search for on UBoot start
         bootstring (str): string that indicates that the Kernel is booting
-        login_timeout (int): optional, timeout for login prompt detection 
+        login_timeout (int): optional, timeout for login prompt detection
 
     """
     bindings = {"console": ConsoleProtocol, }

@@ -8,8 +8,7 @@ import sys
 import os
 import traceback
 import subprocess
-from socket import gethostname, getfqdn, socket, AF_INET, SOCK_STREAM
-from contextlib import closing
+from socket import gethostname, getfqdn
 import attr
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 

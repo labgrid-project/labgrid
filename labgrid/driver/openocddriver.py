@@ -1,6 +1,5 @@
 # pylint: disable=no-member
 import subprocess
-import os.path
 import logging
 from itertools import chain
 import attr

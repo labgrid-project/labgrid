@@ -129,7 +129,7 @@ class SSHConnection:
 
     def __attrs_post_init__(self):
         self._logger = logging.getLogger("{}".format(self))
-        self._ssh_prefix = [ "-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no" ]
+        self._ssh_prefix = ["-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
         self._socket = os.path.join(
             self._tmpdir, 'control-{}'.format(self.host)
         )

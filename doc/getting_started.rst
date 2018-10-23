@@ -155,7 +155,7 @@ The documentation is inside ``doc/``.  HTML-Documentation is build using:
    $ cd doc/
    $ make html
 
-The HTML-documentation is written to ``doc/.build/html/``.
+The HTML documentation is written to ``doc/.build/html/``.
 
 
 Setting Up the Distributed Infrastructure
@@ -191,6 +191,8 @@ by running ``crossbar start`` inside of the repository.
 
 .. note:: This is possible because the labgrid repository contains the crossbar
           configuration the coordinator in the ``.crossbar`` folder.
+          crossbar is a network messaging framework for building distributed
+          applications, which labgrid plugs into.
 
 Exporter
 ~~~~~~~~
@@ -199,7 +201,7 @@ The exporter needs a configuration file written in YAML syntax, listing
 the resources to be exported from the local machine.
 The config file contains one or more named resource groups.
 Each group contains one or more resource declarations and optionally a location
-string (see the configuration reference for details).
+string (see the :doc:`configuration reference <configuration>` for details).
 
 For example, to export a ``RawSerialPort`` with the group name `example-port` and
 the location `example-location`:
@@ -234,6 +236,13 @@ Additional groups and resources can be added:
        port: /dev/ttyUSB1
 
 Restart the exporter to activate the new configuration.
+
+.. Attention::
+   The `ManagedFile` will create temporary uploads in the exporters ``/tmp``
+   filesystem. It is recommended to install a cron job or systemd timer to
+   remove old temporary files. All uploads done by labgrid are stored in the
+   ``/tmp/labgrid`` directory.
+
 
 Client
 ~~~~~~
@@ -289,7 +298,8 @@ Now we can connect to the serial console:
 
     $ labgrid-client -p example-place console
 
-For a complete reference have a look at the ``labgrid-client(1)`` man page.
+For a complete reference have a look at the :doc:`labgrid-client(1) <man/client>`
+man page.
 
 udev Matching
 -------------

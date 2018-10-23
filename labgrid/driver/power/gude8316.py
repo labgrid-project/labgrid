@@ -42,7 +42,7 @@ def power_get(host, index):
     # get the contents of the main page
     r = requests.get("http://{}/ov.html".format(host))
     r.raise_for_status()
-    for line_no, line in enumerate (r.text.splitlines()):
+    for line_no, line in enumerate(r.text.splitlines()):
         if line_no == index and line.find("content=\"Power Port ") > 0:
             if line.find(",0") > 0:
                 return False

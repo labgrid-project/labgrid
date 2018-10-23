@@ -3,7 +3,6 @@ import sys
 import pytest
 from _pytest.capture import safe_text_dupfile
 
-from .. import Environment
 from ..step import steps
 
 logging.basicConfig(

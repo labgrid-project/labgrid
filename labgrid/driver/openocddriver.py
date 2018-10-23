@@ -1,6 +1,5 @@
 # pylint: disable=no-member
 import subprocess
-import os.path
 import logging
 from itertools import chain
 import attr
@@ -10,6 +9,7 @@ from ..protocol import BootstrapProtocol
 from ..resource.remote import NetworkAlteraUSBBlaster
 from ..resource.udev import AlteraUSBBlaster
 from ..step import step
+from ..util.managedfile import ManagedFile
 from .common import Driver, check_file
 
 
@@ -60,9 +60,9 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
     def load(self, filename=None):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
-        filename = os.path.abspath(os.path.expanduser(filename))
+        mf = ManagedFile(filename, self.interface)
+        mf.sync_to_resource()
 
-        check_file(filename, command_prefix=self.interface.command_prefix)
         for config in self.config:
             check_file(config, command_prefix=self.interface.command_prefix)
 
@@ -71,7 +71,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         cmd += chain.from_iterable(("--file", path) for path in self.config)
         cmd += [
             "--command", "'init'",
-            "--command", "'bootstrap {}'".format(filename),
+            "--command", "'bootstrap {}'".format(mf.get_remote_path()),
             "--command", "'shutdown'",
         ]
         subprocess.check_call(cmd)

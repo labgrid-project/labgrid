@@ -729,6 +729,8 @@ Implements:
 Arguments:
   - keyfile (str): filename of private key to login into the remote system
     (only used if password is not set)
+  - stderr_merge (bool): set to True to make `run()` return stderr merged with
+      stdout, and an empty list as second element.
 
 InfoDriver
 ~~~~~~~~~~
@@ -1502,6 +1504,7 @@ The skeleton for an environment consists of:
      <more tools>
    imports:
      - <import.py>
+     - <python module>
 
 If you have a single target in your environment, name it "main", as the
 ``get_target`` function defaults to "main".

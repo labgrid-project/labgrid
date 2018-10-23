@@ -58,7 +58,7 @@ class USBResource(ManagedResource):
                 return False
         else: # new device
             def match_single(dev, key, value):
-                if dev.get(key) == value:
+                if dev.properties.get(key) == value:
                     return True
                 elif dev.attributes.get(key) == value:
                     return True
@@ -103,7 +103,7 @@ class USBResource(ManagedResource):
     def busnum(self):
         device = self._get_usb_device()
         if device:
-            return int(device.get('BUSNUM'))
+            return int(device.properties.get('BUSNUM'))
 
         return None
 
@@ -111,7 +111,7 @@ class USBResource(ManagedResource):
     def devnum(self):
         device = self._get_usb_device()
         if device:
-            return int(device.get('DEVNUM'))
+            return int(device.properties.get('DEVNUM'))
 
         return None
 
@@ -134,7 +134,7 @@ class USBResource(ManagedResource):
     def vendor_id(self):
         device = self._get_usb_device()
         if device:
-            return int(device.get('ID_VENDOR_ID'), 16)
+            return int(device.properties.get('ID_VENDOR_ID'), 16)
 
         return None
 
@@ -142,7 +142,7 @@ class USBResource(ManagedResource):
     def model_id(self):
         device = self._get_usb_device()
         if device:
-            return int(device.get('ID_MODEL_ID'), 16)
+            return int(device.properties.get('ID_MODEL_ID'), 16)
 
         return None
 
@@ -200,7 +200,7 @@ class USBMassStorage(USBResource):
 @attr.s(cmp=False)
 class IMXUSBLoader(USBResource):
     def filter_match(self, device):
-        match = (device.get('ID_VENDOR_ID'), device.get('ID_MODEL_ID'))
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
         if match not in [("15a2", "0054"), ("15a2", "0061"),
                          ("15a2", "0063"), ("15a2", "0071"),
@@ -216,7 +216,7 @@ class IMXUSBLoader(USBResource):
 @attr.s(cmp=False)
 class MXSUSBLoader(USBResource):
     def filter_match(self, device):
-        match = (device.get('ID_VENDOR_ID'), device.get('ID_MODEL_ID'))
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
         if match not in [("066f", "3780"), ("15a2", "004f")]:
             return False
@@ -229,9 +229,9 @@ class AndroidFastboot(USBResource):
     usb_vendor_id = attr.ib(default='1d6b', validator=attr.validators.instance_of(str))
     usb_product_id = attr.ib(default='0104', validator=attr.validators.instance_of(str))
     def filter_match(self, device):
-        if device.get('ID_VENDOR_ID') != self.usb_vendor_id:
+        if device.properties.get('ID_VENDOR_ID') != self.usb_vendor_id:
             return False
-        if device.get('ID_MODEL_ID') != self.usb_product_id:
+        if device.properties.get('ID_MODEL_ID') != self.usb_product_id:
             return False
         return super().filter_match(device)
 
@@ -246,7 +246,7 @@ class USBEthernetInterface(USBResource, EthernetInterface):
     def update(self):
         super().update()
         if self.device:
-            self.ifname = self.device.get('INTERFACE')
+            self.ifname = self.device.properties.get('INTERFACE')
         else:
             self.ifname = None
 
@@ -261,9 +261,9 @@ class USBEthernetInterface(USBResource, EthernetInterface):
 @attr.s(cmp=False)
 class AlteraUSBBlaster(USBResource):
     def filter_match(self, device):
-        if device.get('ID_VENDOR_ID') != "09fb":
+        if device.properties.get('ID_VENDOR_ID') != "09fb":
             return False
-        if device.get('ID_MODEL_ID') not in ["6010", "6810"]:
+        if device.properties.get('ID_MODEL_ID') not in ["6010", "6810"]:
             return False
         return super().filter_match(device)
 

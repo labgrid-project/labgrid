@@ -40,10 +40,21 @@ OPTIONS
     display command line help
 -x, --crossbar-url
     the crossbar url of the coordinator
+-i, --isolated
+    enable isolated mode (always request SSH forwards)
 -n, --name
     the public name of the exporter
 --hostname
     hostname (or IP) published for accessing resources
+
+-i / --isolated
+~~~~~~~~~~~~~~~
+This option enables isolated mode, which causes all exported resources marked
+as requiring SSH connection forwarding.
+Isolated mode is useful when resources (such as NetworkSerialPorts) are not
+directly accessible from the clients.
+The client will then use SSH to create a port forward to the resource when
+needed.
 
 -n / --name
 ~~~~~~~~~~~

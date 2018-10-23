@@ -1,6 +1,5 @@
 # pylint: disable=no-member
 import subprocess
-import os.path
 import re
 import attr
 
@@ -8,8 +7,9 @@ from ..factory import target_factory
 from ..resource.remote import NetworkAlteraUSBBlaster
 from ..resource.udev import AlteraUSBBlaster
 from ..step import step
-from .common import Driver, check_file
+from .common import Driver
 from .exception import ExecutionError
+from ..util.managedfile import ManagedFile
 
 
 @target_factory.reg_driver
@@ -63,8 +63,8 @@ class QuartusHPSDriver(Driver):
     def flash(self, filename=None, address=0x0):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
-        filename = os.path.abspath(os.path.expanduser(filename))
-        check_file(filename, command_prefix=self.interface.command_prefix)
+        mf = ManagedFile(filename)
+        mf.sync_to_resource()
 
         assert isinstance(address, int)
 
@@ -73,6 +73,6 @@ class QuartusHPSDriver(Driver):
         cmd += [
             "--cable={}".format(cable_number),
             "--addr=0x{:X}".format(address),
-            "--operation=P {}".format(filename),
+            "--operation=P {}".format(mf.get_remote_path()),
         ]
         subprocess.check_call(cmd)

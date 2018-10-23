@@ -13,11 +13,12 @@ setup(
     data_files=[('share/man/1', ['man/labgrid-client.1',
                                  'man/labgrid-exporter.1',
                                  'man/labgrid-device-config.1'])],
-    python_requires='>=3.5',
+    python_requires='>=3.5, <3.7',
     extras_require={
         'onewire': ['onewire>=0.2'],
         'snmp': ['pysnmp', 'pysnmp-mibs'],
         'modbus': ['pyModbusTCP'],
+        'graph': ['graphviz'],
     },
     setup_requires=['pytest-runner', 'setuptools_scm'],
     tests_require=['pytest-mock', ],
@@ -32,7 +33,6 @@ setup(
         'requests',
         'xmodem>=0.4.5',
         'autobahn',
-        'graphviz',
     ],
     packages=[
         'labgrid',

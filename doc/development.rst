@@ -354,6 +354,73 @@ alternative boot method.
 .. image:: res/graphstrategy-2.png
 
 
+SSHManager
+----------
+
+Labgrid provides a SSHManager to allow connection reuse with control sockets.
+To use the SSHManager in your code, import it from `labgrid.util.ssh`:
+
+.. code-block:: python
+
+   from labgrid.util.ssh import sshmanager
+
+you can now request or remove forwards:
+
+.. code-block:: python
+
+   from labgrid.util.ssh import sshmanager
+
+   localport = sshmanager.request_forward('somehost', 3000)
+
+   sshmanager.remove_forward('somehost', 3000)
+
+or get and put files:
+
+.. code-block:: python
+
+   from labgrid.util.ssh import sshmanager
+
+   sshmanager.put_file('somehost', '/path/to/local/file', '/path/to/remote/file')
+
+ManagedFile
+-----------
+While the `SSHManager` exposes a lower level interface to use SSH Connections,
+the ManagedFile provides a higher level interface for file upload to another
+host. It is meant to be used in conjunction with a remote resource, and store
+the file on the remote host with the following pattern:
+
+.. code-block:: bash
+
+   /tmp/labgrid-<username>/<md5sum>/<filename>
+
+Additionally it provides `get_remote_path()` to retrieve the complete file path,
+to easily employ it for driver implementations.
+To use it in conjunction with a `Resource` and a file:
+
+.. code-block:: python
+
+   from labgrid.util.managedfile import ManagedFile
+
+   mf = ManagedFile(<your-file>, <your-resource>)
+   mf.sync_to_resource()
+   path = mf.get_remote_path()
+
+ProxyManager
+------------
+The proxymanager is used to open connections across proxies via an attribute in
+the resource. This allows gated testing networks by always using the exporter as
+an SSH gateway to proxy the connections using SSH Forwarding. Currently this is
+used in the `SerialDriver` for proxy connections.
+
+Usage:
+
+.. code-block:: python
+
+   from labgrid.util.proxy import proxymanager
+
+   proxymanager.get_host_and_port(<resource>)
+
+
 .. _contributing:
 
 Contributing

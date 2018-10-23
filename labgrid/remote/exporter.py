@@ -8,25 +8,19 @@ import sys
 import os
 import traceback
 import subprocess
-from socket import gethostname, socket, AF_INET, SOCK_STREAM
-from contextlib import closing
+from socket import gethostname, getfqdn
 import attr
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .config import ResourceConfig
 from .common import ResourceEntry, enable_tcp_nodelay
+from ..util import get_free_port
 
 try:
     import pkg_resources
     __version__ = pkg_resources.get_distribution('labgrid').version
 except pkg_resources.DistributionNotFound:
     __version__ = "unknown"
-
-def get_free_port():
-    """Helper function to always return an unused port."""
-    with closing(socket(AF_INET, SOCK_STREAM)) as s:
-        s.bind(('', 0))
-        return s.getsockname()[1]
 
 
 exports = {}
@@ -39,6 +33,8 @@ class ResourceExport(ResourceEntry):
     The ResourceEntry attributes contain the information for the client.
     """
     host = attr.ib(default=gethostname(), validator=attr.validators.instance_of(str))
+    proxy = attr.ib(default=None)
+    proxy_required = attr.ib(default=False)
     local = attr.ib(init=False)
     local_params = attr.ib(init=False)
     start_params = attr.ib(init=False)
@@ -98,6 +94,10 @@ class ResourceExport(ResourceEntry):
             self.data['avail'] = self.local.avail
             dirty = True
         params = self._get_params()
+        if not params.get('extra'):
+            params['extra'] = {}
+        params['extra']['proxy_required'] = self.proxy_required
+        params['extra']['proxy'] = self.proxy
         if self.params != params:
             if self.local.avail and self.need_restart():
                 self.stop()
@@ -317,6 +317,7 @@ class ExporterSession(ApplicationSession):
         self.loop = self.config.extra['loop']
         self.name = self.config.extra['name']
         self.hostname = self.config.extra['hostname']
+        self.isolated = self.config.extra['isolated']
         self.authid = "exporter/{}".format(self.name)
         self.address = self._transport.transport.get_extra_info('sockname')[0]
         self.poll_task = None
@@ -346,6 +347,7 @@ class ExporterSession(ApplicationSession):
                     if params is None:
                         continue
                     cls = params.pop('cls', resource_name)
+
                     await self.add_resource(
                         group_name, resource_name, cls, params
                     )
@@ -438,8 +440,9 @@ class ExporterSession(ApplicationSession):
             'cls': cls,
             'params': params,
         }
+        proxy_req = True if self.isolated else False
         if issubclass(export_cls, ResourceExport):
-            group[resource_name] = export_cls(config, host=self.hostname)
+            group[resource_name] = export_cls(config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req)
         else:
             group[resource_name] = export_cls(config)
         await self.update_resource(group_name, resource_name)
@@ -488,6 +491,13 @@ def main():
         help="enable debug mode"
     )
     parser.add_argument(
+        '-i',
+        '--isolated',
+        action='store_true',
+        default=False,
+        help="enable isolated mode (always request SSH forwards)"
+    )
+    parser.add_argument(
         'resources',
         metavar='RESOURCES',
         type=str,
@@ -502,6 +512,7 @@ def main():
         'name': args.name or gethostname(),
         'hostname': args.hostname or gethostname(),
         'resources': args.resources,
+        'isolated': args.isolated
     }
 
     crossbar_url = args.crossbar

@@ -12,3 +12,4 @@ yapf==0.20.1
 -r modbus-requirements.txt
 -r snmp-requirements.txt
 -r xena-requirements.txt
+-r graph-requirements.txt

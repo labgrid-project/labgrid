@@ -1,13 +1,13 @@
 # pylint: disable=no-member
 import subprocess
-import os.path
 import attr
 
 from ..factory import target_factory
 from ..resource.remote import NetworkAndroidFastboot
 from ..resource.udev import AndroidFastboot
 from ..step import step
-from .common import Driver, check_file
+from .common import Driver
+from ..util.managedfile import ManagedFile
 
 
 @target_factory.reg_driver
@@ -48,16 +48,16 @@ class AndroidFastbootDriver(Driver):
     @Driver.check_active
     @step(args=['filename'])
     def boot(self, filename):
-        filename = os.path.abspath(filename)
-        check_file(filename, command_prefix=self.fastboot.command_prefix)
-        self("boot", filename)
+        mf = ManagedFile(filename, self.fastboot)
+        mf.sync_to_resource()
+        self("boot", mf.get_remote_path())
 
     @Driver.check_active
     @step(args=['partition', 'filename'])
     def flash(self, partition, filename):
-        filename = os.path.abspath(filename)
-        check_file(filename, command_prefix=self.fastboot.command_prefix)
-        self("flash", partition, filename)
+        mf = ManagedFile(filename, self.fastboot)
+        mf.sync_to_resource()
+        self("flash", partition, mf.get_remote_path())
 
     @Driver.check_active
     @step(args=['cmd'])

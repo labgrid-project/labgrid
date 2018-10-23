@@ -22,7 +22,9 @@ from .exception import ExecutionError
 class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     """SSHDriver - Driver to execute commands via SSH"""
     bindings = {"networkservice": NetworkService, }
+    priorities = {CommandProtocol: 10, FileTransferProtocol: 10}
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
+    stderr_merge = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -52,8 +54,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # use sshpass if we have a password
         sshpass = "sshpass -e " if self.networkservice.password else ""
         args = ("{}ssh -n {} -x -o ConnectTimeout=30 -o ControlPersist=300 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=15 -MN -S {} -p {} {}@{}").format( # pylint: disable=line-too-long
-                    sshpass, self.ssh_prefix, control, self.networkservice.port,
-                    self.networkservice.username, self.networkservice.address).split(" ")
+            sshpass, self.ssh_prefix, control, self.networkservice.port,
+            self.networkservice.username, self.networkservice.address).split(" ")
 
         env = os.environ.copy()
         if self.networkservice.password:
@@ -121,9 +123,13 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             port=self.networkservice.port
         ).split(' ')
         self.logger.debug("Sending command: %s", complete_cmd)
+        if self.stderr_merge:
+            stderr_pipe = subprocess.STDOUT
+        else:
+            stderr_pipe = subprocess.PIPE
         try:
             sub = subprocess.Popen(
-                complete_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                complete_cmd, stdout=subprocess.PIPE, stderr=stderr_pipe
             )
         except:
             raise ExecutionError(
@@ -132,9 +138,12 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         stdout, stderr = sub.communicate()
         stdout = stdout.decode(codec, decodeerrors).split('\n')
-        stderr = stderr.decode(codec, decodeerrors).split('\n')
         stdout.pop()
-        stderr.pop()
+        if stderr is None:
+            stderr = []
+        else:
+            stderr = stderr.decode(codec, decodeerrors).split('\n')
+            stderr.pop()
         return (stdout, stderr, sub.returncode)
 
     def get_status(self):

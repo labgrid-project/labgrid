@@ -11,6 +11,7 @@ from ..protocol import ConsoleProtocol
 from ..resource import SerialPort, NetworkSerialPort
 from .common import Driver
 from .consoleexpectmixin import ConsoleExpectMixin
+from ..util.proxy import proxymanager
 
 
 @target_factory.reg_driver
@@ -26,10 +27,10 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     else:
         bindings = {"port": {SerialPort, NetworkSerialPort}, }
     if tuple(int(x) for x in serial.__version__.split('.')) < (3, 4, 0, 1):
-        message = ("The installed python version does not contain important RFC2217 fixes.\n"
-            "You can install the labgrid fork via:\n"
-            "pip uninstall pyserial\n"
-            "pip install https://github.com/labgrid-project/pyserial/archive/v3.4.0.1.zip#egg=pyserial\n")
+        message = ("The installed pyserial version does not contain important RFC2217 fixes.\n"
+                   "You can install the labgrid fork via:\n"
+                   "pip uninstall pyserial\n"
+                   "pip install https://github.com/labgrid-project/pyserial/archive/v3.4.0.1.zip#egg=pyserial\n")
         warnings.warn(message)
 
     txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
@@ -53,10 +54,11 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
             self.serial.port = self.port.port
             self.serial.baudrate = self.port.speed
         else:
+            host, port = proxymanager.get_host_and_port(self.port)
             if self.port.protocol == "rfc2217":
-                self.serial.port = "rfc2217://{}:{}/".format(self.port.host, self.port.port)
+                self.serial.port = "rfc2217://{}:{}/".format(host, port)
             elif self.port.protocol == "raw":
-                self.serial.port = "socket://{}:{}/".format(self.port.host, self.port.port)
+                self.serial.port = "socket://{}:{}/".format(host, port)
             else:
                 raise Exception("SerialDriver: unknown protocol")
             self.serial.baudrate = self.port.speed

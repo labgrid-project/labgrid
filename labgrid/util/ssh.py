@@ -210,7 +210,8 @@ class SSHConnection:
         """Put a file onto the remote host"""
         subprocess.check_call([
             "rsync", "-e", "ssh -o ControlPath={}".format(self._socket),
-            "{}".format(local_file), "{}:{}".format(self.host, remote_path)
+            "--copy-links", "{}".format(local_file),
+            "{}:{}".format(self.host, remote_path)
         ])
 
     @_check_connected

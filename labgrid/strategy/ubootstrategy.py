@@ -38,7 +38,7 @@ class UBootStrategy(Strategy):
         elif status == self.status:
             return # nothing to do
         elif status == Status.off:
-            self.target.deactivate(self.barebox)
+            self.target.deactivate(self.uboot)
             self.target.deactivate(self.shell)
             self.target.activate(self.power)
             self.power.off()

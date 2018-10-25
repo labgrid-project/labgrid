@@ -63,7 +63,7 @@ class QuartusHPSDriver(Driver):
     def flash(self, filename=None, address=0x0):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
-        mf = ManagedFile(filename)
+        mf = ManagedFile(filename, self.interface)
         mf.sync_to_resource()
 
         assert isinstance(address, int)

@@ -765,8 +765,13 @@ class ClientSession(ApplicationSession):
 
     def _get_ip(self, place):
         target = self._get_target(place)
-        from ..resource import EthernetPort
-        resource = target.get_resource(EthernetPort)
+        from ..resource import EthernetPort, NetworkService
+        try:
+            resource = target.get_resource(EthernetPort)
+        except NoResourceFoundError:
+            resource = target.get_resource(NetworkService)
+            return resource.address
+
         matches = []
         for details in resource.extra.get('macs').values():
             ips = details.get('ips', [])

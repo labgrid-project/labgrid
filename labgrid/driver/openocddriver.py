@@ -63,12 +63,19 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         mf = ManagedFile(filename, self.interface)
         mf.sync_to_resource()
 
+        managed_configs = []
         for config in self.config:
-            check_file(config, command_prefix=self.interface.command_prefix)
+            mconfig = ManagedFile(config, self.interface)
+            mconfig.sync_to_resource()
+            managed_configs.append(mconfig)
 
         cmd = self.interface.command_prefix+[self.tool]
         cmd += chain.from_iterable(("--search", path) for path in self.search)
-        cmd += chain.from_iterable(("--file", path) for path in self.config)
+
+        for mconfig in managed_configs:
+            cmd.append("--file")
+            cmd.append(mconfig.get_remote_path())
+
         cmd += [
             "--command", "'init'",
             "--command", "'bootstrap {}'".format(mf.get_remote_path()),
@@ -79,11 +86,18 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
     @Driver.check_active
     @step(args=['commands'])
     def execute(self, commands: list):
+        managed_configs = []
         for config in self.config:
-            check_file(config, command_prefix=self.interface.command_prefix)
+            mconfig = ManagedFile(config, self.interface)
+            mconfig.sync_to_resource()
+            managed_configs.append(mconfig)
 
         cmd = self.interface.command_prefix+[self.tool]
         cmd += chain.from_iterable(("--search", path) for path in self.search)
-        cmd += chain.from_iterable(("--file", conf) for conf in self.config)
+
+        for mconfig in managed_configs:
+            cmd.append("--file")
+            cmd.append(mconfig.get_remote_path())
+
         cmd += chain.from_iterable(("--command", "'{}'".format(command)) for command in commands)
         subprocess.check_call(cmd)

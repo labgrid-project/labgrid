@@ -145,7 +145,7 @@ A USBPowerPort describes a generic switchable USB hub as supported by
 
 The example describes port 1 on the hub with the ID_PATH
 "pci-0000:00:14.0-usb-0:2:1.0".
-(use "udevadmin info /sys/bus/usb/devices/..." to find the ID_PATH value)
+(use ``udevadm info /sys/bus/usb/devices/...`` to find the ID_PATH value)
 
 - index (int): number of the port to switch
 
@@ -528,7 +528,7 @@ Only if these succeed, match entries provided by the user for the resource
 instance are considered.
 
 In addition to the properties reported by ``udevadm monitor --udev
---property``, elements of the ``ATTR(S){}`` dictionary (as shown by ``udevadmin
+--property``, elements of the ``ATTR(S){}`` dictionary (as shown by ``udevadm
 info <device> -a``) are useable as match keys.
 Finally ``sys_name`` allows matching against the name of the directory in
 sysfs.

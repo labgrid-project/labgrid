@@ -1224,9 +1224,9 @@ def main():
     }
 
     if args.command and args.command != 'help':
-        session = start_session(args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"), extra)
         exitcode = 0
         try:
+            session = start_session(args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"), extra)
             if asyncio.iscoroutinefunction(args.func):
                 session.loop.run_until_complete(args.func(session))
             else:
@@ -1251,6 +1251,9 @@ def main():
             else:
                 print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
             print("This is likely caused by an error in the environment configuration or invalid\nresource information provided by the coordinator.", file=sys.stderr)  # pylint: disable=line-too-long
+            exitcode = 1
+        except ConnectionError as e:
+            print("Could not connect to coordinator: {}".format(e))
             exitcode = 1
         except Error as e:
             if args.debug:

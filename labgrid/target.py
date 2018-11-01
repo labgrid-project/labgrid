@@ -99,7 +99,8 @@ class Target:
     def get_resource(self, cls, *, name=None, wait_avail=True):
         """
         Helper function to get a resource of the target.
-        Returns the first valid resource found, otherwise None.
+        Returns the first valid resource found, otherwise a
+        NoResourceFoundError is raised.
 
         Arguments:
         cls -- resource-class to return as a resource

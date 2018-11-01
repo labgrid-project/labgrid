@@ -654,12 +654,7 @@ class ClientSession(ApplicationSession):
         name = self.args.name
         target = self._get_target(place)
         from ..resource import NetworkSerialPort
-        try:
-            resource = target.get_resource(NetworkSerialPort, name=name)
-        except KeyError:
-            print("resource not found")
-            return False
-
+        resource = target.get_resource(NetworkSerialPort, name=name)
         host, port = proxymanager.get_host_and_port(resource, self.args.proxy)
 
         # check for valid resources
@@ -771,11 +766,7 @@ class ClientSession(ApplicationSession):
     def _get_ip(self, place):
         target = self._get_target(place)
         from ..resource import EthernetPort
-        try:
-            resource = target.get_resource(EthernetPort)
-        except KeyError:
-            print("resource not found")
-            return None
+        resource = target.get_resource(EthernetPort)
         matches = []
         for details in resource.extra.get('macs').values():
             ips = details.get('ips', [])

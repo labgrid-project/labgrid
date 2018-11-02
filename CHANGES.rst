@@ -4,6 +4,8 @@ Release 0.2.0 (unreleased)
 New Features
 ~~~~~~~~~~~~
 
+- ``labgrid-client ssh`` now uses ip/user/password from NetworkService resource
+  if available
 - ManagedFile: the managedfile takes a local file and synchronizes it to a
   resource on a remote host. If the resource is not a `NetworkResource`, the
   local file is used instead.

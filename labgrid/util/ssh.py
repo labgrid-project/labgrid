@@ -41,7 +41,7 @@ class SSHConnectionManager:
         instance = self._connections.get(host)
         if instance is None:
             # pylint: disable=unsupported-assignment-operation
-            self.logger.debug("Trying to start new control socket")
+            self.logger.debug("Creating SSHConnection for {}".format(host))
             instance = SSHConnection(host)
             instance.connect()
             self._connections[host] = instance
@@ -105,8 +105,6 @@ class SSHConnectionManager:
             self.remove_by_name(name)
 
 
-
-
 @attr.s
 class SSHConnection:
     """SSHConnections are individual connections to hosts managed by a control
@@ -130,14 +128,17 @@ class SSHConnection:
     def __attrs_post_init__(self):
         self._logger = logging.getLogger("{}".format(self))
         self._ssh_prefix = ["-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
-        self._socket = os.path.join(
-            self._tmpdir, 'control-{}'.format(self.host)
-        )
+        self._socket = None
 
     def _open_connection(self):
         """Internal function which appends the control socket and checks if the
         connection is already open"""
-        self._check_and_start_master()
+        if self._check_external_master():
+            self._logger.info("Using existing SSH connection to {}".format(self.host))
+        else:
+            self._start_own_master()
+            self._logger.info("Created new SSH connection to {}".format(self.host))
+        self._connected = True
 
     def _run_socket_command(self, command, forward=None):
         "Internal function to send a command to the control socket"
@@ -251,8 +252,8 @@ class SSHConnection:
         )
 
     def connect(self):
-        self._open_connection()
-        self._connected = True
+        if not self._connected:
+            self._open_connection()
 
     @_check_connected
     def disconnect(self):
@@ -261,15 +262,16 @@ class SSHConnection:
     def isconnected(self):
         return self._connected
 
-    def _check_and_start_master(self):
+    def _check_external_master(self):
         args = ["ssh", "-O", "check", "{}".format(self.host)]
         check = subprocess.call(
             args
         )
         if check == 0:
-            return ""
+            self._logger.debug("Found existing control socket")
+            return True
 
-        return self._start_own_master()
+        return False
 
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
@@ -305,15 +307,27 @@ class SSHConnection:
         if not os.path.exists(control):
             raise ExecutionError("no control socket to {}".format(self.host))
 
+        self._socket = control
+
         self._logger.debug('Connected to %s', self.host)
 
-        return control
+    def _stop_own_master(self):
+        assert self._socket is not None
+
+        try:
+            self._run_socket_command("cancel")
+            self._run_socket_command("exit")
+        finally:
+            self._socket = None
 
     def _disconnect(self):
-        self._run_socket_command("cancel")
-        self._run_socket_command("exit")
-        self._connected = False
-
+        assert self._connected
+        try:
+            if self._socket:
+                self._logger.info("Closing SSH connection to {}".format(self.host))
+                self._stop_own_master()
+        finally:
+            self._connected = False
 
 sshmanager = SSHConnectionManager()
 

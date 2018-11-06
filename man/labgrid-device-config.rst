@@ -91,9 +91,9 @@ TOOLS KEYS
 
 IMPORTS
 -------
-The ``imports`` key is a list of files which are imported by the environment
-after loading the configuration. Relative paths to the configuration file are
-also supported.
+The ``imports`` key is a list of files or python modules which
+are imported by the environment after loading the configuration.
+Paths relative to the configuration file are also supported.
 
 EXAMPLES
 --------

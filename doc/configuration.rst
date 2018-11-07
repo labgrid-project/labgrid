@@ -487,6 +487,33 @@ NetworkUSBTMC
 A :any:`NetworkUSBTMC` resource describes a :any:`USBTMC` resource available
 on a remote computer.
 
+Flashrom
+~~~~~~~~
+A Flashrom resource is used to configure the parameters to a local installed flashrom instance.
+It is assumed that flashrom is installed on the host and the executable is configured in:
+
+.. code-block:: yaml
+
+  tools:
+    flashrom: '/usr/sbin/flashrom'
+
+The resource must configure which programmer to use and the parameters to the programmer.
+The programmer parameter is passed directly to the flashrom bin hence man(8) flashrom
+can be used for reference.
+Below an example where the local spidev is used.
+
+.. code-block:: yaml
+
+  Flashrom:
+    programmer: 'linux_spi:dev=/dev/spidev0.1,spispeed=30000'
+
+Used by:
+  - `FlashromDriver`_
+
+NetworkFlashRom
+~~~~~~~~~~~~~~~
+A NetworkFlashrom descibes an `Flashrom`_ available on a remote computer.
+
 XenaManager
 ~~~~~~~~~~~
 A XenaManager resource describe a Xena Manager instance which is the instance the
@@ -1383,6 +1410,28 @@ It only supports the `Keysight DSO-X 2000` series (with the USB ID 0957:1798),
 but more devices can be added by extending `on_activate()` in
 ``labgrid/driver/usbtmcdriver.py`` and writing a corresponding backend in
 ``labgrid/driver/usbtmc/``.
+
+FlashromDriver
+~~~~~~~~~~~~~~
+The :any:`FlashromDriver` is used to flash a rom, using the flashrom utility.
+
+.. code-block:: yaml
+
+   FlashromDriver:
+        image: 'foo'
+   images:
+     foo: ../images/image_to_load.raw
+
+Binds to:
+  flashrom_resource:
+    - `Flashrom`_
+    - `NetworkFlashrom`_
+
+The FlashromDriver allows using the linux util "flashrom" to write directly to a ROM e.g. a NOR SPI
+flash. The assumption is that the device flashing the DUT e.g. an exporter is wired to the Flash
+to be flashed. The driver implements the bootstrap protocol.
+The driver uses tool configuration section and the key: flashrom to determine the path of the
+installed flashrom utility.
 
 XenaDriver
 ~~~~~~~~~~

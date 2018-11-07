@@ -20,6 +20,9 @@ New Features in 0.3.0
   Drivers which run commands via SSH to the exporter still connect directly,
   allowing custom configuration in the user's ``.ssh/config`` as needed.
   Note that not all drivers have been updated to use the ProxyManager yet.
+- Flashrom support added, by hard-wiring e.g. an exporter to the DUT, the ROM
+  on the DUT can be written directly. The flashrom driver implements the
+  bootstrap protocol.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -129,6 +129,7 @@ class SSHConnection:
         self._logger = logging.getLogger("{}".format(self))
         self._socket = None
         self._master = None
+        self._keepalive = None
 
     def _get_ssh_base_args(self):
         return ["-x", "-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
@@ -154,6 +155,7 @@ class SSHConnection:
         else:
             self._start_own_master()
             self._logger.info("Created new SSH connection to {}".format(self.host))
+        self._start_keepalive()
         self._connected = True
 
     def _run_socket_command(self, command, forward=None):
@@ -274,7 +276,7 @@ class SSHConnection:
         self._disconnect()
 
     def isconnected(self):
-        return self._connected
+        return self._connected and self._check_keepalive()
 
     def _check_external_master(self):
         args = ["ssh", "-O", "check", "{}".format(self.host)]
@@ -356,11 +358,44 @@ class SSHConnection:
             self._socket = None
             self._master = None
 
+    def _start_keepalive(self):
+        """Starts a keepalive connection via the own or external master."""
+        args = ["ssh"] + self._get_ssh_args() + [ self.host, "cat" ]
+
+        assert self._keepalive is None
+        self._keepalive = subprocess.Popen(
+            args,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE
+        )
+
+        self._logger.debug('Started keepalive for %s', self.host)
+
+    def _check_keepalive(self):
+        return self._keepalive.poll() is None
+
+    def _stop_keepalive(self):
+        assert self._keepalive is not None
+
+        self._logger.debug('Stopping keepalive for %s', self.host)
+
+        try:
+            self._keepalive.communicate(timeout=60)
+        except TimeoutExpired:
+            self._keepalive.kill()
+
+        try:
+            self._keepalive.wait(timeout=60)
+        finally:
+            self._keepalive = None
+
     def _disconnect(self):
         assert self._connected
         try:
             if self._socket:
                 self._logger.info("Closing SSH connection to {}".format(self.host))
+                self._stop_keepalive()
                 self._stop_own_master()
         finally:
             self._connected = False

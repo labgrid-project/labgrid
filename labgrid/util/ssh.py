@@ -173,16 +173,6 @@ class SSHConnection:
 
         return res
 
-    def _run_command(self, command):
-        "Internal function to run a command over the SSH connection"
-        complete_cmd = ["ssh"] + self._get_ssh_args()
-        complete_cmd += [self.host, command]
-        res = subprocess.check_call(
-            complete_cmd
-        )
-
-        return res
-
     def _check_connected(func):
         """Check if an SSHConnection is connected as a decorator"""
 
@@ -208,7 +198,13 @@ class SSHConnection:
         Returns:
             int: exitcode of the command
         """
-        return self._run_command(command)
+        complete_cmd = ["ssh"] + self._get_ssh_args()
+        complete_cmd += [self.host, command]
+        res = subprocess.check_call(
+            complete_cmd
+        )
+
+        return res
 
     @_check_connected
     def get_file(self, remote_file, local_file):

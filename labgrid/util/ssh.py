@@ -278,11 +278,24 @@ class SSHConnection:
 
     def _check_external_master(self):
         args = ["ssh", "-O", "check", "{}".format(self.host)]
-        check = subprocess.call(args)
+        # We don't want to confuse the use with SSHs output here, so we need to
+        # capture and parse it.
+        proc = subprocess.Popen(
+            args,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE
+        )
+        stdout, _ = proc.communicate(timeout=60)
+        check = proc.wait(args)
         if check == 0:
             self._logger.debug("Found existing control socket")
             return True
+        elif b"No such file or directory" in stdout:
+            self._logger.debug("No existing control socket found")
+            return False
 
+        self._logger.debug("Unexpected ssh check output '{}'".format(stdout))
         return False
 
     def _start_own_master(self):

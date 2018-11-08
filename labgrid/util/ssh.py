@@ -128,6 +128,7 @@ class SSHConnection:
     def __attrs_post_init__(self):
         self._logger = logging.getLogger("{}".format(self))
         self._socket = None
+        self._master = None
 
     def _get_ssh_base_args(self):
         return ["-x", "-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
@@ -299,7 +300,8 @@ class SSHConnection:
                 self.host,
         ]
 
-        self.process = subprocess.Popen(
+        assert self._master is None
+        self._master = subprocess.Popen(
             args,
             stderr=subprocess.PIPE,
             stdin=subprocess.PIPE,
@@ -307,16 +309,16 @@ class SSHConnection:
         )
 
         try:
-            if self.process.wait(timeout=30) is not 0:
+            if self._master.wait(timeout=30) is not 0:
                 raise ExecutionError(
                     "failed to connect to {} with args {}, returncode={} [{}],[{}] ".format(
-                        self.host, args, self.process.wait(), self.process.stdout.readlines(), self.process.stderr.readlines()
+                        self.host, args, self._master.wait(), self._master.stdout.readlines(), self._master.stderr.readlines()
                     )
                 )
         except subprocess.TimeoutExpired:
             raise ExecutionError(
                 "failed to connect (timeout) to {} with args {} [{}],[{}]".format(
-                    self.host, args, self.process.stdout.readlines(), self.process.stderr.readlines()
+                    self.host, args, self._master.stdout.readlines(), self._master.stderr.readlines()
                 )
             )
 
@@ -329,12 +331,17 @@ class SSHConnection:
 
     def _stop_own_master(self):
         assert self._socket is not None
+        assert self._master is not None
 
         try:
             self._run_socket_command("cancel")
             self._run_socket_command("exit")
+            # if the master doesn't terminate in less than 60 seconds,
+            # something is very wrong
+            self._master.wait(timeout=60)
         finally:
             self._socket = None
+            self._master = None
 
     def _disconnect(self):
         assert self._connected

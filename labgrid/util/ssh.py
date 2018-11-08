@@ -127,8 +127,23 @@ class SSHConnection:
 
     def __attrs_post_init__(self):
         self._logger = logging.getLogger("{}".format(self))
-        self._ssh_prefix = ["-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
         self._socket = None
+
+    def _get_ssh_base_args(self):
+        return ["-x", "-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
+
+    def _get_ssh_control_args(self):
+        if self._socket:
+            return [
+                    "-o", "ControlMaster=no",
+                    "-o", "ControlPath={}".format(self._socket),
+            ]
+        return []
+
+    def _get_ssh_args(self):
+        args = self._get_ssh_base_args()
+        args += self._get_ssh_control_args()
+        return args
 
     def _open_connection(self):
         """Internal function which appends the control socket and checks if the
@@ -142,15 +157,12 @@ class SSHConnection:
 
     def _run_socket_command(self, command, forward=None):
         "Internal function to send a command to the control socket"
-        complete_cmd = [
-            "ssh", "-x", "-o",
-            "ControlPath={}".format(self._socket), "-O",
-            command,
-        ]
+        complete_cmd = ["ssh"] + self._get_ssh_args()
+        complete_cmd += ["-O", command]
         if forward:
             for item in forward:
                 complete_cmd.append(item)
-        complete_cmd.append("{host}".format(host=self.host))
+        complete_cmd.append(self.host)
         res = subprocess.check_call(
             complete_cmd,
             timeout=2
@@ -160,11 +172,8 @@ class SSHConnection:
 
     def _run_command(self, command):
         "Internal function to run a command over the SSH connection"
-        complete_cmd = [
-            "ssh", "-x", "-o", "ControlPath={}".format(self._socket), self.host,
-            command
-        ]
-        complete_cmd[2:2] = self._ssh_prefix
+        complete_cmd = ["ssh"] + self._get_ssh_args()
+        complete_cmd += [self.host, command]
         res = subprocess.check_call(
             complete_cmd
         )
@@ -201,18 +210,22 @@ class SSHConnection:
     @_check_connected
     def get_file(self, remote_file, local_file):
         """Get a file from the remote host"""
-        subprocess.check_call([
-            "scp", "-o", "ControlPath={}".format(self._socket),
-            "{}:{}".format(self.host, remote_file), "{}".format(local_file)
-        ])
+        complete_cmd = ["scp"] + self._get_ssh_control_args()
+        complete_cmd += [
+                "{}:{}".format(self.host, remote_file),
+                "{}".format(local_file)
+        ]
+        subprocess.check_call(complete_cmd)
 
     @_check_connected
     def put_file(self, local_file, remote_path):
         """Put a file onto the remote host"""
-        subprocess.check_call([
-            "rsync", "-e", "ssh -o ControlPath={}".format(self._socket),
-            "{}".format(local_file), "{}:{}".format(self.host, remote_path)
-        ])
+        complete_cmd = ["rsync", "-e", " ".join(['ssh'] + self._get_ssh_args())]
+        complete_cmd += [
+                "{}".format(local_file),
+                "{}:{}".format(self.host, remote_path)
+        ]
+        subprocess.check_call(complete_cmd)
 
     @_check_connected
     def add_port_forward(self, remote_host, remote_port):
@@ -264,9 +277,7 @@ class SSHConnection:
 
     def _check_external_master(self):
         args = ["ssh", "-O", "check", "{}".format(self.host)]
-        check = subprocess.call(
-            args
-        )
+        check = subprocess.call(args)
         if check == 0:
             self._logger.debug("Found existing control socket")
             return True
@@ -276,12 +287,17 @@ class SSHConnection:
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
         control = os.path.join(self._tmpdir, 'control-{}'.format(self.host))
-        args = [
-            "ssh", "-n", "-x", "-o", "ConnectTimeout=30",
-            "-o", "ControlPersist=300", "-o", "UserKnownHostsFile=/dev/null",
-            "-o", "StrictHostKeyChecking=no", "-MN", "-S", control, self.host
+
+        args = ["ssh"] + self._get_ssh_base_args()
+        args += [ "-n", "-MN",
+                "-o", "ConnectTimeout=30",
+                "-o", "ControlPersist=300",
+                "-o", "ControlMaster=yes",
+                "-o", "ControlPath={}".format(control),
+                "-o", "UserKnownHostsFile=/dev/null",
+                "-o", "StrictHostKeyChecking=no",
+                self.host,
         ]
-        args[2:2] = self._ssh_prefix
 
         self.process = subprocess.Popen(
             args,

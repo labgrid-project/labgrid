@@ -68,6 +68,9 @@ class StepReporter:
         for k, v in event.data.items():
             self.__merge_element(k, v)
 
+        self._line_format(event)
+
+    def _line_format(self, event):
         indent = '  '*event.step.level
         line = [indent, bold(event.step.title)]
         if event.resource:

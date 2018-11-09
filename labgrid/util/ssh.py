@@ -314,8 +314,8 @@ class SSHConnection:
                 "-o", "ControlPersist=300",
                 "-o", "ControlMaster=yes",
                 "-o", "ControlPath={}".format(control),
-                "-o", "UserKnownHostsFile=/dev/null",
-                "-o", "StrictHostKeyChecking=no",
+                # We don't want to ask the user to confirm host keys here.
+                "-o", "StrictHostKeyChecking=yes",
                 self.host,
         ]
 

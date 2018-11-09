@@ -1,6 +1,8 @@
 import logging
 import sys
+import os
 import colors
+import re
 import pytest
 from _pytest.capture import safe_text_dupfile
 
@@ -91,3 +93,54 @@ class StepReporter:
             self.__commit()
         else:
             pass
+
+
+class ColoredStepReporter(StepReporter):
+    EVENT_COLORS_DARK = {
+        'expect$': 8, # dark gray (a lot of output, blend into background)
+        'run': 10, # green
+        'state_': 51, # light blue
+        'transition$': 45, # blue
+        'cycle$|on$|off$': 246, # light gray
+    }
+
+    EVENT_COLORS_LIGHT = {
+        'expect$': 250, # light gray (a lot of output, blend into background)
+        'run': 10, # green
+        'state_': 51, # light blue
+        'transition$': 45, # blue
+        'cycle$|on$|off$': 8, # dark gray
+    }
+
+    def __init__(self, terminalreporter, *, rewrite=False):
+        super().__init__(terminalreporter, rewrite=rewrite)
+
+        scheme = os.environ.get('LG_COLOR_SCHEME', 'dark')
+        if scheme == 'light':
+            self.color_scheme = ColoredStepReporter.EVENT_COLORS_LIGHT
+        else:
+            self.color_scheme = ColoredStepReporter.EVENT_COLORS_DARK
+
+    def __event_color(self, event):
+            for pattern, color in self.color_scheme.items():
+                if re.match(pattern, event.step.title):
+                    return color
+            else:
+                return 'default'
+
+    def __format_elements(self, color):
+        return [
+            colors.color(k, fg=color, style='underline') + colors.color('={}'.format(repr(v)), fg=color) for k, v in self.elements if v is not None
+        ]
+
+    def _line_format(self, event):
+        indent = '  '*event.step.level
+        color = self.__event_color(event)
+        line = [indent, colors.color(event.step.title, fg=color, style='bold')]
+        if event.resource:
+            line.append(event.resource)
+        line.extend(self.__format_elements(color))
+        if self.rewrite:
+            self.tr._tw.reline(" ".join(line))
+        else:
+            self.tr._tw.line(" ".join(line))

@@ -8,3 +8,4 @@ requests==2.18.4
 xmodem==0.4.5
 autobahn==17.10.1
 PyYAML==3.12
+ansicolors==1.1.8

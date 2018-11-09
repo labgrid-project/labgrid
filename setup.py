@@ -24,6 +24,7 @@ setup(
     tests_require=['pytest-mock', ],
     install_requires=[
         'attrs>=17.4.0',
+        'ansicolors',
         'jinja2',
         'pexpect',
         'pyserial>=3.3',

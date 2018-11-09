@@ -1,5 +1,6 @@
 import logging
 import sys
+import colors
 import pytest
 from _pytest.capture import safe_text_dupfile
 
@@ -11,11 +12,6 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 
-def bold(text):
-    return "\033[1m{}\033[0m".format(text)
-
-def under(text):
-    return "\033[4m{}\033[0m".format(text)
 
 class StepReporter:
     def __init__(self, terminalreporter, *, rewrite=False):
@@ -45,7 +41,7 @@ class StepReporter:
 
     def __format_elements(self):
         return [
-            "{}={}".format(under(k), repr(v)) for k, v in self.elements if v is not None
+            "{}={}".format(colors.color(k, style='underline'), repr(v)) for k, v in self.elements if v is not None
         ]
 
     def notify(self, event):
@@ -72,7 +68,7 @@ class StepReporter:
 
     def _line_format(self, event):
         indent = '  '*event.step.level
-        line = [indent, bold(event.step.title)]
+        line = [indent, colors.color(event.step.title, style='bold')]
         if event.resource:
             line.append(event.resource)
         line.extend(self.__format_elements())

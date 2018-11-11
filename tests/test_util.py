@@ -77,13 +77,16 @@ def test_sshconnection_inactive_raise():
     with pytest.raises(ExecutionError):
         con.run_command("echo Hallo")
 
+@pytest.mark.localsshmanager
 def test_sshconnection_connect(connection_localhost):
     assert connection_localhost.isconnected()
     assert os.path.exists(connection_localhost._socket)
 
+@pytest.mark.localsshmanager
 def test_sshconnection_run(connection_localhost):
     assert connection_localhost.run_command("echo Hello") == 0
 
+@pytest.mark.localsshmanager
 def test_sshconnection_port_forward_add_remove(connection_localhost):
     port = 1337
     test_string = "Hello World"
@@ -100,12 +103,14 @@ def test_sshconnection_port_forward_add_remove(connection_localhost):
     assert client_socket.recv(16).decode("utf-8") == test_string
     connection_localhost.remove_port_forward('localhost', port)
 
+@pytest.mark.localsshmanager
 def test_sshconnection_port_forward_remove_raise(connection_localhost):
     port = 1337
 
     with pytest.raises(ForwardError):
         connection_localhost.remove_port_forward('localhost', port)
 
+@pytest.mark.localsshmanager
 def test_sshconnection_port_forward_add_duplicate(connection_localhost):
     port = 1337
 
@@ -113,7 +118,7 @@ def test_sshconnection_port_forward_add_duplicate(connection_localhost):
     second_port = connection_localhost.add_port_forward('localhost', port)
     assert first_port == second_port
 
-
+@pytest.mark.localsshmanager
 def test_sshconnection_put_file(connection_localhost, tmpdir):
     port = 1337
 
@@ -126,33 +131,39 @@ def test_sshconnection_put_file(connection_localhost, tmpdir):
     assert os.path.isfile('/tmp/test')
     assert open('/tmp/test', 'r').readlines() == [ "Teststring" ]
 
+@pytest.mark.localsshmanager
 def test_sshconnection_get_file(connection_localhost, tmpdir):
 
     p = tmpdir.join("test")
     connection_localhost.get_file('/tmp/test', p)
 
+@pytest.mark.localsshmanager
 def test_sshmanager_open(sshmanager_fix):
     con = sshmanager_fix.open("localhost")
 
     assert isinstance(con, SSHConnection)
 
+@pytest.mark.localsshmanager
 def test_sshmanager_add_forward(sshmanager_fix):
     port = sshmanager_fix.request_forward("localhost", 'localhost', 3000)
 
     assert port < 65536
 
+@pytest.mark.localsshmanager
 def test_sshmanager_remove_forward(sshmanager_fix):
     port = sshmanager_fix.request_forward("localhost", 'localhost', 3000)
     sshmanager_fix.remove_forward('localhost', 'localhost', 3000)
 
     assert 3000 not in sshmanager_fix.get('localhost')._forwards
 
+@pytest.mark.localsshmanager
 def test_sshmanager_close(sshmanager_fix):
     con = sshmanager_fix.open("localhost")
 
     assert isinstance(con, SSHConnection)
     sshmanager_fix.close("localhost")
 
+@pytest.mark.localsshmanager
 def test_sshmanager_remove_raise(sshmanager_fix):
     con = sshmanager_fix.open("localhost")
     con.connect()
@@ -191,6 +202,7 @@ def test_proxymanager_no_proxy(target):
 
     assert (host, port) == proxymanager.get_host_and_port(nr)
 
+@pytest.mark.localsshmanager
 def test_proxymanager_remote_forced_proxy(target):
     sshmanager.close_all()
     host = 'localhost'
@@ -203,6 +215,7 @@ def test_proxymanager_remote_forced_proxy(target):
     assert (host, port) != (nhost, nport)
     sshmanager.close_all()
 
+@pytest.mark.localsshmanager
 def test_proxymanager_local_forced_proxy(target):
     host = 'localhost'
     port = 5000
@@ -213,6 +226,7 @@ def test_proxymanager_local_forced_proxy(target):
 
     assert (host, port) != (nhost, nport)
 
+@pytest.mark.localsshmanager
 def test_remote_managedfile(target, tmpdir):
     import hashlib
     import getpass

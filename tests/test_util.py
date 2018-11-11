@@ -177,8 +177,7 @@ def test_sshmanager_add_new(sshmanager_fix):
 
     assert con_now == con
 
-
-def test_sshmanager_remove_raise():
+def test_sshmanager_invalid_host_raise():
     con = SSHConnection("nosuchhost.notavailable")
     with pytest.raises(ExecutionError):
         con.connect()

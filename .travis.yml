@@ -11,14 +11,15 @@ python:
   - "3.5"
   - "3.6"
 before_install:
-  - ssh-keygen -f ~/.ssh/localkey -t ed25519 -N ""
-  - cat ~/.ssh/localkey.pub > ~/.ssh/authorized_keys
-  - echo -e "Host localhost ip6-localhost\n  Hostname 127.0.0.1\n  Identityfile ~/.ssh/localkey" > ~/.ssh/config
+  - ssh-keygen -f ~/.ssh/id_ed25519.local -t ed25519 -N ""
+  - cat ~/.ssh/id_ed25519.local.pub > ~/.ssh/authorized_keys
+  - echo -e "Host localhost ip6-localhost\n  Hostname 127.0.0.1\n  IdentityFile ~/.ssh/id_ed25519.local\n  UserKnownHostsFile ~/.ssh/known_hosts.local" > ~/.ssh/config
+  - ssh -o StrictHostKeyChecking=no localhost echo OK
 install:
   - pip install -r travis-requirements.txt
 script:
   - pip install -e .
-  - pytest --cov-config .coveragerc --cov=labgrid
+  - pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager
   - python setup.py build_sphinx
   - make -C man all
   - git --no-pager diff --exit-code

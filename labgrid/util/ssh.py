@@ -41,7 +41,7 @@ class SSHConnectionManager:
         instance = self._connections.get(host)
         if instance is None:
             # pylint: disable=unsupported-assignment-operation
-            self.logger.debug("Trying to start new control socket")
+            self.logger.debug("Creating SSHConnection for {}".format(host))
             instance = SSHConnection(host)
             instance.connect()
             self._connections[host] = instance
@@ -105,8 +105,6 @@ class SSHConnectionManager:
             self.remove_by_name(name)
 
 
-
-
 @attr.s
 class SSHConnection:
     """SSHConnections are individual connections to hosts managed by a control
@@ -129,43 +127,49 @@ class SSHConnection:
 
     def __attrs_post_init__(self):
         self._logger = logging.getLogger("{}".format(self))
-        self._ssh_prefix = ["-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
-        self._socket = os.path.join(
-            self._tmpdir, 'control-{}'.format(self.host)
-        )
+        self._socket = None
+        self._master = None
+        self._keepalive = None
+
+    def _get_ssh_base_args(self):
+        return ["-x", "-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
+
+    def _get_ssh_control_args(self):
+        if self._socket:
+            return [
+                    "-o", "ControlMaster=no",
+                    "-o", "ControlPath={}".format(self._socket),
+            ]
+        return []
+
+    def _get_ssh_args(self):
+        args = self._get_ssh_base_args()
+        args += self._get_ssh_control_args()
+        return args
 
     def _open_connection(self):
         """Internal function which appends the control socket and checks if the
         connection is already open"""
-        self._check_and_start_master()
+        if self._check_external_master():
+            self._logger.info("Using existing SSH connection to {}".format(self.host))
+        else:
+            self._start_own_master()
+            self._logger.info("Created new SSH connection to {}".format(self.host))
+        self._start_keepalive()
+        self._connected = True
 
     def _run_socket_command(self, command, forward=None):
         "Internal function to send a command to the control socket"
-        complete_cmd = [
-            "ssh", "-x", "-o",
-            "ControlPath={}".format(self._socket), "-O",
-            command,
-        ]
+        complete_cmd = ["ssh"] + self._get_ssh_args()
+        complete_cmd += ["-O", command]
         if forward:
             for item in forward:
                 complete_cmd.append(item)
-        complete_cmd.append("{host}".format(host=self.host))
+        complete_cmd.append(self.host)
         res = subprocess.check_call(
             complete_cmd,
-            timeout=2
-        )
-
-        return res
-
-    def _run_command(self, command):
-        "Internal function to run a command over the SSH connection"
-        complete_cmd = [
-            "ssh", "-x", "-o", "ControlPath={}".format(self._socket), self.host,
-            command
-        ]
-        complete_cmd[2:2] = self._ssh_prefix
-        res = subprocess.check_call(
-            complete_cmd
+            stdin=subprocess.DEVNULL,
+            timeout=2,
         )
 
         return res
@@ -195,23 +199,40 @@ class SSHConnection:
         Returns:
             int: exitcode of the command
         """
-        return self._run_command(command)
+        complete_cmd = ["ssh"] + self._get_ssh_args()
+        complete_cmd += [self.host, command]
+        res = subprocess.check_call(
+            complete_cmd,
+            stdin=subprocess.DEVNULL,
+        )
+
+        return res
 
     @_check_connected
     def get_file(self, remote_file, local_file):
         """Get a file from the remote host"""
-        subprocess.check_call([
-            "scp", "-o", "ControlPath={}".format(self._socket),
-            "{}:{}".format(self.host, remote_file), "{}".format(local_file)
-        ])
+        complete_cmd = ["scp"] + self._get_ssh_control_args()
+        complete_cmd += [
+                "{}:{}".format(self.host, remote_file),
+                "{}".format(local_file)
+        ]
+        subprocess.check_call(
+            complete_cmd,
+            stdin=subprocess.DEVNULL,
+        )
 
     @_check_connected
     def put_file(self, local_file, remote_path):
         """Put a file onto the remote host"""
-        subprocess.check_call([
-            "rsync", "-e", "ssh -o ControlPath={}".format(self._socket),
-            "{}".format(local_file), "{}:{}".format(self.host, remote_path)
-        ])
+        complete_cmd = ["rsync", "-e", " ".join(['ssh'] + self._get_ssh_args())]
+        complete_cmd += [
+                "{}".format(local_file),
+                "{}:{}".format(self.host, remote_path)
+        ]
+        subprocess.check_call(
+            complete_cmd,
+            stdin=subprocess.DEVNULL,
+        )
 
     @_check_connected
     def add_port_forward(self, remote_host, remote_port):
@@ -251,69 +272,137 @@ class SSHConnection:
         )
 
     def connect(self):
-        self._open_connection()
-        self._connected = True
+        if not self._connected:
+            self._open_connection()
 
     @_check_connected
     def disconnect(self):
         self._disconnect()
 
     def isconnected(self):
-        return self._connected
+        return self._connected and self._check_keepalive()
 
-    def _check_and_start_master(self):
+    def _check_external_master(self):
         args = ["ssh", "-O", "check", "{}".format(self.host)]
-        check = subprocess.call(
-            args
+        # We don't want to confuse the use with SSHs output here, so we need to
+        # capture and parse it.
+        proc = subprocess.Popen(
+            args,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
+        stdout, _ = proc.communicate(timeout=60)
+        check = proc.wait(args)
         if check == 0:
-            return ""
+            self._logger.debug("Found existing control socket")
+            return True
+        elif b"No such file or directory" in stdout:
+            self._logger.debug("No existing control socket found")
+            return False
 
-        return self._start_own_master()
+        self._logger.debug("Unexpected ssh check output '{}'".format(stdout))
+        return False
 
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
         control = os.path.join(self._tmpdir, 'control-{}'.format(self.host))
-        args = [
-            "ssh", "-n", "-x", "-o", "ConnectTimeout=30",
-            "-o", "ControlPersist=300", "-o", "UserKnownHostsFile=/dev/null",
-            "-o", "StrictHostKeyChecking=no", "-MN", "-S", control, self.host
-        ]
-        args[2:2] = self._ssh_prefix
 
-        self.process = subprocess.Popen(
+        args = ["ssh"] + self._get_ssh_base_args()
+        args += [ "-n", "-MN",
+                "-o", "ConnectTimeout=30",
+                "-o", "ControlPersist=300",
+                "-o", "ControlMaster=yes",
+                "-o", "ControlPath={}".format(control),
+                # We don't want to ask the user to confirm host keys here.
+                "-o", "StrictHostKeyChecking=yes",
+                self.host,
+        ]
+
+        assert self._master is None
+        self._master = subprocess.Popen(
             args,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE
         )
 
         try:
-            if self.process.wait(timeout=30) is not 0:
+            if self._master.wait(timeout=30) is not 0:
                 raise ExecutionError(
-                    "failed to connect to {} with args {}, returncode={} [{}],[{}] ".format(
-                        self.host, args, self.process.wait(), self.process.stdout.readlines(), self.process.stderr.readlines()
+                    "failed to connect to {} with args {}, returncode={} {},{} ".format(
+                        self.host, args, self._master.wait(), self._master.stdout.readlines(), self._master.stderr.readlines()
                     )
                 )
         except subprocess.TimeoutExpired:
             raise ExecutionError(
-                "failed to connect (timeout) to {} with args {} [{}],[{}]".format(
-                    self.host, args, self.process.stdout.readlines(), self.process.stderr.readlines()
+                "failed to connect (timeout) to {} with args {} {},{}".format(
+                    self.host, args, self._master.stdout.readlines(), self._master.stderr.readlines()
                 )
             )
 
         if not os.path.exists(control):
             raise ExecutionError("no control socket to {}".format(self.host))
 
+        self._socket = control
+
         self._logger.debug('Connected to %s', self.host)
 
-        return control
+    def _stop_own_master(self):
+        assert self._socket is not None
+        assert self._master is not None
+
+        try:
+            self._run_socket_command("cancel")
+            self._run_socket_command("exit")
+            # if the master doesn't terminate in less than 60 seconds,
+            # something is very wrong
+            self._master.wait(timeout=60)
+        finally:
+            self._socket = None
+            self._master = None
+
+    def _start_keepalive(self):
+        """Starts a keepalive connection via the own or external master."""
+        args = ["ssh"] + self._get_ssh_args() + [ self.host, "cat" ]
+
+        assert self._keepalive is None
+        self._keepalive = subprocess.Popen(
+            args,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self._logger.debug('Started keepalive for %s', self.host)
+
+    def _check_keepalive(self):
+        return self._keepalive.poll() is None
+
+    def _stop_keepalive(self):
+        assert self._keepalive is not None
+
+        self._logger.debug('Stopping keepalive for %s', self.host)
+
+        try:
+            self._keepalive.communicate(timeout=60)
+        except TimeoutExpired:
+            self._keepalive.kill()
+
+        try:
+            self._keepalive.wait(timeout=60)
+        finally:
+            self._keepalive = None
 
     def _disconnect(self):
-        self._run_socket_command("cancel")
-        self._run_socket_command("exit")
-        self._connected = False
-
+        assert self._connected
+        try:
+            if self._socket:
+                self._logger.info("Closing SSH connection to {}".format(self.host))
+                self._stop_keepalive()
+                self._stop_own_master()
+        finally:
+            self._connected = False
 
 sshmanager = SSHConnectionManager()
 

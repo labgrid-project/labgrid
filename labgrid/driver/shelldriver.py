@@ -226,7 +226,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                     "Key, newkey: %s,%s", key['key'], new_key['key']
                 )
                 if key['key'] == new_key['key']:
-                    self.logger.info("Key already on target")
+                    self.logger.debug("Key already on target")
                     return
 
         if test_write == 0 and read_keys == 0:

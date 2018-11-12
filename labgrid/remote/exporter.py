@@ -121,7 +121,7 @@ class USBSerialPortExport(ResourceExport):
 
     def __del__(self):
         if self.child is not None:
-            self._stop()
+            self.stop()
 
     def _get_start_params(self):
         return {

@@ -387,7 +387,7 @@ class SSHConnection:
 
         try:
             self._keepalive.communicate(timeout=60)
-        except TimeoutExpired:
+        except subprocess.TimeoutExpired:
             self._keepalive.kill()
 
         try:

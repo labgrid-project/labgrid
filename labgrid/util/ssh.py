@@ -137,8 +137,8 @@ class SSHConnection:
     def _get_ssh_control_args(self):
         if self._socket:
             return [
-                    "-o", "ControlMaster=no",
-                    "-o", "ControlPath={}".format(self._socket),
+                "-o", "ControlMaster=no",
+                "-o", "ControlPath={}".format(self._socket),
             ]
         return []
 
@@ -213,8 +213,8 @@ class SSHConnection:
         """Get a file from the remote host"""
         complete_cmd = ["scp"] + self._get_ssh_control_args()
         complete_cmd += [
-                "{}:{}".format(self.host, remote_file),
-                "{}".format(local_file)
+            "{}:{}".format(self.host, remote_file),
+            "{}".format(local_file)
         ]
         subprocess.check_call(
             complete_cmd,
@@ -227,8 +227,8 @@ class SSHConnection:
         complete_cmd = ["rsync", "--copy-links", "-e",
                         " ".join(['ssh'] + self._get_ssh_args())]
         complete_cmd += [
-                "{}".format(local_file),
-                "{}:{}".format(self.host, remote_path)
+            "{}".format(local_file),
+            "{}:{}".format(self.host, remote_path)
         ]
         subprocess.check_call(
             complete_cmd,
@@ -310,14 +310,15 @@ class SSHConnection:
         control = os.path.join(self._tmpdir, 'control-{}'.format(self.host))
 
         args = ["ssh"] + self._get_ssh_base_args()
-        args += [ "-n", "-MN",
-                "-o", "ConnectTimeout=30",
-                "-o", "ControlPersist=300",
-                "-o", "ControlMaster=yes",
-                "-o", "ControlPath={}".format(control),
-                # We don't want to ask the user to confirm host keys here.
-                "-o", "StrictHostKeyChecking=yes",
-                self.host,
+        args += [
+            "-n", "-MN",
+            "-o", "ConnectTimeout=30",
+            "-o", "ControlPersist=300",
+            "-o", "ControlMaster=yes",
+            "-o", "ControlPath={}".format(control),
+            # We don't want to ask the user to confirm host keys here.
+            "-o", "StrictHostKeyChecking=yes",
+            self.host,
         ]
 
         assert self._master is None
@@ -332,13 +333,16 @@ class SSHConnection:
             if self._master.wait(timeout=30) is not 0:
                 raise ExecutionError(
                     "failed to connect to {} with args {}, returncode={} {},{} ".format(
-                        self.host, args, self._master.wait(), self._master.stdout.readlines(), self._master.stderr.readlines()
+                        self.host, args, self._master.wait(),
+                        self._master.stdout.readlines(),
+                        self._master.stderr.readlines()
                     )
                 )
         except subprocess.TimeoutExpired:
             raise ExecutionError(
                 "failed to connect (timeout) to {} with args {} {},{}".format(
-                    self.host, args, self._master.stdout.readlines(), self._master.stderr.readlines()
+                    self.host, args, self._master.stdout.readlines(),
+                    self._master.stderr.readlines()
                 )
             )
 
@@ -365,7 +369,7 @@ class SSHConnection:
 
     def _start_keepalive(self):
         """Starts a keepalive connection via the own or external master."""
-        args = ["ssh"] + self._get_ssh_args() + [ self.host, "cat" ]
+        args = ["ssh"] + self._get_ssh_args() + [self.host, "cat"]
 
         assert self._keepalive is None
         self._keepalive = subprocess.Popen(
@@ -387,7 +391,7 @@ class SSHConnection:
 
         try:
             self._keepalive.communicate(timeout=60)
-        except TimeoutExpired:
+        except subprocess.TimeoutExpired:
             self._keepalive.kill()
 
         try:

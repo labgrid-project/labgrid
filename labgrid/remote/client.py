@@ -196,7 +196,12 @@ class ClientSession(ApplicationSession):
 
     async def print_places(self):
         """Print out the places"""
-        for name, place in sorted(self.places.items()):
+        if self.args.sort_last_changed:
+            places = sorted(self.places.items(), key=lambda p: p[1].changed)
+        else:
+            places = sorted(self.places.items())
+
+        for name, place in places:
             if self.args.acquired and place.acquired is None:
                 continue
             if self.args.verbose:
@@ -1029,6 +1034,8 @@ def main():
     subparser = subparsers.add_parser('places', aliases=('p',),
                                       help="list available places")
     subparser.add_argument('-a', '--acquired', action='store_true')
+    subparser.add_argument('--sort-last-changed', action='store_true',
+                           help='sort by last changed date (oldest first)')
     subparser.set_defaults(func=ClientSession.print_places)
 
     subparser = subparsers.add_parser('who',

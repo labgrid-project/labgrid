@@ -137,6 +137,10 @@ class GraphStrategy(Strategy):
 
             # run state methods
             for state_name in path:
+                if state_name == self.root_state:
+                    # deactivate drivers before root state method is called
+                    self.target.deactivate_all_drivers()
+
                 try:
                     self.states[state_name]['method']()
 

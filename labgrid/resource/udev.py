@@ -301,6 +301,7 @@ class USBSDMuxDevice(USBResource):
         if not self.device:
             self.control_path = None
             self.disk_path = None
+            return
         for child in self.device.children:
             if child.subsystem == 'block':
                 self.disk_path = child.device_node

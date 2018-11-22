@@ -99,8 +99,7 @@ class GraphStrategy(Strategy):
         self.path = []
 
         # deactivate all drivers to restore initial state
-        for driver in self.target.drivers:
-            self.target.deactivate(driver)
+        self.target.deactivate_all_drivers()
 
     @step(args=['state'])
     def transition(self, state, via=None):

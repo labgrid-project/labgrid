@@ -441,10 +441,14 @@ class Target:
         client.on_deactivate()
         client.state = BindingState.bound
 
-    def cleanup(self):
-        """Clean up conntected drivers and resources in reversed order"""
+    def deactivate_all_drivers(self):
+        """Deactivates all drivers in reversed order they were activated"""
         for drv in reversed(self.drivers):
             self.deactivate(drv)
+
+    def cleanup(self):
+        """Clean up conntected drivers and resources in reversed order"""
+        self.deactivate_all_drivers()
         for res in reversed(self.resources):
             self.deactivate(res)
 

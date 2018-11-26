@@ -128,6 +128,23 @@ The pytest plugin also supports the verbosity argument of pytest:
 
 This allows debugging during the writing of tests and inspection during test runs.
 
+Other labgrid-related pytest plugin options are:
+
+``--lg-env=LG_ENV`` (was ``--env-config=ENV_CONFIG``)
+  Specify a labgrid environment config file.
+  This is equivalent to labgrid-client's ``-c``/``--config``.
+
+``--lg-coordinator=CROSSBAR_URL``
+  Specify labgrid coordinator websocket URL.
+  Defaults to ``ws://127.0.0.1:20408/ws``.
+  This is equivalent to labgrid-client's ``-x``/``--crossbar``.
+
+``--lg-log=[path to logfiles]``
+  Path to store console log file.
+  If option is specified without path the current working directory is used.
+
+``pytest --help`` shows these options in a separate *labgrid* section.
+
 Simple Example
 ~~~~~~~~~~~~~~
 

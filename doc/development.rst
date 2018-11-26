@@ -529,16 +529,6 @@ The inactive Driver could then cause a preemption and would be activated.
 The current caller of the originally active driver would be notified via an
 exception.
 
-File Transfer to Exporters
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Currently, the exporter and client expect to have a shared filesystem (see for
-example how the :any:`AndroidFastbootDriver` works when accessing a
-:any:`NetworkAndroidFastboot` resource).
-To remove this limitation, we should have a common way to make files available
-to the exporter, possibly by generating a hash locally and rsyncing new files to
-the exporter.
-
 Remote Target Reservation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

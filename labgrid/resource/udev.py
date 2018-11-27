@@ -1,8 +1,10 @@
 # pylint: disable=unsupported-assignment-operation
-from functools import partial
 import logging
 import os
+import queue
+import time
 import warnings
+
 import attr
 import pyudev
 
@@ -15,10 +17,14 @@ from .base import SerialPort, EthernetInterface
 class UdevManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.queue = queue.Queue()
+
         self.log = logging.getLogger('UdevManager')
         self._context = pyudev.Context()
         self._monitor = pyudev.Monitor.from_netlink(self._context)
-        self._monitor.start()
+        self._observer = pyudev.MonitorObserver(self._monitor,
+                                                callback=self._insert_into_queue)
+        self._observer.start()
 
     def on_resource_added(self, resource):
         devices = self._context.list_devices()
@@ -27,14 +33,21 @@ class UdevManager(ResourceManager):
             if resource.try_match(device):
                 break
 
+    def _insert_into_queue(self, device):
+        self.queue.put(device)
+
     def poll(self):
-        for device in iter(partial(self._monitor.poll, 0), None):
+        deadline = time.monotonic() + 0.1
+        while time.monotonic() < deadline:
+            try:
+                device = self.queue.get(False)
+            except queue.Empty:
+                break
             self.log.debug("%s: %s", device.action, device)
             for resource in self.resources:
                 self.log.debug(" %s", resource)
                 if resource.try_match(device):
                     break
-
 
 @attr.s(cmp=False)
 class USBResource(ManagedResource):

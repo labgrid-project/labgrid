@@ -391,7 +391,7 @@ the file on the remote host with the following pattern:
 
 .. code-block:: bash
 
-   /tmp/labgrid-<username>/<md5sum>/<filename>
+   /tmp/labgrid-<username>/<sha256sum>/<filename>
 
 Additionally it provides `get_remote_path()` to retrieve the complete file path,
 to easily employ it for driver implementations.
@@ -528,16 +528,6 @@ unexpectedly (by looking for the bootloader startup messages, in this case).
 The inactive Driver could then cause a preemption and would be activated.
 The current caller of the originally active driver would be notified via an
 exception.
-
-File Transfer to Exporters
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Currently, the exporter and client expect to have a shared filesystem (see for
-example how the :any:`AndroidFastbootDriver` works when accessing a
-:any:`NetworkAndroidFastboot` resource).
-To remove this limitation, we should have a common way to make files available
-to the exporter, possibly by generating a hash locally and rsyncing new files to
-the exporter.
 
 Remote Target Reservation
 ~~~~~~~~~~~~~~~~~~~~~~~~~

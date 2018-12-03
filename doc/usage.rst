@@ -145,6 +145,14 @@ Other labgrid-related pytest plugin options are:
   Path to store console log file.
   If option is specified without path the current working directory is used.
 
+``--lg-colored-steps``
+  Enables the ColoredStepReporter.
+  Different events have different colors.
+  The more colorful, the more important.
+  In order to make less important output "blend into the background" different
+  color schemes are available.
+  See :ref:`LG_COLOR_SCHEME <usage-lgcolorscheme>`.
+
 ``pytest --help`` shows these options in a separate *labgrid* section.
 
 Environment Variables
@@ -153,6 +161,15 @@ Environment Variables
 LG_ENV
 ^^^^^^
 Behaves like ``LG_ENV`` for :doc:`labgrid-client <man/client>`.
+
+.. _usage-lgcolorscheme:
+
+LG_COLOR_SCHEME
+^^^^^^^^^^^^^^^
+Influences the color scheme used for the Colored Step Reporter. ``dark``
+(default) is meant for dark terminal background.
+``light`` is optimized for light terminal background.
+Takes effect only when used with ``--lg-colored-steps``.
 
 Simple Example
 ~~~~~~~~~~~~~~

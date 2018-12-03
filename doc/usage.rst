@@ -121,6 +121,8 @@ env (session scope)
 target (session scope)
   Used to access the 'main' :any:`Target` defined in the configuration file.
 
+Command-Line Options
+~~~~~~~~~~~~~~~~~~~~
 The pytest plugin also supports the verbosity argument of pytest:
 
 - ``-vv``: activates the step reporting feature, showing function parameters and/or results
@@ -144,6 +146,13 @@ Other labgrid-related pytest plugin options are:
   If option is specified without path the current working directory is used.
 
 ``pytest --help`` shows these options in a separate *labgrid* section.
+
+Environment Variables
+~~~~~~~~~~~~~~~~~~~~~
+
+LG_ENV
+^^^^^^
+Behaves like ``LG_ENV`` for :doc:`labgrid-client <man/client>`.
 
 Simple Example
 ~~~~~~~~~~~~~~

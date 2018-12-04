@@ -1,3 +1,11 @@
+Release 0.3.0 (unreleased)
+--------------------------
+
+New Features in 0.3.0
+~~~~~~~~~~~~~~~~~~~~~
+- labgrid-client ``write-image`` subcommand: labgrid client now has a
+  ``write-image`` command to write images onto block devices.
+
 Release 0.2.0 (released Jan 4, 2019)
 ------------------------------------
 

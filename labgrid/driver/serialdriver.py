@@ -56,7 +56,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         else:
             host, port = proxymanager.get_host_and_port(self.port)
             if self.port.protocol == "rfc2217":
-                self.serial.port = "rfc2217://{}:{}/".format(host, port)
+                self.serial.port = "rfc2217://{}:{}?ign_set_control".format(host, port)
             elif self.port.protocol == "raw":
                 self.serial.port = "socket://{}:{}/".format(host, port)
             else:

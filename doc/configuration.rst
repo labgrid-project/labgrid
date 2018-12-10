@@ -1178,10 +1178,16 @@ Implements:
 
 .. code-block:: yaml
 
-   NetworkUSBStorageDriver: {}
+   NetworkUSBStorageDriver:
+     image: flashimage
+
+.. code-block:: yaml
+
+   images:
+     flashimage: ../images/myusb.image
 
 Arguments:
-  - None
+  - image (str): filename of the image to write to the remote usb storage
 
 OneWirePIODriver
 ~~~~~~~~~~~~~~~~

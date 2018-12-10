@@ -24,6 +24,10 @@ class NetworkUSBStorageDriver(Driver):
             NetworkUSBSDMuxDevice
         },
     }
+    image = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -36,11 +40,14 @@ class NetworkUSBStorageDriver(Driver):
         pass
 
     @step(args=['filename'])
-    def write_image(self, filename):
+    def write_image(self, filename=None):
         if not self.storage.path:
             raise ExecutionError(
                 "{} is not available".format(self.storage_path)
             )
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        assert filename, "write_image requires a filename"
         mf = ManagedFile(filename, self.storage)
         mf.sync_to_resource()
         self.logger.info("pwd: %s", os.getcwd())

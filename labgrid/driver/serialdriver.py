@@ -78,7 +78,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         self.serial.timeout = timeout
         res = self.serial.read(reading)
         if not res:
-            raise TIMEOUT("Timeout of %.2f seconds exceeded" % timeout)
+            raise TIMEOUT("Timeout of %.2f seconds exceeded or connection closed by peer" % timeout)
         return res
 
     def _write(self, data: bytes):

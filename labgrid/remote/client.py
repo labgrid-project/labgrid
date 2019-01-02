@@ -156,6 +156,13 @@ class ClientSession(ApplicationSession):
             for name in sorted(self.places.keys()):
                 print(name)
 
+    def _get_places_by_resource(self, resource_path):
+        """Yield Place objects that match the given resource path"""
+        for place in self.places.values():
+            match = place.getmatch(resource_path)
+            if match:
+                yield place
+
     async def print_resources(self):
         """Print out the resources"""
         match = ResourceMatch.fromstr(self.args.match) if self.args.match else None
@@ -179,7 +186,7 @@ class ClientSession(ApplicationSession):
                     filtered[exporter][group_name][resource_name] = resource
 
         # print the filtered resources
-        if self.args.verbose:
+        if self.args.verbose and not self.args.sort_by_matched_place_change:
             for exporter, groups in sorted(filtered.items()):
                 print("Exporter '{}':".format(exporter))
                 for group_name, group in sorted(groups.items()):
@@ -189,14 +196,47 @@ class ClientSession(ApplicationSession):
                             resource_name, exporter, group_name, resource.cls, resource_name))
                         print(indent(pformat(resource.asdict()), prefix="      "))
         else:
+            results = []
             for exporter, groups in sorted(filtered.items()):
                 for group_name, group in sorted(groups.items()):
                     for resource_name, resource in sorted(group.items()):
-                        print("{}/{}/{}".format(exporter, group_name, resource.cls))
+                        if self.args.sort_by_matched_place_change:
+                            resource_path = (exporter, group_name, resource.cls, resource_name)
+                            places = list(self._get_places_by_resource(resource_path))
+                            # most recently changed place last
+                            places = sorted(places, key=lambda p: p.changed, reverse=True)
+                        else:
+                            places = None
+
+                        results.append((places, exporter, group_name, resource.cls))
+
+            results = sorted(results, key=lambda res: res[0][0].changed if res[0] else 0)
+
+            for places, exporter, group_name, resource_cls in results:
+                if self.args.sort_by_matched_place_change:
+                    places_strs = [
+                        "{}: {:%Y-%m-%d}".format(p.name, datetime.fromtimestamp(p.changed))
+                        for p in places
+                    ]
+                    places_info = ", ".join(places_strs) if places_strs else "not used by any place"
+
+                else:
+                    places_info = None
+
+                line = "{}/{}/{}".format(exporter, group_name, resource_cls)
+                if places_info is not None:
+                    print("{0:<50s} {1}".format(line, places_info))
+                else:
+                    print(line)
 
     async def print_places(self):
         """Print out the places"""
-        for name, place in sorted(self.places.items()):
+        if self.args.sort_last_changed:
+            places = sorted(self.places.items(), key=lambda p: p[1].changed)
+        else:
+            places = sorted(self.places.items())
+
+        for name, place in places:
             if self.args.acquired and place.acquired is None:
                 continue
             if self.args.verbose:
@@ -1023,12 +1063,16 @@ def main():
                                       help="list available resources")
     subparser.add_argument('-a', '--acquired', action='store_true')
     subparser.add_argument('-e', '--exporter')
+    subparser.add_argument('--sort-by-matched-place-change', action='store_true',
+                           help="sort by matched place's changed date (oldest first) and show place and date")  # pylint: disable=line-too-long
     subparser.add_argument('match', nargs='?')
     subparser.set_defaults(func=ClientSession.print_resources)
 
     subparser = subparsers.add_parser('places', aliases=('p',),
                                       help="list available places")
     subparser.add_argument('-a', '--acquired', action='store_true')
+    subparser.add_argument('--sort-last-changed', action='store_true',
+                           help='sort by last changed date (oldest first)')
     subparser.set_defaults(func=ClientSession.print_places)
 
     subparser = subparsers.add_parser('who',

@@ -36,6 +36,11 @@ def pytest_addoption(parser):
         nargs='?',
         const=".",
         help='path to store logfiles')
+    group.addoption(
+        '--lg-colored-steps',
+        action='store_true',
+        dest='lg_colored_steps',
+        help='colored step reporter')
 
 
 @pytest.fixture('session')

@@ -4,7 +4,7 @@ import pytest
 
 from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
-from .reporter import StepReporter
+from .reporter import StepReporter, ColoredStepReporter
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
@@ -15,7 +15,10 @@ def pytest_configure(config):
     if capturemanager._method == "no":
         rewrite = False  # other output would interfere with our rewrites
     if terminalreporter.verbosity > 1:  # enable with -vv
-        config.pluginmanager.register(StepReporter(terminalreporter, rewrite=rewrite))
+        if config.option.lg_colored_steps:
+            config.pluginmanager.register(ColoredStepReporter(terminalreporter, rewrite=rewrite))
+        else:
+            config.pluginmanager.register(StepReporter(terminalreporter, rewrite=rewrite))
     if terminalreporter.verbosity > 2:  # enable with -vvv
         logging.getLogger().setLevel(logging.DEBUG)
     if lg_log:

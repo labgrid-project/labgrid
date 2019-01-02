@@ -1081,6 +1081,10 @@ The driver takes care of the exporting the pin and setting its direction to
 output. Besides this the user running labgrid on the machine needs the
 correct access-rights to */sys/class/gpio/*.
 
+.. note::
+  This driver is mainly useful for local testing, as it doesn't support remote
+  access via the network or binds to a corresponding resource.
+
 Implements:
   - :any:`DigitalOutputProtocol`
 

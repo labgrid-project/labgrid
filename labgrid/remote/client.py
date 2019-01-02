@@ -694,12 +694,7 @@ class ClientSession(ApplicationSession):
         name = self.args.name
         target = self._get_target(place)
         from ..resource import NetworkSerialPort
-        try:
-            resource = target.get_resource(NetworkSerialPort, name=name)
-        except KeyError:
-            print("resource not found")
-            return False
-
+        resource = target.get_resource(NetworkSerialPort, name=name)
         host, port = proxymanager.get_host_and_port(resource, self.args.proxy)
 
         # check for valid resources
@@ -810,12 +805,13 @@ class ClientSession(ApplicationSession):
 
     def _get_ip(self, place):
         target = self._get_target(place)
-        from ..resource import EthernetPort
+        from ..resource import EthernetPort, NetworkService
         try:
             resource = target.get_resource(EthernetPort)
-        except KeyError:
-            print("resource not found")
-            return None
+        except NoResourceFoundError:
+            resource = target.get_resource(NetworkService)
+            return resource.address
+
         matches = []
         for details in resource.extra.get('macs').values():
             ips = details.get('ips', [])
@@ -830,19 +826,34 @@ class ClientSession(ApplicationSession):
         return newest[0]
 
     def ssh(self):
+        from ..resource import NetworkService
         place = self.get_acquired_place()
         ip = self._get_ip(place)
         if not ip:
             return
-        args = [
+        target = self._get_target(place)
+        env = os.environ.copy()
+        try:
+            resource = target.get_resource(NetworkService)
+            username = resource.username
+            # use sshpass if we have a password
+            if resource.password:
+                env['SSHPASS'] = resource.password
+            sshpass = ['sshpass', '-e'] if resource.password else []
+
+        except NoResourceFoundError:
+            username = 'root'
+            sshpass = []
+
+        args = sshpass + [
             'ssh',
-            '-l', 'root',
+            '-l', username,
             '-o', 'StrictHostKeyChecking no',
             '-o', 'UserKnownHostsFile /dev/null',
             str(ip),
         ] + self.args.leftover
         print('Note: Using dummy known hosts file.')
-        res = subprocess.call(args)
+        res = subprocess.run(args, env=env)
         if res:
             print("connection lost")
 

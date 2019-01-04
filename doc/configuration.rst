@@ -1263,7 +1263,7 @@ The qemudriver also requires the specification of:
 
 SigrokDriver
 ~~~~~~~~~~~~
-The SigrokDriver uses a SigrokDriver Resource to record samples and provides
+The SigrokDriver uses a SigrokDevice Resource to record samples and provides
 them during test runs.
 
 Binds to:

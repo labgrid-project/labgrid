@@ -65,7 +65,12 @@ class AgentWrapper:
         elif 'exception' in response:
             self.agent.wait()
             self.agent = None
-            raise AgentException(response['exception'])
+            e = response['exception']
+            # work around BaseException repr change
+            # https://bugs.python.org/issue30399
+            if e[-2:] == ',)':
+                e = e[:-2] + ')'
+            raise AgentException(e)
         else:
             self.agent.wait()
             self.agent = None

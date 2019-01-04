@@ -1,28 +1,30 @@
-Release 0.2.0 (unreleased)
---------------------------
+Release 0.2.0 (released Jan 4, 2019)
+------------------------------------
 
 New Features
 ~~~~~~~~~~~~
 
+- A colored StepReporter was added and can be used with ``pytest
+  --lg-colored-steps``.
+- ``labgrid-client`` can now use the last changed information to sort listed
+  resources and places.
 - ``labgrid-client ssh`` now uses ip/user/password from NetworkService resource
   if available
-- ManagedFile: the managedfile takes a local file and synchronizes it to a
+- The environement files can contain feature flags which can be used to control
+  which tests are run in pytest.
+- The new "managed file" support takes a local file and synchronizes it to a
   resource on a remote host. If the resource is not a `NetworkResource`, the
   local file is used instead.
 - ProxyManager: a class to automatically create ssh forwardings to proxy
   connections over the exporter
-- SSHManager: a global sshmanager to multiplex connections to different exporters
+- SSHManager: a global manager to multiplex connections to different exporters
 - The target now saves it's attached drivers, resources and protocols in a
   lookup table, avoiding the need of importing many Drivers and Protocols (see
   `Syntactic sugar for Targets`_)
+- When multiple Drivers implement the same Protocol, the best one can be
+  selected using a priority (see below).
 - The new subcommand ``labgrid-client monitor`` shows resource or places
   changes as they happen, which is useful during development or debugging.
-- The new `QEMUDriver` runs a system image in QEmu and implements the
-  :any:`ConsoleProtocol` and :any:`PowerProtocol`.
-  This allows using labgrid without any real hardware.
-- The bootloader drivers now have a ``reset`` method.
-- The `BareboxDriver`'s boot string is now configurable, which allows it to work
-  with the ``quiet`` Linux boot parameter.
 - The environment yaml file can now list Python files (under the 'imports' key).
   They are imported before constructing the Targets, which simplifies using
   custom Resources, Drivers or Strategies.
@@ -35,11 +37,54 @@ New Features
 - Resource matches for places configured in the coordinator can now have a
   name, allowing multiple resources with the same class.
 - The new `Target.__getitem__` method makes writing using protocols less verbose.
-- The `NetworkPowerDriver` now support the newer NETIO 4 models.
-- The `ShellDriver` now supports configuring the login prompt timeout.
+- Experimental: The labgrid-autoinstall tool was added (see below).
+
+New and Updated Drivers
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- The new `DigitalOutputResetDriver` adapts a driver implementing the
+  DigitalOutputProtocol to the ResetProtocol.
+- The new `ModbusCoilDriver` support outputs on a ModbusTCP device.
+- The new `NetworkUSBStorageDriver` allows writing to remote USB storage
+  devices (such as SD cards or memory sticks connected to a mux).
+- The new `QEMUDriver` runs a system image in QEmu and implements the
+  :any:`ConsoleProtocol` and :any:`PowerProtocol`.
+  This allows using labgrid without any real hardware.
+- The new `QuartusHPSDriver` controls the "Quartus Prime Programmer and Tools"
+  to flash a target's QSPI.
+- The new `SerialPortDigitalOutputDriver` controls the state of a GPIO using
+  the control lines of a serial port.
+- The new `SigrokDriver` uses a (local or remote) device supported by sigrok to
+  record samples.
+- The new `SmallUBootDriver` supports the extremely limited U-Boot found in
+  cheap WiFi routers.
+- The new `USBSDMuxDriver` controls a Pengutronix USB-SD-Mux device.
+- The new `USBTMCDriver` can fetch measurements and screenshots from the
+  "Keysight DSOX2000 series" and the "Tektronix TDS 2000 series".
+- The new `USBVideoDriver` can stream video from a remote H.264
+  UVC (USB Video Class) camera using gstreamer over SSH. Currently,
+  configuration for the "Logitech HD Pro Webcam C920" exists.
+- The new `XenaDriver` allows interacting with Xena network testing equipment.
+- The new `YKUSHPowerDriver` and `USBPowerDriver` support software-controlled
+  USB hubs.
+- The bootloader drivers now have a ``reset`` method.
+- The `BareboxDriver`'s boot string is now configurable, which allows it to work
+  with the ``quiet`` Linux boot parameter.
+- The `IMXUSBLoader` now recognizes more USB IDs.
+- The `OpenOCDDriver` is now more flexible with loading configuration files.
+- The `NetworkPowerDriver` now additionally supports:
+
+  - 24 port "Gude Expert Power Control 8080"
+  - 8 port "Gude Expert Power Control 8316"
+  - NETIO 4 models (via telnet)
+  - a simple REST interface
+
 - The `SerialDriver` now supports using plain TCP instead of RFC 2217, which is
   needed from some console servers.
-- Experimental: The labgrid-autoinstall tool was added (see below).
+- The `ShellDriver` has been improved:
+  
+  - It supports configuring the various timeouts used during the login process.
+  - It can use xmodem to transfer file from and to the target.
 
 Incompatible Changes
 ~~~~~~~~~~~~~~~~~~~~
@@ -128,6 +173,17 @@ New (with real names):
   >>> SerialDriver(t, "MyDriver")
   SerialDriver(target=Target(name='MyTarget', env=None), name='MyDriver', state=<BindingState.bound: 1>, txdelay=0.0)
 
+Priorities
+~~~~~~~~~~
+
+Each driver supports a priorities class variable.
+This allows drivers which implement the same protocol to add a priority option
+to each of their protocols.
+This way a `NetworkPowerDriver` can implement the `ResetProtocol`, but if another
+`ResetProtocol` driver with a higher protocol is available, it will be selected
+instead.
+See the documentation for details.
+
 Auto-Installer Tool
 ~~~~~~~~~~~~~~~~~~~
 
@@ -145,6 +201,8 @@ gadget.
 
 .. note::
   ``labgrid-autoinstall`` is still experimental and no documentation has been written.
+
+Contributions from: Ahmad Fatoum, Bastian Krause, Björn Lässig, Chris Fiege, Enrico Joerns, Esben Haabendal, Felix Lampe, Florian Scherf, Georg Hofmann, Jan Lübbe, Jan Remmet, Johannes Nau, Kasper Revsbech, Kjeld Flarup, Laurentiu Palcu, Oleksij Rempel, Roland Hieber, Rouven Czerwinski, Stanley Phoong Cheong Kwan, Steffen Trumtrar, Tobi Gschwendtner, Vincent Prince
 
 Release 0.1.0 (released May 11, 2017)
 -------------------------------------

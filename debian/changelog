@@ -1,5 +1,5 @@
-labgrid (0.1.0) UNRELEASED; urgency=low
+labgrid (0.2.0) UNRELEASED; urgency=low
 
   * Initial release. (Closes: #XXXXXX)
 
- -- Jan Lübbe <jlu@pengutronix.de>  Wed, 04 Apr 2018 17:36:46 +0200
+ -- Jan Lübbe <jlu@pengutronix.de>  Mon, 07 Jan 2019 11:57:16 +0100

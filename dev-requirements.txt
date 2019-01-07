@@ -1,4 +1,4 @@
-pytest-cov==2.6.0
+pytest-cov==2.6.1
 pytest-isort==0.2.1
 pytest-mock==1.10.0
 pytest-pylint==0.13.0

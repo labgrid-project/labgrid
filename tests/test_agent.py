@@ -59,7 +59,7 @@ def test_exception(subprocess_mock):
     aw = AgentWrapper('localhost')
     with pytest.raises(AgentException) as excinfo:
         aw.error('foo')
-    assert excinfo.value.args == ("RuntimeError('foo',)",)
+    assert excinfo.value.args == ("RuntimeError('foo')",)
 
 def test_error(subprocess_mock):
     aw = AgentWrapper('localhost')

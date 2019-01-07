@@ -97,7 +97,7 @@ def pytest_configure(config):
                             "localsshmanager: test SSHManager against Localhost")
 
 def pytest_runtest_setup(item):
-    envmarker = item.get_marker("sigrokusb")
+    envmarker = item.get_closest_marker("sigrokusb")
     if envmarker is not None:
         if item.config.getoption("--sigrok-usb") is False:
             pytest.skip("sigrok usb tests not enabled (enable with --sigrok-usb)")

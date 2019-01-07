@@ -1,11 +1,10 @@
-pytest-cache==1.0
-pytest-cov==2.5.1
-pytest-isort==0.1.0
-pytest-mock==1.6.3
-pytest-pylint==0.7.1
-pytest-runner==3.0
-pytest-dependency==0.3.2
-yapf==0.20.1
+pytest-cov==2.6.0
+pytest-isort==0.2.1
+pytest-mock==1.10.0
+pytest-pylint==0.13.0
+pytest-runner==4.2
+pytest-dependency==0.4.0
+yapf==0.24.0
 -r doc-requirements.txt
 -r crossbar-requirements.txt
 -r onewire-requirements.txt

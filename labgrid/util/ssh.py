@@ -294,7 +294,7 @@ class SSHConnection:
             stderr=subprocess.STDOUT,
         )
         stdout, _ = proc.communicate(timeout=60)
-        check = proc.wait(args)
+        check = proc.wait()
         if check == 0:
             self._logger.debug("Found existing control socket")
             return True

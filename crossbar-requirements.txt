@@ -1,5 +1,5 @@
 -r requirements.txt
 setuptools>=38.0.0
-crossbar==17.12.1
+crossbar==18.12.1
 # For crossbar
 idna==2.5

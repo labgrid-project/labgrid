@@ -4,7 +4,7 @@ pytest-mock==1.10.0
 pytest-pylint==0.13.0
 pytest-runner==4.2
 pytest-dependency==0.4.0
-yapf==0.24.0
+yapf==0.25.0
 -r doc-requirements.txt
 -r crossbar-requirements.txt
 -r onewire-requirements.txt

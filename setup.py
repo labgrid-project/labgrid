@@ -28,7 +28,7 @@ setup(
         'jinja2',
         'pexpect',
         'pyserial>=3.3',
-        'pytest',
+        'pytest>=3.6',
         'pyyaml',
         'pyudev',
         'requests',

@@ -10,8 +10,12 @@ New Features
   resources and places.
 - ``labgrid-client ssh`` now uses ip/user/password from NetworkService resource
   if available
+- The pytest plugin option ``--lg-log`` enables logging of the serial traffic
+  into a file (see below).
 - The environement files can contain feature flags which can be used to control
   which tests are run in pytest.
+- ``LG_*`` variables from the OS environment can be used in the config file with
+  the ``!template`` directive.
 - The new "managed file" support takes a local file and synchronizes it to a
   resource on a remote host. If the resource is not a `NetworkResource`, the
   local file is used instead.
@@ -183,6 +187,25 @@ This way a `NetworkPowerDriver` can implement the `ResetProtocol`, but if anothe
 `ResetProtocol` driver with a higher protocol is available, it will be selected
 instead.
 See the documentation for details.
+
+ConsoleLogging Reporter
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The ConsoleLoggingReporter can be used with the pytest plugin or the library.
+It records the Data send from a DUT to the computer running labgrid.
+The logfile contains a header with the name of the device from the environment
+configuration and a timestamp.
+
+When using the library, the reporter can be started with::
+
+  from labgrid.consoleloggingreporter import ConsoleLoggingReporter
+
+  ConsoleLoggingReporter.start(".")
+
+where "." is the output directory.
+
+The pytest plugin accepts the ``--lg-log`` commandline option, either with or
+without an output path.
 
 Auto-Installer Tool
 ~~~~~~~~~~~~~~~~~~~

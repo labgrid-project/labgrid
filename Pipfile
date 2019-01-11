@@ -1,0 +1,41 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+coveralls = ">=1.3.0"
+codecov = ">=2.0.15"
+pytest-cov = "==2.6.1"
+pytest-isort = "==0.2.1"
+pytest-mock = "==1.10.0"
+pytest-pylint = "==0.13.0"
+pytest-runner = "==4.2"
+pytest-dependency = "==0.4.0"
+yapf = "==0.25.0"
+docutils = "==0.14"
+graphviz = "==0.10.1"
+Sphinx = "==1.8.3"
+sphinx_rtd_theme = "==0.4.2"
+
+[packages]
+attrs = "==18.2.0"
+pexpect = "==4.6"
+pyserial = {git = "https://github.com/labgrid-project/pyserial.git", ref="v3.4.0.1", editable=true}
+pytest = "==4.0.2"
+pyudev = "==0.21.0"
+requests = "==2.21.0"
+xmodem = "==0.4.5"
+autobahn = "==18.12.1"
+ansicolors = "==1.1.8"
+"Jinja2" = "==2.10"
+PyYAML = "==3.13"
+labgrid = {editable = true, path = "."}
+pyModbusTCP = "==0.1.8"
+setuptools = ">=38.0.0"
+crossbar = "==18.12.1"
+idna = "==2.5"
+onewire = "==0.2"
+pysnmp = "==4.4.8"
+pysnmp-mibs = "==0.1.6"
+xenavalkyrie = "==1.2.1"

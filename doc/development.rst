@@ -5,6 +5,11 @@ The first step is to install labgrid into a local virtualenv.
 Installation
 ------------
 
+There are two ways to install labgrid.
+
+Installation through requirements.txt
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Clone the git repository:
 
 .. code-block:: bash
@@ -41,6 +46,55 @@ Tests can now be run via:
 .. code-block:: bash
 
    python -m pytest --lg-env <config>
+
+Installation through pipenv
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Clone the git repository:
+
+.. code-block:: bash
+
+   git clone https://github.com/labgrid-project/labgrid && cd labgrid
+
+Install required dependencies:
+
+.. code-block:: bash
+
+   sudo apt install libow-dev
+
+Install required development requirements:
+
+.. code-block:: bash
+
+   pipenv install --dev
+
+Enter the environment:
+
+.. code-block:: bash
+
+   pipenv shell
+
+Tests can now be run via:
+
+.. code-block:: bash
+
+   python -m pytest --lg-env <config>
+
+.. note::
+   If you want to install the production dependencies,
+   then run:
+
+      .. code-block:: bash
+
+          pipenv install
+
+   If you want to deploy labgrid with pipenv,
+   then run:
+
+      .. code-block:: bash
+
+         pipenv install --deploy
+
 
 Writing a Driver
 ----------------

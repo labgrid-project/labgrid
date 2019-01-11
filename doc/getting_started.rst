@@ -72,6 +72,9 @@ If the help for labgrid-client does not show up, open an `Issue
 <https://github.com/labgrid-project/labgrid/issues>`_. If everything was
 successful so far, proceed to the next section:
 
+For an alternative way of installing labgrid,
+see :doc:`development reference <development>`
+
 Optional Requirements
 ~~~~~~~~~~~~~~~~~~~~~
 Labgrid provides optional features which are not included in the default

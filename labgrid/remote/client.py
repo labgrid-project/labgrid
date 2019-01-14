@@ -841,6 +841,7 @@ class ClientSession(ApplicationSession):
         try:
             resource = target.get_resource(NetworkService)
             username = resource.username
+            port = resource.port or 22
             # use sshpass if we have a password
             if resource.password:
                 env['SSHPASS'] = resource.password
@@ -849,10 +850,12 @@ class ClientSession(ApplicationSession):
         except NoResourceFoundError:
             username = 'root'
             sshpass = []
+            port = 22
 
         args = sshpass + [
             'ssh',
             '-l', username,
+            '-p', str(port),
             '-o', 'StrictHostKeyChecking no',
             '-o', 'UserKnownHostsFile /dev/null',
             str(ip),

@@ -175,7 +175,7 @@ class SSHConnection:
 
         return res
 
-    def _check_connected(func):
+    def _check_connected(func):  # pylint: disable=no-self-argument
         """Check if an SSHConnection is connected as a decorator"""
 
         @wraps(func)
@@ -186,7 +186,7 @@ class SSHConnection:
                         func.__qualname__, self
                     )
                 )
-            return func(self, *_args, **_kwargs)
+            return func(self, *_args, **_kwargs)  # pylint: disable=not-callable
 
         return wrapper
 

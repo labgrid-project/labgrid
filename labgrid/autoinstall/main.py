@@ -39,7 +39,7 @@ class Handler(multiprocessing.Process):
         co = compile(tree, filename=self.env.config_file, mode='exec')
 
         stage = {}
-        exec(co, context, stage)
+        exec(co, context, stage)  # pylint: disable=exec-used
         return stage[name]
 
     def _get_setup_function(self):

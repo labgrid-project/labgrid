@@ -41,7 +41,7 @@ class SSHConnectionManager:
         instance = self._connections.get(host)
         if instance is None:
             # pylint: disable=unsupported-assignment-operation
-            self.logger.debug("Creating SSHConnection for {}".format(host))
+            self.logger.debug("Creating SSHConnection for %s", host)
             instance = SSHConnection(host)
             instance.connect()
             self._connections[host] = instance
@@ -151,10 +151,10 @@ class SSHConnection:
         """Internal function which appends the control socket and checks if the
         connection is already open"""
         if self._check_external_master():
-            self._logger.info("Using existing SSH connection to {}".format(self.host))
+            self._logger.info("Using existing SSH connection to %s", self.host)
         else:
             self._start_own_master()
-            self._logger.info("Created new SSH connection to {}".format(self.host))
+            self._logger.info("Created new SSH connection to %s", self.host)
         self._start_keepalive()
         self._connected = True
 
@@ -302,7 +302,7 @@ class SSHConnection:
             self._logger.debug("No existing control socket found")
             return False
 
-        self._logger.debug("Unexpected ssh check output '{}'".format(stdout))
+        self._logger.debug("Unexpected ssh check output '%s'", stdout)
         return False
 
     def _start_own_master(self):
@@ -403,7 +403,7 @@ class SSHConnection:
         assert self._connected
         try:
             if self._socket:
-                self._logger.info("Closing SSH connection to {}".format(self.host))
+                self._logger.info("Closing SSH connection to %s", self.host)
                 self._stop_keepalive()
                 self._stop_own_master()
         finally:

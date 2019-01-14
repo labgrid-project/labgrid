@@ -2,9 +2,9 @@ import logging
 import warnings
 
 import attr
+from pexpect import TIMEOUT
 import serial
 import serial.rfc2217
-from pexpect import TIMEOUT
 
 from ..factory import target_factory
 from ..protocol import ConsoleProtocol

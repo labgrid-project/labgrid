@@ -1,8 +1,8 @@
 import logging
 import sys
 import os
-import colors
 import re
+import colors
 import pytest
 from _pytest.capture import safe_text_dupfile
 

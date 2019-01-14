@@ -10,7 +10,7 @@ from ..resource.remote import NetworkAlteraUSBBlaster
 from ..resource.udev import AlteraUSBBlaster
 from ..step import step
 from ..util.managedfile import ManagedFile
-from .common import Driver, check_file
+from .common import Driver
 
 
 @target_factory.reg_driver

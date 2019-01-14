@@ -26,7 +26,8 @@ class RemotePlaceManager(ResourceManager):
         try:
             self.session = start_session(self.url, self.realm, {'env': self.env})
         except ConnectionRefusedError as e:
-            raise ConnectionRefusedError("Could not connect to coordinator {}".format(self.url)) from e
+            raise ConnectionRefusedError("Could not connect to coordinator {}".format(self.url)) \
+                from e
 
         self.loop = self.session.loop
 

@@ -1281,7 +1281,8 @@ def main():
     if args.command and args.command != 'help':
         exitcode = 0
         try:
-            session = start_session(args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"), extra)
+            session = start_session(args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"),
+                                    extra)
             if asyncio.iscoroutinefunction(args.func):
                 session.loop.run_until_complete(args.func(session))
             else:

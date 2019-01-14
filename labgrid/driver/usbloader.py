@@ -79,5 +79,6 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
         mf.sync_to_resource()
 
         subprocess.check_call(
-            self.loader.command_prefix+[self.tool, "-p", str(self.loader.path), "-c", mf.get_remote_path()]
+            self.loader.command_prefix +
+            [self.tool, "-p", str(self.loader.path), "-c", mf.get_remote_path()]
         )

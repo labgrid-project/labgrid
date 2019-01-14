@@ -43,7 +43,8 @@ class StepReporter:
 
     def __format_elements(self):
         return [
-            "{}={}".format(colors.color(k, style='underline'), repr(v)) for k, v in self.elements if v is not None
+            "{}={}".format(colors.color(k, style='underline'), repr(v)) \
+                for k, v in self.elements if v is not None
         ]
 
     def notify(self, event):
@@ -130,7 +131,9 @@ class ColoredStepReporter(StepReporter):
 
     def __format_elements(self, color):
         return [
-            colors.color(k, fg=color, style='underline') + colors.color('={}'.format(repr(v)), fg=color) for k, v in self.elements if v is not None
+            colors.color(k, fg=color, style='underline') + \
+                colors.color('={}'.format(repr(v)), fg=color) \
+                    for k, v in self.elements if v is not None
         ]
 
     def _line_format(self, event):

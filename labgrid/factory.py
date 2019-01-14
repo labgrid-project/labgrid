@@ -70,7 +70,7 @@ class TargetFactory:
                     else:
                         item = {'cls':  key}
                         if value is None:
-                            raise InvalidConfigError("invalid list item, add empty dict for no arguments")
+                            raise InvalidConfigError("invalid list item, add empty dict for no arguments")  # pylint: disable=line-too-long
                         item.update(value)
                 result.append(item)
         elif isinstance(data, dict):

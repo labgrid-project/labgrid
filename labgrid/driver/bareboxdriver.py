@@ -181,7 +181,8 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                     self.console.sendline("")
 
                 if timeout.expired:
-                    raise TIMEOUT("Timeout of {} seconds exceeded during waiting for login".format(self.login_timeout))
+                    raise TIMEOUT("Timeout of {} seconds exceeded during waiting for login"
+                                  .format(self.login_timeout))
 
             last_before = before
 

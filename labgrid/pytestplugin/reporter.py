@@ -123,11 +123,11 @@ class ColoredStepReporter(StepReporter):
             self.color_scheme = ColoredStepReporter.EVENT_COLORS_DARK
 
     def __event_color(self, event):
-            for pattern, color in self.color_scheme.items():
-                if re.match(pattern, event.step.title):
-                    return color
-            else:
-                return 'default'
+        for pattern, color in self.color_scheme.items():
+            if re.match(pattern, event.step.title):
+                return color
+        else:
+            return 'default'
 
     def __format_elements(self, color):
         return [

@@ -4,7 +4,7 @@ import attr
 
 
 @attr.s(cmp=False)
-class Timeout(object):
+class Timeout:
     """Reperents a timeout (as a deadline)"""
     timeout = attr.ib(
         default=120.0, validator=attr.validators.instance_of(float)

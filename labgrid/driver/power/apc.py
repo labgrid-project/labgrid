@@ -12,10 +12,10 @@ def _snmp_get(host, oid):
     assert oid == out_oid
     if value == "1":
         return True
-    elif value == "2":
+    if value == "2":
         return False
-    else:
-        raise ExecutionError("failed to get SNMP value")
+
+    raise ExecutionError("failed to get SNMP value")
 
 
 def _snmp_set(host, oid, value):

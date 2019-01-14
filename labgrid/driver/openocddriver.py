@@ -48,7 +48,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
                 return [self.target.env.config.resolve_path(path)]
             return [path]
 
-        elif isinstance(path, list):
+        if isinstance(path, list):
             if self.target.env:
                 return [self.target.env.config.resolve_path(p) for p in path]
             # fall-through

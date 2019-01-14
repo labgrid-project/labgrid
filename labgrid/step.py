@@ -127,7 +127,7 @@ class Step:
     def duration(self):
         if self._start_ts is None:
             return 0.0
-        elif self._stop_ts is None:
+        if self._stop_ts is None:
             return monotonic() - self._start_ts
 
         return self._stop_ts - self._start_ts
@@ -136,7 +136,7 @@ class Step:
     def status(self):
         if self._start_ts is None:
             return 'new'
-        elif self._stop_ts is None:
+        if self._stop_ts is None:
             return 'active'
 
         return 'done'

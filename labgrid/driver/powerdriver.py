@@ -263,6 +263,6 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             status = status.split()
             if b"power" in status:
                 return True
-            elif b"off" in status:
+            if b"off" in status:
                 return False
         raise ExecutionError("Did not find port status in uhubctl output ({})".format(repr(output)))

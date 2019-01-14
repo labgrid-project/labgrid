@@ -52,7 +52,7 @@ class Environment:
 
     def get_target_features(self):
         flags = set()
-        for target, value in self.config.get_targets().items():
+        for value in self.config.get_targets().values():
             flags = flags | set(value.get('features', {}))
         return flags
 

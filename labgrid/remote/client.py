@@ -723,7 +723,7 @@ class ClientSession(ApplicationSession):
     def fastboot(self):
         place = self.get_acquired_place()
         args = self.args.fastboot_args
-        if len(args) < 1:
+        if not args:
             raise UserError("not enough arguments for fastboot")
         if args[0] == 'flash':
             if len(args) < 3:

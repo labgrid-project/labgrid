@@ -298,7 +298,7 @@ class SSHConnection:
         if check == 0:
             self._logger.debug("Found existing control socket")
             return True
-        elif b"No such file or directory" in stdout:
+        if b"No such file or directory" in stdout:
             self._logger.debug("No existing control socket found")
             return False
 

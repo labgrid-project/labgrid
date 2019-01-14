@@ -62,7 +62,7 @@ class AgentWrapper:
         response = json.loads(response)
         if 'result' in response:
             return response['result']
-        elif 'exception' in response:
+        if 'exception' in response:
             self.agent.wait()
             self.agent = None
             e = response['exception']

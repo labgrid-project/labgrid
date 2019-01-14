@@ -55,9 +55,9 @@ class TargetFactory:
                 if not isinstance(item, dict):
                     raise InvalidConfigError(
                         "invalid list item type {} (should be dict)".format(type(item)))
-                if len(item) < 1:
+                if not item:
                     raise InvalidConfigError("invalid empty dict as list item")
-                elif len(item) > 1:
+                if len(item) > 1:
                     if 'cls' in item:
                         item = item.copy()
                     else:

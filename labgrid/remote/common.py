@@ -85,11 +85,11 @@ class ResourceMatch:
         exporter, group, cls, name = resource_path
         if not fnmatchcase(exporter, self.exporter):
             return False
-        elif not fnmatchcase(group, self.group):
+        if not fnmatchcase(group, self.group):
             return False
-        elif not fnmatchcase(cls, self.cls):
+        if not fnmatchcase(cls, self.cls):
             return False
-        elif self.name and not fnmatchcase(name, self.name):
+        if self.name and not fnmatchcase(name, self.name):
             return False
 
         return True

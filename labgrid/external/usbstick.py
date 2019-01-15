@@ -18,7 +18,7 @@ class USBStatus(enum.Enum):
 
 
 @attr.s(cmp=False)
-class USBStick(object):
+class USBStick:
     """The USBStick class provides an easy to use interface to describe a
     target as an USB Stick."""
     target = attr.ib()

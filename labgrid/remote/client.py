@@ -723,7 +723,7 @@ class ClientSession(ApplicationSession):
     def fastboot(self):
         place = self.get_acquired_place()
         args = self.args.fastboot_args
-        if len(args) < 1:
+        if not args:
             raise UserError("not enough arguments for fastboot")
         if args[0] == 'flash':
             if len(args) < 3:
@@ -1281,7 +1281,8 @@ def main():
     if args.command and args.command != 'help':
         exitcode = 0
         try:
-            session = start_session(args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"), extra)
+            session = start_session(args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"),
+                                    extra)
             if asyncio.iscoroutinefunction(args.func):
                 session.loop.run_until_complete(args.func(session))
             else:

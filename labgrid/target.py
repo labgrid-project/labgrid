@@ -138,7 +138,7 @@ class Target:
         return found[0]
 
     def _get_driver(self, cls, *, name=None, activate=True, active=False):
-        assert not (activate == True and active == True)
+        assert not (activate is True and active is True)
 
         found = []
         other_names = []
@@ -375,10 +375,10 @@ class Target:
     def bind(self, bindable):
         if isinstance(bindable, Resource):
             return self.bind_resource(bindable)
-        elif isinstance(bindable, Driver):
+        if isinstance(bindable, Driver):
             return self.bind_driver(bindable)
-        else:
-            raise BindingError("object {} is not bindable".format(bindable))
+
+        raise BindingError("object {} is not bindable".format(bindable))
 
     def activate(self, client):
         """

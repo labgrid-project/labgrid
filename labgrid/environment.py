@@ -19,13 +19,16 @@ class Environment:
         self.config = Config(self.config_file)
 
         for user_import in self.config.get_imports():
-            import importlib
+            import importlib.util
             from importlib.machinery import SourceFileLoader
             import sys
 
             if user_import.endswith('.py'):
                 module_name = os.path.basename(user_import)[:-3]
-                module = SourceFileLoader(module_name, user_import).load_module()
+                loader = SourceFileLoader(module_name, user_import)
+                spec = importlib.util.spec_from_loader(loader.name, loader)
+                module = importlib.util.module_from_spec(spec)
+                loader.exec_module(module)
             else:
                 module_name = user_import
                 module = importlib.import_module(user_import)
@@ -52,7 +55,7 @@ class Environment:
 
     def get_target_features(self):
         flags = set()
-        for target, value in self.config.get_targets().items():
+        for value in self.config.get_targets().values():
             flags = flags | set(value.get('features', {}))
         return flags
 

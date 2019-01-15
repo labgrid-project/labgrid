@@ -71,9 +71,9 @@ class ExporterSession(RemoteSession):
         if old and new:
             assert old.cls == new.cls
             return Action.UPD, resource_path
-        elif old:
+        if old:
             return Action.DEL, resource_path
-        elif new:
+        if new:
             return Action.ADD, resource_path
 
         return None, resource_path

@@ -26,9 +26,9 @@ def power_get(host, index):
         if line.find(power_pattern) > 0 or line.find(switch_patern) > 0:
             if line.find("OFF") > 0:
                 return False
-            elif line.find("ON") > 0:
+            if line.find("ON") > 0:
                 return True
-            else:
-                raise ExecutionError("failed to parse the port status")
+
+            raise ExecutionError("failed to parse the port status")
     # if we got this far, something is wrong with the website
     raise ExecutionError("failed to find the port")

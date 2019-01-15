@@ -91,11 +91,11 @@ class USBTMCDriver(Driver):
         png = getattr(self.backend, 'get_screenshot_png', None)
         tiff = getattr(self.backend, 'get_screenshot_tiff', None)
         if png:
-            return 'png', png(self)
-        elif tiff:
-            return 'tiff', tiff(self)
-        else:
-            raise InvalidConfigError("get_screenshot_png/_tiff not implemented")
+            return 'png', png(self)  # pylint: disable=not-callable
+        if tiff:
+            return 'tiff', tiff(self)  # pylint: disable=not-callable
+
+        raise InvalidConfigError("get_screenshot_png/_tiff not implemented")
 
     @Driver.check_active
     def get_bool(self, cmd):

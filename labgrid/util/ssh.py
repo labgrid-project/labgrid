@@ -41,7 +41,7 @@ class SSHConnectionManager:
         instance = self._connections.get(host)
         if instance is None:
             # pylint: disable=unsupported-assignment-operation
-            self.logger.debug("Creating SSHConnection for {}".format(host))
+            self.logger.debug("Creating SSHConnection for %s", host)
             instance = SSHConnection(host)
             instance.connect()
             self._connections[host] = instance
@@ -131,7 +131,8 @@ class SSHConnection:
         self._master = None
         self._keepalive = None
 
-    def _get_ssh_base_args(self):
+    @staticmethod
+    def _get_ssh_base_args():
         return ["-x", "-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
 
     def _get_ssh_control_args(self):
@@ -143,7 +144,7 @@ class SSHConnection:
         return []
 
     def _get_ssh_args(self):
-        args = self._get_ssh_base_args()
+        args = SSHConnection._get_ssh_base_args()
         args += self._get_ssh_control_args()
         return args
 
@@ -151,10 +152,10 @@ class SSHConnection:
         """Internal function which appends the control socket and checks if the
         connection is already open"""
         if self._check_external_master():
-            self._logger.info("Using existing SSH connection to {}".format(self.host))
+            self._logger.info("Using existing SSH connection to %s", self.host)
         else:
             self._start_own_master()
-            self._logger.info("Created new SSH connection to {}".format(self.host))
+            self._logger.info("Created new SSH connection to %s", self.host)
         self._start_keepalive()
         self._connected = True
 
@@ -174,7 +175,7 @@ class SSHConnection:
 
         return res
 
-    def _check_connected(func):
+    def _check_connected(func):  # pylint: disable=no-self-argument
         """Check if an SSHConnection is connected as a decorator"""
 
         @wraps(func)
@@ -185,7 +186,7 @@ class SSHConnection:
                         func.__qualname__, self
                     )
                 )
-            return func(self, *_args, **_kwargs)
+            return func(self, *_args, **_kwargs)  # pylint: disable=not-callable
 
         return wrapper
 
@@ -298,18 +299,18 @@ class SSHConnection:
         if check == 0:
             self._logger.debug("Found existing control socket")
             return True
-        elif b"No such file or directory" in stdout:
+        if b"No such file or directory" in stdout:
             self._logger.debug("No existing control socket found")
             return False
 
-        self._logger.debug("Unexpected ssh check output '{}'".format(stdout))
+        self._logger.debug("Unexpected ssh check output '%s'", stdout)
         return False
 
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
         control = os.path.join(self._tmpdir, 'control-{}'.format(self.host))
 
-        args = ["ssh"] + self._get_ssh_base_args()
+        args = ["ssh"] + SSHConnection._get_ssh_base_args()
         args += [
             "-n", "-MN",
             "-o", "ConnectTimeout=30",
@@ -403,7 +404,7 @@ class SSHConnection:
         assert self._connected
         try:
             if self._socket:
-                self._logger.info("Closing SSH connection to {}".format(self.host))
+                self._logger.info("Closing SSH connection to %s", self.host)
                 self._stop_keepalive()
                 self._stop_own_master()
         finally:

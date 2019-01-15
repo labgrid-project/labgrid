@@ -21,12 +21,12 @@ class FakeConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         self.rxq = []
         self.txq = []
 
-    def _read(self, *args, **kwargs):
+    def _read(self, *_, **__):
         if self.rxq:
             return self.rxq.pop()
         return b''
 
-    def _write(self, data, *args):
+    def _write(self, data, *_):
         self.txq.append(data)
         mo = re.match(rb'^echo "(\w+)""(\w+)"\n$', data)
         if mo:

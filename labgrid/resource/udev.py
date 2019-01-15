@@ -60,9 +60,9 @@ class USBResource(ManagedResource):
             def match_single(dev, key, value):
                 if dev.properties.get(key) == value:
                     return True
-                elif dev.attributes.get(key) == value:
+                if dev.attributes.get(key) == value:
                     return True
-                elif getattr(dev, key, None) == value:
+                if getattr(dev, key, None) == value:
                     return True
                 return False
 
@@ -169,7 +169,7 @@ class USBSerialPort(USBResource, SerialPort):
         if self.port:
             warnings.warn(
                 "USBSerialPort: The port attribute will be overwritten by udev.\n"
-                "Please use udev matching as described in http://labgrid.readthedocs.io/en/latest/getting_started.html#udev-matching"
+                "Please use udev matching as described in http://labgrid.readthedocs.io/en/latest/getting_started.html#udev-matching"  # pylint: disable=line-too-long
             )
         super().__attrs_post_init__()
 

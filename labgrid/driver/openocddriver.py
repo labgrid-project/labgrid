@@ -10,7 +10,7 @@ from ..resource.remote import NetworkAlteraUSBBlaster
 from ..resource.udev import AlteraUSBBlaster
 from ..step import step
 from ..util.managedfile import ManagedFile
-from .common import Driver, check_file
+from .common import Driver
 
 
 @target_factory.reg_driver
@@ -48,7 +48,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
                 return [self.target.env.config.resolve_path(path)]
             return [path]
 
-        elif isinstance(path, list):
+        if isinstance(path, list):
             if self.target.env:
                 return [self.target.env.config.resolve_path(p) for p in path]
             # fall-through

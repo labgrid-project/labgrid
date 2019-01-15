@@ -1,8 +1,8 @@
 import logging
 import sys
 import os
-import colors
 import re
+import colors
 import pytest
 from _pytest.capture import safe_text_dupfile
 
@@ -43,7 +43,8 @@ class StepReporter:
 
     def __format_elements(self):
         return [
-            "{}={}".format(colors.color(k, style='underline'), repr(v)) for k, v in self.elements if v is not None
+            "{}={}".format(colors.color(k, style='underline'), repr(v)) \
+                for k, v in self.elements if v is not None
         ]
 
     def notify(self, event):
@@ -122,15 +123,17 @@ class ColoredStepReporter(StepReporter):
             self.color_scheme = ColoredStepReporter.EVENT_COLORS_DARK
 
     def __event_color(self, event):
-            for pattern, color in self.color_scheme.items():
-                if re.match(pattern, event.step.title):
-                    return color
-            else:
-                return 'default'
+        for pattern, color in self.color_scheme.items():
+            if re.match(pattern, event.step.title):
+                return color
+        else:
+            return 'default'
 
     def __format_elements(self, color):
         return [
-            colors.color(k, fg=color, style='underline') + colors.color('={}'.format(repr(v)), fg=color) for k, v in self.elements if v is not None
+            colors.color(k, fg=color, style='underline') + \
+                colors.color('={}'.format(repr(v)), fg=color) \
+                    for k, v in self.elements if v is not None
         ]
 
     def _line_format(self, event):

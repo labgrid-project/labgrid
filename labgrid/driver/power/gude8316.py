@@ -46,9 +46,9 @@ def power_get(host, index):
         if line_no == index and line.find("content=\"Power Port ") > 0:
             if line.find(",0") > 0:
                 return False
-            elif line.find(",1") > 0:
+            if line.find(",1") > 0:
                 return True
-            else:
-                raise ExecutionError("failed to parse the port status")
+
+            raise ExecutionError("failed to parse the port status")
     # if we got this far, something is wrong with the website
     raise ExecutionError("failed to find the port")

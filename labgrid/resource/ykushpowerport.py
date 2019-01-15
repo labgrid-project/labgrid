@@ -14,4 +14,4 @@ class YKUSHPowerPort(Resource):
         index (int): port index"""
     serial = attr.ib(validator=attr.validators.instance_of(str))
     index = attr.ib(validator=attr.validators.instance_of(int),
-                    converter=lambda x: int(x))
+                    converter=int)

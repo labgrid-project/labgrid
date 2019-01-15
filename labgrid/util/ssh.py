@@ -131,7 +131,8 @@ class SSHConnection:
         self._master = None
         self._keepalive = None
 
-    def _get_ssh_base_args(self):
+    @staticmethod
+    def _get_ssh_base_args():
         return ["-x", "-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
 
     def _get_ssh_control_args(self):
@@ -143,7 +144,7 @@ class SSHConnection:
         return []
 
     def _get_ssh_args(self):
-        args = self._get_ssh_base_args()
+        args = SSHConnection._get_ssh_base_args()
         args += self._get_ssh_control_args()
         return args
 
@@ -309,7 +310,7 @@ class SSHConnection:
         """Starts a controlmaster connection in a temporary directory."""
         control = os.path.join(self._tmpdir, 'control-{}'.format(self.host))
 
-        args = ["ssh"] + self._get_ssh_base_args()
+        args = ["ssh"] + SSHConnection._get_ssh_base_args()
         args += [
             "-n", "-MN",
             "-o", "ConnectTimeout=30",

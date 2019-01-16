@@ -132,7 +132,7 @@ LABGRID-CLIENT COMMANDS
 
 ``power (pw)`` action           Change (or get) a place's power status, where action is one of get, on, off, status
 
-``io`` action                   Interact with Onewire devices, where action is one of high, low, get
+``io`` action                   Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
 
 ``console (con)``               Connect to the console
 
@@ -140,7 +140,7 @@ LABGRID-CLIENT COMMANDS
 
 ``bootstrap`` filename          Start a bootloader
 
-``sd-mux`` action               Switch USB SD Muxer, where action is one of dut (client), host, off
+``sd-mux`` action               Switch USB SD Muxer, where action is one of dut (device-under-test), host, off
 
 ``ssh``                         Connect via SSH
 

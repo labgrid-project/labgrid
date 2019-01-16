@@ -40,8 +40,8 @@ def pytest_configure(config):
         lg_env = os.environ.get('LG_ENV')
     if lg_env is not None:
         env = Environment(config_file=lg_env)
-    if lg_coordinator is not None:
-        env.config.set_option('crossbar_url', lg_coordinator)
+        if lg_coordinator is not None:
+            env.config.set_option('crossbar_url', lg_coordinator)
     config._labgrid_env = env
 
 @pytest.hookimpl()

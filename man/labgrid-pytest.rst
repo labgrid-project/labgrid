@@ -20,7 +20,7 @@ labgrid-pytest labgrid integration for pytest
 SYNOPSIS
 --------
 
-``pytest --lg-env`` ``*.yaml`` 
+``pytest --lg-env`` ``*.yaml``
 
 DESCRIPTION
 -----------

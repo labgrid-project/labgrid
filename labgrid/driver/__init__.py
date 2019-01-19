@@ -25,3 +25,4 @@ from .networkusbstoragedriver import NetworkUSBStorageDriver
 from .resetdriver import DigitalOutputResetDriver
 from .serialdigitaloutput import SerialPortDigitalOutputDriver
 from .xenadriver import XenaDriver
+from .leddriver import LedDriver

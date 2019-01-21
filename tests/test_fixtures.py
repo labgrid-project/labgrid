@@ -28,6 +28,13 @@ def test(env):
     )
     return t
 
+def test_config(short_test):
+    with pexpect.spawn('pytest --traceconfig {}'.format(short_test)) as spawn:
+        spawn.expect(pexpect.EOF)
+        assert b'labgrid.pytestplugin' in spawn.before
+        spawn.close()
+        assert spawn.exitstatus == 0
+
 def test_env_fixture(short_env, short_test):
     with pexpect.spawn('pytest --lg-env {} {}'.format(short_env,short_test)) as spawn:
         spawn.expect(pexpect.EOF)
@@ -55,5 +62,17 @@ def test_env_with_junit(short_env, short_test, tmpdir):
     with pexpect.spawn('pytest --junitxml={} --env-config {} {}'.format(x,short_env,short_test)) as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
-        print(spawn.before)
+        assert spawn.exitstatus == 0
+
+def test_help(short_test):
+    with pexpect.spawn('pytest --help {}'.format(short_test)) as spawn:
+        spawn.expect(pexpect.EOF)
+        assert b'--lg-coordinator=CROSSBAR_URL' in spawn.before
+        spawn.close()
+        assert spawn.exitstatus == 0
+
+def test_help_coordinator(short_test):
+    with pexpect.spawn('pytest --lg-coordinator=ws://127.0.0.1:20408/ws --help {}'.format(short_test)) as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
         assert spawn.exitstatus == 0

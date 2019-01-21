@@ -584,7 +584,6 @@ class ClientSession(ApplicationSession):
             if name != resource.cls:
                 args['name'] = name
             args.update(resource.args)
-            print(args)
             resources.append({resource.cls: args})
         return config
 

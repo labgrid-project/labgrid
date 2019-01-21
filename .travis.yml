@@ -41,7 +41,6 @@ matrix:
       python: "3.8-dev"
       dist: xenial
       sudo: true
-  fast_finish: true
   allow_failures:
     - stage: docker
     - stage: optional

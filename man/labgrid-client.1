@@ -63,6 +63,12 @@ file and strategy
 .TP
 .B \-d\fP,\fB  \-\-debug
 enable debugging
+.TP
+.B \-v\fP,\fB  \-\-verbose
+increase verbosity
+.TP
+.BI \-P \ PROXY\fP,\fB \ \-\-proxy \ PROXY
+proxy connections over ssh
 .UNINDENT
 .SH CONFIGURATION FILE
 .sp
@@ -99,43 +105,59 @@ and name is its name. Wild cards in match patterns are explicitly allowed, *
 matches anything.
 .SH LABGRID-CLIENT COMMANDS
 .sp
-\fBmonitor\fP             Monitor events from the coordinator
+\fBmonitor\fP                     Monitor events from the coordinator
 .sp
-\fBresources (r)\fP       List available resources
+\fBresources (r)\fP               List available resources
 .sp
-\fBplaces (p)\fP          List available places
+\fBplaces (p)\fP                  List available places
 .sp
-\fBshow\fP                Show a place and related resources
+\fBwho\fP                         List acquired places by user
 .sp
-\fBcreate\fP              Add a new place (name supplied by \-p parameter)
+\fBshow\fP                        Show a place and related resources
 .sp
-\fBdelete\fP              Delete an existing place
+\fBcreate\fP                      Add a new place (name supplied by \-p parameter)
 .sp
-\fBadd\-alias\fP           Add an alias to a place
+\fBdelete\fP                      Delete an existing place
 .sp
-\fBdel\-alias\fP           Delete an alias from a place
+\fBadd\-alias\fP alias             Add an alias to a place
 .sp
-\fBset\-comment\fP         Update or set the place comment
+\fBdel\-alias\fP alias             Delete an alias from a place
 .sp
-\fBadd\-match\fP match     Add a match pattern to a place, see MATCHES
+\fBset\-comment\fP comment         Update or set the place comment
 .sp
-\fBdel\-match\fP match     Delete a match pattern from a place, see MATCHES
+\fBadd\-match\fP match             Add one (or multiple) match pattern(s) to a place, see MATCHES
 .sp
-\fBacquire (lock)\fP      Acquire a place
+\fBdel\-match\fP match             Delete one (or multiple) match pattern(s) from a place, see MATCHES
 .sp
-\fBrelease (unlock)\fP    Release a place
+\fBadd\-named\-match\fP match name  Add one match pattern with a name to a place
 .sp
-\fBenv\fP                 Generate a labgrid environment file for a place
+\fBacquire (lock)\fP              Acquire a place
 .sp
-\fBpower (pw)\fP action   Change (or get) a place\(aqs power status, where action is one of get, on, off, status
+\fBallow\fP user                  Allow another user to access a place
 .sp
-\fBconsole (con)\fP       Connect to the console
+\fBrelease (unlock)\fP            Release a place
 .sp
-\fBfastboot\fP            Run fastboot
+\fBenv\fP                         Generate a labgrid environment file for a place
 .sp
-\fBbootstrap\fP           Start a bootloader
+\fBpower (pw)\fP action           Change (or get) a place\(aqs power status, where action is one of get, on, off, status
 .sp
-\fBio\fP                  Interact with Onewire devices
+\fBio\fP action                   Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
+.sp
+\fBconsole (con)\fP               Connect to the console
+.sp
+\fBfastboot\fP arg                Run fastboot with argument
+.sp
+\fBbootstrap\fP filename          Start a bootloader
+.sp
+\fBsd\-mux\fP action               Switch USB SD Muxer, where action is one of dut (device\-under\-test), host, off
+.sp
+\fBssh\fP                         Connect via SSH
+.sp
+\fBtelnet\fP                      Connect via telnet
+.sp
+\fBvideo\fP                       Start a video stream
+.sp
+\fBtmc\fP command                 Control a USB TMC device
 .SH EXAMPLES
 .sp
 To retrieve a list of places run:

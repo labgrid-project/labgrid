@@ -1189,7 +1189,7 @@ def main():
     subparser.set_defaults(func=ClientSession.bootstrap)
 
     subparser = subparsers.add_parser('sd-mux',
-                                      help="Switch USB SD Muxer")
+                                      help="switch USB SD Muxer")
     subparser.add_argument('action', choices=['dut', 'host', 'off', 'client'])
     subparser.set_defaults(func=ClientSession.sd_mux)
 

@@ -47,6 +47,10 @@ OPTIONS
     file and strategy
 -d, --debug
     enable debugging
+-v, --verbose
+    increase verbosity
+-P PROXY, --proxy PROXY
+    proxy connections over ssh
 
 CONFIGURATION FILE
 ------------------
@@ -92,43 +96,59 @@ matches anything.
 
 LABGRID-CLIENT COMMANDS
 -----------------------
-``monitor``             Monitor events from the coordinator
+``monitor``                     Monitor events from the coordinator
 
-``resources (r)``       List available resources
+``resources (r)``               List available resources
 
-``places (p)``          List available places
+``places (p)``                  List available places
 
-``show``                Show a place and related resources
+``who``                         List acquired places by user
 
-``create``              Add a new place (name supplied by -p parameter)
+``show``                        Show a place and related resources
 
-``delete``              Delete an existing place
+``create``                      Add a new place (name supplied by -p parameter)
 
-``add-alias``           Add an alias to a place
+``delete``                      Delete an existing place
 
-``del-alias``           Delete an alias from a place
+``add-alias`` alias             Add an alias to a place
 
-``set-comment``         Update or set the place comment
+``del-alias`` alias             Delete an alias from a place
 
-``add-match`` match     Add a match pattern to a place, see MATCHES
+``set-comment`` comment         Update or set the place comment
 
-``del-match`` match     Delete a match pattern from a place, see MATCHES
+``add-match`` match             Add one (or multiple) match pattern(s) to a place, see MATCHES
 
-``acquire (lock)``      Acquire a place
+``del-match`` match             Delete one (or multiple) match pattern(s) from a place, see MATCHES
 
-``release (unlock)``    Release a place
+``add-named-match`` match name  Add one match pattern with a name to a place
 
-``env``                 Generate a labgrid environment file for a place
+``acquire (lock)``              Acquire a place
 
-``power (pw)`` action   Change (or get) a place's power status, where action is one of get, on, off, status
+``allow`` user                  Allow another user to access a place
 
-``console (con)``       Connect to the console
+``release (unlock)``            Release a place
 
-``fastboot``            Run fastboot
+``env``                         Generate a labgrid environment file for a place
 
-``bootstrap``           Start a bootloader
+``power (pw)`` action           Change (or get) a place's power status, where action is one of get, on, off, status
 
-``io``                  Interact with Onewire devices
+``io`` action                   Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
+
+``console (con)``               Connect to the console
+
+``fastboot`` arg                Run fastboot with argument
+
+``bootstrap`` filename          Start a bootloader
+
+``sd-mux`` action               Switch USB SD Muxer, where action is one of dut (device-under-test), host, off
+
+``ssh``                         Connect via SSH
+
+``telnet``                      Connect via telnet
+
+``video``                       Start a video stream
+
+``tmc`` command                 Control a USB TMC device
 
 EXAMPLES
 --------

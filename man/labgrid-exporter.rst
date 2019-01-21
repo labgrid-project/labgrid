@@ -23,9 +23,9 @@ labgrid-exporter interface to control boards
 SYNOPSIS
 --------
 
-``labgrid-exporter`` ``--help`` 
+``labgrid-exporter`` ``--help``
 
-``labgrid-exporter`` ``*.yaml`` 
+``labgrid-exporter`` ``*.yaml``
 
 DESCRIPTION
 -----------
@@ -46,6 +46,8 @@ OPTIONS
     the public name of the exporter
 --hostname
     hostname (or IP) published for accessing resources
+-d, --debug
+    enable debug mode
 
 -i / --isolated
 ~~~~~~~~~~~~~~~

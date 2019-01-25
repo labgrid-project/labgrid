@@ -740,6 +740,12 @@ class ClientSession(ApplicationSession):
             drv = AndroidFastbootDriver(target, name=None)
         drv.fastboot.timeout = self.args.wait
         target.activate(drv)
+        if args[0] == 'flash':
+            drv.flash(args[1], args[2])
+            return
+        if args[0] == 'boot':
+            drv.boot(args[1])
+            return
         drv(*args)
 
     def bootstrap(self):

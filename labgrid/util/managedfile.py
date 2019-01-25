@@ -53,7 +53,7 @@ class ManagedFile:
         if isinstance(self.resource, NetworkResource):
             host = self.resource.host
             conn = sshmanager.open(host)
-            conn.run_command("mkdir -p {}".format(self.rpath))
+            conn.run_check("mkdir -p {}".format(self.rpath))
             conn.put_file(
                 self.local_path,
                 "{}{}".format(self.rpath, os.path.basename(self.local_path))

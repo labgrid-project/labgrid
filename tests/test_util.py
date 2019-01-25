@@ -4,6 +4,7 @@ import socket
 
 import attr
 import pytest
+import logging
 
 from labgrid.util import diff_dict, flat_dict, filter_dict
 from labgrid.util.ssh import ForwardError, SSHConnection, sshmanager
@@ -75,7 +76,7 @@ def test_sshconnection_inactive_raise():
     from labgrid.util.ssh import SSHConnection
     con = SSHConnection("localhost")
     with pytest.raises(ExecutionError):
-        con.run_command("echo Hallo")
+        con.run_check("echo Hallo")
 
 @pytest.mark.localsshmanager
 def test_sshconnection_connect(connection_localhost):
@@ -84,7 +85,38 @@ def test_sshconnection_connect(connection_localhost):
 
 @pytest.mark.localsshmanager
 def test_sshconnection_run(connection_localhost):
-    assert connection_localhost.run_command("echo Hello") == 0
+    stdout, stderr, exitcode = connection_localhost.run("echo stderr >&2; echo stdout1; echo stdout2")
+    assert exitcode == 0
+    assert stderr == ["stderr"]
+    assert stdout == ["stdout1", "stdout2"]
+
+@pytest.mark.localsshmanager
+def test_sshconnection_run_log(connection_localhost, caplog):
+    caplog.set_level(logging.INFO)
+    stdout, stderr, exitcode = connection_localhost.run("echo stderr >&2; echo stdout1; echo stdout2",
+            stdout_loglevel=logging.INFO, stderr_loglevel=logging.WARNING)
+    assert exitcode == 0
+    assert stderr == ["stderr"]
+    assert stdout == ["stdout1", "stdout2"]
+    assert sorted([(rec[1], rec[2]) for rec in caplog.record_tuples]) == [
+        (logging.INFO, 'stdout1'),
+        (logging.INFO, 'stdout2'),
+        (logging.WARNING, 'stderr'),
+   ]
+
+@pytest.mark.localsshmanager
+def test_sshconnection_run_merged_stderr(connection_localhost):
+    stdout, stderr, exitcode = connection_localhost.run(
+            "echo stderr >&2; echo stdout", stderr_merge=True)
+    assert exitcode == 0
+    assert sorted(stdout) == ["stderr", "stdout"]
+    assert stderr == []
+
+@pytest.mark.localsshmanager
+def test_sshconnection_run_fail(connection_localhost):
+    stdout, stderr, exitcode = connection_localhost.run("false")
+    assert exitcode != 0
+
 
 @pytest.mark.localsshmanager
 def test_sshconnection_port_forward_add_remove(connection_localhost):

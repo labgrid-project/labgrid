@@ -271,12 +271,26 @@ Test
 """
     )
     hash = hashlib.sha256(t.read().encode("utf-8")).hexdigest()
-    mf = ManagedFile(t, res)
+    mf = ManagedFile(t, res, detect_nfs=False)
     mf.sync_to_resource()
 
     assert os.path.isfile("/tmp/labgrid-{}/{}/test".format(getpass.getuser(), hash))
     assert hash == mf.get_hash()
     assert "/tmp/labgrid-{}/{}/test".format(getpass.getuser(), hash) == mf.get_remote_path()
+
+@pytest.mark.localsshmanager
+def test_remote_managedfile_on_nfs(target, tmpdir):
+    res = NetworkResource(target, "test", "localhost")
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+    mf = ManagedFile(t, res, detect_nfs=True)
+    mf.sync_to_resource()
+
+    assert str(t) == mf.get_remote_path()
 
 def test_local_managedfile(target, tmpdir):
     import hashlib
@@ -289,7 +303,7 @@ Test
 """
     )
     hash = hashlib.sha256(t.read().encode("utf-8")).hexdigest()
-    mf = ManagedFile(t, res)
+    mf = ManagedFile(t, res, detect_nfs=False)
     mf.sync_to_resource()
 
     assert hash == mf.get_hash()

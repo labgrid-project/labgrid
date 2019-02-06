@@ -9,6 +9,17 @@ New Features in 0.3.0
 - ``labgrid-client ssh`` now also uses port from NetworkService resource if
   available
 
+Breaking changes in 0.3.0
+~~~~~~~~~~~~~~~~~~~~~~~~~
+- `ManagedFile` now saves the files in a different directory on the exporter.
+  Previously ``/tmp`` was used, labgrid now uses ``/var/cache/labgrid``.
+  A tmpfiles example configuration for systemd is provided in the ``/contrib``
+  directory.
+  It is also highly recommended to enable ``fs.protected_regular=1`` and
+  ``fs.protected_fifos=1`` for kernels>=4.19.
+  This requires user intervention after the upgrade to create the directory and
+  setup the cleanup job.
+
 Release 0.2.0 (released Jan 4, 2019)
 ------------------------------------
 

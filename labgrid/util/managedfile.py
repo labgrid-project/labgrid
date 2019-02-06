@@ -54,7 +54,7 @@ class ManagedFile:
             if self._on_nfs(conn):
                 return # nothing to do
 
-            self.rpath = "/tmp/labgrid-{user}/{hash}/".format(
+            self.rpath = "/var/cache/labgrid/{user}/{hash}/".format(
                 user=get_user(), hash=self.get_hash()
             )
             conn.run_check("mkdir -p {}".format(self.rpath))

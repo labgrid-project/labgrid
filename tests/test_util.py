@@ -274,9 +274,9 @@ Test
     mf = ManagedFile(t, res, detect_nfs=False)
     mf.sync_to_resource()
 
-    assert os.path.isfile("/tmp/labgrid-{}/{}/test".format(getpass.getuser(), hash))
+    assert os.path.isfile("/var/cache/labgrid/{}/{}/test".format(getpass.getuser(), hash))
     assert hash == mf.get_hash()
-    assert "/tmp/labgrid-{}/{}/test".format(getpass.getuser(), hash) == mf.get_remote_path()
+    assert "/var/cache/labgrid/{}/{}/test".format(getpass.getuser(), hash) == mf.get_remote_path()
 
 @pytest.mark.localsshmanager
 def test_remote_managedfile_on_nfs(target, tmpdir):

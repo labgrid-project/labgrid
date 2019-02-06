@@ -238,11 +238,17 @@ Additional groups and resources can be added:
 Restart the exporter to activate the new configuration.
 
 .. Attention::
-   The `ManagedFile` will create temporary uploads in the exporters ``/tmp``
-   filesystem. It is recommended to install a cron job or systemd timer to
-   remove old temporary files. All uploads done by labgrid are stored in the
-   ``/tmp/labgrid`` directory.
+   The `ManagedFile` will create temporary uploads in the exporters
+   ``/var/cache/labgrid`` directory. This directory needs to be created manually
+   and should allow write access for users. The ``/contrib`` directory in the
+   labgrid-project contains a tmpfiles configuration example to automatically
+   create and clean the directory.
+   It is also highly recommended to enable ``fs.protected_regular=1`` and
+   ``fs.protected_fifos=1`` for kernels>=4.19, to protect the users from opening
+   files not owned by them in world writeable sticky directories.
+   For more information see `this kernel commit`_.
 
+.. _`this kernel commit`: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=30aba6656f
 
 Client
 ~~~~~~

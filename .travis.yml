@@ -17,6 +17,7 @@ before_install:
   - ssh -o StrictHostKeyChecking=no localhost echo OK
 install:
   - pip install -r travis-requirements.txt
+  - sudo mkdir /var/cache/labgrid && sudo chmod 1775 /var/cache/labgrid && sudo chown root:travis /var/cache/labgrid
 script:
   - pip install -e .
   - pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager

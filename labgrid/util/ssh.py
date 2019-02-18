@@ -3,6 +3,7 @@ import tempfile
 import logging
 import subprocess
 import os
+from select import select
 import socket
 from functools import wraps
 
@@ -191,23 +192,110 @@ class SSHConnection:
         return wrapper
 
     @_check_connected
-    def run_command(self, command):
+    def run(self, command, *, codec="utf-8", decodeerrors="strict",
+            force_tty=False, stderr_merge=False, stderr_loglevel=None,
+            stdout_loglevel=None):
+
         """Run a command over the SSHConnection
 
         Args:
             command (string): The command to run
+            codec (string, optional): output encoding. Defaults to "utf-8".
+            decodeerrors (string, optional): behavior on decode errors. Defaults
+                 to "strict". Refer to stdtypes' bytes.decode for details.
+            force_tty (bool, optional): force allocate a tty (ssh -tt). Defaults
+                 to False
+            stderr_merge (bool, optional): merge ssh subprocess stderr into
+                 stdout. Defaults to False.
+            stdout_loglevel (int, optional): log stdout with specific log level
+                 as well. Defaults to None, i.e. don't log.
+            stderr_loglevel (int, optional): log stderr with specific log level
+                 as well. Defaults to None, i.e. don't log.
+
+        returns:
+            (stdout, stderr, returncode)
+        """
+
+        complete_cmd = ["ssh"] + self._get_ssh_args()
+        if force_tty:
+            complete_cmd += ["-tt"]
+        complete_cmd += [self.host, command]
+        self._logger.debug("Sending command: %s", complete_cmd)
+        if stderr_merge:
+            stderr_pipe = subprocess.STDOUT
+        else:
+            stderr_pipe = subprocess.PIPE
+        try:
+            sub = subprocess.Popen(
+                complete_cmd, stdout=subprocess.PIPE, stderr=stderr_pipe,
+                stdin=subprocess.DEVNULL
+            )
+        except:
+            raise ExecutionError(
+                "error executing command: {}".format(complete_cmd)
+            )
+
+        stdout = []
+        stderr = []
+
+        readable = {
+            sub.stdout.fileno(): (sub.stdout, stdout, stdout_loglevel),
+        }
+
+        if sub.stderr is not None:
+            readable[sub.stderr.fileno()] = (sub.stderr, stderr, stderr_loglevel)
+
+        while readable:
+            for fd in select(readable, [], [])[0]:
+                stream, output, loglevel = readable[fd]
+                line = stream.readline().decode(codec, decodeerrors)
+                if line == "": # EOF
+                    del readable[fd]
+                else:
+                    line = line.rstrip('\n')
+                    output.append(line)
+                    if loglevel is not None:
+                        self._logger.log(loglevel, line)
+
+        return stdout, stderr, sub.wait()
+
+    def run_check(self, command, *, codec="utf-8", decodeerrors="strict",
+        force_tty=False, stderr_merge=False, stderr_loglevel=None,
+        stdout_loglevel=None):
+        """
+        Runs a command over the SSHConnection
+        returns the output if successful, raises ExecutionError otherwise.
+
+        Except for the means of returning the value, this is equivalent to
+        run.
+
+        Args:
+            command (string): The command to run
+            codec (string, optional): output encoding. Defaults to "utf-8".
+            decodeerrors (string, optional): behavior on decode errors. Defaults
+                 to "strict". Refer to stdtypes' bytes.decode for details.
+            force_tty (bool, optional): force allocate a tty (ssh -tt). Defaults
+                 to False
+            stderr_merge (bool, optional): merge ssh subprocess stderr into
+                 stdout. Defaults to False.
+            stdout_loglevel (int, optional): log stdout with specific log level
+                 as well. Defaults to None, i.e. don't log.
+            stderr_loglevel (int, optional): log stderr with specific log level
+                 as well. Defaults to None, i.e. don't log.
 
         Returns:
-            int: exitcode of the command
-        """
-        complete_cmd = ["ssh"] + self._get_ssh_args()
-        complete_cmd += [self.host, command]
-        res = subprocess.check_call(
-            complete_cmd,
-            stdin=subprocess.DEVNULL,
-        )
+            List[str]: stdout of the executed command if successful and
+                       otherwise an ExecutionError Exception
 
-        return res
+        """
+        stdout, stderr, exitcode = self.run(command, codec=codec,
+                decodeerrors=decodeerrors, force_tty=force_tty,
+                stderr_merge=stderr_merge, stdout_loglevel=stdout_loglevel,
+                stderr_loglevel=stderr_loglevel)
+
+        if exitcode != 0:
+            raise ExecutionError(command, stdout, stderr)
+        return stdout
 
     @_check_connected
     def get_file(self, remote_file, local_file):
@@ -225,7 +313,7 @@ class SSHConnection:
     @_check_connected
     def put_file(self, local_file, remote_path):
         """Put a file onto the remote host"""
-        complete_cmd = ["rsync", "--copy-links", "-e",
+        complete_cmd = ["rsync", "--compress=1", "--sparse", "--copy-links", "-e",
                         " ".join(['ssh'] + self._get_ssh_args())]
         complete_cmd += [
             "{}".format(local_file),

@@ -96,7 +96,7 @@ Start it with something like:
 
    $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws \
        -v $HOME/exporter-conf:/opt/conf \
-	 labgrid-coordinator
+	 labgrid-exporter
 
 If using ser2net,
 the devices needed must be added to Docker container

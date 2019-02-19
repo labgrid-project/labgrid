@@ -8,7 +8,7 @@ RUN cd /opt/labgrid \
  && python setup.py install
 
 VOLUME /opt/crossbar
-EXPOSE 40208
+EXPOSE 20408
 
 ENV CROSSBAR_DIR=/opt/crossbar
 CMD ["crossbar", "start", "--config", "/opt/labgrid/.crossbar/config.yaml"]

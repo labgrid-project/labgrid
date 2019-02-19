@@ -17,20 +17,20 @@ Build
 -----
 
 To build one of the above images,
-you need to run the `docker build` command in the root of this repository.
+you need to run the ``docker build`` command in the root of this repository.
 Example showing how to build labgrid-client image:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-     $ docker build -t labgrid-client -f docker/client/Dockerfile .
+   $ docker build -t labgrid-client -f docker/client/Dockerfile .
 
 You can also choose to build all 3 images,
 with the included script
 (which also must be run from the root of this repository):
 
-  .. code-block:: bash
+.. code-block:: bash
 
-     $ ./docker/build.sh
+   $ ./docker/build.sh
 
 
 Usage
@@ -49,13 +49,13 @@ The labgrid-coordinator comes with a preconfigured Crossbar.io server.
 It listens to port 20408,
 so you probably want to publish that so you can talk to the coordinator.
 
-State is written to `/opt/crossbar`.
+State is written to ``/opt/crossbar``.
 You might want to bind a volume to that
 so you can restart the service without loosing state.
 
-  .. code-block:: bash
+.. code-block:: bash
 
-     $ docker run -t -p 20408:20408 -v $HOME/crossbar:/opt/crossbar
+   $ docker run -t -p 20408:20408 -v $HOME/crossbar:/opt/crossbar
 	 labgrid-coordinator
 
 
@@ -63,20 +63,20 @@ labgrid-client usage
 ~~~~~~~~~~~~~~~~~~~~
 
 The labgrid-client image can be used to
-run `labgrid-client` and `pytest` commands.
+run ``labgrid-client`` and ``pytest`` commands.
 For example listing available places registered at coordinator at
 ws://192.168.1.42:20408/ws
 
-  .. code-block:: bash
+.. code-block:: bash
 
-     $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws labgrid-client \
+   $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws labgrid-client \
 	 labgrid-client places
 
 Or running all pytest/labgrid tests at current directory:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-     $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws labgrid-client \
+   $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws labgrid-client \
 	 pytest
 
 
@@ -92,12 +92,12 @@ but needs to be bind mounted to
 
 Start it with something like:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-     $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws \
-         -v $HOME/exporter-conf:/opt/conf \
+   $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws \
+       -v $HOME/exporter-conf:/opt/conf \
 	 labgrid-coordinator
 
 If using ser2net,
 the devices needed must be added to Docker container
-(`docker run --device` option).
+(``docker run --device`` option).

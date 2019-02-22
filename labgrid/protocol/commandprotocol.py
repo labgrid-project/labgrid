@@ -31,3 +31,10 @@ class CommandProtocol(abc.ABC):
         Wait for a shell command to return with the specified output
         """
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def poll_until_success(self):
+        """
+        Repeatedly call a shell command until it succeeds
+        """
+        raise NotImplementedError

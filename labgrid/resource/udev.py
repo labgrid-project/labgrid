@@ -289,24 +289,39 @@ class USBSDMuxDevice(USBResource):
     """The USBSDMuxDevice describes an attached USBSDMux device,
     it is identified via USB using udev
     """
+
+    control_path = attr.ib(default=None)
+    disk_path = attr.ib(default=None)
+
     def __attrs_post_init__(self):
         self.match['ID_VENDOR_ID'] = '0424'
         self.match['ID_MODEL_ID'] = '4041'
-        self.control_path = None
-        self.disk_path = None
         super().__attrs_post_init__()
 
-    def update(self):
-        super().update()
+    # Overwrite the avail attribute with our internal property
+    @property
+    def avail(self):
+        return bool(self.disk_path and self.control_path)
+
+    # Forbid the USBResource super class to set the avail property
+    @avail.setter
+    def avail(self, prop):
+        pass
+
+    # Overwrite the poll function. Only mark the SDMux as available if both
+    # paths are available.
+    def poll(self):
+        super().poll()
         if not self.device:
             self.control_path = None
             self.disk_path = None
-            return
-        for child in self.device.children:
-            if child.subsystem == 'block':
-                self.disk_path = child.device_node
-            elif child.subsystem == 'scsi_generic':
-                self.control_path = child.device_node
+        else:
+            if not self.avail:
+                for child in self.device.children:
+                    if child.subsystem == 'block' and child.device_type == 'disk':
+                        self.disk_path = child.device_node
+                    elif child.subsystem == 'scsi_generic':
+                        self.control_path = child.device_node
 
     @property
     def path(self):

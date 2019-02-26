@@ -150,6 +150,8 @@ LABGRID-CLIENT COMMANDS
 
 ``tmc`` command                 Control a USB TMC device
 
+``write-image``         Write images onto block devices (USBSDMux, USB Sticks, …)
+
 EXAMPLES
 --------
 

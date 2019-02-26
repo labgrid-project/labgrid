@@ -950,6 +950,33 @@ class ClientSession(ApplicationSession):
         for k, v in sorted(data.items()):
             print("{:<16s} {:<10s}".format(k, str(v)))
 
+    def write_image(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        drv = None
+        from ..resource.remote import NetworkUSBMassStorage, NetworkUSBSDMuxDevice
+        from ..driver import NetworkUSBStorageDriver
+        try:
+            drv = target.get_driver(NetworkUSBStorageDriver)
+        except NoDriverFoundError:
+            for resource in target.resources:
+                if isinstance(resource, (NetworkUSBSDMuxDevice, NetworkUSBMassStorage)):
+                    try:
+                        drv = target.get_driver(NetworkUSBStorageDriver)
+                    except NoDriverFoundError:
+                        drv = NetworkUSBStorageDriver(target, name=None)
+                    drv.storage.timeout = self.args.wait
+                    break
+        if not drv:
+            raise UserError("target has no compatible resource available")
+        target.activate(drv)
+        try:
+            drv.write_image(self.args.filename)
+        except subprocess.CalledProcessError as e:
+            raise UserError("could not write image to network usb storage: {}".format(e))
+        except FileNotFoundError as e:
+            raise UserError(e)
+
 def start_session(url, realm, extra):
     from autobahn.wamp.types import ComponentConfig
     from autobahn.websocket.util import parse_url
@@ -1240,6 +1267,11 @@ def main():
     tmc_subparser.add_argument('channel', type=int)
     tmc_subparser.add_argument('action', choices=['info', 'values'])
     tmc_subparser.set_defaults(func=ClientSession.tmc_channel)
+
+    subparser = subparsers.add_parser('write-image', help="write an image onto mass storage")
+    subparser.add_argument('-w', '--wait', type=float, default=10.0)
+    subparser.add_argument('filename', help='filename to boot on the target')
+    subparser.set_defaults(func=ClientSession.write_image)
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()

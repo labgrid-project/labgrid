@@ -1,5 +1,5 @@
-from labgrid.resource import NetworkPowerPort
-from labgrid.driver.powerdriver import ExternalPowerDriver, ManualPowerDriver, NetworkPowerDriver
+from labgrid.resource import NetworkPowerPort, ModbusTCPCoil
+from labgrid.driver.powerdriver import ExternalPowerDriver, ManualPowerDriver, NetworkPowerDriver, ModbusTCPCoilPowerDriver
 
 
 class TestManualPowerDriver:
@@ -99,6 +99,53 @@ class TestExternalPowerDriver:
 
         m.assert_called_once_with(['set', '-c', 'foo-board'])
         m_sleep.assert_not_called()
+
+class TestModbusTCPCoilPowerDriver:
+    def test_create(self, target):
+        r = ModbusTCPCoil(target, 'modbus:1234', host='dummy', coil=1, invert=False)
+        d = ModbusTCPCoilPowerDriver(target, 'mobus')
+        assert isinstance(d, ModbusTCPCoilPowerDriver)
+
+    def test_on(self, target, mocker):
+        m = mocker.patch('pyModbusTCP.client.ModbusClient')
+
+        r = ModbusTCPCoil(target, 'modbus', host='dummy:1234', coil=1, invert=False)
+        d = ModbusTCPCoilPowerDriver(target, 'mobus')
+
+        target.activate(d)
+        d.on()
+
+        m.assert_has_calls([
+            mocker.call(auto_close=True, auto_open=True, host='dummy', port=1234),
+            mocker.call().write_single_coil(1, True)])
+
+    def test_off(self, target, mocker):
+        m = mocker.patch('pyModbusTCP.client.ModbusClient')
+
+        r = ModbusTCPCoil(target, 'modbus', host='new_dummy', coil=2, invert=False)
+        d = ModbusTCPCoilPowerDriver(target, 'mobus')
+
+        target.activate(d)
+        d.off()
+
+        m.assert_has_calls([
+            mocker.call(auto_close=True, auto_open=True, host='new_dummy', port=502),
+            mocker.call().write_single_coil(2, False)])
+
+
+    def test_cycle(self, target, mocker):
+        m = mocker.patch('pyModbusTCP.client.ModbusClient')
+
+        r = ModbusTCPCoil(target, 'modbus', host='new_dummy', coil=2, invert=True)
+        d = ModbusTCPCoilPowerDriver(target, 'mobus')
+
+        target.activate(d)
+        d.cycle()
+
+        m.assert_has_calls([
+            mocker.call(auto_close=True, auto_open=True, host='new_dummy', port=502),
+            mocker.call().write_single_coil(2, True),
+            mocker.call().write_single_coil(2, False)])
 
 class TestNetworkPowerDriver:
     def test_create(self, target):

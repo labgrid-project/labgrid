@@ -9,6 +9,7 @@ from ..factory import target_factory
 from ..protocol import PowerProtocol, DigitalOutputProtocol, ResetProtocol
 from ..resource import NetworkPowerPort
 from ..resource import YKUSHPowerPort
+from ..resource import ModbusTCPCoil
 from ..resource.remote import NetworkUSBPowerPort
 from ..resource.udev import USBPowerPort
 from ..step import step
@@ -93,6 +94,45 @@ class ExternalPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             self.off()
             time.sleep(self.delay)
             self.on()
+
+@target_factory.reg_driver
+@attr.s(cmp=False)
+class ModbusTCPCoilPowerDriver(Driver, PowerResetMixin, PowerProtocol):
+    """ModbusTCPCoilPowerDriver - Driver using a Modbus TCP protocol to control a target's power"""
+    bindings = {"coil": ModbusTCPCoil, }
+    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self._module = import_module('pyModbusTCP.client')
+        port = "502"
+        host = self.coil.host
+        if ':' in host:
+            host, port = host.split(':', 1)
+        self.client = self._module.ModbusClient(
+            host=host, port=int(port), auto_open=True, auto_close=True)
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        value = True
+        if self.coil.invert:
+            value = not value
+        self.client.write_single_coil(self.coil.coil, bool(value))
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        value = False
+        if self.coil.invert:
+            value = not value
+        self.client.write_single_coil(self.coil.coil, bool(value))
+        
+    @Driver.check_active
+    def cycle(self):
+        self.off()
+        time.sleep(self.delay)
+        self.on()
 
 @target_factory.reg_driver
 @attr.s(cmp=False)

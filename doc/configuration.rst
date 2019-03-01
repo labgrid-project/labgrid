@@ -968,6 +968,26 @@ Arguments:
   - cycle (str): optional command to switch the board off and on
   - delay (float): configurable delay in seconds between off and on if cycle is not set
 
+ModbusTCPCoilPowerDriver
+~~~~~~~~~~~~~~~~~~~~~~~~
+A ModbusTCPCoilPowerDriver controls a `ModbusTCPCoil`, allowing control of the
+target power state without user ineraction.
+
+Binds to:
+    coil:
+      - `ModbusTCPCoil`_
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+    ModbusTCPCoilPowerDriver:
+      delay: 5.0
+
+Arguments:
+  - delay (float): optional delay in seconds between off and on
+
 NetworkPowerDriver
 ~~~~~~~~~~~~~~~~~~
 A NetworkPowerDriver controls a `NetworkPowerPort`, allowing control of the

@@ -624,9 +624,10 @@ class ClientSession(ApplicationSession):
         action = self.args.action
         delay = self.args.delay
         target = self._get_target(place)
-        from ..driver.powerdriver import NetworkPowerDriver, USBPowerDriver
+        from ..driver.powerdriver import NetworkPowerDriver, USBPowerDriver, ModbusTCPCoilPowerDriver
         from ..resource.power import NetworkPowerPort
         from ..resource.remote import NetworkUSBPowerPort
+        from ..resource.modbus import ModbusTCPCoil
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkPowerPort):
@@ -640,6 +641,12 @@ class ClientSession(ApplicationSession):
                     drv = target.get_driver(USBPowerDriver)
                 except NoDriverFoundError:
                     drv = USBPowerDriver(target, name=None, delay=delay)
+                break
+            elif isinstance(resource, ModbusTCPCoil):
+                try:
+                    drv = target.get_driver(ModbusTCPCoilPowerDriver)
+                except NoDriverFoundError:
+                    drv = ModbusTCPCoilPowerDriver(target, name=None, delay=delay)
                 break
         if not drv:
             raise UserError("target has no compatible resource available")

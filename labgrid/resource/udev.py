@@ -53,7 +53,7 @@ class USBResource(ManagedResource):
         return True
 
     def try_match(self, device):
-        if self.device:
+        if self.device is not None:
             if self.device.sys_path != device.sys_path:
                 return False
         else: # new device
@@ -117,8 +117,8 @@ class USBResource(ManagedResource):
 
     def _get_usb_device(self):
         device = self.device
-        if self.device and (self.device.subsystem != 'usb'
-                            or self.device.device_type != 'usb_device'):
+        if self.device is not None and (self.device.subsystem != 'usb'
+                                        or self.device.device_type != 'usb_device'):
             device = self.device.find_parent('usb', 'usb_device')
         return device
 
@@ -154,7 +154,7 @@ class USBResource(ManagedResource):
         """
         # FIXME update pyudev to support udev_device_set_sysattr_value(dev,
         # attr, None) to clear the cache
-        if self.device:
+        if self.device is not None:
             with open(os.path.join(self.device.sys_path, attribute), 'rb') as f:
                 return f.read().rstrip(b'\n') # drop trailing newlines
 
@@ -175,7 +175,7 @@ class USBSerialPort(USBResource, SerialPort):
 
     def update(self):
         super().update()
-        if self.device:
+        if self.device is not None:
             self.port = self.device.device_node
         else:
             self.port = None
@@ -191,7 +191,7 @@ class USBMassStorage(USBResource):
 
     @property
     def path(self):
-        if self.device:
+        if self.device is not None:
             return self.device.device_node
 
         return None
@@ -245,7 +245,7 @@ class USBEthernetInterface(USBResource, EthernetInterface):
 
     def update(self):
         super().update()
-        if self.device:
+        if self.device is not None:
             self.ifname = self.device.properties.get('INTERFACE')
         else:
             self.ifname = None
@@ -312,7 +312,7 @@ class USBSDMuxDevice(USBResource):
     # paths are available.
     def poll(self):
         super().poll()
-        if not self.device:
+        if self.device is None:
             self.control_path = None
             self.disk_path = None
         else:
@@ -352,7 +352,7 @@ class USBVideo(USBResource):
 
     @property
     def path(self):
-        if self.device:
+        if self.device is not None:
             return self.device.device_node
 
         return None
@@ -368,7 +368,7 @@ class USBTMC(USBResource):
 
     @property
     def path(self):
-        if self.device:
+        if self.device is not None:
             return self.device.device_node
 
         return None

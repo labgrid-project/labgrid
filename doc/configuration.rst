@@ -1579,6 +1579,10 @@ would resolve the qemu_bin path relative to the BASE dir of the YAML file and
 try to use the RemotePlace with the name set in the LG_PLACE environment
 variable.
 
+See the :ref:`labgrid-device-config` man page for documentation on the
+top-level ``options``, ``images``, ``tools``, and ``examples`` keys in the
+environment configuration.
+
 Exporter Configuration
 ----------------------
 The exporter is configured by using a YAML file (with a syntax similar to the

@@ -498,7 +498,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             IOError: if the provided localfile could not be found
             ExecutionError: if something else went wrong
         """
-        self._run_script(data, timeout)
+        return self._run_script(data, timeout)
 
     @step(title='run_script_file', args=['scriptfile', 'timeout', 'args'])
     def _run_script_file(self, scriptfile: str, *args, timeout: int = 60):
@@ -526,4 +526,4 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             ExecutionError: if something went wrong
             IOError: if the provided localfile could not be found
         """
-        self._run_script_file(scriptfile, *args, timeout=timeout)
+        return self._run_script_file(scriptfile, *args, timeout=timeout)

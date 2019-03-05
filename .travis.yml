@@ -29,7 +29,6 @@ after_success:
 matrix:
   include:
     - stage: docker
-      python: "3.7"
       services:
         - docker
       script: ./docker/build.sh

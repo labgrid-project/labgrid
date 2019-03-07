@@ -66,3 +66,8 @@ def test_error(subprocess_mock):
     aw.agent.stdin.write(b'\x00')
     with pytest.raises(AgentError):
         aw.test()
+
+def test_module(subprocess_mock):
+    aw = AgentWrapper('localhost')
+    dummy = aw.load('dummy')
+    assert dummy.neg(1) == -1

@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import base64
+import types
 
 def b2s(b):
     return base64.b85encode(b).decode('ascii')
@@ -14,6 +15,7 @@ def s2b(s):
 class Agent:
     def __init__(self):
         self.methods = {}
+        self.register('load', self.load)
 
     @staticmethod
     def _send(data):
@@ -23,6 +25,12 @@ class Agent:
     def register(self, name, func):
         assert name not in self.methods
         self.methods[name] = func
+
+    def load(self, name, source):
+        module = types.ModuleType(name)
+        exec(source, module.__dict__)
+        for k, v in module.methods.items():
+            self.register('{}.{}'.format(name, k), v)
 
     def run(self):
         for line in sys.stdin:

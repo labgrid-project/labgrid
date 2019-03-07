@@ -16,16 +16,27 @@ class AgentError(Exception):
 class AgentException(Exception):
     pass
 
-class AgentWrapper:
-    class Proxy:
-        def __init__(self, wrapper, name):
-            self.wrapper = wrapper
-            self.name = name
+class MethodProxy:
+    def __init__(self, wrapper, name):
+        self.wrapper = wrapper
+        self.name = name
 
-        def __call__(self, *args, **kwargs):
-            return self.wrapper.call(self.name, *args, **kwargs)
+    def __call__(self, *args, **kwargs):
+        return self.wrapper.call(self.name, *args, **kwargs)
+
+class ModuleProxy:
+    def __init__(self, wrapper, name):
+        self.wrapper = wrapper
+        self.name = name
+
+    def __getattr__(self, name):
+        return MethodProxy(self.wrapper, '{}.{}'.format(self.name, name))
+
+class AgentWrapper:
 
     def __init__(self, host):
+        self.loaded = {}
+
         agent = os.path.join(
             os.path.abspath(os.path.dirname(__file__)),
             'agent.py')
@@ -45,7 +56,7 @@ class AgentWrapper:
         self.close()
 
     def __getattr__(self, name):
-        return self.Proxy(self, name)
+        return MethodProxy(self, name)
 
     def call(self, method, *args, **kwargs):
         request = {
@@ -75,6 +86,21 @@ class AgentWrapper:
             self.agent.wait()
             self.agent = None
             raise AgentError(response['error'])
+
+    def load(self, name):
+        if name in self.loaded:
+            return self.loaded[name]
+
+        filename = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)),
+            'agents', '{}.py'.format(name))
+        source = open(filename, 'r').read()
+
+        self.call('load', name, source)
+
+        proxy = ModuleProxy(self, name)
+        self.loaded[name] = proxy
+        return proxy
 
     def close(self):
         if self.agent is None:

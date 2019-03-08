@@ -102,3 +102,8 @@ def test_all_modules():
     methods = aw.list()
     assert 'deditec_relais8.set' in methods
     assert 'deditec_relais8.get' in methods
+
+def test_import_modules():
+    import labgrid.util.agents
+    import labgrid.util.agents.dummy
+    import labgrid.util.agents.deditec_relais8

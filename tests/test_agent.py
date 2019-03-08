@@ -95,3 +95,7 @@ def test_local():
 
     dummy = aw.load('dummy')
     assert dummy.neg(1) == -1
+
+def test_all_modules():
+    aw = AgentWrapper(None)
+    aw.load('deditec_relais8')

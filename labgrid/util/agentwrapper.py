@@ -34,23 +34,31 @@ class ModuleProxy:
 
 class AgentWrapper:
 
-    def __init__(self, host):
+    def __init__(self, host=None):
         self.loaded = {}
 
         agent = os.path.join(
             os.path.abspath(os.path.dirname(__file__)),
             'agent.py')
-        agent_data = open(agent, 'rb').read()
-        agent_hash = hashlib.sha256(agent_data).hexdigest()
-        agent_remote = '.labgrid_agent_{}.py'.format(agent_hash)
-        ssh_opts = 'ssh -x -o ConnectTimeout=5 -o PasswordAuthentication=no'.split()
-        subprocess.check_call(
-            ['rsync', '-e', ' '.join(ssh_opts), '-tq', agent, '{}:{}'.format(host, agent_remote)],
-        )
-        self.agent = subprocess.Popen(
-            ssh_opts + [host, '--', 'python3', agent_remote],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE)
+        if host:
+            # copy agent.py and run via ssh
+            agent_data = open(agent, 'rb').read()
+            agent_hash = hashlib.sha256(agent_data).hexdigest()
+            agent_remote = '.labgrid_agent_{}.py'.format(agent_hash)
+            ssh_opts = 'ssh -x -o ConnectTimeout=5 -o PasswordAuthentication=no'.split()
+            subprocess.check_call(
+                ['rsync', '-e', ' '.join(ssh_opts), '-tq', agent, '{}:{}'.format(host, agent_remote)],
+            )
+            self.agent = subprocess.Popen(
+                ssh_opts + [host, '--', 'python3', agent_remote],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE)
+        else:
+            # run locally
+            self.agent = subprocess.Popen(
+                ['python3', agent],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE)
 
     def __del__(self):
         self.close()

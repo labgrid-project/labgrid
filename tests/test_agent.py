@@ -99,3 +99,6 @@ def test_local():
 def test_all_modules():
     aw = AgentWrapper(None)
     aw.load('deditec_relais8')
+    methods = aw.list()
+    assert 'deditec_relais8.set' in methods
+    assert 'deditec_relais8.get' in methods

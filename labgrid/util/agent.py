@@ -16,6 +16,7 @@ class Agent:
     def __init__(self):
         self.methods = {}
         self.register('load', self.load)
+        self.register('list', self.list)
 
         # use real stdin/stdout
         self.stdin = sys.stdin
@@ -37,6 +38,9 @@ class Agent:
         exec(compile(source, '<loaded {}>'.format(name), 'exec'), module.__dict__)
         for k, v in module.methods.items():
             self.register('{}.{}'.format(name, k), v)
+
+    def list(self):
+        return list(self.methods.keys())
 
     def run(self):
         for line in self.stdin:

@@ -3,6 +3,8 @@ import hashlib
 import json
 import os.path
 import subprocess
+import traceback
+import logging
 
 def b2s(b):
     return base64.b85encode(b).decode('ascii')
@@ -36,6 +38,7 @@ class AgentWrapper:
 
     def __init__(self, host=None):
         self.loaded = {}
+        self.logger = logging.getLogger("ResourceExport({})".format(host))
 
         agent = os.path.join(
             os.path.abspath(os.path.dirname(__file__)),
@@ -87,6 +90,9 @@ class AgentWrapper:
             # https://bugs.python.org/issue30399
             if e[-2:] == ',)':
                 e = e[:-2] + ')'
+            self.logger.debug("Traceback from agent (most recent call last) for {}:".format(e))
+            for line in ''.join(traceback.format_list(response['tb'])).splitlines():
+                self.logger.debug(line)
             raise AgentException(e)
         elif 'error' in response:
             self.agent.wait()

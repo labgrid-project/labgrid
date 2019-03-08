@@ -28,7 +28,7 @@ class Agent:
 
     def load(self, name, source):
         module = types.ModuleType(name)
-        exec(source, module.__dict__)
+        exec(compile(source, '<loaded {}>'.format(name), 'exec'), module.__dict__)
         for k, v in module.methods.items():
             self.register('{}.{}'.format(name, k), v)
 
@@ -53,7 +53,12 @@ class Agent:
                 response = self.methods[name](*args, **kwargs)
                 Agent._send({'result': response})
             except Exception as e:  # pylint: disable=broad-except
-                Agent._send({'exception': repr(e)})
+                import traceback
+                try:
+                    tb = [list(x) for x in traceback.extract_tb(sys.exc_info()[2])]
+                except:
+                    tb = None
+                Agent._send({'exception': repr(e), 'tb': tb})
 
 def handle_test(*args, **kwargs):  # pylint: disable=unused-argument
     return args[::-1]

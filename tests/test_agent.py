@@ -57,9 +57,14 @@ def test_bytes(subprocess_mock):
 
 def test_exception(subprocess_mock):
     aw = AgentWrapper('localhost')
+
     with pytest.raises(AgentException) as excinfo:
         aw.error('foo')
-    assert excinfo.value.args == ("RuntimeError('foo')",)
+    assert excinfo.value.args == ("ValueError('foo')",)
+
+    with pytest.raises(AgentException) as excinfo:
+        aw.error('bar')
+    assert excinfo.value.args == ("ValueError('bar')",)
 
 def test_error(subprocess_mock):
     aw = AgentWrapper('localhost')

@@ -40,7 +40,7 @@ class Agent:
             try:
                 request = json.loads(line)
             except json.JSONDecodeError:
-                Agent._send({'error': 'request parsing failed'})
+                Agent._send({'error': 'request parsing failed for {}'.format(repr(line))})
                 break
 
             if request.get('close', False):
@@ -54,13 +54,12 @@ class Agent:
                 Agent._send({'result': response})
             except Exception as e:  # pylint: disable=broad-except
                 Agent._send({'exception': repr(e)})
-                break
 
 def handle_test(*args, **kwargs):  # pylint: disable=unused-argument
     return args[::-1]
 
 def handle_error(message):
-    raise RuntimeError(message)
+    raise ValueError(message)
 
 def handle_usbtmc(index, cmd, read=False):
     assert isinstance(index, int)

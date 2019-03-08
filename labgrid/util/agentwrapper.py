@@ -73,19 +73,19 @@ class AgentWrapper:
         response = json.loads(response)
         if 'result' in response:
             return response['result']
-        if 'exception' in response:
-            self.agent.wait()
-            self.agent = None
+        elif 'exception' in response:
             e = response['exception']
             # work around BaseException repr change
             # https://bugs.python.org/issue30399
             if e[-2:] == ',)':
                 e = e[:-2] + ')'
             raise AgentException(e)
-        else:
+        elif 'error' in response:
             self.agent.wait()
             self.agent = None
             raise AgentError(response['error'])
+        else:
+            raise AgentError("unknown response from agent: {}".format(response))
 
     def load(self, name):
         if name in self.loaded:

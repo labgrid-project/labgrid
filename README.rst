@@ -1,3 +1,7 @@
+.. image:: labgrid_logo.png
+   :alt: labgrid logo
+   :align: center
+
 Welcome to labgrid
 ==================
 

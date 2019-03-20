@@ -4,6 +4,7 @@ Release 0.3.0 (unreleased)
 New Features in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~
 
+- labgrid now has a logo!
 - labgrid-client ``write-image`` subcommand: labgrid client now has a
   ``write-image`` command to write images onto block devices.
 - ``labgrid-client ssh`` now also uses port from NetworkService resource if

@@ -1,6 +1,7 @@
-.. image:: labgrid_logo.png
+.. image:: labgrid-logo.svg
    :alt: labgrid logo
    :align: center
+   :width: 50%
 
 Welcome to labgrid
 ==================

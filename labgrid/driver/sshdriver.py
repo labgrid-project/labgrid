@@ -63,7 +63,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.process = subprocess.Popen(args, env=env)
 
         try:
-            if self.process.wait(timeout=30) is not 0:
+            if self.process.wait(timeout=30) != 0:
                 raise ExecutionError(
                     "failed to connect to {} with {} and {}".
                     format(self.networkservice.address, args, self.process.wait())
@@ -169,7 +169,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             raise ExecutionError(
                 "error executing command: {}".format(transfer_cmd)
             )
-        if sub is not 0:
+        if sub != 0:
             raise ExecutionError(
                 "error executing command: {}".format(transfer_cmd)
             )
@@ -193,7 +193,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             raise ExecutionError(
                 "error executing command: {}".format(transfer_cmd)
             )
-        if sub is not 0:
+        if sub != 0:
             raise ExecutionError(
                 "error executing command: {}".format(transfer_cmd)
             )

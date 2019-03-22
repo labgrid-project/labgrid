@@ -419,7 +419,7 @@ class SSHConnection:
         )
 
         try:
-            if self._master.wait(timeout=30) is not 0:
+            if self._master.wait(timeout=30) != 0:
                 raise ExecutionError(
                     "failed to connect to {} with args {}, returncode={} {},{} ".format(
                         self.host, args, self._master.wait(),

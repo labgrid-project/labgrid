@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import base64
+import types
 
 def b2s(b):
     return base64.b85encode(b).decode('ascii')
@@ -14,6 +15,7 @@ def s2b(s):
 class Agent:
     def __init__(self):
         self.methods = {}
+        self.register('load', self.load)
 
     @staticmethod
     def _send(data):
@@ -24,6 +26,12 @@ class Agent:
         assert name not in self.methods
         self.methods[name] = func
 
+    def load(self, name, source):
+        module = types.ModuleType(name)
+        exec(compile(source, '<loaded {}>'.format(name), 'exec'), module.__dict__)
+        for k, v in module.methods.items():
+            self.register('{}.{}'.format(name, k), v)
+
     def run(self):
         for line in sys.stdin:
             if not line:
@@ -32,7 +40,7 @@ class Agent:
             try:
                 request = json.loads(line)
             except json.JSONDecodeError:
-                Agent._send({'error': 'request parsing failed'})
+                Agent._send({'error': 'request parsing failed for {}'.format(repr(line))})
                 break
 
             if request.get('close', False):
@@ -45,14 +53,18 @@ class Agent:
                 response = self.methods[name](*args, **kwargs)
                 Agent._send({'result': response})
             except Exception as e:  # pylint: disable=broad-except
-                Agent._send({'exception': repr(e)})
-                break
+                import traceback
+                try:
+                    tb = [list(x) for x in traceback.extract_tb(sys.exc_info()[2])]
+                except:
+                    tb = None
+                Agent._send({'exception': repr(e), 'tb': tb})
 
 def handle_test(*args, **kwargs):  # pylint: disable=unused-argument
     return args[::-1]
 
 def handle_error(message):
-    raise RuntimeError(message)
+    raise ValueError(message)
 
 def handle_usbtmc(index, cmd, read=False):
     assert isinstance(index, int)

@@ -57,12 +57,41 @@ def test_bytes(subprocess_mock):
 
 def test_exception(subprocess_mock):
     aw = AgentWrapper('localhost')
+
     with pytest.raises(AgentException) as excinfo:
         aw.error('foo')
-    assert excinfo.value.args == ("RuntimeError('foo')",)
+    assert excinfo.value.args == ("ValueError('foo')",)
+
+    with pytest.raises(AgentException) as excinfo:
+        aw.error('bar')
+    assert excinfo.value.args == ("ValueError('bar')",)
 
 def test_error(subprocess_mock):
     aw = AgentWrapper('localhost')
     aw.agent.stdin.write(b'\x00')
     with pytest.raises(AgentError):
         aw.test()
+
+def test_module(subprocess_mock):
+    aw = AgentWrapper('localhost')
+    dummy = aw.load('dummy')
+    assert dummy.neg(1) == -1
+
+def test_local():
+    aw = AgentWrapper(None)
+
+    assert aw.test() == []
+    assert aw.test( 0, 1) == [1, 0]
+
+    assert s2b(aw.test(b2s(b'\x00foo'))[0]) == b'\x00foo'
+
+    with pytest.raises(AgentException) as excinfo:
+        aw.error('foo')
+    assert excinfo.value.args == ("ValueError('foo')",)
+
+    with pytest.raises(AgentException) as excinfo:
+        aw.error('bar')
+    assert excinfo.value.args == ("ValueError('bar')",)
+
+    dummy = aw.load('dummy')
+    assert dummy.neg(1) == -1

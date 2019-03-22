@@ -732,25 +732,6 @@ Arguments:
   - stderr_merge (bool): set to True to make `run()` return stderr merged with
       stdout, and an empty list as second element.
 
-InfoDriver
-~~~~~~~~~~
-An InfoDriver provides an interface to retrieve system settings and state. It
-requires a `CommandProtocol`.
-
-Binds to:
-  command:
-    - :any:`CommandProtocol`
-
-Implements:
-  - :any:`InfoProtocol`
-
-.. code-block:: yaml
-
-   InfoDriver: {}
-
-Arguments:
-  - None
-
 UBootDriver
 ~~~~~~~~~~~
 A UBootDriver interfaces with a u-boot boot loader via a `ConsoleProtocol`.

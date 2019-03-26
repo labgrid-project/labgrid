@@ -750,6 +750,7 @@ Implements:
 
 Arguments:
   - prompt (regex): u-boot prompt to match
+  - autoboot (regex, default="stop autoboot"): autoboot message to match
   - password (str): optional, u-boot unlock password
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
   - init_commands (tuple): tuple of commands to execute after matching the

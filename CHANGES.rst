@@ -4,6 +4,7 @@ Release 0.3.0 (unreleased)
 New Features in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~
 
+- The new `GpioDigitalOutputDriver` controls the state of a GPIO via libgpiod.
 - The InfoDriver was removed. The functions have been integrated into the
   labgridhelper library, please use the library for the old functionality.
 - labgrid-client ``write-image`` subcommand: labgrid client now has a

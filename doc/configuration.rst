@@ -1088,6 +1088,25 @@ Implements:
 Arguments:
   - delay (float): optional delay in seconds between off and on
 
+GpioDigitalOutputDriver
+~~~~~~~~~~~~~~~~~~~~~~~
+The GpioDigitalOutputDriver writes a digital signal to a GPIO line.
+
+This driver uses the libgpiod python bindings.
+Make sure to have them installed.
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   GpioDigitalOutputDriver:
+     offset: 42
+
+Arguments:
+  - chip (str): A GPIO device's path, name, label or number (default: "0")
+  - offset (int): The offset to a GPIO line
+
 SerialPortDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The SerialPortDigitalOutputDriver makes it possible to use a UART

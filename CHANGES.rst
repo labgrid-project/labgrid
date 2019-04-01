@@ -4,6 +4,7 @@ Release 0.3.0 (unreleased)
 New Features in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~
 
+- Crossbar and autobahn have been updated to 19.3.3 and 19.3.5 respectively.
 - The InfoDriver was removed. The functions have been integrated into the
   labgridhelper library, please use the library for the old functionality.
 - labgrid-client ``write-image`` subcommand: labgrid client now has a

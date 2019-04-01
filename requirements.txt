@@ -6,6 +6,6 @@ pytest==4.0.2
 pyudev==0.21.0
 requests==2.19.1
 xmodem==0.4.5
-autobahn==18.12.1
-PyYAML==3.13
+autobahn==19.3.3
+PyYAML==5.1
 ansicolors==1.1.8

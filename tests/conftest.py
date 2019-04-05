@@ -101,7 +101,7 @@ def pytest_runtest_setup(item):
     if envmarker is not None:
         if item.config.getoption("--sigrok-usb") is False:
             pytest.skip("sigrok usb tests not enabled (enable with --sigrok-usb)")
-    envmarker = item.get_marker("localsshmanager")
+    envmarker = item.get_closest_marker("localsshmanager")
     if envmarker is not None:
         if item.config.getoption("--local-sshmanager") is False:
             pytest.skip("SSHManager tests against localhost not enabled (enable with --local-sshmanager)")

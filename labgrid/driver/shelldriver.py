@@ -35,8 +35,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     """
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(validator=attr.validators.instance_of(str))
-    login_prompt = attr.ib(validator=attr.validators.instance_of(str))
     username = attr.ib(validator=attr.validators.instance_of(str))
+    login_prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
@@ -105,7 +105,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         start = time.time()
 
-        expectations = [self.prompt, self.login_prompt, TIMEOUT]
+        expectations = [self.prompt, TIMEOUT]
+        if self.login_prompt != "":
+            expectations.append(self.login_prompt)
         if self.console_ready != "":
             expectations.append(self.console_ready)
 
@@ -129,6 +131,23 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 break
 
             elif index == 1:
+                # expect hit a timeout while waiting for a match
+                if before == last_before:
+                    # we did not receive anything during
+                    # self.await_login_timeout.
+                    # let's assume the target is idle and we can safely issue a
+                    # newline to check the state
+                    self.console.sendline("")
+
+            elif index == 2:
+                # no need to login?
+                if self.login_prompt == "":
+                    # we have just activated a console here
+                    # lets start over again and see if login or prompt will appear
+                    # now.
+                    self.console.sendline("")
+                    break
+
                 # we need to login
                 self.console.sendline(self.username)
                 index, _, _, _ = self.console.expect([self.prompt, "Password: "], timeout=10)
@@ -140,15 +159,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                         raise Exception("Password entry needed but no password set")
                 self._check_prompt()
                 break
-
-            elif index == 2:
-                # expect hit a timeout while waiting for a match
-                if before == last_before:
-                    # we did not receive anything during
-                    # self.await_login_timeout.
-                    # let's assume the target is idle and we can safely issue a
-                    # newline to check the state
-                    self.console.sendline("")
 
             elif index == 3:
                 # we have just activated a console here

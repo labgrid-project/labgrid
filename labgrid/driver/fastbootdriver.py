@@ -61,7 +61,10 @@ class AndroidFastbootDriver(Driver):
 
     @Driver.check_active
     @step(args=['cmd'])
-    def run(self, cmd):
+    def run(self, cmd, *, echo_cmd=False):
+        if echo_cmd:
+            self("oem", "exec", "--", "echo {}".format(cmd))
+
         self("oem", "exec", "--", cmd)
 
     @Driver.check_active

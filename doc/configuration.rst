@@ -875,9 +875,12 @@ Implements:
 
    AndroidFastbootDriver:
      image: mylocal.image
+     sparse_size: 100M
 
 Arguments:
   - image (str): filename of the image to upload to the device
+  - sparse_size (str): optional, sparse files greater than given size (see
+    fastboot manpage -S option for allowed size suffixes)
 
 OpenOCDDriver
 ~~~~~~~~~~~~~

@@ -32,8 +32,11 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def on_activate(self):
         self.ssh_prefix = "-o LogLevel=ERROR"
-        self.ssh_prefix += " -i {}".format(os.path.abspath(self.keyfile)
-                                          ) if self.keyfile else ""
+        if self.keyfile:
+            keyfile_path = self.keyfile
+            if self.target.env:
+                keyfile_path = self.target.env.config.resolve_path(self.keyfile)
+            self.ssh_prefix += " -i {}".format(keyfile_path)
         self.ssh_prefix += " -o PasswordAuthentication=no" if (
             not self.networkservice.password) else ""
         self.control = self._check_master()

@@ -13,6 +13,8 @@ New Features in 0.3.0
   available
 - The SSHDriver's keyfile attribute is now specified relative to the config
   file just like the images are.
+- The ShellDriver's keyfile attribute is now specified relative to the config
+  file just like the images are.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

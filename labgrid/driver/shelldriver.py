@@ -59,8 +59,14 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if self._status == 0:
             self._await_login()
             self._inject_run()
+
         if self.keyfile:
-            self._put_ssh_key(self.keyfile)
+            keyfile_path = self.keyfile
+            if self.target.env:
+                keyfile_path = self.target.env.config.resolve_path(self.keyfile)
+
+            self._put_ssh_key(keyfile_path)
+
         # Turn off Kernel Messages to the console
         self._run("dmesg -n 1")
 

@@ -43,7 +43,13 @@ class AndroidFastbootDriver(Driver):
     @Driver.check_active
     @step(title='call', args=['args'])
     def __call__(self, *args):
-        subprocess.check_call(self._get_fastboot_prefix() + list(args))
+        # unfortunately fastboot uses stderr for normal output
+        proc = subprocess.run(self._get_fastboot_prefix() + list(args), stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT, check=True, universal_newlines=True)
+        stdout = proc.stdout.split('\n')
+        out_prefix = '(bootloader) '
+        # ignore lines with status and timing information, also remove message prefix
+        return list(line[len(out_prefix):] for line in stdout if line.startswith(out_prefix))
 
     @Driver.check_active
     @step(args=['filename'])

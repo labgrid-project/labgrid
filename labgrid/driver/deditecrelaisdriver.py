@@ -5,6 +5,7 @@ import attr
 from .common import Driver
 from ..factory import target_factory
 from ..resource.udev import DeditecRelais8
+from ..resource.remote import NetworkDeditecRelais8
 from ..step import step
 from ..protocol import DigitalOutputProtocol
 from ..util.agentwrapper import AgentWrapper
@@ -14,7 +15,7 @@ from ..util.agentwrapper import AgentWrapper
 @attr.s(cmp=False)
 class DeditecRelaisDriver(Driver, DigitalOutputProtocol):
     bindings = {
-        "relais": {DeditecRelais8},
+        "relais": {DeditecRelais8, NetworkDeditecRelais8},
     }
 
     def __attrs_post_init__(self):
@@ -22,7 +23,11 @@ class DeditecRelaisDriver(Driver, DigitalOutputProtocol):
         self.wrapper = None
 
     def on_activate(self):
-        self.wrapper = AgentWrapper(None)
+        if isinstance(self.relais, NetworkDeditecRelais8):
+            host = self.relais.host
+        else:
+            host = None
+        self.wrapper = AgentWrapper(host)
         self.proxy = self.wrapper.load('deditec_relais8')
 
     def on_deactivate(self):

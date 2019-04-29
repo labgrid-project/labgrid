@@ -17,10 +17,16 @@ class Agent:
         self.methods = {}
         self.register('load', self.load)
 
-    @staticmethod
-    def _send(data):
-        sys.stdout.write(json.dumps(data)+'\n')
-        sys.stdout.flush()
+        # use real stdin/stdout
+        self.stdin = sys.stdin
+        self.stdout = sys.stdout
+
+        # use stderr for normal prints
+        sys.stdout = sys.stderr
+
+    def send(self, data):
+        self.stdout.write(json.dumps(data)+'\n')
+        self.stdout.flush()
 
     def register(self, name, func):
         assert name not in self.methods
@@ -33,14 +39,14 @@ class Agent:
             self.register('{}.{}'.format(name, k), v)
 
     def run(self):
-        for line in sys.stdin:
+        for line in self.stdin:
             if not line:
                 continue
 
             try:
                 request = json.loads(line)
             except json.JSONDecodeError:
-                Agent._send({'error': 'request parsing failed for {}'.format(repr(line))})
+                self.send({'error': 'request parsing failed for {}'.format(repr(line))})
                 break
 
             if request.get('close', False):
@@ -51,14 +57,14 @@ class Agent:
             kwargs = request['kwargs']
             try:
                 response = self.methods[name](*args, **kwargs)
-                Agent._send({'result': response})
+                self.send({'result': response})
             except Exception as e:  # pylint: disable=broad-except
                 import traceback
                 try:
                     tb = [list(x) for x in traceback.extract_tb(sys.exc_info()[2])]
                 except:
                     tb = None
-                Agent._send({'exception': repr(e), 'tb': tb})
+                self.send({'exception': repr(e), 'tb': tb})
 
 def handle_test(*args, **kwargs):  # pylint: disable=unused-argument
     return args[::-1]

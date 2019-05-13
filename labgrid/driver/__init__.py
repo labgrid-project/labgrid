@@ -13,7 +13,7 @@ from .onewiredriver import OneWirePIODriver
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver, \
                          DigitalOutputPowerDriver, YKUSHPowerDriver, \
                          USBPowerDriver
-from .usbloader import MXSUSBDriver, IMXUSBDriver
+from .usbloader import MXSUSBDriver, IMXUSBDriver, RKUSBDriver
 from .usbstorage import USBStorageDriver
 from .usbsdmuxdriver import USBSDMuxDriver
 from .common import Driver

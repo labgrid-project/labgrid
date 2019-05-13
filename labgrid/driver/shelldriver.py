@@ -377,8 +377,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             remotefile (str): destination filename on the target
 
         Raises:
-            IOError: if the provided localfile could not be found
-            ExecutionError: if something else went wrong
+            ExecutionError: if something went wrong
         """
         return self._put_bytes(buf, remotefile)
 
@@ -450,7 +449,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             (bytes) file contents
 
         Raises:
-            IOError: if localfile could be written
             ExecutionError: if something went wrong
         """
         return self._get_bytes(remotefile)
@@ -471,7 +469,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             localfile (str): destination filename on the local machine (can be relative)
 
         Raises:
-            IOError: if localfile could be written
+            IOError: if localfile could not be written
             ExecutionError: if something went wrong
         """
         self._get(remotefile, localfile)
@@ -495,8 +493,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             Tuple of (stdout: str, stderr: str, return_value: int)
 
         Raises:
-            IOError: if the provided localfile could not be found
-            ExecutionError: if something else went wrong
+            ExecutionError: if something went wrong
         """
         return self._run_script(data, timeout)
 

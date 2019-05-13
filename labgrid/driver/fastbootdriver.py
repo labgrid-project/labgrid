@@ -18,6 +18,7 @@ class AndroidFastbootDriver(Driver):
     }
 
     image = attr.ib(default=None)
+    sparse_size = attr.ib(default='0', validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -32,6 +33,7 @@ class AndroidFastbootDriver(Driver):
             self.tool,
             "-i", hex(self.fastboot.vendor_id),
             "-s", "usb:{}".format(self.fastboot.path),
+            "-S", self.sparse_size,
         ]
 
     def on_activate(self):

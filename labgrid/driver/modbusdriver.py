@@ -5,6 +5,7 @@ from ..factory import target_factory
 from ..resource import ModbusTCPCoil
 from ..protocol import DigitalOutputProtocol
 from .common import Driver
+from .exception import ExecutionError
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
@@ -25,12 +26,18 @@ class ModbusCoilDriver(Driver, DigitalOutputProtocol):
     def set(self, status):
         if self.coil.invert:
             status = not status
-        self.client.write_single_coil(self.coil.coil, bool(status))
+        write_status = self.client.write_single_coil(self.coil.coil, bool(status))
+        if write_status is None:
+            error_code = self.client.last_error()
+            raise ExecutionError('Could not write coil (code={})'.format(error_code))
 
     @Driver.check_active
     def get(self):
         status = self.client.read_coils(self.coil.coil)
-        assert len(status) == 1
+        if status is None:
+            error_code = self.client.last_error()
+            raise ExecutionError('Could not read coil (code={})'.format(error_code))
+
         status = status[0]
         if self.coil.invert:
             status = not status

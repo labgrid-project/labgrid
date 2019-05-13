@@ -49,6 +49,7 @@ setup(
         'labgrid.resource',
         'labgrid.strategy',
         'labgrid.util',
+        'labgrid.util.agents',
     ],
     # the following makes a plugin available to pytest
     entry_points={

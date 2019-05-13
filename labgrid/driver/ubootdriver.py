@@ -33,6 +33,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     """
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
+    autoboot = attr.ib(default="stop autoboot", validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
     interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
     init_commands = attr.ib(default=attr.Factory(tuple), convert=tuple)
@@ -147,7 +148,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self.console.expect(self.boot_expression, timeout=self.login_timeout)
         index, _, _, _ = self.console.expect(
-            [self.prompt, "stop autoboot", self.password_prompt]
+            [self.prompt, self.autoboot, self.password_prompt]
         )
         if index == 0:
             self._status = 1

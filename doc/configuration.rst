@@ -750,6 +750,7 @@ Implements:
 
 Arguments:
   - prompt (regex): u-boot prompt to match
+  - autoboot (regex, default="stop autoboot"): autoboot message to match
   - password (str): optional, u-boot unlock password
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
   - init_commands (tuple): tuple of commands to execute after matching the
@@ -875,9 +876,12 @@ Implements:
 
    AndroidFastbootDriver:
      image: mylocal.image
+     sparse_size: 100M
 
 Arguments:
   - image (str): filename of the image to upload to the device
+  - sparse_size (str): optional, sparse files greater than given size (see
+    fastboot manpage -S option for allowed size suffixes)
 
 OpenOCDDriver
 ~~~~~~~~~~~~~
@@ -1597,6 +1601,10 @@ As an example:
 would resolve the qemu_bin path relative to the BASE dir of the YAML file and
 try to use the RemotePlace with the name set in the LG_PLACE environment
 variable.
+
+See the :ref:`labgrid-device-config` man page for documentation on the
+top-level ``options``, ``images``, ``tools``, and ``examples`` keys in the
+environment configuration.
 
 Exporter Configuration
 ----------------------

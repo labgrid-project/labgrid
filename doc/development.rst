@@ -290,17 +290,19 @@ linux kernel. The `off` states switch the power off.
 Graph Strategies
 ----------------
 
-Graph Strategies are made for more complex strategies, with multiple, on each
-other depending, states.
+.. warning::
+    This feature is experimental and brings much complexity to your project.
 
-All states **HAVE TO**:
-  1. Be a method of a `GraphStrategy` subclass
-  2. Use this prototype: `def state_$STATENAME(self):`
-  3. Not call `transition()` in its state definition
+GraphStrategies are made for more complex strategies, with multiple, on each
+other depending, states. A GraphStrategy graph has to be a directed graph with
+one root state.
 
-Every Graph Strategy graph has to have exactly one root state.
-A root state is a state that has no dependencies.
-If `invalidate()` is overridden the super method must be called.
+Using a GraphStrategy makes only sense if you have board states that are
+reachable by different ways. In this case GraphStrategies reduce state
+duplication.
+
+Example
+~~~~~~~
 
 .. code-block:: python
 
@@ -309,39 +311,24 @@ If `invalidate()` is overridden the super method must be called.
 
 
     class TestStrategy(GraphStrategy):
-        def state_Root(self):
+        def state_Unknown(self):
             pass
 
-        @GraphStrategy.depends('Root')
-        def state_A1(self):
+        @GraphStrategy.depends('Unknown')
+        def state_Boot_via_NAND(self):
             pass
 
-        @GraphStrategy.depends('Root')
-        def state_A2(self):
+        @GraphStrategy.depends('Unknown')
+        def state_Boot_via_NFS(self):
             pass
 
-        @GraphStrategy.depends('A1', 'A2')
-        def state_B(self):
+        @GraphStrategy.depends('Boot_via_NAND', 'Boot_via_NFS')
+        def state_BareBox(self):
             pass
 
-Graph Stategies allow to specify multiple paths to states.
-The first argument of `@GraphStrategy.depends()` becomes part of the default
-path.
-If a different path should be followed the keyword argument `via` can be used
-on `transition()`.
-
-.. code-block:: python
-
-    # test_feature.py
-    def test_feature(graph_strategy):
-        graph_strategy.transition('B')  #  returns: ['A1', 'B']
-        graph_strategy.transition('B')  #  returns: []
-        graph_strategy.transition('B', via=['A2'])  #  returns: ['Root', 'A2', 'B']
-
-`pytest fixtures <https://docs.pytest.org/en/latest/fixture.html>`_ can be used
-to `transition()` into the designated state before a test is executed.
-Use `transition('my_state', via=...)` to follow a (non-default) path, e.g. an
-alternative boot method.
+        @GraphStrategy.depends('BareBox')
+        def state_Linux_Shell(self):
+            pass
 
 .. code-block:: python
 
@@ -352,6 +339,65 @@ alternative boot method.
 .. image:: res/graphstrategy-1.png
 
 .. image:: res/graphstrategy-2.png
+
+State
+~~~~~
+
+Every graph node describes a board state and how to reach it, A state
+has to be a class method following this prototype:
+`def state_$STATENAME(self):`. A state may not call `transition()` in its
+state definition.
+
+Dependency
+~~~~~~~~~~
+
+Every state, but the root state, can depend on other States, If a state has
+multiple dependencies, not all of them, but one, have to be reached before
+running the current state.
+When no via is used during a transition the order of the given dependencies
+decides which one gets called, where the first one has the highest priority
+and the last one the lowest.
+Dependencies are represented by graph edges.
+
+Root State
+~~~~~~~~~~
+
+Every GraphStrategy has to has to define exactly one root state. The root state
+defines the start of the graph and therefore the start of every transition.
+A state becomes a root state if it has no dependencies.
+
+Transition
+~~~~~~~~~~
+
+A transition describes a path, or a part of a path, through a GraphStrategy
+graph.
+Every State in the graph has a auto generated default path starting from the
+root state.
+So using the given example, the GraphStrategy would call the states `Unknown`
+, `Boot_via_NAND`, `BareBox`, and `Linux_Shell` in this order if
+`transition('Linux_Shell')` would be called.
+The GraphStrategy would prefer `Boot_via_NAND` over `Boot_via_NFS` because
+`Boot_via_NAND` is mentioned before `Boot_via_NFS` in the dependencies of
+`BareBox`. If you want to reach via `Boot_via_NFS` the call would look like
+this: `transition('Linux_Shell', via='Boot_via_NFS')`.
+
+A transition can be incremental. If we trigger a transition
+`transition('BareBox')` first, the states `Unknown`, `Boot_via_NAND` and
+`BareBox` will be called in this order. If we trigger a transition
+`transition('Linux_Shell')` afterwards only `Linux_Shell` gets called. This
+happens because `Linux_Shell` is reachable from `BareBox` and the Strategy
+holds state of the last walked path.
+But there is a catch! The second, incremental path must be *fully* incremental
+to the previous path!
+For example: Lets say we reached `BareBox` via `Boot_via_NFS`,
+(`transition('Barebox', via='Boot_via_NFS')`). If we trigger
+`transition('Linux_Shell')` afterwards the GraphStrategy would compare the last
+path `'Unknown', 'Boot_via_NFS', 'BareBox'` with the default path to
+`Linux_Shell` which would be
+`'Unknown', 'Boot_via_NAND', 'BareBox', 'Linux_Shell'`, and decides the path
+is not fully incremental and starts over by the root state. If we had given
+the second transition `Boot_via_NFS` like in the first transition the paths
+had been incremental.
 
 
 SSHManager

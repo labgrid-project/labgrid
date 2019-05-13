@@ -57,8 +57,8 @@ class ClientSession(ApplicationSession):
         self.monitor = self.config.extra.get('monitor', False)
         enable_tcp_nodelay(self)
         self.join(
-            self.config.realm, ["ticket"],
-            "client/{}/{}".format(gethostname(), getuser())
+            self.config.realm, authmethods=["ticket"],
+            authid="client/{}/{}".format(gethostname(), getuser())
         )
 
     def onChallenge(self, challenge):

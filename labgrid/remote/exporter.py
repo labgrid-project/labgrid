@@ -318,14 +318,14 @@ class ExporterSession(ApplicationSession):
         self.name = self.config.extra['name']
         self.hostname = self.config.extra['hostname']
         self.isolated = self.config.extra['isolated']
-        self.authid = "exporter/{}".format(self.name)
         self.address = self._transport.transport.get_extra_info('sockname')[0]
         self.poll_task = None
 
         self.groups = {}
 
         enable_tcp_nodelay(self)
-        self.join(self.config.realm, ["ticket"], self.authid)
+        self.join(self.config.realm, authmethods=["ticket"], authid="exporter/{}".format(
+            self.name))
 
     def onChallenge(self, challenge):
         """Function invoked on received challege, returns just a dummy ticket

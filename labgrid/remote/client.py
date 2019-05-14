@@ -1001,7 +1001,7 @@ def start_session(url, realm, extra):
 
     session = [None]
 
-    url = proxymanager.get_url(url)
+    url = proxymanager.get_url(url, default_port=20408)
 
     def create():
         nonlocal session

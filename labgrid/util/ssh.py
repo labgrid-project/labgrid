@@ -190,6 +190,10 @@ class SSHConnection:
         return wrapper
 
     @_check_connected
+    def get_prefix(self):
+        return ["ssh"] + self._get_ssh_args() + [self.host]
+
+    @_check_connected
     def run(self, command, *, codec="utf-8", decodeerrors="strict",
             force_tty=False, stderr_merge=False, stderr_loglevel=None,
             stdout_loglevel=None):

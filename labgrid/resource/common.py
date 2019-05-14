@@ -1,6 +1,7 @@
 import attr
 
 from ..binding import BindingMixin
+from ..util.ssh import sshmanager
 
 
 @attr.s(cmp=False)
@@ -61,10 +62,15 @@ class NetworkResource(Resource):
 
     @property
     def command_prefix(self):
-        return ['ssh', '-x',
-                '-o', 'ConnectTimeout=5',
-                '-o', 'PasswordAuthentication=no',
-                self.host, '--']
+        host = self.host
+
+        if hasattr(self, 'extra'):
+            host = self.extra.get('proxy')
+
+        conn = sshmanager.get(host)
+        prefix = conn.get_prefix()
+
+        return prefix + ['--']
 
 
 @attr.s(cmp=False)

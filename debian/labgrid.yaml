@@ -1,0 +1,3 @@
+tools:
+  fastboot: /usr/bin/fastboot
+  imx-usb-loader: /usr/bin/imx-usb-loader

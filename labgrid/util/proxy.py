@@ -21,11 +21,13 @@ class ProxyManager:
         cls._force_proxy = force_proxy
 
     @classmethod
-    def get_host_and_port(cls, res):
+    def get_host_and_port(cls, res, force_port=None):
         """ get host and port for a proxy connection from a Resource
 
         Args:
             res (Resource): The resource to retrieve the proxy for
+            force_port (optional): TCP port to use instead of the one
+                configured for the resource
 
         Returns:
             (host, port) host and port for the proxy connection
@@ -35,7 +37,8 @@ class ProxyManager:
         """
         assert isinstance(res, Resource)
 
-        host, port = res.host, res.port
+        host = res.host
+        port = force_port or res.port
 
         if cls._force_proxy:
             port = sshmanager.request_forward(cls._force_proxy, host, port)

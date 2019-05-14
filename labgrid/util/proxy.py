@@ -21,11 +21,13 @@ class ProxyManager:
         cls._force_proxy = force_proxy
 
     @classmethod
-    def get_host_and_port(cls, res, force_port=None):
+    def get_host_and_port(cls, res, *, default_port=None, force_port=None):
         """ get host and port for a proxy connection from a Resource
 
         Args:
             res (Resource): The resource to retrieve the proxy for
+            default_port (optional): TCP port to use if no other port is
+                configured
             force_port (optional): TCP port to use instead of the one
                 configured for the resource
 
@@ -44,7 +46,7 @@ class ProxyManager:
         elif s.port:
             port = s.port
         else:
-            port = res.port
+            port = getattr(res, 'port', None) or default_port
 
         if cls._force_proxy:
             port = sshmanager.request_forward(cls._force_proxy, host, port)
@@ -61,14 +63,25 @@ class ProxyManager:
         return host, port
 
     @classmethod
-    def get_url(cls, url):
+    def get_url(cls, url, *, default_port=None):
         assert isinstance(url, str)
 
         s = urlsplit(url)
 
+        hostname = s.hostname
+        port = s.port or default_port
+
         if cls._force_proxy:
-            port = sshmanager.request_forward(s.hostname, '127.0.0.1', s.port)
-            s = s._replace(netloc="{}:{}".format('127.0.0.1', port))
+            port = sshmanager.request_forward(cls._force_proxy, hostname, port)
+            hostname = 'localhost'
+
+            print(cls._force_proxy, hostname, port)
+
+        if ':' in hostname:
+            # IPv6 address
+            s = s._replace(netloc="[{}]:{}".format(hostname, port))
+        else:
+            s = s._replace(netloc="{}:{}".format(hostname, port))
 
         return urlunsplit(s)
 

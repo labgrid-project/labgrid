@@ -4,7 +4,6 @@ import logging
 import subprocess
 import os
 from select import select
-import socket
 from functools import wraps
 
 import attr
@@ -38,7 +37,6 @@ class SSHConnectionManager:
 
         Returns:
             :obj:`SSHConnection`: the SSHConnection for the host"""
-        host = socket.getfqdn(host)
         instance = self._connections.get(host)
         if instance is None:
             # pylint: disable=unsupported-assignment-operation

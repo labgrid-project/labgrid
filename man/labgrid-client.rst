@@ -60,12 +60,12 @@ ENVIRONMENT VARIABLES
 ---------------------
 Various labgrid-client commands use the following environment variable:
 
-PLACE
-~~~~~
+LG_PLACE
+~~~~~~~~
 This variable can be used to specify a place without using the ``-p`` option, the ``-p`` option overrides it.
 
-STATE
-~~~~~
+LG_STATE
+~~~~~~~~
 This variable can be used to specify a state which the device transitions into
 before executing a command. Requires a configuration file and a Strategy
 specified for the device.

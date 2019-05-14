@@ -1036,8 +1036,11 @@ def main():
         stream=sys.stderr,
     )
 
+    # Support both legacy variables and properly namespaced ones
     place = os.environ.get('PLACE', None)
+    place = os.environ.get('LG_PLACE', place)
     state = os.environ.get('STATE', None)
+    state = os.environ.get('LG_STATE', state)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(

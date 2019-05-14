@@ -37,8 +37,14 @@ class ProxyManager:
         """
         assert isinstance(res, Resource)
 
-        host = res.host
-        port = force_port or res.port
+        s = urlsplit('//'+res.host)
+        host = s.hostname
+        if force_port:
+            port = force_port
+        elif s.port:
+            port = s.port
+        else:
+            port = res.port
 
         if cls._force_proxy:
             port = sshmanager.request_forward(cls._force_proxy, host, port)

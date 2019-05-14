@@ -72,7 +72,6 @@ specified for the device.
 
 LG_ENV
 ~~~~~~
-
 This variable can be used to specify the configuration file to use without
 using the ``--config`` option, the ``--config`` option overrides it.
 
@@ -161,7 +160,6 @@ To retrieve a list of places run:
 
    $ labgrid-client places
 
-
 To access a place, it needs to be acquired first, this can be done by running
 the ``acquire command`` and passing the placename as a -p parameter:
 
@@ -180,7 +178,6 @@ Add all resources with the group "example-group" to the place example-place:
 .. code-block:: bash
 
    $ labgrid-client -p example-place add-match */example-group/*/*
-
 
 SEE ALSO
 --------

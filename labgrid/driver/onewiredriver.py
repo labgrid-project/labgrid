@@ -1,3 +1,4 @@
+from importlib import import_module
 import attr
 
 from ..factory import target_factory
@@ -13,17 +14,16 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
     bindings = {"port": OneWirePIO, }
 
     def __attrs_post_init__(self):
-        import onewire
         super().__attrs_post_init__()
+        self._module = import_module('onewire')
         self._onewire = None
         self._host = None
         self._port = None
 
     def on_activate(self):
-        import onewire
         # we can only forward if the backend knows which port to use
         self._host, self._port = proxymanager.get_host_and_port(self.port)
-        self._onewire = onewire.Onewire(
+        self._onewire = self._module.Onewire(
             "{}:{}".format(self._host, self._port)
         )
 

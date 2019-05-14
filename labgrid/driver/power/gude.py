@@ -2,23 +2,24 @@ import requests
 
 from ..exception import ExecutionError
 
+PORT = 80
 
-def power_set(host, index, value):
+def power_set(host, port, index, value):
     index = int(index)
     assert 1 <= index <= 8
     # access the web interface...
     value = 1 if value else 0
     r = requests.get(
-        "http://{}/switch.html?cmd=1&p={}&s={}".format(host, index, value)
+        "http://{}:{}/switch.html?cmd=1&p={}&s={}".format(host, port, index, value)
     )
     r.raise_for_status()
 
 
-def power_get(host, index):
+def power_get(host, port, index):
     index = int(index)
     assert 1 <= index <= 8
     # get the contents of the main page
-    r = requests.get("http://{}/".format(host))
+    r = requests.get("http://{}:{}/".format(host, port))
     r.raise_for_status()
     for line in r.text.splitlines():
         power_pattern = "Power Port {}</td>".format(index)

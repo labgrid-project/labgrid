@@ -11,7 +11,9 @@ from ..exception import ExecutionError
 # Driver has been tested with:
 # * Gude Expert Power Control 8080
 
-def power_set(host, index, value):
+PORT = 80
+
+def power_set(host, port, index, value):
     # The gude web-interface uses different pages for the three groups of
     # switches. The web-interface always uses the 'correct' page to set a
     # value. But commands for all pages are accepted on all pages.
@@ -20,12 +22,12 @@ def power_set(host, index, value):
     # access the web interface...
     value = 1 if value else 0
     r = requests.get(
-        "http://{}/ov.html?cmd=1&p={}&s={}".format(host, index, value)
+        "http://{}:{}/ov.html?cmd=1&p={}&s={}".format(host, port, index, value)
     )
     r.raise_for_status()
 
 
-def power_get(host, index):
+def power_get(host, port, index):
     # The status of the ports is made available via a html <meta>-tag using the
     # following format:
     # <meta http-equiv="powerstate" content="Power Port 1,0">
@@ -33,7 +35,7 @@ def power_get(host, index):
     index = int(index)
     assert 1 <= index <= 24
     # get the contents of the main page
-    r = requests.get("http://{}/ov.html".format(host))
+    r = requests.get("http://{}:{}/ov.html".format(host, port))
     r.raise_for_status()
     for line in r.text.splitlines():
         if line.find("content=\"Power Port {}".format(index)) > 0:

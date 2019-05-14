@@ -1,8 +1,9 @@
 import re
 import requests
 
+PORT = 80
 
-def power_set(host, index, value):
+def power_set(host, port, index, value):
     index = int(index)
     assert 1 <= index <= 4
     # access the web interface...
@@ -11,17 +12,17 @@ def power_set(host, index, value):
     else:
         portstring = {1: "0uuu", 2: "u0uu", 3: "uu0u", 4: "uuu0"}
     r = requests.get(
-        "http://{}/tgi/control.tgi?l=p:admin:admin&p={}".
-        format(host, portstring[index])
+        "http://{}:{}/tgi/control.tgi?l=p:admin:admin&p={}".
+        format(host, port, portstring[index])
     )
     r.raise_for_status()
 
 
-def power_get(host, index):
+def power_get(host, port, index):
     index = int(index)
     assert 1 <= index <= 4
     # get the contents of the main page
-    r = requests.get("http://" + host + "/tgi/control.tgi?l=p:admin:admin&p=l")
+    r = requests.get("http://{}:{}/tgi/control.tgi?l=p:admin:admin&p=l".format(host, port))
     r.raise_for_status()
     m = re.match(r".*(\d) (\d) (\d) (\d).*", r.text)
     states = {"0": False, "1": True}

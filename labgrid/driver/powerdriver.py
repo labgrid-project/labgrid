@@ -109,16 +109,18 @@ class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             ".power.{}".format(self.port.model),
             __package__
         )
+        self._host = self.port.host
+        self._port = None
 
     @Driver.check_active
     @step()
     def on(self):
-        self.backend.power_set(self.port.host, self.port.index, True)
+        self.backend.power_set(self._host, self._port, self.port.index, True)
 
     @Driver.check_active
     @step()
     def off(self):
-        self.backend.power_set(self.port.host, self.port.index, False)
+        self.backend.power_set(self._host, self._port, self.port.index, False)
 
     @Driver.check_active
     @step()
@@ -129,7 +131,7 @@ class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 
     @Driver.check_active
     def get(self):
-        return self.backend.power_get(self.port.host, self.port.index)
+        return self.backend.power_get(self._host, self._port, self.port.index)
 
 @target_factory.reg_driver
 @attr.s(cmp=False)

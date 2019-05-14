@@ -1,0 +1,4 @@
+debian/labgrid.yaml /etc
+debian/labgrid-client /usr/bin
+debian/labgrid-exporter /usr/bin
+debian/labgrid-pytest /usr/bin

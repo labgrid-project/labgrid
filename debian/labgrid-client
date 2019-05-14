@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cmd="labgrid-client -c /etc/labgrid.yaml"
+
+exec /opt/venvs/labgrid/bin/$cmd "$@"

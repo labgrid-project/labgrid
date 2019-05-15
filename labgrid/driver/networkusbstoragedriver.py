@@ -54,8 +54,10 @@ class NetworkUSBStorageDriver(Driver):
         args = [
             "dd",
             "if={}".format(mf.get_remote_path()),
-            "of={} status=progress bs=4M conv=fdatasync"
-            .format(self.storage.path)
+            "of={}".format(self.storage.path),
+            "status=progress",
+            "bs=4M",
+            "conv=fdatasync"
         ]
         subprocess.check_call(
             self.storage.command_prefix + args

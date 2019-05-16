@@ -18,7 +18,7 @@ class AndroidFastbootDriver(Driver):
     }
 
     image = attr.ib(default=None)
-    sparse_size = attr.ib(default='0', validator=attr.validators.instance_of(str))
+    sparse_size = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -29,12 +29,16 @@ class AndroidFastbootDriver(Driver):
             self.tool = 'fastboot'
 
     def _get_fastboot_prefix(self):
-        return self.fastboot.command_prefix+[
+        prefix = self.fastboot.command_prefix+[
             self.tool,
             "-i", hex(self.fastboot.vendor_id),
             "-s", "usb:{}".format(self.fastboot.path),
-            "-S", self.sparse_size,
         ]
+
+        if self.sparse_size is not None:
+            prefix += ["-S", self.sparse_size]
+
+        return prefix
 
     def on_activate(self):
         pass

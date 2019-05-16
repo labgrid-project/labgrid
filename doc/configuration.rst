@@ -881,7 +881,9 @@ Implements:
 Arguments:
   - image (str): filename of the image to upload to the device
   - sparse_size (str): optional, sparse files greater than given size (see
-    fastboot manpage -S option for allowed size suffixes)
+    fastboot manpage -S option for allowed size suffixes). The default is the
+    same as the fastboot default, which is computed after querying the target's
+    ``max-download-size`` variable.
 
 OpenOCDDriver
 ~~~~~~~~~~~~~

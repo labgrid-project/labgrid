@@ -11,6 +11,10 @@ New Features in 0.3.0
   ``write-image`` command to write images onto block devices.
 - ``labgrid-client ssh`` now also uses port from NetworkService resource if
   available
+- The SSHDriver's keyfile attribute is now specified relative to the config
+  file just like the images are.
+- The ShellDriver's keyfile attribute is now specified relative to the config
+  file just like the images are.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

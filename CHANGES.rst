@@ -23,6 +23,7 @@ New Features in 0.3.0
 - Flashrom support added, by hard-wiring e.g. an exporter to the DUT, the ROM
   on the DUT can be written directly. The flashrom driver implements the
   bootstrap protocol.
+- AndroidFastbootDriver now supports 'getvar' and 'oem getenv' subcommands.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

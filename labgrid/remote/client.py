@@ -746,6 +746,9 @@ class ClientSession(ApplicationSession):
         if args[0] == 'boot':
             drv.boot(args[1])
             return
+        if args[0:2] == ['oem', 'exec']:
+            drv.run(" ".join(args[2:]))
+            return
         drv(*args)
 
     def bootstrap(self):

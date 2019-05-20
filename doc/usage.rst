@@ -171,6 +171,11 @@ Influences the color scheme used for the Colored Step Reporter. ``dark``
 ``light`` is optimized for light terminal background.
 Takes effect only when used with ``--lg-colored-steps``.
 
+LG_PROXY
+^^^^^^^^
+Specifies a SSH proxy host to be used for port forwards to access the
+coordinator and network resources.
+
 Simple Example
 ~~~~~~~~~~~~~~
 

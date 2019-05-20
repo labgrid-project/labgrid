@@ -29,12 +29,12 @@ def test_onewire_driver_instance(target, onewire_driver):
 
 def test_onewire_set(onewire_driver):
     onewire_driver.set(True)
-    onewire_driver.onewire.set.assert_called_once_with("path", '1')
+    onewire_driver._onewire.set.assert_called_once_with("path", '1')
 
 def test_onewire_unset(onewire_driver):
     onewire_driver.set(False)
-    onewire_driver.onewire.set.assert_called_once_with("path", '0')
+    onewire_driver._onewire.set.assert_called_once_with("path", '0')
 
 def test_onewire_get(onewire_driver):
     onewire_driver.get()
-    onewire_driver.onewire.get.assert_called_once_with("path")
+    onewire_driver._onewire.get.assert_called_once_with("path")

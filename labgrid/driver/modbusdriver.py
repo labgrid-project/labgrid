@@ -4,6 +4,7 @@ import attr
 from ..factory import target_factory
 from ..resource import ModbusTCPCoil
 from ..protocol import DigitalOutputProtocol
+from ..util.proxy import proxymanager
 from .common import Driver
 from .exception import ExecutionError
 
@@ -15,12 +16,16 @@ class ModbusCoilDriver(Driver, DigitalOutputProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self._module = import_module('pyModbusTCP.client')
-        port = "502"
-        host = self.coil.host
-        if ':' in host:
-            host, port = host.split(':', 1)
+        self.client = None
+
+    def on_activate(self):
+        # we can only forward if the backend knows which port to use
+        host, port = proxymanager.get_host_and_port(self.coil, default_port=502)
         self.client = self._module.ModbusClient(
             host=host, port=int(port), auto_open=True, auto_close=True)
+
+    def on_deactivate(self):
+        self.client = None
 
     @Driver.check_active
     def set(self, status):

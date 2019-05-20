@@ -3,12 +3,13 @@
 import re
 import telnetlib
 
+PORT = 1234
 
-def power_set(host, index, value):
+def power_set(host, port, index, value):
     index = int(index)
     assert 1 <= index <= 4
     value = "1" if value else "0"
-    tn = telnetlib.Telnet(host, 1234, 1)
+    tn = telnetlib.Telnet(host, port, 1)
     tn.read_until(b"\r\n", 0.5)
     tn.write(b"login admin admin\n")
     tn.read_until(b"250 OK\r\n", 0.5)
@@ -18,10 +19,10 @@ def power_set(host, index, value):
     tn.close()
 
 
-def power_get(host, index):
+def power_get(host, port, index):
     index = int(index)
     assert 1 <= index <= 4
-    tn = telnetlib.Telnet(host, 1234, 1)
+    tn = telnetlib.Telnet(host, port, 1)
     tn.read_until(b"\r\n", 0.5)
     tn.write(b"login admin admin\n")
     tn.read_until(b"250 OK\r\n", 0.5)

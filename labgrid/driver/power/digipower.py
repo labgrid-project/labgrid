@@ -1,7 +1,8 @@
 import requests
 
+PORT = 80
 
-def power_set(host, index, value):
+def power_set(host, port, index, value):
     index = int(index)
     assert 1 <= index <= 8
 
@@ -22,18 +23,18 @@ def power_set(host, index, value):
         "8": "00000001",
     }
     r = requests.get(
-        "http://{}/{}?led={}".format(host, cgi, portstring[index] + suffixstring),
+        "http://{}:{}/{}?led={}".format(host, port, cgi, portstring[index] + suffixstring),
         auth=("snmp", "1234"),
     )
     r.raise_for_status()
 
 
-def power_get(host, index):
+def power_get(host, port, index):
     index = int(index)
     assert 1 <= index <= 8
 
     # get the contents of the status page
-    r = requests.get("http://" + host + "/status.xml", auth=("snmp", "1234"))
+    r = requests.get("http://{}:{}/status.xml".format(host, port), auth=("snmp", "1234"))
     r.raise_for_status()
     states = {"0": False, "1": True}
     ports = {

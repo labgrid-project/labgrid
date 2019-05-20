@@ -15,6 +15,11 @@ New Features in 0.3.0
   file just like the images are.
 - The ShellDriver's keyfile attribute is now specified relative to the config
   file just like the images are.
+- ``labgrid-client -P <PROXY>`` and the ``LG_PROXY`` enviroment variable can be
+  used to access the coordinator and network resources via that SSH proxy host.
+  Drivers which run commands via SSH to the exporter still connect directly,
+  allowing custom configuration in the user's ``.ssh/config`` as needed.
+  Note that not all drivers have been updated to use the ProxyManager yet.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

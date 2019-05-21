@@ -29,14 +29,13 @@ after_success:
 
 matrix:
   include:
+    - python: "3.7"
+      dist: xenial
+      sudo: true
     - stage: docker
       services:
         - docker
       script: ./docker/build.sh
-    - stage: optional
-      python: "3.7"
-      dist: xenial
-      sudo: true
     - stage: optional
       python: "3.8-dev"
       dist: xenial

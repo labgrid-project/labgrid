@@ -1,2 +1,2 @@
-pysnmp==4.4.6
+pysnmp==4.4.8
 pysnmp-mibs==0.1.6

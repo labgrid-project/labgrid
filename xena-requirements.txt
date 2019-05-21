@@ -1,1 +1,1 @@
-xenavalkyrie==1.1.2
+xenavalkyrie==1.2.1

@@ -1,10 +1,10 @@
-attrs==17.4.0
+attrs==18.2.0
 jinja2==2.10
 pexpect==4.6
 https://github.com/labgrid-project/pyserial/archive/v3.4.0.1.zip#egg=pyserial
 pytest==4.0.2
 pyudev==0.21.0
-requests==2.19.1
+requests==2.21.0
 xmodem==0.4.5
 autobahn==19.3.3
 PyYAML==5.1

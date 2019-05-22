@@ -290,6 +290,21 @@ An MXSUSBLoader resource describes a USB device in the mxs loader state.
 Used by:
   - `MXSUSBDriver`_
 
+RKUSBLoader
+~~~~~~~~~~~~
+An RKUSBLoader resource describes a USB device in the rockchip loader state.
+
+.. code-block:: yaml
+
+   RKUSBLoader:
+     match:
+       'sys_name': '1-3'
+
+- match (str): key and value for a udev match, see `udev Matching`_
+
+Used by:
+  - `RKUSBDriver`_
+
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
 A NetworkMXSUSBLoader descibes an `MXSUSBLoader`_ available on a remote computer.
@@ -297,6 +312,10 @@ A NetworkMXSUSBLoader descibes an `MXSUSBLoader`_ available on a remote computer
 NetworkIMXUSBLoader
 ~~~~~~~~~~~~~~~~~~~
 A NetworkIMXUSBLoader descibes an `IMXUSBLoader`_ available on a remote computer.
+
+NetworkRKUSBLoader
+~~~~~~~~~~~~~~~~~~~
+A NetworkRKUSBLoader descibes an `RKUSBLoader`_ available on a remote computer.
 
 AndroidFastboot
 ~~~~~~~~~~~~~~~
@@ -838,7 +857,7 @@ Arguments:
   - autoboot (regex, default="stop autoboot"): autoboot message to match
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
   - startstring (regex, default="[\n]barebox 20\d+"): string that indicates that Barebox is starting
-  - bootstring (regex, default="Linux version \d"): succesfully jumped into the kernel 
+  - bootstring (regex, default="Linux version \d"): succesfully jumped into the kernel
   - password (str): optional, password to use for access to the shell
   - login_timeout (int): optional, timeout for access to the shell
 
@@ -1140,6 +1159,36 @@ Implements:
 Arguments:
   - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
 
+RKUSBDriver
+~~~~~~~~~~~~
+A RKUSBDriver is used to upload an image into a device in the rockchip USB loader
+state. This is useful to bootstrap a bootloader onto a device.
+
+Binds to:
+  loader:
+    - `RKUSBLoader`_
+    - `NetworkRKUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         RKUSBDriver:
+           image: mybootloaderkey
+           usb_loader: myloaderkey
+
+   images:
+     mybootloaderkey: path/to/mybootloader.img
+     myloaderkey: path/to/myloader.bin
+
+Arguments:
+  - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
+  - usb_loader (srt): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
+
 USBStorageDriver
 ~~~~~~~~~~~~~~~~
 A USBStorageDriver allows access to a USB stick or similar device via the `USBMassStorage`
@@ -1237,7 +1286,7 @@ Binds to:
    images:
      dtb: ../images/mydtb.dtb
      kernel: ../images/vmlinuz
-     
+
 
 Implements:
   - :any:`ConsoleProtocol`
@@ -1258,7 +1307,7 @@ Arguments:
 
 The qemudriver also requires the specification of:
 
-- a tool key, this contains the path to the qemu binary 
+- a tool key, this contains the path to the qemu binary
 - an image key, the path to the kernel image and optionally the dtb key to
   specify the build device tree
 - a path key, this is the path to the rootfs
@@ -1350,7 +1399,7 @@ Currently tested on a `XenaCompact` chassis equipped with a `1 GE test module`.
 Strategies
 ----------
 
-Strategies are used to ensure that the device is in a certain state during a test. 
+Strategies are used to ensure that the device is in a certain state during a test.
 Such a state could be the boot loader or a booted Linux kernel with shell.
 
 BareboxStrategy

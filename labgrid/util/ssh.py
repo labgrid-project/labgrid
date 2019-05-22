@@ -37,8 +37,9 @@ class SSHConnectionManager:
 
         Returns:
             :obj:`SSHConnection`: the SSHConnection for the host"""
-        instance = self._connections.get(host)
-        if instance is None:
+        if host in self._connections:
+            instance = self._connections[host]
+        else:
             # pylint: disable=unsupported-assignment-operation
             self.logger.debug("Creating SSHConnection for %s", host)
             instance = SSHConnection(host)

@@ -37,6 +37,7 @@ class ModuleProxy:
 class AgentWrapper:
 
     def __init__(self, host=None):
+        self.agent = None
         self.loaded = {}
         self.logger = logging.getLogger("ResourceExport({})".format(host))
 

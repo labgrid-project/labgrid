@@ -9,3 +9,4 @@ xmodem==0.4.5
 autobahn==19.3.3
 PyYAML==5.1
 ansicolors==1.1.8
+pyusb==1.0.2

@@ -95,3 +95,15 @@ def test_local():
 
     dummy = aw.load('dummy')
     assert dummy.neg(1) == -1
+
+def test_all_modules():
+    aw = AgentWrapper(None)
+    aw.load('deditec_relais8')
+    methods = aw.list()
+    assert 'deditec_relais8.set' in methods
+    assert 'deditec_relais8.get' in methods
+
+def test_import_modules():
+    import labgrid.util.agents
+    import labgrid.util.agents.dummy
+    import labgrid.util.agents.deditec_relais8

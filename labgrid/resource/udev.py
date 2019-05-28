@@ -385,3 +385,21 @@ class USBTMC(USBResource):
             return self.device.device_node
 
         return None
+
+@target_factory.reg_resource
+@attr.s(cmp=False)
+class DeditecRelais8(USBResource):
+    index = attr.ib(default=None, validator=attr.validators.instance_of(int))
+
+    def __attrs_post_init__(self):
+        self.match['ID_VENDOR'] = 'DEDITEC'
+        # the serial is the same for all boards with the same model
+        self.match['ID_SERIAL_SHORT'] = 'DT000014'
+        super().__attrs_post_init__()
+
+    @property
+    def path(self):
+        if self.device is not None:
+            return self.device.device_path
+
+        return None

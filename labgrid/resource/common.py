@@ -65,7 +65,8 @@ class NetworkResource(Resource):
         host = self.host
 
         if hasattr(self, 'extra'):
-            host = self.extra.get('proxy')
+            if self.extra.get('proxy_required'): 
+                host = self.extra.get('proxy')
 
         conn = sshmanager.get(host)
         prefix = conn.get_prefix()

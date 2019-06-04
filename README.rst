@@ -99,9 +99,9 @@ Tests can now run via:
     :alt: LGPLv2.1
     :target: https://raw.githubusercontent.com/labgrid-project/labgrid/master/LICENSE
 
-.. |build-status| image:: https://img.shields.io/travis/labgrid-project/labgrid/master.svg?style=flat
+.. |build-status| image:: https://img.shields.io/travis/com/labgrid-project/labgrid/master.svg?style=flat
     :alt: build status
-    :target: https://travis-ci.org/labgrid-project/labgrid
+    :target: https://travis-ci.com/labgrid-project/labgrid
 
 .. |coverage-status| image:: https://codecov.io/gh/labgrid-project/labgrid/branch/master/graph/badge.svg
     :alt: coverage status

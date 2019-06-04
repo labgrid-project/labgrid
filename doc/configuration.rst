@@ -889,6 +889,15 @@ OpenOCDDriver
 ~~~~~~~~~~~~~
 An OpenOCDDriver controls OpenOCD to bootstrap a target with a bootloader.
 
+Note that OpenOCD supports specifying USB paths since
+`a1b308ab <https://sourceforge.net/p/openocd/code/ci/a1b308ab/>`_ which is not
+part of a release yet.
+The OpenOCDDriver passes the resource's USB path.
+Depending on which OpenOCD version is installed it is either used correctly or
+a warning is displayed and the first resource seen is used, which might be the
+wrong USB device.
+Consider updating your OpenOCD version when using multiple USB Blasters.
+
 Binds to:
   interface:
     - `AlteraUSBBlaster`_

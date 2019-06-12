@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 import pytest
 
 from .. import Environment
@@ -29,10 +30,9 @@ def pytest_configure(config):
 
     if lg_env is None:
         if env_config is not None:
-            config.warn(
-                'LG-C1',
+            warnings.warn(pytest.PytestWarning(
                 "deprecated option --env-config (use --lg-env instead)",
-                __file__)
+                __file__))
             lg_env = env_config
 
     env = None

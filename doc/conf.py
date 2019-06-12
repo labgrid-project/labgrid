@@ -168,7 +168,9 @@ texinfo_documents = [
 # -- Options for autodoc --------------------------------------------------
 
 autodoc_member_order = 'bysource'
-autodoc_default_flags = ['special-members']
+autodoc_default_options = {
+        'special-members': True,
+}
 autodoc_mock_imports = ['onewire',
                         'txaio',
                         'autobahn',
@@ -190,10 +192,10 @@ for mod in autodoc_mock_imports:
     sys.modules[mod] = Mock()
 
 def run_apidoc(app):
-    from sphinx.apidoc import main
+    from sphinx.ext.apidoc import main
     module = os.path.abspath(os.path.join(app.srcdir, '..', 'labgrid'))
     output = os.path.abspath(os.path.join(app.srcdir, 'modules'))
-    cmd = ['sphinx-apidoc', module, '-M', '-H', 'Modules', '-o', output]
+    cmd = [module, '-a', '-M', '-H', 'Modules', '-o', output]
     main(cmd)
 
 def setup(app):

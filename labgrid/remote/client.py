@@ -285,6 +285,18 @@ class ClientSession(ApplicationSession):
                     result.add(name)
         return list(result)
 
+    def _check_allowed(self, place):
+        if not place.acquired:
+            raise UserError("place {} is not acquired".format(place.name))
+        if gethostname()+'/'+getuser() not in place.allowed:
+            host, user = place.acquired.split('/')
+            if user != getuser():
+                raise UserError("place {} is not acquired by your user, acquired by {}".format(
+                    place.name, user))
+            if host != gethostname():
+                raise UserError("place {} is not acquired on this computer, acquired on {}".format(
+                    place.name, host))
+
     def get_place(self, place=None):
         pattern = place or self.args.place
         if pattern is None:
@@ -310,16 +322,7 @@ class ClientSession(ApplicationSession):
 
     def get_acquired_place(self, place=None):
         place = self.get_place(place)
-        if not place.acquired:
-            raise UserError("place {} is not acquired".format(place.name))
-        if gethostname()+'/'+getuser() not in place.allowed:
-            host, user = place.acquired.split('/')
-            if user != getuser():
-                raise UserError("place {} is not acquired by your user, acquired by {}".format(
-                    place.name, user))
-            if host != gethostname():
-                raise UserError("place {} is not acquired on this computer, acquired on {}".format(
-                    place.name, host))
+        self._check_allowed(place)
         return place
 
     async def print_place(self):
@@ -558,14 +561,7 @@ class ClientSession(ApplicationSession):
             print("allowed {} for place {}".format(self.args.user, place.name))
 
     def get_target_resources(self, place):
-        if not place.acquired:
-            raise UserError("place {} is not acquired".format(place.name))
-        if gethostname()+'/'+getuser() not in place.allowed:
-            host, user = place.acquired.split('/')
-            if user != getuser():
-                raise UserError("place {} is not acquired by your user, acquired by {}".format(place.name, user))  # pylint: disable=line-too-long
-            if host != gethostname():
-                raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))  # pylint: disable=line-too-long
+        self._check_allowed(place)
         resources = {}
         for resource_path in place.acquired_resources:
             match = place.getmatch(resource_path)

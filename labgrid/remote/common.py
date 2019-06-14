@@ -112,6 +112,16 @@ class Place:
         del result['name']  # the name is the key in the places dict
         return result
 
+    def update(self, config):
+        fields = attr.fields_dict(type(self))
+        for k, v in config.items():
+            assert k in fields
+            if k == 'name':
+                # we cannot rename places
+                assert v == self.name
+                continue
+            setattr(self, k, v)
+
     def show(self, level=0):
         indent = '  ' * level
         print(indent + "aliases: {}".format(', '.join(self.aliases)))

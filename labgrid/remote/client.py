@@ -128,18 +128,20 @@ class ClientSession(ApplicationSession):
         config['matches'] = [ResourceMatch(**match) \
             for match in config['matches']]
         config = filter_dict(config, Place, warn=True)
-        place = Place(**config)
         if name not in self.places:
+            place = Place(**config)
+            self.places[name] = place
             if self.monitor:
                 print("Place {} created: {}".format(name, place))
         else:
+            place = self.places[name]
+            old = flat_dict(place.asdict())
+            place.update(config)
+            new = flat_dict(place.asdict())
             if self.monitor:
                 print("Place {} changed:".format(name))
-                for k, v_old, v_new in diff_dict(
-                        flat_dict(self.places[name].asdict()),
-                        flat_dict(place.asdict())):
+                for k, v_old, v_new in diff_dict(old, new):
                     print("  {}: {} -> {}".format(k, v_old, v_new))
-        self.places[name] = place
 
     async def do_monitor(self):
         self.monitor = True
@@ -285,6 +287,18 @@ class ClientSession(ApplicationSession):
                     result.add(name)
         return list(result)
 
+    def _check_allowed(self, place):
+        if not place.acquired:
+            raise UserError("place {} is not acquired".format(place.name))
+        if gethostname()+'/'+getuser() not in place.allowed:
+            host, user = place.acquired.split('/')
+            if user != getuser():
+                raise UserError("place {} is not acquired by your user, acquired by {}".format(
+                    place.name, user))
+            if host != gethostname():
+                raise UserError("place {} is not acquired on this computer, acquired on {}".format(
+                    place.name, host))
+
     def get_place(self, place=None):
         pattern = place or self.args.place
         if pattern is None:
@@ -310,16 +324,7 @@ class ClientSession(ApplicationSession):
 
     def get_acquired_place(self, place=None):
         place = self.get_place(place)
-        if not place.acquired:
-            raise UserError("place {} is not acquired".format(place.name))
-        if gethostname()+'/'+getuser() not in place.allowed:
-            host, user = place.acquired.split('/')
-            if user != getuser():
-                raise UserError("place {} is not acquired by your user, acquired by {}".format(
-                    place.name, user))
-            if host != gethostname():
-                raise UserError("place {} is not acquired on this computer, acquired on {}".format(
-                    place.name, host))
+        self._check_allowed(place)
         return place
 
     async def print_place(self):
@@ -558,14 +563,7 @@ class ClientSession(ApplicationSession):
             print("allowed {} for place {}".format(self.args.user, place.name))
 
     def get_target_resources(self, place):
-        if not place.acquired:
-            raise UserError("place {} is not acquired".format(place.name))
-        if gethostname()+'/'+getuser() not in place.allowed:
-            host, user = place.acquired.split('/')
-            if user != getuser():
-                raise UserError("place {} is not acquired by your user, acquired by {}".format(place.name, user))  # pylint: disable=line-too-long
-            if host != gethostname():
-                raise UserError("place {} is not acquired on this computer, acquired on {}".format(place.name, host))  # pylint: disable=line-too-long
+        self._check_allowed(place)
         resources = {}
         for resource_path in place.acquired_resources:
             match = place.getmatch(resource_path)
@@ -698,7 +696,7 @@ class ClientSession(ApplicationSession):
         elif action == 'low':
             drv.set(False)
 
-    def _console(self, place):
+    async def _console(self, place):
         name = self.args.name
         target = self._get_target(place)
         from ..resource import NetworkSerialPort
@@ -712,21 +710,40 @@ class ClientSession(ApplicationSession):
             'microcom', '-s', str(resource.speed), '-t',
             "{}:{}".format(host, port)
         ]
-        print("connecting to ", resource, "calling ", " ".join(call))
-        res = subprocess.call(call)
-        if res:
-            print("connection lost")
-        return res == 0
+        print("connecting to {} calling {}".format(resource, " ".join(call)))
+        p = await asyncio.create_subprocess_exec(*call)
+        while p.returncode is None:
+            try:
+                await asyncio.wait_for(p.wait(), 1.0)
+            except asyncio.TimeoutError:
+                # subprocess is still running
+                pass
 
-    def console(self):
+            try:
+                self._check_allowed(place)
+            except UserError:
+                p.terminate()
+                try:
+                    await asyncio.wait_for(p.wait(), 1.0)
+                except asyncio.TimeoutError:
+                    # try harder
+                    p.kill()
+                    await asyncio.wait_for(p.wait(), 1.0)
+                raise
+        if p.returncode:
+            print("connection lost")
+            return False
+        return True
+
+    async def console(self):
         place = self.get_acquired_place()
         while True:
-            res = self._console(place)
+            res = await self._console(place)
             if res:
                 break
             if not self.args.loop:
                 break
-            sleep(1.0)
+            await asyncio.sleep(1.0)
 
     def fastboot(self):
         place = self.get_acquired_place()
@@ -1342,10 +1359,13 @@ def main():
         try:
             session = start_session(args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"),
                                     extra)
-            if asyncio.iscoroutinefunction(args.func):
-                session.loop.run_until_complete(args.func(session))
-            else:
-                args.func(session)
+            try:
+                if asyncio.iscoroutinefunction(args.func):
+                    session.loop.run_until_complete(args.func(session))
+                else:
+                    args.func(session)
+            finally:
+                session.loop.close()
         except NoResourceFoundError as e:
             if args.debug:
                 traceback.print_exc()

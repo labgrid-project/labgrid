@@ -128,18 +128,20 @@ class ClientSession(ApplicationSession):
         config['matches'] = [ResourceMatch(**match) \
             for match in config['matches']]
         config = filter_dict(config, Place, warn=True)
-        place = Place(**config)
         if name not in self.places:
+            place = Place(**config)
+            self.places[name] = place
             if self.monitor:
                 print("Place {} created: {}".format(name, place))
         else:
+            place = self.places[name]
+            old = flat_dict(place.asdict())
+            place.update(config)
+            new = flat_dict(place.asdict())
             if self.monitor:
                 print("Place {} changed:".format(name))
-                for k, v_old, v_new in diff_dict(
-                        flat_dict(self.places[name].asdict()),
-                        flat_dict(place.asdict())):
+                for k, v_old, v_new in diff_dict(old, new):
                     print("  {}: {} -> {}".format(k, v_old, v_new))
-        self.places[name] = place
 
     async def do_monitor(self):
         self.monitor = True

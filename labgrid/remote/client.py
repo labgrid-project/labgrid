@@ -712,7 +712,7 @@ class ClientSession(ApplicationSession):
             'microcom', '-s', str(resource.speed), '-t',
             "{}:{}".format(host, port)
         ]
-        print("connecting to ", resource, "calling ", " ".join(call))
+        print("connecting to {} calling {}".format(resource, " ".join(call)))
         res = subprocess.call(call)
         if res:
             print("connection lost")

@@ -696,7 +696,7 @@ class ClientSession(ApplicationSession):
         elif action == 'low':
             drv.set(False)
 
-    def _console(self, place):
+    async def _console(self, place):
         name = self.args.name
         target = self._get_target(place)
         from ..resource import NetworkSerialPort
@@ -711,20 +711,39 @@ class ClientSession(ApplicationSession):
             "{}:{}".format(host, port)
         ]
         print("connecting to {} calling {}".format(resource, " ".join(call)))
-        res = subprocess.call(call)
-        if res:
-            print("connection lost")
-        return res == 0
+        p = await asyncio.create_subprocess_exec(*call)
+        while p.returncode is None:
+            try:
+                await asyncio.wait_for(p.wait(), 1.0)
+            except asyncio.TimeoutError:
+                # subprocess is still running
+                pass
 
-    def console(self):
+            try:
+                self._check_allowed(place)
+            except UserError:
+                p.terminate()
+                try:
+                    await asyncio.wait_for(p.wait(), 1.0)
+                except asyncio.TimeoutError:
+                    # try harder
+                    p.kill()
+                    await asyncio.wait_for(p.wait(), 1.0)
+                raise
+        if p.returncode:
+            print("connection lost")
+            return False
+        return True
+
+    async def console(self):
         place = self.get_acquired_place()
         while True:
-            res = self._console(place)
+            res = await self._console(place)
             if res:
                 break
             if not self.args.loop:
                 break
-            sleep(1.0)
+            await asyncio.sleep(1.0)
 
     def fastboot(self):
         place = self.get_acquired_place()

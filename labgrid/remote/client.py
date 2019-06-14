@@ -1342,10 +1342,13 @@ def main():
         try:
             session = start_session(args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"),
                                     extra)
-            if asyncio.iscoroutinefunction(args.func):
-                session.loop.run_until_complete(args.func(session))
-            else:
-                args.func(session)
+            try:
+                if asyncio.iscoroutinefunction(args.func):
+                    session.loop.run_until_complete(args.func(session))
+                else:
+                    args.func(session)
+            finally:
+                session.loop.close()
         except NoResourceFoundError as e:
             if args.debug:
                 traceback.print_exc()

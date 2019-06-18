@@ -118,10 +118,17 @@ class RKUSBDriver(Driver, BootstrapProtocol):
             mf = ManagedFile(usb_loader, self.loader)
             mf.sync_to_resource()
 
-        subprocess.check_call(
-            self.loader.command_prefix
-            + [self.tool, 'db', mf.get_remote_path()]
-        )
+        timeout = Timeout(3.0)
+        while True:
+            try:
+                subprocess.check_call(
+                    self.loader.command_prefix +
+                    [self.tool, 'db', mf.get_remote_path()]
+                )
+                break
+            except subprocess.CalledProcessError:
+                if timeout.expired:
+                    raise
 
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)

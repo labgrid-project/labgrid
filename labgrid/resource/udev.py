@@ -11,6 +11,7 @@ import pyudev
 from ..factory import target_factory
 from .common import ManagedResource, ResourceManager
 from .base import SerialPort, EthernetInterface
+from ..util import Timeout
 
 
 @attr.s(cmp=False)
@@ -37,8 +38,8 @@ class UdevManager(ResourceManager):
         self.queue.put(device)
 
     def poll(self):
-        deadline = time.monotonic() + 0.1
-        while time.monotonic() < deadline:
+        timeout = Timeout(0.1)
+        while not timeout.expired:
             try:
                 device = self.queue.get(False)
             except queue.Empty:

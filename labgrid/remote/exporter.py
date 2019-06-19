@@ -297,6 +297,7 @@ class USBDeditecRelaisExport(USBGenericExport):
 exports["AndroidFastboot"] = USBGenericExport
 exports["IMXUSBLoader"] = USBGenericExport
 exports["MXSUSBLoader"] = USBGenericExport
+exports["RKUSBLoader"] = USBGenericExport
 exports["AlteraUSBBlaster"] = USBGenericExport
 exports["SigrokUSBDevice"] = USBSigrokExport
 exports["USBSDMuxDevice"] = USBSDMuxExport

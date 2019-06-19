@@ -1,4 +1,5 @@
 # pylint: disable=no-member
+import enum
 import logging
 import subprocess
 import os
@@ -11,6 +12,11 @@ from ..step import step
 from ..util.managedfile import ManagedFile
 from .common import Driver
 from ..driver.exception import ExecutionError
+
+
+class Mode(enum.Enum):
+    DD = 1
+    BMAPTOOL = 2
 
 
 @target_factory.reg_driver
@@ -40,7 +46,7 @@ class NetworkUSBStorageDriver(Driver):
         pass
 
     @step(args=['filename'])
-    def write_image(self, filename=None):
+    def write_image(self, filename=None, mode=Mode.DD):
         if not self.storage.path:
             raise ExecutionError(
                 "{} is not available".format(self.storage_path)
@@ -51,12 +57,26 @@ class NetworkUSBStorageDriver(Driver):
         mf = ManagedFile(filename, self.storage)
         mf.sync_to_resource()
         self.logger.info("pwd: %s", os.getcwd())
-        args = [
-            "dd",
-            "if={}".format(mf.get_remote_path()),
-            "of={} status=progress bs=4M conv=fdatasync"
-            .format(self.storage.path)
-        ]
+
+        if mode == Mode.DD:
+            args = [
+                "dd",
+                "if={}".format(mf.get_remote_path()),
+                "of={}".format(self.storage.path),
+                "status=progress",
+                "bs=4M",
+                "conv=fdatasync"
+            ]
+        elif mode == Mode.BMAPTOOL:
+            args = [
+                "bmaptool",
+                "copy",
+                "{}".format(mf.get_remote_path()),
+                "{}".format(self.storage.path),
+            ]
+        else:
+            raise ValueError
+
         subprocess.check_call(
             self.storage.command_prefix + args
         )

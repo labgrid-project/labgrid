@@ -117,7 +117,7 @@ def test_place_add_no_name(crossbar):
 
 def test_place_del_no_name(crossbar):
     with pexpect.spawn('python -m labgrid.remote.client delete') as spawn:
-        spawn.expect("missing place name")
+        spawn.expect("deletes require an exact place name")
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus != 0

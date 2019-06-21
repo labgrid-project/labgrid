@@ -373,7 +373,14 @@ class ClientSession(ApplicationSession):
 
     async def del_place(self):
         """Delete a place from the coordinator"""
-        name = self.args.place
+        pattern = self.args.place
+        if pattern not in self.places:
+            raise UserError("deletes require an exact place name")
+        place = self.places[pattern]
+        if place.acquired:
+            raise UserError("place {} is not idle (acquired by {})".format(
+                place.name, place.acquired))
+        name = place.name
         if not name:
             raise UserError("missing place name. Set with -p <place> or via env var $PLACE")
         if name not in self.places:

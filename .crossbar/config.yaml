@@ -30,12 +30,6 @@ workers:
           caller: true
           publisher: true
         cache: true
-    store:
-      type: memory
-      event-history:
-      - uri: org.labgrid.
-        match: prefix
-        limit: 100
   transports:
   - type: web
     endpoint:

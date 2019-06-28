@@ -22,7 +22,6 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     Args:
         prompt (str): The default Barebox Prompt
-        startstring (str): string that indicates that Barebox is starting
         bootstring (str): string that indicates that the Kernel is booting
         password (str): optional, password to use for access to the shell
         login_timeout (int): optional, timeout for access to the shell
@@ -31,7 +30,6 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
     autoboot = attr.ib(default="stop autoboot", validator=attr.validators.instance_of(str))
     interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
-    startstring = attr.ib(default=r"[\n]barebox 20\d+", validator=attr.validators.instance_of(str))
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))

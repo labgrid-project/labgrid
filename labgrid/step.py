@@ -176,12 +176,14 @@ class Step:
         assert self._start_ts is not None
         assert self._stop_ts is None
         self._stop_ts = monotonic()
-        # TODO: report duration
         event = StepEvent(self, {'state': 'stop'})
         if self.exception:
             event['exception'] = self.exception
         else:
             event['result'] = self.result
+        duration = self.duration
+        if duration:
+            event['duration'] = duration
         self._notify(event)
         steps.pop(self)
 

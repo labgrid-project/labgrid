@@ -36,6 +36,10 @@ class StepReporter:
         self.__reset()
 
     def __merge_element(self, key, value):
+        if key == 'duration':
+            if value < 0.001:
+                return
+            value = '{:.3f}'.format(value)
         if self.elements and self.elements[-1][0] == key:
             self.elements.pop()
         if value is not None:

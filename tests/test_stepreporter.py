@@ -1,6 +1,7 @@
 import os
 import pexpect
 import pytest
+import time
 
 @pytest.fixture
 def power_env(tmpdir):
@@ -56,13 +57,17 @@ def test_step_reporter(power_env, pw_cycle_test, color_scheme, pytest_extra_para
         assert step_line.endswith("cycle state='start'")
 
         spawn.expect("main: CYCLE the target None and press enter")
+        time.sleep(0.01) # ensure that the step measures a duration
         spawn.sendline()
 
         # rough match
         spawn.expect("cycle.*?state.*?=.*?stop.*?\r\n")
         step_line = strip_color(spawn.after.decode("utf-8")).rstrip()
         # exact match
-        assert step_line.endswith("cycle state='stop'")
+        assert "state='stop'" in step_line.split()
+
+        # duration
+        assert "duration=" in step_line
 
         spawn.expect(pexpect.EOF)
         spawn.close()

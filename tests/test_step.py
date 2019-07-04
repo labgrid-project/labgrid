@@ -34,6 +34,7 @@ def step_sleep(*, step):
 def test_timing():
     step = step_sleep()
     assert step.duration == pytest.approx(0.25, abs=1e-2)
+    assert step.exception is None
 
 class A:
     @step()
@@ -113,12 +114,17 @@ def test_default_arg():
     assert step.args['default'] == 'real'
 
 @step()
-def step_error(default=None, *, step):
+def step_error(output, *, step):
+    output.append(step)
     raise ValueError('dummy')
 
 def test_error():
+    output = []
     with pytest.raises(ValueError, match=r'dummy'):
-        step = step_error()
+        step_error(output)
+    step = output[0]
+    assert step.exception is not None
+    assert isinstance(step.exception, ValueError)
 
 @step()
 def step_event_skip(*, step):

@@ -1,11 +1,13 @@
 from importlib import import_module
 import attr
 
+from ..exceptions import InvalidConfigError
 from ..factory import target_factory
 from ..resource import OneWirePIO
 from ..protocol import DigitalOutputProtocol
 from ..util.proxy import proxymanager
 from .common import Driver
+from .exception import ExecutionError
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
@@ -17,14 +19,16 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
         super().__attrs_post_init__()
         self._module = import_module('onewire')
         self._onewire = None
-        self._host = None
-        self._port = None
+        if "PIO" not in self.port.path:
+            raise InvalidConfigError(
+                    "Invalid OneWire path {} (needs to be in the form of ??.????????????/PIO.?)"
+                    .format(self.port.path))
 
     def on_activate(self):
         # we can only forward if the backend knows which port to use
-        self._host, self._port = proxymanager.get_host_and_port(self.port)
+        host, port = proxymanager.get_host_and_port(self.port)
         self._onewire = self._module.Onewire(
-            "{}:{}".format(self._host, self._port)
+            "{}:{}".format(host, port)
         )
 
     def on_deactivate(self):
@@ -41,7 +45,13 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
 
     @Driver.check_active
     def get(self):
-        status = self._onewire.get(self.port.path)
+        path = self.port.path.replace("PIO", "sensed")
+        status = self._onewire.get(path)
+        if status is None:
+            raise ExecutionError("Failed to get OneWire value for {}".format(path))
+        if status not in ['0', '1']:
+            raise ExecutionError("Invalid OneWire value ({})".format(repr(status)))
+        status = True if status == '1' else False
         if self.port.invert:
             status = not status
-        return status == '1'
+        return status

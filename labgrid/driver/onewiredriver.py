@@ -17,14 +17,12 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
         super().__attrs_post_init__()
         self._module = import_module('onewire')
         self._onewire = None
-        self._host = None
-        self._port = None
 
     def on_activate(self):
         # we can only forward if the backend knows which port to use
-        self._host, self._port = proxymanager.get_host_and_port(self.port)
+        host, port = proxymanager.get_host_and_port(self.port)
         self._onewire = self._module.Onewire(
-            "{}:{}".format(self._host, self._port)
+            "{}:{}".format(host, port)
         )
 
     def on_deactivate(self):
@@ -41,6 +39,7 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
 
     @Driver.check_active
     def get(self):
+
         status = self._onewire.get(self.port.path)
         if self.port.invert:
             status = not status

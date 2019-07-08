@@ -33,3 +33,14 @@ class EthernetPort(Resource):
         interface (str): name of the interface"""
     switch = attr.ib(default=None)
     interface = attr.ib(default=None)
+
+
+@target_factory.reg_resource
+@attr.s(cmp=False)
+class SysfsGPIO(Resource):
+    """The basic SysfsGPIO contains an index
+
+    Args:
+        index (int): index of target gpio line."""
+    index = attr.ib(default=None, validator=attr.validators.instance_of(int))
+

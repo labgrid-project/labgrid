@@ -1092,8 +1092,8 @@ GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
 The GpioDigitalOutputDriver writes a digital signal to a GPIO line.
 
-This driver uses the libgpiod python bindings.
-Make sure to have them installed.
+This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`.
+While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -1101,11 +1101,10 @@ Implements:
 .. code-block:: yaml
 
    GpioDigitalOutputDriver:
-     offset: 42
+     index: 42
 
 Arguments:
-  - chip (str): A GPIO device's path, name, label or number (default: "0")
-  - offset (int): The offset to a GPIO line
+  - index (int): The index of a GPIO line
 
 SerialPortDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

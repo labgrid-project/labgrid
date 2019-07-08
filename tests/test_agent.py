@@ -102,8 +102,13 @@ def test_all_modules():
     methods = aw.list()
     assert 'deditec_relais8.set' in methods
     assert 'deditec_relais8.get' in methods
+    aw.load('sysfsgpio')
+    methods = aw.list()
+    assert 'sysfsgpio.set' in methods
+    assert 'sysfsgpio.get' in methods
+
 
 def test_import_modules():
     import labgrid.util.agents
     import labgrid.util.agents.dummy
-    import labgrid.util.agents.deditec_relais8
+    from labgrid.util.agents import deditec_relais8, sysfsgpio

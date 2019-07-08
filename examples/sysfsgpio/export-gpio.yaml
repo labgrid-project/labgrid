@@ -1,0 +1,3 @@
+desk:
+    GpioDigitalOutputDriver:
+        index: 60

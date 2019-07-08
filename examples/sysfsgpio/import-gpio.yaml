@@ -1,0 +1,9 @@
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: gpio
+    drivers:
+      GpioDigitalOutputDriver: {}
+options:
+  crossbar_url: 'ws://labgrid:20408/ws'

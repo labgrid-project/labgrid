@@ -3,49 +3,44 @@ import attr
 
 from ..factory import target_factory
 from ..protocol import DigitalOutputProtocol
+from ..resource.base import SysfsGPIO
+from ..resource.remote import NetworkSysfsGPIO
 from ..step import step
 from .common import Driver
+from ..util.agentwrapper import AgentWrapper
 
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
 class GpioDigitalOutputDriver(Driver, DigitalOutputProtocol):
-    """
-    Controls the state of a GPIO using libgpiod.
 
-    Takes a string property 'chip' which refers to the GPIO device.
-    You can use its path, name, label or number (default: 0).
-    The offset to the GPIO line is set by the integer property 'offset'.
-    """
-
-    bindings = {}
-    offset = attr.ib(validator=attr.validators.instance_of(int))
-    chip = attr.ib(default="0", validator=attr.validators.instance_of(str))
-    gpio_chip = None
-    gpio_state = True
+    bindings = {
+        "gpio": {SysfsGPIO, NetworkSysfsGPIO},
+    }
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.wrapper = None
 
     def on_activate(self):
-        import gpiod
-        self.gpio_chip = gpiod.Chip(self.chip)
-        gpio_line = self.gpio_chip.get_line(self.offset)
-        gpio_line.request("labgrid", gpiod.LINE_REQ_DIR_OUT)
+        if isinstance(self.gpio, NetworkSysfsGPIO):
+            host = self.gpio.host
+        else:
+            host = None
+        self.wrapper = AgentWrapper(host)
+        self.proxy = self.wrapper.load('sysfsgpio')
 
     def on_deactivate(self):
-        gpio_line = self.gpio_chip.get_line(self.offset)
-        gpio_line.release()
-        self.gpio_chip.close()
+        self.wrapper.close()
+        self.wrapper = None
+        self.proxy = None
 
     @Driver.check_active
-    @step()
-    def get(self):
-        return self.gpio_state
-
-    @Driver.check_active
-    @step()
+    @step(args=['status'])
     def set(self, status):
-        gpio_line = self.gpio_chip.get_line(self.offset)
-        gpio_line.set_value(int(status))
-        self.gpio_state = status
+        self.proxy.set(self.gpio.index, status)
+
+    @Driver.check_active
+    @step(result=True)
+    def get(self):
+        return self.proxy.get(self.gpio.index)

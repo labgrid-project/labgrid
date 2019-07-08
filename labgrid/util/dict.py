@@ -1,6 +1,10 @@
+"""
+This module contains helper functions for working with dictionaries.
+"""
 import warnings
 
 import attr
+
 
 def diff_dict(old, new):
     """
@@ -14,6 +18,7 @@ def diff_dict(old, new):
         if v_old != v_new:
             yield key, v_old, v_new
 
+
 def flat_dict(d):
     def flatten(d, prefix=()):
         for key, value in d.items():
@@ -23,6 +28,7 @@ def flat_dict(d):
             else:
                 yield '.'.join(key), value
     return dict(flatten(d))
+
 
 def filter_dict(d, cls, warn=False):
     """

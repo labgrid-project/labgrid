@@ -1,16 +1,26 @@
+"""
+This module contains the custom YAML load and dump functions and associated
+loader and dumper
+"""
 from collections import OrderedDict, UserString
 from string import Template
 
 import yaml
 
+
 def _dict_constructor(loader, node):
     return OrderedDict(loader.construct_pairs(node))
+
+
 yaml.SafeLoader.add_constructor(
     yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _dict_constructor
 )
 
+
 def _dict_representer(dumper, data):
     return dumper.represent_dict(data.items())
+
+
 yaml.SafeDumper.add_representer(OrderedDict, _dict_representer)
 
 
@@ -22,6 +32,8 @@ def _str_constructor(loader, node):
     obj.start_mark = node.start_mark
     obj.end_mark = node.end_mark
     return obj
+
+
 yaml.SafeLoader.add_constructor(
     yaml.resolver.BaseResolver.DEFAULT_SCALAR_TAG, _str_constructor
 )
@@ -29,20 +41,31 @@ yaml.SafeLoader.add_constructor(
 
 def _template_constructor(loader, node):
     return Template(loader.construct_scalar(node))
+
+
 yaml.SafeLoader.add_constructor(
     '!template', _template_constructor
 )
 
 
 # use SafeLoader
-loader = yaml.SafeLoader
-dumper = yaml.SafeDumper
+Loader = yaml.SafeLoader
+Dumper = yaml.SafeDumper
+
 
 def load(stream):
-    return yaml.load(stream, Loader=loader)
+    """
+    Wrapper for yaml load function with custom loader.
+    """
+    return yaml.load(stream, Loader=Loader)
+
 
 def dump(data, stream=None):
-    return yaml.dump(data, stream, Dumper=dumper, default_flow_style=False)
+    """
+    Wrapper for yaml dump function with custom dumper.
+    """
+    return yaml.dump(data, stream, Dumper=Dumper, default_flow_style=False)
+
 
 def resolve_templates(data, mapping):
     """
@@ -53,14 +76,14 @@ def resolve_templates(data, mapping):
         items = enumerate(data)
     elif isinstance(data, dict):
         items = data.items()
-    for k, v in items:
-        if isinstance(v, Template):
+    for k, val in items:
+        if isinstance(val, Template):
             try:
-                data[k] = v.substitute(mapping)
-            except ValueError as e:
+                data[k] = val.substitute(mapping)
+            except ValueError as error:
                 raise ValueError(
-                    "Invalid template string '{}'".format(v.template)
-                ) from e
+                    "Invalid template string '{}'".format(val.template)
+                ) from error
 
-        elif isinstance(v, (list, dict)):
-            resolve_templates(v, mapping)
+        elif isinstance(val, (list, dict)):
+            resolve_templates(val, mapping)

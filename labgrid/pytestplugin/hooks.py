@@ -9,6 +9,8 @@ from .reporter import StepReporter, ColoredStepReporter
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
+    config.addinivalue_line("markers",
+                            "lg_feature: marker for labgrid feature flags")
     terminalreporter = config.pluginmanager.getplugin('terminalreporter')
     capturemanager = config.pluginmanager.getplugin('capturemanager')
     rewrite = True

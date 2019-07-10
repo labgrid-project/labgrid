@@ -13,7 +13,7 @@ def pytest_configure(config):
     capturemanager = config.pluginmanager.getplugin('capturemanager')
     rewrite = True
     lg_log = config.option.lg_log
-    if capturemanager._method == "no":
+    if not capturemanager.is_globally_capturing():
         rewrite = False  # other output would interfere with our rewrites
     if terminalreporter.verbosity > 1:  # enable with -vv
         if config.option.lg_colored_steps:

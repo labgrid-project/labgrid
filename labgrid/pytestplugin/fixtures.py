@@ -53,8 +53,8 @@ def env(request):
     if not env:
         pytest.skip("missing environment config (use --lg-env)")
 
-    if pytest.config.pluginmanager.hasplugin('junitxml'):
-        my_junit = getattr(pytest.config, '_xml', None)
+    if request.config.pluginmanager.hasplugin('junitxml'):
+        my_junit = getattr(request.config, '_xml', None)
 
         if my_junit:
             my_junit.add_global_property('ENV_CONFIG', env.config_file)

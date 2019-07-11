@@ -8,6 +8,7 @@ from ..protocol import DigitalOutputProtocol
 from ..util.proxy import proxymanager
 from .common import Driver
 from .exception import ExecutionError
+from ..step import step
 
 @target_factory.reg_driver
 @attr.s(cmp=False)
@@ -35,6 +36,7 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
         self._onewire = None
 
     @Driver.check_active
+    @step(args=['status'])
     def set(self, status):
         if self.port.invert:
             status = not status
@@ -44,6 +46,7 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
             self._onewire.set(self.port.path, '0')
 
     @Driver.check_active
+    @step(result=['True'])
     def get(self):
         path = self.port.path.replace("PIO", "sensed")
         status = self._onewire.get(path)

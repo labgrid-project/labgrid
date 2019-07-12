@@ -255,4 +255,7 @@ def test_transition_error(target):
     with pytest.raises(Exception):
         strategy.transition('B')
 
+    with pytest.raises(Exception):
+        strategy.transition('B', via='B')
+
     assert strategy.path == []

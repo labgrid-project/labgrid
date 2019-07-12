@@ -103,6 +103,10 @@ class GraphStrategy(Strategy):
 
     @step(args=['state'])
     def transition(self, state, via=None):
+        if not isinstance(via, (type(None), list)):
+            raise GraphStrategyRuntimeError(
+                "'via' has to be a list or None"
+                )
         # for use with labgrid-client -s, if only state is set, try to extract
         # the via states
         if ':' in state and via is None:

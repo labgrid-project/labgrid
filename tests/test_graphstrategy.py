@@ -247,6 +247,10 @@ def test_transition_error(target):
         def state_B(self):
             raise Exception
 
+        @GraphStrategy.depends('A')
+        def state_C(self):
+            pass
+
     strategy = TestStrategy(target, 'strategy')
 
     strategy.transition('A')
@@ -256,3 +260,29 @@ def test_transition_error(target):
         strategy.transition('B')
 
     assert strategy.path == []
+
+@pytest.mark.dependency(depends=['api-works', 'test_transition'])
+def test_transition_via_string(target):
+    from labgrid.strategy import GraphStrategy
+
+    class TestStrategy(GraphStrategy):
+        def state_Root(self):
+            pass
+
+        @GraphStrategy.depends('Root')
+        def state_A(self):
+            pass
+
+        @GraphStrategy.depends('A')
+        def state_B(self):
+            raise Exception
+
+        @GraphStrategy.depends('A')
+        def state_C(self):
+            pass
+
+    strategy = TestStrategy(target, 'strategy')
+
+    strategy.transition('C', via='Root')
+
+    assert strategy.path == ['Root', 'A', 'C']

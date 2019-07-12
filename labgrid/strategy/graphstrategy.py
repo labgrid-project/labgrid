@@ -103,6 +103,8 @@ class GraphStrategy(Strategy):
 
     @step(args=['state'])
     def transition(self, state, via=None):
+        if isinstance(via, str):
+            via = [via]
         # for use with labgrid-client -s, if only state is set, try to extract
         # the via states
         if ':' in state and via is None:

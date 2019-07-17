@@ -95,17 +95,18 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     @Driver.check_active
     @step(args=['cmd'], result=True)
-    def run(self, cmd, timeout=None): # pylint: disable=unused-argument
+    def run(self, cmd, timeout=30):
         """
         Runs the specified command on the shell and returns the output.
 
         Args:
             cmd (str): command to run on the shell
+            timeout (int): optional, how long to wait for completion
 
         Returns:
             Tuple[List[str],List[str], int]: if successful, None otherwise
         """
-        return self._run(cmd)
+        return self._run(cmd, timeout)
 
     def get_status(self):
         """Retrieve status of the UBootDriver.

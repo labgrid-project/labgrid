@@ -8,6 +8,7 @@ from ..resource.udev import AndroidFastboot
 from ..step import step
 from .common import Driver
 from ..util.managedfile import ManagedFile
+from ..util.helper import processwrapper
 
 
 @target_factory.reg_driver
@@ -57,7 +58,7 @@ class AndroidFastbootDriver(Driver):
     @Driver.check_active
     @step(title='call', args=['args'])
     def __call__(self, *args):
-        subprocess.check_call(self._get_fastboot_prefix() + list(args))
+        processwrapper.check_output(self._get_fastboot_prefix() + list(args))
 
     @Driver.check_active
     @step(args=['filename'])
@@ -91,9 +92,10 @@ class AndroidFastbootDriver(Driver):
             raise NotImplementedError('Retrieving a list of all variables is not supported yet')
 
         cmd = ['getvar', var]
-        proc = subprocess.run(self._get_fastboot_prefix() + cmd, stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT, check=True, universal_newlines=True)
-        values = AndroidFastbootDriver._filter_fastboot_output(proc.stdout, '{}: '.format(var))
+        output = processwrapper.check_output(self._get_fastboot_prefix() + cmd)
+        values = AndroidFastbootDriver._filter_fastboot_output(
+            output, '{}: '.format(var)
+        )
         assert len(values) == 1, 'fastboot did not return exactly one line'
         return values[0]
 
@@ -102,8 +104,7 @@ class AndroidFastbootDriver(Driver):
     def oem_getenv(self, var):
         """Return barebox environment variable value via 'fastboot oem getenv <var>'."""
         cmd = ['oem', 'getenv', var]
-        proc = subprocess.run(self._get_fastboot_prefix() + cmd, stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT, check=True, universal_newlines=True)
-        values = AndroidFastbootDriver._filter_fastboot_output(proc.stdout)
+        output = processwrapper.check_output(self._get_fastboot_prefix() + cmd)
+        values = AndroidFastbootDriver._filter_fastboot_output(output)
         assert len(values) == 1, 'fastboot did not return exactly one line'
         return values[0]

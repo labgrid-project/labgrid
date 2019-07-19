@@ -10,6 +10,7 @@ from ..step import step
 from ..protocol import BootstrapProtocol
 from .common import Driver, check_file
 from ..util.managedfile import ManagedFile
+from ..util.helper import processwrapper
 
 
 @target_factory.reg_driver
@@ -50,7 +51,7 @@ class FlashromDriver(Driver, BootstrapProtocol):
         arg_list.append('-p')
         arg_list.append('{}'.format(self.flashrom_resource.programmer))
         self.logger.debug('Call: {} with args: {}'.format(self.tool, arg_list))
-        subprocess.check_call(self._get_flashrom_prefix() + arg_list)
+        processwrapper.check_output(self._get_flashrom_prefix() + arg_list)
 
     @Driver.check_active
     @step(args=['filename'])

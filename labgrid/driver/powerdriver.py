@@ -13,6 +13,7 @@ from ..resource.remote import NetworkUSBPowerPort
 from ..resource.udev import USBPowerPort
 from ..step import step
 from ..util.proxy import proxymanager
+from ..util.helper import processwrapper
 from .common import Driver
 from .exception import ExecutionError
 
@@ -76,20 +77,20 @@ class ExternalPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     @step()
     def on(self):
         cmd = shlex.split(self.cmd_on)
-        subprocess.check_call(cmd)
+        processwrapper.check_output(cmd)
 
     @Driver.check_active
     @step()
     def off(self):
         cmd = shlex.split(self.cmd_off)
-        subprocess.check_call(cmd)
+        processwrapper.check_output(cmd)
 
     @Driver.check_active
     @step()
     def cycle(self):
         if self.cmd_cycle is not None:
             cmd = shlex.split(self.cmd_cycle)
-            subprocess.check_call(cmd)
+            processwrapper.check_output(cmd)
         else:
             self.off()
             time.sleep(self.delay)
@@ -239,7 +240,7 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             "-r", "100", # use 100 retries for now
             "-a", cmd,
         ]
-        subprocess.check_call(cmd)
+        processwrapper.check_output(cmd)
 
     @Driver.check_active
     @step()
@@ -265,7 +266,7 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             "-l", self.hub.path,
             "-p", str(self.hub.index),
         ]
-        output = subprocess.check_output(cmd)
+        output = processwrapper.check_output(cmd)
         for line in output.splitlines():
             if not line or not line.startswith(b' '):
                 continue

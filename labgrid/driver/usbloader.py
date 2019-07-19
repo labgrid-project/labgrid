@@ -11,6 +11,7 @@ from ..step import step
 from .common import Driver
 from ..util.managedfile import ManagedFile
 from ..util.timeout import Timeout
+from ..util.helper import processwrapper
 
 
 @target_factory.reg_driver
@@ -44,7 +45,7 @@ class MXSUSBDriver(Driver, BootstrapProtocol):
         mf = ManagedFile(filename, self.loader)
         mf.sync_to_resource()
 
-        subprocess.check_call(
+        processwrapper.check_output(
             self.loader.command_prefix + [self.tool, "0", mf.get_remote_path()]
         )
 
@@ -80,7 +81,7 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
         mf = ManagedFile(filename, self.loader)
         mf.sync_to_resource()
 
-        subprocess.check_call(
+        processwrapper.check_output(
             self.loader.command_prefix +
             [self.tool, "-p", str(self.loader.path), "-c", mf.get_remote_path()]
         )
@@ -121,7 +122,7 @@ class RKUSBDriver(Driver, BootstrapProtocol):
         timeout = Timeout(3.0)
         while True:
             try:
-                subprocess.check_call(
+                processwrapper.check_output(
                     self.loader.command_prefix +
                     [self.tool, 'db', mf.get_remote_path()]
                 )
@@ -138,7 +139,7 @@ class RKUSBDriver(Driver, BootstrapProtocol):
         timeout = Timeout(3.0)
         while True:
             try:
-                subprocess.check_call(
+                processwrapper.check_output(
                     self.loader.command_prefix +
                     [self.tool, 'wl', '0x40', mf.get_remote_path()]
                 )

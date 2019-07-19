@@ -6,6 +6,7 @@ import pytest
 from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
 from .reporter import StepReporter, ColoredStepReporter
+from ..util.helper import processwrapper
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
@@ -45,6 +46,8 @@ def pytest_configure(config):
         if lg_coordinator is not None:
             env.config.set_option('crossbar_url', lg_coordinator)
     config._labgrid_env = env
+
+    processwrapper.enable_logging()
 
 @pytest.hookimpl()
 def pytest_collection_modifyitems(config, items):

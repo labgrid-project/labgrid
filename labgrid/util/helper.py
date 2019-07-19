@@ -89,5 +89,20 @@ class ProcessWrapper:
         assert callback in self.callbacks
         self.callbacks.remove(callback)
 
+    def enable_logging(self):
+        """Enables process output to the logging interface.
+        Loglevel is logging.INFO."""
+        def log_callback(message):
+            import logging
+            logger = logging.getLogger("Process")
+            logger.info(message.decode(encoding="utf-8", errors="replace"))
+        self.register(log_callback)
+
+    def enable_print(self):
+        """Enables process output to print."""
+        def print_callback(message):
+            print(message.decode(encoding="utf-8", errors="replace"))
+        self.register(print_callback)
+
 
 processwrapper = ProcessWrapper()

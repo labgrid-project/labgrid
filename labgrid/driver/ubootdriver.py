@@ -106,7 +106,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Returns:
             Tuple[List[str],List[str], int]: if successful, None otherwise
         """
-        return self._run(cmd, timeout)
+        return self._run(cmd, timeout=timeout)
 
     def get_status(self):
         """Retrieve status of the UBootDriver.

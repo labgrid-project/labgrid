@@ -1088,6 +1088,24 @@ Implements:
 Arguments:
   - delay (float): optional delay in seconds between off and on
 
+GpioDigitalOutputDriver
+~~~~~~~~~~~~~~~~~~~~~~~
+The GpioDigitalOutputDriver writes a digital signal to a GPIO line.
+
+This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`.
+While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   GpioDigitalOutputDriver:
+     index: 42
+
+Arguments:
+  - index (int): The index of a GPIO line
+
 SerialPortDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The SerialPortDigitalOutputDriver makes it possible to use a UART

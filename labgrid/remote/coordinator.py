@@ -302,16 +302,26 @@ class CoordinatorComponent(ApplicationSession):
             # only add if there is no conflict
             if len(places) != 1:
                 return
-            place.acquired_resources.append(resource)
+            place = places[0]
+            await self.acquire_resources(place, [resource])
             self._publish_place(place)
         else:
             for place in places:
-                place.acquired_resources.remove(resource)
-            self._publish_place(place)
+                await self.release_resources(place, [resource])
+                self._publish_place(place)
 
     def _publish_place(self, place):
         self.publish(
             'org.labgrid.coordinator.place_changed', place.name, place.asdict()
+        )
+
+    def _publish_resource(self, resource):
+        self.publish(
+            'org.labgrid.coordinator.resource_changed',
+            resource.path[0], # exporter name
+            resource.path[1], # group name
+            resource.path[3], # resource name
+            resource.asdict(),
         )
 
     async def on_session_join(self, session_details):
@@ -463,6 +473,57 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    async def acquire_resources(self, place, resources):
+        resources = resources.copy() # we may modify the list
+        # all resources need to be free
+        for resource in resources:
+            if resource.acquired:
+                return False
+
+        # acquire resources
+        acquired = []
+        try:
+            for resource in resources:
+                acquired.append(resource)
+                # this triggers an update from the exporter which is published
+                # to the clients
+                await self.call('org.labgrid.exporter.{}.acquire'.format(resource.path[0]),
+                        resource.path[1], resource.path[3])
+        except:
+            # cleanup
+            await self.release_resources(place, acquired)
+            return False
+
+        for resource in resources:
+            resource.acquired = place
+            place.acquired_resources.append(resource)
+
+        return True
+
+    async def release_resources(self, place, resources):
+        resources = resources.copy() # we may modify the list
+
+        for resource in resources:
+            resource.acquired = None
+            try:
+                place.acquired_resources.remove(resource)
+            except ValueError:
+                pass
+
+        for resource in resources:
+            try:
+                # this triggers an update from the exporter which is published
+                # to the clients
+                await self.call('org.labgrid.exporter.{}.release'.format(resource.path[0]),
+                        resource.path[1], resource.path[3])
+            except:
+                print("failed to release {}".format(resource))
+                # at leaset try to notify the clients
+                try:
+                    self._publish_resource(resource)
+                except:
+                    pass
+
     async def acquire_place(self, name, details=None):
         print(details)
         try:
@@ -482,7 +543,11 @@ class CoordinatorComponent(ApplicationSession):
                 for _, resource in sorted(group.items()):
                     if not place.hasmatch(resource.path):
                         continue
-                    place.acquired_resources.append(resource)
+                    resources.append(resource)
+        if not await self.acquire_resources(place, resources):
+            # revert earlier change
+            place.acquired = None
+            return False
         place.touch()
         self._publish_place(place)
         self.save_later()
@@ -496,8 +561,10 @@ class CoordinatorComponent(ApplicationSession):
             return False
         if not place.acquired:
             return False
+
+        await self.release_resources(place, place.acquired_resources)
+
         place.acquired = None
-        place.acquired_resources = []
         place.allowed = set()
         place.touch()
         self._publish_place(place)

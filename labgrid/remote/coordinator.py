@@ -79,7 +79,7 @@ class ExporterSession(RemoteSession):
         return None, resource_path
 
     def get_resources(self):
-        """Method invoked by the exporter, get a resource from the coordinator"""
+        """Method invoked by the client, get the resources from the coordinator"""
         result = {}
         for groupname, group in self.groups.items():
             result_group = result[groupname] = {}

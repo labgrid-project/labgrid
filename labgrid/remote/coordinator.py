@@ -91,7 +91,7 @@ class ExporterSession(RemoteSession):
 
 @attr.s(cmp=False)
 class ClientSession(RemoteSession):
-    acquired = attr.ib(default=attr.Factory(list), init=False)
+    pass
 
 
 class CoordinatorComponent(ApplicationSession):

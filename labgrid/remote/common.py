@@ -113,9 +113,24 @@ class Place:
     changed = attr.ib(default=attr.Factory(time.time))
 
     def asdict(self):
-        result = attr.asdict(self)
-        del result['name']  # the name is the key in the places dict
-        return result
+        # in the coordinator, we have resource objects, otherwise just a path
+        acquired_resources = []
+        for resource in self.acquired_resources:  # pylint: disable=not-an-iterable
+            if isinstance(resource, (tuple, list)):
+                acquired_resources.append(resource)
+            else:
+                acquired_resources.append(resource.path)
+
+        return {
+            'aliases': list(self.aliases),
+            'comment': self.comment,
+            'matches': [attr.asdict(x) for x in self.matches],
+            'acquired': self.acquired,
+            'acquired_resources': acquired_resources,
+            'allowed': list(self.allowed),
+            'created': self.created,
+            'changed': self.changed,
+        }
 
     def update(self, config):
         fields = attr.fields_dict(type(self))
@@ -136,7 +151,12 @@ class Place:
             print(indent + "  {}".format(match))
         print(indent + "acquired: {}".format(self.acquired))
         print(indent + "acquired resources:")
-        for resource_path in self.acquired_resources:  # pylint: disable=not-an-iterable
+        # in the coordinator, we have resource objects, otherwise just a path
+        for resource in self.acquired_resources:  # pylint: disable=not-an-iterable
+            if isinstance(resource, (tuple, list)):
+                resource_path = resource
+            else:
+                resource_path = resource.path
             match = self.getmatch(resource_path)
             if match.rename:
                 print(indent + "  {} → {}".format(

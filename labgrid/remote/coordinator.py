@@ -302,11 +302,11 @@ class CoordinatorComponent(ApplicationSession):
             # only add if there is no conflict
             if len(places) != 1:
                 return
-            place.acquired_resources.append(resource.path)
+            place.acquired_resources.append(resource)
             self._publish_place(place)
         else:
             for place in places:
-                place.acquired_resources.remove(resource.path)
+                place.acquired_resources.remove(resource)
             self._publish_place(place)
 
     def _publish_place(self, place):
@@ -482,7 +482,7 @@ class CoordinatorComponent(ApplicationSession):
                 for _, resource in sorted(group.items()):
                     if not place.hasmatch(resource.path):
                         continue
-                    place.acquired_resources.append(resource.path)
+                    place.acquired_resources.append(resource)
         place.touch()
         self._publish_place(place)
         self.save_later()

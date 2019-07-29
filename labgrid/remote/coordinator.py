@@ -272,14 +272,26 @@ class CoordinatorComponent(ApplicationSession):
         """Update acquired places when resources are added or removed."""
         if action not in [Action.ADD, Action.DEL]:
             return  # currently nothing needed for Action.UPD
+
+        # collect affected places
+        places = []
         for placename, place in self.places.items():
             if not place.acquired:
                 continue
             if not place.hasmatch(resource_path):
                 continue
-            if action is Action.ADD:
-                place.acquired_resources.append(resource_path)
-            else:
+            places.append(place)
+
+        if action is Action.ADD:
+            # only add if there is no conflict
+            if len(places) != 1:
+                return
+            place.acquired_resources.append(resource_path)
+            self.publish(
+                'org.labgrid.coordinator.place_changed', placename, place.asdict()
+            )
+        else:
+            for place in places:
                 place.acquired_resources.remove(resource_path)
             self.publish(
                 'org.labgrid.coordinator.place_changed', placename, place.asdict()

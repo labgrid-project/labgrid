@@ -47,6 +47,11 @@ class ResourceEntry:
             'avail': self.avail,
         }
 
+    def update(self, data):
+        data = data.copy()
+        data.setdefault('avail', False)
+        self.data = data
+
 
 @attr.s(cmp=True, repr=False, str=False)
 # This class requires cmp=True, since we put the matches into a list and require

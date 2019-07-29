@@ -48,36 +48,38 @@ class ExporterSession(RemoteSession):
     coordinator, allowing the Exporter to get and set resources"""
     groups = attr.ib(default=attr.Factory(dict), init=False)
 
-    def set_resource(self, groupname, resourcename, resource):
+    def set_resource(self, groupname, resourcename, resourcedata):
         group = self.groups.setdefault(groupname, {})
         old = group.get(resourcename)
-        if resource:
-            new = group[resourcename] = ResourceEntry(resource)
-            cls = new.cls
-        elif old:
+        if resourcedata and old:
+            old.update(resourcedata)
+            new = old
+        elif resourcedata and not old:
+            new = group[resourcename] = ResourceImport(
+                    resourcedata,
+                    path=(self.name, groupname, resourcedata['cls'], resourcename),
+                    )
+        elif not resourcedata and old:
             new = None
-            cls = old.cls
             del group[resourcename]
         else:
+            assert not resourcedata and not old
             new = None
-            cls = None
 
         self.coordinator.publish(
             'org.labgrid.coordinator.resource_changed', self.name,
             groupname, resourcename, new.asdict() if new else {}
         )
 
-        resource_path = (self.name, groupname, cls, resourcename)
-
         if old and new:
-            assert old.cls == new.cls
-            return Action.UPD, resource_path
-        if old:
-            return Action.DEL, resource_path
-        if new:
-            return Action.ADD, resource_path
+            assert old is new
+            return Action.UPD, new
+        elif old and not new:
+            return Action.DEL, old
+        elif not old and new:
+            return Action.ADD, new
 
-        return None, resource_path
+        assert not old and not new
 
     def get_resources(self):
         """Method invoked by the client, get the resources from the coordinator"""
@@ -92,6 +94,15 @@ class ExporterSession(RemoteSession):
 @attr.s(cmp=False)
 class ClientSession(RemoteSession):
     pass
+
+
+@attr.s(cmp=False)
+class ResourceImport(ResourceEntry):
+    """Represents a local resource exported from an exporter.
+
+    The ResourceEntry attributes contain the information for the client.
+    """
+    path = attr.ib(kw_only=True, validator=attr.validators.instance_of(tuple))
 
 
 class CoordinatorComponent(ApplicationSession):
@@ -273,7 +284,7 @@ class CoordinatorComponent(ApplicationSession):
         place.matches.append(ResourceMatch(exporter="*", group=name, cls="*"))
         self.places[name] = place
 
-    async def _update_acquired_places(self, action, resource_path):
+    async def _update_acquired_places(self, action, resource):
         """Update acquired places when resources are added or removed."""
         if action not in [Action.ADD, Action.DEL]:
             return  # currently nothing needed for Action.UPD
@@ -283,7 +294,7 @@ class CoordinatorComponent(ApplicationSession):
         for placename, place in self.places.items():
             if not place.acquired:
                 continue
-            if not place.hasmatch(resource_path):
+            if not place.hasmatch(resource.path):
                 continue
             places.append(place)
 
@@ -291,11 +302,11 @@ class CoordinatorComponent(ApplicationSession):
             # only add if there is no conflict
             if len(places) != 1:
                 return
-            place.acquired_resources.append(resource_path)
+            place.acquired_resources.append(resource.path)
             self._publish_place(place)
         else:
             for place in places:
-                place.acquired_resources.remove(resource_path)
+                place.acquired_resources.remove(resource.path)
             self._publish_place(place)
 
     def _publish_place(self, place):
@@ -325,8 +336,8 @@ class CoordinatorComponent(ApplicationSession):
         if isinstance(session, ExporterSession):
             for groupname, group in session.groups.items():
                 for resourcename in group.copy():
-                    action, resource_path = session.set_resource(groupname, resourcename, {})
-                    await self._update_acquired_places(action, resource_path)  # pylint: disable=not-an-iterable
+                    action, resource = session.set_resource(groupname, resourcename, {})
+                    await self._update_acquired_places(action, resource)  # pylint: disable=not-an-iterable
         self.save_later()
 
     async def attach(self, name, details=None):
@@ -336,7 +347,8 @@ class CoordinatorComponent(ApplicationSession):
         session_details['name'] = name
         self.exporters[name] = defaultdict(dict)
 
-    async def set_resource(self, groupname, resourcename, resource, details=None):
+    async def set_resource(self, groupname, resourcename, resourcedata, details=None):
+        """Called by exporter to create/update/remove resources."""
         session = self.sessions.get(details.caller)
         if session is None:
             return
@@ -346,11 +358,11 @@ class CoordinatorComponent(ApplicationSession):
         resourcename = str(resourcename)
         # TODO check if acquired
         print(details)
-        pprint(resource)
-        action, resource_path = session.set_resource(groupname, resourcename, resource)
+        pprint(resourcedata)
+        action, resource = session.set_resource(groupname, resourcename, resourcedata)
         if action is Action.ADD:
             self._add_default_place(groupname)
-        await self._update_acquired_places(action, resource_path)  # pylint: disable=not-an-iterable
+        await self._update_acquired_places(action, resource)  # pylint: disable=not-an-iterable
         self.save_later()
 
     def _get_resources(self):
@@ -462,13 +474,15 @@ class CoordinatorComponent(ApplicationSession):
         # FIXME use the session object instead? or something else which
         # survives disconnecting clients?
         place.acquired = self.sessions[details.caller].name
-        for exporter, groups in self._get_resources().items():
-            for group_name, group in sorted(groups.items()):
-                for resource_name, resource in sorted(group.items()):
-                    resource_path = (exporter, group_name, resource['cls'], resource_name)
-                    if not place.hasmatch(resource_path):
+        resources = []
+        for _, session in sorted(self.sessions.items()):
+            if not isinstance(session, ExporterSession):
+                continue
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    if not place.hasmatch(resource.path):
                         continue
-                    place.acquired_resources.append(resource_path)
+                    place.acquired_resources.append(resource.path)
         place.touch()
         self._publish_place(place)
         self.save_later()

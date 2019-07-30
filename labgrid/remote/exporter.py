@@ -381,6 +381,12 @@ class ExporterSession(ApplicationSession):
         - bail out if we are unsuccessful
         """
         print(details)
+
+        prefix = 'org.labgrid.exporter.{}'.format(self.name)
+        await self.register(self.acquire, '{}.acquire'.format(prefix))
+        await self.register(self.release, '{}.release'.format(prefix))
+        await self.register(self.version, '{}.version'.format(prefix))
+
         try:
             resource_config = ResourceConfig(self.config.extra['resources'])
             for group_name, group in resource_config.data.items():
@@ -391,6 +397,7 @@ class ExporterSession(ApplicationSession):
                         continue
                     cls = params.pop('cls', resource_name)
 
+                    # this may call back to acquire the resource immediately
                     await self.add_resource(
                         group_name, resource_name, cls, params
                     )
@@ -401,11 +408,6 @@ class ExporterSession(ApplicationSession):
             return
 
         self.poll_task = self.loop.create_task(self.poll())
-
-        prefix = 'org.labgrid.exporter.{}'.format(self.name)
-        await self.register(self.acquire, '{}.acquire'.format(prefix))
-        await self.register(self.release, '{}.release'.format(prefix))
-        await self.register(self.version, '{}.version'.format(prefix))
 
     async def onLeave(self, details):
         """Cleanup after leaving the coordinator connection"""

@@ -526,10 +526,28 @@ class ClientSession(ApplicationSession):
         res = await self.call(
             'org.labgrid.coordinator.acquire_place', place.name
         )
-        if not res:
-            raise ServerError("failed to acquire place {}".format(place.name))
-        else:
+        if res:
             print("acquired place {}".format(place.name))
+            return
+
+        # check potential failure causes
+        for exporter, groups in sorted(self.resources.items()):
+            for group_name, group in sorted(groups.items()):
+                for resource_name, resource in sorted(group.items()):
+                    resource_path = (exporter, group_name, resource.cls, resource_name)
+                    if resource.acquired is None:
+                        continue
+                    match = place.getmatch(resource_path)
+                    if match is None:
+                        continue
+                    name = resource_name
+                    if match.rename:
+                        name = match.rename
+                    print("Matching resource '{}' ({}/{}/{}/{}) already acquired by place '{}'".format(
+                        name, exporter, group_name, resource.cls, resource_name, resource.acquired))
+
+        raise ServerError("failed to acquire place {}".format(place.name))
+
 
     async def release(self):
         """Release a previously acquired place"""

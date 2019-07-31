@@ -14,6 +14,7 @@ from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 from autobahn.wamp.types import RegisterOptions
 
 from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
+from ..util import atomic_replace
 
 
 class Action(Enum):
@@ -231,12 +232,16 @@ class CoordinatorComponent(ApplicationSession):
 
     def save(self):
         self.save_scheduled = False
-        with open('resources.yaml', 'w') as f:
-            resources = self._get_resources()
-            f.write(yaml.dump(resources, default_flow_style=False))
-        with open('places.yaml', 'w') as f:
-            places = self._get_places()
-            f.write(yaml.dump(places, default_flow_style=False))
+
+        data = self._get_resources()
+        data = yaml.dump(data, default_flow_style=False)
+        data = data.encode()
+        atomic_replace('resources.yaml', data)
+
+        data = self._get_places()
+        data = yaml.dump(data, default_flow_style=False)
+        data = data.encode()
+        atomic_replace('places.yaml', data)
 
     def load(self):
         try:

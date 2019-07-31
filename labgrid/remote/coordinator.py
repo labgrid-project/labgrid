@@ -6,6 +6,7 @@ from collections import defaultdict
 from os import environ
 from pprint import pprint
 from enum import Enum
+from functools import wraps
 
 import attr
 import yaml
@@ -105,7 +106,19 @@ class ResourceImport(ResourceEntry):
     path = attr.ib(kw_only=True, validator=attr.validators.instance_of(tuple))
 
 
+def locked(func):
+    @wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        async with self.lock:
+            return await func(self, *args, **kwargs)
+    return wrapper
+
 class CoordinatorComponent(ApplicationSession):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lock = asyncio.Lock()
+
+    @locked
     async def onConnect(self):
         self.sessions = {}
         self.places = {}
@@ -121,6 +134,7 @@ class CoordinatorComponent(ApplicationSession):
     def onChallenge(self, challenge):
         return "dummy-ticket"
 
+    @locked
     async def onJoin(self, details):
         await self.subscribe(self.on_session_join, 'wamp.session.on_join')
         await self.subscribe(
@@ -188,6 +202,7 @@ class CoordinatorComponent(ApplicationSession):
 
         print("Coordinator ready.")
 
+    @locked
     async def onLeave(self, details):
         self.save()
         if self.poll_task:
@@ -195,6 +210,7 @@ class CoordinatorComponent(ApplicationSession):
             await asyncio.wait([self.poll_task])
         super().onLeave(details)
 
+    @locked
     async def onDisconnect(self):
         self.save()
         if self.poll_task:
@@ -303,11 +319,11 @@ class CoordinatorComponent(ApplicationSession):
             if len(places) != 1:
                 return
             place = places[0]
-            await self.acquire_resources(place, [resource])
+            await self._acquire_resources(place, [resource])
             self._publish_place(place)
         else:
             for place in places:
-                await self.release_resources(place, [resource])
+                await self._release_resources(place, [resource])
                 self._publish_place(place)
 
     def _publish_place(self, place):
@@ -324,6 +340,7 @@ class CoordinatorComponent(ApplicationSession):
             resource.asdict(),
         )
 
+    @locked
     async def on_session_join(self, session_details):
         print('join')
         pprint(session_details)
@@ -337,6 +354,7 @@ class CoordinatorComponent(ApplicationSession):
             return
         self.sessions[session.key] = session
 
+    @locked
     async def on_session_leave(self, session_id):
         print('leave ({})'.format(session_id))
         try:
@@ -350,6 +368,7 @@ class CoordinatorComponent(ApplicationSession):
                     await self._update_acquired_places(action, resource)  # pylint: disable=not-an-iterable
         self.save_later()
 
+    @locked
     async def attach(self, name, details=None):
         # TODO check if name is in use
         session = self.sessions[details.caller]
@@ -357,6 +376,8 @@ class CoordinatorComponent(ApplicationSession):
         session_details['name'] = name
         self.exporters[name] = defaultdict(dict)
 
+    # not @locked because set_resource my be triggered by a acquire() call to
+    # an exporter, leading to a deadlock on acquire_place()
     async def set_resource(self, groupname, resourcename, resourcedata, details=None):
         """Called by exporter to create/update/remove resources."""
         session = self.sessions.get(details.caller)
@@ -371,8 +392,11 @@ class CoordinatorComponent(ApplicationSession):
         pprint(resourcedata)
         action, resource = session.set_resource(groupname, resourcename, resourcedata)
         if action is Action.ADD:
-            self._add_default_place(groupname)
-        await self._update_acquired_places(action, resource)  # pylint: disable=not-an-iterable
+            async with self.lock:
+                self._add_default_place(groupname)
+        if action in (Action.ADD, Action.DEL):
+            async with self.lock:
+                await self._update_acquired_places(action, resource)  # pylint: disable=not-an-iterable
         self.save_later()
 
     def _get_resources(self):
@@ -382,9 +406,11 @@ class CoordinatorComponent(ApplicationSession):
                 result[session.name] = session.get_resources()
         return result
 
+    @locked
     async def get_resources(self, details=None):
         return self._get_resources()
 
+    @locked
     async def add_place(self, name, details=None):
         if not name or not isinstance(name, str):
             return False
@@ -396,6 +422,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def del_place(self, name, details=None):
         if not name or not isinstance(name, str):
             return False
@@ -408,6 +435,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def add_place_alias(self, placename, alias, details=None):
         try:
             place = self.places[placename]
@@ -419,6 +447,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def del_place_alias(self, placename, alias, details=None):
         try:
             place = self.places[placename]
@@ -433,6 +462,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def set_place_comment(self, placename, comment, details=None):
         try:
             place = self.places[placename]
@@ -444,6 +474,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def add_place_match(self, placename, pattern, rename=None, details=None):
         try:
             place = self.places[placename]
@@ -458,6 +489,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def del_place_match(self, placename, pattern, rename=None, details=None):
         try:
             place = self.places[placename]
@@ -473,7 +505,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
-    async def acquire_resources(self, place, resources):
+    async def _acquire_resources(self, place, resources):
         resources = resources.copy() # we may modify the list
         # all resources need to be free
         for resource in resources:
@@ -491,7 +523,7 @@ class CoordinatorComponent(ApplicationSession):
                 acquired.append(resource)
         except:
             # cleanup
-            await self.release_resources(place, acquired)
+            await self._release_resources(place, acquired)
             return False
 
         for resource in resources:
@@ -499,7 +531,11 @@ class CoordinatorComponent(ApplicationSession):
 
         return True
 
-    async def release_resources(self, place, resources):
+    @locked
+    async def acquire_resources(self, place, resources):
+        return await self._acquire_resources(place, resources)
+
+    async def _release_resources(self, place, resources):
         resources = resources.copy() # we may modify the list
 
         for resource in resources:
@@ -522,6 +558,11 @@ class CoordinatorComponent(ApplicationSession):
                 except:
                     pass
 
+    @locked
+    async def release_resources(self, place, resources):
+        return await self._release_resources(place, resources)
+
+    @locked
     async def acquire_place(self, name, details=None):
         print(details)
         try:
@@ -542,7 +583,7 @@ class CoordinatorComponent(ApplicationSession):
                     if not place.hasmatch(resource.path):
                         continue
                     resources.append(resource)
-        if not await self.acquire_resources(place, resources):
+        if not await self._acquire_resources(place, resources):
             # revert earlier change
             place.acquired = None
             return False
@@ -551,6 +592,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def release_place(self, name, details=None):
         print(details)
         try:
@@ -560,7 +602,7 @@ class CoordinatorComponent(ApplicationSession):
         if not place.acquired:
             return False
 
-        await self.release_resources(place, place.acquired_resources)
+        await self._release_resources(place, place.acquired_resources)
 
         place.acquired = None
         place.allowed = set()
@@ -569,6 +611,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def allow_place(self, name, user, details=None):
         try:
             place = self.places[name]
@@ -587,6 +630,7 @@ class CoordinatorComponent(ApplicationSession):
     def _get_places(self):
         return {k: v.asdict() for k, v in self.places.items()}
 
+    @locked
     async def get_places(self, details=None):
         return self._get_places()
 

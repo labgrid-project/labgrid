@@ -463,7 +463,7 @@ class ExporterSession(ApplicationSession):
     async def poll(self):
         while True:
             try:
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(0.25)
                 await self._poll_step()
             except asyncio.CancelledError:
                 break

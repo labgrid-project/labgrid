@@ -453,13 +453,7 @@ class ExporterSession(ApplicationSession):
                     traceback.print_exc()
                     continue
                 if changed:
-                    # resource has changed
-                    data = resource.asdict()
-                    print(data)
-                    await self.call(
-                        'org.labgrid.coordinator.set_resource', group_name,
-                        resource_name, data
-                    )
+                    await self.update_resource(group_name, resource_name)
 
     async def poll(self):
         while True:

@@ -424,16 +424,16 @@ class ExporterSession(ApplicationSession):
             await asyncio.sleep(0.5) # give others a chance to clean up
         self.loop.stop()
 
-    async def acquire(self, group_name, resource_name):
+    async def acquire(self, group_name, resource_name, place_name):
         # TODO: perform local actions when a resource is acquired
-        #resource = self.groups[group_name][resource_name]
-        #resource.acquire()
+        resource = self.groups[group_name][resource_name]
+        resource.acquire(place_name)
         await self.update_resource(group_name, resource_name)
 
     async def release(self, group_name, resource_name):
         # TODO: perform local actions when a resource is released
-        #resource = self.groups[group_name][resource_name]
-        #resource.release()
+        resource = self.groups[group_name][resource_name]
+        resource.release()
         await self.update_resource(group_name, resource_name)
 
     async def version(self):

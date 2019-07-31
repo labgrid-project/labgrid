@@ -484,18 +484,17 @@ class CoordinatorComponent(ApplicationSession):
         acquired = []
         try:
             for resource in resources:
-                acquired.append(resource)
                 # this triggers an update from the exporter which is published
                 # to the clients
                 await self.call('org.labgrid.exporter.{}.acquire'.format(resource.path[0]),
-                        resource.path[1], resource.path[3])
+                        resource.path[1], resource.path[3], place.name)
+                acquired.append(resource)
         except:
             # cleanup
             await self.release_resources(place, acquired)
             return False
 
         for resource in resources:
-            resource.acquired = place
             place.acquired_resources.append(resource)
 
         return True
@@ -504,7 +503,6 @@ class CoordinatorComponent(ApplicationSession):
         resources = resources.copy() # we may modify the list
 
         for resource in resources:
-            resource.acquired = None
             try:
                 place.acquired_resources.remove(resource)
             except ValueError:

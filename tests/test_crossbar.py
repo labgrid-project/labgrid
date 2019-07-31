@@ -25,7 +25,7 @@ def place(crossbar):
 
 @pytest.fixture(scope='function')
 def place_acquire(place, exporter):
-    with pexpect.spawn('python -m labgrid.remote.client -p test add-match */*/*') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -p test add-match "*/*/*"') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0
@@ -74,12 +74,12 @@ def test_place_comment(place):
         assert spawn.exitstatus == 0
 
 def test_place_match(place):
-    with pexpect.spawn('python -m labgrid.remote.client -p test add-match e1/g1/r1 e2/g2/*') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -p test add-match "e1/g1/r1" "e2/g2/*"') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0
 
-    with pexpect.spawn('python -m labgrid.remote.client -p test del-match e1/g1/r1') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -p test del-match "e1/g1/r1"') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0

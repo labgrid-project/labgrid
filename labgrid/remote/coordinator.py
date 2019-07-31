@@ -14,6 +14,7 @@ from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 from autobahn.wamp.types import RegisterOptions
 
 from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
+from ..util import atomic_replace
 
 
 class Action(Enum):
@@ -79,7 +80,7 @@ class ExporterSession(RemoteSession):
         return None, resource_path
 
     def get_resources(self):
-        """Method invoked by the exporter, get a resource from the coordinator"""
+        """Method invoked by the client, get the resources from the coordinator"""
         result = {}
         for groupname, group in self.groups.items():
             result_group = result[groupname] = {}
@@ -90,7 +91,7 @@ class ExporterSession(RemoteSession):
 
 @attr.s(cmp=False)
 class ClientSession(RemoteSession):
-    acquired = attr.ib(default=attr.Factory(list), init=False)
+    pass
 
 
 class CoordinatorComponent(ApplicationSession):
@@ -231,12 +232,16 @@ class CoordinatorComponent(ApplicationSession):
 
     def save(self):
         self.save_scheduled = False
-        with open('resources.yaml', 'w') as f:
-            resources = self._get_resources()
-            f.write(yaml.dump(resources, default_flow_style=False))
-        with open('places.yaml', 'w') as f:
-            places = self._get_places()
-            f.write(yaml.dump(places, default_flow_style=False))
+
+        data = self._get_resources()
+        data = yaml.dump(data, default_flow_style=False)
+        data = data.encode()
+        atomic_replace('resources.yaml', data)
+
+        data = self._get_places()
+        data = yaml.dump(data, default_flow_style=False)
+        data = data.encode()
+        atomic_replace('places.yaml', data)
 
     def load(self):
         try:
@@ -272,18 +277,31 @@ class CoordinatorComponent(ApplicationSession):
         """Update acquired places when resources are added or removed."""
         if action not in [Action.ADD, Action.DEL]:
             return  # currently nothing needed for Action.UPD
+
+        # collect affected places
+        places = []
         for placename, place in self.places.items():
             if not place.acquired:
                 continue
             if not place.hasmatch(resource_path):
                 continue
-            if action is Action.ADD:
-                place.acquired_resources.append(resource_path)
-            else:
+            places.append(place)
+
+        if action is Action.ADD:
+            # only add if there is no conflict
+            if len(places) != 1:
+                return
+            place.acquired_resources.append(resource_path)
+            self._publish_place(place)
+        else:
+            for place in places:
                 place.acquired_resources.remove(resource_path)
-            self.publish(
-                'org.labgrid.coordinator.place_changed', placename, place.asdict()
-            )
+            self._publish_place(place)
+
+    def _publish_place(self, place):
+        self.publish(
+            'org.labgrid.coordinator.place_changed', place.name, place.asdict()
+        )
 
     async def on_session_join(self, session_details):
         print('join')
@@ -352,9 +370,7 @@ class CoordinatorComponent(ApplicationSession):
             return False
         place = Place(name)
         self.places[name] = place
-        self.publish(
-            'org.labgrid.coordinator.place_changed', name, place.asdict()
-        )
+        self._publish_place(place)
         self.save_later()
         return True
 
@@ -377,9 +393,7 @@ class CoordinatorComponent(ApplicationSession):
             return False
         place.aliases.add(alias)
         place.touch()
-        self.publish(
-            'org.labgrid.coordinator.place_changed', placename, place.asdict()
-        )
+        self._publish_place(place)
         self.save_later()
         return True
 
@@ -393,9 +407,7 @@ class CoordinatorComponent(ApplicationSession):
         except ValueError:
             return False
         place.touch()
-        self.publish(
-            'org.labgrid.coordinator.place_changed', placename, place.asdict()
-        )
+        self._publish_place(place)
         self.save_later()
         return True
 
@@ -406,9 +418,7 @@ class CoordinatorComponent(ApplicationSession):
             return False
         place.comment = comment
         place.touch()
-        self.publish(
-            'org.labgrid.coordinator.place_changed', placename, place.asdict()
-        )
+        self._publish_place(place)
         self.save_later()
         return True
 
@@ -422,9 +432,7 @@ class CoordinatorComponent(ApplicationSession):
             return False
         place.matches.append(match)
         place.touch()
-        self.publish(
-            'org.labgrid.coordinator.place_changed', placename, place.asdict()
-        )
+        self._publish_place(place)
         self.save_later()
         return True
 
@@ -439,9 +447,7 @@ class CoordinatorComponent(ApplicationSession):
         except ValueError:
             return False
         place.touch()
-        self.publish(
-            'org.labgrid.coordinator.place_changed', placename, place.asdict()
-        )
+        self._publish_place(place)
         self.save_later()
         return True
 
@@ -464,9 +470,7 @@ class CoordinatorComponent(ApplicationSession):
                         continue
                     place.acquired_resources.append(resource_path)
         place.touch()
-        self.publish(
-            'org.labgrid.coordinator.place_changed', name, place.asdict()
-        )
+        self._publish_place(place)
         self.save_later()
         return True
 
@@ -482,9 +486,7 @@ class CoordinatorComponent(ApplicationSession):
         place.acquired_resources = []
         place.allowed = set()
         place.touch()
-        self.publish(
-            'org.labgrid.coordinator.place_changed', name, place.asdict()
-        )
+        self._publish_place(place)
         self.save_later()
         return True
 
@@ -499,9 +501,7 @@ class CoordinatorComponent(ApplicationSession):
             return False
         place.allowed.add(user)
         place.touch()
-        self.publish(
-            'org.labgrid.coordinator.place_changed', name, place.asdict()
-        )
+        self._publish_place(place)
         self.save_later()
         return True
 

@@ -71,26 +71,25 @@ class ResourceExport(ResourceEntry):
         self._stop(self.start_params)
         self.start_params = None
 
-    def need_restart(self):
-        """
-        Check if the previously used start parameters have changed so that a
-        restart is needed.
-        """
-        start_params = self._get_start_params()
-        if self.start_params != start_params:
-            self.logger.info("restart needed (%s -> %s)", self.start_params, start_params)
-            return True
-        return False
-
     def poll(self):
-        dirty = False
         # poll and check for updated params/avail
         self.local.poll()
-        if self.avail != self.local.avail:
-            if self.local.avail:
+
+        if self.local.avail and self.acquired:
+            start_params = self._get_start_params()
+            if self.start_params is None:
                 self.start()
-            else:
+            elif self.start_params != start_params:
+                self.logger.info("restart needed (%s -> %s)", self.start_params, start_params)
                 self.stop()
+                self.start()
+        else:
+            if self.start_params is not None:
+                self.stop()
+
+        # check if resulting information has changed
+        dirty = False
+        if self.avail != self.local.avail:
             self.data['avail'] = self.local.avail
             dirty = True
         params = self._get_params()
@@ -99,12 +98,18 @@ class ResourceExport(ResourceEntry):
         params['extra']['proxy_required'] = self.proxy_required
         params['extra']['proxy'] = self.proxy
         if self.params != params:
-            if self.local.avail and self.need_restart():
-                self.stop()
-                self.start()
             self.data['params'].update(params)  # pylint: disable=unsubscriptable-object
             dirty = True
+
         return dirty
+
+    def acquire(self, *args, **kwargs):
+        super().acquire(*args, **kwargs)
+        self.poll()
+
+    def release(self, *args, **kwargs):
+        super().release(*args, **kwargs)
+        self.poll()
 
 
 @attr.s(cmp=False)
@@ -429,13 +434,11 @@ class ExporterSession(ApplicationSession):
         self.loop.stop()
 
     async def acquire(self, group_name, resource_name, place_name):
-        # TODO: perform local actions when a resource is acquired
         resource = self.groups[group_name][resource_name]
         resource.acquire(place_name)
         await self.update_resource(group_name, resource_name)
 
     async def release(self, group_name, resource_name):
-        # TODO: perform local actions when a resource is released
         resource = self.groups[group_name][resource_name]
         resource.release()
         await self.update_resource(group_name, resource_name)

@@ -161,13 +161,15 @@ class USBSerialPortExport(ResourceExport):
         # stop ser2net
         child = self.child
         self.child = None
+        port = self.port
+        self.port = None
         child.terminate()
         try:
             child.wait(1.0)
         except subprocess.TimeoutExpired:
             child.kill()
             child.wait(1.0)
-        self.logger.info("stopped ser2net for %s on port %d", start_params['path'], self.port)
+        self.logger.info("stopped ser2net for %s on port %d", start_params['path'], port)
 
 
 exports["USBSerialPort"] = USBSerialPortExport

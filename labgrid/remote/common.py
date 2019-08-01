@@ -1,10 +1,18 @@
 # pylint: disable=unsubscriptable-object
 import socket
 import time
+import enum
+import random
+import re
+import string
 from datetime import datetime
 from fnmatch import fnmatchcase
 
 import attr
+
+
+TAG_KEY = re.compile(r"[a-z][a-z0-9_]+")
+TAG_VAL = re.compile(r"[a-z0-9_]?")
 
 
 @attr.s(cmp=False)
@@ -119,6 +127,7 @@ class Place:
     name = attr.ib()
     aliases = attr.ib(default=attr.Factory(set), converter=set)
     comment = attr.ib(default="")
+    tags = attr.ib(default=attr.Factory(dict))
     matches = attr.ib(default=attr.Factory(list))
     acquired = attr.ib(default=None)
     acquired_resources = attr.ib(default=attr.Factory(list))
@@ -138,6 +147,7 @@ class Place:
         return {
             'aliases': list(self.aliases),
             'comment': self.comment,
+            'tags': self.tags,
             'matches': [attr.asdict(x) for x in self.matches],
             'acquired': self.acquired,
             'acquired_resources': acquired_resources,
@@ -160,6 +170,9 @@ class Place:
         indent = '  ' * level
         print(indent + "aliases: {}".format(', '.join(self.aliases)))
         print(indent + "comment: {}".format(self.comment))
+        print(indent + "tags: {}".format(
+            ', '.join(k+"="+v for k, v in sorted(self.tags.items()))
+        ))
         print(indent + "matches:")
         for match in self.matches:  # pylint: disable=not-an-iterable
             print(indent + "  {}".format(match))

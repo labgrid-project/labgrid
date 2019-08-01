@@ -17,7 +17,7 @@ from pprint import pformat
 import txaio
 from autobahn.asyncio.wamp import ApplicationSession
 
-from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
+from .common import *
 from ..environment import Environment
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace
@@ -432,6 +432,29 @@ class ClientSession(ApplicationSession):
         if not res:
             raise ServerError(
                 "failed to set comment {} for place {}".format(comment, place.name)
+            )
+        return res
+
+    async def set_tags(self):
+        """Set the tags on a place"""
+        place = self.get_place()
+        tags = {}
+        for pair in self.args.tags:
+            try:
+                k, v = pair.split('=')
+            except ValueError:
+                raise UserError("tag '{}' needs to match '<key>=<value>'".format(pair))
+            if not TAG_KEY.match(k):
+                raise UserError("tag key '{}' needs to match the rexex '{}'".format(k, TAG_KEY.pattern))
+            if not TAG_VAL.match(v):
+                raise UserError("tag value '{}' needs to match the rexex '{}'".format(v, TAG_VAL.pattern))
+            tags[k] = v
+        res = await self.call(
+            'org.labgrid.coordinator.set_place_tags', place.name, tags
+        )
+        if not res:
+            raise ServerError(
+                "failed to set tags {} for place {}".format(' '.join(self.args.tags), place.name)
             )
         return res
 
@@ -1218,6 +1241,12 @@ def main():
                                       help="update the place comment")
     subparser.add_argument('comment', nargs='+')
     subparser.set_defaults(func=ClientSession.set_comment)
+
+    subparser = subparsers.add_parser('set-tags',
+                                      help="update the place tags")
+    subparser.add_argument('tags', metavar='KEY=VALUE', nargs='+',
+                           help="use an empty value for deletion")
+    subparser.set_defaults(func=ClientSession.set_tags)
 
     subparser = subparsers.add_parser('add-match',
                                       help="add one (or multiple) match pattern(s) to a place")

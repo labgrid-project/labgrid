@@ -1,6 +1,7 @@
 """The coordinator module coordinates exported resources and clients accessing them."""
 # pylint: disable=no-member,unused-argument
 import asyncio
+import enum
 import traceback
 from collections import defaultdict
 from os import environ
@@ -14,7 +15,7 @@ from autobahn import wamp
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 from autobahn.wamp.types import RegisterOptions
 
-from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
+from .common import *
 from ..util import atomic_replace
 
 
@@ -169,6 +170,9 @@ class CoordinatorComponent(ApplicationSession):
         )
         await self.register(
             self.del_place_alias, 'org.labgrid.coordinator.del_place_alias'
+        )
+        await self.register(
+            self.set_place_tags, 'org.labgrid.coordinator.set_place_tags'
         )
         await self.register(
             self.set_place_comment, 'org.labgrid.coordinator.set_place_comment'
@@ -457,6 +461,33 @@ class CoordinatorComponent(ApplicationSession):
             place.aliases.remove(alias)
         except ValueError:
             return False
+        place.touch()
+        self._publish_place(place)
+        self.save_later()
+        return True
+
+    @locked
+    async def set_place_tags(self, placename, tags, details=None):
+        try:
+            place = self.places[placename]
+        except KeyError:
+            return False
+        assert isinstance(tags, dict)
+        for k, v in tags.items():
+            assert isinstance(k, str)
+            assert isinstance(v, str)
+            if not TAG_KEY.match(k):
+                return False
+            if not TAG_VAL.match(v):
+                return False
+        for k, v in tags.items():
+            if not v:
+                try:
+                    del place.tags[k]
+                except KeyError:
+                    pass
+            else:
+                place.tags[k] = v
         place.touch()
         self._publish_place(place)
         self.save_later()

@@ -168,11 +168,14 @@ class Place:
 
     def show(self, level=0):
         indent = '  ' * level
-        print(indent + "aliases: {}".format(', '.join(self.aliases)))
-        print(indent + "comment: {}".format(self.comment))
-        print(indent + "tags: {}".format(
-            ', '.join(k+"="+v for k, v in sorted(self.tags.items()))
-        ))
+        if self.aliases:
+            print(indent + "aliases: {}".format(', '.join(self.aliases)))
+        if self.comment:
+            print(indent + "comment: {}".format(self.comment))
+        if self.tags:
+            print(indent + "tags: {}".format(
+                ', '.join(k+"="+v for k, v in sorted(self.tags.items()))
+            ))
         print(indent + "matches:")
         for match in self.matches:  # pylint: disable=not-an-iterable
             print(indent + "  {}".format(match))
@@ -191,7 +194,8 @@ class Place:
             else:
                 print(indent + "  {}".format(
                     '/'.join(resource_path)))
-        print(indent + "allowed: {}".format(', '.join(self.allowed)))
+        if self.allowed:
+            print(indent + "allowed: {}".format(', '.join(self.allowed)))
         print(indent + "created: {}".format(datetime.fromtimestamp(self.created)))
         print(indent + "changed: {}".format(datetime.fromtimestamp(self.changed)))
 

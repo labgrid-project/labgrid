@@ -273,6 +273,23 @@ class ClientSession(ApplicationSession):
         the current user name.
         """
         result = set()
+
+        # reservation token lookup
+        token = None
+        if pattern.startswith('+'):
+            token = pattern[1:]
+            if not token:
+                token = os.environ.get('LG_TOKEN', None)
+            if not token:
+                return []
+            for name, place in self.places.items():
+                if place.reservation == token:
+                    result.add(name)
+            if not result:
+                raise UserError("reservation token {} matches nothing".format(token))
+            return list(result)
+
+        # name and alias lookup
         for name, place in self.places.items():
             if pattern in name:
                 result.add(name)
@@ -1072,6 +1089,50 @@ class ClientSession(ApplicationSession):
         except FileNotFoundError as e:
             raise UserError(e)
 
+    async def create_reservation(self):
+        filters = ' '.join(self.args.filters)
+        prio = self.args.prio
+        res = await self.call('org.labgrid.coordinator.create_reservation', filters, prio=prio)
+        if res is None:
+            raise ServerError("failed to create reservation")
+        ((token, config),) = res.items() # we get a one-item dict
+        config = filter_dict(config, Reservation, warn=True)
+        res = Reservation(token=token, **config)
+        if self.args.shell:
+            print("export LG_TOKEN={}".format(res.token))
+        else:
+            print("Reservation '{}':".format(res.token))
+            res.show(level=1)
+
+    async def cancel_reservation(self):
+        token = self.args.token
+        res = await self.call('org.labgrid.coordinator.cancel_reservation', token)
+        if not res:
+            raise ServerError("failed to cancel reservation {}".format(token))
+
+    async def wait_reservation(self):
+        token = self.args.token
+        while True:
+            config = await self.call('org.labgrid.coordinator.poll_reservation', token)
+            if config is None:
+                raise ServerError("reservation not found")
+            config = filter_dict(config, Reservation, warn=True)
+            res = Reservation(token=token, **config)
+            res.show()
+            if res.state is ReservationState.waiting:
+                await asyncio.sleep(1.0)
+            else:
+                break
+
+    async def print_reservations(self):
+        reservations = await self.call('org.labgrid.coordinator.get_reservations')
+        for token, config in sorted(reservations.items(), key=lambda x: (-x[1]['prio'], x[1]['created'])):
+            config = filter_dict(config, Reservation, warn=True)
+            res = Reservation(token=token, **config)
+            print("Reservation '{}':".format(res.token))
+            res.show(level=1)
+
+
 def start_session(url, realm, extra):
     from autobahn.asyncio.wamp import ApplicationRunner
 
@@ -1131,6 +1192,7 @@ def main():
     place = os.environ.get('LG_PLACE', place)
     state = os.environ.get('STATE', None)
     state = os.environ.get('LG_STATE', state)
+    token = os.environ.get('LG_TOKEN', None)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -1373,6 +1435,26 @@ def main():
     subparser.add_argument('-w', '--wait', type=float, default=10.0)
     subparser.add_argument('filename', help='filename to boot on the target')
     subparser.set_defaults(func=ClientSession.write_image)
+
+    subparser = subparsers.add_parser('reserve', help="create a reservation")
+    subparser.add_argument('--shell', action='store_true',
+                           help="format output as shell variables")
+    subparser.add_argument('--prio', type=float, default=0.0,
+                           help="priority relative to other reservations (default 0)")
+    subparser.add_argument('filters', metavar='KEY=VALUE', nargs='+',
+                           help="required tags")
+    subparser.set_defaults(func=ClientSession.create_reservation)
+
+    subparser = subparsers.add_parser('cancel-reservation', help="cancel a reservation")
+    subparser.add_argument('token', type=str, default=token, nargs='?' if token else None)
+    subparser.set_defaults(func=ClientSession.cancel_reservation)
+
+    subparser = subparsers.add_parser('wait', help="wait for a reservation to be allocated")
+    subparser.add_argument('token', type=str, default=token, nargs='?' if token else None)
+    subparser.set_defaults(func=ClientSession.wait_reservation)
+
+    subparser = subparsers.add_parser('reservations', help="list current reservations")
+    subparser.set_defaults(func=ClientSession.print_reservations)
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()

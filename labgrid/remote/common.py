@@ -134,6 +134,7 @@ class Place:
     allowed = attr.ib(default=attr.Factory(set), converter=set)
     created = attr.ib(default=attr.Factory(time.time))
     changed = attr.ib(default=attr.Factory(time.time))
+    reservation = attr.ib(default=None)
 
     def asdict(self):
         # in the coordinator, we have resource objects, otherwise just a path
@@ -154,6 +155,7 @@ class Place:
             'allowed': list(self.allowed),
             'created': self.created,
             'changed': self.changed,
+            'reservation': self.reservation,
         }
 
     def update(self, config):
@@ -198,6 +200,8 @@ class Place:
             print(indent + "allowed: {}".format(', '.join(self.allowed)))
         print(indent + "created: {}".format(datetime.fromtimestamp(self.created)))
         print(indent + "changed: {}".format(datetime.fromtimestamp(self.changed)))
+        if self.reservation:
+            print(indent + "reservation: {}".format(self.reservation))
 
     def getmatch(self, resource_path):
         """Return the ResourceMatch object for the given resource path or None if not found.
@@ -219,6 +223,67 @@ class Place:
 
     def touch(self):
         self.changed = time.time()
+
+
+class ReservationState(enum.Enum):
+    waiting = 0
+    allocated = 1
+    acquired = 2
+    expired = 3
+    invalid = 4
+
+
+@attr.s(cmp=False)
+class Reservation:
+    owner = attr.ib(validator=attr.validators.instance_of(str))
+    token = attr.ib(default=attr.Factory(
+        lambda: ''.join(random.choice(string.ascii_uppercase+string.digits) for i in range(10))))
+    state = attr.ib(default='waiting',
+            converter=lambda x: x if isinstance(x, ReservationState) else ReservationState[x],
+            validator=attr.validators.instance_of(ReservationState))
+    prio = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
+    # a dictionary of name -> filter dicts
+    filters = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
+    # a dictionary of name -> place names
+    allocations = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
+    created = attr.ib(default=attr.Factory(time.time))
+    timeout = attr.ib(default=attr.Factory(lambda: time.time() + 60))
+
+    def asdict(self):
+        return {
+            'owner': self.owner,
+            'state': self.state.name,
+            'prio': self.prio,
+            'filters': self.filters,
+            'allocations': self.allocations,
+            'created': self.created,
+            'timeout': self.timeout,
+        }
+
+    def refresh(self, delta=60):
+        self.timeout = max(self.timeout, time.time() + delta)
+
+    @property
+    def expired(self):
+        return self.timeout < time.time()
+
+    def show(self, level=0):
+        indent = '  ' * level
+        print(indent + "owner: {}".format(self.owner))
+        print(indent + "token: {}".format(self.token))
+        print(indent + "state: {}".format(self.state.name))
+        if self.prio:
+            print(indent + "prio: {}".format(self.prio))
+        print(indent + "filters:")
+        for name, filter in self.filters.items():
+            print(indent + "  {}: {}".format(name, " ".join([k+"="+v for k, v in filter.items()])))
+        if self.allocations:
+            print(indent + "allocations:")
+            for name, allocation in self.allocations.items():
+                print(indent + "  {}: {}".format(name, ", ".join(allocation)))
+        print(indent + "created: {}".format(datetime.fromtimestamp(self.created)))
+        print(indent + "timeout: {}".format(datetime.fromtimestamp(self.timeout)))
+
 
 def enable_tcp_nodelay(session):
     """

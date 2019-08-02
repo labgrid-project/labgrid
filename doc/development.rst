@@ -607,14 +607,6 @@ collect data over multiple runs for later analysis.
 This would become more useful by passing recognized events (stack traces,
 crashes, ...) and benchmark results via the Step infrastructure.
 
-Target Feature Flags
-~~~~~~~~~~~~~~~~~~~~
-
-It would be useful to support configuring feature flags in the target YAML
-definition.
-Then individual tests could be skipped if a required feature is unavailable on
-the current target without manually modifying the test suite.
-
 CommandProtocol Support for Background Processes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -623,19 +615,6 @@ processes well.
 An implementation should start a new process,
 return a handle and forbid running other processes in the foreground.
 The handle can be used to retrieve output from a command.
-
-SSH Tunneling for Remote Infrastructure
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Client and exporter require a direct HTTP(S) connection to the coordinator.
-Also, the clients connect directly to the exporters via SSH.
-However, often the clients are in an office network,
-while exporters run in separate lab networks,
-making it necessary to open holes in the firewall to
-connect to the coordinator or from client to exporter.
-In this case, it would be useful to use SSH as the authentication service
-and then use tunneling to connect to the coordinator or
-for the client to exporter connections.
 
 Support for PDU-Daemon
 ~~~~~~~~~~~~~~~~~~~~~~

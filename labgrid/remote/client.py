@@ -1103,6 +1103,10 @@ class ClientSession(ApplicationSession):
         else:
             print("Reservation '{}':".format(res.token))
             res.show(level=1)
+        if self.args.wait:
+            if not self.args.shell:
+                print("Waiting for allocation...")
+            await self._wait_reservation(res.token, verbose=False)
 
     async def cancel_reservation(self):
         token = self.args.token
@@ -1110,19 +1114,23 @@ class ClientSession(ApplicationSession):
         if not res:
             raise ServerError("failed to cancel reservation {}".format(token))
 
-    async def wait_reservation(self):
-        token = self.args.token
+    async def _wait_reservation(self, token, verbose=True):
         while True:
             config = await self.call('org.labgrid.coordinator.poll_reservation', token)
             if config is None:
                 raise ServerError("reservation not found")
             config = filter_dict(config, Reservation, warn=True)
             res = Reservation(token=token, **config)
-            res.show()
+            if verbose:
+                res.show()
             if res.state is ReservationState.waiting:
                 await asyncio.sleep(1.0)
             else:
                 break
+
+    async def wait_reservation(self):
+        token = self.args.token
+        await self._wait_reservation(token)
 
     async def print_reservations(self):
         reservations = await self.call('org.labgrid.coordinator.get_reservations')
@@ -1437,6 +1445,8 @@ def main():
     subparser.set_defaults(func=ClientSession.write_image)
 
     subparser = subparsers.add_parser('reserve', help="create a reservation")
+    subparser.add_argument('--wait', action='store_true',
+                           help="wait until the reservation is allocated")
     subparser.add_argument('--shell', action='store_true',
                            help="format output as shell variables")
     subparser.add_argument('--prio', type=float, default=0.0,

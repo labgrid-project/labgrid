@@ -157,6 +157,7 @@ The documentation is inside ``doc/``.  HTML-Documentation is build using:
 
 The HTML documentation is written to ``doc/.build/html/``.
 
+.. _remote-getting-started:
 
 Setting Up the Distributed Infrastructure
 -----------------------------------------
@@ -304,6 +305,7 @@ Now we can connect to the serial console:
 
     $ labgrid-client -p example-place console
 
+See :ref:`remote-usage` for some more advanced features.
 For a complete reference have a look at the :doc:`labgrid-client(1) <man/client>`
 man page.
 

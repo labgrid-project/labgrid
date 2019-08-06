@@ -585,17 +585,6 @@ The inactive Driver could then cause a preemption and would be activated.
 The current caller of the originally active driver would be notified via an
 exception.
 
-Remote Target Reservation
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For integration with CI systems (like Jenkins), it would help if the CI job
-could reserve and wait for a specific target.
-This could be done by managing a list of waiting users in the coordinator and
-notifying the current user on each invocation of labgrid-client that another
-user is waiting.
-The reservation should expire after some time if it is not used to lock the
-target after it becomes available.
-
 Step Tracing
 ~~~~~~~~~~~~
 

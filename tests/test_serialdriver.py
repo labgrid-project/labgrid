@@ -1,5 +1,4 @@
 import pytest
-import serial
 
 from labgrid.driver import SerialDriver
 from labgrid.exceptions import NoSupplierFoundError
@@ -10,64 +9,55 @@ class TestSerialDriver:
         with pytest.raises(NoSupplierFoundError):
             SerialDriver(target, "serial")
 
-    def test_instanziation(self, target, serial_port, monkeypatch, mocker):
-        serial_mock = mocker.Mock()
-        monkeypatch.setattr(serial, 'Serial', serial_mock)
+    def test_instanziation(self, target, serial_port, mocker):
+        serial_mock = mocker.patch('serial.Serial')
         s = SerialDriver(target, "serial")
         assert (isinstance(s, SerialDriver))
         assert (target.drivers[0] == s)
 
-    def test_write(self, target, monkeypatch, serial_port, mocker):
-        serial_mock = mocker.Mock()
-        serial_mock.write = mocker.MagicMock()
-        monkeypatch.setattr(serial, 'Serial', serial_mock)
+    def test_write(self, target, serial_port, mocker):
+        serial_mock = mocker.patch('serial.Serial')
         s = SerialDriver(target, "serial")
-        s.serial = serial_mock
         target.activate(s)
         s.write(b"testdata")
-        serial_mock.write.assert_called_with(b"testdata")
+        serial_mock.return_value.open.assert_called_once_with()
+        serial_mock.return_value.write.assert_called_once_with(b"testdata")
 
-    def test_read(self, target, monkeypatch, serial_port, mocker):
-        serial_mock = mocker.Mock()
-        serial_mock.read = mocker.MagicMock()
-        serial_mock.in_waiting = 0
-        monkeypatch.setattr(serial, 'Serial', serial_mock)
+    def test_read(self, target, serial_port, mocker):
+        serial_mock = mocker.patch('serial.Serial')
+        serial_mock.return_value.in_waiting = 0
         s = SerialDriver(target, "serial")
-        s.serial = serial_mock
         target.activate(s)
         s.read()
-        assert (serial_mock.read.called)
+        serial_mock.return_value.open.assert_called_once_with()
+        serial_mock.return_value.read.assert_called_once_with(1)
 
-    def test_close(self, target, monkeypatch, serial_port, mocker):
-        serial_mock = mocker.Mock()
-        serial_mock.close = mocker.MagicMock()
-        monkeypatch.setattr(serial, 'Serial', serial_mock)
+    def test_close(self, target, serial_port, mocker):
+        serial_mock = mocker.patch('serial.Serial')
         s = SerialDriver(target, "serial")
-        s.serial = serial_mock
         target.activate(s)
         s.close()
-        assert (serial_mock.close.called)
+        serial_mock.return_value.open.assert_called_once_with()
+        serial_mock.return_value.close.assert_called_once_with()
 
-    def test_deactivate(self, target, monkeypatch, serial_port, mocker):
-        serial_mock = mocker.Mock()
-        serial_mock.close = mocker.MagicMock()
-        monkeypatch.setattr(serial, 'Serial', serial_mock)
+    def test_deactivate(self, target, serial_port, mocker):
+        serial_mock = mocker.patch('serial.Serial')
         s = SerialDriver(target, "serial")
-        s.serial = serial_mock
         target.activate(s)
         target.deactivate(s)
-        assert (serial_mock.close.called)
+        serial_mock.return_value.open.assert_called_once_with()
+        serial_mock.return_value.close.assert_called_once_with()
 
-    def test_rfc2711_instanziation(self, target, serial_rfc2711_port, monkeypatch, mocker):
-        serial_mock = mocker.Mock()
-        monkeypatch.setattr(serial, 'Serial', serial_mock)
+    def test_rfc2711_instanziation(self, target, serial_rfc2711_port, mocker):
+        serial_mock = mocker.patch('serial.rfc2217.Serial')
         s = SerialDriver(target, "serial")
         assert (isinstance(s, SerialDriver))
         assert (target.drivers[0] == s)
+        serial_mock.assert_called_once_with()
 
-    def test_raw_instanziation(self, target, serial_raw_port, monkeypatch, mocker):
-        serial_mock = mocker.Mock()
-        monkeypatch.setattr(serial, 'Serial', serial_mock)
+    def test_raw_instanziation(self, target, serial_raw_port, mocker):
+        serial_mock = mocker.patch('serial.serial_for_url')
         s = SerialDriver(target, "serial")
         assert (isinstance(s, SerialDriver))
         assert (target.drivers[0] == s)
+        serial_mock.assert_called_once_with('socket://', do_not_open=True)

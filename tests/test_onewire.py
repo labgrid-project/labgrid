@@ -10,12 +10,9 @@ def onewire_port(target):
     return OneWirePIO(target, "pio", "testhost", "29.123450000000/PIO.6")
 
 @pytest.fixture(scope='function')
-def onewire_driver(target, onewire_port, monkeypatch, mocker):
-    onewire_mock = mocker.MagicMock
-    onewire_mock.set = mocker.MagicMock()
-    onewire_mock.get = mocker.MagicMock(return_value='1')
-    import onewire
-    monkeypatch.setattr(onewire, 'Onewire', onewire_mock)
+def onewire_driver(target, onewire_port, mocker):
+    onewire_mock = mocker.patch('onewire.Onewire')
+    onewire_mock.return_value.get.return_value = '1'
     s = OneWirePIODriver(target, "pio")
     target.activate(s)
     return s

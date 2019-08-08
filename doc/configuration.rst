@@ -1130,6 +1130,32 @@ Arguments:
     SerialDriver in your environment (what is likely to be the case
     if you are using this driver).
 
+FileDigitalOutputDriver
+~~~~~~~~~~~~~~~~~~~~~~~
+The FileDigitalOutputDriver uses a file
+to write arbitrary string representations of booleans
+to a file and read from it.
+
+The file is checked to exist at configuration time.
+
+If the file's content does not match any of the representations
+reading defaults to False.
+
+A prime example for using this driver is Linux's sysfs.
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   FileDigitalOutputDriver:
+     filepath: "/sys/class/leds/myled/brightness"
+
+Arguments:
+  - filepath (str): A file that is used for reads and writes.
+  - false_repr (str): A representation for False (default: "0\n")
+  - true_repr (str): A representation for True (default: "1\n")
+
 ModbusCoilDriver
 ~~~~~~~~~~~~~~~~
 A ModbusCoilDriver controls a `ModbusTCPCoil` resource.

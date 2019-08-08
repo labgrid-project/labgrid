@@ -4,6 +4,7 @@ Release 0.3.0 (unreleased)
 New Features in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~
 
+- The new `FileDigitalOutputDriver` respresents a digital signal with a file.
 - The new `GpioDigitalOutputDriver` controls the state of a GPIO via the sysfs interface.
 - Crossbar and autobahn have been updated to 19.3.3 and 19.3.5 respectively.
 - The InfoDriver was removed. The functions have been integrated into the

@@ -1033,9 +1033,7 @@ class ClientSession(ApplicationSession):
             raise UserError(e)
 
 def start_session(url, realm, extra):
-    from autobahn.wamp.types import ComponentConfig
-    from autobahn.websocket.util import parse_url
-    from autobahn.asyncio.websocket import WampWebSocketClientFactory
+    from autobahn.asyncio.wamp import ApplicationRunner
 
     loop = asyncio.get_event_loop()
     ready = asyncio.Event()
@@ -1050,18 +1048,16 @@ def start_session(url, realm, extra):
 
     session = [None]
 
-    url = proxymanager.get_url(url, default_port=20408)
-
-    def create():
+    def make(*args, **kwargs):
         nonlocal session
-        cfg = ComponentConfig(realm, extra)
-        session[0] = ClientSession(cfg)
+        session[0] = ClientSession(*args, **kwargs)
         return session[0]
 
-    transport_factory = WampWebSocketClientFactory(create, url=url)
-    _, host, port, _, _, _ = parse_url(url)
+    url = proxymanager.get_url(url, default_port=20408)
 
-    coro = loop.create_connection(transport_factory, host, port)
+    runner = ApplicationRunner(url, realm=realm, extra=extra)
+    coro = runner.run(make, start_loop=False)
+
     loop.run_until_complete(coro)
     loop.run_until_complete(ready.wait())
     return session[0]

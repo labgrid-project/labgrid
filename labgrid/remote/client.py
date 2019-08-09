@@ -712,9 +712,8 @@ class ClientSession(ApplicationSession):
         elif action == 'low':
             drv.set(False)
 
-    async def _console(self, place):
+    async def _console(self, place, target):
         name = self.args.name
-        target = self._get_target(place)
         from ..resource import NetworkSerialPort
         resource = target.get_resource(NetworkSerialPort, name=name)
         host, port = proxymanager.get_host_and_port(resource)
@@ -751,15 +750,15 @@ class ClientSession(ApplicationSession):
             return False
         return True
 
-    async def console(self):
-        place = self.get_acquired_place()
+    async def console(self, place, target):
         while True:
-            res = await self._console(place)
+            res = await self._console(place, target)
             if res:
                 break
             if not self.args.loop:
                 break
             await asyncio.sleep(1.0)
+    console.needs_target = True
 
     def fastboot(self):
         place = self.get_acquired_place()
@@ -1380,7 +1379,13 @@ def main():
                                     extra)
             try:
                 if asyncio.iscoroutinefunction(args.func):
-                    session.loop.run_until_complete(args.func(session))
+                    if getattr(args.func, 'needs_target', False):
+                        place = session.get_acquired_place()
+                        target = session._get_target(place)
+                        coro = args.func(session, place, target)
+                    else:
+                        coro = args.func(session)
+                    session.loop.run_until_complete(coro)
                 else:
                     args.func(session)
             finally:

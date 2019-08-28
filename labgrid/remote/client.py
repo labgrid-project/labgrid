@@ -712,9 +712,8 @@ class ClientSession(ApplicationSession):
         elif action == 'low':
             drv.set(False)
 
-    async def _console(self, place):
+    async def _console(self, place, target):
         name = self.args.name
-        target = self._get_target(place)
         from ..resource import NetworkSerialPort
         resource = target.get_resource(NetworkSerialPort, name=name)
         host, port = proxymanager.get_host_and_port(resource)
@@ -751,15 +750,15 @@ class ClientSession(ApplicationSession):
             return False
         return True
 
-    async def console(self):
-        place = self.get_acquired_place()
+    async def console(self, place, target):
         while True:
-            res = await self._console(place)
+            res = await self._console(place, target)
             if res:
                 break
             if not self.args.loop:
                 break
             await asyncio.sleep(1.0)
+    console.needs_target = True
 
     def fastboot(self):
         place = self.get_acquired_place()
@@ -1033,9 +1032,7 @@ class ClientSession(ApplicationSession):
             raise UserError(e)
 
 def start_session(url, realm, extra):
-    from autobahn.wamp.types import ComponentConfig
-    from autobahn.websocket.util import parse_url
-    from autobahn.asyncio.websocket import WampWebSocketClientFactory
+    from autobahn.asyncio.wamp import ApplicationRunner
 
     loop = asyncio.get_event_loop()
     ready = asyncio.Event()
@@ -1050,18 +1047,16 @@ def start_session(url, realm, extra):
 
     session = [None]
 
-    url = proxymanager.get_url(url, default_port=20408)
-
-    def create():
+    def make(*args, **kwargs):
         nonlocal session
-        cfg = ComponentConfig(realm, extra)
-        session[0] = ClientSession(cfg)
+        session[0] = ClientSession(*args, **kwargs)
         return session[0]
 
-    transport_factory = WampWebSocketClientFactory(create, url=url)
-    _, host, port, _, _, _ = parse_url(url)
+    url = proxymanager.get_url(url, default_port=20408)
 
-    coro = loop.create_connection(transport_factory, host, port)
+    runner = ApplicationRunner(url, realm=realm, extra=extra)
+    coro = runner.run(make, start_loop=False)
+
     loop.run_until_complete(coro)
     loop.run_until_complete(ready.wait())
     return session[0]
@@ -1384,7 +1379,13 @@ def main():
                                     extra)
             try:
                 if asyncio.iscoroutinefunction(args.func):
-                    session.loop.run_until_complete(args.func(session))
+                    if getattr(args.func, 'needs_target', False):
+                        place = session.get_acquired_place()
+                        target = session._get_target(place)
+                        coro = args.func(session, place, target)
+                    else:
+                        coro = args.func(session)
+                    session.loop.run_until_complete(coro)
                 else:
                     args.func(session)
             finally:

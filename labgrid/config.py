@@ -174,6 +174,64 @@ class Config:
         assert isinstance(value, str)
         self.data.setdefault('options', {})[name] = value
 
+    def get_target_option(self, target, name, default=None):
+        """Retrieve an entry from the options subkey under the specified target
+           subkey
+
+        Args:
+            target (str): name of the target
+            name (str): name of the option
+            default (str): A default parameter in case the option can not be
+                found
+
+        Returns:
+            str: value of the option or default parameter
+
+        Raises:
+            KeyError: if the requested key can not be found in the
+                configuration, or if the target can not be found in the
+                configuration.
+        """
+        if target not in self.data['targets']:
+            raise KeyError("No target '{}' found in configuration".format(target))
+
+        try:
+            return str(self.data['targets'][target]['options'][name])
+        except (KeyError, TypeError):
+            # Empty target declarations become None in the target dict, hence
+            # TypeError when we try to subscript it.
+            if default is None:
+                raise KeyError("No option '{}' found in configuration for target '{}'".format(name, target))
+            else:
+                return default
+
+    def set_target_option(self, target, name, value):
+        """Set an entry in the options subkey under the specified target subkey
+
+        Args:
+            target (str): name of the target
+            name (str): name of the option
+            value (str): the new value
+
+        Raises:
+            KeyError: if the requested target can not be found in the
+                configuration
+        """
+        assert isinstance(target, str)
+        assert isinstance(name, str)
+        assert isinstance(value, str)
+
+        if target not in self.data['targets']:
+            raise KeyError("No target '{}' found in configuration".format(target))
+
+        # Empty targets become None in the target dict. Delete it to enable
+        # setdefault below to work on the actual default instead of None.
+        if self.data['targets'][target] is None:
+            del self.data['targets'][target]
+
+        trg = self.data['targets'].setdefault(target, {})
+        trg.setdefault('options', {})[name] = value
+
     def get_targets(self):
         return self.data.get('targets', {})
 

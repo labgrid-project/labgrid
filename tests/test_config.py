@@ -3,6 +3,45 @@ import pytest
 from labgrid.config import Config
 from labgrid.exceptions import InvalidConfigError
 
+def test_get_target_option(tmpdir):
+    p = tmpdir.join("config.yaml")
+    p.write(
+        """
+        targets:
+          main:
+            options:
+              foo: bar
+              spam: eggs
+        """
+    )
+    c = Config(str(p))
+    assert c.get_target_option("main", "spam") == "eggs"
+
+    with pytest.raises(KeyError) as err:
+        c.get_target_option("main", "blah")
+    assert "No option" in str(err)
+
+    with pytest.raises(KeyError) as err:
+        c.get_target_option("nonexist", "spam")
+    assert "No target" in str(err)
+
+def test_set_target_option(tmpdir):
+    p = tmpdir.join("config.yaml")
+    p.write(
+        """
+        targets:
+          main:
+        """
+    )
+    c = Config(str(p))
+
+    with pytest.raises(KeyError) as err:
+        c.get_target_option("main", "spam")
+    assert "No option" in str(err)
+
+    c.set_target_option("main", "spam", "eggs")
+    assert c.get_target_option("main", "spam") == "eggs"
+
 def test_template(tmpdir):
     p = tmpdir.join("config.yaml")
     p.write(

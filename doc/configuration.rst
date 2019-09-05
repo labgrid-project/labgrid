@@ -1845,6 +1845,9 @@ The skeleton for an environment consists of:
          <resources>
        drivers:
          <drivers>
+       options:
+         <target-option-1-name>: <value for target-option-1>
+         <more target-options>
      <more targets>
    options:
      <option-1 name>: <value for option-1>

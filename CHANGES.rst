@@ -36,6 +36,7 @@ New Features in 0.3.0
   ``--skip``, ``--seek``.
 - UBootDriver now allows overriding of default boot command (``run bootcmd``)
   via new ``boot_command`` argument.
+- The config file supports per-target options, in addition to global options.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

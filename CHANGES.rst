@@ -26,6 +26,9 @@ New Features in 0.3.0
   on the DUT can be written directly. The flashrom driver implements the
   bootstrap protocol.
 - AndroidFastbootDriver now supports 'getvar' and 'oem getenv' subcommands.
+- The coordinator now updates the resource acquired state at the exporter.
+  Accordingly, the exporter now starts ser2net only when a resources is
+  aquired. Furthermore, resource conflicts between places are now detected.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

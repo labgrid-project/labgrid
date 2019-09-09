@@ -6,6 +6,7 @@ from collections import defaultdict
 from os import environ
 from pprint import pprint
 from enum import Enum
+from functools import wraps
 
 import attr
 import yaml
@@ -48,36 +49,38 @@ class ExporterSession(RemoteSession):
     coordinator, allowing the Exporter to get and set resources"""
     groups = attr.ib(default=attr.Factory(dict), init=False)
 
-    def set_resource(self, groupname, resourcename, resource):
+    def set_resource(self, groupname, resourcename, resourcedata):
         group = self.groups.setdefault(groupname, {})
         old = group.get(resourcename)
-        if resource:
-            new = group[resourcename] = ResourceEntry(resource)
-            cls = new.cls
-        elif old:
+        if resourcedata and old:
+            old.update(resourcedata)
+            new = old
+        elif resourcedata and not old:
+            new = group[resourcename] = ResourceImport(
+                    resourcedata,
+                    path=(self.name, groupname, resourcedata['cls'], resourcename),
+                    )
+        elif not resourcedata and old:
             new = None
-            cls = old.cls
             del group[resourcename]
         else:
+            assert not resourcedata and not old
             new = None
-            cls = None
 
         self.coordinator.publish(
             'org.labgrid.coordinator.resource_changed', self.name,
             groupname, resourcename, new.asdict() if new else {}
         )
 
-        resource_path = (self.name, groupname, cls, resourcename)
-
         if old and new:
-            assert old.cls == new.cls
-            return Action.UPD, resource_path
-        if old:
-            return Action.DEL, resource_path
-        if new:
-            return Action.ADD, resource_path
+            assert old is new
+            return Action.UPD, new
+        elif old and not new:
+            return Action.DEL, old
+        elif not old and new:
+            return Action.ADD, new
 
-        return None, resource_path
+        assert not old and not new
 
     def get_resources(self):
         """Method invoked by the client, get the resources from the coordinator"""
@@ -94,7 +97,28 @@ class ClientSession(RemoteSession):
     pass
 
 
+@attr.s(cmp=False)
+class ResourceImport(ResourceEntry):
+    """Represents a local resource exported from an exporter.
+
+    The ResourceEntry attributes contain the information for the client.
+    """
+    path = attr.ib(kw_only=True, validator=attr.validators.instance_of(tuple))
+
+
+def locked(func):
+    @wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        async with self.lock:
+            return await func(self, *args, **kwargs)
+    return wrapper
+
 class CoordinatorComponent(ApplicationSession):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lock = asyncio.Lock()
+
+    @locked
     async def onConnect(self):
         self.sessions = {}
         self.places = {}
@@ -110,6 +134,7 @@ class CoordinatorComponent(ApplicationSession):
     def onChallenge(self, challenge):
         return "dummy-ticket"
 
+    @locked
     async def onJoin(self, details):
         await self.subscribe(self.on_session_join, 'wamp.session.on_join')
         await self.subscribe(
@@ -177,6 +202,7 @@ class CoordinatorComponent(ApplicationSession):
 
         print("Coordinator ready.")
 
+    @locked
     async def onLeave(self, details):
         self.save()
         if self.poll_task:
@@ -184,6 +210,7 @@ class CoordinatorComponent(ApplicationSession):
             await asyncio.wait([self.poll_task])
         super().onLeave(details)
 
+    @locked
     async def onDisconnect(self):
         self.save()
         if self.poll_task:
@@ -273,7 +300,7 @@ class CoordinatorComponent(ApplicationSession):
         place.matches.append(ResourceMatch(exporter="*", group=name, cls="*"))
         self.places[name] = place
 
-    async def _update_acquired_places(self, action, resource_path):
+    async def _update_acquired_places(self, action, resource):
         """Update acquired places when resources are added or removed."""
         if action not in [Action.ADD, Action.DEL]:
             return  # currently nothing needed for Action.UPD
@@ -283,7 +310,7 @@ class CoordinatorComponent(ApplicationSession):
         for placename, place in self.places.items():
             if not place.acquired:
                 continue
-            if not place.hasmatch(resource_path):
+            if not place.hasmatch(resource.path):
                 continue
             places.append(place)
 
@@ -291,18 +318,29 @@ class CoordinatorComponent(ApplicationSession):
             # only add if there is no conflict
             if len(places) != 1:
                 return
-            place.acquired_resources.append(resource_path)
+            place = places[0]
+            await self._acquire_resources(place, [resource])
             self._publish_place(place)
         else:
             for place in places:
-                place.acquired_resources.remove(resource_path)
-            self._publish_place(place)
+                await self._release_resources(place, [resource])
+                self._publish_place(place)
 
     def _publish_place(self, place):
         self.publish(
             'org.labgrid.coordinator.place_changed', place.name, place.asdict()
         )
 
+    def _publish_resource(self, resource):
+        self.publish(
+            'org.labgrid.coordinator.resource_changed',
+            resource.path[0], # exporter name
+            resource.path[1], # group name
+            resource.path[3], # resource name
+            resource.asdict(),
+        )
+
+    @locked
     async def on_session_join(self, session_details):
         print('join')
         pprint(session_details)
@@ -316,6 +354,7 @@ class CoordinatorComponent(ApplicationSession):
             return
         self.sessions[session.key] = session
 
+    @locked
     async def on_session_leave(self, session_id):
         print('leave ({})'.format(session_id))
         try:
@@ -325,10 +364,11 @@ class CoordinatorComponent(ApplicationSession):
         if isinstance(session, ExporterSession):
             for groupname, group in session.groups.items():
                 for resourcename in group.copy():
-                    action, resource_path = session.set_resource(groupname, resourcename, {})
-                    await self._update_acquired_places(action, resource_path)  # pylint: disable=not-an-iterable
+                    action, resource = session.set_resource(groupname, resourcename, {})
+                    await self._update_acquired_places(action, resource)  # pylint: disable=not-an-iterable
         self.save_later()
 
+    @locked
     async def attach(self, name, details=None):
         # TODO check if name is in use
         session = self.sessions[details.caller]
@@ -336,7 +376,10 @@ class CoordinatorComponent(ApplicationSession):
         session_details['name'] = name
         self.exporters[name] = defaultdict(dict)
 
-    async def set_resource(self, groupname, resourcename, resource, details=None):
+    # not @locked because set_resource my be triggered by a acquire() call to
+    # an exporter, leading to a deadlock on acquire_place()
+    async def set_resource(self, groupname, resourcename, resourcedata, details=None):
+        """Called by exporter to create/update/remove resources."""
         session = self.sessions.get(details.caller)
         if session is None:
             return
@@ -346,11 +389,14 @@ class CoordinatorComponent(ApplicationSession):
         resourcename = str(resourcename)
         # TODO check if acquired
         print(details)
-        pprint(resource)
-        action, resource_path = session.set_resource(groupname, resourcename, resource)
+        pprint(resourcedata)
+        action, resource = session.set_resource(groupname, resourcename, resourcedata)
         if action is Action.ADD:
-            self._add_default_place(groupname)
-        await self._update_acquired_places(action, resource_path)  # pylint: disable=not-an-iterable
+            async with self.lock:
+                self._add_default_place(groupname)
+        if action in (Action.ADD, Action.DEL):
+            async with self.lock:
+                await self._update_acquired_places(action, resource)  # pylint: disable=not-an-iterable
         self.save_later()
 
     def _get_resources(self):
@@ -360,9 +406,11 @@ class CoordinatorComponent(ApplicationSession):
                 result[session.name] = session.get_resources()
         return result
 
+    @locked
     async def get_resources(self, details=None):
         return self._get_resources()
 
+    @locked
     async def add_place(self, name, details=None):
         if not name or not isinstance(name, str):
             return False
@@ -374,6 +422,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def del_place(self, name, details=None):
         if not name or not isinstance(name, str):
             return False
@@ -386,6 +435,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def add_place_alias(self, placename, alias, details=None):
         try:
             place = self.places[placename]
@@ -397,6 +447,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def del_place_alias(self, placename, alias, details=None):
         try:
             place = self.places[placename]
@@ -411,6 +462,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def set_place_comment(self, placename, comment, details=None):
         try:
             place = self.places[placename]
@@ -422,6 +474,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def add_place_match(self, placename, pattern, rename=None, details=None):
         try:
             place = self.places[placename]
@@ -436,6 +489,7 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    @locked
     async def del_place_match(self, placename, pattern, rename=None, details=None):
         try:
             place = self.places[placename]
@@ -451,6 +505,64 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
         return True
 
+    async def _acquire_resources(self, place, resources):
+        resources = resources.copy() # we may modify the list
+        # all resources need to be free
+        for resource in resources:
+            if resource.acquired:
+                return False
+
+        # acquire resources
+        acquired = []
+        try:
+            for resource in resources:
+                # this triggers an update from the exporter which is published
+                # to the clients
+                await self.call('org.labgrid.exporter.{}.acquire'.format(resource.path[0]),
+                        resource.path[1], resource.path[3], place.name)
+                acquired.append(resource)
+        except:
+            # cleanup
+            await self._release_resources(place, acquired)
+            return False
+
+        for resource in resources:
+            place.acquired_resources.append(resource)
+
+        return True
+
+    @locked
+    async def acquire_resources(self, place, resources):
+        return await self._acquire_resources(place, resources)
+
+    async def _release_resources(self, place, resources):
+        resources = resources.copy() # we may modify the list
+
+        for resource in resources:
+            try:
+                place.acquired_resources.remove(resource)
+            except ValueError:
+                pass
+
+        for resource in resources:
+            try:
+                # this triggers an update from the exporter which is published
+                # to the clients
+                await self.call('org.labgrid.exporter.{}.release'.format(resource.path[0]),
+                        resource.path[1], resource.path[3])
+            except:
+                print("failed to release {}".format(resource))
+                # at leaset try to notify the clients
+                try:
+                    self._publish_resource(resource)
+                except:
+                    pass
+
+    @locked
+    async def release_resources(self, place, resources):
+        return await self._release_resources(place, resources)
+
+    @locked
     async def acquire_place(self, name, details=None):
         print(details)
         try:
@@ -462,18 +574,25 @@ class CoordinatorComponent(ApplicationSession):
         # FIXME use the session object instead? or something else which
         # survives disconnecting clients?
         place.acquired = self.sessions[details.caller].name
-        for exporter, groups in self._get_resources().items():
-            for group_name, group in sorted(groups.items()):
-                for resource_name, resource in sorted(group.items()):
-                    resource_path = (exporter, group_name, resource['cls'], resource_name)
-                    if not place.hasmatch(resource_path):
+        resources = []
+        for _, session in sorted(self.sessions.items()):
+            if not isinstance(session, ExporterSession):
+                continue
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    if not place.hasmatch(resource.path):
                         continue
-                    place.acquired_resources.append(resource_path)
+                    resources.append(resource)
+        if not await self._acquire_resources(place, resources):
+            # revert earlier change
+            place.acquired = None
+            return False
         place.touch()
         self._publish_place(place)
         self.save_later()
         return True
 
+    @locked
     async def release_place(self, name, details=None):
         print(details)
         try:
@@ -482,14 +601,17 @@ class CoordinatorComponent(ApplicationSession):
             return False
         if not place.acquired:
             return False
+
+        await self._release_resources(place, place.acquired_resources)
+
         place.acquired = None
-        place.acquired_resources = []
         place.allowed = set()
         place.touch()
         self._publish_place(place)
         self.save_later()
         return True
 
+    @locked
     async def allow_place(self, name, user, details=None):
         try:
             place = self.places[name]
@@ -508,6 +630,7 @@ class CoordinatorComponent(ApplicationSession):
     def _get_places(self):
         return {k: v.asdict() for k, v in self.places.items()}
 
+    @locked
     async def get_places(self, details=None):
         return self._get_places()
 

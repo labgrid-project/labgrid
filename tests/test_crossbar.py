@@ -138,3 +138,24 @@ def test_remoteplace_target(place_acquire, tmpdir):
     e = Environment(str(p))
     t = e.get_target("test1")
     t.await_resources(t.resources)
+
+def test_resource_conflict(place_acquire, tmpdir):
+    with pexpect.spawn('python -m labgrid.remote.client -p test2 create') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test2 add-match "*/*/*"') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test2 acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus != 0
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test2 delete') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0

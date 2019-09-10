@@ -13,6 +13,7 @@ from labgrid.util.managedfile import ManagedFile
 from labgrid.driver.exception import ExecutionError
 from labgrid.resource.serialport import NetworkSerialPort
 from labgrid.resource.common import Resource, NetworkResource
+from labgrid.util import diff_dict, flat_dict, filter_dict, find_dict
 
 @pytest.fixture
 def connection_localhost():
@@ -308,3 +309,12 @@ Test
 
     assert hash == mf.get_hash()
     assert str(t) == mf.get_remote_path()
+
+
+def test_find_dict():
+    dict_a = {"a": {"a.a": {"a.a.a": "a.a.a_val"}}, "b": "b_val"}
+    assert find_dict(dict_a, "b") == "b_val"
+    assert find_dict(dict_a, "a") == {"a.a": {"a.a.a": "a.a.a_val"}}
+    assert find_dict(dict_a, "a.a") == {"a.a.a": "a.a.a_val"}
+    assert find_dict(dict_a, "a.a.a") == "a.a.a_val"
+    assert find_dict(dict_a, "x") == None

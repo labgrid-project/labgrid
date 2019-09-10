@@ -12,3 +12,4 @@ yapf==0.27.0
 -r snmp-requirements.txt
 -r xena-requirements.txt
 -r graph-requirements.txt
+-r docker-requirements.txt

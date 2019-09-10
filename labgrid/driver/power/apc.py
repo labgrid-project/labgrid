@@ -1,11 +1,12 @@
 import subprocess
 
 from ..exception import ExecutionError
+from ...util.helper import processwrapper
 
 OID = ".1.3.6.1.4.1.318.1.1.4.4.2.1.3"
 
 def _snmp_get(host, oid):
-    out = subprocess.check_output(
+    out = processwrapper.check_output(
         "snmpget -v1 -c private -O qn {} {}".format(host, oid).split()
     ).decode('ascii')
     out_oid, value = out.strip().split(' ', 1)
@@ -20,7 +21,7 @@ def _snmp_get(host, oid):
 
 def _snmp_set(host, oid, value):
     try:
-        subprocess.check_output(
+        processwrapper.check_output(
             "snmpset -v1 -c private {} {} {}".format(host, oid, value).split()
         )
     except Exception as e:

@@ -25,6 +25,7 @@ from ..util.dict import diff_dict, flat_dict, filter_dict
 from ..util.yaml import dump
 from .. import Target, target_factory
 from ..util.proxy import proxymanager
+from ..util.helper import processwrapper
 
 txaio.use_asyncio()
 txaio.config.loop = asyncio.get_event_loop()
@@ -1097,6 +1098,7 @@ def find_any_role_with_place(config):
     return None, None
 
 def main():
+    processwrapper.enable_print()
     logging.basicConfig(
         level=logging.INFO,
         format='%(levelname)7s: %(message)s',

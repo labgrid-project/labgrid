@@ -9,6 +9,7 @@ from ..resource.udev import AlteraUSBBlaster
 from ..step import step
 from .common import Driver
 from .exception import ExecutionError
+from ..util.helper import processwrapper
 from ..util.managedfile import ManagedFile
 
 
@@ -75,4 +76,4 @@ class QuartusHPSDriver(Driver):
             "--addr=0x{:X}".format(address),
             "--operation=P {}".format(mf.get_remote_path()),
         ]
-        subprocess.check_call(cmd)
+        processwrapper.check_output(cmd)

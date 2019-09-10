@@ -47,7 +47,18 @@ class TestExternalPowerDriver:
         assert (isinstance(d, ExternalPowerDriver))
 
     def test_on(self, target, mocker):
-        m = mocker.patch('subprocess.check_call')
+        pty = mocker.patch('pty.openpty')
+        mocker.patch('fcntl.fcntl')
+        fdopen = mocker.patch('os.fdopen')
+        close = mocker.patch('os.close')
+        popen = mocker.patch('subprocess.Popen')
+        fd_mock = mocker.MagicMock()
+        instance_mock = mocker.MagicMock()
+        popen.return_value = instance_mock
+        fdopen.return_value = fd_mock
+        pty.return_value = (instance_mock, 2)
+        fd_mock.read.return_value = b'Done\nDone'
+        instance_mock.returncode = 0
 
         d = ExternalPowerDriver(
             target, 'power', cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
@@ -55,10 +66,22 @@ class TestExternalPowerDriver:
         target.activate(d)
         d.on()
 
-        m.assert_called_once_with(['set', '-1', 'foo-board'])
+        popen.assert_called_once_with(['set', '-1', 'foo-board'], bufsize=0,
+                                      stderr=2, stdout=2)
 
     def test_off(self, target, mocker):
-        m = mocker.patch('subprocess.check_call')
+        pty = mocker.patch('pty.openpty')
+        mocker.patch('fcntl.fcntl')
+        fdopen = mocker.patch('os.fdopen')
+        close = mocker.patch('os.close')
+        popen = mocker.patch('subprocess.Popen')
+        fd_mock = mocker.MagicMock()
+        instance_mock = mocker.MagicMock()
+        popen.return_value = instance_mock
+        fdopen.return_value = fd_mock
+        pty.return_value = (instance_mock, 2)
+        fd_mock.read.return_value = b'Done\nDone'
+        instance_mock.returncode = 0
 
         d = ExternalPowerDriver(
             target, 'power', cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
@@ -66,11 +89,24 @@ class TestExternalPowerDriver:
         target.activate(d)
         d.off()
 
-        m.assert_called_once_with(['set', '-0', 'foo-board'])
+        popen.assert_called_once_with(['set', '-0', 'foo-board'], bufsize=0,
+                                      stderr=2, stdout=2)
 
     def test_cycle(self, target, mocker):
+        pty = mocker.patch('pty.openpty')
+        mocker.patch('fcntl.fcntl')
+        fdopen = mocker.patch('os.fdopen')
+        close = mocker.patch('os.close')
+        popen = mocker.patch('subprocess.Popen')
+        fd_mock = mocker.MagicMock()
+        instance_mock = mocker.MagicMock()
+        popen.return_value = instance_mock
+        fdopen.return_value = fd_mock
+        pty.return_value = (instance_mock, 2)
+        fd_mock.read.return_value = b'Done\nDone'
+        instance_mock.returncode = 0
+
         m_sleep = mocker.patch('time.sleep')
-        m = mocker.patch('subprocess.check_call')
 
         d = ExternalPowerDriver(
             target, 'power', cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
@@ -78,15 +114,29 @@ class TestExternalPowerDriver:
         target.activate(d)
         d.cycle()
 
-        assert m.call_args_list == [
-            mocker.call(['set', '-0', 'foo-board']),
-            mocker.call(['set', '-1', 'foo-board']),
+        assert popen.call_args_list == [
+            mocker.call(['set', '-0', 'foo-board'], bufsize=0, stderr=2,
+                        stdout=2),
+            mocker.call(['set', '-1', 'foo-board'], bufsize=0, stderr=2,
+                        stdout=2),
         ]
         m_sleep.assert_called_once_with(2.0)
 
     def test_cycle_explicit(self, target, mocker):
+        pty = mocker.patch('pty.openpty')
+        mocker.patch('fcntl.fcntl')
+        fdopen = mocker.patch('os.fdopen')
+        close = mocker.patch('os.close')
+        popen = mocker.patch('subprocess.Popen')
+        fd_mock = mocker.MagicMock()
+        instance_mock = mocker.MagicMock()
+        popen.return_value = instance_mock
+        fdopen.return_value = fd_mock
+        pty.return_value = (instance_mock, 2)
+        fd_mock.read.return_value = b'Done\nDone'
+        instance_mock.returncode = 0
+
         m_sleep = mocker.patch('time.sleep')
-        m = mocker.patch('subprocess.check_call')
 
         d = ExternalPowerDriver(
             target, 'power',
@@ -97,7 +147,8 @@ class TestExternalPowerDriver:
         target.activate(d)
         d.cycle()
 
-        m.assert_called_once_with(['set', '-c', 'foo-board'])
+        popen.assert_called_once_with(['set', '-c', 'foo-board'], bufsize=0,
+                                      stderr=2, stdout=2)
         m_sleep.assert_not_called()
 
 class TestNetworkPowerDriver:

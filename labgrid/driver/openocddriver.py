@@ -10,6 +10,7 @@ from ..resource.remote import NetworkAlteraUSBBlaster
 from ..resource.udev import AlteraUSBBlaster
 from ..step import step
 from ..util.managedfile import ManagedFile
+from ..util.helper import processwrapper
 from .common import Driver
 
 
@@ -93,7 +94,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
             "--command", "'bootstrap {}'".format(mf.get_remote_path()),
             "--command", "'shutdown'",
         ]
-        subprocess.check_call(cmd)
+        processwrapper.check_output(cmd)
 
     @Driver.check_active
     @step(args=['commands'])
@@ -113,4 +114,4 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
             cmd.append(mconfig.get_remote_path())
 
         cmd += chain.from_iterable(("--command", "'{}'".format(command)) for command in commands)
-        subprocess.check_call(cmd)
+        processwrapper.check_output(cmd)

@@ -397,7 +397,9 @@ class ExporterSession(ApplicationSession):
         try:
             resource_config = ResourceConfig(self.config.extra['resources'])
             for group_name, group in resource_config.data.items():
+                group_name = str(group_name)
                 for resource_name, params in group.items():
+                    resource_name = str(resource_name)
                     if resource_name == 'location':
                         continue
                     if params is None:

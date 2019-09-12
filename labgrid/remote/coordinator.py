@@ -522,6 +522,7 @@ class CoordinatorComponent(ApplicationSession):
                         resource.path[1], resource.path[3], place.name)
                 acquired.append(resource)
         except:
+            print("failed to acquire {}".format(resource))
             # cleanup
             await self._release_resources(place, acquired)
             return False

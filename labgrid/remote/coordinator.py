@@ -1,6 +1,7 @@
 """The coordinator module coordinates exported resources and clients accessing them."""
 # pylint: disable=no-member,unused-argument
 import asyncio
+import enum
 import traceback
 from collections import defaultdict
 from os import environ
@@ -14,7 +15,8 @@ from autobahn import wamp
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 from autobahn.wamp.types import RegisterOptions
 
-from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
+from .common import *
+from .scheduler import TagSet, schedule
 from ..util import atomic_replace
 
 
@@ -122,6 +124,7 @@ class CoordinatorComponent(ApplicationSession):
     async def onConnect(self):
         self.sessions = {}
         self.places = {}
+        self.reservations = {}
         self.poll_task = None
         self.save_scheduled = False
 
@@ -171,6 +174,9 @@ class CoordinatorComponent(ApplicationSession):
             self.del_place_alias, 'org.labgrid.coordinator.del_place_alias'
         )
         await self.register(
+            self.set_place_tags, 'org.labgrid.coordinator.set_place_tags'
+        )
+        await self.register(
             self.set_place_comment, 'org.labgrid.coordinator.set_place_comment'
         )
         await self.register(
@@ -196,6 +202,25 @@ class CoordinatorComponent(ApplicationSession):
         )
         await self.register(
             self.get_places, 'org.labgrid.coordinator.get_places'
+        )
+
+        # reservations
+        await self.register(
+            self.create_reservation,
+            'org.labgrid.coordinator.create_reservation',
+            options=RegisterOptions(details_arg='details'),
+        )
+        await self.register(
+            self.cancel_reservation,
+            'org.labgrid.coordinator.cancel_reservation',
+        )
+        await self.register(
+            self.poll_reservation,
+            'org.labgrid.coordinator.poll_reservation',
+        )
+        await self.register(
+            self.get_reservations,
+            'org.labgrid.coordinator.get_reservations',
         )
 
         self.poll_task = asyncio.get_event_loop().create_task(self.poll())
@@ -242,6 +267,8 @@ class CoordinatorComponent(ApplicationSession):
                         pass # disconnected
                     else:
                         raise
+        # update reservations
+        self.schedule_reservations()
 
     async def poll(self):
         loop = asyncio.get_event_loop()
@@ -284,6 +311,8 @@ class CoordinatorComponent(ApplicationSession):
                     del config['acquired_resources']
                 if 'allowed' in config:
                     del config['allowed']
+                if 'reservation' in config:
+                    del config['reservation']
                 config['matches'] = [ResourceMatch(**match) for match in config['matches']]
                 place = Place(**config)
                 self.places[placename] = place
@@ -463,6 +492,33 @@ class CoordinatorComponent(ApplicationSession):
         return True
 
     @locked
+    async def set_place_tags(self, placename, tags, details=None):
+        try:
+            place = self.places[placename]
+        except KeyError:
+            return False
+        assert isinstance(tags, dict)
+        for k, v in tags.items():
+            assert isinstance(k, str)
+            assert isinstance(v, str)
+            if not TAG_KEY.match(k):
+                return False
+            if not TAG_VAL.match(v):
+                return False
+        for k, v in tags.items():
+            if not v:
+                try:
+                    del place.tags[k]
+                except KeyError:
+                    pass
+            else:
+                place.tags[k] = v
+        place.touch()
+        self._publish_place(place)
+        self.save_later()
+        return True
+
+    @locked
     async def set_place_comment(self, placename, comment, details=None):
         try:
             place = self.places[placename]
@@ -572,6 +628,10 @@ class CoordinatorComponent(ApplicationSession):
             return False
         if place.acquired:
             return False
+        if place.reservation:
+            res = self.reservations[place.reservation]
+            if not res.owner == self.sessions[details.caller].name:
+                return False
         # FIXME use the session object instead? or something else which
         # survives disconnecting clients?
         place.acquired = self.sessions[details.caller].name
@@ -591,6 +651,7 @@ class CoordinatorComponent(ApplicationSession):
         place.touch()
         self._publish_place(place)
         self.save_later()
+        self.schedule_reservations()
         return True
 
     @locked
@@ -610,6 +671,7 @@ class CoordinatorComponent(ApplicationSession):
         place.touch()
         self._publish_place(place)
         self.save_later()
+        self.schedule_reservations()
         return True
 
     @locked
@@ -635,6 +697,155 @@ class CoordinatorComponent(ApplicationSession):
     async def get_places(self, details=None):
         return self._get_places()
 
+    def schedule_reservations(self):
+        # The primary information is stored in the reservations and the places
+        # only have a copy for convenience.
+
+        # expire reservations
+        for res in list(self.reservations.values()):
+            if res.state is ReservationState.acquired:
+                # acquired reservations do not expire
+                res.refresh()
+            if not res.expired:
+                continue
+            if res.state is not ReservationState.expired:
+                res.state = ReservationState.expired
+                res.allocations.clear()
+                res.refresh()
+                print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))
+            else:
+                del self.reservations[res.token]
+                print('removed {} reservation ({}/{})'.format(res.state.name, res.owner, res.token))
+
+        # check which places are already allocated and handle state transitions
+        allocated_places = set()
+        for res in self.reservations.values():
+            acquired_places = set()
+            for group in list(res.allocations.values()):
+                for name in group:
+                    place = self.places.get(name)
+                    if place is None:
+                        # the allocated place was deleted
+                        res.state = ReservationState.invalid
+                        res.allocations.clear()
+                        res.refresh(300)
+                        print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))
+                    if place.acquired is not None:
+                        acquired_places.add(name)
+                    assert name not in allocated_places, "conflicting allocation"
+                    allocated_places.add(name)
+            if acquired_places and res.state is ReservationState.allocated:
+                # an allocated place was acquired
+                res.state = ReservationState.acquired
+                res.refresh()
+                print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))
+            if not acquired_places and res.state is ReservationState.acquired:
+                # all allocated places were released
+                res.state = ReservationState.allocated
+                res.refresh()
+                print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))
+
+        # check which places are available for allocation
+        available_places = set()
+        for name, place in self.places.items():
+            if place.acquired is None and place.reservation is None:
+                available_places.add(name)
+        assert not (available_places & allocated_places), "inconsistent allocation"
+        available_places -= allocated_places
+
+        # check which reservations should be handled, ordered by priority and age
+        pending_reservations = []
+        for res in sorted(self.reservations.values(), key=lambda x: (-x.prio, x.created)):
+            if res.state is not ReservationState.waiting:
+                continue
+            pending_reservations.append(res)
+
+        # run scheduler
+        place_tagsets = []
+        for name in available_places:
+            tags = set(self.places[name].tags.items())
+            # support place names
+            tags |= {('name', name)}
+            # support place aliases
+            place_tagsets.append(TagSet(name, tags))
+        filter_tagsets = []
+        for res in pending_reservations:
+            filter_tagsets.append(TagSet(res.token, set(res.filters['main'].items())))
+        allocation = schedule(place_tagsets, filter_tagsets)
+
+        # apply allocations
+        for res_token, place_name in allocation.items():
+            res = self.reservations[res_token]
+            res.allocations = {'main': [place_name]}
+            res.state = ReservationState.allocated
+            res.refresh()
+            print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))
+
+        # update reservation property of each place and notify
+        old_map = {}
+        for place in self.places.values():
+            old_map[place.name] = place.reservation
+            place.reservation = None
+        new_map = {}
+        for res in self.reservations.values():
+            if not res.allocations:
+                continue
+            assert len(res.allocations) == 1, "only one filter group is implemented"
+            for group in res.allocations.values():
+                for name in group:
+                    assert name not in new_map, "conflicting allocation"
+                    new_map[name] = res.token
+                    place = self.places.get(name)
+                    assert place is not None, "invalid allocation"
+                    place.reservation = res.token
+        for name in old_map.keys() | new_map.keys():
+            if old_map.get(name) != new_map.get(name):
+                self._publish_place(place)
+
+    @locked
+    async def create_reservation(self, spec, prio=0.0, details=None):
+        filter = {}
+        for pair in spec.split():
+            try:
+                k, v = pair.split('=')
+            except ValueError:
+                return None
+            if not TAG_KEY.match(k):
+                return None
+            if not TAG_VAL.match(v):
+                return None
+            filter[k] = v
+
+        filters = {'main': filter} # currently, only one group is implemented
+
+        owner = self.sessions[details.caller].name
+        res = Reservation(owner=owner, prio=prio, filters=filters)
+        self.reservations[res.token] = res
+        self.schedule_reservations()
+        return {res.token: res.asdict()}
+
+    @locked
+    async def cancel_reservation(self, token, details=None):
+        if not isinstance(token, str):
+            return False
+        if token not in self.reservations:
+            return False
+        del self.reservations[token]
+        self.schedule_reservations()
+        return True
+
+    @locked
+    async def poll_reservation(self, token, details=None):
+        try:
+            res = self.reservations[token]
+        except KeyError:
+            return None
+        res.refresh()
+        return res.asdict()
+
+    @locked
+    async def get_reservations(self, details=None):
+        return {k: v.asdict() for k, v in self.reservations.items()}
 
 if __name__ == '__main__':
     runner = ApplicationRunner(

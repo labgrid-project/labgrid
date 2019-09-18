@@ -217,6 +217,9 @@ These components communicate over the `WAMP <http://wamp-proto.org/>`_
 implementation `Autobahn <http://autobahn.ws/>`_ and the `Crossbar
 <http://crossbar.io/>`_ WAMP router.
 
+The following sections describe the resposibilities of each component. See
+:ref:`remote-usage` for usage information.
+
 Coordinator
 ~~~~~~~~~~~
 
@@ -245,6 +248,10 @@ Each place can have aliases to simplify accessing a specific board (which might
 be moved between generic places).
 It also has a comment, which is used to store a short description of the
 connected board.
+
+To support selecting a specific place from a group containing similar or
+identical hardware, key-value tags can be added to places and used for
+scheduling.
 
 Finally, a place is configured with one or more `resource matches`.
 A resource match pattern has the format ``<exporter>/<group>/<class>``, where

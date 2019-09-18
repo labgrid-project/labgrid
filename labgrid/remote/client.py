@@ -17,7 +17,7 @@ from pprint import pformat
 import txaio
 from autobahn.asyncio.wamp import ApplicationSession
 
-from .common import ResourceEntry, ResourceMatch, Place, enable_tcp_nodelay
+from .common import *
 from ..environment import Environment
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace
@@ -274,6 +274,23 @@ class ClientSession(ApplicationSession):
         the current user name.
         """
         result = set()
+
+        # reservation token lookup
+        token = None
+        if pattern.startswith('+'):
+            token = pattern[1:]
+            if not token:
+                token = os.environ.get('LG_TOKEN', None)
+            if not token:
+                return []
+            for name, place in self.places.items():
+                if place.reservation == token:
+                    result.add(name)
+            if not result:
+                raise UserError("reservation token {} matches nothing".format(token))
+            return list(result)
+
+        # name and alias lookup
         for name, place in self.places.items():
             if pattern in name:
                 result.add(name)
@@ -433,6 +450,29 @@ class ClientSession(ApplicationSession):
         if not res:
             raise ServerError(
                 "failed to set comment {} for place {}".format(comment, place.name)
+            )
+        return res
+
+    async def set_tags(self):
+        """Set the tags on a place"""
+        place = self.get_place()
+        tags = {}
+        for pair in self.args.tags:
+            try:
+                k, v = pair.split('=')
+            except ValueError:
+                raise UserError("tag '{}' needs to match '<key>=<value>'".format(pair))
+            if not TAG_KEY.match(k):
+                raise UserError("tag key '{}' needs to match the rexex '{}'".format(k, TAG_KEY.pattern))
+            if not TAG_VAL.match(v):
+                raise UserError("tag value '{}' needs to match the rexex '{}'".format(v, TAG_VAL.pattern))
+            tags[k] = v
+        res = await self.call(
+            'org.labgrid.coordinator.set_place_tags', place.name, tags
+        )
+        if not res:
+            raise ServerError(
+                "failed to set tags {} for place {}".format(' '.join(self.args.tags), place.name)
             )
         return res
 
@@ -1050,6 +1090,58 @@ class ClientSession(ApplicationSession):
         except FileNotFoundError as e:
             raise UserError(e)
 
+    async def create_reservation(self):
+        filters = ' '.join(self.args.filters)
+        prio = self.args.prio
+        res = await self.call('org.labgrid.coordinator.create_reservation', filters, prio=prio)
+        if res is None:
+            raise ServerError("failed to create reservation")
+        ((token, config),) = res.items() # we get a one-item dict
+        config = filter_dict(config, Reservation, warn=True)
+        res = Reservation(token=token, **config)
+        if self.args.shell:
+            print("export LG_TOKEN={}".format(res.token))
+        else:
+            print("Reservation '{}':".format(res.token))
+            res.show(level=1)
+        if self.args.wait:
+            if not self.args.shell:
+                print("Waiting for allocation...")
+            await self._wait_reservation(res.token, verbose=False)
+
+    async def cancel_reservation(self):
+        token = self.args.token
+        res = await self.call('org.labgrid.coordinator.cancel_reservation', token)
+        if not res:
+            raise ServerError("failed to cancel reservation {}".format(token))
+
+    async def _wait_reservation(self, token, verbose=True):
+        while True:
+            config = await self.call('org.labgrid.coordinator.poll_reservation', token)
+            if config is None:
+                raise ServerError("reservation not found")
+            config = filter_dict(config, Reservation, warn=True)
+            res = Reservation(token=token, **config)
+            if verbose:
+                res.show()
+            if res.state is ReservationState.waiting:
+                await asyncio.sleep(1.0)
+            else:
+                break
+
+    async def wait_reservation(self):
+        token = self.args.token
+        await self._wait_reservation(token)
+
+    async def print_reservations(self):
+        reservations = await self.call('org.labgrid.coordinator.get_reservations')
+        for token, config in sorted(reservations.items(), key=lambda x: (-x[1]['prio'], x[1]['created'])):
+            config = filter_dict(config, Reservation, warn=True)
+            res = Reservation(token=token, **config)
+            print("Reservation '{}':".format(res.token))
+            res.show(level=1)
+
+
 def start_session(url, realm, extra):
     from autobahn.asyncio.wamp import ApplicationRunner
 
@@ -1110,6 +1202,7 @@ def main():
     place = os.environ.get('LG_PLACE', place)
     state = os.environ.get('STATE', None)
     state = os.environ.get('LG_STATE', state)
+    token = os.environ.get('LG_TOKEN', None)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -1220,6 +1313,12 @@ def main():
                                       help="update the place comment")
     subparser.add_argument('comment', nargs='+')
     subparser.set_defaults(func=ClientSession.set_comment)
+
+    subparser = subparsers.add_parser('set-tags',
+                                      help="update the place tags")
+    subparser.add_argument('tags', metavar='KEY=VALUE', nargs='+',
+                           help="use an empty value for deletion")
+    subparser.set_defaults(func=ClientSession.set_tags)
 
     subparser = subparsers.add_parser('add-match',
                                       help="add one (or multiple) match pattern(s) to a place")
@@ -1346,6 +1445,28 @@ def main():
     subparser.add_argument('-w', '--wait', type=float, default=10.0)
     subparser.add_argument('filename', help='filename to boot on the target')
     subparser.set_defaults(func=ClientSession.write_image)
+
+    subparser = subparsers.add_parser('reserve', help="create a reservation")
+    subparser.add_argument('--wait', action='store_true',
+                           help="wait until the reservation is allocated")
+    subparser.add_argument('--shell', action='store_true',
+                           help="format output as shell variables")
+    subparser.add_argument('--prio', type=float, default=0.0,
+                           help="priority relative to other reservations (default 0)")
+    subparser.add_argument('filters', metavar='KEY=VALUE', nargs='+',
+                           help="required tags")
+    subparser.set_defaults(func=ClientSession.create_reservation)
+
+    subparser = subparsers.add_parser('cancel-reservation', help="cancel a reservation")
+    subparser.add_argument('token', type=str, default=token, nargs='?' if token else None)
+    subparser.set_defaults(func=ClientSession.cancel_reservation)
+
+    subparser = subparsers.add_parser('wait', help="wait for a reservation to be allocated")
+    subparser.add_argument('token', type=str, default=token, nargs='?' if token else None)
+    subparser.set_defaults(func=ClientSession.wait_reservation)
+
+    subparser = subparsers.add_parser('reservations', help="list current reservations")
+    subparser.set_defaults(func=ClientSession.print_reservations)
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()

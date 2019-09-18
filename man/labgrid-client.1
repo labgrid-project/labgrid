@@ -79,6 +79,10 @@ Various labgrid\-client commands use the following environment variable:
 .SS LG_PLACE
 .sp
 This variable can be used to specify a place without using the \fB\-p\fP option, the \fB\-p\fP option overrides it.
+.SS LG_TOKEN
+.sp
+This variable can be used to specify a reservation for the \fBwait\fP command and
+for the \fB+\fP place expansion.
 .SS LG_STATE
 .sp
 This variable can be used to specify a state which the device transitions into
@@ -130,6 +134,8 @@ matches anything.
 .sp
 \fBset\-comment\fP comment         Update or set the place comment
 .sp
+\fBset\-tags\fP comment            Set place tags (key=value)
+.sp
 \fBadd\-match\fP match             Add one (or multiple) match pattern(s) to a place, see MATCHES
 .sp
 \fBdel\-match\fP match             Delete one (or multiple) match pattern(s) from a place, see MATCHES
@@ -164,7 +170,15 @@ matches anything.
 .sp
 \fBtmc\fP command                 Control a USB TMC device
 .sp
-\fBwrite\-image\fP         Write images onto block devices (USBSDMux, USB Sticks, …)
+\fBwrite\-image\fP                 Write images onto block devices (USBSDMux, USB Sticks, …)
+.sp
+\fBreserve\fP filter              Create a reservation
+.sp
+\fBcancel\-reservation\fP token    Cancel a pending reservation
+.sp
+\fBwait\fP token                  Wait for a reservation to be allocated
+.sp
+\fBreservations\fP                List current reservations
 .SH EXAMPLES
 .sp
 To retrieve a list of places run:

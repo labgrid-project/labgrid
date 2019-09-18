@@ -64,6 +64,11 @@ LG_PLACE
 ~~~~~~~~
 This variable can be used to specify a place without using the ``-p`` option, the ``-p`` option overrides it.
 
+LG_TOKEN
+~~~~~~~~
+This variable can be used to specify a reservation for the ``wait`` command and
+for the ``+`` place expansion.
+
 LG_STATE
 ~~~~~~~~
 This variable can be used to specify a state which the device transitions into
@@ -121,6 +126,8 @@ LABGRID-CLIENT COMMANDS
 
 ``set-comment`` comment         Update or set the place comment
 
+``set-tags`` comment            Set place tags (key=value)
+
 ``add-match`` match             Add one (or multiple) match pattern(s) to a place, see MATCHES
 
 ``del-match`` match             Delete one (or multiple) match pattern(s) from a place, see MATCHES
@@ -155,7 +162,16 @@ LABGRID-CLIENT COMMANDS
 
 ``tmc`` command                 Control a USB TMC device
 
-``write-image``         Write images onto block devices (USBSDMux, USB Sticks, …)
+``write-image``                 Write images onto block devices (USBSDMux, USB Sticks, …)
+
+``reserve`` filter              Create a reservation
+
+``cancel-reservation`` token    Cancel a pending reservation
+
+``wait`` token                  Wait for a reservation to be allocated
+
+``reservations``                List current reservations
+
 
 EXAMPLES
 --------

@@ -1,6 +1,171 @@
 Usage
 =====
 
+.. _remote-usage:
+
+Remote Access
+-------------
+
+As described in :ref:`remote-resources-and-places`, one of labgrid's main
+features is making access to boards connected to other hosts transparent for
+the client.
+To get started with remote access, take a look at
+:ref:`remote-getting-started`.
+
+Place Scheduling
+~~~~~~~~~~~~~~~~
+
+When sharing places between developers or with CI jobs, it soon becomes
+necessary to manage who can access which places.
+Developers often just need any place which has one of a group of identical
+devices, while CI jobs should wait until the necessary place is free instead of
+failing.
+
+To support these use-cases, the coordinator has support for reserving places by
+using a tag filter and an optional priority.
+First, the places have to be tagged with the relevant key-value pairs:
+
+.. code-block:: bash
+
+  $ labgrid-client -p board-1 set-tags board=imx6-foo
+  $ labgrid-client -p board-2 set-tags board=imx6-foo
+  $ labgrid-client -p board-3 set-tags board=imx8m-bar
+  $ labgrid-client -v places
+  Place 'board-1':
+    tags: bar=baz, board=imx6-foo, jlu=2, rcz=1
+    matches:
+      rl-test/Testport1/NetworkSerialPort
+  …
+  Place 'board-2':
+    tags: board=imx6-foo
+    matches:
+      rl-test/Testport2/NetworkSerialPort
+  …
+  Place 'board-3':
+    tags: board=imx8m-bar
+    matches:
+      rl-test/Testport3/NetworkSerialPort
+  …
+
+Now, if you want to access any ``imx6-foo`` board, you could find that all are
+already in use by someone else:
+
+.. code-block:: bash
+
+  $ labgrid-client who
+  User     Host     Place    Changed
+  rcz      dude     board-1  2019-08-06 12:14:38.446201
+  jenkins  worker1  board-2  2019-08-06 12:52:44.762131
+
+In this case, you can create a reservation.
+You can specify any custom tags as part of the filter, as well as
+``name=<place-name>`` to select only a specific place (even if it has no custom
+tags).
+
+.. code-block:: bash
+
+  $ labgrid-client reserve board=imx6-foo
+  Reservation 'SP37P5OQRU':
+    owner: rettich/jlu
+    token: SP37P5OQRU
+    state: waiting
+    filters:
+      main: board=imx6-foo
+    created: 2019-08-06 12:56:49.779982
+    timeout: 2019-08-06 12:57:49.779983
+
+As soon as any matching place becomes free, the reservation state will change
+from ``waiting`` to ``allocated``.
+Then, you can use the reservation token prefixed by ``+`` to refer to the
+allocated place for locking and usage.
+While a place is allocated for a reservation, only the owner of the reservation
+can lock that place.
+
+
+.. code-block:: bash
+
+  $ labgrid-client wait SP37P5OQRU
+  owner: rettich/jlu
+  token: SP37P5OQRU
+  state: waiting
+  filters:
+    main: board=imx6-foo
+  created: 2019-08-06 12:56:49.779982
+  timeout: 2019-08-06 12:58:14.900621
+  …
+  owner: rettich/jlu
+  token: SP37P5OQRU
+  state: allocated
+  filters:
+    main: board=imx6-foo
+  allocations:
+    main: board-2
+  created: 2019-08-06 12:56:49.779982
+  timeout: 2019-08-06 12:58:46.145851
+  $ labgrid-client -p +SP37P5OQRU lock
+  acquired place board-2
+  $ labgrid-client reservations
+  Reservation 'SP37P5OQRU':
+    owner: rettich/jlu
+    token: SP37P5OQRU
+    state: acquired
+    filters:
+      main: board=imx6-foo
+    allocations:
+      main: board-2
+    created: 2019-08-06 12:56:49.779982
+    timeout: 2019-08-06 12:59:11.840780
+  $ labgrid-client -p +SP37P5OQRU console
+
+When using reservation in a CI job or to save some typing, the ``labgrid-client
+reserve`` command supports a ``--shell`` command to print code for evaluating
+in the shell.
+This sets the ``LG_TOKEN`` environment variable, which is then automatically
+used by ``wait`` and expanded via ``-p +``.
+
+.. code-block:: bash
+
+  $ eval `labgrid-client reserve --shell board=imx6-foo`
+  $ echo $LG_TOKEN
+  ZDMZJZNLBF
+  $ labgrid-client wait
+  owner: rettich/jlu
+  token: ZDMZJZNLBF
+  state: waiting
+  filters:
+    main: board=imx6-foo
+  created: 2019-08-06 13:05:30.987072
+  timeout: 2019-08-06 13:06:44.629736
+  …
+  owner: rettich/jlu
+  token: ZDMZJZNLBF
+  state: allocated
+  filters:
+    main: board=imx6-foo
+  allocations:
+    main: board-1
+  created: 2019-08-06 13:05:30.987072
+  timeout: 2019-08-06 13:06:56.196684
+  $ labgrid-client -p + lock
+  acquired place board-1
+  $ labgrid-client -p + show
+  Place 'board-1':
+    tags: bar=baz, board=imx6-foo, jlu=2, rcz=1
+    matches:
+      rettich/Testport1/NetworkSerialPort
+    acquired: rettich/jlu
+    acquired resources:
+    created: 2019-07-29 16:11:52.006269
+    changed: 2019-08-06 13:06:09.667682
+    reservation: ZDMZJZNLBF
+
+Finally, to avoid calling the ``wait`` command explicitly, you can add
+``--wait`` to the ``reserve`` command, so it waits until the reservation is
+allocated before returning.
+
+A reservation will time out after a short time, if it is neither refreshed nor
+used by locked places.
+
 Library
 -------
 Labgrid can be used directly as a Python library, without the infrastructure

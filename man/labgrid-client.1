@@ -179,6 +179,14 @@ matches anything.
 \fBwait\fP token                  Wait for a reservation to be allocated
 .sp
 \fBreservations\fP                List current reservations
+.SH ADDING NAMED RESOURCES
+.sp
+If a target contains multiple Resources of the same type, named matches need to
+be used to address the individual resources. In addition to the \fImatch\fP taken by
+\fIadd\-match\fP, \fIadd\-named\-match\fP also takes a name for the resource. The other
+client commands support the name as an optional parameter and will inform the
+user that a name is required if multiple resources are found, but no name is
+given.
 .SH EXAMPLES
 .sp
 To retrieve a list of places run:

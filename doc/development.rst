@@ -428,6 +428,10 @@ or get and put files:
 
    sshmanager.put_file('somehost', '/path/to/local/file', '/path/to/remote/file')
 
+.. note::
+  The SSHManager will reuse existing Control Sockets and set up a keepalive loop
+  to prevent timeouts of the socket during tests.
+
 ManagedFile
 -----------
 While the `SSHManager` exposes a lower level interface to use SSH Connections,

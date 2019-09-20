@@ -104,7 +104,7 @@ class ResourceMatch:
     def __str__(self):
         result = repr(self)
         if self.rename:
-            result += " → " + self.rename
+            result += " -> " + self.rename
         return result
 
     def ismatch(self, resource_path):
@@ -191,7 +191,7 @@ class Place:
                 resource_path = resource.path
             match = self.getmatch(resource_path)
             if match.rename:
-                print(indent + "  {} → {}".format(
+                print(indent + "  {} -> {}".format(
                     '/'.join(resource_path), match.rename))
             else:
                 print(indent + "  {}".format(

@@ -67,11 +67,27 @@ Defaults to \(aqrealm1\(aq.
 .SH IMAGES
 .sp
 The \fBimages:\fP top key provides paths to access preconfigured images to flash
-onto the board.
+onto the board. The image paths can be either relative to the YAML file or
+absolute.
 .SS IMAGE KEYS
 .sp
 The subkeys consist of image names as keys and their paths as values. The
 corresponding name can than be used with the appropriate tool found under TOOLS.
+.SS IMAGE EXAMPLE
+.sp
+Two configured images, one for the root filesystem, one for the bootloader:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+images:
+  root: "platform\-v7a/images/root.img"
+  boot: "platform\-v7a/images/barebox.img"
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
 .SH TOOLS
 .sp
 The \fBtools:\fP top key provides paths to binaries such as fastboot.
@@ -87,11 +103,41 @@ Path to the mxs\-usb\-loader binary
 .B \fBimx\-usb\-loader\fP
 Path to the imx\-usb\-loader binary
 .UNINDENT
+.SS TOOLS EXAMPLE
+.sp
+Configure the tool path for \fBimx\-usb\-loader\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tools:
+  imx\-usb\-loader: "/opt/labgrid\-helper/imx\-usb\-loader"
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
 .SH IMPORTS
 .sp
 The \fBimports\fP key is a list of files or python modules which
 are imported by the environment after loading the configuration.
 Paths relative to the configuration file are also supported.
+This is useful to load drivers and strategy which are contained in your
+testsuite, since the import is done before instantiating the targets.
+.SS IMPORTS EXAMPLE
+.sp
+Import a local \fImyfunctions.py\fP file:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+imports:
+  \- myfunctions.py
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
 .SH EXAMPLES
 .sp
 A sample configuration with one \fImain\fP target, accessible via SerialPort
@@ -112,6 +158,36 @@ targets:
         prompt: \(aqroot@\ew+:[^ ]+ \(aq
         login_prompt: \(aq login: \(aq
         username: \(aqroot\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+A sample configuration with \fIRemotePlace\fP, using the tools configuration and
+importing the local \fImystrategy.py\fP file. The \fIMyStrategy\fP strategy is contained
+in the loaded local python file:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: test\-place
+    drivers:
+      SerialDriver: {}
+      ShellDriver:
+        prompt: \(aqroot@\ew+:[^ ]+ \(aq
+        login_prompt: \(aq login: \(aq
+        username: \(aqroot\(aq
+      MyStrategy: {}
+      IMXUSBLoader: {}
+tools:
+  imx\-usb\-loader: "/opt/lg\-tools/imx\-usb\-loader"
+imports:
+  \- mystrategy.py
 .ft P
 .fi
 .UNINDENT

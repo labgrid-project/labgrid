@@ -65,13 +65,24 @@ OPTIONS KEYS
 IMAGES
 ------
 The ``images:`` top key provides paths to access preconfigured images to flash
-onto the board.
+onto the board. The image paths can be either relative to the YAML file or
+absolute.
 
 IMAGE KEYS
 ~~~~~~~~~~
 
 The subkeys consist of image names as keys and their paths as values. The
 corresponding name can than be used with the appropriate tool found under TOOLS.
+
+IMAGE EXAMPLE
+~~~~~~~~~~~~~~
+Two configured images, one for the root filesystem, one for the bootloader:
+
+::
+
+   images:
+     root: "platform-v7a/images/root.img"
+     boot: "platform-v7a/images/barebox.img"
 
 TOOLS
 -----
@@ -89,11 +100,31 @@ TOOLS KEYS
 ``imx-usb-loader``
     Path to the imx-usb-loader binary
 
+TOOLS EXAMPLE
+~~~~~~~~~~~~~~
+Configure the tool path for ``imx-usb-loader``:
+
+::
+
+   tools:
+     imx-usb-loader: "/opt/labgrid-helper/imx-usb-loader"
+
 IMPORTS
 -------
 The ``imports`` key is a list of files or python modules which
 are imported by the environment after loading the configuration.
 Paths relative to the configuration file are also supported.
+This is useful to load drivers and strategy which are contained in your
+testsuite, since the import is done before instantiating the targets.
+
+IMPORTS EXAMPLE
+~~~~~~~~~~~~~~~
+Import a local `myfunctions.py` file:
+
+::
+
+   imports:
+     - myfunctions.py
 
 EXAMPLES
 --------
@@ -114,6 +145,29 @@ A sample configuration with one `main` target, accessible via SerialPort
            login_prompt: ' login: '
            username: 'root'
 
+A sample configuration with `RemotePlace`, using the tools configuration and
+importing the local `mystrategy.py` file. The `MyStrategy` strategy is contained
+in the loaded local python file:
+
+::
+
+   targets:
+     main:
+       resources:
+         RemotePlace:
+           name: test-place
+       drivers:
+         SerialDriver: {}
+         ShellDriver:
+           prompt: 'root@\w+:[^ ]+ '
+           login_prompt: ' login: '
+           username: 'root'
+         MyStrategy: {}
+	 IMXUSBLoader: {}
+   tools:
+     imx-usb-loader: "/opt/lg-tools/imx-usb-loader"
+   imports:
+     - mystrategy.py
 
 SEE ALSO
 --------

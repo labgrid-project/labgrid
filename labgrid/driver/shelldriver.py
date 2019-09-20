@@ -141,7 +141,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 if index == 1:
                     if self.password:
                         self.console.sendline(self.password)
-                        self.console.expect(self.prompt, timeout=5)
+                        remaining_time = (start + self.login_timeout) - time.time()
+                        self.console.expect(self.prompt, timeout=remaining_time)
                     else:
                         raise Exception("Password entry needed but no password set")
                 self._check_prompt()

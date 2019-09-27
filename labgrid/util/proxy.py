@@ -75,8 +75,6 @@ class ProxyManager:
             port = sshmanager.request_forward(cls._force_proxy, hostname, port)
             hostname = 'localhost'
 
-            print(cls._force_proxy, hostname, port)
-
         if ':' in hostname:
             # IPv6 address
             s = s._replace(netloc="[{}]:{}".format(hostname, port))

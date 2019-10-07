@@ -1536,7 +1536,7 @@ def main():
                 traceback.print_exc()
             else:
                 print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
-            print("This may be caused by disconnected exporter or wrong match entries.\nYou can use the 'show' command to all matching resources.", file=sys.stderr)  # pylint: disable=line-too-long
+            print("This may be caused by disconnected exporter or wrong match entries.\nYou can use the 'show' command to review all matching resources.", file=sys.stderr)  # pylint: disable=line-too-long
             exitcode = 1
         except NoDriverFoundError as e:
             if args.debug:

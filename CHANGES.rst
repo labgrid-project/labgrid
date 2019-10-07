@@ -40,6 +40,8 @@ Breaking changes in 0.3.0
   ``fs.protected_fifos=1`` for kernels>=4.19.
   This requires user intervention after the upgrade to create the directory and
   setup the cleanup job.
+- ``@attr.s(cmp=False)`` is deprecated and all classes have been moved to
+  ``@attr.s(eq=False)``, this release requires attrs version 19.2.0
 
 Release 0.2.0 (released Jan 4, 2019)
 ------------------------------------

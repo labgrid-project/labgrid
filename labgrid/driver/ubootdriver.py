@@ -15,7 +15,7 @@ from .commandmixin import CommandMixin
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     """UBootDriver - Driver to control uboot via the console.
     UBootDriver binds on top of a ConsoleProtocol.

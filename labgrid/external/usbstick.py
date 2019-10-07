@@ -17,7 +17,7 @@ class USBStatus(enum.Enum):
     mounted = 2
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBStick:
     """The USBStick class provides an easy to use interface to describe a
     target as an USB Stick."""
@@ -140,7 +140,7 @@ class USBStick:
         self.image_name = image_name
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StateError(Exception):
     """Exception which indicates a error in the state handling of the test"""
     msg = attr.ib()

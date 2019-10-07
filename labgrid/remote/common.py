@@ -15,7 +15,7 @@ TAG_KEY = re.compile(r"[a-z][a-z0-9_]+")
 TAG_VAL = re.compile(r"[a-z0-9_]?")
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ResourceEntry:
     data = attr.ib()  # cls, params
 
@@ -84,7 +84,7 @@ class ResourceMatch:
     cls = attr.ib()
     name = attr.ib(default=None)
     # rename is just metadata, so don't use it for comparing matches
-    rename = attr.ib(default=None, cmp=False)
+    rename = attr.ib(default=None, eq=False)
 
     @classmethod
     def fromstr(cls, pattern):
@@ -122,7 +122,7 @@ class ResourceMatch:
         return True
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class Place:
     name = attr.ib()
     aliases = attr.ib(default=attr.Factory(set), converter=set)
@@ -233,7 +233,7 @@ class ReservationState(enum.Enum):
     invalid = 4
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class Reservation:
     owner = attr.ib(validator=attr.validators.instance_of(str))
     token = attr.ib(default=attr.Factory(

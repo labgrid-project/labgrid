@@ -9,7 +9,7 @@ from .common import Driver
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class FileDigitalOutputDriver(Driver, DigitalOutputProtocol):
     """
     Two arbitrary string values false_repr and true_repr

@@ -11,7 +11,7 @@ from ..exceptions import InvalidConfigError
 from ..util.agentwrapper import AgentWrapper, b2s, s2b
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBTMCDriver(Driver):
     bindings = {
         "tmc": {USBTMC, NetworkUSBTMC},

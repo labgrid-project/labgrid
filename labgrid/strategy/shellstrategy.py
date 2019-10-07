@@ -16,7 +16,7 @@ class Status(enum.Enum):
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ShellStrategy(Strategy):
     """ShellStrategy - Strategy to switch to shell"""
     bindings = {

@@ -4,7 +4,7 @@ from ..factory import target_factory
 from .common import Resource
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class SigrokDevice(Resource):
     """The SigrokDevice describes an attached sigrok device with driver and
     channel mapping

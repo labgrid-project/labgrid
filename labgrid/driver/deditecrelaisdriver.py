@@ -12,7 +12,7 @@ from ..util.agentwrapper import AgentWrapper
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class DeditecRelaisDriver(Driver, DigitalOutputProtocol):
     bindings = {
         "relais": {DeditecRelais8, NetworkDeditecRelais8},

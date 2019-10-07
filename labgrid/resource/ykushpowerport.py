@@ -5,7 +5,7 @@ from .common import Resource
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class YKUSHPowerPort(Resource):
     """This resource describes a YEPKIT YKUSH switchable USB hub.
 

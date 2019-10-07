@@ -15,7 +15,7 @@ from ..util.proxy import proxymanager
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     """
     Driver implementing the ConsoleProtocol interface over a SerialPort connection

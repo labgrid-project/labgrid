@@ -9,7 +9,7 @@ from ..resource.udev import USBVideo
 from ..exceptions import InvalidConfigError
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBVideoDriver(Driver):
     bindings = {
         "video": {USBVideo, NetworkUSBVideo},

@@ -15,7 +15,7 @@ class Status(enum.Enum):
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class DockerStrategy(Strategy):
     """
     DockerStrategy enables the user to directly transition to a state

@@ -12,7 +12,7 @@ from labgrid.protocol.powerprotocol import PowerProtocol
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class DockerDriver(PowerProtocol, Driver):
     """The DockerDriver is used to create docker containers.
     This is done via communication with a docker daemon.

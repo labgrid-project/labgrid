@@ -23,7 +23,7 @@ class DockerConstants:
     DOCKER_LG_CLEANUP_TYPE_AUTO = "auto"
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class DockerManager(ResourceManager):
     """The DockerManager is responsible for cleaning up dangling
     containers and managing the managed NetworkService
@@ -76,7 +76,7 @@ class DockerManager(ResourceManager):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class DockerDaemon(ManagedResource):
     """ A resource identifying a docker daemon """
     docker_daemon_url = attr.ib(validator=attr.validators.instance_of(str))

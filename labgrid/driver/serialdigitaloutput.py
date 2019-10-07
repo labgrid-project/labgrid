@@ -7,7 +7,7 @@ from .common import Driver
 from . import SerialDriver
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
     """
     Controls the state of a GPIO using the control lines of a serial port.

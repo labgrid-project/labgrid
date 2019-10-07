@@ -15,7 +15,7 @@ from ..util.helper import processwrapper
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class MXSUSBDriver(Driver, BootstrapProtocol):
     bindings = {
         "loader": {MXSUSBLoader, NetworkMXSUSBLoader},
@@ -51,7 +51,7 @@ class MXSUSBDriver(Driver, BootstrapProtocol):
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class IMXUSBDriver(Driver, BootstrapProtocol):
     bindings = {
         "loader": {IMXUSBLoader, NetworkIMXUSBLoader, MXSUSBLoader, NetworkMXSUSBLoader},
@@ -88,7 +88,7 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class RKUSBDriver(Driver, BootstrapProtocol):
     bindings = {
         "loader": {RKUSBLoader, NetworkRKUSBLoader},

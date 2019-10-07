@@ -26,7 +26,7 @@ class Action(Enum):
     UPD = 2
 
 
-@attr.s(init=False, cmp=False)
+@attr.s(init=False, eq=False)
 class RemoteSession:
     """class encapsulating a session, used by ExporterSession and ClientSession"""
     coordinator = attr.ib()
@@ -45,7 +45,7 @@ class RemoteSession:
         return self.authid.split('/', 1)[1]
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ExporterSession(RemoteSession):
     """An ExporterSession is opened for each Exporter connecting to the
     coordinator, allowing the Exporter to get and set resources"""
@@ -94,12 +94,12 @@ class ExporterSession(RemoteSession):
         return result
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ClientSession(RemoteSession):
     pass
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ResourceImport(ResourceEntry):
     """Represents a local resource exported from an exporter.
 

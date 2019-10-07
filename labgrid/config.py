@@ -10,7 +10,7 @@ import attr
 from .exceptions import NoConfigFoundError, InvalidConfigError
 from .util.yaml import load, resolve_templates
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class Config:
     filename = attr.ib(validator=attr.validators.instance_of(str))
 

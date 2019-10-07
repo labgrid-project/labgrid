@@ -20,7 +20,7 @@ from .exception import ExecutionError
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     """ShellDriver - Driver to execute commands on the shell
     ShellDriver binds on top of a ConsoleProtocol.

@@ -1,12 +1,12 @@
 import attr
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NoConfigFoundError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NoSupplierFoundError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
     filter = attr.ib(
@@ -15,16 +15,16 @@ class NoSupplierFoundError(Exception):
     )
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class InvalidConfigError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NoDriverFoundError(NoSupplierFoundError):
     pass
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NoResourceFoundError(NoSupplierFoundError):
     pass

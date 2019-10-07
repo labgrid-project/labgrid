@@ -9,7 +9,7 @@ from .common import Driver
 from .exception import ExecutionError
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ModbusCoilDriver(Driver, DigitalOutputProtocol):
     bindings = {"coil": ModbusTCPCoil, }
 

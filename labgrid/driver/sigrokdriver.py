@@ -22,7 +22,7 @@ from .common import Driver, check_file
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class SigrokDriver(Driver):
     """The SigrokDriver uses sigrok-cli to record samples and expose them as python dictionaries.
 

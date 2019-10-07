@@ -8,7 +8,7 @@ from .common import Driver
 from .ubootdriver import UBootDriver
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class SmallUBootDriver(UBootDriver):
     """
     SmallUBootDriver is meant as a driver for UBoot with only little

@@ -8,7 +8,7 @@ from ..step import step
 from .common import Driver
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class DigitalOutputResetDriver(Driver, ResetProtocol):
     """DigitalOutputResetDriver - Driver using a DigitalOutput to reset the
     target"""

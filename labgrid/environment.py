@@ -5,7 +5,7 @@ from .target import Target
 from .config import Config
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class Environment:
     """An environment encapsulates targets."""
     config_file = attr.ib(

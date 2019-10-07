@@ -14,7 +14,7 @@ from ..util.managedfile import ManagedFile
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class QuartusHPSDriver(Driver):
     bindings = {
         "interface": {AlteraUSBBlaster, NetworkAlteraUSBBlaster},

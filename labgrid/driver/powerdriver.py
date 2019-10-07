@@ -18,7 +18,7 @@ from .common import Driver
 from .exception import ExecutionError
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class PowerResetMixin(ResetProtocol):
     """
     ResetMixin implements the ResetProtocol for drivers which support the PowerProtocol
@@ -34,7 +34,7 @@ class PowerResetMixin(ResetProtocol):
         self.cycle()
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """ManualPowerDriver - Driver to tell the user to control a target's power"""
 
@@ -62,7 +62,7 @@ class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ExternalPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """ExternalPowerDriver - Driver using an external command to control a target's power"""
     cmd_on = attr.ib(validator=attr.validators.instance_of(str))
@@ -97,7 +97,7 @@ class ExternalPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             self.on()
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """NetworkPowerDriver - Driver using a networked power switch to control a target's power"""
     bindings = {"port": NetworkPowerPort, }
@@ -145,7 +145,7 @@ class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
         return self.backend.power_get(self._host, self._port, self.port.index)
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class DigitalOutputPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """
     DigitalOutputPowerDriver uses a DigitalOutput to control the power
@@ -180,7 +180,7 @@ class DigitalOutputPowerDriver(Driver, PowerResetMixin, PowerProtocol):
         return self.output.get()
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """YKUSHPowerDriver - Driver using a YEPKIT YKUSH switchable USB hub
         to control a target's power - https://www.yepkit.com/products/ykush"""
@@ -217,7 +217,7 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
         return self.pykush.get_port_state(self.port.index)
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """USBPowerDriver - Driver using a power switchable USB hub and the uhubctl
     tool (https://github.com/mvp/uhubctl) to control a target's power"""

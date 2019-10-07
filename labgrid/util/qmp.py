@@ -3,7 +3,7 @@ import logging
 import attr
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class QMPMonitor:
     monitor_out = attr.ib()
     monitor_in = attr.ib()
@@ -45,6 +45,6 @@ class QMPMonitor:
             raise QMPError(answer['error'])
         return answer
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class QMPError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))

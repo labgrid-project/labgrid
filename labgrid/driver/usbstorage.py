@@ -11,7 +11,7 @@ from .common import Driver
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBStorageDriver(Driver):
     bindings = {"storage": {USBMassStorage, USBSDMuxDevice}, }
 

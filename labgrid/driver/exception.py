@@ -1,7 +1,7 @@
 import attr
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ExecutionError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
     stdout = attr.ib(
@@ -14,6 +14,6 @@ class ExecutionError(Exception):
     )
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class CleanUpError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))

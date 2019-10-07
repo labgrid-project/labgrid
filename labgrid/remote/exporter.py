@@ -26,7 +26,7 @@ except pkg_resources.DistributionNotFound:
 exports = {}
 reexec = False
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ResourceExport(ResourceEntry):
     """Represents a local resource exported via a specific protocol.
 
@@ -112,7 +112,7 @@ class ResourceExport(ResourceEntry):
         self.poll()
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBSerialPortExport(ResourceExport):
     """ResourceExport for a USB SerialPort"""
 
@@ -179,7 +179,7 @@ class USBSerialPortExport(ResourceExport):
 
 exports["USBSerialPort"] = USBSerialPortExport
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBEthernetExport(ResourceExport):
     """ResourceExport for a USB ethernet interface"""
 
@@ -200,7 +200,7 @@ class USBEthernetExport(ResourceExport):
 
 exports["USBEthernetInterface"] = USBEthernetExport
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBGenericExport(ResourceExport):
     """ResourceExport for USB devices accessed directly from userspace"""
 
@@ -223,7 +223,7 @@ class USBGenericExport(ResourceExport):
             'model_id': self.local.model_id,
         }
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBSigrokExport(USBGenericExport):
     """ResourceExport for USB devices accessed directly from userspace"""
 
@@ -243,7 +243,7 @@ class USBSigrokExport(USBGenericExport):
             'channels': self.local.channels
         }
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBSDMuxExport(USBGenericExport):
     """ResourceExport for USB devices accessed directly from userspace"""
 
@@ -262,7 +262,7 @@ class USBSDMuxExport(USBGenericExport):
             'control_path': self.local.control_path,
         }
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBPowerPortExport(USBGenericExport):
     """ResourceExport for ports on switchable USB hubs"""
 
@@ -281,7 +281,7 @@ class USBPowerPortExport(USBGenericExport):
             'index': self.local.index,
         }
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBDeditecRelaisExport(USBGenericExport):
     """ResourceExport for outputs on deditec relais"""
 
@@ -337,7 +337,7 @@ class EthernetPortExport(ResourceExport):
 exports["SNMPEthernetPort"] = EthernetPortExport
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class GPIOGenericExport(ResourceExport):
     """ResourceExport for GPIO lines accessed directly from userspace"""
 

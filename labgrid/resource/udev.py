@@ -14,7 +14,7 @@ from .base import SerialPort, EthernetInterface
 from ..util import Timeout
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class UdevManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -50,7 +50,7 @@ class UdevManager(ResourceManager):
                 if resource.try_match(device):
                     break
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBResource(ManagedResource):
     manager_cls = UdevManager
 
@@ -176,7 +176,7 @@ class USBResource(ManagedResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBSerialPort(USBResource, SerialPort):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'tty'
@@ -195,7 +195,7 @@ class USBSerialPort(USBResource, SerialPort):
             self.port = None
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBMassStorage(USBResource):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'block'
@@ -211,7 +211,7 @@ class USBMassStorage(USBResource):
         return None
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class IMXUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
@@ -227,7 +227,7 @@ class IMXUSBLoader(USBResource):
         return super().filter_match(device)
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class RKUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
@@ -238,7 +238,7 @@ class RKUSBLoader(USBResource):
         return super().filter_match(device)
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class MXSUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
@@ -249,7 +249,7 @@ class MXSUSBLoader(USBResource):
         return super().filter_match(device)
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class AndroidFastboot(USBResource):
     usb_vendor_id = attr.ib(default='1d6b', validator=attr.validators.instance_of(str))
     usb_product_id = attr.ib(default='0104', validator=attr.validators.instance_of(str))
@@ -261,7 +261,7 @@ class AndroidFastboot(USBResource):
         return super().filter_match(device)
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBEthernetInterface(USBResource, EthernetInterface):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'net'
@@ -283,7 +283,7 @@ class USBEthernetInterface(USBResource, EthernetInterface):
         return value
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class AlteraUSBBlaster(USBResource):
     def filter_match(self, device):
         if device.properties.get('ID_VENDOR_ID') != "09fb":
@@ -293,7 +293,7 @@ class AlteraUSBBlaster(USBResource):
         return super().filter_match(device)
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class SigrokUSBDevice(USBResource):
     """The SigrokUSBDevice describes an attached sigrok device with driver and
     channel mapping, it is identified via usb using udev
@@ -309,7 +309,7 @@ class SigrokUSBDevice(USBResource):
         super().__attrs_post_init__()
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBSDMuxDevice(USBResource):
     """The USBSDMuxDevice describes an attached USBSDMux device,
     it is identified via USB using udev
@@ -353,7 +353,7 @@ class USBSDMuxDevice(USBResource):
         return self.disk_path
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBPowerPort(USBResource):
     """The USBPowerPort describes a single port on an USB hub which supports
     power control.
@@ -368,7 +368,7 @@ class USBPowerPort(USBResource):
         super().__attrs_post_init__()
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBVideo(USBResource):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'video4linux'
@@ -383,7 +383,7 @@ class USBVideo(USBResource):
         return None
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBTMC(USBResource):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'usbmisc'
@@ -399,7 +399,7 @@ class USBTMC(USBResource):
         return None
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class DeditecRelais8(USBResource):
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
 

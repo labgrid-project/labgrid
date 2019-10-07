@@ -3,7 +3,7 @@ import attr
 from .fileprovider import FileProvider
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class MediaFileProvider(FileProvider):
     groups = attr.ib(default={}, validator=attr.validators.instance_of(dict))
 

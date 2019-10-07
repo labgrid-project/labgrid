@@ -12,7 +12,7 @@ from ..util.helper import processwrapper
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class AndroidFastbootDriver(Driver):
     bindings = {
         "fastboot": {AndroidFastboot, NetworkAndroidFastboot},

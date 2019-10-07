@@ -11,7 +11,7 @@ from .exception import ExecutionError
 from ..step import step
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class OneWirePIODriver(Driver, DigitalOutputProtocol):
 
     bindings = {"port": OneWirePIO, }

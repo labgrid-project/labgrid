@@ -22,7 +22,7 @@ class Mode(enum.Enum):
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkUSBStorageDriver(Driver):
     bindings = {
         "storage": {

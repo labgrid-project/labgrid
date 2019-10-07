@@ -11,7 +11,7 @@ from .exception import ExecutionError
 from ..util.helper import processwrapper
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class USBSDMuxDriver(Driver):
     """The USBSDMuxDriver uses the usbsdmux tool
     (https://github.com/pengutronix/usbsdmux) to control the USB-SD-Mux

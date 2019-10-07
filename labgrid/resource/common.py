@@ -4,7 +4,7 @@ from ..binding import BindingMixin
 from ..util.ssh import sshmanager
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class Resource(BindingMixin):
     """
     Represents a resource which is used by drivers. It only stores information
@@ -47,7 +47,7 @@ class Resource(BindingMixin):
         return self._parent.get_managed_parent() if self._parent else None
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkResource(Resource):
     """
     Represents a remote Resource available on another computer.
@@ -74,7 +74,7 @@ class NetworkResource(Resource):
         return prefix + ['--']
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ResourceManager:
     instances = {}
 
@@ -100,7 +100,7 @@ class ResourceManager:
         pass
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ManagedResource(Resource):
     """
     Represents a resource which can appear and disappear at runtime. Every

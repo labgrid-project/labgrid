@@ -13,7 +13,7 @@ from .strategy import Strategy
 from .util import Timeout
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class Target:
     name = attr.ib(validator=attr.validators.instance_of(str))
     env = attr.ib(default=None)

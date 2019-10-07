@@ -7,7 +7,7 @@ from .common import Driver
 from ..resource.xenamanager import XenaManager
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class XenaDriver(Driver):
     """
     Xena Driver

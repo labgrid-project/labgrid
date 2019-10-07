@@ -6,7 +6,7 @@ from ..factory import target_factory
 from .common import NetworkResource, ManagedResource, ResourceManager
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class RemotePlaceManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -92,7 +92,7 @@ class RemotePlaceManager(ResourceManager):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class RemotePlace(ManagedResource):
     manager_cls = RemotePlaceManager
 
@@ -100,7 +100,7 @@ class RemotePlace(ManagedResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class RemoteUSBResource(NetworkResource, ManagedResource):
     manager_cls = RemotePlaceManager
 
@@ -112,7 +112,7 @@ class RemoteUSBResource(NetworkResource, ManagedResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkAndroidFastboot(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
@@ -120,7 +120,7 @@ class NetworkAndroidFastboot(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkIMXUSBLoader(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
@@ -128,7 +128,7 @@ class NetworkIMXUSBLoader(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkMXSUSBLoader(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
@@ -136,7 +136,7 @@ class NetworkMXSUSBLoader(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkRKUSBLoader(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
@@ -144,7 +144,7 @@ class NetworkRKUSBLoader(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkAlteraUSBBlaster(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
@@ -152,7 +152,7 @@ class NetworkAlteraUSBBlaster(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkSigrokUSBDevice(RemoteUSBResource):
     """The NetworkSigrokUSBDevice describes a remotely accessible sigrok USB device"""
     driver = attr.ib(default=None, validator=attr.validators.instance_of(str))
@@ -163,7 +163,7 @@ class NetworkSigrokUSBDevice(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkUSBMassStorage(RemoteUSBResource):
     """The NetworkUSBMassStorage describes a remotely accessible USB storage device"""
     def __attrs_post_init__(self):
@@ -172,7 +172,7 @@ class NetworkUSBMassStorage(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkUSBSDMuxDevice(RemoteUSBResource):
     """The NetworkUSBSDMuxDevice describes a remotely accessible USBSDMux device"""
     control_path = attr.ib(default=None, validator=attr.validators.instance_of(str))
@@ -182,7 +182,7 @@ class NetworkUSBSDMuxDevice(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkUSBPowerPort(RemoteUSBResource):
     """The NetworkUSBPowerPort describes a remotely accessible USB hub port with power switching"""
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
@@ -192,7 +192,7 @@ class NetworkUSBPowerPort(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkUSBVideo(RemoteUSBResource):
     """The NetworkUSBVideo describes a remotely accessible USB video device"""
     def __attrs_post_init__(self):
@@ -201,7 +201,7 @@ class NetworkUSBVideo(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkUSBTMC(RemoteUSBResource):
     """The NetworkUSBTMC describes a remotely accessible USB TMC device"""
     def __attrs_post_init__(self):
@@ -210,7 +210,7 @@ class NetworkUSBTMC(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkDeditecRelais8(RemoteUSBResource):
     """The NetworkDeditecRelais8 describes a remotely accessible USB relais port"""
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
@@ -220,7 +220,7 @@ class NetworkDeditecRelais8(RemoteUSBResource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class NetworkSysfsGPIO(NetworkResource, ManagedResource):
     manager_cls = RemotePlaceManager
 

@@ -4,7 +4,7 @@ from ..factory import target_factory
 from .common import Resource
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class SerialPort(Resource):
     """The basic SerialPort describes port and speed
 
@@ -15,7 +15,7 @@ class SerialPort(Resource):
     speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class EthernetInterface(Resource):
     """The basic EthernetInterface contains an interfacename
 
@@ -36,7 +36,7 @@ class EthernetPort(Resource):
 
 
 @target_factory.reg_resource
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class SysfsGPIO(Resource):
     """The basic SysfsGPIO contains an index
 

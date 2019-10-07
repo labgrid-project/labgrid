@@ -3,7 +3,7 @@ from collections import defaultdict
 import attr
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class TagSet:
     name = attr.ib(validator=attr.validators.instance_of(str))
     tags = attr.ib(validator=attr.validators.instance_of(set))

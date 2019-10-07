@@ -14,7 +14,7 @@ from ..util.helper import processwrapper
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class FlashromDriver(Driver, BootstrapProtocol):
     """ The Flashrom driver used the flashrom utility to write an image to a raw rom.
     The driver is a pure wrapper of the flashrom utility"""

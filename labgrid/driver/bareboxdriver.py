@@ -15,7 +15,7 @@ from .commandmixin import CommandMixin
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     """BareboxDriver - Driver to control barebox via the console.
        BareboxDriver binds on top of a ConsoleProtocol.

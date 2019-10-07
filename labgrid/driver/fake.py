@@ -11,7 +11,7 @@ from .consoleexpectmixin import ConsoleExpectMixin
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class FakeConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
 
@@ -40,7 +40,7 @@ class FakeConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class FakeCommandDriver(CommandMixin, Driver, CommandProtocol):
     @Driver.check_active
     def run(self, *args, timeout=None): # pylint: disable=unused-argument
@@ -56,7 +56,7 @@ class FakeCommandDriver(CommandMixin, Driver, CommandProtocol):
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class FakeFileTransferDriver(Driver, FileTransferProtocol):
     @Driver.check_active
     def get(self, *args):
@@ -67,7 +67,7 @@ class FakeFileTransferDriver(Driver, FileTransferProtocol):
         pass
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class FakePowerDriver(Driver, PowerProtocol):
     @Driver.check_active
     def on(self, *args):

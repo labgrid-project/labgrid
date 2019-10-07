@@ -7,7 +7,7 @@ from ..util.yaml import load
 from ..exceptions import NoConfigFoundError
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ResourceConfig:
     filename = attr.ib(validator=attr.validators.instance_of(str))
 

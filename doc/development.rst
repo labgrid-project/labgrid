@@ -75,7 +75,7 @@ provided by connecting drivers and resources on a given target at runtime.
     from labgrid.driver.common import Driver
     from labgrid.protocol import ConsoleProtocol
 
-    @attr.s(cmp=False)
+    @attr.s(eq=False)
     class ExampleDriver(Driver, ConsoleProtocol):
         pass
 
@@ -93,7 +93,7 @@ be added into multiple drivers.
     from labgrid.driver.consoleexpectmixin import ConsoleExpectMixin
     from labgrid.protocol import ConsoleProtocol
 
-    @attr.s(cmp=False)
+    @attr.s(eq=False)
     class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
         pass
 
@@ -111,7 +111,7 @@ dependencies on other drivers or resources.
     from labgrid.protocol import ConsoleProtocol
 
     @target_factory.reg_driver
-    @attr.s(cmp=False)
+    @attr.s(eq=False)
     class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
         bindings = { "port": SerialPort }
         pass
@@ -145,7 +145,7 @@ The minimum requirement is a call to :code:`super().__attrs_post_init__()`.
     from labgrid.protocol import ConsoleProtocol
 
     @target_factory.reg_driver
-    @attr.s(cmp=False)
+    @attr.s(eq=False)
     class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
         bindings = { "port": SerialPort }
 
@@ -179,7 +179,7 @@ register it with the :any:`target_factory`.
     from labgrid.driver.common import Resource
 
     @target_factory.reg_resource
-    @attr.s(cmp=False)
+    @attr.s(eq=False)
     class ExampleResource(Resource):
         pass
 
@@ -194,7 +194,7 @@ variables.
     from labgrid.driver.common import Resource
 
     @target_factory.reg_resource
-    @attr.s(cmp=False)
+    @attr.s(eq=False)
     class ExampleResource(Resource):
         examplevar1 = attr.ib()
         examplevar2 = attr.ib()

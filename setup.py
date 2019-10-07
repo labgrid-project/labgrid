@@ -23,7 +23,7 @@ setup(
     setup_requires=['pytest-runner', 'setuptools_scm'],
     tests_require=['pytest-mock', ],
     install_requires=[
-        'attrs>=17.4.0',
+        'attrs>=19.2.0',
         'ansicolors',
         'jinja2',
         'pexpect',

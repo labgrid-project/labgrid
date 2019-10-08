@@ -312,6 +312,9 @@ class Target:
             errors = []
             suppliers = []
             for requirement in requirements:
+                # convert class name string to classes
+                if isinstance(requirement, str):
+                    requirement = self._class_from_string(requirement)
                 try:
                     if issubclass(requirement, Resource):
                         suppliers.append(
@@ -456,4 +459,4 @@ class Target:
         try:
             return self._lookup_table[string]
         except KeyError:
-            raise KeyError("No such driver/resource/protocol in lookup table, perhaps not bound?")
+            raise KeyError("No driver/resource/protocol of type '{}' in lookup table, perhaps not bound?".format(string))

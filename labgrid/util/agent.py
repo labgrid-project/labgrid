@@ -2,6 +2,7 @@
 
 import json
 import os
+import signal
 import sys
 import base64
 import types
@@ -93,6 +94,8 @@ def handle_usbtmc(index, cmd, read=False):
     return b2s(b''.join(data))
 
 def main():
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
     a = Agent()
     a.register('test', handle_test)
     a.register('error', handle_error)

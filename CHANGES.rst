@@ -29,6 +29,9 @@ New Features in 0.3.0
 - The coordinator now updates the resource acquired state at the exporter.
   Accordingly, the exporter now starts ser2net only when a resources is
   aquired. Furthermore, resource conflicts between places are now detected.
+- The binding dictionary can now supports type name strings in addition to the
+  types themselves, avoiding the need to import a specific protocol or driver
+  in some cases.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

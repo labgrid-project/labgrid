@@ -2,6 +2,9 @@
 
 from setuptools import setup
 
+import fastentrypoints  # noqa: F401 # pylint: disable=unused-import
+
+
 setup(
     name='labgrid',
     description='labgrid: lab hardware and software control layer',

@@ -214,6 +214,7 @@ class NetworkUSBTMC(RemoteUSBResource):
 class NetworkDeditecRelais8(RemoteUSBResource):
     """The NetworkDeditecRelais8 describes a remotely accessible USB relais port"""
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
+    invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()

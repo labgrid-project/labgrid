@@ -38,9 +38,14 @@ class DeditecRelaisDriver(Driver, DigitalOutputProtocol):
     @Driver.check_active
     @step(args=['status'])
     def set(self, status):
+        if self.relais.invert:
+            status = not status
         self.proxy.set(self.relais.busnum, self.relais.devnum, self.relais.index, status)
 
     @Driver.check_active
     @step(result=True)
     def get(self):
-        return self.proxy.get(self.relais.busnum, self.relais.devnum, self.relais.index)
+        status = self.proxy.get(self.relais.busnum, self.relais.devnum, self.relais.index)
+        if self.relais.invert:
+            status = not status
+        return status

@@ -402,6 +402,7 @@ class USBTMC(USBResource):
 @attr.s(eq=False)
 class DeditecRelais8(USBResource):
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
+    invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         self.match['ID_VENDOR'] = 'DEDITEC'

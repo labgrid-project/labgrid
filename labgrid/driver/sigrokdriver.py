@@ -21,18 +21,8 @@ from ..step import step
 from .common import Driver, check_file
 
 
-@target_factory.reg_driver
 @attr.s(eq=False)
-class SigrokDriver(Driver):
-    """The SigrokDriver uses sigrok-cli to record samples and expose them as python dictionaries.
-
-    Args:
-        bindings (dict): driver to use with sigrok
-    """
-    bindings = {
-        "sigrok": {SigrokUSBDevice, NetworkSigrokUSBDevice, SigrokDevice},
-    }
-
+class SigrokCommon(Driver):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         # FIXME make sure we always have an environment or config
@@ -44,19 +34,6 @@ class SigrokDriver(Driver):
             self.tool = 'sigrok-cli'
         self.log = logging.getLogger("SigrokDriver")
         self._running = False
-
-    def _get_sigrok_prefix(self):
-        if isinstance(self.sigrok, (NetworkSigrokUSBDevice, SigrokUSBDevice)):
-            prefix = [
-                self.tool, "-d", "{}:conn={}.{}".format(
-                    self.sigrok.driver, self.sigrok.busnum, self.sigrok.devnum
-                ), "-C", self.sigrok.channels
-            ]
-        else:
-            prefix = [
-                self.tool, "-d", self.sigrok.driver, "-C", self.sigrok.channels
-            ]
-        return self.sigrok.command_prefix + prefix
 
     def _create_tmpdir(self):
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
@@ -126,6 +103,32 @@ class SigrokDriver(Driver):
             stdin=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class SigrokDriver(SigrokCommon):
+    """The SigrokDriver uses sigrok-cli to record samples and expose them as python dictionaries.
+
+    Args:
+        bindings (dict): driver to use with sigrok
+    """
+    bindings = {
+        "sigrok": {SigrokUSBDevice, NetworkSigrokUSBDevice, SigrokDevice},
+    }
+
+    def _get_sigrok_prefix(self):
+        if isinstance(self.sigrok, (NetworkSigrokUSBDevice, SigrokUSBDevice)):
+            prefix = [
+                self.tool, "-d", "{}:conn={}.{}".format(
+                    self.sigrok.driver, self.sigrok.busnum, self.sigrok.devnum
+                ), "-C", self.sigrok.channels
+            ]
+        else:
+            prefix = [
+                self.tool, "-d", self.sigrok.driver, "-C", self.sigrok.channels
+            ]
+        return self.sigrok.command_prefix + prefix
 
     @Driver.check_active
     def capture(self, filename, samplerate="200k"):

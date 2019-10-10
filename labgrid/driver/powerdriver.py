@@ -279,3 +279,52 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             if b"off" in status:
                 return False
         raise ExecutionError("Did not find port status in uhubctl output ({})".format(repr(output)))
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class PDUDaemonDriver(Driver, PowerResetMixin, PowerProtocol):
+    """PDUDaemonDriver - Driver using a PDU port available via pdudaemon"""
+    bindings = {"port": "PDUDaemonPort", }
+    delay = attr.ib(default=5, validator=attr.validators.instance_of(int))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self._requests = import_module('requests')
+        self._host = None
+        self._port = None
+
+    def _build_url(self, cmd):
+        res = "http://{}:{}/power/control/{}?hostname={}&port={}".format(
+            self._host, self._port, cmd, self.port.pdu, self.port.index)
+        if cmd == 'reboot':
+            res += "&delay={}".format(self.delay)
+        return res
+
+    def on_activate(self):
+        self._host, self._port = proxymanager.get_host_and_port(self.port, default_port=16421)
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        r = self._requests.get(self._build_url('on'))
+        r.raise_for_status()
+        time.sleep(1)  # give pdudaemon some time to execute the request
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        r = self._requests.get(self._build_url('off'))
+        r.raise_for_status()
+        time.sleep(1)  # give pdudaemon some time to execute the request
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        r = self._requests.get(self._build_url('reboot'))
+        r.raise_for_status()
+        time.sleep(self.delay + 1)  # give pdudaemon some time to execute the request
+
+    @Driver.check_active
+    def get(self):
+        return None

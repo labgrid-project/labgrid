@@ -9,7 +9,7 @@ from labgrid.step import step
 from labgrid.strategy.common import Strategy
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StrategyError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
 
@@ -21,7 +21,7 @@ class Status(enum.Enum):
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class QuartusHPSStrategy(Strategy):
     """QuartusHPSStrategy - Strategy to flash QSPI via 'Quartus Prime Programmer and Tools'"""
     bindings = {

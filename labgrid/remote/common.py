@@ -75,8 +75,8 @@ class ResourceEntry:
         self.data['acquired'] = None
 
 
-@attr.s(cmp=True, repr=False, str=False)
-# This class requires cmp=True, since we put the matches into a list and require
+@attr.s(eq=True, repr=False, str=False)
+# This class requires eq=True, since we put the matches into a list and require
 # the cmp functions to be able to remove the matches from the list later on.
 class ResourceMatch:
     exporter = attr.ib()

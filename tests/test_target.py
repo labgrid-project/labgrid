@@ -242,7 +242,7 @@ def test_suppliers_optional_named_a_missing(target):
 
 
 # test nested resource creation
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class DiscoveryResource(Resource):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

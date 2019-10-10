@@ -9,7 +9,7 @@ from labgrid.step import step
 from labgrid.strategy import Strategy
 
 
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class StrategyError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
 
@@ -21,7 +21,7 @@ class Status(enum.Enum):
 
 
 @target_factory.reg_driver
-@attr.s(cmp=False)
+@attr.s(eq=False)
 class ExampleStrategy(Strategy):
     """ExampleStrategy - Strategy to for the usbpower labgrid example"""
     bindings = {

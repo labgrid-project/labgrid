@@ -58,9 +58,12 @@ class StepEvent:
         result = [str(self.step)]
         if self.resource:
             result.append(self.resource.__class__.__name__)
-        result.append(", ".join(
-            "{}={}".format(k, repr(v)) for k, v in self.data.items() if v is not None
-        ))
+        data = self.data.copy()
+        duration = data.pop('duration', 0.0)
+        pairs = ["{}={}".format(k, repr(v)) for k, v in data.items() if v is not None]
+        if duration >= 0.001:
+            pairs.append("duration={:.3f}".format(duration))
+        result.append(", ".join(pairs))
         return " ".join(result)
 
     def __setitem__(self, k, v):

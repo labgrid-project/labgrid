@@ -111,6 +111,30 @@ The example describes port 0 on the remote power switch
 Used by:
   - `NetworkPowerDriver`_
 
+PDUDaemonPort
++++++++++++++
+A PDUDaemonPort describes a PDU port accessible via `PDUDaemon
+<https://github.com/pdudaemon/pdudaemon>`_.
+As one PDUDaemon instance can control many PDUs, the instance name from the
+PDUDaemon configuration file needs to be specified.
+
+.. code-block:: yaml
+
+   PDUDaemonPort:
+     host: pduserver
+     pdu: apc-snmpv3-noauth
+     index: 1
+
+The example describes port 1 on the PDU configured as `apc-snmpv3-noauth`, with
+PDUDaemon running on the host `pduserver`.
+
+- host (str): name of the host running the PDUDaemon
+- pdu (str): name of the PDU in the configuration file
+- index (int): index of the power port on the PDU
+
+Used by:
+  - `PDUDaemonDriver`_
+
 YKUSHPowerPort
 ++++++++++++++
 A YKUSHPowerPort describes a YEPKIT YKUSH USB (HID) switchable USB hub.
@@ -1059,6 +1083,30 @@ Implements:
 
 Arguments:
   - delay (float): optional delay in seconds between off and on
+
+PDUDaemonDriver
+~~~~~~~~~~~~~~~
+A PDUDaemonDriver controls a `PDUDaemonPort`, allowing control of the target
+power state without user interaction.
+
+.. note::
+  PDUDaemon processess commands in the background, so the actual state change
+  may happen several seconds after calls to PDUDaemonDriver return.
+
+Binds to:
+  port:
+    - `PDUDaemonPort`_
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   PDUDaemonDriver:
+     delay: 5
+
+Arguments:
+  - delay (int): optional delay in seconds between off and on
 
 YKUSHPowerDriver
 ~~~~~~~~~~~~~~~~

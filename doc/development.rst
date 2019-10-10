@@ -608,10 +608,3 @@ processes well.
 An implementation should start a new process,
 return a handle and forbid running other processes in the foreground.
 The handle can be used to retrieve output from a command.
-
-Support for PDU-Daemon
-~~~~~~~~~~~~~~~~~~~~~~
-
-The LAVA project developed their own daemon for power switching, the `PDU Daemon
-<https://https://staging.validation.linaro.org/static/docs/v2/pdudaemon.html>`_.
-Add support for the daemon in the NetworkPowerDriver.

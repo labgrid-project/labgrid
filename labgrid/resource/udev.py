@@ -344,14 +344,15 @@ class AlteraUSBBlaster(USBResource):
 @attr.s(eq=False)
 class SigrokUSBDevice(USBResource):
     """The SigrokUSBDevice describes an attached sigrok device with driver and
-    channel mapping, it is identified via usb using udev
+    optional channel mapping, it is identified via usb using udev.
 
     Args:
         driver (str): driver to use with sigrok
         channels (str): a sigrok channel mapping as desribed in the sigrok-cli man page
     """
     driver = attr.ib(default=None, validator=attr.validators.instance_of(str))
-    channels = attr.ib(default=None, validator=attr.validators.instance_of(str))
+    channels = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+
     def __attrs_post_init__(self):
         self.match['@SUBSYSTEM'] = 'usb'
         super().__attrs_post_init__()

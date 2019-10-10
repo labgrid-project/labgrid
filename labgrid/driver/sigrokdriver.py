@@ -71,12 +71,23 @@ class SigrokCommon(Driver):
         else:
             shutil.rmtree(self._tmpdir)
 
-
     def on_activate(self):
         self._create_tmpdir()
 
     def on_deactivate(self):
         self._delete_tmpdir()
+
+    def _get_sigrok_prefix(self):
+        prefix = [self.tool]
+        if isinstance(self.sigrok, (NetworkSigrokUSBDevice, SigrokUSBDevice)):
+            prefix += ["-d", "{}:conn={}.{}".format(
+                self.sigrok.driver, self.sigrok.busnum, self.sigrok.devnum
+            )]
+        else:
+            prefix += ["-d", self.sigrok.driver]
+        if self.sigrok.channels:
+            prefix += ["-C", self.sigrok.channels]
+        return self.sigrok.command_prefix + prefix
 
     @Driver.check_active
     @step(title='call', args=['args'])
@@ -93,9 +104,10 @@ class SigrokCommon(Driver):
     @Driver.check_active
     @step(title='call', args=['args'])
     def _call(self, *args):
-        combined = self.sigrok.command_prefix + [
-            self.tool, "-C", self.sigrok.channels
-        ] + list(args)
+        combined = self.sigrok.command_prefix + [self.tool]
+        if self.sigrok.channels:
+            combined += ["-C", self.sigrok.channels]
+        combined += list(args)
         self.log.debug("Combined command: %s", combined)
         self._process = subprocess.Popen(
             combined,
@@ -116,19 +128,6 @@ class SigrokDriver(SigrokCommon):
     bindings = {
         "sigrok": {SigrokUSBDevice, NetworkSigrokUSBDevice, SigrokDevice},
     }
-
-    def _get_sigrok_prefix(self):
-        if isinstance(self.sigrok, (NetworkSigrokUSBDevice, SigrokUSBDevice)):
-            prefix = [
-                self.tool, "-d", "{}:conn={}.{}".format(
-                    self.sigrok.driver, self.sigrok.busnum, self.sigrok.devnum
-                ), "-C", self.sigrok.channels
-            ]
-        else:
-            prefix = [
-                self.tool, "-d", self.sigrok.driver, "-C", self.sigrok.channels
-            ]
-        return self.sigrok.command_prefix + prefix
 
     @Driver.check_active
     def capture(self, filename, samplerate="200k"):

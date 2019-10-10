@@ -279,7 +279,7 @@ from all connected supported devices use the `SigrokUSBDevice`_.
      channel: "D0=CLK,D1=DATA"
 
 - driver (str): name of the sigrok driver to use
-- channel (str): channel mapping as described in the sigrok-cli man page
+- channel (str): optional, channel mapping as described in the sigrok-cli man page
 
 Used by:
   - `SigrokDriver`_
@@ -411,7 +411,7 @@ A SigrokUSBDevice resource describes a sigrok USB device.
        'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 - driver (str): name of the sigrok driver to use
-- channel (str): channel mapping as described in the sigrok-cli man page
+- channel (str): optional, channel mapping as described in the sigrok-cli man page
 - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
@@ -432,7 +432,7 @@ host which is exported over the network. The SigrokDriver will access it via SSH
      host: remote.example.computer
 
 - driver (str): name of the sigrok driver to use
-- channel (str): channel mapping as described in the sigrok-cli man page
+- channel (str): optional, channel mapping as described in the sigrok-cli man page
 - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:

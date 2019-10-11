@@ -3,7 +3,6 @@ import attr
 
 from ..factory import target_factory
 from ..protocol import DigitalOutputProtocol
-from ..resource.base import SysfsGPIO
 from ..resource.remote import NetworkSysfsGPIO
 from ..step import step
 from .common import Driver
@@ -15,7 +14,7 @@ from ..util.agentwrapper import AgentWrapper
 class GpioDigitalOutputDriver(Driver, DigitalOutputProtocol):
 
     bindings = {
-        "gpio": {SysfsGPIO, NetworkSysfsGPIO},
+        "gpio": {"SysfsGPIO", "NetworkSysfsGPIO"},
     }
 
     def __attrs_post_init__(self):

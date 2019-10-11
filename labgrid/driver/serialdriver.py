@@ -8,10 +8,10 @@ import serial.rfc2217
 
 from ..factory import target_factory
 from ..protocol import ConsoleProtocol
-from ..resource import SerialPort, NetworkSerialPort
 from .common import Driver
 from .consoleexpectmixin import ConsoleExpectMixin
 from ..util.proxy import proxymanager
+from ..resource import SerialPort
 
 
 @target_factory.reg_driver
@@ -23,9 +23,9 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     # pyserial 3.2.1 does not support RFC2217 under Python 3
     # https://github.com/pyserial/pyserial/pull/183
     if tuple(int(x) for x in serial.__version__.split('.')) <= (3, 2, 1):
-        bindings = {"port": SerialPort, }
+        bindings = {"port": "SerialPort", }
     else:
-        bindings = {"port": {SerialPort, NetworkSerialPort}, }
+        bindings = {"port": {"SerialPort", "NetworkSerialPort"}, }
     if tuple(int(x) for x in serial.__version__.split('.')) < (3, 4, 0, 1):
         message = ("The installed pyserial version does not contain important RFC2217 fixes.\n"
                    "You can install the labgrid fork via:\n"

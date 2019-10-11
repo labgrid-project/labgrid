@@ -4,8 +4,6 @@ import re
 import attr
 
 from ..factory import target_factory
-from ..resource.remote import NetworkAlteraUSBBlaster
-from ..resource.udev import AlteraUSBBlaster
 from ..step import step
 from .common import Driver
 from .exception import ExecutionError
@@ -17,7 +15,7 @@ from ..util.managedfile import ManagedFile
 @attr.s(eq=False)
 class QuartusHPSDriver(Driver):
     bindings = {
-        "interface": {AlteraUSBBlaster, NetworkAlteraUSBBlaster},
+        "interface": {"AlteraUSBBlaster", "NetworkAlteraUSBBlaster"},
     }
 
     image = attr.ib(

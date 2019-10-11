@@ -3,8 +3,6 @@ import attr
 
 from .common import Driver
 from ..factory import target_factory
-from ..resource.remote import NetworkUSBSDMuxDevice
-from ..resource.udev import USBSDMuxDevice
 from ..step import step
 from .exception import ExecutionError
 from ..util.helper import processwrapper
@@ -20,7 +18,7 @@ class USBSDMuxDriver(Driver):
         bindings (dict): driver to use with usbsdmux
     """
     bindings = {
-        "mux": {USBSDMuxDevice, NetworkUSBSDMuxDevice},
+        "mux": {"USBSDMuxDevice", "NetworkUSBSDMuxDevice"},
     }
 
     def __attrs_post_init__(self):

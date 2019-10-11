@@ -3,7 +3,6 @@ import attr
 
 from .common import Driver
 from ..factory import target_factory
-from ..resource.udev import DeditecRelais8
 from ..resource.remote import NetworkDeditecRelais8
 from ..step import step
 from ..protocol import DigitalOutputProtocol
@@ -14,7 +13,7 @@ from ..util.agentwrapper import AgentWrapper
 @attr.s(eq=False)
 class DeditecRelaisDriver(Driver, DigitalOutputProtocol):
     bindings = {
-        "relais": {DeditecRelais8, NetworkDeditecRelais8},
+        "relais": {"DeditecRelais8", NetworkDeditecRelais8},
     }
 
     def __attrs_post_init__(self):

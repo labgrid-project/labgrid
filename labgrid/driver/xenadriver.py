@@ -4,7 +4,6 @@ import attr
 
 from ..factory import target_factory
 from .common import Driver
-from ..resource.xenamanager import XenaManager
 
 @target_factory.reg_driver
 @attr.s(eq=False)
@@ -12,7 +11,7 @@ class XenaDriver(Driver):
     """
     Xena Driver
     """
-    bindings = {"xena_manager": XenaManager}
+    bindings = {"xena_manager": "XenaManager"}
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

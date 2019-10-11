@@ -2,8 +2,6 @@
 import attr
 
 from ..factory import target_factory
-from ..resource.remote import NetworkAndroidFastboot
-from ..resource.udev import AndroidFastboot
 from ..step import step
 from .common import Driver
 from ..util.managedfile import ManagedFile
@@ -14,7 +12,7 @@ from ..util.helper import processwrapper
 @attr.s(eq=False)
 class AndroidFastbootDriver(Driver):
     bindings = {
-        "fastboot": {AndroidFastboot, NetworkAndroidFastboot},
+        "fastboot": {"AndroidFastboot", "NetworkAndroidFastboot"},
     }
 
     image = attr.ib(default=None)

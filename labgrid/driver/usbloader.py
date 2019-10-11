@@ -4,8 +4,6 @@ import attr
 
 from ..factory import target_factory
 from ..protocol import BootstrapProtocol
-from ..resource.remote import NetworkMXSUSBLoader, NetworkIMXUSBLoader, NetworkRKUSBLoader
-from ..resource.udev import MXSUSBLoader, IMXUSBLoader, RKUSBLoader
 from ..step import step
 from .common import Driver
 from ..util.managedfile import ManagedFile
@@ -17,7 +15,7 @@ from ..util.helper import processwrapper
 @attr.s(eq=False)
 class MXSUSBDriver(Driver, BootstrapProtocol):
     bindings = {
-        "loader": {MXSUSBLoader, NetworkMXSUSBLoader},
+        "loader": {"MXSUSBLoader", "NetworkMXSUSBLoader"},
     }
 
     image = attr.ib(default=None)
@@ -53,7 +51,7 @@ class MXSUSBDriver(Driver, BootstrapProtocol):
 @attr.s(eq=False)
 class IMXUSBDriver(Driver, BootstrapProtocol):
     bindings = {
-        "loader": {IMXUSBLoader, NetworkIMXUSBLoader, MXSUSBLoader, NetworkMXSUSBLoader},
+        "loader": {"IMXUSBLoader", "NetworkIMXUSBLoader", "MXSUSBLoader", "NetworkMXSUSBLoader"},
     }
 
     image = attr.ib(default=None)
@@ -90,7 +88,7 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
 @attr.s(eq=False)
 class RKUSBDriver(Driver, BootstrapProtocol):
     bindings = {
-        "loader": {RKUSBLoader, NetworkRKUSBLoader},
+        "loader": {"RKUSBLoader", "NetworkRKUSBLoader"},
     }
 
     image = attr.ib(default=None)

@@ -106,7 +106,7 @@ class Target:
         found = []
         other_names = []
         if isinstance(cls, str):
-            cls = self._class_from_string(cls)
+            cls = self._reg_class_from_string(cls)
 
         for res in self.resources:
             if not isinstance(res, cls):
@@ -139,7 +139,7 @@ class Target:
         found = []
         other_names = []
         if isinstance(cls, str):
-            cls = self._class_from_string(cls)
+            cls = self._reg_class_from_string(cls)
 
         for drv in self.drivers:
             if not isinstance(drv, cls):
@@ -228,7 +228,7 @@ class Target:
         elif len(key) == 2:
             cls, name = key
         if isinstance(cls, str):
-            cls = self._class_from_string(cls)
+            cls = self._reg_class_from_string(cls)
         if not issubclass(cls, (Driver, abc.ABC)): # all Protocols derive from ABC
             raise NoDriverFoundError(
                 "invalid driver class {}".format(cls)
@@ -310,7 +310,7 @@ class Target:
             for requirement in requirements:
                 # convert class name string to classes
                 if isinstance(requirement, str):
-                    requirement = self._class_from_string(requirement)
+                    requirement = target_factory._reg_class_from_string(requirement)
                 try:
                     if issubclass(requirement, Resource):
                         suppliers.append(
@@ -457,7 +457,7 @@ class Target:
         for res in reversed(self.resources):
             self.deactivate(res)
 
-    def _class_from_string(self, string: str):
+    def _reg_class_from_string(self, string: str):
         try:
             return self._lookup_table[string]
         except KeyError:

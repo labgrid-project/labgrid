@@ -69,7 +69,7 @@ class ProcessWrapper:
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode,
                                                 command,
-                                                output="\n".join(res))
+                                                output=b'\n'.join(res))
         if buf:
             # process incomplete line
             res.append(buf)

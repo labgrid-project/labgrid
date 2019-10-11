@@ -11,6 +11,7 @@ from .exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoun
 from .resource import Resource
 from .strategy import Strategy
 from .util import Timeout
+from .factory import target_factory
 
 
 @attr.s(eq=False)
@@ -310,7 +311,7 @@ class Target:
             for requirement in requirements:
                 # convert class name string to classes
                 if isinstance(requirement, str):
-                    requirement = target_factory._reg_class_from_string(requirement)
+                    requirement = target_factory.class_from_string(requirement)
                 try:
                     if issubclass(requirement, Resource):
                         suppliers.append(

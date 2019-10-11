@@ -1517,6 +1517,10 @@ Implements:
 Arguments:
   - delay (float): optional delay in seconds between off and on, defaults to
     3.0
+  - max_voltage (float): maximum allowed voltage for protection against
+    accidental damage (optional, in volts)
+  - max_current (float): maximum allowed current for protection against
+    accidental damage (optional, in ampere)
 
 USBSDMuxDriver
 ~~~~~~~~~~~~~~

@@ -255,6 +255,16 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
         "sigrok": {SigrokUSBSerialDevice, NetworkSigrokUSBSerialDevice},
     }
     delay = attr.ib(default=3.0, validator=attr.validators.instance_of(float))
+    max_voltage = attr.ib(
+        default=None,
+        converter=attr.converters.optional(float),
+        validator=attr.validators.optional(attr.validators.instance_of(float)),
+    )
+    max_current = attr.ib(
+        default=None,
+        converter=attr.converters.optional(float),
+        validator=attr.validators.optional(attr.validators.instance_of(float)),
+    )
 
     @Driver.check_active
     @step()
@@ -280,6 +290,9 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
     @Driver.check_active
     @step(args=["value"])
     def set_voltage_target(self, value):
+        if self.max_voltage is not None and value > self.max_voltage:
+            raise ValueError(
+                "Requested voltage target({}) is higher than configured maximum ({})".format(value, self.max_voltage))
         processwrapper.check_output(
             self._get_sigrok_prefix() + ["--config", "voltage_target={:f}".format(value), "--set"]
         )
@@ -287,6 +300,9 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
     @Driver.check_active
     @step(args=["value"])
     def set_current_limit(self, value):
+        if self.max_current is not None and value > self.max_current:
+            raise ValueError(
+                "Requested current limit ({}) is higher than configured maximum ({})".format(value, self.max_current))
         processwrapper.check_output(
             self._get_sigrok_prefix() + ["--config", "current_limit={:f}".format(value), "--set"]
         )

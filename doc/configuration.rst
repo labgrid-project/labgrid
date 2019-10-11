@@ -438,6 +438,24 @@ host which is exported over the network. The SigrokDriver will access it via SSH
 Used by:
   - `SigrokDriver`_
 
+SigrokUSBSerialDevice
+~~~~~~~~~~~~~~~~~~~~~
+A SigrokUSBSerialDevice resource describes a sigrok device which communicates
+of a USB serial port instead of being a USB device itself (see
+`SigrokUSBDevice` for that case).
+
+.. code-block:: yaml
+
+   SigrokUSBSerialDevice:
+     driver: manson-hcs-3xxx
+     match:
+       '@ID_SERIAL_SHORT': P-00-02389
+
+- driver (str): name of the sigrok driver to use
+
+Used by:
+  - `SigrokPowerDriver`_
+
 USBSDMuxDevice
 ~~~~~~~~~~~~~~
 A :any:`USBSDMuxDevice` resource describes a Pengutronix
@@ -1477,6 +1495,28 @@ Implements:
 
 The driver can be used in test cases by calling the `capture`, `stop` and
 `analyze` functions.
+
+SigrokPowerDriver
+~~~~~~~~~~~~~~~~~
+The SigrokPowerDriver uses a `SigrokUSBSerialDevice`_ Resource to control a
+programmable power supply.
+
+Binds to:
+  sigrok:
+    - `SigrokUSBSerialDevice`_
+    - NetworkSigrokUSBSerialDevice
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   SigrokPowerDriver:
+     delay: 3.0
+
+Arguments:
+  - delay (float): optional delay in seconds between off and on, defaults to
+    3.0
 
 USBSDMuxDriver
 ~~~~~~~~~~~~~~

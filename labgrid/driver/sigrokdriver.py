@@ -6,6 +6,7 @@ import subprocess
 import shutil
 import signal
 import tempfile
+import time
 import uuid
 import csv
 
@@ -14,11 +15,15 @@ from time import sleep
 import attr
 
 from ..factory import target_factory
-from ..resource.remote import NetworkSigrokUSBDevice
-from ..resource.udev import SigrokUSBDevice
+from ..protocol import PowerProtocol
+from ..resource.remote import NetworkSigrokUSBDevice, NetworkSigrokUSBSerialDevice
+from ..resource.udev import SigrokUSBDevice, SigrokUSBSerialDevice
 from ..resource.sigrok import SigrokDevice
 from ..step import step
+from ..util.helper import processwrapper
 from .common import Driver, check_file
+from .exception import ExecutionError
+from .powerdriver import PowerResetMixin
 
 
 @attr.s(eq=False)
@@ -82,6 +87,10 @@ class SigrokCommon(Driver):
         if isinstance(self.sigrok, (NetworkSigrokUSBDevice, SigrokUSBDevice)):
             prefix += ["-d", "{}:conn={}.{}".format(
                 self.sigrok.driver, self.sigrok.busnum, self.sigrok.devnum
+            )]
+        elif isinstance(self.sigrok, (NetworkSigrokUSBSerialDevice, SigrokUSBSerialDevice)):
+            prefix += ["-d", "{}:conn={}".format(
+                self.sigrok.driver, self.sigrok.path
             )]
         else:
             prefix += ["-d", self.sigrok.driver]
@@ -231,3 +240,86 @@ class SigrokDriver(SigrokCommon):
             match.groupdict()
             for match in re.finditer(annotation_regex, output.decode("utf-8"))
         ]
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
+    """The SigrokPowerDriverDriver uses sigrok-cli to control a PSU and collect
+    measurements.
+
+    Args:
+        bindings (dict): driver to use with sigrok
+    """
+    bindings = {
+        "sigrok": {SigrokUSBSerialDevice, NetworkSigrokUSBSerialDevice},
+    }
+    delay = attr.ib(default=3.0, validator=attr.validators.instance_of(float))
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        processwrapper.check_output(
+            self._get_sigrok_prefix() + ["--config", "enabled=yes", "--set"]
+        )
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        processwrapper.check_output(
+            self._get_sigrok_prefix() + ["--config", "enabled=no", "--set"]
+        )
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        self.off()
+        time.sleep(self.delay)
+        self.on()
+
+    @Driver.check_active
+    @step(args=["value"])
+    def set_voltage_target(self, value):
+        processwrapper.check_output(
+            self._get_sigrok_prefix() + ["--config", "voltage_target={:f}".format(value), "--set"]
+        )
+
+    @Driver.check_active
+    @step(args=["value"])
+    def set_current_limit(self, value):
+        processwrapper.check_output(
+            self._get_sigrok_prefix() + ["--config", "current_limit={:f}".format(value), "--set"]
+        )
+
+    @Driver.check_active
+    @step(result=True)
+    def get(self):
+        out = processwrapper.check_output(
+            self._get_sigrok_prefix() + ["--get", "enabled"]
+        )
+        if out == b'true':
+            return True
+        elif out == b'false':
+            return False
+        else:
+            raise ExecutionError("Unkown enable status {}".format(out))
+
+    @Driver.check_active
+    @step(result=True)
+    def measure(self):
+        out = processwrapper.check_output(
+            self._get_sigrok_prefix() + ["--show"]
+        )
+        res = {}
+        for line in out.splitlines():
+            line = line.strip()
+            if b':' not in line:
+                continue
+            k, v = line.split(b':', 1)
+            if k == b'voltage':
+                res['voltage'] = float(v)
+            elif k == b'current':
+                res['current'] = float(v)
+        if len(res) != 2:
+            raise ExecutionError("Cannot parse --show output {}".format(out))
+        return res

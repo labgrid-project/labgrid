@@ -3,9 +3,9 @@ import os.path
 from time import sleep
 from shutil import which
 
-from labgrid.resource.udev import SigrokUSBDevice
+from labgrid.resource.udev import SigrokUSBDevice, SigrokUSBSerialDevice
 from labgrid.resource.sigrok import SigrokDevice
-from labgrid.driver.sigrokdriver import SigrokDriver
+from labgrid.driver.sigrokdriver import SigrokDriver, SigrokPowerDriver
 
 
 pytestmark = pytest.mark.skipif(not which("sigrok-cli"),
@@ -35,3 +35,8 @@ def test_sigrok_usb_driver(target, tmpdir):
     assert samples != None
     assert list(samples[0].keys()) == ['time', 'D0', 'D1']
     assert list(samples[-1].keys()) == ['time', 'D0', 'D1']
+
+def test_sigrok_power_driver(target):
+    r = SigrokUSBSerialDevice(target, name=None, driver='manson-hcs-3xxx')
+    d = SigrokPowerDriver(target, name=None)
+    target.activate(d)

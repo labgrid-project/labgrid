@@ -66,15 +66,15 @@ class ProcessWrapper:
                 break
         omfd.close()
         process.wait()
-        if process.returncode != 0:
-            raise subprocess.CalledProcessError(process.returncode,
-                                                command,
-                                                output="\n".join(res))
         if buf:
             # process incomplete line
             res.append(buf)
             for callback in self.callbacks:
                 callback(buf)
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode,
+                                                command,
+                                                output=b'\n'.join(res))
         # this converts '\r\n' to '\n' to be more compatible to the behaviour
         # of the normal subprocess module
         return b'\n'.join(res)

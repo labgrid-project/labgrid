@@ -214,14 +214,10 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         if ready:
             # Always read a page, regardless of size
             res = self._clientsocket.recv(4096)
-            self.logger.debug(
-                "Read %i bytes: %s, timeout %.2f, requested size %i",
-                len(res), res, timeout, size)
         else:
             raise TIMEOUT("Timeout of %.2f seconds exceeded" % timeout)
         return res
 
     @step(args=['data'])
     def _write(self, data):
-        self.logger.debug("Write %i bytes: %s", len(data), data)
         return self._clientsocket.send(data)

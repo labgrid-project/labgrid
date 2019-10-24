@@ -63,6 +63,7 @@ setup(
             'labgrid-client = labgrid.remote.client:main',
             'labgrid-exporter = labgrid.remote.exporter:main',
             'labgrid-autoinstall = labgrid.autoinstall.main:main',
+            'labgrid-suggest = labgrid.resource.suggest:main',
         ]
     },
     # custom PyPI classifiers

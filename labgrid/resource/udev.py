@@ -54,7 +54,7 @@ class UdevManager(ResourceManager):
 class USBResource(ManagedResource):
     manager_cls = UdevManager
 
-    match = attr.ib(default={}, validator=attr.validators.instance_of(dict), hash=False)
+    match = attr.ib(factory=dict, validator=attr.validators.instance_of(dict), hash=False)
     device = attr.ib(default=None, hash=False)
 
     def __attrs_post_init__(self):

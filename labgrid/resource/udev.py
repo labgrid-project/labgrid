@@ -180,6 +180,7 @@ class USBResource(ManagedResource):
 class USBSerialPort(USBResource, SerialPort):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'tty'
+        self.match['@SUBSYSTEM'] = 'usb'
         if self.port:
             warnings.warn(
                 "USBSerialPort: The port attribute will be overwritten by udev.\n"

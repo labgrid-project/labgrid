@@ -67,10 +67,7 @@ class USBResource(ManagedResource):
         return True
 
     def try_match(self, device):
-        if self.device is not None:
-            if self.device.sys_path != device.sys_path:
-                return False
-        else: # new device
+        if self.device is None:  # new device
             def match_single(dev, key, value):
                 if dev.properties.get(key) == value:
                     return True
@@ -96,18 +93,23 @@ class USBResource(ManagedResource):
 
             if not self.filter_match(device):
                 return False
+        else:  # update
+            if self.device.sys_path != device.sys_path:
+                return False
+
         self.log.debug(" found match: %s", self)
         if device.action in [None, 'add']:
             if self.avail:
                 warnings.warn("udev device {} is already available".format(device))
-            self.avail = True
             self.device = device
         elif device.action in ['change', 'move']:
             self.device = device
         elif device.action in ['unbind', 'remove']:
-            self.avail = False
             self.device = None
+
+        self.avail = self.device is not None
         self.update()
+
         return True
 
     def update(self):

@@ -7,6 +7,7 @@ import shutil
 import socket
 import subprocess
 import tempfile
+import time
 
 import attr
 from pexpect import TIMEOUT
@@ -212,6 +213,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
     def _read(self, size=1, timeout=10):
         ready, _, _ = select.select([self._clientsocket], [], [], timeout)
         if ready:
+            # Collect some more data
+            time.sleep(0.01)
             # Always read a page, regardless of size
             res = self._clientsocket.recv(4096)
         else:

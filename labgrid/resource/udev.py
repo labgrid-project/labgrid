@@ -4,6 +4,7 @@ import os
 import queue
 import time
 import warnings
+from collections import OrderedDict
 
 import attr
 import pyudev
@@ -56,6 +57,7 @@ class USBResource(ManagedResource):
 
     match = attr.ib(factory=dict, validator=attr.validators.instance_of(dict), hash=False)
     device = attr.ib(default=None, hash=False)
+    suggest = attr.ib(default=False, hash=False, repr=False)
 
     def __attrs_post_init__(self):
         self.timeout = 5.0
@@ -66,11 +68,44 @@ class USBResource(ManagedResource):
     def filter_match(self, device):  # pylint: disable=unused-argument,no-self-use
         return True
 
+    def suggest_match(self, device):
+        meta = OrderedDict()
+        suggestions = []
+
+        if self.device.device_node:
+            meta['device node'] = self.device.device_node
+        if list(self.device.tags):
+            meta['udev tags'] = ', '.join(self.device.tags)
+        if self.device.properties.get('ID_VENDOR'):
+            meta['vendor'] = self.device.properties.get('ID_VENDOR')
+        if self.device.properties.get('ID_VENDOR_FROM_DATABASE'):
+            meta['vendor (DB)'] = self.device.properties.get('ID_VENDOR_FROM_DATABASE')
+        if self.device.properties.get('ID_MODEL'):
+            meta['model'] = self.device.properties.get('ID_MODEL')
+        if self.device.properties.get('ID_MODEL_FROM_DATABASE'):
+            meta['model (DB)'] = self.device.properties.get('ID_MODEL_FROM_DATABASE')
+        if self.device.properties.get('ID_REVISION'):
+            meta['revision'] = self.device.properties.get('ID_REVISION')
+
+        if self.match.get('SUBSYSTEM', None) == 'usb':
+            path = self._get_usb_device().properties.get('ID_PATH')
+            if path:
+                suggestions.append({'ID_PATH': path})
+            serial = self._get_usb_device().properties.get('ID_SERIAL_SHORT')
+            if serial:
+                suggestions.append({'ID_SERIAL_SHORT': serial})
+        elif self.match.get('@SUBSYSTEM', None) == 'usb':
+            path = self._get_usb_device().properties.get('ID_PATH')
+            if path:
+                suggestions.append({'@ID_PATH': path})
+            serial = self._get_usb_device().properties.get('ID_SERIAL_SHORT')
+            if serial:
+                suggestions.append({'@ID_SERIAL_SHORT': serial})
+
+        return meta, suggestions
+
     def try_match(self, device):
-        if self.device is not None:
-            if self.device.sys_path != device.sys_path:
-                return False
-        else: # new device
+        if self.device is None:  # new device
             def match_single(dev, key, value):
                 if dev.properties.get(key) == value:
                     return True
@@ -96,18 +131,30 @@ class USBResource(ManagedResource):
 
             if not self.filter_match(device):
                 return False
+        else:  # update
+            if self.device.sys_path != device.sys_path:
+                return False
+
         self.log.debug(" found match: %s", self)
+
+        if self.suggest and device.action in [None, 'add']:
+            self.device = device
+            self.suggest(self, *self.suggest_match(device))
+            self.device = None
+            return False
+
         if device.action in [None, 'add']:
             if self.avail:
                 warnings.warn("udev device {} is already available".format(device))
-            self.avail = True
             self.device = device
         elif device.action in ['change', 'move']:
             self.device = device
         elif device.action in ['unbind', 'remove']:
-            self.avail = False
             self.device = None
+
+        self.avail = self.device is not None
         self.update()
+
         return True
 
     def update(self):

@@ -8,7 +8,7 @@ import attr
 from .binding import BindingError, BindingState
 from .driver import Driver
 from .exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
-from .resource import Resource
+from .resource import Resource, ManagedResource
 from .strategy import Strategy
 from .util import Timeout
 
@@ -38,16 +38,15 @@ class Target:
 
     def update_resources(self):
         """
-        Iterate over all relevant managers and deactivate any active but
+        Iterate over all relevant resources and deactivate any active but
         unavailable resources.
         """
         if (monotonic() - self.last_update) < 0.1:
             return
         self.last_update = monotonic()
-        resources = [r for r in self.resources if r.get_managed_parent()]
-        managers = set(r.get_managed_parent().manager for r in resources)
-        for manager in managers:
-            manager.poll()
+        resources = [r for r in self.resources if isinstance(r, ManagedResource)]
+        for resource in resources:
+            resource.poll()
         for resource in resources:
             if not resource.avail and resource.state is BindingState.active:
                 self.log.info("deactivating unavailable resource %s", resource.display_name)  # pylint: disable=line-too-long
@@ -80,9 +79,8 @@ class Target:
 
         while waiting and not timeout.expired:
             waiting = set(r for r in waiting if r.avail != avail)
-            managers = set(r.get_managed_parent().manager for r in waiting)
-            for m in managers:
-                m.poll()
+            for r in waiting:
+                r.poll()
             if not any(r for r in waiting if r.avail == avail):
                 # sleep if no progress
                 sleep(0.5)

@@ -3,4 +3,4 @@ setuptools>=38.0.0
 crossbar==19.3.5
 # For crossbar
 idna==2.5
-msgpack==0.6.1
+msgpack==0.6.2

@@ -344,17 +344,47 @@ class AlteraUSBBlaster(USBResource):
 @attr.s(eq=False)
 class SigrokUSBDevice(USBResource):
     """The SigrokUSBDevice describes an attached sigrok device with driver and
-    channel mapping, it is identified via usb using udev
+    optional channel mapping, it is identified via usb using udev.
+
+    This is used for devices which communicate over a custom USB protocol.
 
     Args:
         driver (str): driver to use with sigrok
         channels (str): a sigrok channel mapping as desribed in the sigrok-cli man page
     """
     driver = attr.ib(default=None, validator=attr.validators.instance_of(str))
-    channels = attr.ib(default=None, validator=attr.validators.instance_of(str))
+    channels = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+
     def __attrs_post_init__(self):
         self.match['@SUBSYSTEM'] = 'usb'
         super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class SigrokUSBSerialDevice(USBResource):
+    """The SigrokUSBSerialDevice describes an attached sigrok device with driver and
+    optional channel mapping, it is identified via usb using udev.
+
+    This is used for devices which communicate over an emulated serial device.
+
+    Args:
+        driver (str): driver to use with sigrok
+        channels (str): a sigrok channel mapping as desribed in the sigrok-cli man page
+    """
+    driver = attr.ib(default=None, validator=attr.validators.instance_of(str))
+    channels = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'tty'
+        self.match['@SUBSYSTEM'] = 'usb'
+        super().__attrs_post_init__()
+
+    @property
+    def path(self):
+        if self.device is not None:
+            return self.device.device_node
+
+        return None
 
 @target_factory.reg_resource
 @attr.s(eq=False)

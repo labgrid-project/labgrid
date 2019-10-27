@@ -279,7 +279,7 @@ from all connected supported devices use the `SigrokUSBDevice`_.
      channel: "D0=CLK,D1=DATA"
 
 - driver (str): name of the sigrok driver to use
-- channel (str): channel mapping as described in the sigrok-cli man page
+- channel (str): optional, channel mapping as described in the sigrok-cli man page
 
 Used by:
   - `SigrokDriver`_
@@ -411,7 +411,7 @@ A SigrokUSBDevice resource describes a sigrok USB device.
        'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 - driver (str): name of the sigrok driver to use
-- channel (str): channel mapping as described in the sigrok-cli man page
+- channel (str): optional, channel mapping as described in the sigrok-cli man page
 - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
@@ -432,11 +432,29 @@ host which is exported over the network. The SigrokDriver will access it via SSH
      host: remote.example.computer
 
 - driver (str): name of the sigrok driver to use
-- channel (str): channel mapping as described in the sigrok-cli man page
+- channel (str): optional, channel mapping as described in the sigrok-cli man page
 - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SigrokDriver`_
+
+SigrokUSBSerialDevice
+~~~~~~~~~~~~~~~~~~~~~
+A SigrokUSBSerialDevice resource describes a sigrok device which communicates
+of a USB serial port instead of being a USB device itself (see
+`SigrokUSBDevice` for that case).
+
+.. code-block:: yaml
+
+   SigrokUSBSerialDevice:
+     driver: manson-hcs-3xxx
+     match:
+       '@ID_SERIAL_SHORT': P-00-02389
+
+- driver (str): name of the sigrok driver to use
+
+Used by:
+  - `SigrokPowerDriver`_
 
 USBSDMuxDevice
 ~~~~~~~~~~~~~~
@@ -1477,6 +1495,32 @@ Implements:
 
 The driver can be used in test cases by calling the `capture`, `stop` and
 `analyze` functions.
+
+SigrokPowerDriver
+~~~~~~~~~~~~~~~~~
+The SigrokPowerDriver uses a `SigrokUSBSerialDevice`_ Resource to control a
+programmable power supply.
+
+Binds to:
+  sigrok:
+    - `SigrokUSBSerialDevice`_
+    - NetworkSigrokUSBSerialDevice
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   SigrokPowerDriver:
+     delay: 3.0
+
+Arguments:
+  - delay (float): optional delay in seconds between off and on, defaults to
+    3.0
+  - max_voltage (float): maximum allowed voltage for protection against
+    accidental damage (optional, in volts)
+  - max_current (float): maximum allowed current for protection against
+    accidental damage (optional, in ampere)
 
 USBSDMuxDriver
 ~~~~~~~~~~~~~~

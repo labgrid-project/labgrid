@@ -156,7 +156,18 @@ class NetworkAlteraUSBBlaster(RemoteUSBResource):
 class NetworkSigrokUSBDevice(RemoteUSBResource):
     """The NetworkSigrokUSBDevice describes a remotely accessible sigrok USB device"""
     driver = attr.ib(default=None, validator=attr.validators.instance_of(str))
-    channels = attr.ib(default=None, validator=attr.validators.instance_of(str))
+    channels = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkSigrokUSBSerialDevice(RemoteUSBResource):
+    """The NetworkSigrokUSBSerialDevice describes a remotely accessible sigrok USB device"""
+    driver = attr.ib(default=None, validator=attr.validators.instance_of(str))
+    channels = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()

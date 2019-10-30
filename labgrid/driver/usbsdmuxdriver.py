@@ -1,5 +1,4 @@
 # pylint: disable=no-member
-import subprocess
 import attr
 
 from .common import Driver

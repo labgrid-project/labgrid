@@ -11,7 +11,6 @@ from textwrap import indent
 from socket import gethostname
 from getpass import getuser
 from collections import defaultdict, OrderedDict
-from time import sleep
 from datetime import datetime
 from pprint import pformat
 import txaio

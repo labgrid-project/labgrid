@@ -1,5 +1,4 @@
 # pylint: disable=no-member
-import subprocess
 import os.path
 import logging
 import attr

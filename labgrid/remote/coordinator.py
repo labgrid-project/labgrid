@@ -1,7 +1,6 @@
 """The coordinator module coordinates exported resources and clients accessing them."""
 # pylint: disable=no-member,unused-argument
 import asyncio
-import enum
 import traceback
 from collections import defaultdict
 from os import environ

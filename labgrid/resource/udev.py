@@ -2,7 +2,6 @@
 import logging
 import os
 import queue
-import time
 import warnings
 from collections import OrderedDict
 

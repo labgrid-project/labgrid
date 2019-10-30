@@ -81,7 +81,7 @@ class GraphStrategy(Strategy):
         if len(root_states) > 1:
             raise InvalidGraphStrategyError(
                 'Only one root state supported. Defined root states: {}'.format(  # NOQA
-                    ', '.join([i[0] for i in root_states]),
+                    ', '.join(root_states),
                 )
             )
 

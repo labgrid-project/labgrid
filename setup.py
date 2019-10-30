@@ -23,8 +23,7 @@ setup(
         'modbus': ['pyModbusTCP'],
         'graph': ['graphviz'],
     },
-    setup_requires=['pytest-runner', 'setuptools_scm'],
-    tests_require=['pytest-mock', ],
+    setup_requires=['setuptools_scm'],
     install_requires=[
         'attrs>=19.2.0',
         'ansicolors',

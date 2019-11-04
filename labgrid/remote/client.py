@@ -785,7 +785,10 @@ class ClientSession(ApplicationSession):
             "{}:{}".format(host, port)
         ]
         print("connecting to {} calling {}".format(resource, " ".join(call)))
-        p = await asyncio.create_subprocess_exec(*call)
+        try:
+            p = await asyncio.create_subprocess_exec(*call)
+        except FileNotFoundError as e:
+            raise ServerError("failed to execute microcom: {}".format(e))
         while p.returncode is None:
             try:
                 await asyncio.wait_for(p.wait(), 1.0)

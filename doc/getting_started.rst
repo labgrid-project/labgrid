@@ -204,15 +204,16 @@ The config file contains one or more named resource groups.
 Each group contains one or more resource declarations and optionally a location
 string (see the :doc:`configuration reference <configuration>` for details).
 
-For example, to export a ``RawSerialPort`` with the group name `example-port` and
-the location `example-location`:
+For example, to export a ``USBSerialPort`` with ``ID_SERIAL_SHORT`` of
+``ID23421JLK``, the group name `example-port` and the location
+`example-location`:
 
 .. code-block:: yaml
 
    example-group:
      location: example-location
-     RawSerialPort:
-       port: /dev/ttyUSB0
+     USBSerialPort:
+       ID_SERIAL_SHORT: ID23421JLK
 
 The exporter can now be started by running:
 
@@ -226,15 +227,15 @@ Additional groups and resources can be added:
 
    example-group:
      location: example-location
-     RawSerialPort:
-       port: /dev/ttyUSB0
+     USBSerialPort:
+       ID_SERIAL_SHORT: ID23421JLK
      NetworkPowerPort:
        model: netio
        host: netio1
        index: 3
    example-group-2:
-     RawSerialPort:
-       port: /dev/ttyUSB1
+     USBSerialPort:
+       ID_SERIAL_SHORT: KSLAH2341J
 
 Restart the exporter to activate the new configuration.
 
@@ -260,8 +261,8 @@ Finally we can test the client functionality, run:
 
     $ labgrid-client resources
     kiwi/example-group/NetworkPowerPort
-    kiwi/example-group/RawSerialPort
-    kiwi/example-group-2/RawSerialPort
+    kiwi/example-group/NetworkSerialPort
+    kiwi/example-group-2/NetworkSerialPort
 
 You can see the available resources listed by the coordinator. The groups
 `example-group` and `example-group-2` should be available there.

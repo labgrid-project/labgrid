@@ -215,6 +215,9 @@ For example, to export a ``USBSerialPort`` with ``ID_SERIAL_SHORT`` of
      USBSerialPort:
        ID_SERIAL_SHORT: ID23421JLK
 
+.. note:: Use ``labgrid-suggest`` to generate the YAML snippets for most
+	  exportable resources.
+
 The exporter can now be started by running:
 
 .. code-block:: bash
@@ -319,6 +322,8 @@ The udev resources become available to the test/exporter as soon es they are
 plugged into the computer, e.g. allowing an exporter to export all USB ports on
 a specific hub and making a ``NetworkSerialPort`` available as soon as it is
 plugged into one of the hub's ports.
+Labgrid also provides a small utility called ``labgrid-suggest`` which will
+output the proper YAML formatted snippets for you.
 The information udev has on a device can be viewed by executing:
 
 .. code-block:: bash

@@ -240,7 +240,9 @@ Additional groups and resources can be added:
    example-group:
      location: example-location
      USBSerialPort:
-       ID_SERIAL_SHORT: ID23421JLK
+       match:
+         'ID_SERIAL_SHORT': 'P-00-00682'
+       speed: 115200
      NetworkPowerPort:
        model: netio
        host: netio1
@@ -317,6 +319,9 @@ Now we can connect to the serial console:
 .. code-block:: bash
 
     $ labgrid-client -p example-place console
+
+.. note:: Using remote connection requires ``microcom`` installed on the host
+   where the labgrid-client is called.
 
 See :ref:`remote-usage` for some more advanced features.
 For a complete reference have a look at the :doc:`labgrid-client(1) <man/client>`

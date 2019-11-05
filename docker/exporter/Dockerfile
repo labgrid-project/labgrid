@@ -1,18 +1,16 @@
-FROM python:3.7
-MAINTAINER eha@deif.com
+FROM labgrid-base
 
-RUN mkdir -p /opt/labgrid
-COPY ./ /opt/labgrid/
-RUN cd /opt/labgrid \
- && pip install -r requirements.txt \
- && python setup.py install
+COPY docker/exporter/entrypoint.sh /entrypoint.sh
 
-RUN apt-get update -q \
- && apt-get install -q -y ser2net \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
+RUN set -e ;\
+    cd /opt/labgrid ;\
+    pip3 install --no-cache-dir -r requirements.txt ;\
+    python3 setup.py install ;\
+    apt update -q=2 ;\
+    apt install -q=2 --yes --no-install-recommends ser2net ;\
+    apt clean ;\
+    rm -rf /var/lib/apt/lists/*
 
 VOLUME /opt/conf
 
-COPY docker/exporter/entrypoint.sh /entrypoint.sh
 CMD ["/entrypoint.sh"]

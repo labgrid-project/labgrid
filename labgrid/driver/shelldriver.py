@@ -185,7 +185,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         try:
             self.console.expect(
                 r"{marker}\s+{prompt}".format(marker=marker, prompt=self.prompt),
-                timeout=3
+                timeout=5
             )
             self._status = 1
         except TIMEOUT:

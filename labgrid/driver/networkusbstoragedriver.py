@@ -3,6 +3,7 @@ import enum
 import logging
 import subprocess
 import os
+import time
 import attr
 
 from ..factory import target_factory
@@ -14,6 +15,7 @@ from .common import Driver
 from ..driver.exception import ExecutionError
 
 from ..util.helper import processwrapper
+from ..util import Timeout
 
 
 class Mode(enum.Enum):
@@ -60,6 +62,19 @@ class NetworkUSBStorageDriver(Driver):
         mf.sync_to_resource()
         self.logger.info("pwd: %s", os.getcwd())
 
+        # wait for medium
+        timeout = Timeout(10.0)
+        while not timeout.expired:
+            try:
+                if self.get_size() > 0:
+                    break
+                time.sleep(0.5)
+            except ValueError:
+                # when the medium gets ready the sysfs attribute is empty for a short time span
+                continue
+        else:
+            raise ExecutionError("Timeout while waiting for medium")
+
         if mode == Mode.DD:
             args = [
                 "dd",
@@ -89,6 +104,6 @@ class NetworkUSBStorageDriver(Driver):
             raise ExecutionError(
                 "{} is not available".format(self.storage_path)
             )
-        args = ["cat", "/sys/class/block/{}/size" % self.storage.path[5:]]
+        args = ["cat", "/sys/class/block/{}/size".format(self.storage.path[5:])]
         size = processwrapper.check_output(self.storage.command_prefix + args)
         return int(size)

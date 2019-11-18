@@ -183,8 +183,10 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # hide marker from expect
         self.console.sendline("echo '{}''{}'".format(marker[:4], marker[4:]))
         try:
-            self.console.expect("{}".format(marker), timeout=2)
-            self.console.expect(self.prompt, timeout=1)
+            self.console.expect(
+                r"{marker}\s+{prompt}".format(marker=marker, prompt=self.prompt),
+                timeout=3
+            )
             self._status = 1
         except TIMEOUT:
             self._status = 0

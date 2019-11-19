@@ -11,6 +11,7 @@ class GpioDigitalOutput:
     _gpio_sysfs_path_prefix = '/sys/class/gpio'
     _buffered_file_access=False
 
+    @staticmethod
     def _assert_gpio_line_is_exported(index):
         gpio_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix, 'gpio{0}'.format(index))
         if not os.path.exists(gpio_sysfs_path):

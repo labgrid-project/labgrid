@@ -292,7 +292,7 @@ class Target:
             if isinstance(requirements, Driver.NamedBinding):
                 requirements = requirements.value
                 explicit = True
-            supplier_name = mapping.get(name)
+            supplier_name = mapping.pop(name, None)
             if explicit and supplier_name is None:
                 raise BindingError(
                     "supplier for {} ({}) of {} in target {} requires an explicit name".format(
@@ -354,6 +354,12 @@ class Target:
         if duplicates:
             raise BindingError(
                 "duplicate bindings {} found in target {}".format(duplicates, self)
+            )
+
+        # make sure drivers consume all given bindings
+        if mapping and not isinstance(client, Strategy):
+            raise BindingError(
+                "{} got unexpected bindings: {}".format(client, list(mapping.keys()))
             )
 
         # update relationship in both directions

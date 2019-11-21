@@ -134,6 +134,14 @@ def test_suppliers_ab_missing(target):
         d = DriverWithAB(target, "driver")
 
 
+def test_suppliers_unexpected_binding(target):
+    ra = ResourceA(target, "resource")
+    target.set_binding_map({"res": "resource", "unexpected": "foo"})
+    with pytest.raises(BindingError) as excinfo:
+        DriverWithA(target, "driver")
+    assert "got unexpected bindings" in excinfo.value.msg
+
+
 class DriverWithNamedA(Driver):
     bindings = {
         "res": Driver.NamedBinding(ResourceA),

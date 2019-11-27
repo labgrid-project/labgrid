@@ -1,5 +1,5 @@
 language: python
-
+dist: bionic
 addons:
   apt:
     packages:
@@ -10,6 +10,8 @@ addons:
 python:
   - "3.5"
   - "3.6"
+  - "3.7"
+  - "3.8"
 before_install:
   - ssh-keygen -f ~/.ssh/id_ed25519.local -t ed25519 -N ""
   - cat ~/.ssh/id_ed25519.local.pub > ~/.ssh/authorized_keys
@@ -29,17 +31,11 @@ after_success:
 
 matrix:
   include:
-    - python: "3.7"
-      dist: xenial
-      sudo: true
     - stage: docker
       services:
         - docker
       script: ./docker/build.sh
     - stage: optional
-      python: "3.8-dev"
-      dist: xenial
-      sudo: true
+      python: "nightly"
   allow_failures:
-    - stage: docker
     - stage: optional

@@ -204,15 +204,19 @@ The config file contains one or more named resource groups.
 Each group contains one or more resource declarations and optionally a location
 string (see the :doc:`configuration reference <configuration>` for details).
 
-For example, to export a ``RawSerialPort`` with the group name `example-port` and
-the location `example-location`:
+For example, to export a ``USBSerialPort`` with ``ID_SERIAL_SHORT`` of
+``ID23421JLK``, the group name `example-port` and the location
+`example-location`:
 
 .. code-block:: yaml
 
    example-group:
      location: example-location
-     RawSerialPort:
-       port: /dev/ttyUSB0
+     USBSerialPort:
+       ID_SERIAL_SHORT: ID23421JLK
+
+.. note:: Use ``labgrid-suggest`` to generate the YAML snippets for most
+	  exportable resources.
 
 The exporter can now be started by running:
 
@@ -226,15 +230,15 @@ Additional groups and resources can be added:
 
    example-group:
      location: example-location
-     RawSerialPort:
-       port: /dev/ttyUSB0
+     USBSerialPort:
+       ID_SERIAL_SHORT: ID23421JLK
      NetworkPowerPort:
        model: netio
        host: netio1
        index: 3
    example-group-2:
-     RawSerialPort:
-       port: /dev/ttyUSB1
+     USBSerialPort:
+       ID_SERIAL_SHORT: KSLAH2341J
 
 Restart the exporter to activate the new configuration.
 
@@ -260,8 +264,8 @@ Finally we can test the client functionality, run:
 
     $ labgrid-client resources
     kiwi/example-group/NetworkPowerPort
-    kiwi/example-group/RawSerialPort
-    kiwi/example-group-2/RawSerialPort
+    kiwi/example-group/NetworkSerialPort
+    kiwi/example-group-2/NetworkSerialPort
 
 You can see the available resources listed by the coordinator. The groups
 `example-group` and `example-group-2` should be available there.
@@ -318,6 +322,8 @@ The udev resources become available to the test/exporter as soon es they are
 plugged into the computer, e.g. allowing an exporter to export all USB ports on
 a specific hub and making a ``NetworkSerialPort`` available as soon as it is
 plugged into one of the hub's ports.
+Labgrid also provides a small utility called ``labgrid-suggest`` which will
+output the proper YAML formatted snippets for you.
 The information udev has on a device can be viewed by executing:
 
 .. code-block:: bash

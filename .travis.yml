@@ -34,7 +34,18 @@ matrix:
     - stage: docker
       services:
         - docker
-      script: ./docker/build.sh
+      script:
+        - ./docker/build.sh
+        - if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ "$TRAVIS_BRANCH" = "master" ] && [ "$DOCKER_USERNAME" != "" ] && [ "$DOCKER_TOKEN" != "" ]; then
+          echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin;
+          docker images;
+          docker tag labgrid-client labgrid/client;
+          docker tag labgrid-exporter labgrid/exporter;
+          docker tag labgrid-coordinator labgrid/coordinator;
+          docker push labgrid/client;
+          docker push labgrid/exporter;
+          docker push labgrid/coordinator;
+          fi
     - stage: optional
       python: "nightly"
   allow_failures:

@@ -1,5 +1,6 @@
 import os
 import re
+import time
 
 from importlib.util import find_spec
 
@@ -273,6 +274,43 @@ def test_reservation(place_acquire, tmpdir):
         assert token not in spawn.before, spawn.before.strip()
 
     with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+def test_exporter_timeout(place, exporter):
+    with pexpect.spawn('python -m labgrid.remote.client resources') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert b'/Testport/NetworkSerialPort' in spawn.before
+
+    # lock resources ensure cleanup is needed
+    with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    suspend_tree(exporter.pid)
+    try:
+        time.sleep(30)
+
+        # the unresponsive exporter should be kicked by now
+        with pexpect.spawn('python -m labgrid.remote.client resources') as spawn:
+            spawn.expect(pexpect.EOF)
+            spawn.close()
+            assert spawn.exitstatus == 0, spawn.before.strip()
+            assert b'/Testport/NetworkSerialPort' not in spawn.before
+    finally:
+        resume_tree(exporter.pid)
+
+    # the exporter should quit by itself now
+    time.sleep(5)
+
+    assert not exporter.isalive()
+    assert exporter.exitstatus == 100
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test release') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()

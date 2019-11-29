@@ -25,6 +25,30 @@ def keep_reading(spawn):
             return
 
 
+class Prefixer:
+    def __init__(self, wrapped, prefix):
+        self.__wrapped = wrapped
+        self.__prefix = prefix.encode()+b": "
+        self.__continuation = False
+
+    def write(self, data):
+        if data[-1:] == b'\n':
+            continuation = False
+            data = data[:-1]
+        else:
+            continuation = True
+        data = data.replace(b'\n', b'\n'+self.__prefix)
+        if not self.__continuation:
+            data = self.__prefix+data
+        if not continuation:
+            data += b'\n'
+        self.__continuation = continuation
+        self.__wrapped.write(data)
+
+    def __getattr__(self, name):
+        return getattr(self.__wrapped, name)
+
+
 @pytest.fixture(scope='function')
 def target():
     return Target('Test')
@@ -69,7 +93,7 @@ def crossbar(tmpdir, pytestconfig):
     pytestconfig.rootdir.join('.crossbar/config.yaml').copy(tmpdir.mkdir('.crossbar'))
     spawn = pexpect.spawn(
             'crossbar start --color false --logformat none',
-            logfile=sys.stdout.buffer,
+            logfile=Prefixer(sys.stdout.buffer, 'crossbar'),
             cwd=str(tmpdir))
     try:
         spawn.expect('Realm .* started')
@@ -98,7 +122,7 @@ def exporter(tmpdir):
     )
     spawn = pexpect.spawn(
             'labgrid-exporter exports.yaml',
-            logfile=sys.stdout.buffer,
+            logfile=Prefixer(sys.stdout.buffer, 'exporter'),
             cwd=str(tmpdir))
     try:
         spawn.expect('SessionDetails')

@@ -587,10 +587,6 @@ class CoordinatorComponent(ApplicationSession):
 
         return True
 
-    @locked
-    async def acquire_resources(self, place, resources):
-        return await self._acquire_resources(place, resources)
-
     async def _release_resources(self, place, resources):
         resources = resources.copy() # we may modify the list
 
@@ -613,10 +609,6 @@ class CoordinatorComponent(ApplicationSession):
                     self._publish_resource(resource)
                 except:
                     pass
-
-    @locked
-    async def release_resources(self, place, resources):
-        return await self._release_resources(place, resources)
 
     @locked
     async def acquire_place(self, name, details=None):

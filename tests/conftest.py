@@ -1,3 +1,5 @@
+import sys
+import threading
 from importlib.util import find_spec
 
 import pytest
@@ -7,6 +9,20 @@ from labgrid import Target
 from labgrid.driver import SerialDriver
 from labgrid.resource import RawSerialPort, NetworkSerialPort
 from labgrid.driver.fake import FakeConsoleDriver
+
+def keep_reading(spawn):
+    "The output from background processes must be read to avoid blocking them."
+    while spawn.isalive():
+        try:
+            data = spawn.read_nonblocking(size=1024, timeout=0.1)
+            if not data:
+                return
+        except pexpect.TIMEOUT:
+            continue
+        except pexpect.EOF:
+            return
+        except OSError:
+            return
 
 
 @pytest.fixture(scope='function')
@@ -51,7 +67,10 @@ def crossbar(tmpdir, pytestconfig):
     if not find_spec('crossbar'):
         pytest.skip("crossbar not found")
     pytestconfig.rootdir.join('.crossbar/config.yaml').copy(tmpdir.mkdir('.crossbar'))
-    spawn = pexpect.spawn('crossbar start --logformat none', cwd=str(tmpdir))
+    spawn = pexpect.spawn(
+            'crossbar start --color false --logformat none',
+            logfile=sys.stdout.buffer,
+            cwd=str(tmpdir))
     try:
         spawn.expect('Realm .* started')
         spawn.expect('Guest .* started')
@@ -59,9 +78,13 @@ def crossbar(tmpdir, pytestconfig):
     except:
         print("crossbar startup failed with {}".format(spawn.before))
         raise
+    reader = threading.Thread(target=keep_reading, name='crossbar-reader', args=(spawn,), daemon=True)
+    reader.start()
     yield spawn
+    print("stopping crossbar")
     spawn.close(force=True)
     assert not spawn.isalive()
+    reader.join()
 
 @pytest.fixture(scope='function')
 def exporter(tmpdir):
@@ -73,15 +96,22 @@ def exporter(tmpdir):
           {host: 'localhost', port: 4000}
     """
     )
-    spawn = pexpect.spawn('labgrid-exporter exports.yaml', cwd=str(tmpdir))
+    spawn = pexpect.spawn(
+            'labgrid-exporter exports.yaml',
+            logfile=sys.stdout.buffer,
+            cwd=str(tmpdir))
     try:
         spawn.expect('SessionDetails')
     except:
         print("exporter startup failed with {}".format(spawn.before))
         raise
+    reader = threading.Thread(target=keep_reading, name='exporter-reader', args=(spawn,), daemon=True)
+    reader.start()
     yield spawn
+    print("stopping exporter")
     spawn.close(force=True)
     assert not spawn.isalive()
+    reader.join()
 
 def pytest_addoption(parser):
     parser.addoption("--sigrok-usb", action="store_true",

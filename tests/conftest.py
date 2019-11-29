@@ -111,7 +111,7 @@ def crossbar(tmpdir, pytestconfig):
     reader.join()
 
 @pytest.fixture(scope='function')
-def exporter(tmpdir):
+def exporter(tmpdir, crossbar):
     p = tmpdir.join("exports.yaml")
     p.write(
         """

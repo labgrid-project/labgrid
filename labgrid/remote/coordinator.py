@@ -255,7 +255,10 @@ class CoordinatorComponent(ApplicationSession):
                 done, _ = await asyncio.wait([fut], timeout=5)
                 if not done:
                     print('kicking exporter ({}/{})'.format(session.key, session.name))
+                    await self.call('wamp.session.kill', session.key, message="timeout detected by coordinator")
+                    print('cleaning up exporter ({}/{})'.format(session.key, session.name))
                     await self.on_session_leave(session.key)
+                    print('removed exporter ({}/{})'.format(session.key, session.name))
                     continue
                 try:
                     session.version = done.pop().result()
@@ -264,6 +267,8 @@ class CoordinatorComponent(ApplicationSession):
                         pass # old client
                     elif e.error == "wamp.error.canceled":
                         pass # disconnected
+                    elif e.error == "wamp.error.no_such_session":
+                        pass # client has already disconnected
                     else:
                         raise
         # update reservations

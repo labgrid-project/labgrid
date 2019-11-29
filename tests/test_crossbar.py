@@ -5,9 +5,22 @@ from importlib.util import find_spec
 
 import pytest
 import pexpect
+import psutil
 
 pytestmark = pytest.mark.skipif(not find_spec("crossbar"),
                               reason="crossbar required")
+
+def suspend_tree(pid):
+    main = psutil.Process(pid)
+    main.suspend()
+    for child in main.children(recursive=True):
+        child.suspend()
+
+def resume_tree(pid):
+    main = psutil.Process(pid)
+    main.resume()
+    for child in main.children(recursive=True):
+        child.resume()
 
 def test_startup(crossbar):
     pass
@@ -49,6 +62,25 @@ def place_acquire(place, exporter):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
+
+def test_connect_error():
+    with pexpect.spawn('python -m labgrid.remote.client -x ws://127.0.0.1:20409/ws places') as spawn:
+        spawn.expect("Could not connect to coordinator")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 1, spawn.before.strip()
+
+def test_connect_timeout(crossbar):
+    suspend_tree(crossbar.pid)
+    try:
+        with pexpect.spawn('python -m labgrid.remote.client places') as spawn:
+            spawn.expect("connection closed during setup")
+            spawn.expect(pexpect.EOF)
+            spawn.close()
+            assert spawn.exitstatus == 1, spawn.before.strip()
+    finally:
+        resume_tree(crossbar.pid)
+        pass
 
 def test_place_show(place):
     with pexpect.spawn('python -m labgrid.remote.client -p test show') as spawn:

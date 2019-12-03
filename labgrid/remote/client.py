@@ -462,9 +462,13 @@ class ClientSession(ApplicationSession):
             except ValueError:
                 raise UserError("tag '{}' needs to match '<key>=<value>'".format(pair))
             if not TAG_KEY.match(k):
-                raise UserError("tag key '{}' needs to match the rexex '{}'".format(k, TAG_KEY.pattern))
+                raise UserError(
+                    "tag key '{}' needs to match the rexex '{}'".format(k, TAG_KEY.pattern)
+                )
             if not TAG_VAL.match(v):
-                raise UserError("tag value '{}' needs to match the rexex '{}'".format(v, TAG_VAL.pattern))
+                raise UserError(
+                    "tag value '{}' needs to match the rexex '{}'".format(v, TAG_VAL.pattern)
+                )
             tags[k] = v
         res = await self.call(
             'org.labgrid.coordinator.set_place_tags', place.name, tags

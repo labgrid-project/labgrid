@@ -60,11 +60,15 @@ class Relais8:
         self._dev.ctrl_transfer(64, 3, 20, 0, 0, 5000)
         self._dev.ctrl_transfer(64, 9, 2, 0, 0, 5000)
         self._ep_out = usb.util.find_descriptor(
-                intf,
-                custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_OUT)
+            intf,
+            custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == \
+                usb.util.ENDPOINT_OUT
+        )
         self._ep_in = usb.util.find_descriptor(
-                intf,
-                custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_IN)
+            intf,
+            custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == \
+                usb.util.ENDPOINT_IN
+        )
         self._sequence_number = 0
         self._logger = logging.getLogger("Device: ")
         self._run_configuration_sequence()
@@ -99,7 +103,7 @@ class Relais8:
         if status > 255 or status < 0:
             return
         data = '0123{}000000001{:02X}00000000000000'.format(
-                0 if reset else 8, status)
+            0 if reset else 8, status)
         self.write(unhexlify(Relais8._padding + data))
         self.read(255)
 

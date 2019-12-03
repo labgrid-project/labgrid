@@ -58,9 +58,9 @@ class ExporterSession(RemoteSession):
             new = old
         elif resourcedata and not old:
             new = group[resourcename] = ResourceImport(
-                    resourcedata,
-                    path=(self.name, groupname, resourcedata['cls'], resourcename),
-                    )
+                resourcedata,
+                path=(self.name, groupname, resourcedata['cls'], resourcename)
+            )
         elif not resourcedata and old:
             new = None
             del group[resourcename]
@@ -574,7 +574,7 @@ class CoordinatorComponent(ApplicationSession):
                 # this triggers an update from the exporter which is published
                 # to the clients
                 await self.call('org.labgrid.exporter.{}.acquire'.format(resource.path[0]),
-                        resource.path[1], resource.path[3], place.name)
+                                resource.path[1], resource.path[3], place.name)
                 acquired.append(resource)
         except:
             print("failed to acquire {}".format(resource))
@@ -605,7 +605,7 @@ class CoordinatorComponent(ApplicationSession):
                 # this triggers an update from the exporter which is published
                 # to the clients
                 await self.call('org.labgrid.exporter.{}.release'.format(resource.path[0]),
-                        resource.path[1], resource.path[3])
+                                resource.path[1], resource.path[3])
             except:
                 print("failed to release {}".format(resource))
                 # at leaset try to notify the clients

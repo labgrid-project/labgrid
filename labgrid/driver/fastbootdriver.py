@@ -18,7 +18,10 @@ class AndroidFastbootDriver(Driver):
     }
 
     image = attr.ib(default=None)
-    sparse_size = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    sparse_size = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

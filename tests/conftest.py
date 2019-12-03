@@ -52,6 +52,7 @@ def crossbar(tmpdir, pytestconfig):
         pytest.skip("crossbar not found")
     pytestconfig.rootdir.join('.crossbar/config.yaml').copy(tmpdir.mkdir('.crossbar'))
     spawn = pexpect.spawn('crossbar start --logformat none', cwd=str(tmpdir))
+    print (spawn.before)
     try:
         spawn.expect('Realm .* started')
         spawn.expect('Guest .* started')

@@ -56,7 +56,7 @@ workers:
   arguments:
   - -mlabgrid.remote.coordinator
   options:
-    workdir: ..
+    workdir: ../.crossbar
     env:
       vars:
         WS: ws://localhost:20408/ws

@@ -2,8 +2,9 @@
 Class for connecting to a docker daemon running on the host machine.
 """
 
-import attr
 import logging
+
+import attr
 
 from labgrid.factory import target_factory
 from labgrid.driver.common import Driver

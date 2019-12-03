@@ -1,5 +1,6 @@
-import attr
 import enum
+
+import attr
 
 from ..factory import target_factory
 from .common import Strategy, StrategyError

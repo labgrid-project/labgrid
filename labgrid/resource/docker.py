@@ -4,9 +4,10 @@ and DockerManager will create the NetworkResource instance that is declared
 in the specification (e.g. yaml) of DockerDriver.
 """
 
-import attr
 import logging
 import socket
+
+import attr
 
 from labgrid.util.dict import find_dict
 from ..factory import target_factory

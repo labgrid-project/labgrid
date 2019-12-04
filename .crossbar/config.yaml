@@ -52,7 +52,7 @@ workers:
     role: authenticator
 - id: coordinator
   type: guest
-  executable: python
+  executable: python3
   arguments:
   - -mlabgrid.remote.coordinator
   options:

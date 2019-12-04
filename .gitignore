@@ -19,3 +19,4 @@
 /htmlcov/
 /docker/staging/crossbar/*
 !/docker/staging/crossbar/places_example.yaml
+/.idea

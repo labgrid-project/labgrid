@@ -9,5 +9,6 @@ COPY ./ /opt/labgrid/
 RUN set -e ;\
     apt update -q=2 ;\
     apt install -q=2 --yes --no-install-recommends python3 python3-dev python3-pip python3-setuptools python3-wheel git build-essential libsnappy-dev ;\
+    ln -sf $(which python3) /usr/bin/python ;\
     apt clean ;\
     rm -rf /var/lib/apt/lists/*

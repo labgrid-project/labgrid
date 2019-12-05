@@ -22,7 +22,7 @@ Install required dependencies:
 
 .. code-block:: bash
 
-   sudo apt install libow-dev
+   sudo apt install python3-dev libow-dev
 
 Install the development requirements:
 

@@ -38,5 +38,6 @@ def test_sigrok_usb_driver(target, tmpdir):
 
 def test_sigrok_power_driver(target):
     r = SigrokUSBSerialDevice(target, name=None, driver='manson-hcs-3xxx')
+    r.avail = True
     d = SigrokPowerDriver(target, name=None)
     target.activate(d)

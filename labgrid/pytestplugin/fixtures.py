@@ -43,7 +43,7 @@ def pytest_addoption(parser):
         help='colored step reporter')
 
 
-@pytest.fixture('session')
+@pytest.fixture(scope="session")
 def env(request):
     """Return the environment configured in the supplied configuration file.
     It contains the targets contained in the configuration file.
@@ -103,7 +103,7 @@ def env(request):
     sshmanager.close_all()
 
 
-@pytest.fixture('session')
+@pytest.fixture(scope="session")
 def target(env):
     """Return the default target `main` configured in the supplied
     configuration file."""

@@ -46,6 +46,11 @@ class Resource(BindingMixin):
         """
         return self._parent.get_managed_parent() if self._parent else None
 
+    def poll(self):
+        managed_parent = self.get_managed_parent()
+        if managed_parent:
+            managed_parent.poll()
+
 
 @attr.s(eq=False)
 class NetworkResource(Resource):

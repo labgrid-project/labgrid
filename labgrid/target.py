@@ -44,10 +44,8 @@ class Target:
         if (monotonic() - self.last_update) < 0.1:
             return
         self.last_update = monotonic()
-        resources = [r for r in self.resources if isinstance(r, ManagedResource)]
-        for resource in resources:
+        for resource in self.resources:
             resource.poll()
-        for resource in resources:
             if not resource.avail and resource.state is BindingState.active:
                 self.log.info("deactivating unavailable resource %s", resource.display_name)  # pylint: disable=line-too-long
                 self.deactivate(resource)

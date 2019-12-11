@@ -2,6 +2,8 @@
 import enum
 import logging
 import os
+import pathlib
+import subprocess
 import time
 import subprocess
 
@@ -42,6 +44,11 @@ class USBStorageDriver(Driver):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
+    WAIT_FOR_MEDIUM_TIMEOUT = 10.0 # s
+    WAIT_FOR_MEDIUM_SLEEP = 0.5 # s
+    PMOUNT_MEDIA_DIR = pathlib.PurePath('/media') # pmount compile-time configure option
+    PUMOUNT_MAX_RETRIES = 5
+    PUMOUNT_BUSY_WAIT = 3 # s
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -52,6 +59,69 @@ class USBStorageDriver(Driver):
 
     def on_deactivate(self):
         pass
+
+    def _wait_for_medium(self, partition=None):
+        timeout = Timeout(self.WAIT_FOR_MEDIUM_TIMEOUT)
+        while not timeout.expired:
+            if self.get_size(partition) > 0:
+                break
+            time.sleep(self.WAIT_FOR_MEDIUM_SLEEP)
+        else:
+            raise ExecutionError("Timeout while waiting for medium")
+
+    def _pmount(self, partition):
+        mount_args = ["pmount", self.storage.path + str(partition)]
+        self._wait_for_medium(partition)
+        processwrapper.check_output(self.storage.command_prefix + mount_args)
+
+    def _pumount(self, partition):
+        dev_path = self.storage.path + str(partition)
+        for i in range(self.PUMOUNT_MAX_RETRIES):
+            sync_args = ["sync", dev_path]
+            processwrapper.check_output(self.storage.command_prefix + sync_args)
+
+            umount_args = ["pumount", dev_path]
+            try:
+                processwrapper.check_output(self.storage.command_prefix + umount_args)
+            except subprocess.CalledProcessError as e:
+                if e.returncode == 5:
+                    self.logger.info('umount: %s: target is busy; wait for %s s',
+                                     dev_path, self.PUMOUNT_BUSY_WAIT)
+                    time.sleep(self.PUMOUNT_BUSY_WAIT)
+                    continue
+                raise e
+            break
+
+    @Driver.check_active
+    @step(args=['filenames', 'target_dir', 'partition'])
+    def copy_files(self, filenames, target_dir=pathlib.PurePath("."), partition=1):
+        """
+        Copies the file(s) specified by filename(s) to the
+        bound USB storage partition.
+
+        Args:
+            filenames (List[str]): path(s) to the file(s) to be copied to the bound USB storage
+                partition.
+            target_dir (str): optional, target directory to copy to (defaults to partition root
+                directory)
+            partition (int): optional, copy to the specified partition (defaults to first partition)
+        """
+        dev_path = pathlib.PurePath(self.storage.path + str(partition))
+        mount_path = self.PMOUNT_MEDIA_DIR / dev_path.name
+
+        self._pmount(partition)
+        self.logger.debug('Mount %s to %s', dev_path, mount_path)
+
+        target_path = pathlib.PurePath(mount_path) / target_dir
+        try:
+            for f in filenames:
+                mf = ManagedFile(f, self.storage)
+                mf.sync_to_resource()
+                self.logger.debug("Copy %s to %s", mf.get_remote_path(), target_path)
+                cp_args = ["cp", "-t", str(target_path), mf.get_remote_path()]
+                processwrapper.check_output(self.storage.command_prefix + cp_args)
+        finally:
+            self._pumount(partition)
 
     @Driver.check_active
     @step(args=['filename'])
@@ -74,18 +144,7 @@ class USBStorageDriver(Driver):
         mf = ManagedFile(filename, self.storage)
         mf.sync_to_resource()
 
-        # wait for medium
-        timeout = Timeout(10.0)
-        while not timeout.expired:
-            try:
-                if self.get_size() > 0:
-                    break
-                time.sleep(0.5)
-            except ValueError:
-                # when the medium gets ready the sysfs attribute is empty for a short time span
-                continue
-        else:
-            raise ExecutionError("Timeout while waiting for medium")
+        self._wait_for_medium()
 
         partition = "" if partition is None else partition
         remote_path = mf.get_remote_path()
@@ -146,11 +205,26 @@ class USBStorageDriver(Driver):
         )
 
     @Driver.check_active
-    @step(result=True)
-    def get_size(self):
-        args = ["cat", "/sys/class/block/{}/size".format(self.storage.path[5:])]
-        size = subprocess.check_output(self.storage.command_prefix + args)
-        return int(size)*512
+    @step(args=['partition'], result=True)
+    def get_size(self, partition=None):
+        """
+        Get the size of the bound USB storage root device or partition.
+
+        Args:
+            partition (int or None): optional, get size of the specified partition or None for
+                getting the size of the root device (defaults to None)
+
+        Returns:
+            int: size in bytes
+        """
+        partition = "" if partition is None else partition
+        args = ["cat", "/sys/class/block/{}{}/size".format(self.storage.path[5:], partition)]
+        size = processwrapper.check_output(self.storage.command_prefix + args)
+        try:
+            return int(size)
+        except ValueError:
+            # when the medium gets ready the sysfs attribute is empty for a short time span
+            return 0
 
 
 @target_factory.reg_driver

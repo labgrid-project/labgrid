@@ -5,6 +5,7 @@ import asyncio
 import contextlib
 import enum
 import os
+import pathlib
 import subprocess
 import traceback
 import logging
@@ -1214,6 +1215,32 @@ class ClientSession(ApplicationSession):
         for k, v in sorted(data.items()):
             print(f"{k:<16s} {str(v):<10s}")
 
+    def write_files(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        name = self.args.name
+        drv = self._get_driver_or_new(target, "USBStorageDriver", activate=False, name=name)
+        drv.storage.timeout = self.args.wait
+        target.activate(drv)
+
+        try:
+            if self.args.partition == 0:
+                self.args.partition = None
+
+            if self.args.rename:
+                if len(self.args.SOURCE) != 2:
+                    self.args.parser.error("the following arguments are required: SOURCE DEST")
+
+                drv.write_files([self.args.SOURCE[0]], self.args.SOURCE[1],
+                                self.args.partition, target_is_directory=False)
+            else:
+                drv.write_files(self.args.SOURCE, self.args.target_directory,
+                                self.args.partition, target_is_directory=True)
+        except subprocess.CalledProcessError as e:
+            raise UserError(f"could not copy files to network usb storage: {e}")
+        except FileNotFoundError as e:
+            raise UserError(e)
+
     def write_image(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
@@ -1760,6 +1787,27 @@ def main():
     tmc_subparser.add_argument('channel', type=int)
     tmc_subparser.add_argument('action', choices=['info', 'values'])
     tmc_subparser.set_defaults(func=ClientSession.tmc_channel)
+
+    subparser = subparsers.add_parser('write-files', help="copy files onto mass storage device",
+                                      usage="%(prog)s [OPTION]... -T SOURCE DEST\n" +
+                                     "       %(prog)s [OPTION]... [-t DIRECTORY] SOURCE...")
+    subparser.add_argument('-w', '--wait', type=float, default=10.0,
+                           help='storage poll timeout in seconds')
+    subparser.add_argument('-p', '--partition', type=int, choices=range(0, 256),
+                           metavar='0-255', default=1,
+                           help='partition number to mount or 0 to mount whole disk (default: %(default)s)')
+    group = subparser.add_mutually_exclusive_group()
+    group.add_argument('-t', '--target-directory', type=pathlib.PurePath, metavar='DIRECTORY',
+                           default=pathlib.PurePath("/"),
+                           help='copy all SOURCE files into DIRECTORY (default: partition root)')
+    group.add_argument('-T', action='store_true', dest='rename',
+                           help='copy SOURCE file and rename to DEST')
+    subparser.add_argument('--name', '-n', help="optional resource name")
+    subparser.add_argument('SOURCE', type=pathlib.PurePath, nargs='+',
+                           help='source file(s) to copy')
+    subparser.add_argument('DEST', type=pathlib.PurePath, nargs='?',
+                           help='destination file name for SOURCE')
+    subparser.set_defaults(func=ClientSession.write_files, parser=subparser)
 
     subparser = subparsers.add_parser('write-image', help="write an image onto mass storage")
     subparser.add_argument('-w', '--wait', type=float, default=10.0)

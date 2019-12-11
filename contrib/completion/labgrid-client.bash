@@ -769,6 +769,40 @@ _labgrid_client_write_image()
     esac
 }
 
+_labgrid_client_write_files()
+{
+    local cur prev words cword
+    _init_completion || return
+
+    case "$prev" in
+    -w|--wait)
+        ;&
+    -p|--partition)
+        ;&
+    -t|--target-directory)
+        ;&
+    -T)
+        ;&
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
+    esac
+
+    case "$cur" in
+    -*)
+        local options="--wait --partition --target-directory --name $_labgrid_shared_options"
+        COMPREPLY=( $(compgen -W "$options" -- "$cur") )
+        ;;
+    *)
+        local args
+        _labgrid_count_args "@(-w|--wait|-p|--partition|-t|--target-directory|-T|-n|--name)" || return
+
+        _filedir
+        ;;
+    esac
+}
+
 _labgrid_client_reserve()
 {
     _labgrid_client_generic_subcommand "--wait --shell --prio"
@@ -888,6 +922,7 @@ _labgrid_client()
                                audio \
                                tmc \
                                write-image \
+                               write-files \
                                reserve \
                                cancel-reservation \
                                wait \

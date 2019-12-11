@@ -1,17 +1,20 @@
 import enum
 import os
+import pathlib
 import time
 import subprocess
 
 import attr
 
 from ..factory import target_factory
+from ..resource.remote import RemoteUSBResource
 from ..step import step
 from ..util.managedfile import ManagedFile
 from .common import Driver
 from ..driver.exception import ExecutionError
 
 from ..util.helper import processwrapper
+from ..util.agentwrapper import AgentWrapper
 from ..util import Timeout
 
 
@@ -43,11 +46,66 @@ class USBStorageDriver(Driver):
     WAIT_FOR_MEDIUM_TIMEOUT = 10.0 # s
     WAIT_FOR_MEDIUM_SLEEP = 0.5 # s
 
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self.wrapper = None
+
     def on_activate(self):
-        pass
+        host = self.storage.host if isinstance(self.storage, RemoteUSBResource) else None
+        self.wrapper = AgentWrapper(host)
+        self.proxy = self.wrapper.load('udisks2')
 
     def on_deactivate(self):
-        pass
+        self.wrapper.close()
+        self.wrapper = None
+        self.proxy = None
+
+    @Driver.check_active
+    @step(args=['sources', 'target', 'partition', 'target_is_directory'])
+    def write_files(self, sources, target, partition, target_is_directory=True):
+        """
+        Write the file(s) specified by filename(s) to the
+        bound USB storage partition.
+
+        Args:
+            sources (List[str]): path(s) to the file(s) to be copied to the bound USB storage
+                partition.
+            target (str): target directory or file to copy to
+            partition (int): mount the specified partition or None to mount the whole disk
+            target_is_directory (bool): Whether target is a directory
+        """
+
+        self.devpath = self._get_devpath(partition)
+        mount_path = self.proxy.mount(self.devpath)
+
+        try:
+            # (pathlib.PurePath(...) / "/") == "/", so we turn absolute paths into relative
+            # paths with respect to the mount point here
+            target_rel = target.relative_to(target.root) if target.root is not None else target
+            target_path = str(pathlib.PurePath(mount_path) / target_rel)
+
+            copied_sources = []
+
+            for f in sources:
+                mf = ManagedFile(f, self.storage)
+                mf.sync_to_resource()
+                copied_sources.append(mf.get_remote_path())
+
+            if target_is_directory:
+                args = ["cp", "-t", target_path] + copied_sources
+            else:
+                if len(sources) != 1:
+                    raise ValueError("single source argument required when target_is_directory=False")
+
+                args = ["cp", "-T", copied_sources[0], target_path]
+
+            processwrapper.check_output(self.storage.command_prefix + args)
+            self.proxy.unmount(self.devpath)
+        except:
+            # We are going to die with an exception anyway, so no point in waiting
+            # to make sure everything has been written before continuing
+            self.proxy.unmount(self.devpath, lazy=True)
+            raise
 
     @Driver.check_active
     @step(args=['filename'])

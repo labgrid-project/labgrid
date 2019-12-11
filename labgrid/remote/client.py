@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import contextlib
 import os
+import pathlib
 import subprocess
 import traceback
 import logging
@@ -1268,6 +1269,33 @@ class ClientSession(ApplicationSession):
         for k, v in sorted(data.items()):
             print("{:<16s} {:<10s}".format(k, str(v)))
 
+    def copy_files(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        drv = None
+        from ..resource.remote import NetworkUSBMassStorage, NetworkUSBSDMuxDevice
+        from ..driver import NetworkUSBStorageDriver
+        try:
+            drv = target.get_driver(NetworkUSBStorageDriver)
+        except NoDriverFoundError:
+            for resource in target.resources:
+                if isinstance(resource, (NetworkUSBSDMuxDevice, NetworkUSBMassStorage)):
+                    try:
+                        drv = target.get_driver(NetworkUSBStorageDriver)
+                    except NoDriverFoundError:
+                        drv = NetworkUSBStorageDriver(target, name=None)
+                    drv.storage.timeout = self.args.wait
+                    break
+        if not drv:
+            raise UserError("target has no compatible resource available")
+        target.activate(drv)
+        try:
+            drv.copy_files(self.args.filenames, self.args.target_directory, self.args.partition)
+        except subprocess.CalledProcessError as e:
+            raise UserError("could not copy files to network usb storage: {}".format(e))
+        except FileNotFoundError as e:
+            raise UserError(e)
+
     def write_image(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
@@ -1742,6 +1770,18 @@ def main():
     tmc_subparser.add_argument('channel', type=int)
     tmc_subparser.add_argument('action', choices=['info', 'values'])
     tmc_subparser.set_defaults(func=ClientSession.tmc_channel)
+
+    subparser = subparsers.add_parser('copy-files', help="copy files onto mass storage device")
+    subparser.add_argument('-n', '--partition', type=int, default=1, choices=range(1, 256),
+                           metavar='1-255', help='partition number to copy to (default: %(default)s)')
+    subparser.add_argument('-t', '--target-directory', type=pathlib.PurePath,
+                           default=pathlib.PurePath('.'), metavar='DIRECTORY',
+                           help='copy all files into DIRECTORY')
+    subparser.add_argument('-w', '--wait', type=float, default=10.0,
+                           help='storage poll timeout in seconds')
+    subparser.add_argument('filenames', type=pathlib.PurePath, nargs='+', metavar='filename',
+                           help='filename to copy onto mass storage device')
+    subparser.set_defaults(func=ClientSession.copy_files)
 
     subparser = subparsers.add_parser('write-image', help="write an image onto mass storage")
     subparser.add_argument('-w', '--wait', type=float, default=10.0)

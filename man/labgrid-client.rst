@@ -178,6 +178,8 @@ LABGRID-CLIENT COMMANDS
 
 ``tmc`` command                 Control a USB TMC device
 
+``copy-files`` filename(s)      Copy files onto mass storage device
+
 ``write-image``                 Write images onto block devices (USBSDMux, USB Sticks, …)
 
 ``reserve`` filter              Create a reservation

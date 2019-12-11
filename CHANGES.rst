@@ -18,6 +18,8 @@ New Features in 0.4.0
 - Network controlled relay providing GET/PUT based REST API
 - Improved LG_PROXY documentation in docs/usage.rst.
 - Exporter now checks /usr/sbin/ser2net for SerialPortExport
+- labgrid-client now has a ``copy-files`` subcommand to copy files onto mass
+  storage devices.
 
 Bug fixes in 0.4.0
 ~~~~~~~~~~~~~~~~~~

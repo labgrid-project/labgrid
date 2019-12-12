@@ -1,0 +1,16 @@
+--- a/.crossbar/config.yaml	2021-04-27 10:47:30.149732334 +0200
++++ b/.crossbar/config.yaml	2021-04-27 10:47:57.798224696 +0200
+@@ -52,11 +52,11 @@
+     role: authenticator
+ - id: coordinator
+   type: guest
+-  executable: python3
++  executable: /opt/venvs/labgrid/bin/python3
+   arguments:
+   - -mlabgrid.remote.coordinator
+   options:
+-    workdir: .
++    workdir: /var/lib/labgrid-coordinator
+     env:
+       vars:
+         WS: ws://localhost:20408/ws

@@ -1,5 +1,9 @@
-debian/labgrid.yaml /etc
+#!/usr/bin/dh-exec
+
+debian/client.yaml /etc/labgrid
 debian/labgrid-client /usr/bin
+debian/labgrid-coordinator /usr/bin
 debian/labgrid-exporter /usr/bin
 debian/labgrid-pytest /usr/bin
 helpers/labgrid-bound-connect /usr/sbin
+.crossbar/config.yaml => /etc/labgrid/coordinator.yaml

@@ -54,7 +54,7 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
             raise ExecutionError("Failed to get OneWire value for {}".format(path))
         if status not in ['0', '1']:
             raise ExecutionError("Invalid OneWire value ({})".format(repr(status)))
-        status = True if status == '1' else False
+        status = (status == '1')
         if self.port.invert:
             status = not status
         return status

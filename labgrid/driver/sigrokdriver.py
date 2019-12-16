@@ -208,7 +208,7 @@ class SigrokDriver(SigrokCommon):
                 # skip first 5 lines of the csv output, contains metadata and fieldnames
                 for _ in range(0, 5):
                     next(csv_file)
-                return [x for x in csv.DictReader(csv_file, fieldnames=fnames)]
+                return list(csv.DictReader(csv_file, fieldnames=fnames))
         else:
             shutil.copyfile(
                 os.path.join(self._tmpdir, self._basename), self._filename
@@ -217,7 +217,7 @@ class SigrokDriver(SigrokCommon):
                 # skip first 5 lines of the csv output, contains metadata and fieldnames
                 for _ in range(0, 5):
                     next(csv_file)
-                return [x for x in csv.DictReader(csv_file, fieldnames=fnames)]
+                return list(csv.DictReader(csv_file, fieldnames=fnames))
 
     @Driver.check_active
     def analyze(self, args, filename=None):

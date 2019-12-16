@@ -32,5 +32,4 @@ class PDUDaemonPort(Resource):
     """
     host = attr.ib(validator=attr.validators.instance_of(str))
     pdu = attr.ib(validator=attr.validators.instance_of(str))
-    index = attr.ib(validator=attr.validators.instance_of(int),
-                    converter=lambda x: int(x))
+    index = attr.ib(validator=attr.validators.instance_of(int), converter=int)

@@ -26,7 +26,7 @@ class GpioDigitalOutput:
         GpioDigitalOutput._assert_gpio_line_is_exported(index)
         gpio_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix, 'gpio{0}'.format(index))
         gpio_sysfs_direction_path = os.path.join(gpio_sysfs_path, 'direction')
-        self._logger.debug("Configuring GPIO {idx} as output.".format(idx = index))
+        self._logger.debug("Configuring GPIO %d as output.", index)
         with open(gpio_sysfs_direction_path, 'wb') as direction_fd:
             direction_fd.write(b'out')
         gpio_sysfs_value_path = os.path.join(gpio_sysfs_path, 'value')
@@ -46,8 +46,7 @@ class GpioDigitalOutput:
         raise ValueError("GPIO value is out of range.")
 
     def set(self, status):
-        self._logger.debug(
-                "Setting GPIO to `{}`.".format(status))
+        self._logger.debug("Setting GPIO to `%s`.", status)
         binary_value = None
         if status is True:
             binary_value = b'1'

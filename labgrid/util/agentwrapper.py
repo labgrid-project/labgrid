@@ -92,7 +92,7 @@ class AgentWrapper:
             # https://bugs.python.org/issue30399
             if e[-2:] == ',)':
                 e = e[:-2] + ')'
-            self.logger.debug("Traceback from agent (most recent call last) for {}:".format(e))
+            self.logger.debug("Traceback from agent (most recent call last) for %s:", e)
             for line in ''.join(traceback.format_list(response['tb'])).splitlines():
                 self.logger.debug(line)
             raise AgentException(e)

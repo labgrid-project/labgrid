@@ -64,10 +64,10 @@ class GpioDigitalOutput:
 
 _gpios = {}
 
-def _get_gpio_line(_index):
-    if _index not in _gpios:
-        _gpios[_index] = GpioDigitalOutput(index = _index)
-    return _gpios[_index]
+def _get_gpio_line(index):
+    if index not in _gpios:
+        _gpios[index] = GpioDigitalOutput(index=index)
+    return _gpios[index]
 
 def handle_set(index, status):
     gpio_line = _get_gpio_line(index)

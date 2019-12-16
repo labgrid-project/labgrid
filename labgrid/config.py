@@ -140,8 +140,8 @@ class Config:
         except KeyError:
             if default is None:
                 raise KeyError("no option '{}' found in configuration".format(name))
-            else:
-                return default
+
+            return default
 
     def set_option(self, name, value):
         """Set an entry in the options subkey

@@ -317,8 +317,8 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
             return True
         elif out == b'false':
             return False
-        else:
-            raise ExecutionError("Unkown enable status {}".format(out))
+
+        raise ExecutionError("Unkown enable status {}".format(out))
 
     @Driver.check_active
     @step(result=True)

@@ -121,10 +121,10 @@ class Target:
                     "all resources matching {} found in target {} have other names: {}".format(
                         cls, self, other_names)
                 )
-            else:
-                raise NoResourceFoundError(
-                    "no resource matching {} found in target {}".format(cls, self)
-                )
+
+            raise NoResourceFoundError(
+                "no resource matching {} found in target {}".format(cls, self)
+            )
         elif len(found) > 1:
             raise NoResourceFoundError(
                 "multiple resources matching {} found in target {}".format(cls, self)
@@ -157,12 +157,12 @@ class Target:
                         "active " if active else "",
                         cls, self, other_names)
                 )
-            else:
-                raise NoDriverFoundError(
-                    "no {}driver matching {} found in target {}".format(
-                        "active " if active else "", cls, self
-                    )
+
+            raise NoDriverFoundError(
+                "no {}driver matching {} found in target {}".format(
+                    "active " if active else "", cls, self
                 )
+            )
         elif len(found) > 1:
             prio_last = -255
             prio_found = []

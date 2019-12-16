@@ -610,8 +610,8 @@ class ClientSession(ApplicationSession):
         )
         if not res:
             raise ServerError("failed to release place {}".format(place.name))
-        else:
-            print("released place {}".format(place.name))
+
+        print("released place {}".format(place.name))
 
     async def allow(self):
         """Allow another use access to a previously acquired place"""
@@ -630,8 +630,8 @@ class ClientSession(ApplicationSession):
         res = await self.call('org.labgrid.coordinator.allow_place', place.name, self.args.user)
         if not res:
             raise ServerError("failed to allow {} for place {}".format(self.args.user, place.name))
-        else:
-            print("allowed {} for place {}".format(self.args.user, place.name))
+
+        print("allowed {} for place {}".format(self.args.user, place.name))
 
     def get_target_resources(self, place):
         self._check_allowed(place)

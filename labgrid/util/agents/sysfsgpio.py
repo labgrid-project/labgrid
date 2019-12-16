@@ -9,14 +9,17 @@ import os
 
 class GpioDigitalOutput:
     _gpio_sysfs_path_prefix = '/sys/class/gpio'
-    _buffered_file_access=False
+    _buffered_file_access = False
 
     @staticmethod
     def _assert_gpio_line_is_exported(index):
-        gpio_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix, 'gpio{0}'.format(index))
+        gpio_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix,
+                                       'gpio{0}'.format(index))
         if not os.path.exists(gpio_sysfs_path):
             export_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix, 'export')
-            with open(export_sysfs_path, mode = 'r+', buffering = GpioDigitalOutput._buffered_file_access, closefd = True) as export:
+            with open(export_sysfs_path, mode='r+',
+                      buffering=GpioDigitalOutput._buffered_file_access,
+                      closefd=True) as export:
                 export.write(str(index))
         if not os.path.exists(gpio_sysfs_path):
             raise ValueError("Device not found")
@@ -25,7 +28,8 @@ class GpioDigitalOutput:
         index = kwargs['index']
         self._logger = logging.getLogger("Device: ")
         GpioDigitalOutput._assert_gpio_line_is_exported(index)
-        gpio_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix, 'gpio{0}'.format(index))
+        gpio_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix,
+                                       'gpio{0}'.format(index))
         gpio_sysfs_direction_path = os.path.join(gpio_sysfs_path, 'direction')
         self._logger.debug("Configuring GPIO %d as output.", index)
         with open(gpio_sysfs_direction_path, 'wb') as direction_fd:

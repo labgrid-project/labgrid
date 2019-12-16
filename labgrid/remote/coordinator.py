@@ -335,7 +335,7 @@ class CoordinatorComponent(ApplicationSession):
 
         # collect affected places
         places = []
-        for placename, place in self.places.items():
+        for place in self.places.values():
             if not place.acquired:
                 continue
             if not place.hasmatch(resource.path):

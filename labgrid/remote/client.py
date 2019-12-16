@@ -592,7 +592,6 @@ class ClientSession(ApplicationSession):
 
         raise ServerError("failed to acquire place {}".format(place.name))
 
-
     async def release(self):
         """Release a previously acquired place"""
         place = self.get_place()

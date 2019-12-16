@@ -70,7 +70,7 @@ class NetworkResource(Resource):
         host = self.host
 
         if hasattr(self, 'extra'):
-            if self.extra.get('proxy_required'): 
+            if self.extra.get('proxy_required'):
                 host = self.extra.get('proxy')
 
         conn = sshmanager.get(host)

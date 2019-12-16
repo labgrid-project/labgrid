@@ -23,8 +23,7 @@ class GpioDigitalOutput:
         if not os.path.exists(gpio_sysfs_path):
             raise ValueError("Device not found")
 
-    def __init__(self, **kwargs):
-        index = kwargs['index']
+    def __init__(self, index):
         self._logger = logging.getLogger("Device: ")
         GpioDigitalOutput._assert_gpio_line_is_exported(index)
         gpio_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix,

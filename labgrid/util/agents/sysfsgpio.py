@@ -18,8 +18,7 @@ class GpioDigitalOutput:
         if not os.path.exists(gpio_sysfs_path):
             export_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix, 'export')
             with open(export_sysfs_path, mode='r+',
-                      buffering=GpioDigitalOutput._buffered_file_access,
-                      closefd=True) as export:
+                      buffering=GpioDigitalOutput._buffered_file_access) as export:
                 export.write(str(index))
         if not os.path.exists(gpio_sysfs_path):
             raise ValueError("Device not found")

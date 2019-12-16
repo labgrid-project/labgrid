@@ -54,7 +54,7 @@ def find_dict(d, key):
     """
     if key in d:
         return d[key]
-    for k, v in d.items():
+    for v in d.values():
         if isinstance(v, dict):
             value = find_dict(v, key)
             if value is not None:

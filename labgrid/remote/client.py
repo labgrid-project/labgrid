@@ -588,7 +588,7 @@ class ClientSession(ApplicationSession):
                     if match.rename:
                         name = match.rename
                     print("Matching resource '{}' ({}/{}/{}/{}) already acquired by place '{}'".format(
-                        name, exporter, group_name, resource.cls, resource_name, resource.acquired))
+                        name, exporter, group_name, resource.cls, resource_name, resource.acquired))  # pylint: disable=line-too-long
 
         raise ServerError("failed to acquire place {}".format(place.name))
 
@@ -1147,7 +1147,7 @@ class ClientSession(ApplicationSession):
 
     async def print_reservations(self):
         reservations = await self.call('org.labgrid.coordinator.get_reservations')
-        for token, config in sorted(reservations.items(), key=lambda x: (-x[1]['prio'], x[1]['created'])):
+        for token, config in sorted(reservations.items(), key=lambda x: (-x[1]['prio'], x[1]['created'])):  # pylint: disable=line-too-long
             config = filter_dict(config, Reservation, warn=True)
             res = Reservation(token=token, **config)
             print("Reservation '{}':".format(res.token))

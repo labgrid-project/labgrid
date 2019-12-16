@@ -292,7 +292,7 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
     def set_voltage_target(self, value):
         if self.max_voltage is not None and value > self.max_voltage:
             raise ValueError(
-                "Requested voltage target({}) is higher than configured maximum ({})".format(value, self.max_voltage))
+                "Requested voltage target({}) is higher than configured maximum ({})".format(value, self.max_voltage))  # pylint: disable=line-too-long
         processwrapper.check_output(
             self._get_sigrok_prefix() + ["--config", "voltage_target={:f}".format(value), "--set"]
         )
@@ -302,7 +302,7 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
     def set_current_limit(self, value):
         if self.max_current is not None and value > self.max_current:
             raise ValueError(
-                "Requested current limit ({}) is higher than configured maximum ({})".format(value, self.max_current))
+                "Requested current limit ({}) is higher than configured maximum ({})".format(value, self.max_current))  # pylint: disable=line-too-long
         processwrapper.check_output(
             self._get_sigrok_prefix() + ["--config", "current_limit={:f}".format(value), "--set"]
         )

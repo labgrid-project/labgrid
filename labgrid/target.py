@@ -461,4 +461,4 @@ class Target:
         try:
             return self._lookup_table[string]
         except KeyError:
-            raise KeyError("No driver/resource/protocol of type '{}' in lookup table, perhaps not bound?".format(string))
+            raise KeyError("No driver/resource/protocol of type '{}' in lookup table, perhaps not bound?".format(string))  # pylint: disable=line-too-long

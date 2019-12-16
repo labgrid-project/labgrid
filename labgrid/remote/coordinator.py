@@ -728,7 +728,7 @@ class CoordinatorComponent(ApplicationSession):
                         res.state = ReservationState.invalid
                         res.allocations.clear()
                         res.refresh(300)
-                        print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))
+                        print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))  # pylint: disable=line-too-long
                     if place.acquired is not None:
                         acquired_places.add(name)
                     assert name not in allocated_places, "conflicting allocation"

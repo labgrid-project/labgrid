@@ -45,7 +45,7 @@ class USBVideoDriver(Driver):
         if match == (0x046d, 0x082d):
             return "v4l2src device={} ! {} ! h264parse ! fdsink"
         if match == (0x046d, 0x0892):
-            return "v4l2src device={} ! {} ! decodebin ! vaapipostproc ! vaapih264enc ! h264parse ! fdsink"
+            return "v4l2src device={} ! {} ! decodebin ! vaapipostproc ! vaapih264enc ! h264parse ! fdsink"  # pylint: disable=line-too-long
         raise InvalidConfigError("Unkown USB video device {:04x}:{:04x}".format(*match))
 
     @Driver.check_active

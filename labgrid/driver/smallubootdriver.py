@@ -80,11 +80,7 @@ class SmallUBootDriver(UBootDriver):
         # handle it's error message as an echo-output.
         # additionally we are not able to get the command's return code and
         # will always return 0.
-        cmp_command = """echo{}; {}; echo{}""".format(
-            marker,
-            cmd,
-            marker
-        )
+        cmp_command = "echo{marker}; {cmd}; echo{marker}".format(marker=marker, cmd=cmd)
 
         self.console.sendline(cmp_command)
         _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)

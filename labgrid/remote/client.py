@@ -192,10 +192,12 @@ class ClientSession(ApplicationSession):
             for exporter, groups in sorted(filtered.items()):
                 print("Exporter '{}':".format(exporter))
                 for group_name, group in sorted(groups.items()):
-                    print("  Group '{}' ({}/{}/*):".format(group_name, exporter, group_name))
+                    print("  Group '{group}' ({exporter}/{group}/*):".format(
+                        group=group_name, exporter=exporter))
                     for resource_name, resource in sorted(group.items()):
-                        print("    Resource '{}' ({}/{}/{}[/{}]):".format(
-                            resource_name, exporter, group_name, resource.cls, resource_name))
+                        print("    Resource '{res}' ({exporter}/{group}/{res_cls}[/{res}]):"
+                              .format(res=resource_name, exporter=exporter, group=group_name,
+                                      res_cls=resource.cls))
                         print(indent(pformat(resource.asdict()), prefix="      "))
         else:
             results = []

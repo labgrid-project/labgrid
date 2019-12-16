@@ -88,8 +88,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             marker[:4], marker[4:], shlex.quote(cmd)
         )
         self.console.sendline(cmp_command)
-        _, _, match, _ = self.console.expect(r'{}(.*){}\s+(\d+)\s+{}'.format(
-            marker, marker, self.prompt
+        _, _, match, _ = self.console.expect(r'{marker}(.*){marker}\s+(\d+)\s+{prompt}'.format(
+            marker=marker, prompt=self.prompt
         ), timeout=timeout)
         # Remove VT100 Codes, split by newline and remove surrounding newline
         data = self.re_vt100.sub('', match.group(1).decode(codec, decodeerrors)).split('\r\n')

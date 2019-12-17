@@ -103,11 +103,11 @@ class ResourceExport(ResourceEntry):
 
         return dirty
 
-    def acquire(self, *args, **kwargs):
+    def acquire(self, *args, **kwargs):  # pylint: disable=arguments-differ
         super().acquire(*args, **kwargs)
         self.poll()
 
-    def release(self, *args, **kwargs):
+    def release(self, *args, **kwargs):  # pylint: disable=arguments-differ
         super().release(*args, **kwargs)
         self.poll()
 

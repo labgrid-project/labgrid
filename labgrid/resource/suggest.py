@@ -50,7 +50,7 @@ class Suggester:
         print("  {} for {}".format(cls, resource.device.device_path))
 
         if meta:
-            print("  === device properies ===")
+            print("  === device properties ===")
         for k, v in meta.items():
             print("  {}: {}".format(k, v))
         if not suggestions:

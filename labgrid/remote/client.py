@@ -587,8 +587,9 @@ class ClientSession(ApplicationSession):
                     name = resource_name
                     if match.rename:
                         name = match.rename
-                    print("Matching resource '{}' ({}/{}/{}/{}) already acquired by place '{}'".format(
-                        name, exporter, group_name, resource.cls, resource_name, resource.acquired))  # pylint: disable=line-too-long
+                    print("Matching resource '{}' ({}/{}/{}/{}) already acquired by place '{}'"
+                          .format(name, exporter, group_name, resource.cls, resource_name,
+                                  resource.acquired))
 
         raise ServerError("failed to acquire place {}".format(place.name))
 

@@ -14,4 +14,7 @@ class SigrokDevice(Resource):
         channels (str): a sigrok channel mapping as desribed in the sigrok-cli man page
     """
     driver = attr.ib(default="demo")
-    channels = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    channels = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )

@@ -803,7 +803,7 @@ class CoordinatorComponent(ApplicationSession):
 
     @locked
     async def create_reservation(self, spec, prio=0.0, details=None):
-        filter = {}
+        filter_ = {}
         for pair in spec.split():
             try:
                 k, v = pair.split('=')
@@ -813,9 +813,9 @@ class CoordinatorComponent(ApplicationSession):
                 return None
             if not TAG_VAL.match(v):
                 return None
-            filter[k] = v
+            filter_[k] = v
 
-        filters = {'main': filter} # currently, only one group is implemented
+        filters = {'main': filter_} # currently, only one group is implemented
 
         owner = self.sessions[details.caller].name
         res = Reservation(owner=owner, prio=prio, filters=filters)

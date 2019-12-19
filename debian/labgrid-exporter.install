@@ -2,3 +2,4 @@
 
 debian/labgrid-exporter.bin => /usr/bin/labgrid-exporter
 helpers/labgrid-bound-connect /usr/sbin
+debian/labgrid-exporter.sysuser => /usr/lib/sysusers.d/labgrid-exporter.conf

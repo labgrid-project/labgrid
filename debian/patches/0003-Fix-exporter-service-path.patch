@@ -1,0 +1,15 @@
+--- a/contrib/systemd/labgrid-exporter.service	2021-04-07 08:38:03.899447108 +0200
++++ b/contrib/systemd/labgrid-exporter.service	2021-04-07 14:36:02.886469406 +0200
+@@ -3,11 +3,10 @@
+ After=network.target
+ 
+ [Service]
+-ExecStart=/path/to/labgrid/venv/bin/labgrid-exporter /etc/labgrid/exporter.yaml
++ExecStart=/usr/bin/labgrid-exporter /etc/labgrid/exporter.yaml
+ Restart=on-abort
+ User=labgrid
+ Group=labgrid
+-# Adjust to your distribution (most often "dialout" or "tty")
+ SupplementaryGroups=dialout
+ CacheDirectory=labgrid
+ CacheDirectoryMode=1775

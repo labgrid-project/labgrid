@@ -1,1 +1,3 @@
 0001-Fix-coordinator-config-paths.patch
+0002-Fix-coordinator-service-path.patch
+0003-Fix-exporter-service-path.patch

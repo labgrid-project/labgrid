@@ -1,0 +1,16 @@
+[Unit]
+Description=Labgrid Exporter
+After=network.target
+
+[Service]
+ExecStart=/path/to/labgrid/venv/bin/labgrid-exporter /etc/labgrid/exporter.yaml
+Restart=on-abort
+User=labgrid
+Group=labgrid
+# Adjust to your distribution (most often "dialout" or "tty")
+SupplementaryGroups=dialout
+CacheDirectory=labgrid
+CacheDirectoryMode=1775
+
+[Install]
+WantedBy=multi-user.target

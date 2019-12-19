@@ -7,11 +7,10 @@ Build-Depends: debhelper (>= 11), dh-exec, python3-all-dev,
  python3-setuptools, git, libsodium-dev, libffi-dev, libssl-dev
 Standards-Version: 3.9.5
 
-Package: labgrid
+Package: labgrid-base
 Architecture: any
 Pre-Depends: dpkg (>= 1.16.1), python3, ${misc:Pre-Depends}
 Depends: ${python3:Depends}, ${misc:Depends}, ${shlibs:Depends}
-Recommends: openssh-client, microcom, socat, sshfs, rsync
 Description: embedded board control python library
  Labgrid is a embedded board control python library with a focus on testing,
  development and general automation. It includes a remote control layer to
@@ -21,3 +20,21 @@ Description: embedded board control python library
  layer needed for testing of embedded systems, automatic software installation
  and automation during development. Labgrid itself is not a testing framework,
  but is intended to be combined with pytest (and additional pytest plugins).
+
+Package: labgrid-client
+Architecture: any
+Depends: labgrid-base
+Recommends: gstreamer1.0-libav, gstreamer1.0-plugins-bad, gstreamer1.0-tools,
+  microcom, openssh-client, rsync, sshfs, sshpass
+Description: Labgrid client
+
+Package: labgrid-coordinator
+Architecture: any
+Depends: labgrid-base
+Description: Labgrid coordinator
+
+Package: labgrid-exporter
+Architecture: any
+Depends: labgrid-base
+Recommends: ser2net, socat
+Description: Labgrid exporter

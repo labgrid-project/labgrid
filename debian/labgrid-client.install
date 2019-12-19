@@ -1,0 +1,5 @@
+#!/usr/bin/dh-exec
+
+debian/client.yaml /etc/labgrid
+debian/labgrid-client.bin => /usr/bin/labgrid-client
+debian/labgrid-pytest.bin => /usr/bin/labgrid-pytest

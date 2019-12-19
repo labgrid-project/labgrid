@@ -8,6 +8,8 @@ override_dh_shlibs:
 
 override_dh_virtualenv:
 	dh_virtualenv \
+		--package labgrid-base \
+		--install-suffix labgrid \
 		--python /usr/bin/python3 \
 		--builtin-venv \
 		--preinstall 'setuptools>=38.0.0' \

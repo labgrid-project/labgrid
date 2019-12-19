@@ -1,0 +1,4 @@
+#!/usr/bin/dh-exec
+
+debian/labgrid-exporter.bin => /usr/bin/labgrid-exporter
+helpers/labgrid-bound-connect /usr/sbin

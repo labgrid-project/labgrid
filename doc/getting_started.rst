@@ -176,6 +176,8 @@ same machine. The client is used to access functionality provided by an
 exporter. Over the course of this tutorial we will set up a coordinator and
 exporter, and learn how to access the exporter via the client.
 
+.. _remote-getting-started-coordinator:
+
 Coordinator
 ~~~~~~~~~~~
 
@@ -326,6 +328,75 @@ Now we can connect to the serial console:
 See :ref:`remote-usage` for some more advanced features.
 For a complete reference have a look at the :doc:`labgrid-client(1) <man/client>`
 man page.
+
+Systemd files
+~~~~~~~~~~~~~
+
+Labgrid comes with several systemd files in :file:`contrib/systemd`:
+
+- service files for coordinator and exporter
+- tmpfiles.d file to regularly remove files uploaded to the exporter in
+  :file:`/var/cache/labgrid`
+- sysusers.d file to create the ``labgrid`` user and group, enabling members of
+  the ``labgrid`` group to upload files to the exporter in :file:`/var/cache/labgrid`
+
+Follow these instructions to install the systemd files on your machine(s):
+
+#. Copy the service, tmpfiles.d and sysusers.d files to the respective
+   installation paths of your distribution.
+#. Adapt the ``ExecStart`` paths of the service files to the respective Python
+   virtual environments of the coordinator and exporter.
+#. Create the coordinator configuration file referenced in the ``ExecStart``
+   option of the :file:`systemd-coordinator.service` file by using
+   :file:`.crossbar/config.yaml` as a starting point. You most likely want to
+   make sure that the ``workdir`` option matches the path given via the
+   ``--cbdir`` option in the service file; see
+   :ref:`remote-getting-started-coordinator` for further information.
+#. Adjust the ``SupplementaryGroups`` option in the
+   :file:`labgrid-exporter.service` file to your distribution so that the
+   exporter gains read and write access on TTY devices (for ``ser2net``); most
+   often, this group is called ``dialout`` or ``tty``.
+#. Set the coordinator URL the exporter should connect to by overriding the
+   exporter service file; i.e. execute ``systemctl edit
+   labgrid-exporter.service`` and add the following snippet:
+
+   .. code-block::
+
+      [Service]
+      Environment="LG_CROSSBAR=ws://<your-host>:<your-port>/ws"
+
+#. Create the ``labgrid`` user and group:
+
+   .. code-block:: console
+
+      # systemd-sysusers
+
+#. Reload the systemd manager configuration:
+
+   .. code-block:: console
+
+      # systemctl daemon-reload
+
+#. Start the coordinator, if applicable:
+
+   .. code-block:: console
+
+      # systemctl start labgrid-coordinator
+
+#. After creating the exporter configuration file referenced in the
+   ``ExecStart`` option of the :file:`systemd-exporter.service` file, start the
+   exporter:
+
+   .. code-block:: console
+
+      # systemctl start labgrid-exporter
+
+#. Optionally, for users being able to upload files to the exporter, add them
+   to the `labgrid` group on the exporter machine:
+
+   .. code-block:: console
+
+      # usermod -a -G labgrid <user>
 
 .. _udev-matching:
 

@@ -1,0 +1,13 @@
+[Unit]
+Description=Labgrid Coordinator
+After=network.target
+
+[Service]
+ExecStart=/path/to/labgrid-coordinator/venv/bin/crossbar start --logformat=syslogd --cbdir /var/lib/labgrid-coordinator --config /etc/labgrid/coordinator.yaml
+ExecStop=/usr/bin/labgrid-coordinator stop --cbdir /var/lib/labgrid-coordinator
+Restart=on-abort
+DynamicUser=yes
+StateDirectory=labgrid-coordinator
+
+[Install]
+WantedBy=multi-user.target

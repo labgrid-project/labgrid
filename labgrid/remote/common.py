@@ -238,9 +238,10 @@ class Reservation:
     owner = attr.ib(validator=attr.validators.instance_of(str))
     token = attr.ib(default=attr.Factory(
         lambda: ''.join(random.choice(string.ascii_uppercase+string.digits) for i in range(10))))
-    state = attr.ib(default='waiting',
-            converter=lambda x: x if isinstance(x, ReservationState) else ReservationState[x],
-            validator=attr.validators.instance_of(ReservationState))
+    state = attr.ib(
+        default='waiting',
+        converter=lambda x: x if isinstance(x, ReservationState) else ReservationState[x],
+        validator=attr.validators.instance_of(ReservationState))
     prio = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
     # a dictionary of name -> filter dicts
     filters = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))

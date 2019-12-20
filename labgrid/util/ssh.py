@@ -262,8 +262,8 @@ class SSHConnection:
         return stdout, stderr, sub.wait()
 
     def run_check(self, command, *, codec="utf-8", decodeerrors="strict",
-        force_tty=False, stderr_merge=False, stderr_loglevel=None,
-        stdout_loglevel=None):
+                  force_tty=False, stderr_merge=False, stderr_loglevel=None,
+                  stdout_loglevel=None):
         """
         Runs a command over the SSHConnection
         returns the output if successful, raises ExecutionError otherwise.
@@ -290,10 +290,11 @@ class SSHConnection:
                        otherwise an ExecutionError Exception
 
         """
-        stdout, stderr, exitcode = self.run(command, codec=codec,
-                decodeerrors=decodeerrors, force_tty=force_tty,
-                stderr_merge=stderr_merge, stdout_loglevel=stdout_loglevel,
-                stderr_loglevel=stderr_loglevel)
+        stdout, stderr, exitcode = self.run(
+            command, codec=codec, decodeerrors=decodeerrors, force_tty=force_tty,
+            stderr_merge=stderr_merge, stdout_loglevel=stdout_loglevel,
+            stderr_loglevel=stderr_loglevel
+        )
 
         if exitcode != 0:
             raise ExecutionError(command, stdout, stderr)

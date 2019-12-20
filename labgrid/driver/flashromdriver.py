@@ -1,5 +1,4 @@
 # pylint: disable=no-member
-import subprocess
 import os.path
 import logging
 import attr
@@ -31,7 +30,7 @@ class FlashromDriver(Driver, BootstrapProtocol):
             self.tool = self.target.env.config.get_tool('flashrom')
         else:
             self.tool = 'flashrom'
-        self.logger.debug('Tool {}'.format(self.tool))
+        self.logger.debug('Tool %s', self.tool)
 
     def _get_flashrom_prefix(self):
         return self.flashrom_resource.command_prefix+[
@@ -50,7 +49,7 @@ class FlashromDriver(Driver, BootstrapProtocol):
         arg_list = list(args)
         arg_list.append('-p')
         arg_list.append('{}'.format(self.flashrom_resource.programmer))
-        self.logger.debug('Call: {} with args: {}'.format(self.tool, arg_list))
+        self.logger.debug('Call: %s with args: %s', self.tool, arg_list)
         processwrapper.check_output(self._get_flashrom_prefix() + arg_list)
 
     @Driver.check_active
@@ -62,6 +61,5 @@ class FlashromDriver(Driver, BootstrapProtocol):
         check_file(filename)
         mf = ManagedFile(filename, self.flashrom_resource)
         mf.sync_to_resource()
-        self.logger.debug('Local File {} synced to remote path {}'.format(filename,
-                                                                          mf.get_remote_path()))
+        self.logger.debug('Local File %s synced to remote path %s', filename, mf.get_remote_path())
         self('-w', mf.get_remote_path())

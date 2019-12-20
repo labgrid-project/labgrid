@@ -11,7 +11,6 @@ from textwrap import indent
 from socket import gethostname
 from getpass import getuser
 from collections import defaultdict, OrderedDict
-from time import sleep
 from datetime import datetime
 from pprint import pformat
 import txaio
@@ -193,10 +192,12 @@ class ClientSession(ApplicationSession):
             for exporter, groups in sorted(filtered.items()):
                 print("Exporter '{}':".format(exporter))
                 for group_name, group in sorted(groups.items()):
-                    print("  Group '{}' ({}/{}/*):".format(group_name, exporter, group_name))
+                    print("  Group '{group}' ({exporter}/{group}/*):".format(
+                        group=group_name, exporter=exporter))
                     for resource_name, resource in sorted(group.items()):
-                        print("    Resource '{}' ({}/{}/{}[/{}]):".format(
-                            resource_name, exporter, group_name, resource.cls, resource_name))
+                        print("    Resource '{res}' ({exporter}/{group}/{res_cls}[/{res}]):"
+                              .format(res=resource_name, exporter=exporter, group=group_name,
+                                      res_cls=resource.cls))
                         print(indent(pformat(resource.asdict()), prefix="      "))
         else:
             results = []
@@ -463,9 +464,13 @@ class ClientSession(ApplicationSession):
             except ValueError:
                 raise UserError("tag '{}' needs to match '<key>=<value>'".format(pair))
             if not TAG_KEY.match(k):
-                raise UserError("tag key '{}' needs to match the rexex '{}'".format(k, TAG_KEY.pattern))
+                raise UserError(
+                    "tag key '{}' needs to match the rexex '{}'".format(k, TAG_KEY.pattern)
+                )
             if not TAG_VAL.match(v):
-                raise UserError("tag value '{}' needs to match the rexex '{}'".format(v, TAG_VAL.pattern))
+                raise UserError(
+                    "tag value '{}' needs to match the rexex '{}'".format(v, TAG_VAL.pattern)
+                )
             tags[k] = v
         res = await self.call(
             'org.labgrid.coordinator.set_place_tags', place.name, tags
@@ -584,11 +589,11 @@ class ClientSession(ApplicationSession):
                     name = resource_name
                     if match.rename:
                         name = match.rename
-                    print("Matching resource '{}' ({}/{}/{}/{}) already acquired by place '{}'".format(
-                        name, exporter, group_name, resource.cls, resource_name, resource.acquired))
+                    print("Matching resource '{}' ({}/{}/{}/{}) already acquired by place '{}'"
+                          .format(name, exporter, group_name, resource.cls, resource_name,
+                                  resource.acquired))
 
         raise ServerError("failed to acquire place {}".format(place.name))
-
 
     async def release(self):
         """Release a previously acquired place"""
@@ -605,8 +610,8 @@ class ClientSession(ApplicationSession):
         )
         if not res:
             raise ServerError("failed to release place {}".format(place.name))
-        else:
-            print("released place {}".format(place.name))
+
+        print("released place {}".format(place.name))
 
     async def allow(self):
         """Allow another use access to a previously acquired place"""
@@ -625,8 +630,8 @@ class ClientSession(ApplicationSession):
         res = await self.call('org.labgrid.coordinator.allow_place', place.name, self.args.user)
         if not res:
             raise ServerError("failed to allow {} for place {}".format(self.args.user, place.name))
-        else:
-            print("allowed {} for place {}".format(self.args.user, place.name))
+
+        print("allowed {} for place {}".format(self.args.user, place.name))
 
     def get_target_resources(self, place):
         self._check_allowed(place)
@@ -1144,7 +1149,7 @@ class ClientSession(ApplicationSession):
 
     async def print_reservations(self):
         reservations = await self.call('org.labgrid.coordinator.get_reservations')
-        for token, config in sorted(reservations.items(), key=lambda x: (-x[1]['prio'], x[1]['created'])):
+        for token, config in sorted(reservations.items(), key=lambda x: (-x[1]['prio'], x[1]['created'])):  # pylint: disable=line-too-long
             config = filter_dict(config, Reservation, warn=True)
             res = Reservation(token=token, **config)
             print("Reservation '{}':".format(res.token))

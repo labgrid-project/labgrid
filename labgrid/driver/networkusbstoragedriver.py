@@ -1,7 +1,6 @@
 # pylint: disable=no-member
 import enum
 import logging
-import subprocess
 import os
 import time
 import attr

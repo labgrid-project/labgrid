@@ -1,5 +1,3 @@
-import subprocess
-
 from ..exception import ExecutionError
 from ...util.helper import processwrapper
 

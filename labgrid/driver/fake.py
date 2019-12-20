@@ -1,3 +1,4 @@
+# pylint: disable=arguments-differ
 import logging
 import re
 

@@ -22,8 +22,8 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
         self._onewire = None
         if "PIO" not in self.port.path:
             raise InvalidConfigError(
-                    "Invalid OneWire path {} (needs to be in the form of ??.????????????/PIO.?)"
-                    .format(self.port.path))
+                "Invalid OneWire path {} (needs to be in the form of ??.????????????/PIO.?)"
+                .format(self.port.path))
 
     def on_activate(self):
         # we can only forward if the backend knows which port to use
@@ -54,7 +54,7 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
             raise ExecutionError("Failed to get OneWire value for {}".format(path))
         if status not in ['0', '1']:
             raise ExecutionError("Invalid OneWire value ({})".format(repr(status)))
-        status = True if status == '1' else False
+        status = (status == '1')
         if self.port.invert:
             status = not status
         return status

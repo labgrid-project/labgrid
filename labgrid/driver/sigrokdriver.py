@@ -208,7 +208,7 @@ class SigrokDriver(SigrokCommon):
                 # skip first 5 lines of the csv output, contains metadata and fieldnames
                 for _ in range(0, 5):
                     next(csv_file)
-                return [x for x in csv.DictReader(csv_file, fieldnames=fnames)]
+                return list(csv.DictReader(csv_file, fieldnames=fnames))
         else:
             shutil.copyfile(
                 os.path.join(self._tmpdir, self._basename), self._filename
@@ -217,7 +217,7 @@ class SigrokDriver(SigrokCommon):
                 # skip first 5 lines of the csv output, contains metadata and fieldnames
                 for _ in range(0, 5):
                     next(csv_file)
-                return [x for x in csv.DictReader(csv_file, fieldnames=fnames)]
+                return list(csv.DictReader(csv_file, fieldnames=fnames))
 
     @Driver.check_active
     def analyze(self, args, filename=None):
@@ -292,7 +292,7 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
     def set_voltage_target(self, value):
         if self.max_voltage is not None and value > self.max_voltage:
             raise ValueError(
-                "Requested voltage target({}) is higher than configured maximum ({})".format(value, self.max_voltage))
+                "Requested voltage target({}) is higher than configured maximum ({})".format(value, self.max_voltage))  # pylint: disable=line-too-long
         processwrapper.check_output(
             self._get_sigrok_prefix() + ["--config", "voltage_target={:f}".format(value), "--set"]
         )
@@ -302,7 +302,7 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
     def set_current_limit(self, value):
         if self.max_current is not None and value > self.max_current:
             raise ValueError(
-                "Requested current limit ({}) is higher than configured maximum ({})".format(value, self.max_current))
+                "Requested current limit ({}) is higher than configured maximum ({})".format(value, self.max_current))  # pylint: disable=line-too-long
         processwrapper.check_output(
             self._get_sigrok_prefix() + ["--config", "current_limit={:f}".format(value), "--set"]
         )
@@ -317,8 +317,8 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
             return True
         elif out == b'false':
             return False
-        else:
-            raise ExecutionError("Unkown enable status {}".format(out))
+
+        raise ExecutionError("Unkown enable status {}".format(out))
 
     @Driver.check_active
     @step(result=True)

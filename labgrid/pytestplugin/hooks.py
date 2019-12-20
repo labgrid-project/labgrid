@@ -65,14 +65,14 @@ def pytest_collection_modifyitems(config, items):
         marker = item.get_closest_marker("lg_feature")
         if not marker:
             continue
+
+        arg = marker.args[0]
+        if isinstance(arg, str):
+            want_feature = set([arg])
+        elif isinstance(arg, list):
+            want_feature = set(arg)
         else:
-            arg = marker.args[0]
-            if isinstance(arg, str):
-                want_feature = set([arg])
-            elif isinstance(arg, list):
-                want_feature = set(arg)
-            else:
-                raise Exception("Unsupported feature argument type")
+            raise Exception("Unsupported feature argument type")
         missing_feature = want_feature - have_feature
         if missing_feature:
             if len(missing_feature) == 1:

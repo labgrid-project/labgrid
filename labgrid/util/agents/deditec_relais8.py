@@ -60,11 +60,15 @@ class Relais8:
         self._dev.ctrl_transfer(64, 3, 20, 0, 0, 5000)
         self._dev.ctrl_transfer(64, 9, 2, 0, 0, 5000)
         self._ep_out = usb.util.find_descriptor(
-                intf,
-                custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_OUT)
+            intf,
+            custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == \
+                usb.util.ENDPOINT_OUT
+        )
         self._ep_in = usb.util.find_descriptor(
-                intf,
-                custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_IN)
+            intf,
+            custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == \
+                usb.util.ENDPOINT_IN
+        )
         self._sequence_number = 0
         self._logger = logging.getLogger("Device: ")
         self._run_configuration_sequence()
@@ -76,20 +80,19 @@ class Relais8:
 
     def read(self, size):
         data = self._ep_in.read(size)
-        self._logger.debug("Read data: {}".format(hexlify(data)))
+        self._logger.debug("Read data: %s", hexlify(data))
         return data
 
     def write_config_request(self, address):
         complete_request = unhexlify(Relais8._padding)
         complete_request += bytes([self._sequence_number])
         complete_request += unhexlify(address + Relais8._post_padding)
-        self._logger.debug(
-                "Sending Request: {}".format(hexlify(complete_request)))
+        self._logger.debug("Sending Request: %s", hexlify(complete_request))
         self.write(complete_request)
 
     def write(self, data):
         self._sequence_number = (self._sequence_number + 1) & 0xff
-        self._logger.debug("Writing data: {}".format(hexlify(data)))
+        self._logger.debug("Writing data: %s", hexlify(data))
         self._ep_out.write(data)
 
     def set_all_outputs(self, status, reset=False):
@@ -99,7 +102,7 @@ class Relais8:
         if status > 255 or status < 0:
             return
         data = '0123{}000000001{:02X}00000000000000'.format(
-                0 if reset else 8, status)
+            0 if reset else 8, status)
         self.write(unhexlify(Relais8._padding + data))
         self.read(255)
 

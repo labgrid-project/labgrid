@@ -43,4 +43,3 @@ class SysfsGPIO(Resource):
     Args:
         index (int): index of target gpio line."""
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
-

@@ -155,8 +155,14 @@ class NetworkAlteraUSBBlaster(RemoteUSBResource):
 @attr.s(eq=False)
 class NetworkSigrokUSBDevice(RemoteUSBResource):
     """The NetworkSigrokUSBDevice describes a remotely accessible sigrok USB device"""
-    driver = attr.ib(default=None, validator=attr.validators.instance_of(str))
-    channels = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    driver = attr.ib(
+        default=None,
+        validator=attr.validators.instance_of(str)
+    )
+    channels = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
@@ -166,8 +172,14 @@ class NetworkSigrokUSBDevice(RemoteUSBResource):
 @attr.s(eq=False)
 class NetworkSigrokUSBSerialDevice(RemoteUSBResource):
     """The NetworkSigrokUSBSerialDevice describes a remotely accessible sigrok USB device"""
-    driver = attr.ib(default=None, validator=attr.validators.instance_of(str))
-    channels = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    driver = attr.ib(
+        default=None,
+        validator=attr.validators.instance_of(str)
+    )
+    channels = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
@@ -186,7 +198,10 @@ class NetworkUSBMassStorage(RemoteUSBResource):
 @attr.s(eq=False)
 class NetworkUSBSDMuxDevice(RemoteUSBResource):
     """The NetworkUSBSDMuxDevice describes a remotely accessible USBSDMux device"""
-    control_path = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    control_path = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()

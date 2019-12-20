@@ -4,9 +4,10 @@ and DockerManager will create the NetworkResource instance that is declared
 in the specification (e.g. yaml) of DockerDriver.
 """
 
-import attr
 import logging
 import socket
+
+import attr
 
 from labgrid.util.dict import find_dict
 from ..factory import target_factory
@@ -70,7 +71,7 @@ class DockerManager(ResourceManager):
             for container in container_list:
                 if (container['Labels'][DockerConstants.DOCKER_LG_CLEANUP_LABEL] ==
                         DockerConstants.DOCKER_LG_CLEANUP_TYPE_AUTO):
-                    self.log.info("Deleting container " + container['Names'][0])
+                    self.log.info("Deleting container %s", container['Names'][0])
                     docker_client.api.remove_container(container['Id'], force=True)
             self._docker_daemons_cleaned.append(docker_client.api.base_url)
 
@@ -131,7 +132,7 @@ class DockerDaemon(ManagedResource):
                 if nw_service.address == "":
                     container = docker_client.api.containers(
                         filters={"name": "/" + container_name})
-                    self.log.debug("Containers found {}".format(container))
+                    self.log.debug("Containers found %s", container)
                     if container:
                         nw_service.address = find_dict(
                             d=container[0]['NetworkSettings'],

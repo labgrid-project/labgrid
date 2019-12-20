@@ -130,8 +130,8 @@ class ColoredStepReporter(StepReporter):
         for pattern, color in self.color_scheme.items():
             if re.match(pattern, event.step.title):
                 return color
-        else:
-            return 'default'
+
+        return 'default'
 
     def __format_elements(self, color):
         return [

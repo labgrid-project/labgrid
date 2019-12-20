@@ -103,11 +103,11 @@ class ResourceExport(ResourceEntry):
 
         return dirty
 
-    def acquire(self, *args, **kwargs):
+    def acquire(self, *args, **kwargs):  # pylint: disable=arguments-differ
         super().acquire(*args, **kwargs)
         self.poll()
 
-    def release(self, *args, **kwargs):
+    def release(self, *args, **kwargs):  # pylint: disable=arguments-differ
         super().release(*args, **kwargs)
         self.poll()
 
@@ -487,7 +487,7 @@ class ExporterSession(ApplicationSession):
             'cls': cls,
             'params': params,
         }
-        proxy_req = True if self.isolated else False
+        proxy_req = self.isolated
         if issubclass(export_cls, ResourceExport):
             group[resource_name] = export_cls(config, host=self.hostname, proxy=getfqdn(),
                                               proxy_required=proxy_req)

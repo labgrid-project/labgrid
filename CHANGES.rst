@@ -37,6 +37,7 @@ New Features in 0.3.0
 - UBootDriver now allows overriding of default boot command (``run bootcmd``)
   via new ``boot_command`` argument.
 - The config file supports per-target options, in addition to global options.
+- Add power driver to support GEMBIRD SiS-PM implementing SiSPMPowerDriver.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

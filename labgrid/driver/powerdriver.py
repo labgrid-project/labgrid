@@ -59,6 +59,60 @@ class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 
 @target_factory.reg_driver
 @attr.s(eq=False)
+class SiSPMPowerDriver(Driver, PowerResetMixin, PowerProtocol):
+    """SiSPMPowerDriver - Driver using a SiS-PM (Silver Shield PM) to control a
+       target's power using the sispmctl tool - http://sispmctl.sourceforge.net/"""
+
+    bindings = {"port": {"SiSPMPowerPort", "NetworkSiSPMPowerPort"}, }
+    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('sispmctl') or 'sispmctl'
+        else:
+            self.tool = 'sispmctl'
+
+    def _get_sispmctl_prefix(self):
+        return self.port.command_prefix + [
+            self.tool,
+            "-U", "{:03d}:{:03d}".format(self.port.busnum, self.port.devnum),
+        ]
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        cmd = ['-o', str(self.port.index)]
+        processwrapper.check_output(self._get_sispmctl_prefix() + cmd)
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        cmd = ['-f', str(self.port.index)]
+        processwrapper.check_output(self._get_sispmctl_prefix() + cmd)
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        self.off()
+        time.sleep(self.delay)
+        self.on()
+
+    @Driver.check_active
+    @step()
+    def get(self):
+        cmd = ['-q', '-g', str(self.port.index)]
+        output = processwrapper.check_output(self._get_sispmctl_prefix() + cmd)
+        if output.strip() == b"on":
+            return True
+        if output.strip() == b"off":
+            return False
+        raise ExecutionError("Did not find port status in sispmctl output ({})"
+                             .format(repr(output)))
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
 class ExternalPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """ExternalPowerDriver - Driver using an external command to control a target's power"""
     cmd_on = attr.ib(validator=attr.validators.instance_of(str))

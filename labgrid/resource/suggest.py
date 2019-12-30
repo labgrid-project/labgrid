@@ -16,6 +16,7 @@ from .udev import (
     AlteraUSBBlaster,
     RKUSBLoader,
     USBEthernetInterface,
+    SiSPMPowerPort,
 )
 from ..util import dump
 
@@ -42,6 +43,7 @@ class Suggester:
         self.resources.append(AlteraUSBBlaster(**args))
         self.resources.append(RKUSBLoader(**args))
         self.resources.append(USBEthernetInterface(**args))
+        self.resources.append(SiSPMPowerPort(**args))
 
     def suggest_callback(self, resource, meta, suggestions):
         cls = type(resource).__name__

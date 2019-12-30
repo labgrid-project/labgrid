@@ -519,6 +519,27 @@ class USBPowerPort(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class SiSPMPowerPort(USBResource):
+    """This resource describes a SiS-PM (Silver Shield PM) power port.
+
+    Args:
+        index (int): port index
+    """
+    index = attr.ib(default=0, validator=attr.validators.instance_of(int))
+
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [
+                ("04b4", "fd10"), ("04b4", "fd11"),
+                ("04b4", "fd12"), ("04b4", "fd13"),
+                ("04b4", "fd15")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class USBVideo(USBResource):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'video4linux'

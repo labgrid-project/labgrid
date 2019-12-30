@@ -193,7 +193,7 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
         super().__attrs_post_init__()
         # uses the YKUSH pykush interface from here:
         # https://github.com/Yepkit/pykush
-        self.pykush_mod = import_module('pykush')
+        self.pykush_mod = import_module('pykush.pykush')
         self.pykush = self.pykush_mod.YKUSH(serial=self.port.serial)
 
     @Driver.check_active

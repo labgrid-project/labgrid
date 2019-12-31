@@ -222,6 +222,17 @@ class NetworkUSBSDWireDevice(RemoteUSBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class NetworkYKUSHPowerPort(RemoteUSBResource):
+    """The NetworkYKUSHPowerPort describes a remotely YEPKIT YKUSH switchable USB hub"""
+    serial = attr.ib(validator=attr.validators.instance_of(str))
+    index = attr.ib(validator=attr.validators.instance_of(int))
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class NetworkUSBPowerPort(RemoteUSBResource):
     """The NetworkUSBPowerPort describes a remotely accessible USB hub port with power switching"""
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))

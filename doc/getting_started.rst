@@ -3,6 +3,8 @@ Getting Started
 
 This section of the manual contains introductory tutorials for installing
 labgrid, running your first test and setting up the distributed infrastructure.
+For an overview about the basic design and components of `labgrid`, read the
+:ref:`overview` first.
 
 Installation
 ------------

@@ -220,6 +220,8 @@ implementation `Autobahn <http://autobahn.ws/>`_ and the `Crossbar
 The following sections describe the resposibilities of each component. See
 :ref:`remote-usage` for usage information.
 
+.. _overview-coordinator:
+
 Coordinator
 ~~~~~~~~~~~
 
@@ -281,6 +283,8 @@ client host has currently acquired the place.
 The resource matches are only evaluated while a place is being acquired and cannot be
 changed until it is `released` again.
 
+.. _overview-exporter:
+
 Exporter
 ~~~~~~~~
 An exporters registers all its configured resources when it connects to the
@@ -299,6 +303,8 @@ Resources which do not need explicit support in the exporter, are just
 published as declared in the configuration file.
 This is useful to register externally configured resources such as network
 power switches or serial port servers with a labgrid coordinator.
+
+.. _overview-client:
 
 Client
 ~~~~~~

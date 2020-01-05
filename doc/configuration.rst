@@ -797,6 +797,7 @@ Binds to:
 
 Implements:
   - :any:`CommandProtocol`
+  - :any:`BackgroundProcessProtocol`
 
 .. code-block:: yaml
 

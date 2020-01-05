@@ -11,17 +11,35 @@ from pexpect import TIMEOUT
 import xmodem
 
 from ..factory import target_factory
-from ..protocol import CommandProtocol, ConsoleProtocol, FileTransferProtocol
+from ..protocol import (CommandProtocol, ConsoleProtocol, FileTransferProtocol,
+                        BackgroundProcessProtocol)
 from ..step import step
 from ..util import gen_marker
+from ..util.timeout import Timeout
 from .commandmixin import CommandMixin
 from .common import Driver
 from .exception import ExecutionError
 
 
+@attr.s(eq=False)
+class ShellProcess:
+    """Represents a shell background process"""
+    command = attr.ib(validator=attr.validators.instance_of(str))
+    marker = attr.ib(validator=attr.validators.instance_of(str))
+    exitcode = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(int))
+    )
+
+    @property
+    def running(self):
+        return self.exitcode is None
+
+
 @target_factory.reg_driver
 @attr.s(eq=False)
-class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
+class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol,
+                  BackgroundProcessProtocol):
     """ShellDriver - Driver to execute commands on the shell
     ShellDriver binds on top of a ConsoleProtocol.
 
@@ -55,6 +73,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._xmodem_cached_rx_cmd = ""
         self._xmodem_cached_sx_cmd = ""
 
+        self.background_process = None
+
     def on_activate(self):
         if self._status == 0:
             self._await_login()
@@ -71,7 +91,17 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._run("dmesg -n 1")
 
     def on_deactivate(self):
+        if self.background_process.running:
+            self.console.sendcontrol('c')
+            self.console.expect(self.prompt)
+            self.background_process.exitcode = 130
+
         self._status = 0
+
+    @Driver.check_active
+    @step(args=['cmd'], result=True)
+    def run(self, cmd, timeout=30.0, codec="utf-8", decodeerrors="strict"):
+        return self._run(cmd, timeout=timeout, codec=codec, decodeerrors=decodeerrors)
 
     def _run(self, cmd, *, timeout=30.0, codec="utf-8", decodeerrors="strict"):
         """
@@ -80,30 +110,132 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         Arguments:
         cmd - cmd to run on the shell
         """
-        # FIXME: Handle pexpect Timeout
+        timeout_ = None if timeout is None else Timeout(float(timeout))
+
+        process = self._run_as_background_process(cmd)
+        read_timeout = timeout_.remaining if timeout_ else None
+        stdout, stderr = self._read_from_background_process(process, timeout=read_timeout)
+
+        if timeout_ and timeout_.expired:
+            raise TIMEOUT("Timeout of {} seconds exceeded while executing {}"
+                          .format(timeout, process))
+
+        exitcode = self._poll_background_process(process)
+        assert exitcode is not None
+
+        stdout = stdout.split('\n')[:-1]
+        stderr = stderr.split('\n')[:-1]
+
+        return (stdout, stderr, exitcode)
+
+    @Driver.check_active
+    @step(args=['command'], result=True)
+    def run_as_background_process(self, command):
+        """
+        Start the given command as a background process and immediately return a process handle.
+        Raises ExecutionError if another background process is already running.
+
+        Args:
+            command (str): the command to run in background
+
+        Returns:
+            process handle (str)
+        """
+        return self._run_as_background_process(command)
+
+    def _run_as_background_process(self, command):
+        if self.background_process and self.background_process.running:
+            raise ExecutionError('Another background process is running')
+
         self._check_prompt()
         marker = gen_marker()
         # hide marker from expect
         cmp_command = '''MARKER='{}''{}' run {}'''.format(
-            marker[:4], marker[4:], shlex.quote(cmd)
+            marker[:4], marker[4:], shlex.quote(command)
         )
         self.console.sendline(cmp_command)
-        _, _, match, _ = self.console.expect(r'{marker}(.*){marker}\s+(\d+)\s+{prompt}'.format(
-            marker=marker, prompt=self.prompt
-        ), timeout=timeout)
-        # Remove VT100 Codes, split by newline and remove surrounding newline
-        data = self.re_vt100.sub('', match.group(1).decode(codec, decodeerrors)).split('\r\n')
-        if data and not data[-1]:
-            del data[-1]
-        self.logger.debug("Received Data: %s", data)
-        # Get exit code
-        exitcode = int(match.group(2))
-        return (data, [], exitcode)
+        self.console.expect(r'{marker}'.format(marker=marker), timeout=1)
+
+        self.background_process = ShellProcess(command, marker)
+
+        # provide ShellProcess object to satisfy the BackgroundProcessProtocol requirements and for
+        # step context
+        return self.background_process
 
     @Driver.check_active
-    @step(args=['cmd'], result=True)
-    def run(self, cmd, timeout=30.0, codec="utf-8", decodeerrors="strict"):
-        return self._run(cmd, timeout=timeout, codec=codec, decodeerrors=decodeerrors)
+    @step(args=['process', 'timeout'], result=True)
+    def read_from_background_process(self, process, *, timeout=0):
+        """
+        Read stdout/stderr of background process until timeout. For timeout=0 (default) the call
+        won't block and will return stdout/stderr until current EOF. For timeout=None the call
+        will block until the process has terminated. Returns a tuple (stdout, stderr).
+        Raises ExecutionError if process is not known.
+
+        Args:
+            process (str): process handle
+            timeout (int or None): will block until timeout is exceeded or process terminates,
+                                   timeout=0 returns immediately (default), timeout=None blocks
+                                   until process terminates
+
+        Returns:
+            (stdout (str), stderr (str))
+        """
+        return self._read_from_background_process(process, timeout=timeout)
+
+    def _read_from_background_process(self, process, *, timeout=0):
+        if process is not self.background_process:
+            raise ExecutionError('Unknown process handle')
+
+        # skip reading if process terminated
+        if not self.background_process.running:
+            return '', ''
+
+        expect = [r'(.*){marker}\s+(\d+)\s+{prompt}'.format(
+            marker=self.background_process.marker,
+            prompt=self.prompt)]
+        if not timeout:
+            expect.append(TIMEOUT)
+
+        index, before, match, _ = self.console.expect(expect, timeout=timeout)
+
+        if index == 0:
+            self.background_process.exitcode = int(match.group(2))
+            stdout = match.group(1)
+        elif index == 1:
+            stdout = self.console._expect.read(size=len(before))
+        else:
+            raise RuntimeError('expect returned invalid index') # impossible
+
+        stdout = self._translate_newlines(stdout)
+        # Remove VT100 Codes, split by newline and remove surrounding newline
+        stdout = self.re_vt100.sub('', stdout)
+        return stdout, ''
+
+    @Driver.check_active
+    def poll_background_process(self, process):
+        """
+        Returns exitcode if process has terminated. otherwise None.
+        Raises ExecutionError if process is not known.
+
+        Args:
+            process (str): process handle, type implementation defined
+
+        Returns:
+            exit code if process terminated otherwise None
+        """
+        return self._poll_background_process(process)
+
+    def _poll_background_process(self, process):
+        if process is not self.background_process:
+            raise ExecutionError('Unknown process handle')
+        return self.background_process.exitcode
+
+    def _translate_newlines(self, out, codec="utf-8", decodeerrors="strict"):
+        # TODO: use codec/decodeerrors from instance variable once all drivers are adjusted that
+        # way
+        out = out.decode(codec, decodeerrors)
+        out = out.replace('\r\n', '\n').replace('\r', '\n')
+        return out
 
     @step()
     def _await_login(self):

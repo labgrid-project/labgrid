@@ -1,3 +1,5 @@
+import string
+
 import pexpect
 
 
@@ -33,3 +35,12 @@ class PtxExpect(pexpect.spawn):
         if timeout == -1:
             timeout = self.timeout
         return self.driver.read(size=size, timeout=timeout)
+
+    def sendcontrol(self, char):
+        char = char.lower()
+        try:
+            ord_ = string.ascii_lowercase.index(char) + 1
+            self.send(bytes([ord_]))
+        except ValueError:
+            raise NotImplementedError("Sending control character {} is not supported yet".format(char))
+

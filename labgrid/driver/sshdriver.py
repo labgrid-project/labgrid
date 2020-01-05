@@ -4,22 +4,26 @@ import logging
 import os
 import shutil
 import subprocess
+import selectors
 import tempfile
 
 import attr
+from pexpect import TIMEOUT
 
 from ..factory import target_factory
-from ..protocol import CommandProtocol, FileTransferProtocol
+from ..protocol import CommandProtocol, FileTransferProtocol, BackgroundProcessProtocol
 from ..resource import NetworkService
 from .commandmixin import CommandMixin
 from .common import Driver
 from ..step import step
 from .exception import ExecutionError
+from ..util.timeout import Timeout
 
 
 @target_factory.reg_driver
 @attr.s(eq=False)
-class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
+class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol,
+                BackgroundProcessProtocol):
     """SSHDriver - Driver to execute commands via SSH"""
     bindings = {"networkservice": NetworkService, }
     priorities = {CommandProtocol: 10, FileTransferProtocol: 10}
@@ -29,6 +33,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self.background_processes = []
 
     def on_activate(self):
         self.ssh_prefix = "-o LogLevel=ERROR"
@@ -46,6 +51,12 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         ) if self.control else ""
 
     def on_deactivate(self):
+        while self.background_processes:
+            proc = self.background_processes.pop()
+            if proc.poll() is None:
+                proc.kill()
+                proc.communicate()
+
         self._cleanup_own_master()
 
     def _start_own_master(self):
@@ -106,9 +117,6 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['cmd'], result=True)
     def run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
-        return self._run(cmd, codec=codec, decodeerrors=decodeerrors)
-
-    def _run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
         """Execute `cmd` on the target.
 
         This method runs the specified `cmd` as a command on its target.
@@ -118,10 +126,46 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         returns:
         (stdout, stderr, returncode)
         """
+        return self._run(cmd, codec=codec, decodeerrors=decodeerrors)
+
+    def _run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
+        timeout_ = None if timeout is None else Timeout(float(timeout))
+
+        process = self._run_as_background_process(cmd)
+        read_timeout = timeout_.remaining if timeout_ else None
+        stdout, stderr = self._read_from_background_process(process, timeout=read_timeout)
+
+        if timeout_ and timeout_.expired:
+            raise TIMEOUT("Timeout of {} seconds exceeded while executing {}"
+                          .format(timeout, process))
+
+        exitcode = self.poll_background_process(process)
+        assert exitcode is not None
+
+        stdout = stdout.split('\n')[:-1]
+        stderr = stderr.split('\n')[:-1]
+
+        return (stdout, stderr, exitcode)
+
+    @Driver.check_active
+    @step(args=['command'], result=True)
+    def run_as_background_process(self, command):
+        """
+        Runs the given `command` as a background process and immediately return a process handle.
+
+        Args:
+            command (str): the command to run in background
+
+        Returns:
+            process handle (Popen)
+        """
+        return self._run_as_background_process(command)
+
+    def _run_as_background_process(self, command):
         complete_cmd = "ssh -x {prefix} -p {port} {user}@{host} {cmd}".format(
             user=self.networkservice.username,
             host=self.networkservice.address,
-            cmd=cmd,
+            cmd=command,
             prefix=self.ssh_prefix,
             port=self.networkservice.port
         ).split(' ')
@@ -131,23 +175,99 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         else:
             stderr_pipe = subprocess.PIPE
         try:
-            sub = subprocess.Popen(
-                complete_cmd, stdout=subprocess.PIPE, stderr=stderr_pipe
-            )
+            proc = subprocess.Popen(complete_cmd, stdout=subprocess.PIPE, stderr=stderr_pipe)
+            self.background_processes.append(proc)
+            return proc
         except:
             raise ExecutionError(
                 "error executing command: {}".format(complete_cmd)
             )
 
-        stdout, stderr = sub.communicate()
-        stdout = stdout.decode(codec, decodeerrors).split('\n')
-        stdout.pop()
-        if stderr is None:
-            stderr = []
-        else:
-            stderr = stderr.decode(codec, decodeerrors).split('\n')
-            stderr.pop()
-        return (stdout, stderr, sub.returncode)
+    @Driver.check_active
+    @step(args=['process', 'timeout'], result=True)
+    def read_from_background_process(self, process, *, timeout=0):
+        """
+        Read stdout/stderr of background process until timeout. For timeout=0 (default) the call
+        won't block and will return stdout/stderr until current EOF. For timeout=None the call
+        will block until the process has terminated. Returns a tuple (stdout, stderr).
+        Raises ExecutionError if process is not known.
+
+        Args:
+            process (Popen): process handle
+            timeout (int or None): will block until timeout is exceeded or process terminates,
+                                   timeout=0 returns immediately (default), timeout=None blocks
+                                   until process terminates
+
+        Returns:
+            (stdout (str), stderr (str))
+        """
+
+        return self._read_from_background_process(process, timeout=timeout)
+
+    def _read_from_background_process(self, process, *, timeout=0):
+        assert isinstance(process, subprocess.Popen)
+        if process not in self.background_processes:
+            raise ExecutionError('Unknown process handle')
+
+        timeout_ = None if timeout is None or timeout <= 0 else Timeout(float(timeout))
+        output = {
+            process.stdout: [],
+            process.stderr: [],
+        }
+
+        with selectors.PollSelector() as selector:
+            selector.register(process.stdout, selectors.EVENT_READ)
+            selector.register(process.stderr, selectors.EVENT_READ)
+
+            while selector.get_map():
+                select_timeout = timeout_.remaining if timeout_ else timeout
+                ready = selector.select(timeout=select_timeout)
+
+                # return as soon as there is nothing left to read
+                if not ready:
+                    break
+
+                for key, _ in ready:
+                    if key.fileobj in (process.stdout, process.stderr):
+                        data = os.read(key.fd, 32768)
+                        if not data:
+                            selector.unregister(key.fileobj)
+                            key.fileobj.close()
+                        output[key.fileobj].append(data)
+
+        # read until EOF, decoding should now work safely
+        stdout = b''.join(output[process.stdout])
+        stdout = self._translate_newlines(stdout)
+
+        stderr = b''.join(output[process.stderr])
+        stderr = self._translate_newlines(stderr)
+
+        return (stdout, stderr)
+
+    @Driver.check_active
+    def poll_background_process(self, process):
+        """
+        Check if background process has terminated. Returns exitcode if process has terminated
+        otherwise None. Raises ExecutionError if process is not known.
+
+        Args:
+            process (Popen): process handle, type implementation defined
+
+        Returns:
+            exit code if process terminated otherwise None
+        """
+        assert isinstance(process, subprocess.Popen)
+        if process not in self.background_processes:
+            raise ExecutionError('Unknown process handle')
+
+        return process.poll()
+
+    def _translate_newlines(self, out, codec="utf-8", decodeerrors="strict"):
+        # TODO: use codec/decodeerrors from instance variable once all drivers are adjusted that
+        # way
+        out = out.decode(codec, decodeerrors)
+        out = out.replace('\r\n', '\n').replace('\r', '\n')
+        return out
 
     def get_status(self):
         """The SSHDriver is always connected, return 1"""

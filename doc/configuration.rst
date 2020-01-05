@@ -838,6 +838,7 @@ Binds to:
 
 Implements:
   - :any:`CommandProtocol`
+  - :any:`BackgroundProcessProtocol`
   - :any:`FileTransferProtocol`
 
 .. code-block:: yaml

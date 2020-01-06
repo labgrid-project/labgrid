@@ -15,7 +15,7 @@ class QMPMonitor:
     def _negotiate_capabilities(self):
         greeting = self._read_parse_json()
         if not greeting.get('QMP'):
-            raise IOError
+            raise QMPError("QMP greeting message invalid")
 
         self.monitor_in.write(json.dumps({"execute": "qmp_capabilities"}).encode("utf-8"))
         self.monitor_in.write("\n".encode("utf-8"))

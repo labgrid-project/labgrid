@@ -246,6 +246,10 @@ Start by creating a strategy skeleton:
 
 The ``bindings`` variable needs to declare the drivers necessary for the
 strategy, usually one for power, boot loader and shell.
+It is possible to reference drivers via their protocol, e.g.
+``ConsoleProtocol``.
+Note that drivers which implement multiple protocols must not be referenced
+multiple times via different protocols.
 The ``Status`` class needs to be extended to cover the states of your strategy,
 then for each state an ``elif`` entry in the transition function needs to be
 added.

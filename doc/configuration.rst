@@ -358,7 +358,7 @@ Used by:
 
 USBEthernetInterface
 ~~~~~~~~~~~~~~~~~~~~
-A USBEthernetInterface resource describes a USB device Ethernet adapter.
+A USBEthernetInterface resource describes a USB ethernet adapter.
 
 .. code-block:: yaml
 
@@ -558,8 +558,8 @@ A NetworkFlashrom descibes an `Flashrom`_ available on a remote computer.
 
 XenaManager
 ~~~~~~~~~~~
-A XenaManager resource describe a Xena Manager instance which is the instance the
-Xena Driver must connect to in order to configure a Xena chassis.
+A XenaManager resource describes a Xena Manager instance which is the instance the
+`XenaDriver`_ must connect to in order to configure a Xena chassis.
 
 .. code-block:: yaml
 
@@ -887,32 +887,31 @@ SmallUBootDriver
 A SmallUBootDriver interfaces with stripped-down UBoot variants that are
 sometimes used in cheap consumer electronics.
 
-SmallUBootDriver is meant as a driver for UBoot with only little
-functionality compared to standard a standard UBoot.
+SmallUBootDriver is meant as a driver for UBoot with only little functionality
+compared to a standard UBoot.
 Especially is copes with the following limitations:
 
 - The UBoot does not have a real password-prompt but can be activated by
   entering a "secret" after a message was displayed.
-- The command line is does not have a build-in echo command. Thus this
-  driver uses 'Unknown Command' messages as marker before and after the
-  output of a command.
-- Since there is no echo we can not return the exit code of the command.
+- The command line does not have a built-in echo command.
+  Thus this driver uses 'Unknown Command' messages as marker before and after
+  the output of a command.
+- Since there is no echo we cannot return the exit code of the command.
   Commands will always return 0 unless the command was not found.
 
 This driver needs the following features activated in UBoot to work:
 
-- The UBoot must not have real password prompt. Instead it must be
-  keyword activated.
+- The UBoot must not have a real password prompt. Instead it must be keyword
+  activated.
   For example it should be activated by a dialog like the following:
 
   - UBoot: "Autobooting in 1s..."
   - Labgrid: "secret"
   - UBoot: <switching to console>
 
-- The UBoot must be able to parse multiple commands in a single
-  line separated by ";".
-- The UBoot must support the "bootm" command to boot from a
-  memory location.
+- The UBoot must be able to parse multiple commands in a single line separated
+  by ";".
+- The UBoot must support the "bootm" command to boot from a memory location.
 
 Binds to:
   - :any:`ConsoleProtocol` (see `SerialDriver`_)
@@ -1208,8 +1207,8 @@ SerialPortDigitalOutputDriver
 The SerialPortDigitalOutputDriver makes it possible to use a UART
 as a 1-Bit general-purpose digital output.
 
-This driver sits on top of a SerialDriver and uses the it's pyserial-
-port to control the flow control lines.
+This driver acts on top of a SerialDriver and uses the its pyserial port to
+control the flow control lines.
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -1481,7 +1480,7 @@ The qemudriver also requires the specification of:
 
 SigrokDriver
 ~~~~~~~~~~~~
-The SigrokDriver uses a SigrokDevice Resource to record samples and provides
+The SigrokDriver uses a SigrokDevice resource to record samples and provides
 them during test runs.
 
 Binds to:
@@ -1498,7 +1497,7 @@ The driver can be used in test cases by calling the `capture`, `stop` and
 
 SigrokPowerDriver
 ~~~~~~~~~~~~~~~~~
-The SigrokPowerDriver uses a `SigrokUSBSerialDevice`_ Resource to control a
+The SigrokPowerDriver uses a `SigrokUSBSerialDevice`_ resource to control a
 programmable power supply.
 
 Binds to:
@@ -1601,8 +1600,8 @@ installed flashrom utility.
 
 XenaDriver
 ~~~~~~~~~~
-The XenaDriver allows to use Xena networking tests equipment. Using the xenavalkyrie library
-a full API to control the tester is available.
+The XenaDriver allows to use Xena networking test equipment.
+Using the `xenavalkyrie` library a full API to control the tester is available.
 
 Binds to:
   xena_manager:
@@ -1651,7 +1650,7 @@ Strategies
 ----------
 
 Strategies are used to ensure that the device is in a certain state during a test.
-Such a state could be the boot loader or a booted Linux kernel with shell.
+Such a state could be the bootloader or a booted Linux kernel with shell.
 
 BareboxStrategy
 ~~~~~~~~~~~~~~~
@@ -1672,7 +1671,7 @@ to transition to the shell state:
    s.transition("shell")
 
 
-this command would transition from the boot loader into a Linux shell and
+this command would transition from the bootloader into a Linux shell and
 activate the shelldriver.
 
 ShellStrategy
@@ -1715,7 +1714,7 @@ to transition to the shell state:
    s.transition("shell")
 
 
-this command would transition from the boot loader into a Linux shell and
+this command would transition from the bootloader into a Linux shell and
 activate the shelldriver.
 
 DockerShellStrategy
@@ -1897,7 +1896,7 @@ To bind the correct driver to the correct resource, explicit ``name`` and
         port: 'bar'
 
 The property name for the binding (e.g. `port` in the example above) is
-documented for each individual driver under this chapter.
+documented for each individual driver in this chapter.
 
 The YAML configuration file also supports templating for some substitutions,
 these are:

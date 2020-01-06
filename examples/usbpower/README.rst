@@ -16,8 +16,8 @@ examplestrategy.py
   Custom strategy which controls the USB-SD-Mux and the USB port power.
 
 test_example.py
-  Testsuite (based on pytest) to run a simple command in Barebox, Shell and
-  Barebox again.
+  Testsuite (based on pytest) to run a simple command in barebox, shell and
+  barebox again.
 
 exports.yaml
   Configuration file for labgrid-exporter to export these resources over the

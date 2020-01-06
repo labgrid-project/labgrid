@@ -159,7 +159,7 @@ Writing a Resource
 -------------------
 
 To add a new resource to labgrid, we import attr into our new resource file.
-Additionally we need the :any:`target_factory` and the common Resource class.
+Additionally we need the :any:`target_factory` and the common ``Resource`` class.
 
 ::
 
@@ -245,7 +245,7 @@ Start by creating a strategy skeleton:
 
 
 The ``bindings`` variable needs to declare the drivers necessary for the
-strategy, usually one for power, boot loader and shell.
+strategy, usually one for power, bootloader and shell.
 It is possible to reference drivers via their protocol, e.g.
 ``ConsoleProtocol``.
 Note that drivers which implement multiple protocols must not be referenced
@@ -254,7 +254,8 @@ The ``Status`` class needs to be extended to cover the states of your strategy,
 then for each state an ``elif`` entry in the transition function needs to be
 added.
 
-Lets take a look at the builtin `BareboxStrategy`. The Status enum for Barebox:
+Lets take a look at the builtin `BareboxStrategy`.
+The Status enum for the BareboxStrategy:
 
 ::
 
@@ -460,14 +461,16 @@ To use it in conjunction with a `Resource` and a file:
    path = mf.get_remote_path()
 
 Unless constructed with `ManagedFile(..., detect_nfs=False)`, ManagedFile
-employs the following heuristic to check if a file is on NFS and if so, foregoes
-the transfer and `get_remote_path()` just returns the local path (which is
-identical to the remote path in this case):
+employs the following heuristic to check if a file is stored on a NFS share
+available both locally and remotely via the same path:
 
   - check if GNU coreutils stat(1) with option --format exists on local and
     remote system
   - check if inode number, total size and birth/modification timestamps match
     on local and remote system
+
+If this is the case the actual file transfer in ``sync_to_resource`` is
+skipped.
 
 ProxyManager
 ------------
@@ -597,7 +600,7 @@ Step Tracing
 ~~~~~~~~~~~~
 
 The Step infrastructure already collects timing and nesting information on
-executed commands, but is currently only used for in pytest or via the
+executed commands, but is currently only used in the pytest plugin or via the
 standalone StepReporter.
 By writing these events to a file (or sqlite database) as a trace, we can
 collect data over multiple runs for later analysis.

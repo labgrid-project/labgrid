@@ -6,6 +6,7 @@ import asyncio
 import logging
 import sys
 import os
+import time
 import traceback
 import subprocess
 from socket import gethostname, getfqdn
@@ -370,6 +371,7 @@ class ExporterSession(ApplicationSession):
         self.hostname = self.config.extra['hostname']
         self.isolated = self.config.extra['isolated']
         self.address = self._transport.transport.get_extra_info('sockname')[0]
+        self.checkpoint = time.monotonic()
         self.poll_task = None
 
         self.groups = {}
@@ -411,6 +413,7 @@ class ExporterSession(ApplicationSession):
                     await self.add_resource(
                         group_name, resource_name, cls, params
                     )
+                    self.checkpoint = time.monotonic()
 
         except Exception:  # pylint: disable=broad-except
             traceback.print_exc()
@@ -447,6 +450,7 @@ class ExporterSession(ApplicationSession):
         await self.update_resource(group_name, resource_name)
 
     async def version(self):
+        self.checkpoint = time.monotonic()
         return __version__
 
     async def _poll_step(self):
@@ -472,6 +476,10 @@ class ExporterSession(ApplicationSession):
                 break
             except Exception:  # pylint: disable=broad-except
                 traceback.print_exc()
+            age = time.monotonic() - self.checkpoint
+            if age > 300:
+                print("missed checkpoint, exiting (last was {} seconds ago)".format(age))
+                self.disconnect()
 
     async def add_resource(self, group_name, resource_name, cls, params):
         """Add a resource to the exporter and update status on the coordinator"""

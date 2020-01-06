@@ -255,7 +255,10 @@ class CoordinatorComponent(ApplicationSession):
                 done, _ = await asyncio.wait([fut], timeout=5)
                 if not done:
                     print('kicking exporter ({}/{})'.format(session.key, session.name))
+                    await self.call('wamp.session.kill', session.key, message="timeout detected by coordinator")
+                    print('cleaning up exporter ({}/{})'.format(session.key, session.name))
                     await self.on_session_leave(session.key)
+                    print('removed exporter ({}/{})'.format(session.key, session.name))
                     continue
                 try:
                     session.version = done.pop().result()
@@ -264,6 +267,8 @@ class CoordinatorComponent(ApplicationSession):
                         pass # old client
                     elif e.error == "wamp.error.canceled":
                         pass # disconnected
+                    elif e.error == "wamp.error.no_such_session":
+                        pass # client has already disconnected
                     else:
                         raise
         # update reservations
@@ -328,7 +333,7 @@ class CoordinatorComponent(ApplicationSession):
         place.matches.append(ResourceMatch(exporter="*", group=name, cls="*"))
         self.places[name] = place
 
-    async def _update_acquired_places(self, action, resource):
+    async def _update_acquired_places(self, action, resource, callback=True):
         """Update acquired places when resources are added or removed."""
         if action not in [Action.ADD, Action.DEL]:
             return  # currently nothing needed for Action.UPD
@@ -351,7 +356,7 @@ class CoordinatorComponent(ApplicationSession):
             self._publish_place(place)
         else:
             for place in places:
-                await self._release_resources(place, [resource])
+                await self._release_resources(place, [resource], callback=callback)
                 self._publish_place(place)
 
     def _publish_place(self, place):
@@ -393,7 +398,7 @@ class CoordinatorComponent(ApplicationSession):
             for groupname, group in session.groups.items():
                 for resourcename in group.copy():
                     action, resource = session.set_resource(groupname, resourcename, {})
-                    await self._update_acquired_places(action, resource)  # pylint: disable=not-an-iterable
+                    await self._update_acquired_places(action, resource, callback=False)  # pylint: disable=not-an-iterable
         self.save_later()
 
     @locked
@@ -587,11 +592,7 @@ class CoordinatorComponent(ApplicationSession):
 
         return True
 
-    @locked
-    async def acquire_resources(self, place, resources):
-        return await self._acquire_resources(place, resources)
-
-    async def _release_resources(self, place, resources):
+    async def _release_resources(self, place, resources, callback=True):
         resources = resources.copy() # we may modify the list
 
         for resource in resources:
@@ -604,8 +605,9 @@ class CoordinatorComponent(ApplicationSession):
             try:
                 # this triggers an update from the exporter which is published
                 # to the clients
-                await self.call('org.labgrid.exporter.{}.release'.format(resource.path[0]),
-                                resource.path[1], resource.path[3])
+                if callback:
+                    await self.call('org.labgrid.exporter.{}.release'.format(resource.path[0]),
+                                    resource.path[1], resource.path[3])
             except:
                 print("failed to release {}".format(resource))
                 # at leaset try to notify the clients
@@ -613,10 +615,6 @@ class CoordinatorComponent(ApplicationSession):
                     self._publish_resource(resource)
                 except:
                     pass
-
-    @locked
-    async def release_resources(self, place, resources):
-        return await self._release_resources(place, resources)
 
     @locked
     async def acquire_place(self, name, details=None):

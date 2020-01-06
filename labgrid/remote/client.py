@@ -1182,7 +1182,19 @@ def start_session(url, realm, extra):
     runner = ApplicationRunner(url, realm=realm, extra=extra)
     coro = runner.run(make, start_loop=False)
 
-    loop.run_until_complete(coro)
+    transport, protocol = loop.run_until_complete(coro)
+
+    # there is no other notification when the WAMP connection setup times out,
+    # so we need to wait for one of these protocol futures to resolve
+    done, pending = loop.run_until_complete(asyncio.wait(
+        {protocol.is_open, protocol.is_closed},
+        timeout=30,
+        return_when=asyncio.FIRST_COMPLETED))
+    if protocol.is_closed in done:
+        raise Error("connection closed during setup")
+    if protocol.is_open in pending:
+        raise Error("connection timed out during setup")
+
     loop.run_until_complete(ready.wait())
     return session[0]
 

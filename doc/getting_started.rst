@@ -3,6 +3,8 @@ Getting Started
 
 This section of the manual contains introductory tutorials for installing
 labgrid, running your first test and setting up the distributed infrastructure.
+For an overview about the basic design and components of `labgrid`, read the
+:ref:`overview` first.
 
 Installation
 ------------
@@ -162,11 +164,12 @@ The HTML documentation is written to ``doc/.build/html/``.
 Setting Up the Distributed Infrastructure
 -----------------------------------------
 
-The labgrid distributed infrastructure consists of three components:
+The labgrid :ref:`distributed infrastructure <remote-resources-and-places>`
+consists of three components:
 
-#. Coordinator
-#. Exporter
-#. Client
+#. :ref:`overview-coordinator`
+#. :ref:`overview-exporter`
+#. :ref:`overview-client`
 
 The system needs at least one coordinator and exporter, these can run on the
 same machine. The client is used to access functionality provided by an

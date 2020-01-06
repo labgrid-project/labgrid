@@ -1,6 +1,7 @@
 import time
 
 import attr
+from pexpect import TIMEOUT
 
 
 @attr.s(eq=False)
@@ -23,3 +24,10 @@ class Timeout:
     @property
     def expired(self):
         return self._deadline <= time.monotonic()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        if self.expired:
+            raise TIMEOUT("Timeout of {} seconds exceeded".format(self.timeout))

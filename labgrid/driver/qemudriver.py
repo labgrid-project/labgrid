@@ -17,7 +17,7 @@ from ..protocol import PowerProtocol, ConsoleProtocol
 from ..step import step
 from .common import Driver
 from .consoleexpectmixin import ConsoleExpectMixin
-from ..util.qmp import QMPMonitor
+from ..util.qmp import QMPMonitor, QMPError
 from .exception import ExecutionError
 
 
@@ -182,7 +182,15 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._clientsocket, address = self._socket.accept()
         self._clientsocket.setblocking(0)
         self.logger.debug("new connection from %s", address)
-        self.qmp = QMPMonitor(self._child.stdout, self._child.stdin)
+
+        try:
+            self.qmp = QMPMonitor(self._child.stdout, self._child.stdin)
+        except QMPError as exc:
+            if self._child.poll() is not None:
+                raise IOError("QEMU process terminated with exit code {}"
+                              .format(self._child.returncode)) from exc
+            raise
+
         self.status = 1
         self.monitor_command("cont")
 

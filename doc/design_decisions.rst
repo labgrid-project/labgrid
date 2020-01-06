@@ -24,7 +24,7 @@ Our reasons for this are:
 Test Infrastructure
 ~~~~~~~~~~~~~~~~~~~
 
-Labgrid does not include a test framework.
+labgrid does not include a test framework.
 
 The main reason is that with `pytest <https://docs.pytest.org/>`_ we already
 have a test framework which:

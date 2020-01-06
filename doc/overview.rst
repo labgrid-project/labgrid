@@ -4,7 +4,7 @@ Overview
 Architecture
 ------------
 
-Labgrid can be used in several ways:
+labgrid can be used in several ways:
 
 - on the command line to control individual embedded systems during development
   ("board farm")
@@ -173,7 +173,7 @@ Especially when using labgrid from pytest, explicitly controlling the board's
 boot process can distract from the individual test case.
 Each :any:`Strategy` implements the board- or project-specific actions necessary to
 transition from one state to another.
-Labgrid includes the :any:`BareboxStrategy` and the :any:`UBootStrategy`, which
+labgrid includes the :any:`BareboxStrategy` and the :any:`UBootStrategy`, which
 can be used as-is for simple cases or serve as an example for implementing a
 custom strategy.
 
@@ -192,7 +192,7 @@ For more information on the reasons behind labgrid's architecture, see
 Remote Resources and Places
 ---------------------------
 
-Labgrid contains components for accessing resources which are not directly
+labgrid contains components for accessing resources which are not directly
 accessible on the local machine.
 The main parts of this are:
 
@@ -275,7 +275,7 @@ exporter1/hub1-port1/\*
   (such as a USB ROM-Loader interface, Android fastboot and a USB serial gadget
   in Linux).
 
-To avoid conflicting access to the same resources, a place must be `aquired`
+To avoid conflicting access to the same resources, a place must be `acquired`
 before it is used and the coordinator also keeps track of which user on which
 client host has currently acquired the place.
 The resource matches are only evaluated while a place is being acquired and cannot be
@@ -353,7 +353,7 @@ connections to remote resources made available by this exporter need to be
 tunneled using a SSH connection.
 On the other hand, clients may need to access the remote infrastrucure using a
 SSH tunnel. In this case the :code:`LG_PROXY` environment variable needs to be
-set to the remote host which should tunnel the connections. The client than
+set to the remote host which should tunnel the connections. The client then
 forwards all network traffic through SSH, even the coordinator connection is
 forwarded. This means that with :code:`LG_PROXY` and :code:`LG_CROSSBAR` labgrid can be used
 fully remotely with only a SSH connection as a requirement.

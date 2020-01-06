@@ -51,8 +51,8 @@ OPTIONS
 
 -i / --isolated
 ~~~~~~~~~~~~~~~
-This option enables isolated mode, which causes all exported resources marked
-as requiring SSH connection forwarding.
+This option enables isolated mode, which causes all exported resources being
+marked as requiring SSH connection forwarding.
 Isolated mode is useful when resources (such as NetworkSerialPorts) are not
 directly accessible from the clients.
 The client will then use SSH to create a port forward to the resource when

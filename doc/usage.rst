@@ -7,7 +7,7 @@ Remote Access
 -------------
 
 As described in :ref:`remote-resources-and-places`, one of labgrid's main
-features is making access to boards connected to other hosts transparent for
+features is granting access to boards connected to other hosts transparent for
 the client.
 To get started with remote access, take a look at
 :ref:`remote-getting-started`.
@@ -168,7 +168,7 @@ used by locked places.
 
 Library
 -------
-Labgrid can be used directly as a Python library, without the infrastructure
+labgrid can be used directly as a Python library, without the infrastructure
 provided by the pytest plugin.
 
 Creating and Configuring Targets
@@ -270,7 +270,7 @@ multiple drivers, see :ref:`configuration:Environment Configuration`.
 
 pytest Plugin
 -------------
-Labgrid includes a `pytest <http://pytest.org>`_ plugin to simplify writing tests which
+labgrid includes a `pytest <http://pytest.org>`_ plugin to simplify writing tests which
 involve embedded boards.
 The plugin is configured by providing an environment config file
 (via the --lg-env pytest option, or the LG_ENV environment variable)
@@ -516,9 +516,9 @@ For this example, you should get a report similar to this:
 
 Feature Flags
 ~~~~~~~~~~~~~
-Labgrid includes support for feature flags on a global and target scope.
-They will be concatenated and compared to a pytest mark on the test to decide
-whether the test can run with the available features.::
+labgrid includes support for feature flags on a global and target scope.
+Adding a ``@pytest.mark.lg_feature`` decorator to a test ensures it is only
+executed if the desired feature is available::
 
    import pytest
 
@@ -526,7 +526,7 @@ whether the test can run with the available features.::
    def test_camera(target):
       [...]
 
-together with an example environment configuration:
+Here's an example environment configuration:
 
 .. code-block:: yaml
 
@@ -537,7 +537,7 @@ together with an example environment configuration:
       resources: {}
       drivers: {}
 
-would run the above test, however the following configuration would skip the
+This would run the above test, however the following configuration would skip the
 test because of the missing feature:
 
 .. code-block:: yaml
@@ -549,10 +549,9 @@ test because of the missing feature:
       resources: {}
       drivers: {}
 
-This is also reported in the pytest execution as a skipped test with the reason
-being the missing feature.
+pytest will record the missing feature as the skip reason.
 
-For tests with multiple required features, pass them as a list to pytest:::
+For tests with multiple required features, pass them as a list to pytest::
 
    import pytest
 
@@ -574,7 +573,7 @@ features key:
       resources: {}
       drivers: {}
 
-This yaml would combine both the global and the target features.
+This YAML configuration would combine both the global and the target features.
 
 
 Test Reports
@@ -606,7 +605,7 @@ They can also be converted to other formats, such as HTML with `junit2html tool
   $ junit2html report.xml
 
 
-Labgrid adds additional xml properties to a test run, these are:
+labgrid adds additional xml properties to a test run, these are:
 
 - ENV_CONFIG: Name of the configuration file
 - TARGETS: List of target names
@@ -622,14 +621,14 @@ Labgrid adds additional xml properties to a test run, these are:
 Command-Line
 ------------
 
-Labgrid contains some command line tools which are used for remote access to
+labgrid contains some command line tools which are used for remote access to
 resources.
 See :doc:`man/client`, :doc:`man/device-config` and :doc:`man/exporter` for
 more information.
 
 USB stick emulation
 --------------------
-Labgrid makes it posible to use a target as an emulated USB stick, allowing
+labgrid makes it posible to use a target as an emulated USB stick, allowing
 upload, modification, plug and unplug events. 
 To use a target as an emulated USB stick, several requirements have to be met:
 
@@ -657,7 +656,7 @@ the emulated USB stick in and out.
 hawkBit management API
 ----------------------
 
-Labgrid provides an interface to the hawkbit management API.
+labgrid provides an interface to the hawkbit management API.
 This allows a labgrid test to create targets, rollouts and manage deployments.
 
 ::

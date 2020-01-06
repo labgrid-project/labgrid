@@ -168,7 +168,7 @@ used by locked places.
 
 Library
 -------
-Labgrid can be used directly as a Python library, without the infrastructure
+labgrid can be used directly as a Python library, without the infrastructure
 provided by the pytest plugin.
 
 Creating and Configuring Targets
@@ -270,7 +270,7 @@ multiple drivers, see :ref:`configuration:Environment Configuration`.
 
 pytest Plugin
 -------------
-Labgrid includes a `pytest <http://pytest.org>`_ plugin to simplify writing tests which
+labgrid includes a `pytest <http://pytest.org>`_ plugin to simplify writing tests which
 involve embedded boards.
 The plugin is configured by providing an environment config file
 (via the --lg-env pytest option, or the LG_ENV environment variable)
@@ -516,7 +516,7 @@ For this example, you should get a report similar to this:
 
 Feature Flags
 ~~~~~~~~~~~~~
-Labgrid includes support for feature flags on a global and target scope.
+labgrid includes support for feature flags on a global and target scope.
 Adding a ``@pytest.mark.lg_feature`` decorator to a test ensures it is only
 executed if the desired feature is available::
 
@@ -605,7 +605,7 @@ They can also be converted to other formats, such as HTML with `junit2html tool
   $ junit2html report.xml
 
 
-Labgrid adds additional xml properties to a test run, these are:
+labgrid adds additional xml properties to a test run, these are:
 
 - ENV_CONFIG: Name of the configuration file
 - TARGETS: List of target names
@@ -621,14 +621,14 @@ Labgrid adds additional xml properties to a test run, these are:
 Command-Line
 ------------
 
-Labgrid contains some command line tools which are used for remote access to
+labgrid contains some command line tools which are used for remote access to
 resources.
 See :doc:`man/client`, :doc:`man/device-config` and :doc:`man/exporter` for
 more information.
 
 USB stick emulation
 --------------------
-Labgrid makes it posible to use a target as an emulated USB stick, allowing
+labgrid makes it posible to use a target as an emulated USB stick, allowing
 upload, modification, plug and unplug events. 
 To use a target as an emulated USB stick, several requirements have to be met:
 
@@ -656,7 +656,7 @@ the emulated USB stick in and out.
 hawkBit management API
 ----------------------
 
-Labgrid provides an interface to the hawkbit management API.
+labgrid provides an interface to the hawkbit management API.
 This allows a labgrid test to create targets, rollouts and manage deployments.
 
 ::

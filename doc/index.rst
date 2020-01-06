@@ -1,14 +1,14 @@
 Welcome to labgrid's documentation!
 ===================================
 
-Labgrid is a embedded board control python library with a focus on testing, development
+labgrid is a embedded board control python library with a focus on testing, development
 and general automation.
 It includes a remote control layer to control boards connected to other hosts.
 
 The idea behind labgrid is to create an abstraction of the hardware control
 layer needed for testing of embedded systems, automatic software installation
 and automation during development.
-Labgrid itself is *not* a testing framework, but is intended to be combined with
+labgrid itself is *not* a testing framework, but is intended to be combined with
 `pytest <https://docs.pytest.org>`_ (and additional pytest plugins).
 Please see :doc:`design_decisions` for more background information.
 

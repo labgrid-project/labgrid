@@ -51,7 +51,7 @@ If you are unsure about a new protocol's API, just use the driver directly from
 the client code, as deciding on a good API will be much easier when another
 similar driver is added.
 
-Labgrid uses the `attrs library <https://attrs.readthedocs.io>`_ for internal
+labgrid uses the `attrs library <https://attrs.readthedocs.io>`_ for internal
 classes.
 First of all import attr, the protocol and the common driver class
 into your new driver file.
@@ -205,7 +205,7 @@ validators, see the `attrs documentation <https://attrs.readthedocs.io/en/stable
 Writing a Strategy
 ------------------
 
-Labgrid only offers two basic strategies, for complex use cases a customized
+labgrid only offers two basic strategies, for complex use cases a customized
 strategy is required.
 Start by creating a strategy skeleton:
 
@@ -408,7 +408,7 @@ had been incremental.
 SSHManager
 ----------
 
-Labgrid provides a SSHManager to allow connection reuse with control sockets.
+labgrid provides a SSHManager to allow connection reuse with control sockets.
 To use the SSHManager in your code, import it from `labgrid.util.ssh`:
 
 .. code-block:: python
@@ -540,7 +540,7 @@ Run Tests
 Developer's Certificate of Origin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Labgrid uses the `Developer's Certificate of Origin 1.1
+labgrid uses the `Developer's Certificate of Origin 1.1
 <https://developercertificate.org/>`_ with the same `process
 <https://www.kernel.org/doc/html/latest/process/submitting-patches.html#sign-your-work-the-developer-s-certificate-of-origin>`_
 as used for the Linux kernel:

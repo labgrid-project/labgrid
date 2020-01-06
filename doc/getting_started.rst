@@ -39,7 +39,7 @@ requirements from the `requirements.txt` file:
    Consequently we now recommend using pinned versions from the
    `requirements.txt` file for most use cases.
 
-   Labgrid also supports the installation as a library via pip, but we only
+   labgrid also supports the installation as a library via pip, but we only
    test against library versions specified in the requirements.txt file.
    Thus when installing directly from pip you have to test compatibility
    yourself.
@@ -74,7 +74,7 @@ successful so far, proceed to the next section:
 
 Optional Requirements
 ~~~~~~~~~~~~~~~~~~~~~
-Labgrid provides optional features which are not included in the default
+labgrid provides optional features which are not included in the default
 `requirements.txt`. The tested library version for each feature is included in a
 seperate requirements file. An example for snmp support is:
 
@@ -316,13 +316,13 @@ man page.
 udev Matching
 -------------
 
-Labgrid allows the exporter (or the client-side environment) to match resources
+labgrid allows the exporter (or the client-side environment) to match resources
 via udev rules.
 The udev resources become available to the test/exporter as soon es they are
 plugged into the computer, e.g. allowing an exporter to export all USB ports on
 a specific hub and making a ``NetworkSerialPort`` available as soon as it is
 plugged into one of the hub's ports.
-Labgrid also provides a small utility called ``labgrid-suggest`` which will
+labgrid also provides a small utility called ``labgrid-suggest`` which will
 output the proper YAML formatted snippets for you.
 The information udev has on a device can be viewed by executing:
 
@@ -380,7 +380,7 @@ to a shell. They have a few requirements:
 - A driver implementing the ``CommandProtocol``, usually a ``ShellDriver`` with
   a ``SerialDriver`` below it.
 
-Labgrid ships with two builtin strategies, ``BareboxStrategy`` and
+labgrid ships with two builtin strategies, ``BareboxStrategy`` and
 ``UBootStrategy``. These can be used as a reference example for simple
 strategies, more complex tests usually require the implementation of your own
 strategies.

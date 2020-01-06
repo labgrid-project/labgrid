@@ -4,7 +4,7 @@ Overview
 Architecture
 ------------
 
-Labgrid can be used in several ways:
+labgrid can be used in several ways:
 
 - on the command line to control individual embedded systems during development
   ("board farm")
@@ -173,7 +173,7 @@ Especially when using labgrid from pytest, explicitly controlling the board's
 boot process can distract from the individual test case.
 Each :any:`Strategy` implements the board- or project-specific actions necessary to
 transition from one state to another.
-Labgrid includes the :any:`BareboxStrategy` and the :any:`UBootStrategy`, which
+labgrid includes the :any:`BareboxStrategy` and the :any:`UBootStrategy`, which
 can be used as-is for simple cases or serve as an example for implementing a
 custom strategy.
 
@@ -192,7 +192,7 @@ For more information on the reasons behind labgrid's architecture, see
 Remote Resources and Places
 ---------------------------
 
-Labgrid contains components for accessing resources which are not directly
+labgrid contains components for accessing resources which are not directly
 accessible on the local machine.
 The main parts of this are:
 

@@ -853,7 +853,7 @@ Arguments:
 
 UBootDriver
 ~~~~~~~~~~~
-A UBootDriver interfaces with a u-boot boot loader via a `ConsoleProtocol`.
+A UBootDriver interfaces with a U-Boot bootloader via a `ConsoleProtocol`.
 
 Binds to:
   console:
@@ -868,15 +868,15 @@ Implements:
      prompt: 'Uboot> '
 
 Arguments:
-  - prompt (regex): u-boot prompt to match
+  - prompt (regex): U-Boot prompt to match
   - autoboot (regex, default="stop autoboot"): autoboot message to match
-  - password (str): optional, u-boot unlock password
+  - password (str): optional, U-Boot unlock password
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
   - init_commands (tuple): tuple of commands to execute after matching the
     prompt
-  - password_prompt (str): optional, regex to match the uboot password prompt,
+  - password_prompt (str): optional, regex to match the U-Boot password prompt,
     defaults to "enter Password: "
-  - boot_expression (str): optional, regex to match the uboot start string
+  - boot_expression (str): optional, regex to match the U-Boot start string
     defaults to "U-Boot 20\d+"
   - bootstring (str): optional, regex to match on Linux Kernel boot
   - login_timeout (int): optional, timeout for login prompt detection in
@@ -884,14 +884,14 @@ Arguments:
 
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~
-A SmallUBootDriver interfaces with stripped-down UBoot variants that are
+A SmallUBootDriver interfaces with stripped-down U-Boot variants that are
 sometimes used in cheap consumer electronics.
 
-SmallUBootDriver is meant as a driver for UBoot with only little functionality
-compared to a standard UBoot.
+SmallUBootDriver is meant as a driver for U-Boot with only little functionality
+compared to a standard U-Boot.
 Especially is copes with the following limitations:
 
-- The UBoot does not have a real password-prompt but can be activated by
+- The U-Boot does not have a real password-prompt but can be activated by
   entering a "secret" after a message was displayed.
 - The command line does not have a built-in echo command.
   Thus this driver uses 'Unknown Command' messages as marker before and after
@@ -899,19 +899,19 @@ Especially is copes with the following limitations:
 - Since there is no echo we cannot return the exit code of the command.
   Commands will always return 0 unless the command was not found.
 
-This driver needs the following features activated in UBoot to work:
+This driver needs the following features activated in U-Boot to work:
 
-- The UBoot must not have a real password prompt. Instead it must be keyword
+- The U-Boot must not have a real password prompt. Instead it must be keyword
   activated.
   For example it should be activated by a dialog like the following:
 
-  - UBoot: "Autobooting in 1s..."
-  - Labgrid: "secret"
-  - UBoot: <switching to console>
+  - U-Boot: "Autobooting in 1s..."
+  - labgrid: "secret"
+  - U-Boot: <switching to console>
 
-- The UBoot must be able to parse multiple commands in a single line separated
+- The U-Boot must be able to parse multiple commands in a single line separated
   by ";".
-- The UBoot must support the "bootm" command to boot from a memory location.
+- The U-Boot must support the "bootm" command to boot from a memory location.
 
 Binds to:
   - :any:`ConsoleProtocol` (see `SerialDriver`_)
@@ -927,10 +927,10 @@ Implements:
      boot_secret: "tpl"
 
 Arguments:
-  - prompt (regex): u-boot prompt to match
+  - prompt (regex): U-Boot prompt to match
   - init_commands (tuple): tuple of commands to execute after matching the
     prompt
-  - boot_expression (str): optional, regex to match the uboot start string
+  - boot_expression (str): optional, regex to match the U-Boot start string
     defaults to "U-Boot 20\d+"
   - login_timeout (str): optional, timeout for the password/login detection
 
@@ -1042,7 +1042,7 @@ Arguments:
   - image (str): filename of image to flash QSPI
 
 The driver can be used in test cases by calling the `flash` function. An
-example strategy is included in Labgrid.
+example strategy is included in labgrid.
 
 ManualPowerDriver
 ~~~~~~~~~~~~~~~~~
@@ -1422,7 +1422,7 @@ Arguments:
 
 QEMUDriver
 ~~~~~~~~~~
-The QEMUDriver allows the usage of a qemu instance as a target. It requires
+The QEMUDriver allows the usage of a QEMU instance as a target. It requires
 several arguments, listed below.
 The kernel, flash, rootfs and dtb arguments refer to images and paths declared
 in the environment configuration.
@@ -1471,9 +1471,9 @@ Arguments:
   - rootfs (str): optional, reference to the paths key for use as the virtio-9p filesystem
   - dtb (str): optional, reference to the image key for the device tree
 
-The qemudriver also requires the specification of:
+The QEMUDriver also requires the specification of:
 
-- a tool key, this contains the path to the qemu binary
+- a tool key, this contains the path to the QEMU binary
 - an image key, the path to the kernel image and optionally the dtb key to
   specify the build device tree
 - a path key, this is the path to the rootfs
@@ -1737,10 +1737,10 @@ To transition to the shell state:
 
 These commands would activate the docker driver which creates and starts
 a docker container. This will subsequently make `NetworkService`_ instance(s)
-available which can be used for e.g. ssh access.
+available which can be used for e.g. SSH access.
 
 Note: Transitioning to the "off" state will make any `NetworkService`_
-instance(s) unresponsive - which may in turn invalidate ssh connection
+instance(s) unresponsive - which may in turn invalidate SSH connection
 sharing. Therefore, during automated test suites, refrain from transitioning
 to the "off" state.
 

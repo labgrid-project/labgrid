@@ -28,6 +28,8 @@ class QMPMonitor:
     def _read_parse_json(self):
         line = self.monitor_out.readline().decode('utf-8')
         self.logger.debug("Received line: %s", line)
+        if not line:
+            raise QMPError("Received empty response")
         return json.loads(line)
 
     def execute(self, command):

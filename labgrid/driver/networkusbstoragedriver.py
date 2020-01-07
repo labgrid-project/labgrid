@@ -52,7 +52,7 @@ class NetworkUSBStorageDriver(Driver):
     def write_image(self, filename=None, mode=Mode.DD):
         if not self.storage.path:
             raise ExecutionError(
-                "{} is not available".format(self.storage_path)
+                "{} is not available".format(self.storage.path)
             )
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
@@ -101,7 +101,7 @@ class NetworkUSBStorageDriver(Driver):
     def get_size(self):
         if not self.storage.path:
             raise ExecutionError(
-                "{} is not available".format(self.storage_path)
+                "{} is not available".format(self.storage.path)
             )
         args = ["cat", "/sys/class/block/{}/size".format(self.storage.path[5:])]
         size = processwrapper.check_output(self.storage.command_prefix + args)

@@ -119,6 +119,9 @@ def exporter(tmpdir, crossbar):
         NetworkSerialPort:
           host: 'localhost'
           port: 4000
+    Broken:
+        RawSerialPort:
+          port: 'none'
     """
     )
     spawn = pexpect.spawn(

@@ -27,6 +27,14 @@ except pkg_resources.DistributionNotFound:
 exports = {}
 reexec = False
 
+class ExporterError(Exception):
+    pass
+
+
+class BrokenResourceError(ExporterError):
+    pass
+
+
 @attr.s(eq=False)
 class ResourceExport(ResourceEntry):
     """Represents a local resource exported via a specific protocol.
@@ -48,6 +56,26 @@ class ResourceExport(ResourceEntry):
         for key in self.local_params:
             del self.params[key]
         self.start_params = None
+        self._broken = None
+
+    # if something criticial failed for an export, we can mark it as
+    # permanently broken
+    @property
+    def broken(self):
+        return self._broken
+
+    @broken.setter
+    def broken(self, reason):
+        assert self._broken is None
+        assert type(reason) == str
+        assert reason
+        self._broken = reason
+        # By setting the acquired field, we block places from using this
+        # resource. For now, when trying to acquire a place with a match for
+        # this resource, we get 'resource is already in used by <broken>',
+        # instead of an unspecific error.
+        self.data['acquired'] = '<broken>'
+        self.logger.error("marked as broken: %s", reason)
 
     def _get_start_params(self):  # pylint: disable=no-self-use
         return {}
@@ -64,19 +92,33 @@ class ResourceExport(ResourceEntry):
         pass
 
     def start(self):
+        assert not self.broken
         start_params = self._get_start_params()
-        self._start(start_params)
+        try:
+            self._start(start_params)
+        except Exception:  # pylint: disable=broad-except
+            self.broken = "start failed"
+            self.logger.exception("failed to start with %s", start_params)
+            raise
         self.start_params = start_params
 
     def stop(self):
-        self._stop(self.start_params)
+        assert not self.broken
+        try:
+            self._stop(self.start_params)
+        except Exception:  # pylint: disable=broad-except
+            self.broken = "stop failed"
+            self.logger.exception("failed to stop with %s", self.start_params)
+            raise
         self.start_params = None
 
     def poll(self):
         # poll and check for updated params/avail
         self.local.poll()
 
-        if self.local.avail and self.acquired:
+        if self.broken:
+            pass  # don't touch broken resources
+        elif self.local.avail and self.acquired:
             start_params = self._get_start_params()
             if self.start_params is None:
                 self.start()
@@ -90,14 +132,16 @@ class ResourceExport(ResourceEntry):
 
         # check if resulting information has changed
         dirty = False
-        if self.avail != self.local.avail:
-            self.data['avail'] = self.local.avail
+        if self.avail != (self.local.avail and not self.broken):
+            self.data['avail'] = self.local.avail and not self.broken
             dirty = True
         params = self._get_params()
         if not params.get('extra'):
             params['extra'] = {}
         params['extra']['proxy_required'] = self.proxy_required
         params['extra']['proxy'] = self.proxy
+        if self.broken:
+            params['extra']['broken'] = self.broken
         if self.params != params:
             self.data['params'].update(params)  # pylint: disable=unsubscriptable-object
             dirty = True
@@ -105,10 +149,14 @@ class ResourceExport(ResourceEntry):
         return dirty
 
     def acquire(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        if self.broken:
+            raise BrokenResourceError("cannot acquire broken resource (original reason): {}".format(self.broken))
         super().acquire(*args, **kwargs)
         self.poll()
 
     def release(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        if self.broken:
+            raise BrokenResourceError("cannot release broken resource (original reason): {}".format(self.broken))
         super().release(*args, **kwargs)
         self.poll()
 

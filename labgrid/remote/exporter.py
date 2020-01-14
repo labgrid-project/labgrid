@@ -35,6 +35,17 @@ class BrokenResourceError(ExporterError):
     pass
 
 
+def log_subprocess_kernel_stack(logger, child):
+    if child.poll() is not None:  # nothing to check if no longer running
+        return
+    try:
+        with open('/proc/{}/stack'.format(child.pid), 'r') as f:
+            stack = f.read()
+            stack = stack.strip()
+    except PermissionError:
+        return
+    logger.info("current kernel stack of %s is:\n%s", child.args, stack)
+
 @attr.s(eq=False)
 class ResourceExport(ResourceEntry):
     """Represents a local resource exported via a specific protocol.
@@ -230,6 +241,8 @@ class SerialPortExport(ResourceExport):
         try:
             child.wait(2.0)  # ser2net takes about a second to react
         except subprocess.TimeoutExpired:
+            self.logger.warning("ser2net for %s still running after SIGTERM", start_params['path'])
+            log_subprocess_kernel_stack(self.logger, child)
             child.kill()
             child.wait(1.0)
         self.logger.info("stopped ser2net for %s on port %d", start_params['path'], port)

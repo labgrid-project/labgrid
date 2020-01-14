@@ -114,14 +114,18 @@ class ResourceExport(ResourceEntry):
 
 
 @attr.s(eq=False)
-class USBSerialPortExport(ResourceExport):
-    """ResourceExport for a USB SerialPort"""
+class SerialPortExport(ResourceExport):
+    """ResourceExport for a USB or Raw SerialPort"""
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        if self.cls == "RawSerialPort":
+            from ..resource.serialport import RawSerialPort
+            self.local = RawSerialPort(target=None, name=None, **self.local_params)
+        elif self.cls == "USBSerialPort":
+            from ..resource.udev import USBSerialPort
+            self.local = USBSerialPort(target=None, name=None, **self.local_params)
         self.data['cls'] = "NetworkSerialPort"
-        from ..resource.udev import USBSerialPort
-        self.local = USBSerialPort(target=None, name=None, **self.local_params)
         self.child = None
         self.port = None
 
@@ -148,7 +152,7 @@ class USBSerialPortExport(ResourceExport):
         """Start ``ser2net`` subprocess"""
         assert self.local.avail
         assert self.child is None
-        # start ser2net
+        assert start_params['path'].startswith('/dev/')
         self.port = get_free_port()
         self.child = subprocess.Popen([
             '/usr/sbin/ser2net',
@@ -162,23 +166,23 @@ class USBSerialPortExport(ResourceExport):
         self.logger.info("started ser2net for %s on port %d", start_params['path'], self.port)
 
     def _stop(self, start_params):
-        """Stop spawned subprocess"""
+        """Stop ``ser2net`` subprocess"""
         assert self.child
-        # stop ser2net
         child = self.child
         self.child = None
         port = self.port
         self.port = None
         child.terminate()
         try:
-            child.wait(1.0)
+            child.wait(2.0)  # ser2net takes about a second to react
         except subprocess.TimeoutExpired:
             child.kill()
             child.wait(1.0)
         self.logger.info("stopped ser2net for %s on port %d", start_params['path'], port)
 
 
-exports["USBSerialPort"] = USBSerialPortExport
+exports["USBSerialPort"] = SerialPortExport
+exports["RawSerialPort"] = SerialPortExport
 
 @attr.s(eq=False)
 class USBEthernetExport(ResourceExport):

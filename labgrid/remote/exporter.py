@@ -445,13 +445,17 @@ class ExporterSession(ApplicationSession):
 
     async def acquire(self, group_name, resource_name, place_name):
         resource = self.groups[group_name][resource_name]
-        resource.acquire(place_name)
-        await self.update_resource(group_name, resource_name)
+        try:
+            resource.acquire(place_name)
+        finally:
+            await self.update_resource(group_name, resource_name)
 
     async def release(self, group_name, resource_name):
         resource = self.groups[group_name][resource_name]
-        resource.release()
-        await self.update_resource(group_name, resource_name)
+        try:
+            resource.release()
+        finally:
+            await self.update_resource(group_name, resource_name)
 
     async def version(self):
         self.checkpoint = time.monotonic()

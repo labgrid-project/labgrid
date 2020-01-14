@@ -211,6 +211,12 @@ class SerialPortExport(ResourceExport):
                 self.port, start_params['path']
             ),
         ])
+        try:
+            self.child.wait(timeout=0.5)
+            raise ExporterError("ser2net for {} exited immediately".format(start_params['path']))
+        except subprocess.TimeoutExpired:
+            # good, ser2net didn't exit immediately
+            pass
         self.logger.info("started ser2net for %s on port %d", start_params['path'], self.port)
 
     def _stop(self, start_params):

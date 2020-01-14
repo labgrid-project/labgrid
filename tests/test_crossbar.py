@@ -47,7 +47,7 @@ def place(crossbar):
 
 @pytest.fixture(scope='function')
 def place_acquire(place, exporter):
-    with pexpect.spawn('python -m labgrid.remote.client -p test add-match "*/*/*"') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -p test add-match "*/Testport/*"') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
@@ -186,7 +186,7 @@ def test_resource_conflict(place_acquire, tmpdir):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-    with pexpect.spawn('python -m labgrid.remote.client -p test2 add-match "*/*/*"') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -p test2 add-match "*/Testport/*"') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()

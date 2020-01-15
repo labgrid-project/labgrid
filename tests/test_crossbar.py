@@ -47,7 +47,7 @@ def place(crossbar):
 
 @pytest.fixture(scope='function')
 def place_acquire(place, exporter):
-    with pexpect.spawn('python -m labgrid.remote.client -p test add-match "*/*/*"') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -p test add-match "*/Testport/*"') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
@@ -149,6 +149,25 @@ def test_place_aquire(place):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
+def test_place_aquire_broken(place, exporter):
+    with pexpect.spawn('python -m labgrid.remote.client -p test add-match "*/Broken/*"') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
+        spawn.expect('failed to acquire place test')
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 1, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test show') as spawn:
+        spawn.expect("'broken': 'start failed'")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        print(spawn.before.decode())
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
 def test_place_add_no_name(crossbar):
     with pexpect.spawn('python -m labgrid.remote.client create') as spawn:
         spawn.expect("missing place name")
@@ -186,7 +205,7 @@ def test_resource_conflict(place_acquire, tmpdir):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-    with pexpect.spawn('python -m labgrid.remote.client -p test2 add-match "*/*/*"') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -p test2 add-match "*/Testport/*"') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()

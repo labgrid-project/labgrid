@@ -27,6 +27,25 @@ except pkg_resources.DistributionNotFound:
 exports = {}
 reexec = False
 
+class ExporterError(Exception):
+    pass
+
+
+class BrokenResourceError(ExporterError):
+    pass
+
+
+def log_subprocess_kernel_stack(logger, child):
+    if child.poll() is not None:  # nothing to check if no longer running
+        return
+    try:
+        with open('/proc/{}/stack'.format(child.pid), 'r') as f:
+            stack = f.read()
+            stack = stack.strip()
+    except PermissionError:
+        return
+    logger.info("current kernel stack of %s is:\n%s", child.args, stack)
+
 @attr.s(eq=False)
 class ResourceExport(ResourceEntry):
     """Represents a local resource exported via a specific protocol.
@@ -48,6 +67,26 @@ class ResourceExport(ResourceEntry):
         for key in self.local_params:
             del self.params[key]
         self.start_params = None
+        self._broken = None
+
+    # if something criticial failed for an export, we can mark it as
+    # permanently broken
+    @property
+    def broken(self):
+        return self._broken
+
+    @broken.setter
+    def broken(self, reason):
+        assert self._broken is None
+        assert type(reason) == str
+        assert reason
+        self._broken = reason
+        # By setting the acquired field, we block places from using this
+        # resource. For now, when trying to acquire a place with a match for
+        # this resource, we get 'resource is already in used by <broken>',
+        # instead of an unspecific error.
+        self.data['acquired'] = '<broken>'
+        self.logger.error("marked as broken: %s", reason)
 
     def _get_start_params(self):  # pylint: disable=no-self-use
         return {}
@@ -64,19 +103,33 @@ class ResourceExport(ResourceEntry):
         pass
 
     def start(self):
+        assert not self.broken
         start_params = self._get_start_params()
-        self._start(start_params)
+        try:
+            self._start(start_params)
+        except Exception:  # pylint: disable=broad-except
+            self.broken = "start failed"
+            self.logger.exception("failed to start with %s", start_params)
+            raise
         self.start_params = start_params
 
     def stop(self):
-        self._stop(self.start_params)
+        assert not self.broken
+        try:
+            self._stop(self.start_params)
+        except Exception:  # pylint: disable=broad-except
+            self.broken = "stop failed"
+            self.logger.exception("failed to stop with %s", self.start_params)
+            raise
         self.start_params = None
 
     def poll(self):
         # poll and check for updated params/avail
         self.local.poll()
 
-        if self.local.avail and self.acquired:
+        if self.broken:
+            pass  # don't touch broken resources
+        elif self.local.avail and self.acquired:
             start_params = self._get_start_params()
             if self.start_params is None:
                 self.start()
@@ -90,14 +143,16 @@ class ResourceExport(ResourceEntry):
 
         # check if resulting information has changed
         dirty = False
-        if self.avail != self.local.avail:
-            self.data['avail'] = self.local.avail
+        if self.avail != (self.local.avail and not self.broken):
+            self.data['avail'] = self.local.avail and not self.broken
             dirty = True
         params = self._get_params()
         if not params.get('extra'):
             params['extra'] = {}
         params['extra']['proxy_required'] = self.proxy_required
         params['extra']['proxy'] = self.proxy
+        if self.broken:
+            params['extra']['broken'] = self.broken
         if self.params != params:
             self.data['params'].update(params)  # pylint: disable=unsubscriptable-object
             dirty = True
@@ -105,23 +160,31 @@ class ResourceExport(ResourceEntry):
         return dirty
 
     def acquire(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        if self.broken:
+            raise BrokenResourceError("cannot acquire broken resource (original reason): {}".format(self.broken))
         super().acquire(*args, **kwargs)
         self.poll()
 
     def release(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        if self.broken:
+            raise BrokenResourceError("cannot release broken resource (original reason): {}".format(self.broken))
         super().release(*args, **kwargs)
         self.poll()
 
 
 @attr.s(eq=False)
-class USBSerialPortExport(ResourceExport):
-    """ResourceExport for a USB SerialPort"""
+class SerialPortExport(ResourceExport):
+    """ResourceExport for a USB or Raw SerialPort"""
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        if self.cls == "RawSerialPort":
+            from ..resource.serialport import RawSerialPort
+            self.local = RawSerialPort(target=None, name=None, **self.local_params)
+        elif self.cls == "USBSerialPort":
+            from ..resource.udev import USBSerialPort
+            self.local = USBSerialPort(target=None, name=None, **self.local_params)
         self.data['cls'] = "NetworkSerialPort"
-        from ..resource.udev import USBSerialPort
-        self.local = USBSerialPort(target=None, name=None, **self.local_params)
         self.child = None
         self.port = None
 
@@ -148,7 +211,7 @@ class USBSerialPortExport(ResourceExport):
         """Start ``ser2net`` subprocess"""
         assert self.local.avail
         assert self.child is None
-        # start ser2net
+        assert start_params['path'].startswith('/dev/')
         self.port = get_free_port()
         self.child = subprocess.Popen([
             '/usr/sbin/ser2net',
@@ -159,26 +222,34 @@ class USBSerialPortExport(ResourceExport):
                 self.port, start_params['path']
             ),
         ])
+        try:
+            self.child.wait(timeout=0.5)
+            raise ExporterError("ser2net for {} exited immediately".format(start_params['path']))
+        except subprocess.TimeoutExpired:
+            # good, ser2net didn't exit immediately
+            pass
         self.logger.info("started ser2net for %s on port %d", start_params['path'], self.port)
 
     def _stop(self, start_params):
-        """Stop spawned subprocess"""
+        """Stop ``ser2net`` subprocess"""
         assert self.child
-        # stop ser2net
         child = self.child
         self.child = None
         port = self.port
         self.port = None
         child.terminate()
         try:
-            child.wait(1.0)
+            child.wait(2.0)  # ser2net takes about a second to react
         except subprocess.TimeoutExpired:
+            self.logger.warning("ser2net for %s still running after SIGTERM", start_params['path'])
+            log_subprocess_kernel_stack(self.logger, child)
             child.kill()
             child.wait(1.0)
         self.logger.info("stopped ser2net for %s on port %d", start_params['path'], port)
 
 
-exports["USBSerialPort"] = USBSerialPortExport
+exports["USBSerialPort"] = SerialPortExport
+exports["RawSerialPort"] = SerialPortExport
 
 @attr.s(eq=False)
 class USBEthernetExport(ResourceExport):
@@ -441,13 +512,17 @@ class ExporterSession(ApplicationSession):
 
     async def acquire(self, group_name, resource_name, place_name):
         resource = self.groups[group_name][resource_name]
-        resource.acquire(place_name)
-        await self.update_resource(group_name, resource_name)
+        try:
+            resource.acquire(place_name)
+        finally:
+            await self.update_resource(group_name, resource_name)
 
     async def release(self, group_name, resource_name):
         resource = self.groups[group_name][resource_name]
-        resource.release()
-        await self.update_resource(group_name, resource_name)
+        try:
+            resource.release()
+        finally:
+            await self.update_resource(group_name, resource_name)
 
     async def version(self):
         self.checkpoint = time.monotonic()

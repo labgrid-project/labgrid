@@ -5,7 +5,6 @@ from time import time
 import attr
 
 from ..factory import target_factory
-from ..resource.udev import USBMassStorage, USBSDMuxDevice
 from ..step import step
 from .common import Driver
 
@@ -13,7 +12,7 @@ from .common import Driver
 @target_factory.reg_driver
 @attr.s(eq=False)
 class USBStorageDriver(Driver):
-    bindings = {"storage": {USBMassStorage, USBSDMuxDevice}, }
+    bindings = {"storage": {"USBMassStorage", "USBSDMuxDevice"}, }
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

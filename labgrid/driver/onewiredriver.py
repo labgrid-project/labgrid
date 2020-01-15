@@ -3,7 +3,6 @@ import attr
 
 from ..exceptions import InvalidConfigError
 from ..factory import target_factory
-from ..resource import OneWirePIO
 from ..protocol import DigitalOutputProtocol
 from ..util.proxy import proxymanager
 from .common import Driver
@@ -14,7 +13,7 @@ from ..step import step
 @attr.s(eq=False)
 class OneWirePIODriver(Driver, DigitalOutputProtocol):
 
-    bindings = {"port": OneWirePIO, }
+    bindings = {"port": "OneWirePIO", }
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

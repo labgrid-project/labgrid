@@ -2,7 +2,6 @@ from importlib import import_module
 import attr
 
 from ..factory import target_factory
-from ..resource import ModbusTCPCoil
 from ..protocol import DigitalOutputProtocol
 from ..util.proxy import proxymanager
 from .common import Driver
@@ -11,7 +10,7 @@ from .exception import ExecutionError
 @target_factory.reg_driver
 @attr.s(eq=False)
 class ModbusCoilDriver(Driver, DigitalOutputProtocol):
-    bindings = {"coil": ModbusTCPCoil, }
+    bindings = {"coil": "ModbusTCPCoil", }
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

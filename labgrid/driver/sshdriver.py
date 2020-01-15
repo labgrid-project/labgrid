@@ -10,7 +10,6 @@ import attr
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, FileTransferProtocol
-from ..resource import NetworkService
 from .commandmixin import CommandMixin
 from .common import Driver
 from ..step import step
@@ -21,7 +20,7 @@ from .exception import ExecutionError
 @attr.s(eq=False)
 class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     """SSHDriver - Driver to execute commands via SSH"""
-    bindings = {"networkservice": NetworkService, }
+    bindings = {"networkservice": "NetworkService", }
     priorities = {CommandProtocol: 10, FileTransferProtocol: 10}
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     stderr_merge = attr.ib(default=False, validator=attr.validators.instance_of(bool))

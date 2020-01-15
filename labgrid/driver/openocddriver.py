@@ -5,8 +5,6 @@ import attr
 
 from ..factory import target_factory
 from ..protocol import BootstrapProtocol
-from ..resource.remote import NetworkAlteraUSBBlaster
-from ..resource.udev import AlteraUSBBlaster
 from ..step import step
 from ..util.managedfile import ManagedFile
 from ..util.helper import processwrapper
@@ -17,7 +15,7 @@ from .common import Driver
 @attr.s(eq=False)
 class OpenOCDDriver(Driver, BootstrapProtocol):
     bindings = {
-        "interface": {AlteraUSBBlaster, NetworkAlteraUSBBlaster},
+        "interface": {"AlteraUSBBlaster", "NetworkAlteraUSBBlaster"},
     }
 
     config = attr.ib(validator=attr.validators.instance_of((str, list)))

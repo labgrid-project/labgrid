@@ -4,15 +4,13 @@ import attr
 
 from .common import Driver
 from ..factory import target_factory
-from ..resource.remote import NetworkUSBVideo
-from ..resource.udev import USBVideo
 from ..exceptions import InvalidConfigError
 
 @target_factory.reg_driver
 @attr.s(eq=False)
 class USBVideoDriver(Driver):
     bindings = {
-        "video": {USBVideo, NetworkUSBVideo},
+        "video": {"USBVideo", "NetworkUSBVideo"},
     }
 
     def get_caps(self):

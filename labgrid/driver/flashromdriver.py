@@ -3,7 +3,7 @@ import os.path
 import logging
 import attr
 
-from ..resource import Flashrom, NetworkFlashrom
+from ..resource import NetworkFlashrom
 from ..factory import target_factory
 from ..step import step
 from ..protocol import BootstrapProtocol
@@ -18,7 +18,7 @@ class FlashromDriver(Driver, BootstrapProtocol):
     """ The Flashrom driver used the flashrom utility to write an image to a raw rom.
     The driver is a pure wrapper of the flashrom utility"""
     bindings = {
-        'flashrom_resource': {Flashrom, NetworkFlashrom},
+        'flashrom_resource': {"Flashrom", NetworkFlashrom},
     }
 
     image = attr.ib(default=None)

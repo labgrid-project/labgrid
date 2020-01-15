@@ -8,7 +8,7 @@ import attr
 
 from labgrid.factory import target_factory
 from labgrid.driver.common import Driver
-from labgrid.resource.docker import DockerDaemon, DockerConstants
+from labgrid.resource.docker import DockerConstants
 from labgrid.protocol.powerprotocol import PowerProtocol
 
 
@@ -42,7 +42,7 @@ class DockerDriver(PowerProtocol, Driver):
                                  service that the docker container exposes.
 
     """
-    bindings = {"docker_daemon": {DockerDaemon}}
+    bindings = {"docker_daemon": {"DockerDaemon"}}
     image_uri = attr.ib(default=None, validator=attr.validators.optional(
         attr.validators.instance_of(str)))
     command = attr.ib(default=None, validator=attr.validators.optional(

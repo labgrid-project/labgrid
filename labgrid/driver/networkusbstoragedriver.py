@@ -6,8 +6,6 @@ import time
 import attr
 
 from ..factory import target_factory
-from ..resource.udev import USBMassStorage, USBSDMuxDevice
-from ..resource.remote import NetworkUSBMassStorage, NetworkUSBSDMuxDevice
 from ..step import step
 from ..util.managedfile import ManagedFile
 from .common import Driver
@@ -27,10 +25,10 @@ class Mode(enum.Enum):
 class NetworkUSBStorageDriver(Driver):
     bindings = {
         "storage": {
-            USBMassStorage,
-            NetworkUSBMassStorage,
-            USBSDMuxDevice,
-            NetworkUSBSDMuxDevice
+            "USBMassStorage",
+            "NetworkUSBMassStorage",
+            "USBSDMuxDevice",
+            "NetworkUSBSDMuxDevice"
         },
     }
     image = attr.ib(

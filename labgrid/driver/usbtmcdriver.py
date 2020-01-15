@@ -5,8 +5,6 @@ import attr
 
 from .common import Driver
 from ..factory import target_factory
-from ..resource.remote import NetworkUSBTMC
-from ..resource.udev import USBTMC
 from ..exceptions import InvalidConfigError
 from ..util.agentwrapper import AgentWrapper, b2s, s2b
 
@@ -14,7 +12,7 @@ from ..util.agentwrapper import AgentWrapper, b2s, s2b
 @attr.s(eq=False)
 class USBTMCDriver(Driver):
     bindings = {
-        "tmc": {USBTMC, NetworkUSBTMC},
+        "tmc": {"USBTMC", "NetworkUSBTMC"},
     }
 
     def __attrs_post_init__(self):

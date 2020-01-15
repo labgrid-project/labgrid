@@ -1,3 +1,5 @@
+import inspect
+
 from .exceptions import InvalidConfigError
 from .util.dict import filter_dict
 
@@ -5,12 +7,14 @@ class TargetFactory:
     def __init__(self):
         self.resources = {}
         self.drivers = {}
+        self.all_classes = {}
 
     def reg_resource(self, cls):
         """Register a resource with the factory.
 
         Returns the class to allow using it as a decorator."""
         self.resources[cls.__name__] = cls
+        self._insert_into_all(cls)
         return cls
 
     def reg_driver(self, cls):
@@ -18,6 +22,7 @@ class TargetFactory:
 
         Returns the class to allow using it as a decorator."""
         self.drivers[cls.__name__] = cls
+        self._insert_into_all(cls)
         return cls
 
     @staticmethod
@@ -147,6 +152,17 @@ class TargetFactory:
             self.make_driver(target, driver, name, args)
         return target
 
+    def class_from_string(self, string: str):
+        try:
+            return self.all_classes[string]
+        except KeyError:
+            raise KeyError("No driver/resource/protocol of type '{}' in factory, perhaps not registered?".format(string))
+
+    def _insert_into_all(self, cls):
+        classes = inspect.getmro(cls)
+        for cl in classes:
+            if not self.all_classes.get(cl.__name__):
+                self.all_classes[cl.__name__] = cl
 
 #: Global TargetFactory instance
 #:

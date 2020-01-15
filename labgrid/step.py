@@ -207,7 +207,7 @@ def step(*, title=None, args=[], result=False, tag=None):  # pylint: disable=unu
         def wrapper(*_args, **_kwargs):
             bound = signature.bind_partial(*_args, **_kwargs)
             bound.apply_defaults()
-            source = bound.arguments.get('self')
+            source = func.__self__ if inspect.ismethod(func) else bound.arguments.get('self')
             step = steps.get_new(title, tag, source)
             # optionally pass the step object
             if 'step' in signature.parameters:

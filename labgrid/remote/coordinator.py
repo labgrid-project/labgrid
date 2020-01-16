@@ -228,7 +228,7 @@ class CoordinatorComponent(ApplicationSession):
 
     @locked
     async def onLeave(self, details):
-        self.save()
+        await self.save()
         if self.poll_task:
             self.poll_task.cancel()
             await asyncio.wait([self.poll_task])
@@ -236,7 +236,7 @@ class CoordinatorComponent(ApplicationSession):
 
     @locked
     async def onDisconnect(self):
-        self.save()
+        await self.save()
         if self.poll_task:
             self.poll_task.cancel()
             await asyncio.wait([self.poll_task])
@@ -245,7 +245,7 @@ class CoordinatorComponent(ApplicationSession):
     async def _poll_step(self):
         # save changes
         if self.save_scheduled:
-            self.save()
+            await self.save()
         # poll exporters
         for session in list(self.sessions.values()):
             if isinstance(session, ExporterSession):
@@ -288,18 +288,19 @@ class CoordinatorComponent(ApplicationSession):
     def save_later(self):
         self.save_scheduled = True
 
-    def save(self):
+    async def save(self):
         self.save_scheduled = False
 
-        data = self._get_resources()
-        data = yaml.dump(data, default_flow_style=False)
-        data = data.encode()
-        atomic_replace('resources.yaml', data)
+        resources = self._get_resources()
+        resources = yaml.dump(resources, default_flow_style=False)
+        resources = resources.encode()
+        places = self._get_places()
+        places = yaml.dump(places, default_flow_style=False)
+        places = places.encode()
 
-        data = self._get_places()
-        data = yaml.dump(data, default_flow_style=False)
-        data = data.encode()
-        atomic_replace('places.yaml', data)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, atomic_replace, 'resources.yaml', resources)
+        await loop.run_in_executor(None, atomic_replace, 'places.yaml', places)
 
     def load(self):
         try:

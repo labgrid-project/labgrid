@@ -541,6 +541,9 @@ class ExporterSession(ApplicationSession):
                     continue
                 if changed:
                     await self.update_resource(group_name, resource_name)
+                else:
+                    # let other tasks run, see https://github.com/python/asyncio/issues/284
+                    await asyncio.sleep(0)
 
     async def poll(self):
         while True:

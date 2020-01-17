@@ -6,7 +6,9 @@ addons:
       libow-dev
       openssh-server
       openssh-client
-
+env:
+  global:
+    - CURRENT_UID=$(id -u):$(id -g)
 python:
   - "3.5"
   - "3.6"
@@ -36,6 +38,8 @@ matrix:
         - docker
       script:
         - ./docker/build.sh
+        - docker-compose -f docker/staging/docker-compose.yml up --exit-code-from client client
+        - docker-compose -f docker/staging/docker-compose.yml down
         - if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ "$TRAVIS_BRANCH" = "master" ] && [ "$DOCKER_USERNAME" != "" ] && [ "$DOCKER_TOKEN" != "" ]; then
           echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin;
           docker images;

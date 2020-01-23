@@ -45,6 +45,10 @@ Breaking changes in 0.3.0
   setup the cleanup job.
 - ``@attr.s(cmp=False)`` is deprecated and all classes have been moved to
   ``@attr.s(eq=False)``, this release requires attrs version 19.2.0
+- Coordinator work dir is now set to the same dir as the crossbar configuration
+  dir. Hence coordinator specific files like ``places.yaml`` and
+  ``resources.yaml`` are now also stored in the crossbar configuration folder.
+  Previously it would use ``..``.
 
 Release 0.2.0 (released Jan 4, 2019)
 ------------------------------------

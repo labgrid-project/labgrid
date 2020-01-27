@@ -198,6 +198,11 @@ by running ``crossbar start`` inside of the repository.
           crossbar is a network messaging framework for building distributed
           applications, which labgrid plugs into.
 
+.. note:: For long running deployments, you should copy and customize the
+	  ``.crossbar/config.yaml`` file for your use case. This includes
+	  setting a different ``workdir`` and may include changing the running
+	  port.
+
 Exporter
 ~~~~~~~~
 

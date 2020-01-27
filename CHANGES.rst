@@ -51,6 +51,7 @@ Breaking changes in 0.3.0
   dir. Hence coordinator specific files like ``places.yaml`` and
   ``resources.yaml`` are now also stored in the crossbar configuration folder.
   Previously it would use ``..``.
+- The ``HawkbitTestClient`` and ``USBStick`` classes have been removed
 
 Release 0.2.0 (released Jan 4, 2019)
 ------------------------------------

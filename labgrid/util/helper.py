@@ -60,7 +60,7 @@ class ProcessWrapper:
                 res.extend(parts)
                 for part in parts:
                     for callback in self.callbacks:
-                        callback(part)
+                        callback(part, process)
             process.poll()
             if process.returncode is not None:
                 break
@@ -73,7 +73,7 @@ class ProcessWrapper:
             if buf[-1] != b'\n':
                 buf += b'\n'
             for callback in self.callbacks:
-                callback(buf)
+                callback(buf, process)
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode,
                                                 command,
@@ -93,7 +93,7 @@ class ProcessWrapper:
         self.callbacks.remove(callback)
 
     @staticmethod
-    def log_callback(message):
+    def log_callback(message, process):
         """Logs process output message along with its pid."""
         import logging
         logger = logging.getLogger("Process")
@@ -102,7 +102,7 @@ class ProcessWrapper:
             logger.info(message)
 
     @staticmethod
-    def print_callback(message):
+    def print_callback(message, _):
         """Prints process output message."""
         message = message.decode(encoding="utf-8", errors="replace")
         print("\r{}".format(message), end='')

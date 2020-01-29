@@ -1249,7 +1249,7 @@ def find_any_role_with_place(config):
 def main():
     processwrapper.enable_print()
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.WARNING,
         format='%(levelname)7s: %(message)s',
         stream=sys.stderr,
     )
@@ -1556,7 +1556,9 @@ def main():
         args.leftover = leftover
 
 
-    if args.debug:
+    if args.verbose:
+        logging.getLogger().setLevel(logging.INFO)
+    if args.debug or args.verbose > 1:
         logging.getLogger().setLevel(logging.DEBUG)
 
     if not args.config and args.state:

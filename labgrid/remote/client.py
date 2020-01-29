@@ -1247,7 +1247,7 @@ def find_any_role_with_place(config):
     return None, None
 
 def main():
-    processwrapper.enable_print()
+    processwrapper.enable_logging()
     logging.basicConfig(
         level=logging.WARNING,
         format='%(levelname)7s: %(message)s',

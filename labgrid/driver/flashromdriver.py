@@ -49,7 +49,6 @@ class FlashromDriver(Driver, BootstrapProtocol):
         arg_list = list(args)
         arg_list.append('-p')
         arg_list.append('{}'.format(self.flashrom_resource.programmer))
-        self.logger.debug('Call: %s with args: %s', self.tool, arg_list)
         processwrapper.check_output(self._get_flashrom_prefix() + arg_list)
 
     @Driver.check_active

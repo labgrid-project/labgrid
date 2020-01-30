@@ -107,9 +107,17 @@ class ProcessWrapper:
         Loglevel is logging.INFO."""
         self.register(ProcessWrapper.log_callback)
 
+    def disable_logging(self):
+        """Disables process output logging."""
+        self.unregister(ProcessWrapper.log_callback)
+
     def enable_print(self):
         """Enables process output to print."""
         self.register(ProcessWrapper.print_callback)
+
+    def disable_print(self):
+        """Disables process output printing."""
+        self.unregister(ProcessWrapper.print_callback)
 
 
 processwrapper = ProcessWrapper()

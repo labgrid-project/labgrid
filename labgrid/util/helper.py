@@ -42,6 +42,8 @@ class ProcessWrapper:
         process = subprocess.Popen(command, stderr=sfd,
                                    stdout=sfd, bufsize=0)
 
+        logger.log(ProcessWrapper.loglevel, "[%d] command: %s", process.pid, " ".join(command))
+
         # do not register/unregister already registered print_callback
         if ProcessWrapper.print_callback in self.callbacks:
             print_on_silent_log = False
@@ -113,7 +115,7 @@ class ProcessWrapper:
         logger = logging.getLogger("Process")
         message = message.decode(encoding="utf-8", errors="replace").strip("\n")
         if message:
-            logger.log(ProcessWrapper.loglevel, message)
+            logger.log(ProcessWrapper.loglevel, "[%d] %s", process.pid, message)
 
     @staticmethod
     def print_callback(message, _):

@@ -1,5 +1,6 @@
 import fcntl
 import os
+import logging
 import pty
 import select
 import subprocess
@@ -28,16 +29,26 @@ def get_user():
 @attr.s
 class ProcessWrapper:
     callbacks = attr.ib(default=attr.Factory(list))
+    loglevel = logging.INFO
 
     @step(args=['command'], result=True, tag='process')
-    def check_output(self, command):
+    def check_output(self, command, *, print_on_silent_log=False):
         """Run a command and supply the output to callback functions"""
+        logger = logging.getLogger("Process")
         res = []
         mfd, sfd = pty.openpty()
         flags = fcntl.fcntl(mfd, fcntl.F_GETFL)
         fcntl.fcntl(mfd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
         process = subprocess.Popen(command, stderr=sfd,
                                    stdout=sfd, bufsize=0)
+
+        # do not register/unregister already registered print_callback
+        if ProcessWrapper.print_callback in self.callbacks:
+            print_on_silent_log = False
+
+        if print_on_silent_log and logger.getEffectiveLevel() > ProcessWrapper.loglevel:
+            self.enable_print()
+
         # close sfd so we notice when the child is gone
         os.close(sfd)
         # get a file object from the fd
@@ -74,6 +85,10 @@ class ProcessWrapper:
                 buf += b'\n'
             for callback in self.callbacks:
                 callback(buf, process)
+
+        if print_on_silent_log and logger.getEffectiveLevel() > ProcessWrapper.loglevel:
+            self.disable_print()
+
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode,
                                                 command,
@@ -95,11 +110,10 @@ class ProcessWrapper:
     @staticmethod
     def log_callback(message, process):
         """Logs process output message along with its pid."""
-        import logging
         logger = logging.getLogger("Process")
         message = message.decode(encoding="utf-8", errors="replace").strip("\n")
         if message:
-            logger.info(message)
+            logger.log(ProcessWrapper.loglevel, message)
 
     @staticmethod
     def print_callback(message, _):
@@ -108,8 +122,7 @@ class ProcessWrapper:
         print("\r{}".format(message), end='')
 
     def enable_logging(self):
-        """Enables process output to the logging interface.
-        Loglevel is logging.INFO."""
+        """Enables process output to the logging interface."""
         self.register(ProcessWrapper.log_callback)
 
     def disable_logging(self):

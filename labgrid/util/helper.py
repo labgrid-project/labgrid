@@ -56,7 +56,7 @@ class ProcessWrapper:
 
             if raw:
                 buf += raw
-                *parts, buf = buf.split(b'\r\n')
+                *parts, buf = buf.split(b'\r')
                 res.extend(parts)
                 for part in parts:
                     for callback in self.callbacks:
@@ -70,15 +70,17 @@ class ProcessWrapper:
         if buf:
             # process incomplete line
             res.append(buf)
+            if buf[-1] != b'\n':
+                buf += b'\n'
             for callback in self.callbacks:
                 callback(buf)
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode,
                                                 command,
-                                                output=b'\n'.join(res))
+                                                output=b'\r'.join(res))
         # this converts '\r\n' to '\n' to be more compatible to the behaviour
         # of the normal subprocess module
-        return b'\n'.join(res)
+        return b'\n'.join([r.strip(b'\n') for r in res])
 
     def register(self, callback):
         """Register a callback with the ProcessWrapper"""
@@ -95,12 +97,15 @@ class ProcessWrapper:
         """Logs process output message along with its pid."""
         import logging
         logger = logging.getLogger("Process")
-        logger.info(message.decode(encoding="utf-8", errors="replace"))
+        message = message.decode(encoding="utf-8", errors="replace").strip("\n")
+        if message:
+            logger.info(message)
 
     @staticmethod
     def print_callback(message):
         """Prints process output message."""
-        print(message.decode(encoding="utf-8", errors="replace"))
+        message = message.decode(encoding="utf-8", errors="replace")
+        print("\r{}".format(message), end='')
 
     def enable_logging(self):
         """Enables process output to the logging interface.

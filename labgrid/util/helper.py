@@ -90,20 +90,26 @@ class ProcessWrapper:
         assert callback in self.callbacks
         self.callbacks.remove(callback)
 
+    @staticmethod
+    def log_callback(message):
+        """Logs process output message along with its pid."""
+        import logging
+        logger = logging.getLogger("Process")
+        logger.info(message.decode(encoding="utf-8", errors="replace"))
+
+    @staticmethod
+    def print_callback(message):
+        """Prints process output message."""
+        print(message.decode(encoding="utf-8", errors="replace"))
+
     def enable_logging(self):
         """Enables process output to the logging interface.
         Loglevel is logging.INFO."""
-        def log_callback(message):
-            import logging
-            logger = logging.getLogger("Process")
-            logger.info(message.decode(encoding="utf-8", errors="replace"))
-        self.register(log_callback)
+        self.register(ProcessWrapper.log_callback)
 
     def enable_print(self):
         """Enables process output to print."""
-        def print_callback(message):
-            print(message.decode(encoding="utf-8", errors="replace"))
-        self.register(print_callback)
+        self.register(ProcessWrapper.print_callback)
 
 
 processwrapper = ProcessWrapper()

@@ -115,7 +115,8 @@ class USBStorageDriver(Driver):
             raise ValueError
 
         processwrapper.check_output(
-            self.storage.command_prefix + args
+            self.storage.command_prefix + args,
+            print_on_silent_log=True
         )
 
     @Driver.check_active

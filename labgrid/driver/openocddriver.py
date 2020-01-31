@@ -31,27 +31,18 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.logger = logging.getLogger("{}:{}".format(self, self.target))
-        self.config = self.resolve_path_str_or_list(self.config)
-        self.search = self.resolve_path_str_or_list(self.search)
 
         # FIXME make sure we always have an environment or config
         if self.target.env:
             self.tool = self.target.env.config.get_tool('openocd') or 'openocd'
+            self.config = self.target.env.config.resolve_path_str_or_list(self.config)
+            self.search = self.target.env.config.resolve_path_str_or_list(self.search)
         else:
             self.tool = 'openocd'
-
-    def resolve_path_str_or_list(self, path):
-        if isinstance(path, str):
-            if self.target.env:
-                return [self.target.env.config.resolve_path(path)]
-            return [path]
-
-        if isinstance(path, list):
-            if self.target.env:
-                return [self.target.env.config.resolve_path(p) for p in path]
-            # fall-through
-
-        return path
+            if isinstance(self.config, str):
+                self.config = [self.config]
+            if isinstance(self.search, str):
+                self.search = [self.search]
 
     def _get_usb_path_cmd(self):
         # OpenOCD supports "adapter usb location" since a1b308ab, if the command is not known

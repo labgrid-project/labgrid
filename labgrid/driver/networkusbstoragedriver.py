@@ -49,6 +49,14 @@ class NetworkUSBStorageDriver(Driver):
     @Driver.check_active
     @step(args=['filename'])
     def write_image(self, filename=None, mode=Mode.DD):
+        """
+        Writes the file specified by filename or if not specified by config image subkey to the
+        bound USB storage.
+
+        Args:
+            filename (str): optional, path to the image to write to bound USB storage
+            mode (Mode): optional, Mode.DD or Mode.BMAPTOOL (defaults to Mode.DD)
+        """
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
         assert filename, "write_image requires a filename"

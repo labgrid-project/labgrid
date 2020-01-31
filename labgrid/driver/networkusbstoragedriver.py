@@ -48,14 +48,16 @@ class NetworkUSBStorageDriver(Driver):
 
     @Driver.check_active
     @step(args=['filename'])
-    def write_image(self, filename=None, mode=Mode.DD):
+    def write_image(self, filename=None, mode=Mode.DD, partition=None):
         """
         Writes the file specified by filename or if not specified by config image subkey to the
-        bound USB storage.
+        bound USB storage root device or partition.
 
         Args:
             filename (str): optional, path to the image to write to bound USB storage
             mode (Mode): optional, Mode.DD or Mode.BMAPTOOL (defaults to Mode.DD)
+            partition (int or None): optional, write to the specified partition or None for writing
+                to root device (defaults to None)
         """
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
@@ -77,11 +79,13 @@ class NetworkUSBStorageDriver(Driver):
         else:
             raise ExecutionError("Timeout while waiting for medium")
 
+        partition = "" if partition is None else partition
+
         if mode == Mode.DD:
             args = [
                 "dd",
                 "if={}".format(mf.get_remote_path()),
-                "of={}".format(self.storage.path),
+                "of={}{}".format(self.storage.path, partition),
                 "status=progress",
                 "bs=4M",
                 "conv=fdatasync"
@@ -91,7 +95,7 @@ class NetworkUSBStorageDriver(Driver):
                 "bmaptool",
                 "copy",
                 "{}".format(mf.get_remote_path()),
-                "{}".format(self.storage.path),
+                "{}{}".format(self.storage.path, partition),
             ]
         else:
             raise ValueError

@@ -253,7 +253,6 @@ A USBMassStorage resource describes a USB memory stick or similar device.
 - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
-  - `USBStorageDriver`_
   - `NetworkUSBStorageDriver`_
 
 NetworkUSBMassStorage
@@ -1354,26 +1353,6 @@ Implements:
 Arguments:
   - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
   - usb_loader (srt): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
-
-USBStorageDriver
-~~~~~~~~~~~~~~~~
-A USBStorageDriver allows access to a USB stick or similar device via the `USBMassStorage`
-resource.
-
-Binds to:
-  storage:
-    - `USBMassStorage`_
-
-Implements:
-  - None (yet)
-
-.. code-block:: yaml
-
-   USBStorageDriver: {}
-
-
-Arguments:
-  - None
 
 NetworkUSBStorageDriver
 ~~~~~~~~~~~~~~~~~~~~~~~

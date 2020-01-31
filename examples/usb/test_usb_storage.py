@@ -3,5 +3,5 @@ def test_usb_storage(target):
     assert r.path is not None
 
 def test_usb_storage_size(target):
-    d = target.get_driver('USBStorageDriver')
+    d = target.get_driver('NetworkUSBStorageDriver')
     assert d.get_size() > 0

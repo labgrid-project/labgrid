@@ -67,6 +67,27 @@ class Config:
 
         return os.path.join(self.base, path)
 
+    def resolve_path_str_or_list(self, path):
+        """
+        Resolves a single path or multiple paths. Always returns a list (containing a single or
+        multiple resolved paths).
+
+        Args:
+            path (str, list): path(s) to resolve
+
+        Returns:
+            list: absolute path(s
+
+        Raises:
+            TypeError: if input is neither str nor list
+        """
+        if isinstance(path, str):
+            return [self.resolve_path(path)]
+        elif isinstance(path, list):
+            return [self.resolve_path(p) for p in path]
+
+        raise TypeError("path must be str or list")
+
     def get_tool(self, tool):
         """Retrieve an entry from the tools subkey
 

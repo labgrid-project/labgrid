@@ -119,17 +119,16 @@ class Target:
         if not found:
             if other_names:
                 raise NoResourceFoundError(
-                    "all resources matching {cls} found in target {target} have other names: {other_names}".format(  # pylint: disable=line-too-long
+                    "all resources matching {cls} found in {target} have other names: {other_names}".format(  # pylint: disable=line-too-long
                         cls=cls, target=self, other_names=other_names)
                 )
 
             raise NoResourceFoundError(
-                "no resource matching {cls} found in target {target}".format(cls=cls, target=self)
+                "no resource matching {cls} found in {target}".format(cls=cls, target=self)
             )
         elif len(found) > 1:
             raise NoResourceFoundError(
-                "multiple resources matching {cls} found in target {target}".format(
-                    cls=cls, target=self)
+                "multiple resources matching {cls} found in {target}".format(cls=cls, target=self)
             )
         if wait_avail:
             self.await_resources(found)
@@ -155,12 +154,12 @@ class Target:
         if not found:
             if other_names:
                 raise NoDriverFoundError(
-                    "all {active}drivers matching {cls} found in target {target} have other names: {other_names}".format(  # pylint: disable=line-too-long
+                    "all {active}drivers matching {cls} found in {target} have other names: {other_names}".format(  # pylint: disable=line-too-long
                         active="active " if active else "", cls=cls, target=self, other_names=other_names)
                 )
 
             raise NoDriverFoundError(
-                "no {active}driver matching {cls} found in target {target}".format(
+                "no {active}driver matching {cls} found in {target}".format(
                     active="active " if active else "", cls=cls, target=self
                 )
             )
@@ -180,7 +179,7 @@ class Target:
                 found = prio_found
             else:
                 raise NoDriverFoundError(
-                    "multiple {active}drivers matching {cls} found in target {target} with the same priorities".format(  # pylint: disable=line-too-long
+                    "multiple {active}drivers matching {cls} found in {target} with the same priorities".format(  # pylint: disable=line-too-long
                         active="active " if active else "", cls=cls, target=self)
                 )
         if activate:
@@ -294,7 +293,7 @@ class Target:
             supplier_name = mapping.pop(name, None)
             if explicit and supplier_name is None:
                 raise BindingError(
-                    "supplier for {name} ({requirements}) of {driver} in target {target} requires an explicit name".format(  # pylint: disable=line-too-long
+                    "supplier for {name} ({requirements}) of {driver} in {target} requires an explicit name".format(  # pylint: disable=line-too-long
                         name=name, requirements=requirements, driver=client, target=self)
                 )
             # use sets even for a single requirement and make a local copy
@@ -332,7 +331,7 @@ class Target:
                     raise errors[0]
                 else:
                     raise NoSupplierFoundError(
-                        "no supplier matching {requirements} found in target {target} (errors: {errors})".format(  # pylint: disable=line-too-long
+                        "no supplier matching {requirements} found in {target} (errors: {errors})".format(  # pylint: disable=line-too-long
                             requirements=requirements, target=self, errors=errors)
                     )
             elif len(suppliers) > 1:

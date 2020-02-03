@@ -117,14 +117,16 @@ class Target:
                 continue
             found.append(res)
         if not found:
+            name_msg = " named '{}'".format(name) if name else ""
             if other_names:
                 raise NoResourceFoundError(
-                    "all resources matching {cls} found in {target} have other names: {other_names}".format(  # pylint: disable=line-too-long
-                        cls=cls, target=self, other_names=other_names)
+                    "no {cls} resource{name} found in {target}, matching resources with other names: {other_names}".format(  # pylint: disable=line-too-long
+                        cls=cls, name=name_msg, target=self, other_names=other_names)
                 )
 
             raise NoResourceFoundError(
-                "no resource matching {cls} found in {target}".format(cls=cls, target=self)
+                "no {cls} resource{name} found in {target}".format(
+                    cls=cls, name=name_msg, target=self)
             )
         elif len(found) > 1:
             raise NoResourceFoundError(
@@ -152,15 +154,17 @@ class Target:
                 continue
             found.append(drv)
         if not found:
+            name_msg = " named '{}'".format(name) if name else ""
             if other_names:
                 raise NoDriverFoundError(
-                    "all {active}drivers matching {cls} found in {target} have other names: {other_names}".format(  # pylint: disable=line-too-long
-                        active="active " if active else "", cls=cls, target=self, other_names=other_names)
+                    "no {active}{cls} driver{name} found in {target}, matching resources with other names: {other_names}".format(  # pylint: disable=line-too-long
+                        active="active " if active else "", cls=cls, name=name_msg, target=self,
+                        other_names=other_names)
                 )
 
             raise NoDriverFoundError(
-                "no {active}driver matching {cls} found in {target}".format(
-                    active="active " if active else "", cls=cls, target=self
+                "no {active}{cls} driver{name} found in {target}".format(
+                    active="active " if active else "", cls=cls, name=name_msg, target=self
                 )
             )
         elif len(found) > 1:

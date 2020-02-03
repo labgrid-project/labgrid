@@ -24,6 +24,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     priorities = {CommandProtocol: 10, FileTransferProtocol: 10}
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     stderr_merge = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    codec = attr.ib(default="utf-8", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -114,10 +115,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     @step(args=['cmd'], result=True)
-    def run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
-        return self._run(cmd, codec=codec, decodeerrors=decodeerrors)
+    def run(self, cmd, timeout=None): # pylint: disable=unused-argument
+        return self._run(cmd)
 
-    def _run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
+    def _run(self, cmd, timeout=None): # pylint: disable=unused-argument
         """Execute `cmd` on the target.
 
         This method runs the specified `cmd` as a command on its target.
@@ -149,12 +150,12 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             )
 
         stdout, stderr = sub.communicate(timeout=timeout)
-        stdout = stdout.decode(codec, decodeerrors).split('\n')
+        stdout = stdout.decode(self.codec, self.decodeerrors).split('\n')
         stdout.pop()
         if stderr is None:
             stderr = []
         else:
-            stderr = stderr.decode(codec, decodeerrors).split('\n')
+            stderr = stderr.decode(self.codec, self.decodeerrors).split('\n')
             stderr.pop()
         return (stdout, stderr, sub.returncode)
 

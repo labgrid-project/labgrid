@@ -24,7 +24,7 @@ class TestUBootDriver:
         d._run = mocker.MagicMock(return_value=(['success'], [], 0))
         res = d.run_check("test")
         assert res == ['success']
-        d._run.assert_called_once_with("test", timeout=30, codec='utf-8', decodeerrors='strict')
+        d._run.assert_called_once_with("test", timeout=30)
         d._run.reset_mock()
         res = d.run("test")
         assert res == (['success'], [], 0)
@@ -38,7 +38,7 @@ class TestUBootDriver:
         d._run = mocker.MagicMock(return_value=(['error'], [], 1))
         with pytest.raises(ExecutionError):
             res = d.run_check("test")
-        d._run.assert_called_once_with("test", timeout=30, codec='utf-8', decodeerrors='strict')
+        d._run.assert_called_once_with("test", timeout=30)
         d._run.reset_mock()
         res = d.run("test")
         assert res == (['error'], [], 1)

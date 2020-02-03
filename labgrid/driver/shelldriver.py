@@ -42,7 +42,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
     console_ready = attr.ib(default="", validator=attr.validators.instance_of(str))
     await_login_timeout = attr.ib(default=2, validator=attr.validators.instance_of(int))
-
+    codec = attr.ib(default="utf-8", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -73,7 +73,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def on_deactivate(self):
         self._status = 0
 
-    def _run(self, cmd, *, timeout=30.0, codec="utf-8", decodeerrors="strict"):
+    def _run(self, cmd, *, timeout=30.0):
         """
         Runs the specified cmd on the shell and returns the output.
 
@@ -92,7 +92,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             marker=marker, prompt=self.prompt
         ), timeout=timeout)
         # Remove VT100 Codes, split by newline and remove surrounding newline
-        data = self.re_vt100.sub('', match.group(1).decode(codec, decodeerrors)).split('\r\n')
+        data = self.re_vt100.sub('', match.group(1).decode(self.codec, self.decodeerrors))
+        data = data.split('\r\n')
         if data and not data[-1]:
             del data[-1]
         self.logger.debug("Received Data: %s", data)
@@ -102,8 +103,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     @step(args=['cmd'], result=True)
-    def run(self, cmd, timeout=30.0, codec="utf-8", decodeerrors="strict"):
-        return self._run(cmd, timeout=timeout, codec=codec, decodeerrors=decodeerrors)
+    def run(self, cmd, timeout=30.0):
+        return self._run(cmd, timeout=timeout)
 
     @step()
     def _await_login(self):

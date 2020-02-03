@@ -41,6 +41,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     boot_expression = attr.ib(default=r"U-Boot 20\d+", validator=attr.validators.instance_of(str))
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
+    codec = attr.ib(default="utf-8", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -65,8 +66,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self._status = 0
 
-    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
-        # TODO: use codec, decodeerrors
+    def _run(self, cmd: str, *, timeout: int = 30):
+        # TODO: use self.codec, self.decodeerrors
         # TODO: Shell Escaping for the U-Boot Shell
         marker = gen_marker()
         cmp_command = """echo '{}''{}'; {}; echo "$?"; echo '{}''{}';""".format(

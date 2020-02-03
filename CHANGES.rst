@@ -56,6 +56,9 @@ Breaking changes in 0.3.0
   renamed to `USBStorageDriver`.
   A deprecated `NetworkUSBStorageDriver` exists temporarily for compatibility
   reasons.
+- ``codec`` and ``decodeerrors`` are no longer ``run()``/``run_check()``
+  kwargs, but driver (``codec``) and `CommandMixin` (``decodeerrors``)
+  attributes.
 
 Release 0.2.0 (released Jan 4, 2019)
 ------------------------------------

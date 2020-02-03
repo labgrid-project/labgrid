@@ -33,6 +33,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
+    codec = attr.ib(default="utf-8", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -59,10 +60,10 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     @Driver.check_active
     @step(args=['cmd'])
-    def run(self, cmd: str, *, timeout: int = 30):  # pylint: disable=unused-argument
+    def run(self, cmd: str, *, timeout: int = 30):
         return self._run(cmd, timeout=timeout)
 
-    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
+    def _run(self, cmd: str, *, timeout: int = 30):
         """
         Runs the specified command on the shell and returns the output.
 
@@ -73,7 +74,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Returns:
             Tuple[List[str],List[str], int]: if successful, None otherwise
         """
-        # FIXME: use codec, decodeerrors
+        # FIXME: use self.codec, self.decodeerrors
         marker = gen_marker()
         # hide marker from expect
         hidden_marker = '"{}""{}"'.format(marker[:4], marker[4:])

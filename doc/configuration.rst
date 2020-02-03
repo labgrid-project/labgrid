@@ -817,6 +817,7 @@ Arguments:
     to pass before sending a newline to device.
   - console_ready (regex): optional, pattern used by the kernel to inform
     the user that a console can be activated by pressing enter.
+  - codec (str, default="utf-8"): optional, encoding used to decode output bytes
 
 .. _conf-sshdriver:
 
@@ -849,6 +850,7 @@ Arguments:
     (only used if password is not set)
   - stderr_merge (bool): set to True to make `run()` return stderr merged with
       stdout, and an empty list as second element.
+  - codec (str, default="utf-8"): optional, encoding used to decode output bytes
 
 UBootDriver
 ~~~~~~~~~~~
@@ -880,6 +882,7 @@ Arguments:
   - bootstring (str): optional, regex to match on Linux Kernel boot
   - login_timeout (int): optional, timeout for login prompt detection in
     seconds (default 60)
+  - codec (str, default="utf-8"): optional, encoding used to decode output bytes
 
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~
@@ -932,6 +935,7 @@ Arguments:
   - boot_expression (str): optional, regex to match the U-Boot start string
     defaults to "U-Boot 20\d+"
   - login_timeout (str): optional, timeout for the password/login detection
+  - codec (str, default="utf-8"): optional, encoding used to decode output bytes
 
 BareboxDriver
 ~~~~~~~~~~~~~
@@ -957,6 +961,7 @@ Arguments:
   - bootstring (regex, default="Linux version \d"): succesfully jumped into the kernel
   - password (str): optional, password to use for access to the shell
   - login_timeout (int): optional, timeout for access to the shell
+  - codec (str, default="utf-8"): optional, encoding used to decode output bytes
 
 ExternalConsoleDriver
 ~~~~~~~~~~~~~~~~~~~~~

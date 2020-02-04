@@ -164,17 +164,17 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         return 1
 
     @Driver.check_active
-    @step(args=['filename', 'remotepath'])
-    def put(self, filename, remotepath=''):
+    @step(args=['local_file', 'remote_file'])
+    def put(self, local_file: str, remote_file: str = ''):
         transfer_cmd = [
             "scp",
             *self.ssh_prefix,
             "-P", str(self.networkservice.port),
-            filename,
+            local_file,
             "{user}@{host}:{remotepath}".format(
                 user=self.networkservice.username,
                 host=self.networkservice.address,
-                remotepath=remotepath)
+                remotepath=remote_file)
             ]
 
         try:
@@ -191,8 +191,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             )
 
     @Driver.check_active
-    @step(args=['filename', 'destination'])
-    def get(self, filename, destination="."):
+    @step(args=['remote_file', 'local_file'])
+    def get(self, remote_file: str, local_file: str = "."):
         transfer_cmd = [
             "scp",
             *self.ssh_prefix,
@@ -200,8 +200,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             "{user}@{host}:{filename}".format(
                 user=self.networkservice.username,
                 host=self.networkservice.address,
-                filename=filename),
-            destination
+                filename=remote_file),
+            local_file
             ]
 
         try:

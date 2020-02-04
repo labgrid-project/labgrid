@@ -332,8 +332,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # use the cached string template to make the full command with parameters
         return self._xmodem_cached_sx_cmd.format(filename=filename)
 
-    @step(title='put_bytes', args=['remotefile'])
-    def _put_bytes(self, buf: bytes, remotefile: str):
+    @step(title='put_bytes', args=['remote_file'])
+    def _put_bytes(self, buf: bytes, remote_file: str):
         # OK, a little explanation on what we're doing here:
         # XMODEM is a fairly simple, but also a fairly historic protocol. For example, all packets
         # carry exactly 128 bytes of payload, and if the file being sent is not a multiple of 128
@@ -368,7 +368,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.console.expect(self.prompt, timeout=30)
 
         # truncate the file to get rid of CPMEOF padding
-        dd_cmd = "dd if='{}' of='{}' bs=1 count={}".format(tmpfile, remotefile, len(buf))
+        dd_cmd = "dd if='{}' of='{}' bs=1 count={}".format(tmpfile, remote_file, len(buf))
         self.logger.debug('dd command: %s', dd_cmd)
         out, _, ret = self._run(dd_cmd)
 
@@ -378,7 +378,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                                  format(ret, out))
 
     @Driver.check_active
-    def put_bytes(self, buf: bytes, remotefile: str):
+    def put_bytes(self, buf: bytes, remote_file: str):
         """ Upload a file to the target.
         Will silently overwrite the remote file if it already exists.
 
@@ -389,11 +389,11 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         Raises:
             ExecutionError: if something went wrong
         """
-        return self._put_bytes(buf, remotefile)
+        return self._put_bytes(buf, remote_file)
 
-    @step(title='put', args=['localfile', 'remotefile'])
-    def _put(self, localfile: str, remotefile: str):
-        with open(localfile, 'rb') as fh:
+    @step(title='put', args=['local_file', 'remote_file'])
+    def _put(self, local_file: str, remote_file: str):
+        with open(local_file, 'rb') as fh:
             buf = fh.read(None)
             self._put_bytes(buf, remote_file)
 
@@ -412,18 +412,18 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """
         self._put(local_file, remote_file)
 
-    @step(title='get_bytes', args=['remotefile'])
-    def _get_bytes(self, remotefile: str):
+    @step(title='get_bytes', args=['remote_file'])
+    def _get_bytes(self, remote_file: str):
         buf = io.BytesIO()
 
-        cmd = self._get_xmodem_sx_cmd(remotefile)
+        cmd = self._get_xmodem_sx_cmd(remote_file)
         self.logger.info('XMODEM send command on target: %s', cmd)
 
         # get file size to remove XMODEM's CPMEOF padding at the end of the last packet
-        out, _, ret = self._run("stat '{}'".format(remotefile))
+        out, _, ret = self._run("stat '{}'".format(remote_file))
         match = re.search(r'Size:\s+(?P<size>\d+)', '\n'.join(out))
         if ret != 0 or not match or not match.group("size"):
-            raise ExecutionError("Could not stat '{}' on target".format(remotefile))
+            raise ExecutionError("Could not stat '{}' on target".format(remote_file))
 
         file_size = int(match.group('size'))
         self.logger.debug('file size on target is %d', file_size)
@@ -449,11 +449,11 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         return buf.read()
 
     @Driver.check_active
-    def get_bytes(self, remotefile: str):
+    def get_bytes(self, remote_file: str):
         """ Download a file from the target.
 
         Args:
-            remotefile (str): source filename on the target
+            remote_file (str): source filename on the target
 
         Returns:
             (bytes) file contents
@@ -461,12 +461,12 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         Raises:
             ExecutionError: if something went wrong
         """
-        return self._get_bytes(remotefile)
+        return self._get_bytes(remote_file)
 
-    @step(title='get', args=['remotefile', 'localfile'])
-    def _get(self, remotefile: str, localfile: str):
-        with open(localfile, 'wb') as fh:
-            buf = self._get_bytes(remotefile)
+    @step(title='get', args=['remote_file', 'local_file'])
+    def _get(self, remote_file: str, local_file: str):
+        with open(local_file, 'wb') as fh:
+            buf = self._get_bytes(remote_file)
             fh.write(buf)
 
     @Driver.check_active
@@ -531,6 +531,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         Raises:
             ExecutionError: if something went wrong
-            IOError: if the provided localfile could not be found
+            IOError: if the provided script_file could not be found
         """
         return self._run_script_file(scriptfile, *args, timeout=timeout)

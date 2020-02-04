@@ -3,9 +3,9 @@ import abc
 
 class FileTransferProtocol(abc.ABC):
     @abc.abstractmethod
-    def put(self, filename: str, remotepath: str):
+    def put(self, local_file: str, remote_file: str):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, filename: str, destination: str):
+    def get(self, remote_file: str, local_file: str):
         raise NotImplementedError

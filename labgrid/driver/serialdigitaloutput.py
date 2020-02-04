@@ -47,8 +47,8 @@ class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
 
     @Driver.check_active
     @step()
-    def set(self, value):
+    def set(self, status):
         if self.signal == "dtr":
-            self._p.dtr = value
+            self._p.dtr = status
         elif self.signal == "rts":
-            self._p.rts = value
+            self._p.rts = status

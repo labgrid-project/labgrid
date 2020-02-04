@@ -384,7 +384,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         Args:
             buf (bytes): file contents
-            remotefile (str): destination filename on the target
+            remote_file (str): destination filename on the target
 
         Raises:
             ExecutionError: if something went wrong
@@ -395,22 +395,22 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def _put(self, localfile: str, remotefile: str):
         with open(localfile, 'rb') as fh:
             buf = fh.read(None)
-            self._put_bytes(buf, remotefile)
+            self._put_bytes(buf, remote_file)
 
     @Driver.check_active
-    def put(self, localfile: str, remotefile: str):
+    def put(self, local_file: str, remote_file: str):
         """ Upload a file to the target.
         Will silently overwrite the remote file if it already exists.
 
         Args:
-            localfile (str): source filename on the local machine
-            remotefile (str): destination filename on the target
+            local_file (str): source filename on the local machine
+            remote_file (str): destination filename on the target
 
         Raises:
-            IOError: if the provided localfile could not be found
+            IOError: if the provided local_file could not be found
             ExecutionError: if something else went wrong
         """
-        self._put(localfile, remotefile)
+        self._put(local_file, remote_file)
 
     @step(title='get_bytes', args=['remotefile'])
     def _get_bytes(self, remotefile: str):
@@ -470,19 +470,19 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             fh.write(buf)
 
     @Driver.check_active
-    def get(self, remotefile: str, localfile: str):
+    def get(self, remote_file: str, local_file: str):
         """ Download a file from the target.
         Will silently overwrite the local file if it already exists.
 
         Args:
-            remotefile (str): source filename on the target
-            localfile (str): destination filename on the local machine (can be relative)
+            remote_file (str): source filename on the target
+            local_file (str): destination filename on the local machine (can be relative)
 
         Raises:
-            IOError: if localfile could not be written
+            IOError: if local_file could not be written
             ExecutionError: if something went wrong
         """
-        self._get(remotefile, localfile)
+        self._get(remote_file, local_file)
 
     @step(title='run_script', args=['data', 'timeout'])
     def _run_script(self, data: bytes, timeout: int = 60):

@@ -26,15 +26,16 @@ class CommandProtocol(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def wait_for(self):
+    def wait_for(self, command: str, pattern: str, *, timeout: int = 30, sleepduration: int = 1):
         """
         Wait for a shell command to return with the specified output
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def poll_until_success(self):
+    def poll_until_success(self, command: str, *, expected: int = 0, tries: int = None,
+                           timeout: int = 30, sleepduration: int = 1):
         """
-        Repeatedly call a shell command until it succeeds
+        Poll a command until a specific exit code is detected.
         """
         raise NotImplementedError

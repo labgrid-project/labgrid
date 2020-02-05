@@ -153,6 +153,20 @@ class NetworkAlteraUSBBlaster(RemoteUSBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class NetworkXilinxUSBJTAG(NetworkResource, ManagedResource):
+    hw_server_bin = attr.ib(default='hw_server')
+    agent_url = attr.ib(factory=str)
+    gdb_port = attr.ib(factory=int)
+    log_level = attr.ib(factory=list)
+    extra_args = attr.ib(factory=list)
+
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class NetworkSigrokUSBDevice(RemoteUSBResource):
     """The NetworkSigrokUSBDevice describes a remotely accessible sigrok USB device"""
     driver = attr.ib(

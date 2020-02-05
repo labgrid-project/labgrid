@@ -355,6 +355,30 @@ class AlteraUSBBlaster(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class XilinxUSBJTAG(USBResource):
+    hw_server_bin = attr.ib(default='hw_server')
+    agent_url = attr.ib(factory=str)
+    gdb_port = attr.ib(factory=int)
+    log_level = attr.ib(factory=list)
+    extra_args = attr.ib(factory=list)
+
+    def __attrs_post_init__(self):
+        self.match['DEVTYPE'] = 'usb_device'
+        super().__attrs_post_init__()
+
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("0403", "6010"),  # Trenz Electronic TE0790-03
+                         ("0403", "6014"),  # Digilent JTAG-SMT2/JTAG-HS3
+                         ("03fd", "0013"),  # Xilinx Platform Cable USB
+                         ("03fd", "0008")]: # Xilinx Platform Cable USB II
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class SigrokUSBDevice(USBResource):
     """The SigrokUSBDevice describes an attached sigrok device with driver and
     optional channel mapping, it is identified via usb using udev.

@@ -11,6 +11,7 @@ from .udev import USBSDMuxDevice
 from .udev import USBSDWireDevice
 from .udev import USBPowerPort
 from .udev import SiSPMPowerPort
+from .udev import XilinxUSBJTAG
 from .common import Resource, ResourceManager, ManagedResource
 from .ykushpowerport import YKUSHPowerPort
 from .xenamanager import XenaManager

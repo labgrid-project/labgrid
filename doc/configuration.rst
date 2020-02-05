@@ -553,6 +553,38 @@ Used by:
   - `OpenOCDDriver`_
   - `QuartusHPSDriver`_
 
+XilinxUSBJTAG
+~~~~~~~~~~~~~~~~
+A XilinxUSBJTAG resource describes a Xilinx-compatible USB JTAG adapter:
+
+- Digilent JTAG-HS3
+- Digilent JTAG-SMT2
+- Trenz Electronic TE0790-03
+- Xilinx Platform Cable USB
+- Xilinx Platform Cable USB II
+
+.. code-block:: yaml
+
+   XilinxUSBJTAG:
+     match:
+      'ID_SERIAL_SHORT': '210308A11F1A'
+     hw_server_bin: '/path/to/Xilinx/Vivado/2018.3/bin/hw_server'
+     agent_url: tcp::3121
+     gdb_port: 3000
+     log_level: [events, protocol]
+     extra_args: ['-S']
+
+- match (dict): key and value for a udev match, see `udev Matching`_
+- hw_server_bin (str): optional, path to `hw_server` binary. The minimum Vivado
+  hardware server version supported is 2018.3
+- agent_url (str): optional, agent listening port and protocol. By default, a
+  random free TCP port is chosen.
+- gdb_port (int): optional, base port number for Xilinx GDB server. By default,
+  a random free port is chosen.
+- log_level ([str]): optional, set log level as a list of categories. Run
+  `hw_server -h` to get all available categories.
+- extra_args ([str]): optional, extra arguments passed to `hw_server`
+
 USBDebugger
 ~~~~~~~~~~~
 An USBDebugger resource describes a JTAG USB adapter (for example an FTDI

@@ -117,18 +117,20 @@ class Target:
                 continue
             found.append(res)
         if not found:
+            name_msg = " named '{}'".format(name) if name else ""
             if other_names:
                 raise NoResourceFoundError(
-                    "all resources matching {} found in target {} have other names: {}".format(
-                        cls, self, other_names)
+                    "no {cls} resource{name} found in {target}, matching resources with other names: {other_names}".format(  # pylint: disable=line-too-long
+                        cls=cls, name=name_msg, target=self, other_names=other_names)
                 )
 
             raise NoResourceFoundError(
-                "no resource matching {} found in target {}".format(cls, self)
+                "no {cls} resource{name} found in {target}".format(
+                    cls=cls, name=name_msg, target=self)
             )
         elif len(found) > 1:
             raise NoResourceFoundError(
-                "multiple resources matching {} found in target {}".format(cls, self)
+                "multiple resources matching {cls} found in {target}".format(cls=cls, target=self)
             )
         if wait_avail:
             self.await_resources(found)
@@ -152,16 +154,17 @@ class Target:
                 continue
             found.append(drv)
         if not found:
+            name_msg = " named '{}'".format(name) if name else ""
             if other_names:
                 raise NoDriverFoundError(
-                    "all {}drivers matching {} found in target {} have other names: {}".format(
-                        "active " if active else "",
-                        cls, self, other_names)
+                    "no {active}{cls} driver{name} found in {target}, matching resources with other names: {other_names}".format(  # pylint: disable=line-too-long
+                        active="active " if active else "", cls=cls, name=name_msg, target=self,
+                        other_names=other_names)
                 )
 
             raise NoDriverFoundError(
-                "no {}driver matching {} found in target {}".format(
-                    "active " if active else "", cls, self
+                "no {active}{cls} driver{name} found in {target}".format(
+                    active="active " if active else "", cls=cls, name=name_msg, target=self
                 )
             )
         elif len(found) > 1:
@@ -180,8 +183,8 @@ class Target:
                 found = prio_found
             else:
                 raise NoDriverFoundError(
-                    "multiple {}drivers matching {} found in target {} with the same priorities".
-                    format("active " if active else "", cls, self)
+                    "multiple {active}drivers matching {cls} found in {target} with the same priorities".format(  # pylint: disable=line-too-long
+                        active="active " if active else "", cls=cls, target=self)
                 )
         if activate:
             self.activate(found[0])
@@ -294,8 +297,8 @@ class Target:
             supplier_name = mapping.pop(name, None)
             if explicit and supplier_name is None:
                 raise BindingError(
-                    "supplier for {} ({}) of {} in target {} requires an explicit name".format(
-                        name, requirements, client, self)
+                    "supplier for {name} ({requirements}) of {driver} in {target} requires an explicit name".format(  # pylint: disable=line-too-long
+                        name=name, requirements=requirements, driver=client, target=self)
                 )
             # use sets even for a single requirement and make a local copy
             if not isinstance(requirements, set):
@@ -332,8 +335,8 @@ class Target:
                     raise errors[0]
                 else:
                     raise NoSupplierFoundError(
-                        "no supplier matching {} found in target {} (errors: {})".format(
-                            requirements, self, errors)
+                        "no supplier matching {requirements} found in {target} (errors: {errors})".format(  # pylint: disable=line-too-long
+                            requirements=requirements, target=self, errors=errors)
                     )
             elif len(suppliers) > 1:
                 raise NoSupplierFoundError("conflicting suppliers matching {} found in target {}".format(requirements, self))  # pylint: disable=line-too-long

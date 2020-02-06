@@ -1,4 +1,5 @@
 import abc
+import re
 
 import attr
 import pytest
@@ -55,10 +56,11 @@ def test_getitem(target):
     assert target[AProtocol, "adriver"] is a
     with pytest.raises(NoDriverFoundError) as excinfo:
         target[A, "bdriver"]
-    assert "have other names" in excinfo.value.msg
+    assert "matching resources with other names" in excinfo.value.msg
     with pytest.raises(NoDriverFoundError) as excinfo:
         target[B, "adriver"]
-    assert "no active driver" in excinfo.value.msg
+    assert re.match("no active .*? driver named '{}' found in Target".format(a.name),
+                    excinfo.value.msg)
 
     a2 = A(target, None)
     target.activate(a2)

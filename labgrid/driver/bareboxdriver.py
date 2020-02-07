@@ -59,16 +59,16 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         self._status = 0
 
     @Driver.check_active
-    @step(args=['cmd'])
-    def run(self, cmd: str, *, timeout: int = 30):
-        return self._run(cmd, timeout=timeout)
+    @step(args=['command'])
+    def run(self, command: str, *, timeout: int = 30):
+        return self._run(command, timeout=timeout)
 
-    def _run(self, cmd: str, *, timeout: int = 30):
+    def _run(self, command: str, *, timeout: int = 30):
         """
         Runs the specified command on the shell and returns the output.
 
         Args:
-            cmd (str): command to run on the shell
+            command (str): command to run on the shell
             timeout (int): optional, timeout in seconds
 
         Returns:
@@ -79,7 +79,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # hide marker from expect
         hidden_marker = '"{}""{}"'.format(marker[:4], marker[4:])
         cmp_command = '''echo -o /cmd {cmd}; echo {marker}; sh /cmd; echo {marker} $?;'''.format(
-            cmd=shlex.quote(cmd), marker=hidden_marker)
+            cmd=shlex.quote(command), marker=hidden_marker)
         if self._status == 1:
             self.console.sendline(cmp_command)
             _, _, match, _ = self.console.expect(

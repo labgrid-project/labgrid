@@ -59,13 +59,13 @@ class SmallUBootDriver(UBootDriver):
         # wait until UBoot has reached it's prompt
         self.console.expect(self.prompt)
 
-    def _run(self, cmd: str, *, timeout: int = 30):
+    def _run(self, command: str, *, timeout: int = 30):
         """
-        If Uboot is in Command-Line mode: Run command cmd and return it's
+        If Uboot is in Command-Line mode: Run command and return its
         output.
 
         Arguments:
-        cmd - Command to run
+        command - Command to run
         """
         # TODO: use self.codec, self.decodeerrors
 
@@ -80,7 +80,7 @@ class SmallUBootDriver(UBootDriver):
         # handle it's error message as an echo-output.
         # additionally we are not able to get the command's return code and
         # will always return 0.
-        cmp_command = "echo{marker}; {cmd}; echo{marker}".format(marker=marker, cmd=cmd)
+        cmp_command = "echo{marker}; {cmd}; echo{marker}".format(marker=marker, cmd=command)
 
         self.console.sendline(cmp_command)
         _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)

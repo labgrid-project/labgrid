@@ -66,14 +66,14 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self._status = 0
 
-    def _run(self, cmd: str, *, timeout: int = 30):
+    def _run(self, command: str, *, timeout: int = 30):
         # TODO: use self.codec, self.decodeerrors
         # TODO: Shell Escaping for the U-Boot Shell
         marker = gen_marker()
         cmp_command = """echo '{}''{}'; {}; echo "$?"; echo '{}''{}';""".format(
             marker[:4],
             marker[4:],
-            cmd,
+            command,
             marker[:4],
             marker[4:],
         )
@@ -85,7 +85,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 '', before.decode('utf-8'), count=1000000
             ).replace("\r", "").split("\n")
             self.logger.debug("Received Data: %s", data)
-            # Remove first element, the invoked cmd
+            # Remove first element, the invoked command
             data = data[data.index(marker) + 1:]
             data = data[:data.index(marker)]
             exitcode = int(data[-1])
@@ -95,19 +95,19 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         return None
 
     @Driver.check_active
-    @step(args=['cmd'], result=True)
-    def run(self, cmd, timeout=30):
+    @step(args=['command'], result=True)
+    def run(self, command: str, *, timeout: int = 30):
         """
         Runs the specified command on the shell and returns the output.
 
         Args:
-            cmd (str): command to run on the shell
+            command (str): command to run on the shell
             timeout (int): optional, how long to wait for completion
 
         Returns:
             Tuple[List[str],List[str], int]: if successful, None otherwise
         """
-        return self._run(cmd, timeout=timeout)
+        return self._run(command, timeout=timeout)
 
     def get_status(self):
         """Retrieve status of the UBootDriver.

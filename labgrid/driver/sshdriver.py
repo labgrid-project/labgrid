@@ -114,16 +114,16 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         return self._start_own_master()
 
     @Driver.check_active
-    @step(args=['cmd'], result=True)
-    def run(self, cmd, timeout=None): # pylint: disable=unused-argument
-        return self._run(cmd)
+    @step(args=['command'], result=True)
+    def run(self, command: str, *, timeout: int = None):
+        return self._run(command, timeout=timeout)
 
-    def _run(self, cmd, timeout=None): # pylint: disable=unused-argument
-        """Execute `cmd` on the target.
+    def _run(self, command: str, *, timeout: int = None):
+        """Execute `command` on the target.
 
-        This method runs the specified `cmd` as a command on its target.
+        This method runs the specified `command` on its target.
         It uses the ssh shell command to run the command and parses the exitcode.
-        cmd - command to be run on the target
+        command - command to be run on the target
 
         returns:
         (stdout, stderr, returncode)
@@ -134,7 +134,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         complete_cmd = ["ssh", "-x", *self.ssh_prefix,
                         "-p", str(self.networkservice.port), "{}@{}".format(
                             self.networkservice.username, self.networkservice.address
-                        )] + cmd.split(" ")
+                        )] + command.split(" ")
         self.logger.debug("Sending command: %s", complete_cmd)
         if self.stderr_merge:
             stderr_pipe = subprocess.STDOUT

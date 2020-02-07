@@ -65,34 +65,34 @@ class CommandMixin:
                     break
         return False
 
-    def _run_check(self, cmd: str, *, timeout=30):
+    def _run_check(self, command: str, *, timeout: int = 30):
         """
         Internal function which runs the specified command on the shell and
         returns the output if successful, raises ExecutionError otherwise.
 
         Args:
-            cmd (str): command to run on the shell
+            command (str): command to run on the shell
 
         Returns:
             List[str]: stdout of the executed command
         """
-        stdout, stderr, exitcode = self._run(cmd, timeout=timeout)
+        stdout, stderr, exitcode = self._run(command, timeout=timeout)
         if exitcode != 0:
-            raise ExecutionError(cmd, stdout, stderr)
+            raise ExecutionError(command, stdout, stderr)
         return stdout
 
     @Driver.check_active
-    @step(args=['cmd'], result=True)
-    def run_check(self, cmd: str, *, timeout=30):
+    @step(args=['command'], result=True)
+    def run_check(self, command: str, *, timeout: int = 30):
         """
         External run_check function, only available if the driver is active.
         Runs the supplied command and returns the stdout, raises an
         ExecutionError otherwise.
 
         Args:
-            cmd (str): command to run on the shell
+            command (str): command to run on the shell
 
         Returns:
             List[str]: stdout of the executed command
         """
-        return self._run_check(cmd, timeout=timeout)
+        return self._run_check(command, timeout=timeout)

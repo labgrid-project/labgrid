@@ -73,19 +73,19 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def on_deactivate(self):
         self._status = 0
 
-    def _run(self, cmd, *, timeout=30.0):
+    def _run(self, command: str, *, timeout: int = 30):
         """
-        Runs the specified cmd on the shell and returns the output.
+        Runs the specified command on the shell and returns the output.
 
         Arguments:
-        cmd - cmd to run on the shell
+        command - command to run on the shell
         """
         # FIXME: Handle pexpect Timeout
         self._check_prompt()
         marker = gen_marker()
         # hide marker from expect
         cmp_command = '''MARKER='{}''{}' run {}'''.format(
-            marker[:4], marker[4:], shlex.quote(cmd)
+            marker[:4], marker[4:], shlex.quote(command)
         )
         self.console.sendline(cmp_command)
         _, _, match, _ = self.console.expect(r'{marker}(.*){marker}\s+(\d+)\s+{prompt}'.format(
@@ -102,9 +102,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         return (data, [], exitcode)
 
     @Driver.check_active
-    @step(args=['cmd'], result=True)
-    def run(self, cmd, timeout=30.0):
-        return self._run(cmd, timeout=timeout)
+    @step(args=['command'], result=True)
+    def run(self, command: str, *, timeout: int = 30):
+        return self._run(command, timeout=timeout)
 
     @step()
     def _await_login(self):

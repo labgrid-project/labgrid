@@ -46,12 +46,9 @@ class NetworkUSBStorageDriver(Driver):
     def on_deactivate(self):
         pass
 
+    @Driver.check_active
     @step(args=['filename'])
     def write_image(self, filename=None, mode=Mode.DD):
-        if not self.storage.path:
-            raise ExecutionError(
-                "{} is not available".format(self.storage_path)
-            )
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
         assert filename, "write_image requires a filename"
@@ -95,12 +92,9 @@ class NetworkUSBStorageDriver(Driver):
             self.storage.command_prefix + args
         )
 
+    @Driver.check_active
     @step(result=True)
     def get_size(self):
-        if not self.storage.path:
-            raise ExecutionError(
-                "{} is not available".format(self.storage_path)
-            )
         args = ["cat", "/sys/class/block/{}/size".format(self.storage.path[5:])]
         size = processwrapper.check_output(self.storage.command_prefix + args)
         return int(size)

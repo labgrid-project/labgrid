@@ -250,6 +250,16 @@ class USBMassStorage(USBResource):
         self.match['@SUBSYSTEM'] = 'usb'
         super().__attrs_post_init__()
 
+    # Overwrite the avail attribute with our internal property
+    @property
+    def avail(self):
+        return self.path is not None
+
+    # Forbid the USBResource super class to set the avail property
+    @avail.setter
+    def avail(self, prop):
+        pass
+
     @property
     def path(self):
         if self.device is not None:

@@ -253,7 +253,7 @@ A USBMassStorage resource describes a USB memory stick or similar device.
 - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
-  - `NetworkUSBStorageDriver`_
+  - `USBStorageDriver`_
 
 NetworkUSBMassStorage
 ~~~~~~~~~~~~~~~~~~~~~
@@ -261,7 +261,7 @@ A NetworkUSBMassStorage resource describes a USB memory stick or similar
 device available on a remote computer.
 
 Used by:
-  - `NetworkUSBStorageDriver`_
+  - `USBStorageDriver`_
 
 The NetworkUSBMassStorage can be used in test cases by calling the
 `write_image()`, and `get_size()` functions.
@@ -1354,9 +1354,9 @@ Arguments:
   - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
   - usb_loader (srt): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
 
-NetworkUSBStorageDriver
+USBStorageDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
-A NetworkUSBStorageDriver allows access to a USB stick or similar local or
+A USBStorageDriver allows access to a USB stick or similar local or
 remote device.
 
 Binds to:
@@ -1368,7 +1368,7 @@ Implements:
 
 .. code-block:: yaml
 
-   NetworkUSBStorageDriver:
+   USBStorageDriver:
      image: flashimage
 
 .. code-block:: yaml

@@ -1082,16 +1082,16 @@ class ClientSession(ApplicationSession):
         target = self._get_target(place)
         drv = None
         from ..resource.remote import NetworkUSBMassStorage, NetworkUSBSDMuxDevice
-        from ..driver import NetworkUSBStorageDriver
+        from ..driver import USBStorageDriver
         try:
-            drv = target.get_driver(NetworkUSBStorageDriver)
+            drv = target.get_driver(USBStorageDriver)
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, (NetworkUSBSDMuxDevice, NetworkUSBMassStorage)):
                     try:
-                        drv = target.get_driver(NetworkUSBStorageDriver)
+                        drv = target.get_driver(USBStorageDriver)
                     except NoDriverFoundError:
-                        drv = NetworkUSBStorageDriver(target, name=None)
+                        drv = USBStorageDriver(target, name=None)
                     drv.storage.timeout = self.args.wait
                     break
         if not drv:

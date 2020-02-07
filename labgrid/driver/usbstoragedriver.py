@@ -22,7 +22,7 @@ class Mode(enum.Enum):
 
 @target_factory.reg_driver
 @attr.s(eq=False)
-class NetworkUSBStorageDriver(Driver):
+class USBStorageDriver(Driver):
     bindings = {
         "storage": {
             "USBMassStorage",
@@ -117,3 +117,13 @@ class NetworkUSBStorageDriver(Driver):
         args = ["cat", "/sys/class/block/{}/size".format(self.storage.path[5:])]
         size = processwrapper.check_output(self.storage.command_prefix + args)
         return int(size)
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class NetworkUSBStorageDriver(USBStorageDriver):
+    def __attrs_post_init__(self):
+        import warnings
+        warnings.warn("NetworkUSBStorageDriver is deprecated, use USBStorageDriver instead",
+                      DeprecationWarning)
+        super().__attrs_post_init__()

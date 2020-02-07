@@ -20,7 +20,7 @@ from .common import Driver
 from .qemudriver import QEMUDriver
 from .modbusdriver import ModbusCoilDriver
 from .sigrokdriver import SigrokDriver
-from .usbstoragedriver import NetworkUSBStorageDriver, Mode
+from .usbstoragedriver import USBStorageDriver, NetworkUSBStorageDriver, Mode
 from .resetdriver import DigitalOutputResetDriver
 from .gpiodriver import GpioDigitalOutputDriver
 from .filedigitaloutput import FileDigitalOutputDriver

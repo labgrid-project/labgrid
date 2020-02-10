@@ -28,6 +28,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self._keepalive = None
 
     def on_activate(self):
         self.ssh_prefix = "-o LogLevel=ERROR"
@@ -43,9 +44,14 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.ssh_prefix += " -o ControlPath={}".format(
             self.control
         ) if self.control else ""
+        self._keepalive = None
+        self._start_keepalive();
 
     def on_deactivate(self):
-        self._cleanup_own_master()
+        try:
+            self._stop_keepalive()
+        finally:
+            self._cleanup_own_master()
 
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
@@ -117,6 +123,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         returns:
         (stdout, stderr, returncode)
         """
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
         complete_cmd = "ssh -x {prefix} -p {port} {user}@{host} {cmd}".format(
             user=self.networkservice.username,
             host=self.networkservice.address,
@@ -218,3 +227,35 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if res != 0:
             self.logger.info("Socket already closed")
         shutil.rmtree(self.tmpdir)
+
+    def _start_keepalive(self):
+        """Starts a keepalive connection via the own or external master."""
+        args = ["ssh"] + self.ssh_prefix.split() + ["cat"]
+
+        assert self._keepalive is None
+        self._keepalive = subprocess.Popen(
+            args,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.logger.debug('Started keepalive for %s', self.networkservice.address)
+
+    def _check_keepalive(self):
+        return self._keepalive.poll() is None
+
+    def _stop_keepalive(self):
+        assert self._keepalive is not None
+
+        self.logger.debug('Stopping keepalive for %s', self.networkservice.address)
+
+        try:
+            self._keepalive.communicate(timeout=60)
+        except subprocess.TimeoutExpired:
+            self._keepalive.kill()
+
+        try:
+            self._keepalive.wait(timeout=60)
+        finally:
+            self._keepalive = None

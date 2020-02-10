@@ -48,7 +48,19 @@ class NetworkUSBStorageDriver(Driver):
 
     @Driver.check_active
     @step(args=['filename'])
-    def write_image(self, filename=None, mode=Mode.DD):
+    def write_image(self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0):
+        """
+        Writes the file specified by filename or if not specified by config image subkey to the
+        bound USB storage root device or partition.
+
+        Args:
+            filename (str): optional, path to the image to write to bound USB storage
+            mode (Mode): optional, Mode.DD or Mode.BMAPTOOL (defaults to Mode.DD)
+            partition (int or None): optional, write to the specified partition or None for writing
+                to root device (defaults to None)
+            skip (int): optional, skip n 512-sized blocks at start of input file (defaults to 0)
+            seek (int): optional, skip n 512-sized blocks at start of output (defaults to 0)
+        """
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
         assert filename, "write_image requires a filename"
@@ -69,21 +81,28 @@ class NetworkUSBStorageDriver(Driver):
         else:
             raise ExecutionError("Timeout while waiting for medium")
 
+        partition = "" if partition is None else partition
+
         if mode == Mode.DD:
+            block_size = '512' if skip or seek else '4M'
             args = [
                 "dd",
                 "if={}".format(mf.get_remote_path()),
-                "of={}".format(self.storage.path),
+                "of={}{}".format(self.storage.path, partition),
                 "status=progress",
-                "bs=4M",
+                "bs={}".format(block_size),
+                "skip={}".format(skip),
+                "seek={}".format(seek),
                 "conv=fdatasync"
             ]
         elif mode == Mode.BMAPTOOL:
+            if skip or seek:
+                raise ExecutionError("bmaptool does not support skip or seek")
             args = [
                 "bmaptool",
                 "copy",
                 "{}".format(mf.get_remote_path()),
-                "{}".format(self.storage.path),
+                "{}{}".format(self.storage.path, partition),
             ]
         else:
             raise ValueError

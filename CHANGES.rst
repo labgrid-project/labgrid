@@ -32,6 +32,8 @@ New Features in 0.3.0
 - The binding dictionary can now supports type name strings in addition to the
   types themselves, avoiding the need to import a specific protocol or driver
   in some cases.
+- ``labgrid-client write-image`` gained new arguments: ``--partition``,
+  ``--skip``, ``--seek``.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

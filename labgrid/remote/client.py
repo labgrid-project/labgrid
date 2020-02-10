@@ -1098,7 +1098,8 @@ class ClientSession(ApplicationSession):
             raise UserError("target has no compatible resource available")
         target.activate(drv)
         try:
-            drv.write_image(self.args.filename)
+            drv.write_image(self.args.filename, partition=self.args.partition, skip=self.args.skip,
+                            seek=self.args.seek)
         except subprocess.CalledProcessError as e:
             raise UserError("could not write image to network usb storage: {}".format(e))
         except FileNotFoundError as e:
@@ -1469,6 +1470,11 @@ def main():
 
     subparser = subparsers.add_parser('write-image', help="write an image onto mass storage")
     subparser.add_argument('-w', '--wait', type=float, default=10.0)
+    subparser.add_argument('-p', '--partition', type=int, help="partition number to write to")
+    subparser.add_argument('--skip', type=int, default=0,
+                           help="skip n 512-sized blocks at start of input")
+    subparser.add_argument('--seek', type=int, default=0,
+                           help="skip n 512-sized blocks at start of output")
     subparser.add_argument('filename', help='filename to boot on the target')
     subparser.set_defaults(func=ClientSession.write_image)
 

@@ -527,8 +527,27 @@ Code
 
 Documentation
 ~~~~~~~~~~~~~
+
 - Use `semantic linefeeds
   <http://rhodesmill.org/brandon/2012/one-sentence-per-line/>`_ in .rst files.
+
+Building the documentation
+++++++++++++++++++++++++++
+
+When contributing to documentation it's practical to be able to build it also locally
+
+.. code-block:: bash
+    
+    git clone https://github.com/labgrid-project/labgrid.git
+    cd labgrid
+    pip3 install -r doc-requirements.txt
+    pip install -e .
+    cd doc
+    make html
+
+Once the build is done you the result can be see with ``firefox .build/html/index.html``
+
+If for whatever the reason you need to rebuild everything from scratch, use ``make SPHINXOPTS="-a -E" html``.
 
 Run Tests
 ~~~~~~~~~

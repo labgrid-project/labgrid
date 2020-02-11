@@ -147,7 +147,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 "error executing command: {}".format(complete_cmd)
             )
 
-        stdout, stderr = sub.communicate()
+        stdout, stderr = sub.communicate(timeout=timeout)
         stdout = stdout.decode(codec, decodeerrors).split('\n')
         stdout.pop()
         if stderr is None:

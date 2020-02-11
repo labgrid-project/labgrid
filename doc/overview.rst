@@ -35,6 +35,14 @@ corresponding part of the `Target`.
 Typical examples of resources are :any:`RawSerialPort`, :any:`NetworkPowerPort`
 and :any:`AndroidFastboot`.
 
+At first, a Resource might look like a property of a driver 
+i.e. "The ``RawSerialPort`` with the value ``/dev/ttyUSB0`` is tightly coupled to the ``SerialDriver``.
+What's the point of separating them?"
+What makes a Resource specific is that it exist regardless of the Driver.
+It's an inherent property of the board itself.
+i.e. Your can manually access the shell of your board with  ``picocom -b 115200 /dev/ttyUSB0``
+Another name for a Resource could be a Board access/control point.
+
 An important type of `Resources` are :any:`ManagedResources <ManagedResource>`.
 While normal `Resources` are always considered available for use and have fixed
 properties (such as the ``/dev/ttyUSB0`` device name for a

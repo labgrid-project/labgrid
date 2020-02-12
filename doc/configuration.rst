@@ -585,6 +585,9 @@ A XilinxUSBJTAG resource describes a Xilinx-compatible USB JTAG adapter:
   `hw_server -h` to get all available categories.
 - extra_args ([str]): optional, extra arguments passed to `hw_server`
 
+Used by:
+  - `XSDBDriver`_
+
 USBDebugger
 ~~~~~~~~~~~
 An USBDebugger resource describes a JTAG USB adapter (for example an FTDI
@@ -1462,6 +1465,25 @@ Arguments:
 
 The driver can be used in test cases by calling the `flash` function. An
 example strategy is included in labgrid.
+
+XSDBDriver
+~~~~~~~~~~
+A XSDBDriver connects to a Vivado hardware server to control a Xilinx device
+via JTAG.
+
+Binds to:
+  interface:
+    - `XilinxUSBJTAG`_
+
+Implements:
+  - None
+
+Arguments:
+  - bitstream (str): filename of bitstream for programmable logic (PL)
+
+The driver can be used in test cases to program a bitstream via the
+`program_bitstream` function or run arbitrary XSDB Tcl commands by calling the
+`run` function.
 
 ManualPowerDriver
 ~~~~~~~~~~~~~~~~~

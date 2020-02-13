@@ -478,6 +478,23 @@ class NetworkServiceExport(ResourceExport):
 
 exports["NetworkService"] = NetworkServiceExport
 
+@attr.s(eq=False)
+class LXAIOBusNodeExport(ResourceExport):
+    """ResourceExport for LXAIOBusNode devices accessed via the HTTP API"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = "Network{}".format(self.cls)
+        from ..resource import lxaiobus
+        local_cls = getattr(lxaiobus, local_cls_name)
+        self.local = local_cls(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return self.local_params
+
+exports["LXAIOBusPIO"] = LXAIOBusNodeExport
+
 
 class ExporterSession(ApplicationSession):
     def onConnect(self):

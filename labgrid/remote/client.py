@@ -737,10 +737,12 @@ class ClientSession(ApplicationSession):
         from ..resource.onewireport import OneWirePIO
         from ..resource.remote import NetworkDeditecRelais8
         from ..resource.remote import NetworkSysfsGPIO
+        from ..resource.remote import NetworkLXAIOBusPIO
         from ..driver.modbusdriver import ModbusCoilDriver
         from ..driver.onewiredriver import OneWirePIODriver
         from ..driver.deditecrelaisdriver import DeditecRelaisDriver
         from ..driver.gpiodriver import GpioDigitalOutputDriver
+        from ..driver.lxaiobusdriver import LXAIOBusPIODriver
         drv = None
         for resource in target.resources:
             if isinstance(resource, ModbusTCPCoil):
@@ -770,6 +772,13 @@ class ClientSession(ApplicationSession):
                 except NoDriverFoundError:
                     target.set_binding_map({"gpio": name})
                     drv = GpioDigitalOutputDriver(target, name=name)
+                break
+            elif isinstance(resource, NetworkLXAIOBusPIO):
+                try:
+                    drv = target.get_driver(LXAIOBusPIODriver, name=name)
+                except NoDriverFoundError:
+                    target.set_binding_map({"pio": name})
+                    drv = LXAIOBusPIODriver(target, name=name)
                 break
         if not drv:
             raise UserError("target has no compatible resource available")

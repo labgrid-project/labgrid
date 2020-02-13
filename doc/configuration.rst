@@ -634,6 +634,34 @@ therefore auto-cleanup is important.
 Used by:
   - `DockerDriver`_
 
+LXAIOBusPIO
+~~~~~~~~~~~
+
+An :any:`LXAIOBusPIO` resource describes a single PIO pin on an LXAIOBusNode.
+
+.. code-block:: yaml
+
+   LXAIOBusPIO:
+     host: localhost:8080
+     node: IOMux-00000003
+     pin: OUT0
+     invert: False
+
+The example uses an lxa-iobus-server running on localhost:8080, with node
+IOMux-00000003 and pin OUT0.
+
+- host (str): hostname with port of the lxa-io-bus server
+- node (str): name of the node to use
+- pin (str): name of the pin to use
+- invert (bool): whether to invert the pin
+
+Used by:
+  - `LXAIOBusPIODriver`_
+
+NetworkLXAIOBusPIO
+~~~~~~~~~~~~~~~~~~
+A NetworkLXAIOBusPIO descibes an `LXAIOBusPIO`_ exported over the network.
+
 udev Matching
 ~~~~~~~~~~~~~
 udev matching allows labgrid to identify resources via their udev properties.
@@ -1673,6 +1701,23 @@ Arguments:
     instances that come alive when the container is created. The "address" argument
     which `NetworkService`_ also requires will be derived automatically upon container
     creation.
+
+LXAIOBusPIODriver
+~~~~~~~~~~~~~~~~~
+An LXAIOBusPIODriver binds to a single `LXAIOBusPIO` to toggle and read the PIO
+states.
+
+Binds to:
+  pio:
+    - `LXAIOBusPIO`_
+    - `NetworkLXAIOBusPIO`_
+
+.. code-block:: yaml
+
+   LXAIOBusPIODriver: {}
+
+Implements:
+  - :any:`DigitalOutputProtocol`
 
 Strategies
 ----------

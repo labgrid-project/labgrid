@@ -27,6 +27,8 @@ strategies, custom implementations for these can be registered at runtime.
 It is expected that for complex use-cases, the user would implement and
 register a custom `Strategy` and possibly some higher-level `Drivers`.
 
+.. _resources:
+
 Resources
 ~~~~~~~~~
 
@@ -53,6 +55,8 @@ they are discovered.
 The most common examples of `ManagedResources` are the various USB resources
 discovered using udev, such as :any:`USBSerialPort`, :any:`IMXUSBLoader` or
 :any:`AndroidFastboot`.
+
+.. _drivers-and-protocols:
 
 Drivers and Protocols
 ~~~~~~~~~~~~~~~~~~~~~
@@ -86,6 +90,8 @@ Other drivers, such as the :any:`SSHDriver`, also implement the
 `CommandProtocol`.
 This way, higher-level code (such as a test suite), can be independent of the
 concrete control method on a given board.
+
+.. _binding-and-activation:
 
 Binding and Activation
 ~~~~~~~~~~~~~~~~~~~~~~

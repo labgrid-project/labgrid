@@ -1,3 +1,4 @@
+.. _configuration:
 Configuration
 =============
 This chapter describes the individual drivers and resources used in a device
@@ -18,6 +19,8 @@ Resources
 
 Serial Ports
 ~~~~~~~~~~~~
+
+.. _raw-serial-port:
 
 RawSerialPort
 +++++++++++++
@@ -764,6 +767,10 @@ To check if your device has a serial number, you can use ``udevadm info``:
 Drivers
 -------
 
+
+
+.. _serial-driver:
+
 SerialDriver
 ~~~~~~~~~~~~
 A SerialDriver connects to a serial port. It requires one of the serial port
@@ -785,6 +792,8 @@ Implements:
 
 Arguments:
   - txdelay (float): time in seconds to wait before sending each byte
+
+.. _shell-driver:
 
 ShellDriver
 ~~~~~~~~~~~
@@ -1796,7 +1805,7 @@ The Reporter can be stopped with a call to the stop function:
 Stopping the ConsoleLoggingReporter if it has not been started will raise an
 AssertionError, as will starting an already started StepReporter.
 
-
+.. _enviornment-configuration:
 
 Environment Configuration
 -------------------------

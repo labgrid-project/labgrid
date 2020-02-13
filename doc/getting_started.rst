@@ -46,53 +46,154 @@ If the help for labgrid-client does not show up, open an `Issue
 <https://github.com/labgrid-project/labgrid/issues>`_. If everything was
 successful so far, proceed to the next section:
 
-Running Your First Test
------------------------
 
-Start by copying the initial example:
+Ways to use labgrid
+-------------------
+
+Labgrid can be used in multiple different use cases. 
+The following chapter will explore those use cases through easy to reproduce examples.
+
+Labgrid is board agnostic, but for the sake of providing an example Raspberry Pi 3 will be used. 
+For the creation of this example `Raspbian Buster Lite <https://downloads.raspberrypi.org/raspbian_lite_latest>`_ was used as the image on the Pi. 
+It is assumed you know how to set up a Pi and connect and use a serial connection.
+
+The USB to serial connection is registered as ``/dev/ttyUSB0``.
+Username is ``pi`` password ``raspberry``.
+
+Please make sure you don't have a serial terminal connection with the Pi while running the examples. 
+This will cause the example to fail.
+
+If you witness any of the examples fail please open an `Issue <https://github.com/labgrid-project/labgrid/issues>`_.
+
+Code examples are copy pastable even for file creation.
+That's what the ``cat > local.yaml << EOF`` are for.
+
+Using labgrid as a library
+++++++++++++++++++++++++++
+
+Create the yaml file:
 
 .. code-block:: bash
 
-    $ mkdir ../first_test/
-    $ cp examples/shell/* ../first_test/
-    $ cd ../first_test/
+    # Allow access to the serial termial
+    sudo chmod 777 /dev/ttyUSB0
 
-Connect your embedded board (raspberry pi, riotboard, …) to your computer and
-adjust the ``port`` parameter of the ``RawSerialPort`` resource and ``username``
-and ``password`` of the ShellDriver driver in ``local.yaml``:
-
-.. code-block:: yaml
-
+    cat > local.yaml << EOF
     targets:
       main:
         resources:
           RawSerialPort:
             port: "/dev/ttyUSB0"
         drivers:
-          ManualPowerDriver:
-            name: "example"
           SerialDriver: {}
           ShellDriver:
-            prompt: 'root@\w+:[^ ]+ '
+            prompt: 'pi@\w+:[^ ]+ '
             login_prompt: ' login: '
-            username: 'root'
+            username: 'pi'
+            password: 'raspberry'
+    EOF
 
-
-You can check which device name gets assigned to your USB-Serial converter by
-unplugging the converter, running ``dmesg -w`` and plugging it back in. Boot up
-your board (manually) and run your first test:
+And the python file where labgrid is used as a library:
 
 .. code-block:: bash
 
-    $ pytest --lg-env local.yaml test_shell.py
+    cat > labgrid_as_lib.py << EOF
+    from labgrid import Environment
+    
+    env_rpi = Environment('local.yaml')
+    target_rpi = env_rpi.get_target()
+    shell = target_rpi.get_driver('CommandProtocol')
+    target_rpi.activate(shell)
+    cmd_return = shell.run("cat /proc/version")
+    print("Command output: " + str(cmd_return[0][0]))
+    print("Exit code: " + str(cmd_return[2]))
+    EOF
+    
 
-It should return successfully, in case it does not, open an `Issue
-<https://github.com/labgrid-project/labgrid/issues>`_.
+Boot up your board manually and execute:
+    
+.. code-block:: bash
+
+    python labgrid_as_lib.py
+
+
+Running this will show the output of ``cat /proc/version`` executed on the Pi.
+This example shows some labgrid concepts in action. 
+
+We defined an :ref:`Environment <enviornment-configuration>` for the Pi. 
+This is the ``yaml`` file describing our target. 
+We called our target ``main``.
+
+We've defined some :ref:`Resources <resources>` and  :ref:`Drivers <drivers-and-protocols>` for the Pi. 
+The drivers stack on top of each other as long as they meet the correct conditions.
+A  resource is always the lowest member of the stack.
+You can check the condition for each driver in :ref:`Configuration <configuration>`.
+
+The top layer of the stack for this example is the :ref:`ShellDriver <shell-driver>`.
+It attempts to set the terminal in a state where ``cat /proc/version`` can be executed.
+i.e. It wouldn't make sense to execute in the ``login`` prompt or while the board is booting.
+The ShellDriver needs to be stacked on top of a driver which implements the :ref:`ConsoleProtocol <drivers-and-protocols>`.
+Once that condition is met the ShellDriver can :ref:`bind to and activate <binding-and-activation>` the lower level driver.
+
+In this example, the driver implementing the ConsoleProtocol is the :ref:`SerialDriver <serial-driver>`.
+Its duty is to set up the serial terminal to a workable state.
+It can only be stacked on top of a certain type of :ref:`Resource <enviornment-configuration>`. 
+If the condition is fulfilled the driver will proceed with :ref:`binding and activating <binding-and-activation>` the resource.
+
+In this example the :ref:`Resource <enviornment-configuration>` which meets the condition is :ref:`RawSerialPort <raw-serial-port>`.
+It represents the access point through which to reach the Pi we want to control.
+Unlike a driver it doesn't provide functionality but is just a description.
+
+
+Using labgrid to run tests
+++++++++++++++++++++++++++
+
+labgrid can also be used to help write tests.
+This doesn't conceptually differ from the example above.
+The only difference is we're using labgrid from the context of the testing framework ``pytest``.
+
+
+Start by copying the initial example:
+
+.. code-block:: bash
+
+    # This is in the root dir of the labgrid repo
+    mkdir ../first_test/
+    cp examples/shell/* ../first_test/
+    cd ../first_test/
+
+Copy paste the code below to create the content for ``local.yaml`` to:
+
+.. code-block:: bash
+
+    cat > local.yaml << EOF
+    targets:
+      main:
+        resources:
+          RawSerialPort:
+            port: "/dev/ttyUSB0"
+        drivers:
+          SerialDriver: {}
+          ShellDriver:
+            prompt: 'pi@\w+:[^ ]+ '
+            login_prompt: ' login: '
+            username: 'pi'
+            password: 'raspberry'
+    EOF
+
+Boot up your board manually and run your first test:
+
+.. code-block:: bash
+
+    pytest --lg-env local.yaml test_shell.py
+
+If everything worked correctly you should see the output showing you a passed test.
+
 
 .. _remote-getting-started:
 
 Setting Up the Distributed Infrastructure
------------------------------------------
++++++++++++++++++++++++++++++++++++++++++
 
 The labgrid :ref:`distributed infrastructure <remote-resources-and-places>`
 consists of three components:

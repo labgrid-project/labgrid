@@ -256,3 +256,20 @@ class NetworkSysfsGPIO(NetworkResource, ManagedResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
+
+@attr.s(eq=False)
+class NetworkLXARemoteIO(ManagedResource):
+    manager_cls = RemotePlaceManager
+
+    host = attr.ib(validator=attr.validators.instance_of(str))
+    node = attr.ib(validator=attr.validators.instance_of(str))
+
+    def __attrs_post_init__(self):
+        self.timeout = 30.0
+        super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkLXARemotePIO(NetworkLXARemoteIO):
+    pin = attr.ib(validator=attr.validators.instance_of(str))
+    invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))

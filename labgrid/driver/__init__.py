@@ -28,3 +28,4 @@ from .filedigitaloutput import FileDigitalOutputDriver
 from .serialdigitaloutput import SerialPortDigitalOutputDriver
 from .xenadriver import XenaDriver
 from .dockerdriver import DockerDriver
+from .lxaremoteiodriver import LXARemotePIODriver

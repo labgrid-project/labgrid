@@ -432,6 +432,24 @@ class GPIOGenericExport(ResourceExport):
 exports["SysfsGPIO"] = GPIOGenericExport
 
 
+@attr.s(eq=False)
+class LXARemoteIOExport(ResourceExport):
+    """ResourceExport for LXARemoteIO devices accessed via the HTTP API"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = "Network{}".format(self.cls)
+        from ..resource import lxaremoteio
+        local_cls = getattr(lxaremoteio, local_cls_name)
+        self.local = local_cls(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return self.local_params
+
+exports["LXARemotePIO"] = LXARemoteIOExport
+
+
 class ExporterSession(ApplicationSession):
     def onConnect(self):
         """Set up internal datastructures on successful connection:

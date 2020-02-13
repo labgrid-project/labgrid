@@ -46,33 +46,6 @@ If the help for labgrid-client does not show up, open an `Issue
 <https://github.com/labgrid-project/labgrid/issues>`_. If everything was
 successful so far, proceed to the next section:
 
-Optional Requirements
-~~~~~~~~~~~~~~~~~~~~~
-labgrid provides optional features which are not included in the default
-`requirements.txt`. The tested library version for each feature is included in a
-seperate requirements file. An example for snmp support is:
-
-.. code-block:: bash
-
-    $ pip install -r snmp-requirements.txt
-
-Onewire
-+++++++
-Onewire support requires the `libow` library with headers, installable on debian
-via the `libow-dev` package. Use the `onewire-requirements.txt` file to install
-the correct onewire library version in addition to the normal installation.
-
-SNMP
-++++
-SNMP support requires to additional packages, `pysnmp` and `pysnmpmibs`. They
-are included in the `snmp-requirements.txt` file.
-
-Modbus
-++++++
-Modbus support requires an additional package `pyModbusTCP`. It is included in
-the `modbus-requirements.txt` file.
-
-
 Running Your First Test
 -----------------------
 

@@ -14,32 +14,32 @@ these usually are:
 
 .. code-block:: bash
 
-   $ apt-get install python3 python3-virtualenv python3-pip virtualenv
+   apt-get install python3 python3-virtualenv python3-pip virtualenv
 
 
 In many cases, the easiest way is to install labgrid into a virtualenv:
 
 .. code-block:: bash
 
-    $ virtualenv -p python3 labgrid-venv
-    $ source labgrid-venv/bin/activate
+    virtualenv -p python3 labgrid-venv
+    source labgrid-venv/bin/activate
 
 Start installing labgrid by cloning the repository and installing the
 requirements from the `requirements.txt` file:
 
 .. code-block:: bash
 
-    $ git clone https://github.com/labgrid-project/labgrid
-    $ cd labgrid && pip install -r requirements.txt
-    $ python3 setup.py install
+    git clone https://github.com/labgrid-project/labgrid
+    cd labgrid && pip install -r requirements.txt
+    python3 setup.py install
 
 
 Test your installation by running:
 
 .. code-block:: bash
 
-    $ labgrid-client --help
-    usage: labgrid-client [-h] [-x URL] [-c CONFIG] [-p PLACE] [-d] COMMAND ...
+    labgrid-client --help
+    # usage: labgrid-client [-h] [-x URL] [-c CONFIG] [-p PLACE] [-d] COMMAND ...
     ...
 
 If the help for labgrid-client does not show up, open an `Issue

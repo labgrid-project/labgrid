@@ -1334,6 +1334,7 @@ Arguments:
     bind against. This is only needed if you have multiple
     SerialDriver in your environment (what is likely to be the case
     if you are using this driver).
+  - invert (bool): whether to invert the signal
 
 FileDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~

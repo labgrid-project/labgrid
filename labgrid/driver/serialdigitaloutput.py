@@ -24,6 +24,7 @@ class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
 
     bindings = {'serial': SerialDriver}
     signal = attr.ib(validator=attr.validators.instance_of(str))
+    invert = attr.ib(validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -39,15 +40,22 @@ class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
     @step()
     def get(self):
         if self.signal == "dtr":
-            return self._p.dtr
+            val =  self._p.dtr
         if self.signal == "rts":
-            return self._p.rts
+            val = self._p.rts
+        else:
+            raise ValueError("Expected signal to be dtr or rts")
 
-        raise ValueError("Expected signal to be dtr or rts")
+        if self.invert:
+            val = not val
+
+        return val
 
     @Driver.check_active
     @step()
     def set(self, value):
+        if self.invert:
+            value = not value
         if self.signal == "dtr":
             self._p.dtr = value
         elif self.signal == "rts":

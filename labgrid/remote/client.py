@@ -691,42 +691,48 @@ class ClientSession(ApplicationSession):
     def power(self):
         place = self.get_acquired_place()
         action = self.args.action
+        names = self.args.name
         delay = self.args.delay
         target = self._get_target(place)
         from ..driver.powerdriver import NetworkPowerDriver, PDUDaemonDriver, USBPowerDriver
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
         from ..resource.remote import NetworkUSBPowerPort
         drv = None
-        for resource in target.resources:
-            if isinstance(resource, NetworkPowerPort):
-                try:
-                    drv = target.get_driver(NetworkPowerDriver)
-                except NoDriverFoundError:
-                    drv = NetworkPowerDriver(target, name=None, delay=delay)
-                break
-            elif isinstance(resource, NetworkUSBPowerPort):
-                try:
-                    drv = target.get_driver(USBPowerDriver)
-                except NoDriverFoundError:
-                    drv = USBPowerDriver(target, name=None, delay=delay)
-                break
-            elif isinstance(resource, PDUDaemonPort):
-                try:
-                    drv = target.get_driver(PDUDaemonDriver)
-                except NoDriverFoundError:
-                    drv = PDUDaemonDriver(target, name=None, delay=int(delay))
-                break
-        if not drv:
-            raise UserError("target has no compatible resource available")
-        target.activate(drv)
-        res = getattr(drv, action)()
-        if action == 'get':
-            print(
-                "power for place {} is {}".format(
-                    place.name,
-                    'on' if res else 'off',
+
+        for name in names:
+            for resource in target.resources:
+                if isinstance(resource, NetworkPowerPort):
+                    try:
+                        drv = target.get_driver(NetworkPowerDriver, name=name)
+                    except NoDriverFoundError:
+                        target.set_binding_map({"port": name})
+                        drv = NetworkPowerDriver(target, name=name, delay=delay)
+                        break
+                elif isinstance(resource, NetworkUSBPowerPort):
+                    try:
+                        drv = target.get_driver(USBPowerDriver, name=name)
+                    except NoDriverFoundError:
+                        target.set_binding_map({"hub": name})
+                        drv = USBPowerDriver(target, name=name, delay=delay)
+                        break
+                elif isinstance(resource, PDUDaemonPort):
+                    try:
+                        drv = target.get_driver(PDUDaemonDriver, name=name)
+                    except NoDriverFoundError:
+                        target.set_binding_map({"port": name})
+                        drv = PDUDaemonDriver(target, name=name, delay=int(delay))
+                        break
+            if not drv:
+                raise UserError("target has no compatible resource available")
+            target.activate(drv)
+            res = getattr(drv, action)()
+            if action == 'get':
+                print(
+                    "power for place {}->{} is {}".format(
+                        place.name, name,
+                        'on' if res else 'off',
+                    )
                 )
-            )
 
     def digital_io(self):
         place = self.get_acquired_place()
@@ -1389,6 +1395,7 @@ def main():
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
     subparser.add_argument('-t', '--delay', type=float, default=1.0,
                            help='wait time in seconds between off and on during cycle')
+    subparser.add_argument('name', help="optional resource name", nargs='*')
     subparser.set_defaults(func=ClientSession.power)
 
     subparser = subparsers.add_parser('io',

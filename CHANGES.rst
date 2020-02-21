@@ -52,6 +52,10 @@ Breaking changes in 0.3.0
   ``resources.yaml`` are now also stored in the crossbar configuration folder.
   Previously it would use ``..``.
 - The ``HawkbitTestClient`` and ``USBStick`` classes have been removed
+- The original USBStorageDriver was removed, ``NetworkUSBStorageDriver`` was
+  renamed to `USBStorageDriver`.
+  A deprecated `NetworkUSBStorageDriver` exists temporarily for compatibility
+  reasons.
 
 Release 0.2.0 (released Jan 4, 2019)
 ------------------------------------
@@ -104,7 +108,7 @@ New and Updated Drivers
 - The new `DigitalOutputResetDriver` adapts a driver implementing the
   DigitalOutputProtocol to the ResetProtocol.
 - The new `ModbusCoilDriver` support outputs on a ModbusTCP device.
-- The new `NetworkUSBStorageDriver` allows writing to remote USB storage
+- The new ``NetworkUSBStorageDriver`` allows writing to remote USB storage
   devices (such as SD cards or memory sticks connected to a mux).
 - The new `QEMUDriver` runs a system image in QEmu and implements the
   :any:`ConsoleProtocol` and :any:`PowerProtocol`.

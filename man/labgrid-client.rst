@@ -39,7 +39,7 @@ OPTIONS
 -p PLACE, --place PLACE
     specify the place to operate on
 -x, --crossbar-url
-    the crossbar url of the coordinator
+    the crossbar url of the coordinator, defaults to ``ws://127.0.0.1:20408/ws``
 -c CONFIG, --config CONFIG
     set the configuration file
 -s STATE, --state STATE

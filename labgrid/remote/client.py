@@ -1238,7 +1238,7 @@ def main():
         metavar='URL',
         type=str,
         default=os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"),
-        help="crossbar websocket URL"
+        help="crossbar websocket URL (default: %(default)s)"
     )
     parser.add_argument(
         '-c',

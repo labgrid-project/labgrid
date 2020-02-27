@@ -1947,6 +1947,41 @@ exported as `exportername/usb-hub-in-rack12/NetworkSerialPort/USBSerialPort`:
        match:
          '@sys_name': '3-1.3'
 
+To export multiple resources of the same class in the same group,
+you can choose a unique resource name, and then use the ``cls`` parameter to
+specify the class name instead (which will not be passed as a parameter to the
+class constructor).
+In this next example we will export one :any:`USBSerialPort` as
+`exportername/usb-hub-in-rack12/NetworkSerialPort/console-main`,
+and another :any:`USBSerialPort` as
+`exportername/usb-hub-in-rack12/NetworkSerialPort/console-secondary`:
+
+.. code-block:: yaml
+
+   usb-hub-in-rack12:
+     console-main:
+       cls: USBSerialPort
+       match:
+         '@sys_name': '3-1.3'
+     console-secondary:
+       cls: USBSerialPort
+       match:
+         '@sys_name': '3-1.4'
+
+Note that you could also split the resources up into distinct groups instead
+to achieve the same effect:
+
+.. code-block:: yaml
+
+   usb-hub-in-rack12-port3:
+     USBSerialPort:
+       match:
+         '@sys_name': '3-1.3'
+   usb-hub-in-rack12-port4:
+     USBSerialPort:
+       match:
+         '@sys_name': '3-1.4'
+
 To reduce the amount of repeated declarations when many similar resources
 need to be exported, the `Jinja2 template engine <http://jinja.pocoo.org/>`_
 is used as a preprocessor for the configuration file:

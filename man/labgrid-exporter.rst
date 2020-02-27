@@ -77,6 +77,9 @@ CONFIGURATION
 -------------
 The exporter uses a YAML configuration file which defines groups of releated
 resources.
+See <https://labgrid.readthedocs.io/en/latest/configuration.html#exporter-configuration>
+for more information.
+
 Furthermore the exporter can start helper binaries such as ``ser2net`` to
 export local serial ports over the network.
 

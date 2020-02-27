@@ -1924,16 +1924,25 @@ The basic structure of an exporter configuration file is:
 .. code-block:: yaml
 
    <group-1>:
-     <resources>
+     <resource-name-1>:
+       <params>
+     <resource-name-2>:
+       <params>
    <group-2>:
-     <resources>
+     <resource-name-1>:
+       <params>
 
-The simplest case is with one group called "group1" containing a single
-:any:`USBSerialPort`:
+By default, the class name is inferred from the resource name,
+and `<params>` will be passed to its constructor.
+For USB resources, you will most likely want to use :ref:`udev-matching` here.
+
+As a simple example, here is one group called *usb-hub-in-rack12* containing
+a single :any:`USBSerialPort` resource (using udev matching), which will be
+exported as `exportername/usb-hub-in-rack12/NetworkSerialPort/USBSerialPort`:
 
 .. code-block:: yaml
 
-   group1:
+   usb-hub-in-rack12:
      USBSerialPort:
        match:
          '@sys_name': '3-1.3'

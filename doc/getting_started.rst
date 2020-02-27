@@ -321,6 +321,8 @@ See :ref:`remote-usage` for some more advanced features.
 For a complete reference have a look at the :doc:`labgrid-client(1) <man/client>`
 man page.
 
+.. _udev-matching:
+
 udev Matching
 -------------
 

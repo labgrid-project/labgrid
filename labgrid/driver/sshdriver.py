@@ -164,14 +164,17 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['filename', 'remotepath'])
     def put(self, filename, remotepath=''):
-        transfer_cmd = "scp {prefix} -P {port} {filename} {user}@{host}:{remotepath}".format(
-            filename=filename,
-            user=self.networkservice.username,
-            host=self.networkservice.address,
-            remotepath=remotepath,
-            prefix=self.ssh_prefix,
-            port=self.networkservice.port
-        ).split(' ')
+        transfer_cmd = [
+            "scp",
+            self.ssh_prefix,
+            "-P", str(self.networkservice.port),
+            filename,
+            "{user}@{host}:{remotepath}".format(
+                user=self.networkservice.username,
+                host=self.networkservice.address,
+                remotepath=remotepath)
+            ]
+
         try:
             sub = subprocess.call(
                 transfer_cmd
@@ -188,14 +191,17 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['filename', 'destination'])
     def get(self, filename, destination="."):
-        transfer_cmd = "scp {prefix} -P {port} {user}@{host}:{filename} {destination}".format(
-            filename=filename,
-            user=self.networkservice.username,
-            host=self.networkservice.address,
-            prefix=self.ssh_prefix,
-            port=self.networkservice.port,
-            destination=destination
-        ).split(' ')
+        transfer_cmd = [
+            "scp",
+            self.ssh_prefix,
+            "-P", str(self.networkservice.port),
+            "{user}@{host}:{filename}".format(
+                user=self.networkservice.username,
+                host=self.networkservice.address,
+                filename=filename),
+            destination
+            ]
+
         try:
             sub = subprocess.call(
                 transfer_cmd

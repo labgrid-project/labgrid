@@ -62,7 +62,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         self._status = 0
 
     @Driver.check_active
-    @step(args=['cmd'])
+    @step(args=['cmd'], result=True)
     def run(self, cmd: str, *, timeout: int = 30):  # pylint: disable=unused-argument
         return self._run(cmd, timeout=timeout)
 

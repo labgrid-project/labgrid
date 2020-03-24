@@ -31,19 +31,20 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._keepalive = None
 
     def on_activate(self):
-        self.ssh_prefix = "-o LogLevel=ERROR"
+        self.ssh_prefix = ["-o", "LogLevel=ERROR"]
         if self.keyfile:
             keyfile_path = self.keyfile
             if self.target.env:
                 keyfile_path = self.target.env.config.resolve_path(self.keyfile)
-            self.ssh_prefix += " -i {}".format(keyfile_path)
-        self.ssh_prefix += " -o PasswordAuthentication=no" if (
-            not self.networkservice.password) else ""
+            self.ssh_prefix += ["-i", keyfile_path ]
+        if not self.networkservice.password:
+            self.ssh_prefix += ["-o", "PasswordAuthentication=no"]
+
         self.control = self._check_master()
-        self.ssh_prefix += " -F /dev/null"
-        self.ssh_prefix += " -o ControlPath={}".format(
-            self.control
-        ) if self.control else ""
+        self.ssh_prefix += ["-F", "/dev/null"]
+        if self.control:
+            self.ssh_prefix += ["-o", "ControlPath={}".format(self.control)]
+
         self._keepalive = None
         self._start_keepalive();
 
@@ -60,10 +61,13 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self.tmpdir, 'control-{}'.format(self.networkservice.address)
         )
         # use sshpass if we have a password
-        sshpass = "sshpass -e " if self.networkservice.password else ""
-        args = ("{}ssh -f {} -x -o ConnectTimeout=30 -o ControlPersist=300 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=15 -MN -S {} -p {} {}@{}").format( # pylint: disable=line-too-long
-            sshpass, self.ssh_prefix, control, self.networkservice.port,
-            self.networkservice.username, self.networkservice.address).split(" ")
+        args = ["sshpass", "-e"] if self.networkservice.password else []
+        args += ["ssh", "-f", *self.ssh_prefix, "-x", "-o", "ConnectTimeout=30",
+                 "-o", "ControlPersist=300", "-o",
+                 "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
+                 "-o", "ServerAliveInterval=15", "-MN", "-S", control, "-p",
+                 str(self.networkservice.port), "{}@{}".format(
+                     self.networkservice.username, self.networkservice.address)]
 
         env = os.environ.copy()
         if self.networkservice.password:
@@ -126,13 +130,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if not self._check_keepalive():
             raise ExecutionError("Keepalive no longer running")
 
-        complete_cmd = "ssh -x {prefix} -p {port} {user}@{host} {cmd}".format(
-            user=self.networkservice.username,
-            host=self.networkservice.address,
-            cmd=cmd,
-            prefix=self.ssh_prefix,
-            port=self.networkservice.port
-        ).split(' ')
+        complete_cmd = ["ssh", "-x", *self.ssh_prefix,
+                        "-p", str(self.networkservice.port), "{}@{}".format(
+                            self.networkservice.username, self.networkservice.address
+                        )] + cmd.split(" ")
         self.logger.debug("Sending command: %s", complete_cmd)
         if self.stderr_merge:
             stderr_pipe = subprocess.STDOUT
@@ -166,7 +167,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def put(self, filename, remotepath=''):
         transfer_cmd = [
             "scp",
-            self.ssh_prefix,
+            *self.ssh_prefix,
             "-P", str(self.networkservice.port),
             filename,
             "{user}@{host}:{remotepath}".format(
@@ -193,7 +194,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def get(self, filename, destination="."):
         transfer_cmd = [
             "scp",
-            self.ssh_prefix,
+            *self.ssh_prefix,
             "-P", str(self.networkservice.port),
             "{user}@{host}:{filename}".format(
                 user=self.networkservice.username,
@@ -236,7 +237,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _start_keepalive(self):
         """Starts a keepalive connection via the own or external master."""
-        args = ["ssh"] + self.ssh_prefix.split() + ["cat"]
+        args = ["ssh", *self.ssh_prefix, "cat"]
 
         assert self._keepalive is None
         self._keepalive = subprocess.Popen(

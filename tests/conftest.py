@@ -146,6 +146,8 @@ def pytest_addoption(parser):
                      help="Run sigrok usb tests with fx2lafw device (0925:3881)")
     parser.addoption("--local-sshmanager", action="store_true",
                      help="Run SSHManager tests against localhost")
+    parser.addoption("--ssh-username", default=None,
+                     help="SSH username to use for SSHDriver testing")
 
 def pytest_configure(config):
     # register an additional marker
@@ -153,6 +155,8 @@ def pytest_configure(config):
                             "sigrokusb: enable fx2lafw USB tests (0925:3881)")
     config.addinivalue_line("markers",
                             "localsshmanager: test SSHManager against Localhost")
+    config.addinivalue_line("markers",
+                            "sshusername: test SSHDriver against Localhost")
 
 def pytest_runtest_setup(item):
     envmarker = item.get_closest_marker("sigrokusb")
@@ -163,3 +167,7 @@ def pytest_runtest_setup(item):
     if envmarker is not None:
         if item.config.getoption("--local-sshmanager") is False:
             pytest.skip("SSHManager tests against localhost not enabled (enable with --local-sshmanager)")
+    envmarker = item.get_closest_marker("sshusername")
+    if envmarker is not None:
+        if item.config.getoption("--ssh-username") is None:
+            pytest.skip("SSHDriver tests against localhost not enabled (enable with --ssh-username <username>)")

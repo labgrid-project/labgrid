@@ -1910,10 +1910,14 @@ environment configs used for pytest) or by instantiating the :any:`Environment`
 object.
 To configure the exporter, you need to define one or more `resource groups`,
 each containing one or more `resources`.
-This allows the exporter to group resources for various usage scenarios, e.g.
+The syntax for exported resource names is ``<exporter>/<group>/<class>/<name>``,
+which allows the exporter to group resources for various usage scenarios, e.g.
 all resources of a specific place or for a specific test setup.
 For information on how the exporter fits into the rest of labgrid, see
 :any:`remote-resources-and-places`.
+
+The ``<exporter>`` part can be specified on the :ref:`labgrid-exporter` command
+line, and defaults to the hostname of the exporter.
 
 The basic structure of an exporter configuration file is:
 

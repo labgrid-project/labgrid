@@ -310,40 +310,65 @@ Example
 ~~~~~~~
 
 .. code-block:: python
+   :caption: conftest.py
 
-    # conftest.py
-    from labgrid.strategy import GraphStrategy
+   from labgrid.strategy import GraphStrategy
 
+   class TestStrategy(GraphStrategy):
+       def state_unknown(self):
+           pass
 
-    class TestStrategy(GraphStrategy):
-        def state_Unknown(self):
-            pass
+       @GraphStrategy.depends('unknown')
+       def state_boot_via_nand(self):
+           pass
 
-        @GraphStrategy.depends('Unknown')
-        def state_Boot_via_NAND(self):
-            pass
+       @GraphStrategy.depends('unknown')
+       def state_boot_via_nfs(self):
+           pass
 
-        @GraphStrategy.depends('Unknown')
-        def state_Boot_via_NFS(self):
-            pass
+       @GraphStrategy.depends('boot_via_nand', 'boot_via_nfs')
+       def state_barebox(self):
+           pass
 
-        @GraphStrategy.depends('Boot_via_NAND', 'Boot_via_NFS')
-        def state_BareBox(self):
-            pass
+       @GraphStrategy.depends('barebox')
+       def state_linux_shell(self):
+           pass
 
-        @GraphStrategy.depends('BareBox')
-        def state_Linux_Shell(self):
-            pass
+The class can also render a graph as PNG (using GraphViz):
+
+.. code-block:: yaml
+   :caption: test.yaml
+
+   targets:
+     main:
+       resources: {}
+       drivers: {}
 
 .. code-block:: python
+   :caption: render_teststrategy.py
 
-    # render graph to png
-    >>> graph_strategy.graph.render('filename')
-    'filename.png'
+   from labgrid.environment import Environment
+   from conftest import TestStrategy
+   env = Environment('test.yaml')
+   strategy = TestStrategy(env.get_target(), "strategy name")
 
-.. image:: res/graphstrategy-1.png
+   strategy.transition('barebox', via=['boot_via_nfs'])
+   # returned: ['unknown', 'boot_via_nfs', 'barebox']
+   strategy.graph.render("teststrategy-via-nfs")
+   # returned: 'teststrategy-via-nfs.png'
 
-.. image:: res/graphstrategy-2.png
+   strategy.transition('barebox', via=['boot_via_nand'])
+   # returned: ['unknown', 'boot_via_nand', 'barebox']
+   strategy.graph.render("teststrategy-via-nand")
+   # returned: 'teststrategy-via-nand.png'
+
+.. figure:: res/graphstrategy-via-nfs.png
+
+   TestStrategy transitioned to 'barebox' via 'boot_via_nfs'
+
+.. figure:: res/graphstrategy-via-nand.png
+
+   TestStrategy transitioned to 'barebox' via 'boot_via_nand'
 
 State
 ~~~~~
@@ -378,30 +403,30 @@ A transition describes a path, or a part of a path, through a GraphStrategy
 graph.
 Every State in the graph has a auto generated default path starting from the
 root state.
-So using the given example, the GraphStrategy would call the states `Unknown`
-, `Boot_via_NAND`, `BareBox`, and `Linux_Shell` in this order if
-`transition('Linux_Shell')` would be called.
-The GraphStrategy would prefer `Boot_via_NAND` over `Boot_via_NFS` because
-`Boot_via_NAND` is mentioned before `Boot_via_NFS` in the dependencies of
-`BareBox`. If you want to reach via `Boot_via_NFS` the call would look like
-this: `transition('Linux_Shell', via='Boot_via_NFS')`.
+So using the given example, the GraphStrategy would call the states `unknown`
+, `boot_via_nand`, `barebox`, and `linux_shell` in this order if
+`transition('linux_shell')` would be called.
+The GraphStrategy would prefer `boot_via_nand` over `boot_via_nfs` because
+`boot_via_nand` is mentioned before `boot_via_nfs` in the dependencies of
+`barebox`. If you want to reach via `boot_via_nfs` the call would look like
+this: `transition('linux_shell', via='boot_via_nfs')`.
 
 A transition can be incremental. If we trigger a transition
-`transition('BareBox')` first, the states `Unknown`, `Boot_via_NAND` and
-`BareBox` will be called in this order. If we trigger a transition
-`transition('Linux_Shell')` afterwards only `Linux_Shell` gets called. This
-happens because `Linux_Shell` is reachable from `BareBox` and the Strategy
+`transition('barebox')` first, the states `unknown`, `boot_via_nand` and
+`barebox` will be called in this order. If we trigger a transition
+`transition('linux_shell')` afterwards only `linux_shell` gets called. This
+happens because `linux_shell` is reachable from `barebox` and the Strategy
 holds state of the last walked path.
 But there is a catch! The second, incremental path must be *fully* incremental
 to the previous path!
-For example: Lets say we reached `BareBox` via `Boot_via_NFS`,
-(`transition('Barebox', via='Boot_via_NFS')`). If we trigger
-`transition('Linux_Shell')` afterwards the GraphStrategy would compare the last
-path `'Unknown', 'Boot_via_NFS', 'BareBox'` with the default path to
-`Linux_Shell` which would be
-`'Unknown', 'Boot_via_NAND', 'BareBox', 'Linux_Shell'`, and decides the path
+For example: Lets say we reached `barebox` via `boot_via_nfs`,
+(`transition('barebox', via='boot_via_nfs')`). If we trigger
+`transition('linux_shell')` afterwards the GraphStrategy would compare the last
+path `'unknown', 'boot_via_nfs', 'barebox'` with the default path to
+`linux_shell` which would be
+`'unknown', 'boot_via_nand', 'barebox', 'linux_shell'`, and decides the path
 is not fully incremental and starts over by the root state. If we had given
-the second transition `Boot_via_NFS` like in the first transition the paths
+the second transition `boot_via_nfs` like in the first transition the paths
 had been incremental.
 
 

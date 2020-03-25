@@ -75,7 +75,7 @@ override this default with another name (or an IP address).
 
 CONFIGURATION
 -------------
-The exporter uses a YAML configuration file which defines groups of releated
+The exporter uses a YAML configuration file which defines groups of related
 resources.
 See <https://labgrid.readthedocs.io/en/latest/configuration.html#exporter-configuration>
 for more information.

@@ -1982,6 +1982,8 @@ to achieve the same effect:
        match:
          '@sys_name': '3-1.4'
 
+Templating
+~~~~~~~~~~
 To reduce the amount of repeated declarations when many similar resources
 need to be exported, the `Jinja2 template engine <http://jinja.pocoo.org/>`_
 is used as a preprocessor for the configuration file:

@@ -80,9 +80,6 @@ resources.
 See <https://labgrid.readthedocs.io/en/latest/configuration.html#exporter-configuration>
 for more information.
 
-Furthermore the exporter can start helper binaries such as ``ser2net`` to
-export local serial ports over the network.
-
 ENVIRONMENT VARIABLES
 ---------------------
 The following environment variable can be used to configure labgrid-exporter.

@@ -258,8 +258,9 @@ identical hardware, key-value tags can be added to places and used for
 scheduling.
 
 Finally, a place is configured with one or more `resource matches`.
-A resource match pattern has the format ``<exporter>/<group>/<class>``, where
-each component may be replaced with the wildcard ``*``.
+A resource match pattern has the format ``<exporter>/<group>/<class>/<name>``,
+where each component may be replaced with the wildcard ``*``.
+The ``/<name>`` part is optional and can be left out to match all resources of a class.
 
 Some commonly used match patterns are:
 

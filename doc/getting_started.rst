@@ -10,7 +10,7 @@ Installation
 ------------
 
 Depending on your distribution you need some dependencies. On Debian stretch
-these usually are:
+and buster these usually are:
 
 .. code-block:: bash
 

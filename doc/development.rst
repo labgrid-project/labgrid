@@ -434,7 +434,7 @@ SSHManager
 ----------
 
 labgrid provides a SSHManager to allow connection reuse with control sockets.
-To use the SSHManager in your code, import it from `labgrid.util.ssh`:
+To use the SSHManager in your code, import it from :any:`labgrid.util.ssh`:
 
 .. code-block:: python
 

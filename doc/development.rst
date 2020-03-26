@@ -375,7 +375,7 @@ State
 
 Every graph node describes a board state and how to reach it, A state
 has to be a class method following this prototype:
-`def state_$STATENAME(self):`. A state may not call `transition()` in its
+``def state_$STATENAME(self):``. A state may not call ``transition()`` in its
 state definition.
 
 Dependency
@@ -403,25 +403,25 @@ A transition describes a path, or a part of a path, through a GraphStrategy
 graph.
 Every State in the graph has a auto generated default path starting from the
 root state.
-So using the given example, the GraphStrategy would call the states `unknown`
-, `boot_via_nand`, `barebox`, and `linux_shell` in this order if
-`transition('linux_shell')` would be called.
+So using the given example, the GraphStrategy would call the states `unknown`,
+`boot_via_nand`, `barebox`, and `linux_shell` in this order if
+``transition('linux_shell')`` would be called.
 The GraphStrategy would prefer `boot_via_nand` over `boot_via_nfs` because
 `boot_via_nand` is mentioned before `boot_via_nfs` in the dependencies of
 `barebox`. If you want to reach via `boot_via_nfs` the call would look like
-this: `transition('linux_shell', via='boot_via_nfs')`.
+this: ``transition('linux_shell', via='boot_via_nfs')``.
 
-A transition can be incremental. If we trigger a transition
-`transition('barebox')` first, the states `unknown`, `boot_via_nand` and
+A transition can be incremental. If we trigger a transition with
+``transition('barebox')`` first, the states `unknown`, `boot_via_nand` and
 `barebox` will be called in this order. If we trigger a transition
-`transition('linux_shell')` afterwards only `linux_shell` gets called. This
+``transition('linux_shell')`` afterwards only `linux_shell` gets called. This
 happens because `linux_shell` is reachable from `barebox` and the Strategy
 holds state of the last walked path.
 But there is a catch! The second, incremental path must be *fully* incremental
 to the previous path!
 For example: Lets say we reached `barebox` via `boot_via_nfs`,
-(`transition('barebox', via='boot_via_nfs')`). If we trigger
-`transition('linux_shell')` afterwards the GraphStrategy would compare the last
+(``transition('barebox', via='boot_via_nfs')``). If we trigger
+``transition('linux_shell')`` afterwards the GraphStrategy would compare the last
 path `'unknown', 'boot_via_nfs', 'barebox'` with the default path to
 `linux_shell` which would be
 `'unknown', 'boot_via_nand', 'barebox', 'linux_shell'`, and decides the path

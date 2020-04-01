@@ -183,6 +183,25 @@ Used by:
    looking for, paths without the interface will fail to match since they use
    the ``usb`` driver.
 
+SiSPMPowerPort
++++++++++++++++++
+A SiSPMPowerPort describes a GEMBIRD SiS-PM as supported by
+`sispmctl <https://sourceforge.net/projects/sispmctl/>`_.
+
+.. code-block:: yaml
+
+   SiSPMPowerPort:
+     match:
+       ID_PATH: platform-1c1a400.usb-usb-0:2
+     index: 1
+
+The example describes port 1 on the hub with the ID_PATH
+"platform-1c1a400.usb-usb-0:2".
+
+- index (int): number of the port to switch
+
+Used by:
+  - `SiSPMPowerDriver`_
 
 ModbusTCPCoil
 ~~~~~~~~~~~~~
@@ -1248,6 +1267,25 @@ Implements:
 .. code-block:: yaml
 
    USBPowerPort:
+     delay: 5.0
+
+Arguments:
+  - delay (float): optional delay in seconds between off and on
+
+SiSPMPowerDriver
+~~~~~~~~~~~~~~~~~~~
+A SiSPMPowerDriver controls a `SiSPMPowerPort`, allowing control of the target
+power state without user interaction.
+
+Binds to:
+  - `SiSPMPowerPort`_
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   SiSPMPowerPort:
      delay: 5.0
 
 Arguments:

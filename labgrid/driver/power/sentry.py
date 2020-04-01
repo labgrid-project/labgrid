@@ -1,3 +1,8 @@
+"""
+This driver was tested on those models: CW-24VDD and 4805-XLS-16
+but should be working on all devices implementing Sentry3-MIB
+"""
+
 from ..exception import ExecutionError
 from ...util.helper import processwrapper
 

@@ -165,3 +165,4 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.gude24
         import labgrid.driver.power.netio
         import labgrid.driver.power.netio_kshell
+        import labgrid.driver.power.sentry

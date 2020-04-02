@@ -8,7 +8,9 @@ import sys
 import os
 import time
 import traceback
+import shutil
 import subprocess
+import warnings
 from socket import gethostname, getfqdn
 import attr
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
@@ -187,6 +189,10 @@ class SerialPortExport(ResourceExport):
         self.data['cls'] = "NetworkSerialPort"
         self.child = None
         self.port = None
+        self.ser2net_bin = shutil.which("ser2net")
+        if self.ser2net_bin is None:
+            warnings.warn("ser2net binary not found, falling back to /usr/bin/ser2net")
+            self.ser2net_bin = "/usr/bin/ser2net"
 
     def __del__(self):
         if self.child is not None:
@@ -214,7 +220,7 @@ class SerialPortExport(ResourceExport):
         assert start_params['path'].startswith('/dev/')
         self.port = get_free_port()
         self.child = subprocess.Popen([
-            '/usr/sbin/ser2net',
+            self.ser2net_bin,
             '-d',
             '-n',
             '-C',

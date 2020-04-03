@@ -202,6 +202,7 @@ class SerialPortExport(ResourceExport):
         return {
             'host': self.host,
             'port': self.port,
+            'speed': self.local.speed,
             'extra': {
                 'path': self.local.port,
             }
@@ -218,8 +219,8 @@ class SerialPortExport(ResourceExport):
             '-d',
             '-n',
             '-C',
-            '{}:telnet:0:{}:115200 8DATABITS NONE 1STOPBIT LOCAL'.format(
-                self.port, start_params['path']
+            '{}:telnet:0:{}:{} 8DATABITS NONE 1STOPBIT LOCAL'.format(
+                self.port, start_params['path'], self.local.speed
             ),
         ])
         try:

@@ -56,13 +56,16 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
+
+        timeout = 30
+
         self.tmpdir = tempfile.mkdtemp(prefix='labgrid-ssh-tmp-')
         control = os.path.join(
             self.tmpdir, 'control-{}'.format(self.networkservice.address)
         )
         # use sshpass if we have a password
         args = ["sshpass", "-e"] if self.networkservice.password else []
-        args += ["ssh", "-f", *self.ssh_prefix, "-x", "-o", "ConnectTimeout=30",
+        args += ["ssh", "-f", *self.ssh_prefix, "-x", "-o", "ConnectTimeout={}".format(timeout),
                  "-o", "ControlPersist=300", "-o",
                  "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
                  "-o", "ServerAliveInterval=15", "-MN", "-S", control, "-p",
@@ -72,19 +75,28 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         env = os.environ.copy()
         if self.networkservice.password:
             env['SSHPASS'] = self.networkservice.password
-        self.process = subprocess.Popen(args, env=env)
+        self.process = subprocess.Popen(args, env=env,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        stdin=subprocess.DEVNULL)
 
         try:
-            if self.process.wait(timeout=30) != 0:
+            subprocess_timeout = timeout + 5
+            return_value = self.process.wait(timeout=subprocess_timeout)
+            if return_value != 0:
+                stdout = self.process.stdout.readlines()
+                stderr = self.process.stderr.readlines()
                 raise ExecutionError(
-                    "failed to connect to {} with {} and {}".
-                    format(self.networkservice.address, args, self.process.wait())
+                    "Failed to connect to {} with {} and {}".
+                    format(self.networkservice.address, args, return_value),
+                    stdout=stdout,
+                    stderr=stderr
                 )
         except subprocess.TimeoutExpired:
             raise ExecutionError(
-                "failed to connect to {} with {} and {}".
-                format(self.networkservice.address, args, self.process.wait())
-                )
+                "Subprocess timed out [{}s] while executing {}".
+                format(subprocess_timeout, args),
+            )
 
         if not os.path.exists(control):
             raise ExecutionError(

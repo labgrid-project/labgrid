@@ -8,6 +8,8 @@ Driver has been tested with:
 * Gude Expert Power Control 8080
 """
 
+import re
+
 import requests
 
 from ..exception import ExecutionError
@@ -67,6 +69,10 @@ def get_state(request, index):
                 return True
 
             raise ExecutionError("failed to parse the port status")
+
+    m = re.search("Device is blocked by another user with IP ([^\s<]+)", request.text)
+    if m:
+        raise ExecutionError("device is blocked by another user with IP {}".format(m.group(1)))
 
     # if we got this far, something is wrong with the website
     raise ExecutionError("failed to determine status of power port {}".format(index))

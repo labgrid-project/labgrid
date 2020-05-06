@@ -7,12 +7,16 @@ from string import Template
 
 import yaml
 
+class Loader(yaml.SafeLoader):
+    pass
+class Dumper(yaml.SafeDumper):
+    pass
 
 def _dict_constructor(loader, node):
     return OrderedDict(loader.construct_pairs(node))
 
 
-yaml.SafeLoader.add_constructor(
+Loader.add_constructor(
     yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _dict_constructor
 )
 
@@ -21,7 +25,7 @@ def _dict_representer(dumper, data):
     return dumper.represent_dict(data.items())
 
 
-yaml.SafeDumper.add_representer(OrderedDict, _dict_representer)
+Dumper.add_representer(OrderedDict, _dict_representer)
 
 
 def _str_constructor(loader, node):
@@ -34,7 +38,7 @@ def _str_constructor(loader, node):
     return obj
 
 
-yaml.SafeLoader.add_constructor(
+Loader.add_constructor(
     yaml.resolver.BaseResolver.DEFAULT_SCALAR_TAG, _str_constructor
 )
 
@@ -43,14 +47,9 @@ def _template_constructor(loader, node):
     return Template(loader.construct_scalar(node))
 
 
-yaml.SafeLoader.add_constructor(
+Loader.add_constructor(
     '!template', _template_constructor
 )
-
-
-# use SafeLoader
-Loader = yaml.SafeLoader
-Dumper = yaml.SafeDumper
 
 
 def load(stream):

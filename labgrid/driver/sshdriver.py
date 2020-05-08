@@ -69,8 +69,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                  "-o", "ControlPersist=300", "-o",
                  "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
                  "-o", "ServerAliveInterval=15", "-MN", "-S", control, "-p",
-                 str(self.networkservice.port), "{}@{}".format(
-                     self.networkservice.username, self.networkservice.address)]
+                 str(self.networkservice.port), "-l", self.networkservice.username,
+                 self.networkservice.address]
 
         env = os.environ.copy()
         if self.networkservice.password:
@@ -109,9 +109,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _check_master(self):
         args = [
-            "ssh", "-O", "check", "{}@{}".format(
-                self.networkservice.username, self.networkservice.address
-            )
+            "ssh", "-O", "check", "-l", self.networkservice.username, self.networkservice.address
         ]
         check = subprocess.call(
             args,
@@ -143,9 +141,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             raise ExecutionError("Keepalive no longer running")
 
         complete_cmd = ["ssh", "-x", *self.ssh_prefix,
-                        "-p", str(self.networkservice.port), "{}@{}".format(
-                            self.networkservice.username, self.networkservice.address
-                        )] + cmd.split(" ")
+                        "-p", str(self.networkservice.port), "-l", self.networkservice.username,
+                        self.networkservice.address
+                        ] + cmd.split(" ")
         self.logger.debug("Sending command: %s", complete_cmd)
         if self.stderr_merge:
             stderr_pipe = subprocess.STDOUT
@@ -230,7 +228,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _cleanup_own_master(self):
         """Exit the controlmaster and delete the tmpdir"""
-        complete_cmd = "ssh -x -o ControlPath={cpath} -O exit -p {port} {user}@{host}".format(
+        complete_cmd = "ssh -x -o ControlPath={cpath} -O exit -p {port} -l {user} {host}".format(
             cpath=self.control,
             port=self.networkservice.port,
             user=self.networkservice.username,

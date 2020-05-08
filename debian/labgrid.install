@@ -2,3 +2,4 @@ debian/labgrid.yaml /etc
 debian/labgrid-client /usr/bin
 debian/labgrid-exporter /usr/bin
 debian/labgrid-pytest /usr/bin
+helpers/labgrid-bound-connect /usr/sbin

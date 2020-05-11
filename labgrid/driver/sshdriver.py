@@ -168,6 +168,24 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             stderr.pop()
         return (stdout, stderr, sub.returncode)
 
+    def interact(self, cmd=None):
+        assert cmd is None or isinstance(cmd, list)
+
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        complete_cmd = ["ssh", "-x", *self.ssh_prefix,
+                        "-t",
+                        self.networkservice.address
+                        ]
+        if cmd:
+            complete_cmd += ["--", *cmd]
+        self.logger.debug("Running command: %s", complete_cmd)
+        sub = subprocess.Popen(
+            complete_cmd,
+        )
+        return sub.wait()
+
     def get_status(self):
         """The SSHDriver is always connected, return 1"""
         return 1

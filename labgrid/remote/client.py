@@ -955,39 +955,34 @@ class ClientSession(ApplicationSession):
         return newest[0]
 
     def ssh(self):
-        from ..resource import NetworkService
         place = self.get_acquired_place()
-        ip = self._get_ip(place)
-        if not ip:
-            return
         target = self._get_target(place)
         env = os.environ.copy()
+
+        from ..resource import NetworkService
         try:
             resource = target.get_resource(NetworkService)
-            username = resource.username
-            port = resource.port or 22
-            # use sshpass if we have a password
-            if resource.password:
-                env['SSHPASS'] = resource.password
-            sshpass = ['sshpass', '-e'] if resource.password else []
-
         except NoResourceFoundError:
-            username = 'root'
-            sshpass = []
-            port = 22
+            ip = self._get_ip(place)
+            if not ip:
+                return
+            resource = NetworkService(target,
+                    address = str(ip),
+                    username = 'root',
+            )
 
-        args = sshpass + [
-            'ssh',
-            '-l', username,
-            '-p', str(port),
-            '-o', 'StrictHostKeyChecking no',
-            '-o', 'UserKnownHostsFile /dev/null',
-            str(ip),
-        ] + self.args.leftover
-        print('Note: Using dummy known hosts file.')
-        res = subprocess.run(args, env=env)
-        if res:
-            print("connection lost")
+        from ..driver.sshdriver import SSHDriver
+        try:
+            drv = target.get_driver(SSHDriver)
+        except NoDriverFoundError:
+            drv = SSHDriver(target, name=None)
+        target.activate(drv)
+
+        res = drv.interact(self.args.leftover)
+        if res == 255:
+            print("connection lost (SSH error)")
+        elif res:
+            print("connection lost (remote exit code {})".format(res))
 
     def telnet(self):
         place = self.get_acquired_place()

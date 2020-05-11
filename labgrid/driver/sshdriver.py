@@ -97,7 +97,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             env['SSHPASS'] = self.networkservice.password
         self.process = subprocess.Popen(args, env=env,
                                         stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT,
                                         stdin=subprocess.DEVNULL)
 
         try:
@@ -105,7 +105,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             return_value = self.process.wait(timeout=subprocess_timeout)
             if return_value != 0:
                 stdout = self.process.stdout.readlines()
-                stderr = self.process.stderr.readlines()
+                for line in stdout:
+                    self.logger.warning("ssh: %s", line.rstrip().decode(encoding="utf-8", errors="replace"))
 
                 try:
                     proxy_error = open(self.tmpdir+'/proxy-stderr').read().strip()
@@ -122,7 +123,6 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                     "Failed to connect to {} with {}: return code {}".
                     format(self.networkservice.address, args, return_value),
                     stdout=stdout,
-                    stderr=stderr
                 )
         except subprocess.TimeoutExpired:
             raise ExecutionError(
@@ -135,7 +135,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 "no control socket to {}".format(self.networkservice.address)
             )
 
-        self.logger.debug('Connected to %s', self.networkservice.address)
+        self.logger.info('Connected to %s', self.networkservice.address)
 
         return control
 

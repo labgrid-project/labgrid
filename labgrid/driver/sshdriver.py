@@ -14,6 +14,7 @@ from .commandmixin import CommandMixin
 from .common import Driver
 from ..step import step
 from .exception import ExecutionError
+from ..util.proxy import proxymanager
 
 
 @target_factory.reg_driver
@@ -43,7 +44,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.control = self._check_master()
         self.ssh_prefix += ["-F", "/dev/null"]
         if self.control:
-            self.ssh_prefix += ["-o", "ControlPath={}".format(self.control)]
+            self.ssh_prefix += ["-o", "ControlPath={}".format(self.control.replace('%', '%%'))]
 
         self._keepalive = None
         self._start_keepalive();
@@ -65,12 +66,31 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
         # use sshpass if we have a password
         args = ["sshpass", "-e"] if self.networkservice.password else []
+
         args += ["ssh", "-f", *self.ssh_prefix, "-x", "-o", "ConnectTimeout={}".format(timeout),
                  "-o", "ControlPersist=300", "-o",
                  "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
-                 "-o", "ServerAliveInterval=15", "-MN", "-S", control, "-p",
+                 "-o", "ServerAliveInterval=15", "-MN", "-S", control.replace('%', '%%'), "-p",
                  str(self.networkservice.port), "-l", self.networkservice.username,
                  self.networkservice.address]
+
+        # proxy via the exporter if we have an ifname suffix
+        address = self.networkservice.address
+        if address.count('%') > 1:
+            raise ValueError("Multiple '%' found in '{}'.".format(address))
+        if '%' in address:
+            address, ifname = address.split('%', 1)
+        else:
+            ifname = None
+
+        proxy_cmd = proxymanager.get_command(self.networkservice, address, self.networkservice.port, ifname)
+        if proxy_cmd:  # only proxy if needed
+            args += [
+                "-o", "ProxyCommand={} 2>{}".format(
+                    ' '.join(proxy_cmd),
+                    self.tmpdir+'/proxy-stderr',
+                )
+            ]
 
         env = os.environ.copy()
         if self.networkservice.password:
@@ -86,8 +106,20 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             if return_value != 0:
                 stdout = self.process.stdout.readlines()
                 stderr = self.process.stderr.readlines()
+
+                try:
+                    proxy_error = open(self.tmpdir+'/proxy-stderr').read().strip()
+                    if proxy_error:
+                        raise ExecutionError(
+                            "Failed to connect to {} with {}: error from SSH ProxyCommand: {}".
+                            format(self.networkservice.address, args, proxy_error),
+                            stdout=stdout,
+                        )
+                except FileNotFoundError:
+                    pass
+
                 raise ExecutionError(
-                    "Failed to connect to {} with {} and {}".
+                    "Failed to connect to {} with {}: return code {}".
                     format(self.networkservice.address, args, return_value),
                     stdout=stdout,
                     stderr=stderr

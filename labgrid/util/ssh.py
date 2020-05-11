@@ -17,7 +17,7 @@ __all__ = ['sshmanager', 'SSHConnection', 'ForwardError']
 @attr.s
 class SSHConnectionManager:
     """The SSHConnectionManager manages multiple SSH connections. This class
-    should not be directly instanciated, use the exported sshmanager from this
+    should not be directly instantiated, use the exported sshmanager from this
     module instead.
     """
     _connections = attr.ib(

@@ -954,7 +954,7 @@ class ClientSession(ApplicationSession):
             return None
         return newest[0]
 
-    def ssh(self):
+    def _get_ssh(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
         env = os.environ.copy()
@@ -977,12 +977,21 @@ class ClientSession(ApplicationSession):
         except NoDriverFoundError:
             drv = SSHDriver(target, name=None)
         target.activate(drv)
+        return drv
+
+    def ssh(self):
+        drv = self._get_ssh()
 
         res = drv.interact(self.args.leftover)
         if res == 255:
             print("connection lost (SSH error)")
         elif res:
             print("connection lost (remote exit code {})".format(res))
+
+    def sshfs(self):
+        drv = self._get_ssh()
+
+        res = drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint)
 
     def telnet(self):
         place = self.get_acquired_place()
@@ -1423,6 +1432,12 @@ def main():
     subparser = subparsers.add_parser('ssh',
                                       help="connect via ssh (with optional arguments)")
     subparser.set_defaults(func=ClientSession.ssh)
+
+    subparser = subparsers.add_parser('sshfs',
+                                      help="mount via sshfs (blocking)")
+    subparser.add_argument('path', help='remote path on the target')
+    subparser.add_argument('mountpoint', help='local path')
+    subparser.set_defaults(func=ClientSession.sshfs)
 
     subparser = subparsers.add_parser('telnet',
                                       help="connect via telnet")

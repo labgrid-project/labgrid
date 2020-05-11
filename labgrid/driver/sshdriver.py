@@ -218,6 +218,33 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
         return sub.wait()
 
+    @Driver.check_active
+    @step(args=['path', 'mountpoint'])
+    def sshfs(self, *, path, mountpoint):
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        complete_cmd = ["sshfs",
+                "-f",
+                "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
+                ":{}".format(path),
+                mountpoint,
+        ]
+
+        self.logger.debug("Running command: %s", complete_cmd)
+        sub = subprocess.Popen(
+            complete_cmd,
+        )
+        try:
+            sub.wait(1)
+            raise ExecutionError(
+                "error executing command: {}".format(complete_cmd)
+            )
+        except subprocess.TimeoutExpired:  # still running
+            self.logger.info("Started SSHFS on {}. Press CTRL-C to stop.".format(mountpoint))
+
+        sub.wait()
+
     def get_status(self):
         """The SSHDriver is always connected, return 1"""
         return 1

@@ -439,6 +439,31 @@ class GPIOGenericExport(ResourceExport):
 exports["SysfsGPIO"] = GPIOGenericExport
 
 
+@attr.s
+class NetworkServiceExport(ResourceExport):
+    """ResourceExport for a NetworkService
+
+    This checks if the address has a interface suffix and then provides the
+    neccessary proxy information.
+    """
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.networkservice import NetworkService
+        self.data['cls'] = "NetworkService"
+        self.local = NetworkService(target=None, name=None, **self.local_params)
+        if '%' in self.local_params['address']:
+            self.proxy_required = True
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            **self.local_params,
+        }
+
+exports["NetworkService"] = NetworkServiceExport
+
+
 class ExporterSession(ApplicationSession):
     def onConnect(self):
         """Set up internal datastructures on successful connection:

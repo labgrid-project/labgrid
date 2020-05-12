@@ -156,6 +156,12 @@ LABGRID-CLIENT COMMANDS
 
 ``ssh``                         Connect via SSH
 
+``scp``                         Transfer file via scp (use ':dir/file' for the remote side)
+
+``rsync``                       Transfer files via rsync (use ':dir/file' for the remote side)
+
+``sshfs``                       Mount a remote path via sshfs
+
 ``telnet``                      Connect via telnet
 
 ``video``                       Start a video stream

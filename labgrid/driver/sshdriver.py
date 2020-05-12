@@ -219,6 +219,61 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         return sub.wait()
 
     @Driver.check_active
+    @step(args=['src', 'dst'])
+    def scp(self, *, src, dst):
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        if src.startswith(':') == dst.startswith(':'):
+            raise ValueError("Either source or destination must be remote (start with :)")
+        if src.startswith(':'):
+            src = '_' + src
+        if dst.startswith(':'):
+            dst = '_' + dst
+
+        complete_cmd = ["scp",
+                "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
+                src, dst,
+        ]
+        self.logger.info("Running command: %s", complete_cmd)
+        sub = subprocess.Popen(
+            complete_cmd,
+        )
+        return sub.wait()
+
+    @Driver.check_active
+    @step(args=['src', 'dst', 'extra'])
+    def rsync(self, *, src, dst, extra=[]):
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        if src.startswith(':') == dst.startswith(':'):
+            raise ValueError("Either source or destination must be remote (start with :)")
+        if src.startswith(':'):
+            src = '_' + src
+        if dst.startswith(':'):
+            dst = '_' + dst
+
+        ssh_cmd = ["ssh",
+                "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
+        ]
+
+        complete_cmd = ["rsync",
+                "-v",
+                "--rsh={}".format(' '.join(ssh_cmd)),
+                "-rlpt",  # --recursive --links --perms --times
+                "--one-file-system",
+                "--progress",
+                *extra,
+                src, dst,
+        ]
+        self.logger.info("Running command: %s", complete_cmd)
+        sub = subprocess.Popen(
+            complete_cmd,
+        )
+        return sub.wait()
+
+    @Driver.check_active
     @step(args=['path', 'mountpoint'])
     def sshfs(self, *, path, mountpoint):
         if not self._check_keepalive():

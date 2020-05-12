@@ -988,6 +988,16 @@ class ClientSession(ApplicationSession):
         elif res:
             print("connection lost (remote exit code {})".format(res))
 
+    def scp(self):
+        drv = self._get_ssh()
+
+        res = drv.scp(src=self.args.src, dst=self.args.dst)
+
+    def rsync(self):
+        drv = self._get_ssh()
+
+        res = drv.rsync(src=self.args.src, dst=self.args.dst, extra=self.args.leftover)
+
     def sshfs(self):
         drv = self._get_ssh()
 
@@ -1433,6 +1443,18 @@ def main():
                                       help="connect via ssh (with optional arguments)")
     subparser.set_defaults(func=ClientSession.ssh)
 
+    subparser = subparsers.add_parser('scp',
+                                      help="transfer file via scp")
+    subparser.add_argument('src', help='source path (use :dir/file for remote side)')
+    subparser.add_argument('dst', help='destination path (use :dir/file for remote side)')
+    subparser.set_defaults(func=ClientSession.scp)
+
+    subparser = subparsers.add_parser('rsync',
+                                      help="transfer files via rsync")
+    subparser.add_argument('src', help='source path (use :dir/file for remote side)')
+    subparser.add_argument('dst', help='destination path (use :dir/file for remote side)')
+    subparser.set_defaults(func=ClientSession.rsync)
+
     subparser = subparsers.add_parser('sshfs',
                                       help="mount via sshfs (blocking)")
     subparser.add_argument('path', help='remote path on the target')
@@ -1512,7 +1534,7 @@ def main():
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()
-    if args.command not in ['ssh']:
+    if args.command not in ['ssh', 'rsync']:
         args = parser.parse_args()
     else:
         args.leftover = leftover

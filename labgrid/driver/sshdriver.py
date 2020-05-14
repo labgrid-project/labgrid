@@ -105,6 +105,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         self.logger.debug('Connected to %s', self.networkservice.address)
 
+        # We don't want to silently fall back to password authentication from now
+        if self.networkservice.password:
+            self.ssh_prefix += ["-o", "PasswordAuthentication=no"]
         return control
 
     def _check_master(self):

@@ -12,3 +12,4 @@ PyYAML==5.3.1
 ansicolors==1.1.8
 pyusb==1.1.0
 six>=1.13.0
+https://github.com/Yepkit/pykush/archive/master.zip#egg=pykush

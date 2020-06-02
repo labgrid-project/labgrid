@@ -91,3 +91,28 @@ def test_local_run_check(ssh_localhost, tmpdir):
 
     res = ssh_localhost.run_check("echo Hello")
     assert res == (["Hello"])
+
+@pytest.mark.sshusername
+def test_local_background(ssh_localhost):
+    cmd = "echo running && /usr/bin/sleep 10 && echo done"
+    with ssh_localhost.background(cmd) as bg:
+        res = ssh_localhost.run("echo Hello")
+        assert res == (["Hello"], [], 0)
+        stdout, _, _ = ssh_localhost.run("ps -ef")
+        assert any(cmd in line for line in stdout), "background command not running"
+        assert bg.stdout.peek(100) == b'running\r\n'
+
+    stdout, _, _ = ssh_localhost.run("ps -ef")
+    assert not any(cmd in line for line in stdout), "background command still running"
+
+@pytest.mark.sshusername
+def test_local_background_exception(ssh_localhost):
+    cmd = "echo running && /usr/bin/sleep 10 && echo done"
+    try:
+        with ssh_localhost.background(cmd) as bg:
+            stdout, _, _ = ssh_localhost.run("ps -ef")
+            assert any(cmd in line for line in stdout), "background command not running"
+            raise KeyError("Testcase failed")
+    except KeyError:
+        stdout, _, _ = ssh_localhost.run("ps -ef")
+        assert not any(cmd in line for line in stdout), "background command still running"

@@ -170,6 +170,57 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             stderr.pop()
         return (stdout, stderr, sub.returncode)
 
+    @Driver.check_active
+    @step(args=['cmd'], result=True)
+    def background(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None):  # pylint: disable=unused-argument
+        return self._background(cmd, codec=codec, decodeerrors=decodeerrors)
+
+    def _background(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None):  # pylint: disable=unused-argument
+        """Execute `cmd` on the target as a background process.
+
+        Like the `run` method, this method runs `cmd` on the target. Unlike
+        `run` this command runs in the background and returns a resource handle
+        which must be managed with the `with` keyword. It will clean up by
+        sending SIGTERM to the command.
+
+        This is useful for setting up long-running commands which must run for
+        the duration of a test, e.g. streaming test data to the DUT.
+
+        returns:
+            With statement context manager
+
+        Usage example:
+        with target.background('sleep 60'):
+            pass
+
+        """
+
+        import pty
+        from contextlib import contextmanager
+
+        # Run command in an SSH pseudo-terminal to avoid interfering with stdin
+        _, pty_slave = pty.openpty()
+        complete_cmd = ["ssh", "-tt", "-x", *self.ssh_prefix,
+                        "-p", str(self.networkservice.port), "{}@{}".format(
+                            self.networkservice.username, self.networkservice.address
+                        )] + cmd.split(" ")
+        self.logger.debug("Running background command: '%s'", str.join(" ", complete_cmd))
+        try:
+            sub = subprocess.Popen(
+                complete_cmd, stdin=pty_slave, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+        except:
+            raise ExecutionError("error executing command: {}".format(complete_cmd))
+
+        @contextmanager
+        def managed_process(sub):
+            try:
+                yield sub
+            finally:
+                self.logger.debug("Stopping background command: '%s'", str.join(" ", complete_cmd))
+                sub.terminate()
+        return managed_process(sub)
+
     def get_status(self):
         """The SSHDriver is always connected, return 1"""
         return 1

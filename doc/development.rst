@@ -292,6 +292,79 @@ Here the `barebox` state simply cycles the board and activates the driver, while
 the `shell` state uses the barebox state to cycle the board and than boot the
 linux kernel. The `off` states switch the power off.
 
+
+Tips for Writing and Debugging Tests
+------------------------------------
+
+Live-Reading Console Output
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When starting labgrid with ``--lg-log`` option, it will dump the input from the
+serial driver to a file in specified directory::
+
+  $ pytest .. --lg-log=logdir test-dir/
+
+This can help understanding what happened and why it happened.
+However, when debugging tests, it might be more helpful to get a live
+impression of what is going on.
+For this, you can use ``tail -f`` to read the content written to the log file
+as if you would be connected to the devices serial console (except that it is
+read-only)::
+
+  $ tail -f logdir/console_main # for the 'main' target
+
+For getting information about timing, the ``annotate-output`` command turned
+out to be quite helpful.
+On Debian it comes with the ``devscripts`` package and you can install it
+with::
+
+  $ apt-get install devscripts
+
+To use it, run::
+
+  $ annotate-output tail -f logdir/console_main
+
+This will print your system time before each line, allowing you to both see
+relative delays between steps in your tests as well as absolute timing of
+things happening in your test environment.
+
+Dealing With Kernel Log Verbosity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For testing your Linux system it can be quite annoying if the kernel outputs
+verbosely to the console you use for testing.
+Note that a too verbose kernel can break tests as kernel logs will pollute the
+expected command outputs making it unreadable for labgrid regular expressions.
+
+However, as the shell driver and most of the tests will depend on seeing
+console output of what is going on during boot, we cannot turn off kernel
+logging completely.
+
+.. note::
+  The labgrid ShellDriver itself attempts to disable console printing by
+  calling ``dmesg -n 1`` as soon as having a logged-in shell.
+  However, this may be too late for reliably capturing the initial login and
+  shell prompt.
+
+A proper point in time for disabling kernel output to the console is when
+systemd starts.
+To achieve this, make use of the ``systemd-sysctl.service`` that uses
+``/etc/sysctl.d/`` to configure kernel parameters.
+This way, the kernel log level can be set to 'error' by the time of service
+execution with a config file like::
+
+  $ cat /etc/sysctl.d/20-quiet-printk.conf
+  kernel.printk = 3
+
+If the *initial* kernel logging is still too high, one could also reduce this.
+But note that for the standard configuration of the labgrid barebox and uboot
+drivers, we need to catch the ``Linux version ...`` line to detect we
+successfully left the bootloader (the ``bootstring`` attribute).
+This line is only printed when having at least kernel log level 6 (notice)
+enabled::
+
+  loglevel=6
+
 Graph Strategies
 ----------------
 

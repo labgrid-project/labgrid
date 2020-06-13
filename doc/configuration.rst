@@ -878,6 +878,7 @@ Arguments:
   - boot_expression (str): optional, regex to match the U-Boot start string
     defaults to "U-Boot 20\d+"
   - bootstring (str): optional, regex to match on Linux Kernel boot
+  - boot_command (str): optional, boot command for booting target (default 'run bootcmd')
   - login_timeout (int): optional, timeout for login prompt detection in
     seconds (default 60)
 

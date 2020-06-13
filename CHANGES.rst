@@ -34,6 +34,8 @@ New Features in 0.3.0
   in some cases.
 - ``labgrid-client write-image`` gained new arguments: ``--partition``,
   ``--skip``, ``--seek``.
+- UBootDriver now allows overriding of default boot command (``run bootcmd``)
+  via new ``boot_command`` argument.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

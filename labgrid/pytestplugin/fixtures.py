@@ -2,7 +2,7 @@ import os
 import subprocess
 import pytest
 
-from ..exceptions import NoResourceFoundError
+from ..exceptions import NoResourceFoundError, NoDriverFoundError
 from ..remote.client import UserError
 from ..resource.remote import RemotePlace
 from ..util.ssh import sshmanager
@@ -41,6 +41,12 @@ def pytest_addoption(parser):
         action='store_true',
         dest='lg_colored_steps',
         help='colored step reporter')
+    group.addoption(
+        '--lg-initial-state',
+        action='store',
+        dest='lg_initial_state',
+        metavar='STATE_NAME',
+        help='set the strategy\'s initial state (during development)')
 
 
 @pytest.fixture(scope="session")
@@ -115,3 +121,19 @@ def target(env):
         pytest.exit(e)
 
     return target
+
+
+@pytest.fixture(scope="session")
+def strategy(request, target):
+    """Return the Strategy of the default target `main` configured in the
+    supplied configuration file."""
+    try:
+        strategy = target.get_driver("Strategy")
+    except NoDriverFoundError as e:
+        pytest.exit(e)
+
+    state = request.config.option.lg_initial_state
+    if state is not None:
+        strategy.force(state)
+
+    return strategy

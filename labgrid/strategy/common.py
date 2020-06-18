@@ -42,3 +42,9 @@ class Strategy(Driver):  # reuse driver handling
 
     def resolve_conflicts(self, client):
         raise NotImplementedError("Strategies do not support clients")
+
+    def transition(self, status):
+        raise NotImplementedError("Strategy.transition() is not implemented for {}".format(self.__class__.__name__))
+
+    def force(self, status):
+        raise NotImplementedError("Strategy.force() is not implemented for {}".format(self.__class__.__name__))

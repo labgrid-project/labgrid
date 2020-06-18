@@ -52,3 +52,20 @@ class ShellStrategy(Strategy):
                 format(self.status, status)
             )
         self.status = status
+
+    @step(args=['status'])
+    def force(self, status, *, step):
+        if not isinstance(status, Status):
+            status = Status[status]
+        if status == Status.unknown:
+            raise StrategyError("can not force state {}".format(status))
+        elif status == Status.off:
+            self.target.deactivate(self.shell)
+            self.target.activate(self.power)
+        elif status == Status.shell:
+            self.target.activate(self.power)
+            self.target.activate(self.shell)
+        else:
+            raise StrategyError("not setup found for {}".format(status))
+        self.status = status
+

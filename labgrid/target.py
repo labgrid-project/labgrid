@@ -29,7 +29,9 @@ class Target:
         # argument at the BindingMixin level.
         # https://github.com/python-attrs/attrs/issues/106
         self._binding_map = {}
-        self._lookup_table = {}
+        self._lookup_table = {
+            Strategy.__name__: Strategy,
+        }
 
     def interact(self, msg):
         if self.env:

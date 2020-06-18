@@ -21,7 +21,6 @@ class ManagedFile:
 
         ManagedFile("/tmp/examplefile", <your-resource>)
 
-
     Synchronisation is done with the sync_to_resource method.
     """
     local_path = attr.ib(
@@ -52,11 +51,13 @@ class ManagedFile:
             conn = sshmanager.open(host)
 
             if self._on_nfs(conn):
+                self.logger.info("File %s is accessible on %s, skipping copy", self.local_path, host)
                 return # nothing to do
 
             self.rpath = "/var/cache/labgrid/{user}/{hash}/".format(
                 user=get_user(), hash=self.get_hash()
             )
+            self.logger.info("Synchronizing %s to %s", self.local_path, host)
             conn.run_check("mkdir -p {}".format(self.rpath))
             conn.put_file(
                 self.local_path,

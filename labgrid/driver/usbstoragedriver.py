@@ -4,6 +4,7 @@ import logging
 import os
 import time
 import attr
+import subprocess
 
 from ..factory import target_factory
 from ..step import step
@@ -66,7 +67,6 @@ class USBStorageDriver(Driver):
         assert filename, "write_image requires a filename"
         mf = ManagedFile(filename, self.storage)
         mf.sync_to_resource()
-        self.logger.info("pwd: %s", os.getcwd())
 
         # wait for medium
         timeout = Timeout(10.0)
@@ -89,6 +89,7 @@ class USBStorageDriver(Driver):
                 "dd",
                 "if={}".format(mf.get_remote_path()),
                 "of={}{}".format(self.storage.path, partition),
+                "oflag=direct",
                 "status=progress",
                 "bs={}".format(block_size),
                 "skip={}".format(skip),
@@ -115,8 +116,8 @@ class USBStorageDriver(Driver):
     @step(result=True)
     def get_size(self):
         args = ["cat", "/sys/class/block/{}/size".format(self.storage.path[5:])]
-        size = processwrapper.check_output(self.storage.command_prefix + args)
-        return int(size)
+        size = subprocess.check_output(self.storage.command_prefix + args)
+        return int(size)*512
 
 
 @target_factory.reg_driver

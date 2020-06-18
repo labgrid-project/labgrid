@@ -308,6 +308,7 @@ class SSHConnection:
             "{}:{}".format(self.host, remote_file),
             "{}".format(local_file)
         ]
+        self._logger.debug("Running command: %s", complete_cmd)
         subprocess.check_call(
             complete_cmd,
             stdin=subprocess.DEVNULL,
@@ -316,12 +317,13 @@ class SSHConnection:
     @_check_connected
     def put_file(self, local_file, remote_path):
         """Put a file onto the remote host"""
-        complete_cmd = ["rsync", "--compress=1", "--sparse", "--copy-links", "-e",
+        complete_cmd = ["rsync", "--compress=1", "--sparse", "--copy-links", "--verbose", "--progress", "--times", "-e",
                         " ".join(['ssh'] + self._get_ssh_args())]
         complete_cmd += [
             "{}".format(local_file),
             "{}:{}".format(self.host, remote_path)
         ]
+        self._logger.debug("Running command: %s", complete_cmd)
         subprocess.check_call(
             complete_cmd,
             stdin=subprocess.DEVNULL,

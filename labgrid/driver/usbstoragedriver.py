@@ -67,7 +67,6 @@ class USBStorageDriver(Driver):
         assert filename, "write_image requires a filename"
         mf = ManagedFile(filename, self.storage)
         mf.sync_to_resource()
-        self.logger.info("pwd: %s", os.getcwd())
 
         # wait for medium
         timeout = Timeout(10.0)
@@ -90,6 +89,7 @@ class USBStorageDriver(Driver):
                 "dd",
                 "if={}".format(mf.get_remote_path()),
                 "of={}{}".format(self.storage.path, partition),
+                "oflag=direct",
                 "status=progress",
                 "bs={}".format(block_size),
                 "skip={}".format(skip),

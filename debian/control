@@ -10,6 +10,7 @@ Package: labgrid
 Architecture: any
 Pre-Depends: dpkg (>= 1.16.1), python3, ${misc:Pre-Depends}
 Depends: ${python3:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Recommends: openssh-client, microcom, socat, sshfs, rsync
 Description: embedded board control python library
  Labgrid is a embedded board control python library with a focus on testing,
  development and general automation. It includes a remote control layer to

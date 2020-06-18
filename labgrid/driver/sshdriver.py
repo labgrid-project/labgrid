@@ -14,6 +14,7 @@ from .commandmixin import CommandMixin
 from .common import Driver
 from ..step import step
 from .exception import ExecutionError
+from ..util.proxy import proxymanager
 
 
 @target_factory.reg_driver
@@ -43,7 +44,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.control = self._check_master()
         self.ssh_prefix += ["-F", "/dev/null"]
         if self.control:
-            self.ssh_prefix += ["-o", "ControlPath={}".format(self.control)]
+            self.ssh_prefix += ["-o", "ControlPath={}".format(self.control.replace('%', '%%'))]
 
         self._keepalive = None
         self._start_keepalive();
@@ -65,19 +66,38 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
         # use sshpass if we have a password
         args = ["sshpass", "-e"] if self.networkservice.password else []
+
         args += ["ssh", "-f", *self.ssh_prefix, "-x", "-o", "ConnectTimeout={}".format(timeout),
                  "-o", "ControlPersist=300", "-o",
                  "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
-                 "-o", "ServerAliveInterval=15", "-MN", "-S", control, "-p",
-                 str(self.networkservice.port), "{}@{}".format(
-                     self.networkservice.username, self.networkservice.address)]
+                 "-o", "ServerAliveInterval=15", "-MN", "-S", control.replace('%', '%%'), "-p",
+                 str(self.networkservice.port), "-l", self.networkservice.username,
+                 self.networkservice.address]
+
+        # proxy via the exporter if we have an ifname suffix
+        address = self.networkservice.address
+        if address.count('%') > 1:
+            raise ValueError("Multiple '%' found in '{}'.".format(address))
+        if '%' in address:
+            address, ifname = address.split('%', 1)
+        else:
+            ifname = None
+
+        proxy_cmd = proxymanager.get_command(self.networkservice, address, self.networkservice.port, ifname)
+        if proxy_cmd:  # only proxy if needed
+            args += [
+                "-o", "ProxyCommand={} 2>{}".format(
+                    ' '.join(proxy_cmd),
+                    self.tmpdir+'/proxy-stderr',
+                )
+            ]
 
         env = os.environ.copy()
         if self.networkservice.password:
             env['SSHPASS'] = self.networkservice.password
         self.process = subprocess.Popen(args, env=env,
                                         stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT,
                                         stdin=subprocess.DEVNULL)
 
         try:
@@ -85,12 +105,24 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             return_value = self.process.wait(timeout=subprocess_timeout)
             if return_value != 0:
                 stdout = self.process.stdout.readlines()
-                stderr = self.process.stderr.readlines()
+                for line in stdout:
+                    self.logger.warning("ssh: %s", line.rstrip().decode(encoding="utf-8", errors="replace"))
+
+                try:
+                    proxy_error = open(self.tmpdir+'/proxy-stderr').read().strip()
+                    if proxy_error:
+                        raise ExecutionError(
+                            "Failed to connect to {} with {}: error from SSH ProxyCommand: {}".
+                            format(self.networkservice.address, args, proxy_error),
+                            stdout=stdout,
+                        )
+                except FileNotFoundError:
+                    pass
+
                 raise ExecutionError(
-                    "Failed to connect to {} with {} and {}".
+                    "Failed to connect to {} with {}: return code {}".
                     format(self.networkservice.address, args, return_value),
                     stdout=stdout,
-                    stderr=stderr
                 )
         except subprocess.TimeoutExpired:
             raise ExecutionError(
@@ -103,15 +135,13 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 "no control socket to {}".format(self.networkservice.address)
             )
 
-        self.logger.debug('Connected to %s', self.networkservice.address)
+        self.logger.info('Connected to %s', self.networkservice.address)
 
         return control
 
     def _check_master(self):
         args = [
-            "ssh", "-O", "check", "{}@{}".format(
-                self.networkservice.username, self.networkservice.address
-            )
+            "ssh", "-O", "check", "-l", self.networkservice.username, self.networkservice.address
         ]
         check = subprocess.call(
             args,
@@ -143,9 +173,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             raise ExecutionError("Keepalive no longer running")
 
         complete_cmd = ["ssh", "-x", *self.ssh_prefix,
-                        "-p", str(self.networkservice.port), "{}@{}".format(
-                            self.networkservice.username, self.networkservice.address
-                        )] + cmd.split(" ")
+                        "-p", str(self.networkservice.port), "-l", self.networkservice.username,
+                        self.networkservice.address
+                        ] + cmd.split(" ")
         self.logger.debug("Sending command: %s", complete_cmd)
         if self.stderr_merge:
             stderr_pipe = subprocess.STDOUT
@@ -169,6 +199,106 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             stderr = stderr.decode(codec, decodeerrors).split('\n')
             stderr.pop()
         return (stdout, stderr, sub.returncode)
+
+    def interact(self, cmd=None):
+        assert cmd is None or isinstance(cmd, list)
+
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        complete_cmd = ["ssh", "-x", *self.ssh_prefix,
+                        "-t",
+                        self.networkservice.address
+                        ]
+        if cmd:
+            complete_cmd += ["--", *cmd]
+        self.logger.debug("Running command: %s", complete_cmd)
+        sub = subprocess.Popen(
+            complete_cmd,
+        )
+        return sub.wait()
+
+    @Driver.check_active
+    @step(args=['src', 'dst'])
+    def scp(self, *, src, dst):
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        if src.startswith(':') == dst.startswith(':'):
+            raise ValueError("Either source or destination must be remote (start with :)")
+        if src.startswith(':'):
+            src = '_' + src
+        if dst.startswith(':'):
+            dst = '_' + dst
+
+        complete_cmd = ["scp",
+                "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
+                src, dst,
+        ]
+        self.logger.info("Running command: %s", complete_cmd)
+        sub = subprocess.Popen(
+            complete_cmd,
+        )
+        return sub.wait()
+
+    @Driver.check_active
+    @step(args=['src', 'dst', 'extra'])
+    def rsync(self, *, src, dst, extra=[]):
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        if src.startswith(':') == dst.startswith(':'):
+            raise ValueError("Either source or destination must be remote (start with :)")
+        if src.startswith(':'):
+            src = '_' + src
+        if dst.startswith(':'):
+            dst = '_' + dst
+
+        ssh_cmd = ["ssh",
+                "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
+        ]
+
+        complete_cmd = ["rsync",
+                "-v",
+                "--rsh={}".format(' '.join(ssh_cmd)),
+                "-rlpt",  # --recursive --links --perms --times
+                "--one-file-system",
+                "--progress",
+                *extra,
+                src, dst,
+        ]
+        self.logger.info("Running command: %s", complete_cmd)
+        sub = subprocess.Popen(
+            complete_cmd,
+        )
+        return sub.wait()
+
+    @Driver.check_active
+    @step(args=['path', 'mountpoint'])
+    def sshfs(self, *, path, mountpoint):
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        complete_cmd = ["sshfs",
+                "-f",
+                "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
+                ":{}".format(path),
+                mountpoint,
+        ]
+
+        self.logger.debug("Running command: %s", complete_cmd)
+        sub = subprocess.Popen(
+            complete_cmd,
+        )
+        try:
+            sub.wait(1)
+            raise ExecutionError(
+                "error executing command: {}".format(complete_cmd)
+            )
+        except subprocess.TimeoutExpired:  # still running
+            self.logger.info("Started SSHFS on {}. Press CTRL-C to stop.".format(mountpoint))
+
+        sub.wait()
 
     def get_status(self):
         """The SSHDriver is always connected, return 1"""
@@ -230,7 +360,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _cleanup_own_master(self):
         """Exit the controlmaster and delete the tmpdir"""
-        complete_cmd = "ssh -x -o ControlPath={cpath} -O exit -p {port} {user}@{host}".format(
+        complete_cmd = "ssh -x -o ControlPath={cpath} -O exit -p {port} -l {user} {host}".format(
             cpath=self.control,
             port=self.networkservice.port,
             user=self.networkservice.username,

@@ -954,40 +954,54 @@ class ClientSession(ApplicationSession):
             return None
         return newest[0]
 
-    def ssh(self):
-        from ..resource import NetworkService
+    def _get_ssh(self):
         place = self.get_acquired_place()
-        ip = self._get_ip(place)
-        if not ip:
-            return
         target = self._get_target(place)
         env = os.environ.copy()
+
+        from ..resource import NetworkService
         try:
             resource = target.get_resource(NetworkService)
-            username = resource.username
-            port = resource.port or 22
-            # use sshpass if we have a password
-            if resource.password:
-                env['SSHPASS'] = resource.password
-            sshpass = ['sshpass', '-e'] if resource.password else []
-
         except NoResourceFoundError:
-            username = 'root'
-            sshpass = []
-            port = 22
+            ip = self._get_ip(place)
+            if not ip:
+                return
+            resource = NetworkService(target,
+                    address = str(ip),
+                    username = 'root',
+            )
 
-        args = sshpass + [
-            'ssh',
-            '-l', username,
-            '-p', str(port),
-            '-o', 'StrictHostKeyChecking no',
-            '-o', 'UserKnownHostsFile /dev/null',
-            str(ip),
-        ] + self.args.leftover
-        print('Note: Using dummy known hosts file.')
-        res = subprocess.run(args, env=env)
-        if res:
-            print("connection lost")
+        from ..driver.sshdriver import SSHDriver
+        try:
+            drv = target.get_driver(SSHDriver)
+        except NoDriverFoundError:
+            drv = SSHDriver(target, name=None)
+        target.activate(drv)
+        return drv
+
+    def ssh(self):
+        drv = self._get_ssh()
+
+        res = drv.interact(self.args.leftover)
+        if res == 255:
+            print("connection lost (SSH error)")
+        elif res:
+            print("connection lost (remote exit code {})".format(res))
+
+    def scp(self):
+        drv = self._get_ssh()
+
+        res = drv.scp(src=self.args.src, dst=self.args.dst)
+
+    def rsync(self):
+        drv = self._get_ssh()
+
+        res = drv.rsync(src=self.args.src, dst=self.args.dst, extra=self.args.leftover)
+
+    def sshfs(self):
+        drv = self._get_ssh()
+
+        res = drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint)
 
     def telnet(self):
         place = self.get_acquired_place()
@@ -1429,6 +1443,24 @@ def main():
                                       help="connect via ssh (with optional arguments)")
     subparser.set_defaults(func=ClientSession.ssh)
 
+    subparser = subparsers.add_parser('scp',
+                                      help="transfer file via scp")
+    subparser.add_argument('src', help='source path (use :dir/file for remote side)')
+    subparser.add_argument('dst', help='destination path (use :dir/file for remote side)')
+    subparser.set_defaults(func=ClientSession.scp)
+
+    subparser = subparsers.add_parser('rsync',
+                                      help="transfer files via rsync")
+    subparser.add_argument('src', help='source path (use :dir/file for remote side)')
+    subparser.add_argument('dst', help='destination path (use :dir/file for remote side)')
+    subparser.set_defaults(func=ClientSession.rsync)
+
+    subparser = subparsers.add_parser('sshfs',
+                                      help="mount via sshfs (blocking)")
+    subparser.add_argument('path', help='remote path on the target')
+    subparser.add_argument('mountpoint', help='local path')
+    subparser.set_defaults(func=ClientSession.sshfs)
+
     subparser = subparsers.add_parser('telnet',
                                       help="connect via telnet")
     subparser.set_defaults(func=ClientSession.telnet)
@@ -1502,7 +1534,7 @@ def main():
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()
-    if args.command not in ['ssh']:
+    if args.command not in ['ssh', 'rsync']:
         args = parser.parse_args()
     else:
         args.leftover = leftover

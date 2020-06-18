@@ -211,6 +211,13 @@ with the username `root`.
 Set the optional password password property to make SSH login with a password
 instead of the key file (needs sshpass to be installed)
 
+When used with ``labgrid-exporter``, the address can contain a device scope
+suffix (such as ``%eth1``), which is especially useful with overlapping address
+ranges or link-local IPv6 addresses.
+In that case, the SSH connection will be proxied via the exporter, using
+``socat`` and the ``labgrid-bound-connect`` sudo helper.
+These and the sudo configuration needs to be prepared by the administrator.
+
 - address (str): hostname of the remote system
 - username (str): username used by SSH
 - password (str): password used by SSH

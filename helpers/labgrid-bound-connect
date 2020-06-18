@@ -1,0 +1,74 @@
+#!/usr/bin/python3 
+
+# This is intended to be used via sudo. For example, add via visudo:
+# %developers ALL = NOPASSWD: /usr/local/sbin/labgrid-bound-connect
+
+import argparse
+import os
+import sys
+import ipaddress
+
+
+def main(ifname, address, port):
+    if not ifname:
+        raise ValueError("Empty interface name.")
+    if any((c == "/" or c.isspace()) for c in ifname):
+        raise ValueError("Interface name '{}' contains invalid characters.".format(ifname))
+    if len(ifname) > 16:
+        raise ValueError("Interface name '{}' is too long.".format(ifname))
+
+    address = ipaddress.ip_address(address)
+
+    if not 0 < port < 0xFFFF:
+        raise ValueError("Invalid port '{}'.".format(port))
+
+    args = [
+        "socat",
+        "STDIO",
+    ]
+
+    if address.version == 4:
+        prefix = "TCP4:{}:{}".format(address, port)
+    elif address.version == 6:
+        prefix = "TCP6:[{}]:{}".format(address, port)
+    else:
+        raise RuntimeError("Invalid IP version '{}'".format(address.version))
+
+    args.append(','.join([
+        prefix,
+        'so-bindtodevice={}'.format(ifname),
+        'connect-timeout=15',
+        'keepalive',
+        'keepcnt=3',
+        'keepidle=15',
+        'keepintvl=15',
+        'nodelay',
+    ]))
+
+    try:
+        os.execvp(args[0], args)
+    except FileNotFoundError as e:
+        raise RuntimeError("Missing socat binary") from e
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-d',
+        '--debug',
+        action='store_true',
+        default=False,
+        help="enable debug mode"
+    )
+    parser.add_argument('interface', type=str, help='interface name')
+    parser.add_argument('address', type=str, help='destination IP address')
+    parser.add_argument('port', type=int, help='destination TCP port')
+    args = parser.parse_args()
+    try:
+        main(args.interface, args.address, args.port)
+    except Exception as e:  # pylint: disable=broad-except
+        if args.debug:
+            import traceback
+            traceback.print_exc()
+        print("ERROR: {}".format(e), file=sys.stderr)
+

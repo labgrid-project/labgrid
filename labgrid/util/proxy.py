@@ -83,5 +83,35 @@ class ProxyManager:
 
         return urlunsplit(s)
 
+    @classmethod
+    def get_command(cls, res, host, port, ifname=None):
+        """get argument list to start a proxy process connected to the target"""
+        assert isinstance(res, Resource)
+
+        proxy = cls._force_proxy
+
+        extra = getattr(res, 'extra', {})
+        if extra.get('proxy_required') or proxy:  # use specific proxy when needed
+            proxy = extra.get('proxy') or proxy
+
+        if not proxy:
+            return None
+
+        conn = sshmanager.get(proxy)
+        command = conn.get_prefix()
+        if ifname:
+            command += [
+                "--",
+                "sudo", "--non-interactive",
+                "labgrid-bound-connect", ifname, host, str(port),
+            ]
+        else:
+            if ':' in host:  # IPv6
+                host = "[{}]".format(host)
+            command += [
+                "-W", "{}:{}".format(host, port)
+            ]
+        return command
+
 
 proxymanager = ProxyManager()

@@ -3,6 +3,7 @@ from .commandprotocol import CommandProtocol
 from .consoleprotocol import ConsoleProtocol
 from .linuxbootprotocol import LinuxBootProtocol
 from .powerprotocol import PowerProtocol
+from .bootcfgprotocol import BootCfgProtocol
 from .filetransferprotocol import FileTransferProtocol
 from .infoprotocol import InfoProtocol
 from .digitaloutputprotocol import DigitalOutputProtocol

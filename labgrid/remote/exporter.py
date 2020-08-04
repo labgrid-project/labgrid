@@ -220,15 +220,29 @@ class SerialPortExport(ResourceExport):
         assert self.child is None
         assert start_params['path'].startswith('/dev/')
         self.port = get_free_port()
-        self.child = subprocess.Popen([
-            self.ser2net_bin,
-            '-d',
-            '-n',
-            '-C',
-            '{}:telnet:0:{}:{} 8DATABITS NONE 1STOPBIT LOCAL'.format(
-                self.port, start_params['path'], self.local.speed
-            ),
-        ])
+
+        # Ser2net has switched to using YAML format at version 4.0.0.
+        _, _, version = str(subprocess.check_output([self.ser2net_bin,'-v'])).split(' ')
+        major_version = version.split('.')[0]
+        if int(major_version) >= 4:
+            self.child = subprocess.Popen([
+                self.ser2net_bin,
+                '-d',
+                '-n',
+                '-Y', 'connection: &con01#  accepter: telnet(rfc2217,mode=server),{}'.format(self.port),
+                '-Y', '  connector: serialdev,{},115200n81,local'.format(start_params['path']
+                ),
+            ])
+        else:
+            self.child = subprocess.Popen([
+                self.ser2net_bin,
+                '-d',
+                '-n',
+                '-C',
+                '{}:telnet:0:{}:115200 NONE 8DATABITS 1STOPBIT LOCAL'.format(
+                    self.port, start_params['path']
+                ),
+            ])
         try:
             self.child.wait(timeout=0.5)
             raise ExporterError("ser2net for {} exited immediately".format(start_params['path']))

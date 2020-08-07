@@ -278,7 +278,7 @@ class IMXUSBLoader(USBResource):
                          ("15a2", "007d"), ("15a2", "0076"),
                          ("15a2", "0080"), ("15a2", "003a"),
                          ("1fc9", "0128"), ("1fc9", "0126"),
-                         ("1fc9", "012b")]:
+                         ("1fc9", "012b"), ("1fc9", "0134")]:
             return False
 
         return super().filter_match(device)

@@ -53,7 +53,7 @@ Contributing
 `Development Docs <http://labgrid.readthedocs.io/en/latest/development.html>`_
 
 IRC channel ``#labgrid`` on freenode (bridged to the `Matrix channel
-#labgrid:matrix.org <https://riot.im/app/#/room/#labgrid:matrix.org>`_)
+#labgrid:matrix.org <https://app.element.io/#/room/#labgrid:matrix.org>`_)
 
 Background
 ----------
@@ -111,4 +111,4 @@ Tests can now run via:
 
 .. |chat| image:: https://matrix.to/img/matrix-badge.svg
     :alt: chat
-    :target: https://riot.im/app/#/room/#labgrid:matrix.org
+    :target: https://app.element.io/#/room/#labgrid:matrix.org

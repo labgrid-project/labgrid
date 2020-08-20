@@ -4,7 +4,6 @@ import os
 import re
 import colors
 import pytest
-from _pytest.capture import safe_text_dupfile
 
 from ..step import steps
 
@@ -15,12 +14,38 @@ logging.basicConfig(
 )
 
 
+def safe_dupfile(f):
+    if pytest.__version__ < "6.0.0":
+        from _pytest.capture import safe_text_dupfile
+        return safe_text_dupfile(f, mode=f.mode)
+    else:
+        from _pytest.capture import EncodedFile
+        default_encoding = "UTF8"
+
+        encoding = getattr(f, "encoding", None)
+        try:
+            fd = f.fileno()
+        except OSError:
+            if "b" not in getattr(f, "mode", "") and hasattr(f, "encoding"):
+                # we seem to have a text stream, let's just use it
+                return f
+
+        newfd = os.dup(fd)
+        mode = f.mode
+        if "b" not in mode:
+            mode += "b"
+        f = os.fdopen(newfd, mode, 0)  # no buffering
+
+        return EncodedFile(f, encoding or default_encoding, errors="replace",
+                           write_through=True)
+
+
 class StepReporter:
     def __init__(self, terminalreporter, *, rewrite=False):
         self.tr = terminalreporter
         # copy the original stdout for use with CaptureFixture
-        self.tr._tw._file = safe_text_dupfile(self.tr._tw._file, mode=self.tr._tw._file.mode)
-        self.rewrite = rewrite
+        self.tr._tw._file = safe_dupfile(self.tr._tw._file)
+        self.rewrite = rewrite and pytest.__version__ < "6.0.0"
         self.__reset()
         steps.subscribe(self.notify)
 

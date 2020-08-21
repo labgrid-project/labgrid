@@ -213,7 +213,7 @@ Each group contains one or more resource declarations and optionally a location
 string (see the :doc:`configuration reference <configuration>` for details).
 
 For example, to export a ``USBSerialPort`` with ``ID_SERIAL_SHORT`` of
-``ID23421JLK``, the group name `example-port` and the location
+``ID23421JLK``, the group name `example-group` and the location
 `example-location`:
 
 .. code-block:: yaml
@@ -302,7 +302,7 @@ And add resources to this place (``-p`` is short for ``--place``):
 
 .. code-block:: bash
 
-    $ labgrid-client -p example-place add-match */example-port/*
+    $ labgrid-client -p example-place add-match */example-group/*
 
 Which adds the previously defined resource from the exporter to the place.
 To interact with this place, it needs to be acquired first, this is done by

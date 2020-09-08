@@ -41,9 +41,11 @@ class TestManualPowerDriver:
 
 class TestExternalPowerDriver:
     def test_create(self, target):
-        d = ExternalPowerDriver(
+        r = ExternalPowerPort(
             target, 'power', cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
         )
+        d = ExternalPowerDriver(target, 'power')
+        
         assert (isinstance(d, ExternalPowerDriver))
 
     def test_on(self, target, mocker):
@@ -60,9 +62,10 @@ class TestExternalPowerDriver:
         fd_mock.read.return_value = b'Done\nDone'
         instance_mock.returncode = 0
 
-        d = ExternalPowerDriver(
+        r = ExternalPowerPort(
             target, 'power', cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
         )
+        d = ExternalPowerDriver(target, 'power')
         target.activate(d)
         d.on()
 
@@ -83,9 +86,10 @@ class TestExternalPowerDriver:
         fd_mock.read.return_value = b'Done\nDone'
         instance_mock.returncode = 0
 
-        d = ExternalPowerDriver(
+        r = ExternalPowerPort(
             target, 'power', cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
         )
+        d = ExternalPowerDriver(target, 'power')
         target.activate(d)
         d.off()
 
@@ -108,9 +112,10 @@ class TestExternalPowerDriver:
 
         m_sleep = mocker.patch('time.sleep')
 
-        d = ExternalPowerDriver(
+        r = ExternalPowerPort(
             target, 'power', cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
         )
+        d = ExternalPowerDriver(target, 'power')
         target.activate(d)
         d.cycle()
 
@@ -138,12 +143,13 @@ class TestExternalPowerDriver:
 
         m_sleep = mocker.patch('time.sleep')
 
-        d = ExternalPowerDriver(
+        r = ExternalPowerPort(
             target, 'power',
             cmd_on='set -1 foo-board',
             cmd_off='set -0 foo-board',
             cmd_cycle='set -c foo-board',
         )
+        d = ExternalPowerDriver(target, 'power')
         target.activate(d)
         d.cycle()
 

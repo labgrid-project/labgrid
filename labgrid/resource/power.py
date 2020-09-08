@@ -33,3 +33,19 @@ class PDUDaemonPort(Resource):
     host = attr.ib(validator=attr.validators.instance_of(str))
     pdu = attr.ib(validator=attr.validators.instance_of(str))
     index = attr.ib(validator=attr.validators.instance_of(int), converter=int)
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class ExternalPowerPort(Resource):
+    """The ExternalPowerPort describes a power switch, controllable
+       via a remote command execution
+
+    Args:
+        cmd_on (str): command to turn power to the board on
+        cmd_off (str): command to turn power to the board off
+        cycle (str): optional command to switch the board off and on
+    """
+    cmd_on = attr.ib(validator=attr.validators.instance_of(str))
+    cmd_off = attr.ib(validator=attr.validators.instance_of(str))
+    cycle = attr.ib(validator=attr.validators.instance_of(str))

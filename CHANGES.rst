@@ -36,6 +36,8 @@ New Features in 0.3.0
   ``--skip``, ``--seek``.
 - UBootDriver now allows overriding of default boot command (``run bootcmd``)
   via new ``boot_command`` argument.
+- ExternalPowerPort is a new resource, bound to ExternalPowerDriver, that can be
+  used with ``labgrid-exporter``/``labgrid-client``.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,6 +60,8 @@ Breaking changes in 0.3.0
   renamed to `USBStorageDriver`.
   A deprecated `NetworkUSBStorageDriver` exists temporarily for compatibility
   reasons.
+- `ExternalPowerDriver` is now split into a Port and a Driver, like PDUDaemon.
+  Configuration files need to be updated to declare the `cmd_*` as a resource.
 
 Release 0.2.0 (released Jan 4, 2019)
 ------------------------------------

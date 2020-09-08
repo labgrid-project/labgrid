@@ -61,31 +61,26 @@ class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 @attr.s(eq=False)
 class ExternalPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """ExternalPowerDriver - Driver using an external command to control a target's power"""
-    cmd_on = attr.ib(validator=attr.validators.instance_of(str))
-    cmd_off = attr.ib(validator=attr.validators.instance_of(str))
-    cmd_cycle = attr.ib(
-        default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(str))
-    )
-    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
+    bindings = {"port": "ExternalPowerPort", }
+    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(int))
 
     @Driver.check_active
     @step()
     def on(self):
-        cmd = shlex.split(self.cmd_on)
+        cmd = shlex.split(self.port.cmd_on)
         processwrapper.check_output(cmd)
 
     @Driver.check_active
     @step()
     def off(self):
-        cmd = shlex.split(self.cmd_off)
+        cmd = shlex.split(self.port.cmd_off)
         processwrapper.check_output(cmd)
 
     @Driver.check_active
     @step()
     def cycle(self):
-        if self.cmd_cycle is not None:
-            cmd = shlex.split(self.cmd_cycle)
+        if self.port.cmd_cycle is not None:
+            cmd = shlex.split(self.port.cmd_cycle)
             processwrapper.check_output(cmd)
         else:
             self.off()

@@ -90,6 +90,24 @@ Used by:
 Power Ports
 ~~~~~~~~~~~
 
+ExternalPowerPort
+++++++++++++++++
+A ExternalPowerPort describes a remotely switchable power port.
+
+.. code-block:: yaml
+
+   ExternalPowerPort:
+     cmd_on: 'ncat --send-only -e "/bin/echo SR 1 on" 192.168.0.123 17123'
+     cmd_off: 'ncat --send-only -e "/bin/echo SR 1 off" 192.168.0.123 17123'
+
+The example describes a power switch that can be controller by writing some ascii
+sequence to tcp/ip address 192.168.0.123:17123.
+
+- cmd_on (str): command to turn power to the board on
+- cmd_off (str): command to turn power to the board off
+- cycle (str): optional command to switch the board off and on
+
+
 NetworkPowerPort
 ++++++++++++++++
 A NetworkPowerPort describes a remotely switchable power port.
@@ -1070,7 +1088,12 @@ Arguments:
 
 ExternalPowerDriver
 ~~~~~~~~~~~~~~~~~~~
-An ExternalPowerDriver is used to control a target power state via an external command.
+An ExternalPowerDriver controls a `ExternalPowerPort`.
+It is used to control a target power state via an external (remote) command.
+
+Binds to:
+  port:
+    - `ExternalPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -1078,15 +1101,10 @@ Implements:
 .. code-block:: yaml
 
    ExternalPowerDriver:
-     cmd_on: example_command on
-     cmd_off: example_command off
-     cmd_cycle: example_command cycle
+     delay: 5
 
 Arguments:
-  - cmd_on (str): command to turn power to the board on
-  - cmd_off (str): command to turn power to the board off
-  - cycle (str): optional command to switch the board off and on
-  - delay (float): configurable delay in seconds between off and on if cycle is not set
+  - delay (int): configurable delay in seconds between off and on if cycle is not set
 
 NetworkPowerDriver
 ~~~~~~~~~~~~~~~~~~

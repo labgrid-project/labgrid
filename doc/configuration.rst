@@ -304,6 +304,7 @@ An IMXUSBLoader resource describes a USB device in the imx loader state.
 
 Used by:
   - `IMXUSBDriver`_
+  - `UUUDriver`_
 
 MXSUSBLoader
 ~~~~~~~~~~~~
@@ -319,6 +320,7 @@ An MXSUSBLoader resource describes a USB device in the mxs loader state.
 
 Used by:
   - `MXSUSBDriver`_
+  - `UUUDriver`_
 
 RKUSBLoader
 ~~~~~~~~~~~~
@@ -1361,6 +1363,37 @@ Implements:
 Arguments:
   - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
   - usb_loader (srt): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
+
+UUUDriver
+~~~~~~~~~~~~
+A UUUDriver is used to upload an image into a device in the NXP USB loader
+state. This is useful to bootstrap a bootloader onto a device.
+
+Binds to:
+  loader:
+    - `MXSUSBLoader`_
+    - `NetworkMXSUSBLoader`_
+    - `IMXUSBLoader`_
+    - `NetworkIMXUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         UUUDriver:
+           image: mybootloaderkey
+           cmd: spl
+
+   images:
+     mybootloaderkey: path/to/mybootloader.img
+
+Arguments:
+  - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
+  - cmd (str): single command used for mfgtool (default: spl)
 
 USBStorageDriver
 ~~~~~~~~~~~~~~~~~~~~~~~

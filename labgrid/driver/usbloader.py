@@ -144,3 +144,40 @@ class RKUSBDriver(Driver, BootstrapProtocol):
             except subprocess.CalledProcessError:
                 if timeout.expired:
                     raise
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class UUUDriver(Driver, BootstrapProtocol):
+    bindings = {
+        "loader": {"IMXUSBLoader", "NetworkIMXUSBLoader", "MXSUSBLoader", "NetworkMXSUSBLoader"},
+    }
+
+    image = attr.ib(default=None)
+    cmd = attr.ib(default='spl', validator=attr.validators.instance_of(str))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('uuu-loader') or 'uuu-loader'
+        else:
+            self.tool = 'uuu-loader'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    @Driver.check_active
+    @step(args=['filename'])
+    def load(self, filename=None):
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        processwrapper.check_output(
+            self.loader.command_prefix + [self.tool, mf.get_remote_path(), self.cmd]
+        )

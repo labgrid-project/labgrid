@@ -14,7 +14,7 @@ from .onewiredriver import OneWirePIODriver
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver, \
                          DigitalOutputPowerDriver, YKUSHPowerDriver, \
                          USBPowerDriver
-from .usbloader import MXSUSBDriver, IMXUSBDriver, RKUSBDriver
+from .usbloader import MXSUSBDriver, IMXUSBDriver, RKUSBDriver, UUUDriver
 from .usbsdmuxdriver import USBSDMuxDriver
 from .common import Driver
 from .qemudriver import QEMUDriver

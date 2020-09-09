@@ -91,7 +91,7 @@ Power Ports
 ~~~~~~~~~~~
 
 ExternalPowerPort
-++++++++++++++++
++++++++++++++++++
 A ExternalPowerPort describes a remotely switchable power port.
 
 .. code-block:: yaml

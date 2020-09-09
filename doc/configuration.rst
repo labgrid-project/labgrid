@@ -105,7 +105,7 @@ sequence to tcp/ip address 192.168.0.123:17123.
 
 - cmd_on (str): command to turn power to the board on
 - cmd_off (str): command to turn power to the board off
-- cycle (str): optional command to switch the board off and on
+- cmd_cycle (str): optional command to switch the board off and on
 
 
 NetworkPowerPort

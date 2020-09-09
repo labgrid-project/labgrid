@@ -48,4 +48,4 @@ class ExternalPowerPort(Resource):
     """
     cmd_on = attr.ib(validator=attr.validators.instance_of(str))
     cmd_off = attr.ib(validator=attr.validators.instance_of(str))
-    cycle = attr.ib(validator=attr.validators.instance_of(str))
+    cmd_cycle = attr.ib(validator=attr.validators.instance_of(str))

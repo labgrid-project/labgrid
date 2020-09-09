@@ -62,7 +62,7 @@ class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 class ExternalPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """ExternalPowerDriver - Driver using an external command to control a target's power"""
     bindings = {"port": "ExternalPowerPort", }
-    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(int))
+    delay = attr.ib(default=2, validator=attr.validators.instance_of(int))
 
     @Driver.check_active
     @step()

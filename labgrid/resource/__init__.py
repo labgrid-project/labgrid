@@ -4,7 +4,7 @@ from .serialport import RawSerialPort, NetworkSerialPort
 from .modbus import ModbusTCPCoil
 from .networkservice import NetworkService
 from .onewireport import OneWirePIO
-from .power import NetworkPowerPort
+from .power import ExternalPowerPort, NetworkPowerPort
 from .remote import RemotePlace
 from .udev import USBSerialPort
 from .udev import USBSDMuxDevice

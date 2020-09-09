@@ -1,4 +1,4 @@
-from labgrid.resource import NetworkPowerPort
+from labgrid.resource import ExternalPowerPort, NetworkPowerPort
 from labgrid.driver.powerdriver import ExternalPowerDriver, ManualPowerDriver, NetworkPowerDriver
 
 

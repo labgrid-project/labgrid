@@ -627,6 +627,23 @@ A XenaManager resource describes a Xena Manager instance which is the instance t
 Used by:
   - `XenaDriver`_
 
+PyVISADevice
+~~~~~~~~~~~~
+A PyVISADevice resource describes a test stimuli device controlled by PyVISA.
+Such device could be a signal generator.
+
+.. code-block:: yaml
+
+   PyVISADevice:
+     type: "TCPIP"
+     url: "192.168.110.11"
+
+- type (str): device resource type following the pyVISA resource syntax, e.g. ASRL, TCPIP...
+- url (str): device identifier on selected resource, e.g. <ip> for TCPIP resource
+
+Used by:
+  - `PyVISADriver`_
+
 RemotePlace
 ~~~~~~~~~~~
 A RemotePlace describes a set of resources attached to a labgrid remote place.
@@ -1795,6 +1812,17 @@ Binds to:
 
 Implements:
   - :any:`DigitalOutputProtocol`
+
+PyVISADriver
+~~~~~~~~~~~~
+The PyVISADriver uses a PyVISADevice resource to control test equipment manageable by PyVISA.
+
+Binds to:
+  pyvisa_resource:
+    - `PyVISADevice`_
+
+Implements:
+  - None yet
 
 Strategies
 ----------

@@ -17,3 +17,4 @@ from .xenamanager import XenaManager
 from .flashrom import Flashrom, NetworkFlashrom
 from .docker import DockerManager, DockerDaemon, DockerConstants
 from .lxaiobus import LXAIOBusPIO
+from .pyvisa import PyVISADevice

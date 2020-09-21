@@ -175,6 +175,23 @@ The example describes port 1 on the hub with the ID_PATH
 
 Used by:
   - `USBPowerDriver`_
+  
+USBRelay
+++++++++++++
+
+This resource describes a usbrelay which is controlled supported by `usbrelay <https://github.com/darrylb123/usbrelay>`_.
+
+.. code-block:: yaml
+
+   USBRelay:
+     name: "RelayId"
+     index: 1
+
+- name (id): relay identification
+- index (int) optional: index of the relay to switch (defaults to 1)
+
+Used by:
+  - `USBRelayPowerDriver`_  
 
 ModbusTCPCoil
 ~~~~~~~~~~~~~
@@ -1190,6 +1207,25 @@ Implements:
 
 Arguments:
   - delay (float): optional delay in seconds between off and on
+  
+USBRelayPowerDriver
+~~~~~~~~~~~~~~~~~~~
+A USBRelayPowerDriver controls a `USBRelay`, allowing control of the target
+power state without user interaction.
+
+Binds to:
+  - `USBRelay`_
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   USBRelayPowerDriver:
+     delay: 5.0
+
+Arguments:
+  - delay (float): optional delay in seconds between off and on  
 
 GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~

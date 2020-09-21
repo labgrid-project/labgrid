@@ -36,6 +36,7 @@ New Features in 0.3.0
   ``--skip``, ``--seek``.
 - UBootDriver now allows overriding of default boot command (``run bootcmd``)
   via new ``boot_command`` argument.
+- USBRelayPowerDriver support added, allows to control the board power by a usbrelay
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

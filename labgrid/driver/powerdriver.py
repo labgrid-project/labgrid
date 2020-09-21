@@ -326,3 +326,67 @@ class PDUDaemonDriver(Driver, PowerResetMixin, PowerProtocol):
     @Driver.check_active
     def get(self):
         return None
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class USBRelayPowerDriver(Driver, PowerResetMixin, PowerProtocol):
+    """USBRelayPowerDriver - Driver using a power switchable usbrelay and the `usbrelay`
+    tool (https://github.com/darrylb123/usbrelay) to control a target's power"""
+
+    bindings = {"relay": {"USBRelay"},}
+    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('usbrelay') or 'usbrelay'
+        else:
+            self.tool = 'usbrelay'
+
+    def _switch(self, cmd):
+
+        number_command = "1" if cmd.lower() == "on" else "0"
+
+        cmd = self.relay.command_prefix + [
+            self.tool,
+            "{}_{}={}".format(self.relay.name, self.relay.index, number_command)
+        ]
+        processwrapper.check_output(cmd)
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        self._switch("on")
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        self._switch("off")
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        self.off()
+        time.sleep(self.delay)
+        self.on()
+
+    @Driver.check_active
+    def get(self):
+        cmd = self.relay.command_prefix + [
+            self.tool,
+            self.relay.name
+        ]
+        output = processwrapper.check_output(cmd)
+        for line in output.splitlines():
+            if not line:
+                continue
+            prefix, status = line.strip().split(b'=', 1)
+            if not self.relay.name in str(prefix):
+                continue
+            status = status.split()
+            if b"1" in status:
+                return True
+            if b"0" in status:
+                return False
+        raise ExecutionError("Did not find relay status in usbrelay output ({})".format(repr(output)))

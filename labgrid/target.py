@@ -432,7 +432,7 @@ class Target:
         This is needed to ensure that no client has an inactive supplier.
         """
         if isinstance(client, str):
-            client = self._class_from_string(client)
+            client = self._reg_class_from_string(client)
 
         if client.state is BindingState.bound:
             return  # nothing to do

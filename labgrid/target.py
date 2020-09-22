@@ -391,7 +391,7 @@ class Target:
 
         raise BindingError("object {} is not bindable".format(bindable))
 
-    def activate(self, client):
+    def activate(self, client, name=None):
         """
         Activate the client by activating all bound suppliers. This may require
         deactivating other clients.
@@ -399,6 +399,12 @@ class Target:
         # don't activate strategies, they usually have conflicting bindings
         if isinstance(client, Strategy):
             return
+
+        if isinstance(client, str):
+            cls = self._reg_class_from_string(client)
+            client = self._get_driver(cls, name=name, activate=False, active=False)
+
+        assert client is not None
 
         if client.state is BindingState.active:
             return  # nothing to do
@@ -425,14 +431,17 @@ class Target:
         client.on_activate()
         client.state = BindingState.active
 
-    def deactivate(self, client):
+    def deactivate(self, client, name=None):
         """
         Recursively deactivate the client's clients and itself.
 
         This is needed to ensure that no client has an inactive supplier.
         """
         if isinstance(client, str):
-            client = self._reg_class_from_string(client)
+            cls = self._reg_class_from_string(client)
+            client = self._get_driver(cls, name=name, activate=False, active=True)
+
+        assert client is not None
 
         if client.state is BindingState.bound:
             return  # nothing to do

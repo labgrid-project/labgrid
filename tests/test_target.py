@@ -352,3 +352,26 @@ def test_get_by_default_priority(target):
     with pytest.raises(NoDriverFoundError) as e_info:
         target.get_driver(AProtocol)
     assert "multiple drivers matching" in str(e_info.value)
+
+def test_target_deactivate_by_string(target):
+
+    @attr.s
+    class A(Driver):
+        pass
+
+    a = A(target, None)
+    target.activate(a)
+    target.deactivate("A")
+
+    assert a == target.get_driver(A, activate=False)
+
+def test_target_activate_by_string(target):
+
+    @attr.s
+    class A(Driver):
+        pass
+
+    a = A(target, None)
+    target.activate("A")
+
+    assert a == target.get_active_driver(A)

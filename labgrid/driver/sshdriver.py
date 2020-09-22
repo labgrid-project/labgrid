@@ -311,6 +311,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             "scp",
             *self.ssh_prefix,
             "-P", str(self.networkservice.port),
+            "-r",
             filename,
             "{user}@{host}:{remotepath}".format(
                 user=self.networkservice.username,
@@ -338,6 +339,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             "scp",
             *self.ssh_prefix,
             "-P", str(self.networkservice.port),
+            "-r",
             "{user}@{host}:{filename}".format(
                 user=self.networkservice.username,
                 host=self.networkservice.address,

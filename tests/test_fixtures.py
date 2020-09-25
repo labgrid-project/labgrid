@@ -44,7 +44,7 @@ def test_env_fixture(short_env, short_test):
 
 def test_env_old_fixture(short_env, short_test):
     with pexpect.spawn('pytest --env-config {} {}'.format(short_env,short_test)) as spawn:
-        spawn.expect("deprecated option")
+        spawn.expect("deprecated option --env-config")
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0
@@ -59,7 +59,7 @@ def test_env_env_fixture(short_env, short_test):
 
 def test_env_with_junit(short_env, short_test, tmpdir):
     x = tmpdir.join('junit.xml')
-    with pexpect.spawn('pytest --junitxml={} --env-config {} {}'.format(x,short_env,short_test)) as spawn:
+    with pexpect.spawn('pytest --junitxml={} --lg-env {} {}'.format(x,short_env,short_test)) as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0

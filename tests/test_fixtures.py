@@ -76,3 +76,10 @@ def test_help_coordinator(short_test):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0
+
+def test_log_without_capturing(short_env, short_test, tmpdir):
+    with pexpect.spawn('pytest -vv -s --lg-env {} {}'.format(short_env,short_test)) as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        print(spawn.before)
+        assert spawn.exitstatus == 0

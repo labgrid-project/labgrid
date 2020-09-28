@@ -10,3 +10,4 @@ autobahn==19.11.1
 PyYAML==5.1.2
 ansicolors==1.1.8
 pyusb==1.0.2
+six>=1.13.0

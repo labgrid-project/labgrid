@@ -71,6 +71,17 @@ def test_local_put(ssh_localhost, tmpdir):
     assert open('/tmp/test_put_yaml', 'r').readlines() == [ "PUT Teststring" ]
 
 @pytest.mark.sshusername
+def test_local_put_dir(ssh_localhost, tmpdir):
+    d = tmpdir.mkdir("test_put_dir");
+    p = d.join("config.yaml")
+    p.write(
+        """PUT Teststring"""
+    )
+
+    ssh_localhost.put(str(d), "/tmp/test_put_dir")
+    assert open('/tmp/test_put_dir/config.yaml', 'r').readlines() == [ "PUT Teststring" ]
+
+@pytest.mark.sshusername
 def test_local_get(ssh_localhost, tmpdir):
     p = tmpdir.join("config.yaml")
     p.write(
@@ -79,6 +90,17 @@ def test_local_get(ssh_localhost, tmpdir):
 
     ssh_localhost.get(str(p), "/tmp/test_get_yaml")
     assert open('/tmp/test_get_yaml', 'r').readlines() == [ "GET Teststring" ]
+
+@pytest.mark.sshusername
+def test_local_get_dir(ssh_localhost, tmpdir):
+    d = tmpdir.mkdir("test_get_dir");
+    p = d.join("config.yaml")
+    p.write(
+        """GET Teststring"""
+    )
+
+    ssh_localhost.get(str(d), "/tmp/test_get_dir")
+    assert open('/tmp/test_get_dir/config.yaml', 'r').readlines() == [ "GET Teststring" ]
 
 @pytest.mark.sshusername
 def test_local_run(ssh_localhost, tmpdir):

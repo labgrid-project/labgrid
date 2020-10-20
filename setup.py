@@ -28,6 +28,7 @@ setup(
         'attrs>=19.2.0',
         'ansicolors',
         'jinja2',
+        'packaging',
         'pexpect',
         'pyserial>=3.3',
         'pytest>=3.6',

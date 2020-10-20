@@ -2,6 +2,7 @@ import logging
 import warnings
 
 import attr
+from packaging import version
 from pexpect import TIMEOUT
 import serial
 import serial.rfc2217
@@ -22,11 +23,11 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     """
     # pyserial 3.2.1 does not support RFC2217 under Python 3
     # https://github.com/pyserial/pyserial/pull/183
-    if tuple(int(x) for x in serial.__version__.split('.')) <= (3, 2, 1):
+    if version.parse(serial.__version__) <= version.Version('3.2.1'):
         bindings = {"port": "SerialPort", }
     else:
         bindings = {"port": {"SerialPort", "NetworkSerialPort"}, }
-    if tuple(int(x) for x in serial.__version__.split('.')) < (3, 4, 0, 1):
+    if version.parse(serial.__version__) != version.Version('3.4.0.1'):
         message = ("The installed pyserial version does not contain important RFC2217 fixes.\n"
                    "You can install the labgrid fork via:\n"
                    "pip uninstall pyserial\n"

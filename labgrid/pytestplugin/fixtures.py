@@ -50,7 +50,7 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture(scope="session")
-def env(request):
+def env(request, record_testsuite_property):
     """Return the environment configured in the supplied configuration file.
     It contains the targets contained in the configuration file.
     """
@@ -59,50 +59,46 @@ def env(request):
     if not env:
         pytest.skip("missing environment config (use --lg-env)")
 
-    if request.config.pluginmanager.hasplugin('junitxml'):
-        my_junit = getattr(request.config, '_xml', None)
+    record_testsuite_property('ENV_CONFIG', env.config_file)
+    targets = list(env.config.get_targets().keys())
+    record_testsuite_property('TARGETS', targets)
 
-        if my_junit:
-            my_junit.add_global_property('ENV_CONFIG', env.config_file)
-            targets = list(env.config.get_targets().keys())
-            my_junit.add_global_property('TARGETS', targets)
+    for target_name in targets:
+        target = env.get_target(target_name)
+        try:
+            remote_place = target.get_resource(RemotePlace, wait_avail=False)
+            remote_name = remote_place.name
+            record_testsuite_property(
+                'TARGET_{}_REMOTE'.format(target_name.upper()), remote_name)
+        except NoResourceFoundError:
+            pass
 
-            for target_name in targets:
-                target = env.get_target(target_name)
-                try:
-                    remote_place = target.get_resource(RemotePlace, wait_avail=False)
-                    remote_name = remote_place.name
-                    my_junit.add_global_property(
-                        'TARGET_{}_REMOTE'.format(target_name.upper()), remote_name)
-                except NoResourceFoundError:
-                    pass
+    for name, path in env.config.get_paths().items():
+        record_testsuite_property('PATH_{}'.format(name.upper()), path)
+        try:
+            sha = subprocess.check_output(
+                "git rev-parse HEAD".split(), cwd=path)
+        except subprocess.CalledProcessError:
+            continue
+        except FileNotFoundError:
+            continue
+        record_testsuite_property(
+            'PATH_{}_GIT_COMMIT'.format(name.upper()),
+            sha.decode("utf-8").strip("\n"))
 
-            for name, path in env.config.get_paths().items():
-                my_junit.add_global_property('PATH_{}'.format(name.upper()), path)
-                try:
-                    sha = subprocess.check_output(
-                        "git rev-parse HEAD".split(), cwd=path)
-                except subprocess.CalledProcessError:
-                    continue
-                except FileNotFoundError:
-                    continue
-                my_junit.add_global_property(
-                    'PATH_{}_GIT_COMMIT'.format(name.upper()),
-                    sha.decode("utf-8").strip("\n"))
-
-            for name, image in env.config.get_images().items():
-                my_junit.add_global_property(
-                    'IMAGE_{}'.format(name.upper()), image)
-                try:
-                    sha = subprocess.check_output(
-                        "git rev-parse HEAD".split(), cwd=os.path.dirname(image))
-                except subprocess.CalledProcessError:
-                    continue
-                except FileNotFoundError:
-                    continue
-                my_junit.add_global_property(
-                    'IMAGE_{}_GIT_COMMIT'.format(name.upper()),
-                    sha.decode("utf-8").strip("\n"))
+    for name, image in env.config.get_images().items():
+        record_testsuite_property(
+            'IMAGE_{}'.format(name.upper()), image)
+        try:
+            sha = subprocess.check_output(
+                "git rev-parse HEAD".split(), cwd=os.path.dirname(image))
+        except subprocess.CalledProcessError:
+            continue
+        except FileNotFoundError:
+            continue
+        record_testsuite_property(
+            'IMAGE_{}_GIT_COMMIT'.format(name.upper()),
+            sha.decode("utf-8").strip("\n"))
 
     yield env
     env.cleanup()

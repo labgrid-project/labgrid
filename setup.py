@@ -30,7 +30,7 @@ setup(
         'jinja2',
         'pexpect',
         'pyserial>=3.3',
-        'pytest>=3.6',
+        'pytest>=4.5',
         'pyyaml',
         'pyudev',
         'requests',

@@ -51,6 +51,7 @@ class ProxyManager:
         if cls._force_proxy:
             port = sshmanager.request_forward(cls._force_proxy, host, port)
             host = 'localhost'
+            return host, port
 
         extra = getattr(res, 'extra', {})
         if extra:

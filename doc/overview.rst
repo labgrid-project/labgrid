@@ -369,3 +369,8 @@ fully remotely with only a SSH connection as a requirement.
 One remaining issue here is the forward of UDP connections, which is currently
 not possible. UDP connections are used by some of the power backends in the form
 of SNMP.
+
+.. note::
+  Labgrid prefers to connect to an isolated exporter over using the LG_PROXY
+  variable. This means that for an isolated exporter, a correct entry for the
+  exporter needs to be set up in the ~/.ssh/config file.

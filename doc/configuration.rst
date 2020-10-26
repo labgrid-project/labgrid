@@ -176,6 +176,14 @@ The example describes port 1 on the hub with the ID_PATH
 Used by:
   - `USBPowerDriver`_
 
+.. note::
+   Labgrid requires that the interface is contained in the ID_PATH.
+   This usually means that the ID_PATH should end with ``:1.0``.
+   Only this first interface is registered with the ``hub`` driver labgrid is
+   looking for, paths without the interface will fail to match since they use
+   the ``usb`` driver.
+
+
 ModbusTCPCoil
 ~~~~~~~~~~~~~
 A ModbusTCPCoil describes a coil accessible via ModbusTCP.

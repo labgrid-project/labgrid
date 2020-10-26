@@ -48,10 +48,6 @@ class ProxyManager:
         else:
             port = getattr(res, 'port', None) or default_port
 
-        if cls._force_proxy:
-            port = sshmanager.request_forward(cls._force_proxy, host, port)
-            host = 'localhost'
-
         extra = getattr(res, 'extra', {})
         if extra:
             proxy_required = extra.get('proxy_required')
@@ -59,6 +55,11 @@ class ProxyManager:
             if proxy_required:
                 port = sshmanager.request_forward(proxy, host, port)
                 host = 'localhost'
+                return host, port
+
+        if cls._force_proxy:
+            port = sshmanager.request_forward(cls._force_proxy, host, port)
+            host = 'localhost'
 
         return host, port
 

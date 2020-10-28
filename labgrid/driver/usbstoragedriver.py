@@ -82,13 +82,16 @@ class USBStorageDriver(Driver):
             raise ExecutionError("Timeout while waiting for medium")
 
         partition = "" if partition is None else partition
+        remote_path = mf.get_remote_path()
+        target = "{}{}".format(self.storage.path, partition)
 
         if mode == Mode.DD:
+            self.logger.info('Writing %s to %s using dd.', remote_path, target)
             block_size = '512' if skip or seek else '4M'
             args = [
                 "dd",
-                "if={}".format(mf.get_remote_path()),
-                "of={}{}".format(self.storage.path, partition),
+                "if={}".format(remote_path),
+                "of={}".format(target),
                 "oflag=direct",
                 "status=progress",
                 "bs={}".format(block_size),
@@ -99,11 +102,12 @@ class USBStorageDriver(Driver):
         elif mode == Mode.BMAPTOOL:
             if skip or seek:
                 raise ExecutionError("bmaptool does not support skip or seek")
+            self.logger.info('Writing %s to %s using bmaptool.', remote_path, target)
             args = [
                 "bmaptool",
                 "copy",
-                "{}".format(mf.get_remote_path()),
-                "{}{}".format(self.storage.path, partition),
+                "{}".format(remote_path),
+                "{}{}".format(target),
             ]
         else:
             raise ValueError

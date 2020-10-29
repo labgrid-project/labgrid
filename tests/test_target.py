@@ -5,7 +5,7 @@ import attr
 import pytest
 
 from labgrid import Target
-from labgrid.binding import BindingError
+from labgrid.binding import BindingError, BindingState, StateError
 from labgrid.resource import Resource
 from labgrid.driver import Driver
 from labgrid.exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
@@ -99,6 +99,9 @@ class DriverWithASet(Driver):
 class DriverWithAB(Driver):
     bindings = {"res": {ResourceA, ResourceB}, }
 
+    @Driver.check_active
+    def test_function(self):
+        pass
 
 def test_suppliers_a(target):
     ra = ResourceA(target, "resource")
@@ -375,3 +378,14 @@ def test_target_activate_by_string(target):
     target.activate("A")
 
     assert a == target.get_active_driver(A)
+
+def test_driver_active_res_unavailable(target):
+    rb = ResourceB(target, "resource")
+    d = DriverWithAB(target, "driver")
+    target.activate(d)
+    assert d.state == BindingState.active
+    d.test_function()
+    rb.avail = False
+    with pytest.raises(StateError) as e_info:
+        d.test_function()
+    assert "no longer available" in str(e_info.value)

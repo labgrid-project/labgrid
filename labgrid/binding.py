@@ -97,6 +97,11 @@ class BindingMixin:
                     '{} has not been activated, {} cannot be called in state "{}"'.format(
                         self, func.__qualname__, self.state.name)
                 )
+            for sup in self.suppliers:
+                if hasattr(sup, "avail") and sup.avail != True:
+                    raise StateError(
+                        'Resource {} no longer available, driver needs to be de- and reactivated'.format(sup)
+                       )
             return func(self, *_args, **_kwargs)
 
         return wrapper

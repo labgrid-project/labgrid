@@ -70,7 +70,7 @@ def get_state(request, index):
 
             raise ExecutionError("failed to parse the port status")
 
-    m = re.search("Device is blocked by another user with IP ([^\s<]+)", request.text)
+    m = re.search(r"Device is blocked by another user with IP ([^\s<]+)", request.text)
     if m:
         raise ExecutionError("device is blocked by another user with IP {}".format(m.group(1)))
 

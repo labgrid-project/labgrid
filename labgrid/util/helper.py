@@ -41,19 +41,19 @@ class ProcessWrapper:
         # close sfd so we notice when the child is gone
         os.close(sfd)
         # get a file object from the fd
-        omfd = os.fdopen(mfd, 'rb')
         buf = b""
         while True:
             try:
-                raw = omfd.read(4096)
+                raw = os.read(mfd, 4096)
+            except BlockingIOError as ex:
+                # wait for new data and retry
+                select.select([mfd], [], [mfd], 0.1)
+                continue
             except OSError as e:
                 if e.errno == 5:
                     break
                 raise
-            if raw is None:
-                # wait for new data and retry
-                select.select([mfd], [], [mfd], 0.1)
-                continue
+
             if raw:
                 buf += raw
                 *parts, buf = buf.split(b'\r\n')
@@ -64,7 +64,8 @@ class ProcessWrapper:
             process.poll()
             if process.returncode is not None:
                 break
-        omfd.close()
+
+        os.close(mfd)
         process.wait()
         if buf:
             # process incomplete line

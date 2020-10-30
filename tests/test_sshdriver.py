@@ -71,6 +71,24 @@ def test_local_put(ssh_localhost, tmpdir):
     assert open('/tmp/test_put_yaml', 'r').readlines() == [ "PUT Teststring" ]
 
 @pytest.mark.sshusername
+def test_local_no_final_line_remove(ssh_localhost, tmpdir):
+    p = tmpdir.join("test_no_line_remove")
+    p.write("teststring")
+
+    ssh_localhost.put(str(p), "/tmp/test_line_remove")
+    stdout, stderr, _ = ssh_localhost.run("cat /tmp/test_line_remove")
+    assert stdout == [ "teststring" ]
+
+@pytest.mark.sshusername
+def test_local_final_line_remove_empty(ssh_localhost, tmpdir):
+    p = tmpdir.join("test_no_line_remove")
+    p.write("teststring\n")
+
+    ssh_localhost.put(str(p), "/tmp/test_line_remove")
+    stdout, stderr, _ = ssh_localhost.run("cat /tmp/test_line_remove")
+    assert stdout == [ "teststring" ]
+
+@pytest.mark.sshusername
 def test_local_put_dir(ssh_localhost, tmpdir):
     d = tmpdir.mkdir("test_put_dir");
     p = d.join("config.yaml")

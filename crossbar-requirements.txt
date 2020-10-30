@@ -1,8 +1,6 @@
 -r requirements.txt
 setuptools>=38.0.0
-crossbar==19.11.1
-# For crossbar
-idna==2.5
-msgpack==0.6.2
+crossbar==20.8.1
 urllib3==1.24.3
-zlmdb==19.11.1
+idna==2.5
+msgpack==1.0.0

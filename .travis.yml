@@ -52,5 +52,7 @@ matrix:
           fi
     - stage: optional
       python: "nightly"
+    - stage: optional
+      python: "3.9"
   allow_failures:
     - stage: optional

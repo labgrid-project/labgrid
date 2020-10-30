@@ -30,8 +30,6 @@ It currently supports:
   from different computers on a network
 - power/reset management via drivers for power switches or onewire PIOs
 - upload of binaries via USB: imxusbloader/mxsusbloader (bootloader) or fastboot (kernel)
-- functions to control external services such as emulated USB-Sticks and the
-  `hawkBit <https://github.com/eclipse/hawkbit>`_ deployment service
 
 While labgrid is currently used for daily development on embedded boards and for
 automated testing, several planned features are not yet implemented and the APIs

@@ -177,7 +177,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         stdout, stderr = sub.communicate(timeout=timeout)
         stdout = stdout.decode(codec, decodeerrors).split('\n')
-        stdout.pop()
+        if stdout[-1] == '':
+            stdout.pop()
         if stderr is None:
             stderr = []
         else:

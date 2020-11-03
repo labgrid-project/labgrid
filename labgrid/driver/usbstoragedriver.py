@@ -107,7 +107,7 @@ class USBStorageDriver(Driver):
                 "bmaptool",
                 "copy",
                 "{}".format(remote_path),
-                "{}{}".format(target),
+                "{}".format(target),
             ]
         else:
             raise ValueError

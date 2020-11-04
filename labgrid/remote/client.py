@@ -43,6 +43,10 @@ class ServerError(Error):
     pass
 
 
+class InteractiveCommandError(Error):
+    pass
+
+
 class ClientSession(ApplicationSession):
     """The ClientSession encapsulates all the actions a Client can Invoke on
     the coordinator."""
@@ -851,14 +855,16 @@ class ClientSession(ApplicationSession):
                 raise
         if p.returncode:
             print("connection lost")
-            return False
-        return True
+            return p.returncode
+        return 0
 
     async def console(self, place, target):
         while True:
             res = await self._console(place, target)
             if res:
-                break
+                exc = InteractiveCommandError("microcom failed")
+                exc.exitcode = res
+                raise exc
             if not self.args.loop:
                 break
             await asyncio.sleep(1.0)
@@ -1023,21 +1029,33 @@ class ClientSession(ApplicationSession):
             print("connection lost (SSH error)")
         elif res:
             print("connection lost (remote exit code {})".format(res))
+        if res:
+            exc = InteractiveCommandError("ssh error")
+            exc.exitcode = res
+            raise exc
 
     def scp(self):
         drv = self._get_ssh()
 
         res = drv.scp(src=self.args.src, dst=self.args.dst)
+        if res:
+            exc = InteractiveCommandError("scp failed")
+            exc.exitcode = res
+            raise exc
 
     def rsync(self):
         drv = self._get_ssh()
 
         res = drv.rsync(src=self.args.src, dst=self.args.dst, extra=self.args.leftover)
+        if res:
+            exc = InteractiveCommandError("rsync failed")
+            exc.exitcode = res
+            raise exc
 
     def sshfs(self):
         drv = self._get_ssh()
 
-        res = drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint)
+        drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint)
 
     def telnet(self):
         place = self.get_acquired_place()
@@ -1662,6 +1680,10 @@ def main():
         except ConnectionError as e:
             print("Could not connect to coordinator: {}".format(e))
             exitcode = 1
+        except InteractiveCommandError as e:
+            if args.debug:
+                traceback.print_exc()
+            exitcode = e.exitcode
         except Error as e:
             if args.debug:
                 traceback.print_exc()

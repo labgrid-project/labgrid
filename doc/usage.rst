@@ -171,8 +171,6 @@ Library
 labgrid can be used directly as a Python library, without the infrastructure
 provided by the pytest plugin.
 
-Creating and Configuring Targets
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The labgrid library provides two ways to configure targets with resources and
 drivers: either create the :any:`Target` directly or use :any:`Environment` to
 load a configuration file.
@@ -182,7 +180,7 @@ load a configuration file.
    targets using the python atexit module.
 
 Targets
-^^^^^^^
+~~~~~~~
 At the lower level, a :any:`Target` can be created directly::
 
   >>> from labgrid import Target
@@ -238,7 +236,7 @@ the advantage that exceptions can be handled by your application::
   >>>     <your code here>
 
 Environments
-^^^^^^^^^^^^
+~~~~~~~~~~~~
 In practice, is is often useful to separate the `Target` configuration from the
 code which needs to control the board (such as a test case or installation
 script).

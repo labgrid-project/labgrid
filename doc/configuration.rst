@@ -2024,8 +2024,13 @@ Environment Configuration
 -------------------------
 The environment configuration for a test environment consists of a YAML file
 which contains targets, drivers and resources.
-The invocation order of objects is important here since drivers may depend on
-other drivers or resources.
+
+.. note::
+
+  The order is important here:
+  Objects are instantiated in the order they appear in the YAML file,
+  so if drivers depend on other drivers or resources which are only instantiated later,
+  loading the environment will fail.
 
 The skeleton for an environment consists of:
 

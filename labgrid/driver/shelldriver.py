@@ -25,6 +25,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     """ShellDriver - Driver to execute commands on the shell
     ShellDriver binds on top of a ConsoleProtocol.
 
+    On activation, the ShellDriver will look for the login prompt on the console,
+    and login to provide shell access.
+
     Args:
         prompt (regex): the shell prompt to detect
         login_prompt (regex): the login prompt to detect

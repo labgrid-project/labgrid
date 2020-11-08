@@ -204,7 +204,7 @@ Then, a :any:`Driver` needs to be created on the `Target`::
   >>> sd = SerialDriver(t, name=None)
 
 
-As the `SerialDriver` declares a binding to a SerialPort, the target binds it
+As the :any:`SerialDriver` declares a binding to a :any:`SerialPort`, the target binds it
 to the resource created above::
 
   >>> sd.port
@@ -217,8 +217,8 @@ Before the driver can be used, it needs to be activated::
   >>> t.activate(sd)
   >>> sd.write(b'test')
 
-Active drivers can be accessed by class (any `Driver` or `Protocol`) using some
-syntactic sugar::
+Active drivers can be accessed by class (any :any:`Driver <labgrid.driver>` or
+:any:`Protocol <labgrid.protocol>`) using some syntactic sugar::
 
   >>> target = Target('main')
   >>> console = FakeConsoleDriver(target, 'console')

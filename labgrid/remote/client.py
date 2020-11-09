@@ -966,19 +966,15 @@ class ClientSession(ApplicationSession):
     def _get_ssh(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        env = os.environ.copy()
 
         from ..resource import NetworkService
         try:
-            resource = target.get_resource(NetworkService)
+            target.get_resource(NetworkService)
         except NoResourceFoundError:
             ip = self._get_ip(place)
             if not ip:
                 return
-            resource = NetworkService(target,
-                    address = str(ip),
-                    username = 'root',
-            )
+            NetworkService(target, address=str(ip), username='root')
 
         from ..driver.sshdriver import SSHDriver
         try:

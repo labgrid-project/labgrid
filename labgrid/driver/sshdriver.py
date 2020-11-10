@@ -232,6 +232,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             dst = '_' + dst
 
         complete_cmd = ["scp",
+                "-F", "none",
                 "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
                 src, dst,
         ]
@@ -255,6 +256,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             dst = '_' + dst
 
         ssh_cmd = ["ssh",
+                "-F", "none",
                 "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
         ]
 
@@ -280,6 +282,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             raise ExecutionError("Keepalive no longer running")
 
         complete_cmd = ["sshfs",
+                "-F", "none",
                 "-f",
                 "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
                 ":{}".format(path),

@@ -15,7 +15,7 @@ class TestManualPowerDriver:
         d.on()
 
         m.assert_called_once_with(
-            "Turn the target foo-board ON and press enter"
+            "Turn the target Test ON and press enter"
         )
 
     def test_off(self, target, mocker):
@@ -26,7 +26,7 @@ class TestManualPowerDriver:
         d.off()
 
         m.assert_called_once_with(
-            "Turn the target foo-board OFF and press enter"
+            "Turn the target Test OFF and press enter"
         )
 
     def test_cycle(self, target, mocker):
@@ -36,7 +36,7 @@ class TestManualPowerDriver:
         target.activate(d)
         d.cycle()
 
-        m.assert_called_once_with("CYCLE the target foo-board and press enter")
+        m.assert_called_once_with("CYCLE the target Test and press enter")
 
 
 class TestExternalPowerDriver:

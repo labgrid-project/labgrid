@@ -38,7 +38,7 @@ class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     @step()
     def on(self):
         self.target.interact(
-            "Turn the target {name} ON and press enter".format(name=self.name)
+            "Turn the target {name} ON and press enter".format(name=self.target.name)
         )
 
     @Driver.check_active
@@ -46,14 +46,14 @@ class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     def off(self):
         self.target.interact(
             "Turn the target {name} OFF and press enter".
-            format(name=self.name)
+            format(name=self.target.name)
         )
 
     @Driver.check_active
     @step()
     def cycle(self):
         self.target.interact(
-            "CYCLE the target {name} and press enter".format(name=self.name)
+            "CYCLE the target {name} and press enter".format(name=self.target.name)
         )
 
 

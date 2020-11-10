@@ -56,7 +56,7 @@ def test_step_reporter(power_env, pw_cycle_test, color_scheme, pytest_extra_para
         # exact match
         assert step_line.endswith("cycle state='start'")
 
-        spawn.expect("main: CYCLE the target None and press enter")
+        spawn.expect("main: CYCLE the target main and press enter")
         time.sleep(0.01) # ensure that the step measures a duration
         spawn.sendline()
 

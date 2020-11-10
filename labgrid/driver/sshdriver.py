@@ -42,7 +42,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self.ssh_prefix += ["-o", "PasswordAuthentication=no"]
 
         self.control = self._check_master()
-        self.ssh_prefix += ["-F", "/dev/null"]
+        self.ssh_prefix += ["-F", "none"]
         if self.control:
             self.ssh_prefix += ["-o", "ControlPath={}".format(self.control.replace('%', '%%'))]
 

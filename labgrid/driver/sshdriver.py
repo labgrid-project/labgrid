@@ -62,7 +62,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         self.tmpdir = tempfile.mkdtemp(prefix='labgrid-ssh-tmp-')
         control = os.path.join(
-            self.tmpdir, 'control-{}'.format(self.networkservice.address)
+            self.tmpdir, 'control-{}-{}'.format(self.networkservice.address, self.networkservice.port)
         )
         # use sshpass if we have a password
         args = ["sshpass", "-e"] if self.networkservice.password else []

@@ -75,3 +75,19 @@ class QuartusHPSDriver(Driver):
             "--operation=P {}".format(mf.get_remote_path()),
         ]
         processwrapper.check_output(cmd)
+
+    @Driver.check_active
+    @step(args=['address', 'size'])
+    def erase(self, address=None, size=None):
+
+        cable_number = self._get_cable_number()
+        cmd = self.interface.command_prefix + [self.tool]
+        cmd += [
+            "--cable={}".format(cable_number),
+            "--operation=E",
+        ]
+        if address:
+            cmd += ["--addr=0x{:X}".format(address)]
+        if size:
+            cmd += ["--size=0x{:X}".format(size)]
+        processwrapper.check_output(cmd)

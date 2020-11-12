@@ -3,6 +3,7 @@ Release 0.5.0 (unreleased)
 
 New Features in 0.5.0
 ~~~~~~~~~~~~~~~~~~~~~
+- Support for Eaton ePDU added, and can be used as a NetworkPowerPort.
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

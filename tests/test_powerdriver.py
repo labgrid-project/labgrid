@@ -162,6 +162,7 @@ class TestNetworkPowerDriver:
     def test_import_backends(self):
         import labgrid.driver.power
         import labgrid.driver.power.apc
+        import labgrid.driver.power.eaton
         import labgrid.driver.power.digipower
         import labgrid.driver.power.gude
         import labgrid.driver.power.gude24

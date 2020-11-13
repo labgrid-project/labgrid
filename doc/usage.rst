@@ -177,6 +177,10 @@ The labgrid library provides two ways to configure targets with resources and
 drivers: either create the :any:`Target` directly or use :any:`Environment` to
 load a configuration file.
 
+.. note::
+   On exit of your script/application, labgrid will call ``cleanup()`` on the
+   targets using the python atexit module.
+
 Targets
 ^^^^^^^
 At the lower level, a :any:`Target` can be created directly::
@@ -223,6 +227,15 @@ syntactic sugar::
   FakeConsoleDriver(target=Target(name='main', …), name='console', …)
   >>> target[FakeConsoleDriver, 'console']
   FakeConsoleDriver(target=Target(name='main', …), name='console', …)
+
+After you are done with the target, optionally call the cleanup method on your
+target. While labgrid registers an atexit handler to cleanup targets, this has
+the advantage that exceptions can be handled by your application:::
+
+  >>> try:
+  >>>     target.cleanup()
+  >>> except Exception as e:
+  >>>     <your code here>
 
 Environments
 ^^^^^^^^^^^^

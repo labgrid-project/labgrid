@@ -41,7 +41,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if not self.networkservice.password:
             self.ssh_prefix += ["-o", "PasswordAuthentication=no"]
 
-        self.control = self._check_master()
+        self.control = self._start_own_master()
         self.ssh_prefix += ["-F", "none"]
         if self.control:
             self.ssh_prefix += ["-o", "ControlPath={}".format(self.control.replace('%', '%%'))]
@@ -138,21 +138,6 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.logger.info('Connected to %s', self.networkservice.address)
 
         return control
-
-    def _check_master(self):
-        args = [
-            "ssh", "-O", "check", "-l", self.networkservice.username, self.networkservice.address
-        ]
-        check = subprocess.call(
-            args,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-        if check == 0:
-            return ""
-
-        return self._start_own_master()
 
     @Driver.check_active
     @step(args=['cmd'], result=True)

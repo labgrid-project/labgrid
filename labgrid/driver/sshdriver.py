@@ -113,7 +113,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                     if proxy_error:
                         raise ExecutionError(
                             "Failed to connect to {} with {}: error from SSH ProxyCommand: {}".
-                            format(self.networkservice.address, args, proxy_error),
+                            format(self.networkservice.address, " ".join(args), proxy_error),
                             stdout=stdout,
                         )
                 except FileNotFoundError:
@@ -121,7 +121,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
                 raise ExecutionError(
                     "Failed to connect to {} with {}: return code {}".
-                    format(self.networkservice.address, args, return_value),
+                    format(self.networkservice.address, " ".join(args), return_value),
                     stdout=stdout,
                 )
         except subprocess.TimeoutExpired:

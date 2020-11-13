@@ -1,4 +1,5 @@
 import abc
+import atexit
 import logging
 from time import monotonic, sleep
 from collections import Counter
@@ -32,6 +33,7 @@ class Target:
         self._lookup_table = {
             Strategy.__name__: Strategy,
         }
+        atexit.register(self._atexit_cleanup)
 
     def interact(self, msg):
         if self.env:
@@ -465,6 +467,14 @@ class Target:
         """Deactivates all drivers in reversed order they were activated"""
         for drv in reversed(self.drivers):
             self.deactivate(drv)
+
+    def _atexit_cleanup(self):
+        try:
+            self.cleanup()
+        except Exception as e:
+            print("An exception occured during cleanup, call the cleanup() "
+                  "method on targets yourself to handle exceptions explictly.")
+            print("Error: {}", e)
 
     def cleanup(self):
         """Clean up conntected drivers and resources in reversed order"""

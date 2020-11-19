@@ -229,8 +229,8 @@ Active drivers can be accessed by class (any :any:`Driver <labgrid.driver>` or
   FakeConsoleDriver(target=Target(name='main', …), name='console', …)
 
 After you are done with the target, optionally call the cleanup method on your
-target. While labgrid registers an atexit handler to cleanup targets, this has
-the advantage that exceptions can be handled by your application:::
+target. While labgrid registers an ``atexit`` handler to cleanup targets, this has
+the advantage that exceptions can be handled by your application::
 
   >>> try:
   >>>     target.cleanup()

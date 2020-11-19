@@ -181,6 +181,13 @@ load a configuration file.
 
 Targets
 ~~~~~~~
+
+.. note::
+   In most cases it is easier to :ref:`use a complete environment from a YAML
+   file <usage_environments>` instead of manually creating and activating objects.
+   Nevertheless, we explain this in the following to clarify the underlying concepts,
+   and how to work with targets on a lower level, e.g. in strategies.
+
 At the lower level, a :any:`Target` can be created directly::
 
   >>> from labgrid import Target
@@ -284,6 +291,8 @@ the advantage that exceptions can be handled by your application::
   >>>     target.cleanup()
   >>> except Exception as e:
   >>>     <your code here>
+
+.. _usage_environments:
 
 Environments
 ~~~~~~~~~~~~

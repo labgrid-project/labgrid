@@ -2211,3 +2211,7 @@ Use ``#`` for line statements (like the for loops in the example) and ``##``
 for line comments.
 Statements like ``{{ 4000 + idx }}`` are expanded based on variables in the
 Jinja2 template.
+
+The template processing also supports use of OS environment variables, using
+something like `{{ env['FOOBAR'] }}` to insert the content of environment
+variable `FOOBAR`.

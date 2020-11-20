@@ -65,6 +65,8 @@ New Features in 0.3.0
   Labgrid.
 - ``labgrid-client write-image`` gained a new argument ``--mode`` to specify
   which tool should be used to write the image (either ``dd`` or ``bmaptool``)
+- Exporter configuration file ``exporter.yaml`` now allows use of environment
+  variables.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

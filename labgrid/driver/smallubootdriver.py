@@ -39,10 +39,14 @@ class SmallUBootDriver(UBootDriver):
     This driver was created especially for the following devices:
 
     - TP-Link WR841 v11
+
+    Args:
+        boot_secret (str): optional, secret used to unlock prompt
+        login_timeout (int): optional, timeout for login prompt detection,
     """
 
     boot_secret = attr.ib(default="a", validator=attr.validators.instance_of(str))
-    login_timeout = attr.ib(default=60.0, validator=attr.validators.instance_of(float))
+    login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
 
     @step()
     def _await_prompt(self):

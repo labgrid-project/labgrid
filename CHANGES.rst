@@ -61,6 +61,8 @@ New Features in 0.3.0
 - ``labgrid-client`` now respects the ``LG_HOSTNAME`` and ``LG_USERNAME``
   environment variables to set the hostname and username when accessing
   resources.
+- Exporter configuration file ``exporter.yaml`` now allows use of environment
+  variables.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -2,6 +2,7 @@ from pprint import pprint
 
 import attr
 import jinja2
+import os
 
 from ..util.yaml import load
 from ..exceptions import NoConfigFoundError
@@ -23,7 +24,7 @@ class ResourceConfig:
             raise NoConfigFoundError(
                 "{} could not be found".format(self.filename)
             )
-        rendered = template.render()
+        rendered = template.render(env=os.environ)
         pprint(('rendered', rendered))
         self.data = load(rendered)
         pprint(('loaded', self.data))

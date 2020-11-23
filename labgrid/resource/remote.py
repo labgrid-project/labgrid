@@ -18,16 +18,24 @@ class RemotePlaceManager(ResourceManager):
         self.ready = None
         self.unmanaged_resources = []
 
-    def _start(self):
+    def _start(self,retry_count=3):
         if self.session:
             return
 
         from ..remote.client import start_session
-        try:
-            self.session = start_session(self.url, self.realm, {'env': self.env})
-        except ConnectionRefusedError as e:
-            raise ConnectionRefusedError("Could not connect to coordinator {}".format(self.url)) \
-                from e
+        from ..remote.client import Error
+
+        for i in range(retry_count):
+            try:
+                self.session = start_session(  self.url, self.realm, {'env': self.env})
+            except ConnectionRefusedError as e:
+                raise ConnectionRefusedError("Could not connect to coordinator {}".format(self.url)) \
+                    from e
+            except Error as e:
+                # Issue: https://github.com/crossbario/autobahn-python/issues/838
+                print ("Websocket error: '{}'. Retry ({}) connection to coordinator...".format(e,i))
+            if self.session:
+                break 
 
         self.loop = self.session.loop
 

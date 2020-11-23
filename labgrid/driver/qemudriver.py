@@ -141,6 +141,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 "if=pflash,format=raw,file={},id=nor0".format(
                     self.target.env.config.get_image_path(self.flash)))
 
+        if "-append" in shlex.split(self.extra_args):
+            raise ExecutionError("-append in extra_args not allowed, use boot_args instead")
+
         self._cmd.extend(shlex.split(self.extra_args))
         self._cmd.append("-S")
         self._cmd.append("-qmp")

@@ -975,6 +975,7 @@ Arguments:
   - prompt (regex): U-Boot prompt to match
   - init_commands (tuple): tuple of commands to execute after matching the
     prompt
+  - boot_secret (str): optional, secret used to unlock prompt
   - boot_expression (str): optional, regex to match the U-Boot start string
     defaults to "U-Boot 20\d+"
   - login_timeout (int): optional, timeout for the password/login detection

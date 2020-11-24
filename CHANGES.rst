@@ -37,6 +37,8 @@ New Features in 0.3.0
 - UBootDriver now allows overriding of default boot command (``run bootcmd``)
   via new ``boot_command`` argument.
 - The config file supports per-target options, in addition to global options.
+- ``labgrid-client write-image`` gained a new argument ``--mode`` to specify
+  which tool should be used to write the image (either ``dd`` or ``bmaptool``)
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

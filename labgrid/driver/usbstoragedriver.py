@@ -104,6 +104,23 @@ class USBStorageDriver(Driver):
         elif mode == Mode.BMAPTOOL:
             if skip or seek:
                 raise ExecutionError("bmaptool does not support skip or seek")
+
+            # Try to find a block map file using the same logic that bmaptool
+            # uses. Handles cases where the image is named like: <image>.bz2
+            # and the block map file is <image>.bmap
+            mf_bmap = None
+            image_path = filename
+            while True:
+                bmap_path = "{}.bmap".format(image_path)
+                if os.path.exists(bmap_path):
+                    mf_bmap = ManagedFile(bmap_path, self.storage)
+                    mf_bmap.sync_to_resource()
+                    break
+
+                image_path, ext = os.path.splitext(image_path)
+                if not ext:
+                    break
+
             self.logger.info('Writing %s to %s using bmaptool.', remote_path, target)
             args = [
                 "bmaptool",
@@ -111,6 +128,11 @@ class USBStorageDriver(Driver):
                 "{}".format(remote_path),
                 "{}".format(target),
             ]
+
+            if mf_bmap is None:
+                args.append("--nobmap")
+            else:
+                args.append("--bmap={}".format(mf_bmap.get_remote_path()))
         else:
             raise ValueError
 

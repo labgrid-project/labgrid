@@ -29,7 +29,9 @@ class USBStorageDriver(Driver):
             "USBMassStorage",
             "NetworkUSBMassStorage",
             "USBSDMuxDevice",
-            "NetworkUSBSDMuxDevice"
+            "NetworkUSBSDMuxDevice",
+            "USBSDWireDevice",
+            "NetworkUSBSDWireDevice",
         },
     }
     image = attr.ib(

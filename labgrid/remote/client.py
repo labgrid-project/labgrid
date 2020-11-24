@@ -927,7 +927,8 @@ class ClientSession(ApplicationSession):
         action = self.args.action
         target = self._get_target(place)
         from ..driver.usbsdmuxdriver import USBSDMuxDriver
-        from ..resource.remote import NetworkUSBSDMuxDevice
+        from ..driver.usbsdwiredriver import USBSDWireDriver
+        from ..resource.remote import NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkUSBSDMuxDevice):
@@ -936,9 +937,17 @@ class ClientSession(ApplicationSession):
                 except NoDriverFoundError:
                     drv = USBSDMuxDriver(target, name=None)
                 break
+            if isinstance(resource, NetworkUSBSDWireDevice):
+                try:
+                    drv = target.get_driver(USBSDWireDriver)
+                except NoDriverFoundError:
+                    drv = USBSDWireDriver(target, name=None)
+                break
         if not drv:
             raise UserError("target has no compatible resource available")
         target.activate(drv)
+        if isinstance(drv, USBSDWireDriver) and action in ['off', 'client']:
+            raise UserError("sd-wire does only support 'dut' and 'host' modes")
         drv.set_mode(action)
 
     def _get_ip(self, place):
@@ -1104,13 +1113,15 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         target = self._get_target(place)
         drv = None
-        from ..resource.remote import NetworkUSBMassStorage, NetworkUSBSDMuxDevice
+        from ..resource.remote import NetworkUSBMassStorage, NetworkUSBSDMuxDevice, \
+            NetworkUSBSDWireDevice
         from ..driver import USBStorageDriver
         try:
             drv = target.get_driver(USBStorageDriver)
         except NoDriverFoundError:
             for resource in target.resources:
-                if isinstance(resource, (NetworkUSBSDMuxDevice, NetworkUSBMassStorage)):
+                if isinstance(resource, (NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice,
+                                         NetworkUSBMassStorage)):
                     try:
                         drv = target.get_driver(USBStorageDriver)
                     except NoDriverFoundError:

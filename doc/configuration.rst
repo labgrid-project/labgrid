@@ -495,6 +495,29 @@ NetworkUSBSDMuxDevice
 A :any:`NetworkUSBSDMuxDevice` resource describes a `USBSDMuxDevice`_ available
 on a remote computer.
 
+USBSDWireDevice
+~~~~~~~~~~~~~~~
+A :any:`USBSDWireDevice` resource describes a Tizen
+`SD Wire device <https://wiki.tizen.org/SDWire>`_
+device.
+
+.. code-block:: yaml
+
+   USBSDWireDevice:
+     match:
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+
+- match (str): key and value for a udev match, see `udev Matching`_
+
+Used by:
+  - `USBSDWireDriver`_
+
+NetworkUSBSDWireDevice
+~~~~~~~~~~~~~~~~~~~~~~
+
+A :any:`NetworkUSBSDWireDevice` resource describes a `USBSDWireDevice`_ available
+on a remote computer.
+
 USBVideo
 ~~~~~~~~
 
@@ -1582,6 +1605,18 @@ USBSDMuxDriver
 ~~~~~~~~~~~~~~
 The :any:`USBSDMuxDriver` uses a USBSDMuxDevice resource to control a
 USB-SD-Mux device via `usbsdmux <https://github.com/pengutronix/usbsdmux>`_
+tool.
+
+Implements:
+  - None yet
+
+The driver can be used in test cases by calling the `set_mode()` function with
+argument being `dut`, `host`, `off`, or `client`.
+
+USBSDWireDriver
+~~~~~~~~~~~~~~~
+The :any:`USBSDWireDriver` uses a USBSDWireDevice resource to control a
+USB-SD-Wire device via `sd-mux-ctrl <https://wiki.tizen.org/SD_MUX#Software>`_
 tool.
 
 Implements:

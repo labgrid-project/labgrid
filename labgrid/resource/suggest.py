@@ -12,6 +12,7 @@ from .udev import (
     IMXUSBLoader,
     AndroidFastboot,
     USBSDMuxDevice,
+    USBSDWireDevice,
     AlteraUSBBlaster,
     RKUSBLoader,
     USBEthernetInterface,
@@ -37,6 +38,7 @@ class Suggester:
         self.resources.append(AndroidFastboot(**args))
         self.resources.append(USBMassStorage(**args))
         self.resources.append(USBSDMuxDevice(**args))
+        self.resources.append(USBSDWireDevice(**args))
         self.resources.append(AlteraUSBBlaster(**args))
         self.resources.append(RKUSBLoader(**args))
         self.resources.append(USBEthernetInterface(**args))

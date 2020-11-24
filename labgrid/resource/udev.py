@@ -409,6 +409,57 @@ class SigrokUSBSerialDevice(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class USBSDWireDevice(USBResource):
+    """The USBSDWireDevice describes an attached SDWire device,
+    it is identified via USB using udev
+    """
+
+    control_path = attr.ib(
+        default=None,
+        validator=attr.validators.optional(str)
+    )
+    disk_path = attr.ib(
+        default=None,
+        validator=attr.validators.optional(str)
+    )
+
+    def __attrs_post_init__(self):
+        self.match['ID_VENDOR_ID'] = '04e8'
+        self.match['ID_MODEL_ID'] = '6001'
+        self.match['@ID_VENDOR_ID'] = '0424'
+        self.match['@ID_MODEL_ID'] = '2640'
+        super().__attrs_post_init__()
+
+    # Overwrite the avail attribute with our internal property
+    @property
+    def avail(self):
+        return bool(self.disk_path and self.control_serial)
+
+    # Forbid the USBResource super class to set the avail property
+    @avail.setter
+    def avail(self, prop):
+        pass
+
+    # Overwrite the poll function. Only mark the SDWire as available if both
+    # paths are available.
+    def poll(self):
+        super().poll()
+        if self.device is None:
+            self.disk_path = None
+            self.control_serial = None
+        else:
+            if not self.avail:
+                for child in self.device.parent.children:
+                    if child.subsystem == 'block' and child.device_type == 'disk':
+                        self.disk_path = child.device_node
+                self.control_serial = self.device.properties.get('ID_SERIAL_SHORT')
+
+    @property
+    def path(self):
+        return self.disk_path
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class USBSDMuxDevice(USBResource):
     """The USBSDMuxDevice describes an attached USBSDMux device,
     it is identified via USB using udev

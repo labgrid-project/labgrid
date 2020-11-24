@@ -63,6 +63,8 @@ New Features in 0.3.0
   resources.
 - PyVISA support added, allowing to use PyVISA controlled test equipment from
   Labgrid.
+- ``labgrid-client write-image`` gained a new argument ``--mode`` to specify
+  which tool should be used to write the image (either ``dd`` or ``bmaptool``)
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

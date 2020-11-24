@@ -25,6 +25,7 @@ from ..util.yaml import dump
 from .. import Target, target_factory
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
+from ..driver import Mode
 
 txaio.use_asyncio()
 txaio.config.loop = asyncio.get_event_loop()
@@ -1150,7 +1151,7 @@ class ClientSession(ApplicationSession):
         target.activate(drv)
         try:
             drv.write_image(self.args.filename, partition=self.args.partition, skip=self.args.skip,
-                            seek=self.args.seek)
+                            seek=self.args.seek, mode=self.args.write_mode)
         except subprocess.CalledProcessError as e:
             raise UserError("could not write image to network usb storage: {}".format(e))
         except FileNotFoundError as e:
@@ -1544,6 +1545,9 @@ def main():
                            help="skip n 512-sized blocks at start of input")
     subparser.add_argument('--seek', type=int, default=0,
                            help="skip n 512-sized blocks at start of output")
+    subparser.add_argument('--mode', dest='write_mode',
+                           type=Mode, choices=Mode, default=Mode.DD,
+                           help="Choose tool for writing images (default: %(default)s)")
     subparser.add_argument('filename', help='filename to boot on the target')
     subparser.set_defaults(func=ClientSession.write_image)
 

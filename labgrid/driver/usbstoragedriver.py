@@ -17,8 +17,11 @@ from ..util import Timeout
 
 
 class Mode(enum.Enum):
-    DD = 1
-    BMAPTOOL = 2
+    DD = "dd"
+    BMAPTOOL = "bmaptool"
+
+    def __str__(self):
+        return self.value
 
 
 @target_factory.reg_driver

@@ -1,7 +1,8 @@
 import inspect
 
-from .exceptions import InvalidConfigError
+from .exceptions import InvalidConfigError, RegistrationError
 from .util.dict import filter_dict
+
 
 class TargetFactory:
     def __init__(self):
@@ -13,6 +14,9 @@ class TargetFactory:
         """Register a resource with the factory.
 
         Returns the class to allow using it as a decorator."""
+        cls_name = cls.__name__
+        if cls_name in self.all_classes:
+            raise RegistrationError("resource with name {} was already registered".format(cls_name))
         self.resources[cls.__name__] = cls
         self._insert_into_all(cls)
         return cls
@@ -21,7 +25,10 @@ class TargetFactory:
         """Register a driver with the factory.
 
         Returns the class to allow using it as a decorator."""
-        self.drivers[cls.__name__] = cls
+        cls_name = cls.__name__
+        if cls_name in self.all_classes:
+            raise RegistrationError("driver with name {} was already registered".format(cls_name))
+        self.drivers[cls_name] = cls
         self._insert_into_all(cls)
         return cls
 
@@ -163,6 +170,7 @@ class TargetFactory:
         for cl in classes:
             if not self.all_classes.get(cl.__name__):
                 self.all_classes[cl.__name__] = cl
+
 
 #: Global TargetFactory instance
 #:

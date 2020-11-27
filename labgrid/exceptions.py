@@ -28,3 +28,8 @@ class NoDriverFoundError(NoSupplierFoundError):
 @attr.s(eq=False)
 class NoResourceFoundError(NoSupplierFoundError):
     pass
+
+
+@attr.s(eq=False)
+class RegistrationError(Exception):
+    msg = attr.ib(validator=attr.validators.instance_of(str))

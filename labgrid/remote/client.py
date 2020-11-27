@@ -696,26 +696,30 @@ class ClientSession(ApplicationSession):
         from ..driver.powerdriver import NetworkPowerDriver, PDUDaemonDriver, USBPowerDriver
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
         from ..resource.remote import NetworkUSBPowerPort
+
         drv = None
-        for resource in target.resources:
-            if isinstance(resource, NetworkPowerPort):
-                try:
-                    drv = target.get_driver(NetworkPowerDriver)
-                except NoDriverFoundError:
-                    drv = NetworkPowerDriver(target, name=None, delay=delay)
-                break
-            elif isinstance(resource, NetworkUSBPowerPort):
-                try:
-                    drv = target.get_driver(USBPowerDriver)
-                except NoDriverFoundError:
-                    drv = USBPowerDriver(target, name=None, delay=delay)
-                break
-            elif isinstance(resource, PDUDaemonPort):
-                try:
-                    drv = target.get_driver(PDUDaemonDriver)
-                except NoDriverFoundError:
-                    drv = PDUDaemonDriver(target, name=None, delay=int(delay))
-                break
+        try:
+            drv = target.get_driver("PowerProtocol")
+        except NoDriverFoundError:
+            for resource in target.resources:
+                if isinstance(resource, NetworkPowerPort):
+                    try:
+                        drv = target.get_driver(NetworkPowerDriver)
+                    except NoDriverFoundError:
+                        drv = NetworkPowerDriver(target, name=None, delay=delay)
+                        break
+                elif isinstance(resource, NetworkUSBPowerPort):
+                    try:
+                        drv = target.get_driver(USBPowerDriver)
+                    except NoDriverFoundError:
+                        drv = USBPowerDriver(target, name=None, delay=delay)
+                        break
+                elif isinstance(resource, PDUDaemonPort):
+                    try:
+                        drv = target.get_driver(PDUDaemonDriver)
+                    except NoDriverFoundError:
+                        drv = PDUDaemonDriver(target, name=None, delay=int(delay))
+                        break
         if not drv:
             raise UserError("target has no compatible resource available")
         target.activate(drv)
@@ -743,43 +747,47 @@ class ClientSession(ApplicationSession):
         from ..driver.deditecrelaisdriver import DeditecRelaisDriver
         from ..driver.gpiodriver import GpioDigitalOutputDriver
         from ..driver.lxaiobusdriver import LXAIOBusPIODriver
+
         drv = None
-        for resource in target.resources:
-            if isinstance(resource, ModbusTCPCoil):
-                try:
-                    drv = target.get_driver(ModbusCoilDriver, name=name)
-                except NoDriverFoundError:
-                    target.set_binding_map({"coil": name})
-                    drv = ModbusCoilDriver(target, name=name)
-                break
-            elif isinstance(resource, OneWirePIO):
-                try:
-                    drv = target.get_driver(OneWirePIODriver, name=name)
-                except NoDriverFoundError:
-                    target.set_binding_map({"port": name})
-                    drv = OneWirePIODriver(target, name=name)
-                break
-            elif isinstance(resource, NetworkDeditecRelais8):
-                try:
-                    drv = target.get_driver(DeditecRelaisDriver, name=name)
-                except NoDriverFoundError:
-                    target.set_binding_map({"relais": name})
-                    drv = DeditecRelaisDriver(target, name=name)
-                break
-            elif isinstance(resource, NetworkSysfsGPIO):
-                try:
-                    drv = target.get_driver(GpioDigitalOutputDriver, name=name)
-                except NoDriverFoundError:
-                    target.set_binding_map({"gpio": name})
-                    drv = GpioDigitalOutputDriver(target, name=name)
-                break
-            elif isinstance(resource, NetworkLXAIOBusPIO):
-                try:
-                    drv = target.get_driver(LXAIOBusPIODriver, name=name)
-                except NoDriverFoundError:
-                    target.set_binding_map({"pio": name})
-                    drv = LXAIOBusPIODriver(target, name=name)
-                break
+        try:
+            drv = target.get_driver("DigitalOutputProtocol")
+        except NoDriverFoundError:
+            for resource in target.resources:
+                if isinstance(resource, ModbusTCPCoil):
+                    try:
+                        drv = target.get_driver(ModbusCoilDriver, name=name)
+                    except NoDriverFoundError:
+                        target.set_binding_map({"coil": name})
+                        drv = ModbusCoilDriver(target, name=name)
+                        break
+                elif isinstance(resource, OneWirePIO):
+                    try:
+                        drv = target.get_driver(OneWirePIODriver, name=name)
+                    except NoDriverFoundError:
+                        target.set_binding_map({"port": name})
+                        drv = OneWirePIODriver(target, name=name)
+                        break
+                elif isinstance(resource, NetworkDeditecRelais8):
+                    try:
+                        drv = target.get_driver(DeditecRelaisDriver, name=name)
+                    except NoDriverFoundError:
+                        target.set_binding_map({"relais": name})
+                        drv = DeditecRelaisDriver(target, name=name)
+                        break
+                elif isinstance(resource, NetworkSysfsGPIO):
+                    try:
+                        drv = target.get_driver(GpioDigitalOutputDriver, name=name)
+                    except NoDriverFoundError:
+                        target.set_binding_map({"gpio": name})
+                        drv = GpioDigitalOutputDriver(target, name=name)
+                        break
+                elif isinstance(resource, NetworkLXAIOBusPIO):
+                    try:
+                        drv = target.get_driver(LXAIOBusPIODriver, name=name)
+                    except NoDriverFoundError:
+                        target.set_binding_map({"pio": name})
+                        drv = LXAIOBusPIODriver(target, name=name)
+                        break
         if not drv:
             raise UserError("target has no compatible resource available")
         target.activate(drv)

@@ -1,0 +1,75 @@
+name: unit tests
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.5', '3.6', '3.7', '3.8']
+        experimental: [false]
+        include:
+          - python-version: 3.9
+            experimental: true
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('*requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Install system dependencies
+      run: |
+        sudo apt-get install -yq libow-dev openssh-server openssh-client
+        sudo mkdir -p /var/cache/labgrid/runner && sudo chown runner /var/cache/labgrid/runner
+    - name: Prepare local SSH
+      run: |
+        # the default of 777 is too open for SSH
+        chmod 755 ~
+        ssh-keygen -f ~/.ssh/id_ed25519.local -t ed25519 -N ""
+        cat ~/.ssh/id_ed25519.local.pub >> ~/.ssh/authorized_keys
+        echo -e "Host localhost ip6-localhost\n  Hostname 127.0.0.1\n  IdentityFile ~/.ssh/id_ed25519.local\n  UserKnownHostsFile ~/.ssh/known_hosts.local" >> ~/.ssh/config
+        ssh -o StrictHostKeyChecking=no localhost echo OK
+    - name: Install python dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools
+        python -m pip install flake8 pytest
+        pip install -r travis-requirements.txt
+    - name: Install labgrid
+      run: |
+        pip install -e .
+    #- name: Lint with flake8
+    #  run: |
+    #    # stop the build if there are Python syntax errors or undefined names
+    #    flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    #    # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+    #    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Test with pytest
+      run: |
+        pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"
+    - name: Build documentation
+      run: |
+        python setup.py build_sphinx
+        make -C man all
+        git --no-pager diff --exit-code
+    - uses: codecov/codecov-action@v1
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build docker images
+      run: |
+        ./docker/build.sh
+        docker-compose -f docker/staging/docker-compose.yml up --exit-code-from client client
+        docker-compose -f docker/staging/docker-compose.yml down
+    - name: Show docker images
+      run: |
+        docker images

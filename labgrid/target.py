@@ -111,7 +111,7 @@ class Target:
         found = []
         other_names = []
         if isinstance(cls, str):
-            cls = self._reg_class_from_string(cls)
+            cls = target_factory.class_from_string(cls)
 
         for res in self.resources:
             if not isinstance(res, cls):
@@ -146,7 +146,7 @@ class Target:
         found = []
         other_names = []
         if isinstance(cls, str):
-            cls = self._reg_class_from_string(cls)
+            cls = target_factory.class_from_string(cls)
 
         for drv in self.drivers:
             if not isinstance(drv, cls):
@@ -236,7 +236,7 @@ class Target:
         elif len(key) == 2:
             cls, name = key
         if isinstance(cls, str):
-            cls = self._reg_class_from_string(cls)
+            cls = target_factory.class_from_string(cls)
         if not issubclass(cls, (Driver, abc.ABC)): # all Protocols derive from ABC
             raise NoDriverFoundError(
                 "invalid driver class {}".format(cls)
@@ -403,7 +403,7 @@ class Target:
             return
 
         if isinstance(client, str):
-            cls = self._reg_class_from_string(client)
+            cls = target_factory.class_from_string(client)
             client = self._get_driver(cls, name=name, activate=False, active=False)
 
         assert client is not None
@@ -440,7 +440,7 @@ class Target:
         This is needed to ensure that no client has an inactive supplier.
         """
         if isinstance(client, str):
-            cls = self._reg_class_from_string(client)
+            cls = target_factory.class_from_string(client)
             client = self._get_driver(cls, name=name, activate=False, active=True)
 
         assert client is not None
@@ -481,9 +481,3 @@ class Target:
         self.deactivate_all_drivers()
         for res in reversed(self.resources):
             self.deactivate(res)
-
-    def _reg_class_from_string(self, string: str):
-        try:
-            return self._lookup_table[string]
-        except KeyError:
-            raise KeyError("No driver/resource/protocol of type '{}' in lookup table, perhaps not bound?".format(string))  # pylint: disable=line-too-long

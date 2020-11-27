@@ -4,7 +4,7 @@ import re
 import attr
 import pytest
 
-from labgrid import Target
+from labgrid import Target, target_factory
 from labgrid.binding import BindingError
 from labgrid.resource import Resource
 from labgrid.driver import Driver
@@ -269,9 +269,11 @@ def test_get_by_string(target):
     class AProtocol(abc.ABC):
         pass
 
+    @target_factory.reg_driver
     class A(Driver, AProtocol):
         pass
 
+    @target_factory.reg_driver
     class C(Resource):
         pass
 
@@ -355,23 +357,25 @@ def test_get_by_default_priority(target):
 
 def test_target_deactivate_by_string(target):
 
+    @target_factory.reg_driver
     @attr.s
-    class A(Driver):
+    class ADea(Driver):
         pass
 
-    a = A(target, None)
+    a = ADea(target, None)
     target.activate(a)
-    target.deactivate("A")
+    target.deactivate("ADea")
 
-    assert a == target.get_driver(A, activate=False)
+    assert a == target.get_driver(ADea, activate=False)
 
 def test_target_activate_by_string(target):
 
+    @target_factory.reg_driver
     @attr.s
-    class A(Driver):
+    class AActiv(Driver):
         pass
 
-    a = A(target, None)
-    target.activate("A")
+    a = AActiv(target, None)
+    target.activate("AActiv")
 
-    assert a == target.get_active_driver(A)
+    assert a == target.get_active_driver(AActiv)

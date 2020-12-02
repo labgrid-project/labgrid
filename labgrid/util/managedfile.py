@@ -40,7 +40,7 @@ class ManagedFile:
     def __attrs_post_init__(self):
         if not os.path.isfile(self.local_path):
             raise FileNotFoundError("Local file {} not found".format(self.local_path))
-        self.logger = logging.getLogger("{}".format(self))
+        self.logger = logging.getLogger("labgrid.{}".format(self.__class__.__name__))
         self.hash = None
         self.rpath = None
         self._on_nfs_cached = None

@@ -20,7 +20,7 @@ class Target:
     env = attr.ib(default=None)
 
     def __attrs_post_init__(self):
-        self.log = logging.getLogger("target({})".format(self.name))
+        self.log = logging.getLogger("{}.{}".format(self.name, self.__class__.__name__))
         self.resources = []
         self.drivers = []
         self.last_update = 0.0

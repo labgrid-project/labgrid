@@ -187,6 +187,7 @@ extra virtualenv and install the dependencies via the requirements file.
     $ git clone https://github.com/labgrid-project/labgrid
     $ cd labgrid && virtualenv -p python3 crossbar_venv
     $ source crossbar_venv/bin/activate
+    $ sudp apt install libsnappy-dev
     $ pip install -r crossbar-requirements.txt
     $ python setup.py install
 

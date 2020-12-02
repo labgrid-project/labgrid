@@ -51,7 +51,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         self.re_vt100 = re.compile(
             r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
         )
-        self.logger = logging.getLogger("{}:{}".format(self, self.target))
+        self.logger = self.get_logger()
         self._status = 0
 
     def on_activate(self):

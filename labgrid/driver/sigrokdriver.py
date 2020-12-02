@@ -37,7 +37,7 @@ class SigrokCommon(Driver):
             ) or 'sigrok-cli'
         else:
             self.tool = 'sigrok-cli'
-        self.log = logging.getLogger("SigrokDriver")
+        self.log = self.get_logger()
         self._running = False
 
     def _create_tmpdir(self):

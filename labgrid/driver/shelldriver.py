@@ -58,7 +58,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.re_vt100 = re.compile(
             r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
         )  # pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
-        self.logger = logging.getLogger("{}:{}".format(self, self.target))
+        self.logger = self.get_logger()
         self._status = 0  # pylint: disable=attribute-defined-outside-init
 
         self._xmodem_cached_rx_cmd = ""

@@ -73,7 +73,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}:".format(self))
+        self.logger = self.get_logger()
         self.status = 0
         self.txdelay = None
         self._child = None

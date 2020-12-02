@@ -39,7 +39,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self.logger = self.get_logger()
         if isinstance(self.port, SerialPort):
             self.serial = serial.Serial()
         else:

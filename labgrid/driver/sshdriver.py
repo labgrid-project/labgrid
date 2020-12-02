@@ -33,7 +33,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self.logger = self.get_logger()
         self._keepalive = None
 
     def on_activate(self):

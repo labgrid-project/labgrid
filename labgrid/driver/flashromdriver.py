@@ -25,7 +25,7 @@ class FlashromDriver(Driver, BootstrapProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger('{}'.format(self))
+        self.logger = self.get_logger()
         if self.target.env:
             self.tool = self.target.env.config.get_tool('flashrom')
         else:

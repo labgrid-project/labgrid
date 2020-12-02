@@ -158,7 +158,7 @@ class SSHConnection:
             self._logger.info("Using existing SSH connection to %s", self.host)
         else:
             self._start_own_master()
-            self._logger.info("Created new SSH connection to %s", self.host)
+            self._logger.debug("Created new SSH connection to %s", self.host)
         self._start_keepalive()
         self._connected = True
 

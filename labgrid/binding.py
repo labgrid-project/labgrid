@@ -1,5 +1,6 @@
 import enum
 from functools import wraps
+import logging
 
 import attr
 
@@ -100,6 +101,20 @@ class BindingMixin:
             return func(self, *_args, **_kwargs)
 
         return wrapper
+
+    def get_logger(self):
+        if self.name:
+            return logging.getLogger("{}.{}.{}".format(
+                self.target.name, self.__class__.__name__, self.name
+            ))
+        elif self.target:
+            return logging.getLogger("{}.{}".format(
+                self.target.name, self.__class__.__name__
+            ))
+        else:
+            return logging.getLogger("{}".format(
+                self.__class__.__name__
+            ))
 
     class NamedBinding:
         """

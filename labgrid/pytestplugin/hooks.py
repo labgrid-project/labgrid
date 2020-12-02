@@ -6,6 +6,7 @@ import pytest
 from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
 from .reporter import StepReporter, ColoredStepReporter
+from ..stepreporter import StepLoggingReporter, SerialLoggingReporter
 from ..util.helper import processwrapper
 
 @pytest.hookimpl(trylast=True)
@@ -27,6 +28,11 @@ def pytest_configure(config):
         logging.getLogger().setLevel(logging.DEBUG)
     if lg_log:
         ConsoleLoggingReporter(lg_log)
+    slr = SerialLoggingReporter()
+    StepLoggingReporter(config.option.lg_logging_indent,
+                        config.option.lg_logging_long_results,
+                        slr)
+
     env_config = config.option.env_config
     lg_env = config.option.lg_env
     lg_coordinator = config.option.lg_coordinator

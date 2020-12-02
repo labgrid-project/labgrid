@@ -47,6 +47,16 @@ def pytest_addoption(parser):
         dest='lg_initial_state',
         metavar='STATE_NAME',
         help='set the strategy\'s initial state (during development)')
+    group.addoption(
+        '--lg-logging-indent',
+        action='store_true',
+        dest='lg_logging_indent',
+        help='Enable indentation for steps in the logging output')
+    group.addoption(
+        '--lg-logging-long-results',
+        action='store_true',
+        dest='lg_logging_long_results',
+        help='Enable output of long step results in the logging output')
 
 
 @pytest.fixture(scope="session")

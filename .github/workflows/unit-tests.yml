@@ -40,7 +40,7 @@ jobs:
         ssh -o StrictHostKeyChecking=no localhost echo OK
     - name: Install python dependencies
       run: |
-        python -m pip install --upgrade pip setuptools
+        python -m pip install --upgrade pip setuptools wheel
         python -m pip install flake8 pytest
         pip install -r travis-requirements.txt
     - name: Install labgrid

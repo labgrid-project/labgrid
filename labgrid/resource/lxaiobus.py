@@ -13,7 +13,7 @@ class LXAIOBusNodeManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
-        self.log = logging.getLogger('LXAIOBusNodeManager')
+        self.log = logging.getLogger('labgrid.LXAIOBusNodeManager')
 
         self._last = 0.0
 

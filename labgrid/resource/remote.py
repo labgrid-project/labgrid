@@ -10,7 +10,9 @@ from .common import NetworkResource, ManagedResource, ResourceManager
 class RemotePlaceManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}".format(self))
+        self.logger = logging.getLogger("labgrid.{}".format(
+            self.__class__.__name__
+        ))
         self.url = None
         self.realm = None
         self.loop = None

@@ -20,7 +20,7 @@ class UdevManager(ResourceManager):
         super().__attrs_post_init__()
         self.queue = queue.Queue()
 
-        self.log = logging.getLogger('UdevManager')
+        self.log = logging.getLogger('labgrid.UdevManager')
         self._context = pyudev.Context()
         self._monitor = pyudev.Monitor.from_netlink(self._context)
         self._observer = pyudev.MonitorObserver(self._monitor,
@@ -60,7 +60,7 @@ class USBResource(ManagedResource):
 
     def __attrs_post_init__(self):
         self.timeout = 5.0
-        self.log = logging.getLogger('USBResource')
+        self.log = self.get_logger()
         self.match.setdefault('SUBSYSTEM', 'usb')
         super().__attrs_post_init__()
 

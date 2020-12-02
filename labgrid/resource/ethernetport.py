@@ -13,7 +13,7 @@ class SNMPSwitch:
     hostname = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
-        self.logger = logging.getLogger("{}".format(self))
+        self.logger = self.get_logger()
         self.ports = {}
         self.fdb = {}
         self.macs_by_port = {}
@@ -182,7 +182,7 @@ class EthernetPortManager(ResourceManager):
     """The EthernetPortManager periodically polls the switch for new updates."""
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}".format(self))
+        self.logger = "labgrid.{}".format(self.__class__.__name__)
         self.loop = None
         self.poll_tasks = []
         self.switches = {}

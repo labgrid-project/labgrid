@@ -34,7 +34,7 @@ class DockerManager(ResourceManager):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.log = logging.getLogger('DockerManager')
+        self.log = logging.getLogger('labgrid.DockerManager')
         self._client = dict()
         self._docker_daemons_cleaned = list()
 
@@ -90,7 +90,7 @@ class DockerDaemon(ManagedResource):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self._nw_services = dict()
-        self.log = logging.getLogger('DockerContainer')
+        self.log = self.get_logger()
         self.timeout = 5.0
         self.avail = True
 

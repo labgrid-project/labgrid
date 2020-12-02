@@ -34,7 +34,7 @@ class ProcessWrapper:
     @step(args=['command'], result=True, tag='process')
     def check_output(self, command, *, print_on_silent_log=False):
         """Run a command and supply the output to callback functions"""
-        logger = logging.getLogger("Process")
+        logger = logging.getLogger("labgrid.process")
         res = []
         mfd, sfd = pty.openpty()
         flags = fcntl.fcntl(mfd, fcntl.F_GETFL)
@@ -114,7 +114,7 @@ class ProcessWrapper:
     @staticmethod
     def log_callback(message, process):
         """Logs process output message along with its pid."""
-        logger = logging.getLogger("Process")
+        logger = logging.getLogger("labgrid.process")
         message = message.decode(encoding="utf-8", errors="replace").strip("\n")
         if message:
             logger.log(ProcessWrapper.loglevel, "[%d] %s", process.pid, message)

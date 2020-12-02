@@ -29,7 +29,7 @@ class SSHConnectionManager:
     )
 
     def __attrs_post_init__(self):
-        self.logger = logging.getLogger("{}".format(self))
+        self.logger = logging.getLogger("labgrid.{}".format(self.__class__.__name__))
         atexit.register(self.close_all)
 
     def get(self, host: str):
@@ -128,7 +128,7 @@ class SSHConnection:
     _forwards = attr.ib(init=False, default=attr.Factory(dict))
 
     def __attrs_post_init__(self):
-        self._logger = logging.getLogger("{}".format(self))
+        self._logger = logging.getLogger("labgrid.{}.{}".format(self.__class__.__name__, self.host))
         self._socket = None
         self._master = None
         self._keepalive = None

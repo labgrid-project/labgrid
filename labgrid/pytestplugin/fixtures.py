@@ -64,7 +64,10 @@ def env(request, record_testsuite_property):
     record_testsuite_property('TARGETS', targets)
 
     for target_name in targets:
-        target = env.get_target(target_name)
+        try:
+            target = env.get_target(target_name)
+        except UserError as e:
+            pytest.exit(e)
         try:
             remote_place = target.get_resource(RemotePlace, wait_avail=False)
             remote_name = remote_place.name
@@ -109,12 +112,9 @@ def env(request, record_testsuite_property):
 def target(env):
     """Return the default target `main` configured in the supplied
     configuration file."""
-    try:
-        target = env.get_target()
-        if target is None:
-            raise UserError("Using target fixture without 'main' target in config")
-    except UserError as e:
-        pytest.exit(e)
+    target = env.get_target()
+    if target is None:
+        raise UserError("Using target fixture without 'main' target in config")
 
     return target
 

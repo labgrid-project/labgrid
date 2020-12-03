@@ -101,12 +101,10 @@ class ProcessWrapper:
 
     def register(self, callback):
         """Register a callback with the ProcessWrapper"""
-        assert callback not in self.callbacks
         self.callbacks.append(callback)
 
     def unregister(self, callback):
         """Unregister a callback with the ProcessWrapper"""
-        assert callback in self.callbacks
         self.callbacks.remove(callback)
 
     @staticmethod

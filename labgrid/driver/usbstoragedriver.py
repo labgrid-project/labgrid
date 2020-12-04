@@ -76,13 +76,9 @@ class USBStorageDriver(Driver):
         # wait for medium
         timeout = Timeout(10.0)
         while not timeout.expired:
-            try:
-                if self.get_size() > 0:
-                    break
-                time.sleep(0.5)
-            except ValueError:
-                # when the medium gets ready the sysfs attribute is empty for a short time span
-                continue
+            if self.get_size() > 0:
+                break
+            time.sleep(0.5)
         else:
             raise ExecutionError("Timeout while waiting for medium")
 
@@ -147,9 +143,11 @@ class USBStorageDriver(Driver):
     @Driver.check_active
     @step(result=True)
     def get_size(self):
-        args = ["cat", "/sys/class/block/{}/size".format(self.storage.path[5:])]
-        size = subprocess.check_output(self.storage.command_prefix + args)
-        return int(size)*512
+        args = ["blockdev", "--getsize64", self.storage.path]
+        p = subprocess.run(self.storage.command_prefix + args, stdout=subprocess.PIPE)
+        if p.returncode != 0:
+            return 0
+        return int(p.stdout.decode('utf-8'))
 
 
 @target_factory.reg_driver

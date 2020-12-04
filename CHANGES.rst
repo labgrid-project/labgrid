@@ -58,6 +58,9 @@ New Features in 0.3.0
 - Add power driver to support GEMBIRD SiS-PM implementing SiSPMPowerDriver.
 - A cleanup of the cleanup functions was performed, labgrid should now clean up
   after itself and throws an error if the user needs to handle it himself.
+- ``labgrid-client`` now respects the ``LG_HOSTNAME`` and ``LG_USERNAME``
+  environment variables to set the hostname and username when accessing
+  resources.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

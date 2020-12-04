@@ -96,6 +96,16 @@ This variable can be used to specify a SSH proxy hostname which should be used
 to connect to the coordinator and any resources which are normally accessed
 directly.
 
+LG_HOSTNAME
+~~~~~~~~~~~
+Override the hostname used when accessing a resource. Typically only useful for
+CI pipelines where the hostname may not be consistent between pipeline stages.
+
+LG_USERNAME
+~~~~~~~~~~~
+Override the username used when accessing a resource. Typically only useful for
+CI pipelines where the username may not be consistent between pipeline stages.
+
 MATCHES
 -------
 Match patterns are used to assign a resource to a specific place. The format is:

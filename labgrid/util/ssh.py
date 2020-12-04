@@ -1,6 +1,8 @@
 # pylint: disable=no-member
+import atexit
 import tempfile
 import logging
+import shutil
 import subprocess
 import os
 from select import select
@@ -28,6 +30,7 @@ class SSHConnectionManager:
 
     def __attrs_post_init__(self):
         self.logger = logging.getLogger("{}".format(self))
+        atexit.register(self.close_all)
 
     def get(self, host: str):
         """Retrieve or create a new connection to a given host
@@ -129,6 +132,7 @@ class SSHConnection:
         self._socket = None
         self._master = None
         self._keepalive = None
+        atexit.register(self.cleanup)
 
     @staticmethod
     def _get_ssh_base_args():
@@ -502,6 +506,11 @@ class SSHConnection:
                 self._stop_own_master()
         finally:
             self._connected = False
+
+    def cleanup(self):
+        if self.isconnected():
+            self.disconnect()
+        shutil.rmtree(self._tmpdir)
 
 sshmanager = SSHConnectionManager()
 

@@ -170,13 +170,13 @@ class SSHConnection:
             for item in forward:
                 complete_cmd.append(item)
         complete_cmd.append(self.host)
-        res = subprocess.check_call(
+        subprocess.check_call(
             complete_cmd,
             stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             timeout=2,
         )
-
-        return res
 
     def _check_connected(func):  # pylint: disable=no-self-argument
         """Check if an SSHConnection is connected as a decorator"""

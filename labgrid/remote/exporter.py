@@ -230,7 +230,7 @@ class SerialPortExport(ResourceExport):
                 '-d',
                 '-n',
                 '-Y', 'connection: &con01#  accepter: telnet(rfc2217,mode=server),{}'.format(self.port),
-                '-Y', '  connector: serialdev(nouucplock=true),{},115200n81,local'.format(start_params['path']
+                '-Y', '  connector: serialdev(nouucplock=true),{},{}n81,local'.format(start_params['path'], start_params['speed'],
                 ),
             ])
         else:
@@ -240,8 +240,8 @@ class SerialPortExport(ResourceExport):
                 '-n',
                 '-u',
                 '-C',
-                '{}:telnet:0:{}:115200 NONE 8DATABITS 1STOPBIT LOCAL'.format(
-                    self.port, start_params['path']
+                '{}:telnet:0:{}:{} NONE 8DATABITS 1STOPBIT LOCAL'.format(
+                    self.port, start_params['path'], start_params['speed']
                 ),
             ])
         try:

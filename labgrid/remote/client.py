@@ -46,6 +46,12 @@ class ClientSession(ApplicationSession):
     """The ClientSession encapsulates all the actions a Client can Invoke on
     the coordinator."""
 
+    def gethostname(self):
+        return os.environ.get('LG_HOSTNAME', gethostname())
+
+    def getuser(self):
+        return os.environ.get('LG_USERNAME', getuser())
+
     def onConnect(self):
         """Actions which are executed if a connection is successfully opened."""
         self.loop = self.config.extra['loop']
@@ -58,7 +64,7 @@ class ClientSession(ApplicationSession):
         enable_tcp_nodelay(self)
         self.join(
             self.config.realm, authmethods=["ticket"],
-            authid="client/{}/{}".format(gethostname(), getuser())
+            authid="client/{}/{}".format(self.gethostname(), self.getuser())
         )
 
     def onChallenge(self, challenge):
@@ -298,7 +304,7 @@ class ClientSession(ApplicationSession):
             for alias in place.aliases:
                 if ':' in alias:
                     namespace, alias = alias.split(':', 1)
-                    if namespace != getuser():
+                    if namespace != self.getuser():
                         continue
                     elif alias == pattern:  # prefer user namespace
                         return [name]
@@ -309,12 +315,12 @@ class ClientSession(ApplicationSession):
     def _check_allowed(self, place):
         if not place.acquired:
             raise UserError("place {} is not acquired".format(place.name))
-        if gethostname()+'/'+getuser() not in place.allowed:
+        if self.gethostname()+'/'+self.getuser() not in place.allowed:
             host, user = place.acquired.split('/')
-            if user != getuser():
+            if user != self.getuser():
                 raise UserError("place {} is not acquired by your user, acquired by {}".format(
                     place.name, user))
-            if host != gethostname():
+            if host != self.gethostname():
                 raise UserError("place {} is not acquired on this computer, acquired on {}".format(
                     place.name, host))
 
@@ -601,7 +607,7 @@ class ClientSession(ApplicationSession):
         if not place.acquired:
             raise UserError("place {} is not acquired".format(place.name))
         _, user = place.acquired.split('/')
-        if user != getuser():
+        if user != self.getuser():
             if not self.args.kick:
                 raise UserError("place {} is acquired by a different user ({}), use --kick if you are sure".format(place.name, place.acquired))  # pylint: disable=line-too-long
             print("warning: kicking user ({})".format(place.acquired))
@@ -619,7 +625,7 @@ class ClientSession(ApplicationSession):
         if not place.acquired:
             raise UserError("place {} is not acquired".format(place.name))
         _, user = place.acquired.split('/')
-        if user != getuser():
+        if user != self.getuser():
             raise UserError(
                 "place {} is acquired by a different user ({})".format(place.name, place.acquired)
             )

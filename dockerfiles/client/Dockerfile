@@ -5,7 +5,7 @@ RUN set -e ;\
     pip3 install --no-cache-dir -r requirements.txt ;\
     python3 setup.py install ;\
     apt update -q=2 ;\
-    apt install -q=2 --yes --no-install-recommends microcom openssh-client sshpass;\
+    apt install -q=2 --yes --no-install-recommends microcom openssh-client sshpass rsync; \
     apt clean ;\
     rm -rf /var/lib/apt/lists/*
 

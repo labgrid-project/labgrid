@@ -170,6 +170,7 @@ class SSHConnection:
             for item in forward:
                 complete_cmd.append(item)
         complete_cmd.append(self.host)
+        self._logger.debug("Running control command: %s", " ".join(complete_cmd))
         subprocess.check_call(
             complete_cmd,
             stdin=subprocess.DEVNULL,
@@ -226,7 +227,7 @@ class SSHConnection:
         if force_tty:
             complete_cmd += ["-tt"]
         complete_cmd += [self.host, command]
-        self._logger.debug("Sending command: %s", complete_cmd)
+        self._logger.debug("Sending command: %s", " ".join(complete_cmd))
         if stderr_merge:
             stderr_pipe = subprocess.STDOUT
         else:
@@ -403,6 +404,7 @@ class SSHConnection:
         """Starts a controlmaster connection in a temporary directory."""
         control = os.path.join(self._tmpdir, 'control-{}'.format(self.host))
 
+        self._logger.debug("ControlSocket: %s", control)
         args = ["ssh"] + SSHConnection._get_ssh_base_args()
         args += [
             "-n", "-MN",
@@ -415,6 +417,7 @@ class SSHConnection:
             self.host,
         ]
 
+        self._logger.debug("Master Start command: %s", " ".join(args))
         assert self._master is None
         self._master = subprocess.Popen(
             args,

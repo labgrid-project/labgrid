@@ -374,10 +374,6 @@ class SSHConnection:
         if not self._connected:
             self._open_connection()
 
-    @_check_connected
-    def disconnect(self):
-        self._disconnect()
-
     def isconnected(self):
         return self._connected and self._check_keepalive()
 
@@ -497,7 +493,8 @@ class SSHConnection:
         finally:
             self._keepalive = None
 
-    def _disconnect(self):
+    @_check_connected
+    def disconnect(self):
         assert self._connected
         try:
             if self._socket:

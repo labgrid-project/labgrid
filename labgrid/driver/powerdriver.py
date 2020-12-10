@@ -182,9 +182,8 @@ class DigitalOutputPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """YKUSHPowerDriver - Driver using a YEPKIT YKUSH switchable USB hub
         to control a target's power - https://www.yepkit.com/products/ykush"""
-    bindings = {"port": "YKUSHPowerPort", }
+    bindings = {"port": {"YKUSHPowerPort", "NetworkYKUSHPowerPort"}, }
     delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
-
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

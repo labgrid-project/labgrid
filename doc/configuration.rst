@@ -852,6 +852,8 @@ Implements:
 
 Arguments:
   - txdelay (float): time in seconds to wait before sending each byte
+  - timeout (float): time in seconds to wait for a network serial port before
+    an error occurs. Default is 3 seconds.
 
 ShellDriver
 ~~~~~~~~~~~

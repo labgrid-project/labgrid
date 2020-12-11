@@ -35,6 +35,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         warnings.warn(message)
 
     txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
+    timeout = attr.ib(default=3.0, validator=attr.validators.instance_of(float))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -57,7 +58,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         else:
             host, port = proxymanager.get_host_and_port(self.port)
             if self.port.protocol == "rfc2217":
-                self.serial.port = "rfc2217://{}:{}?ign_set_control".format(host, port)
+                self.serial.port = "rfc2217://{}:{}?ign_set_control&timeout={}".format(host, port, self.timeout)
             elif self.port.protocol == "raw":
                 self.serial.port = "socket://{}:{}/".format(host, port)
             else:

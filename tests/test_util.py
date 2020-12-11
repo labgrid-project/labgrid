@@ -23,6 +23,12 @@ def connection_localhost():
     con.disconnect()
 
 @pytest.fixture
+def connection_localhost_no_cleanup():
+    con = SSHConnection("localhost")
+    con.connect()
+    return con
+
+@pytest.fixture
 def sshmanager_fix():
     yield sshmanager
     sshmanager.close_all()
@@ -169,6 +175,11 @@ def test_sshconnection_get_file(connection_localhost, tmpdir):
 
     p = tmpdir.join("test")
     connection_localhost.get_file('/tmp/test', p)
+
+@pytest.mark.localsshmanager
+def test_sshconnection_cleanup(connection_localhost_no_cleanup):
+
+    connection_localhost_no_cleanup.cleanup()
 
 @pytest.mark.localsshmanager
 def test_sshmanager_open(sshmanager_fix):

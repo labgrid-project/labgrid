@@ -99,7 +99,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
                 self.serial.open()
             except serial.SerialException as e:
                 raise serial.SerialException(
-                    "Could not open serial port {}".format(self.serial.port)) from e
+                    "Could not open serial port {}: {}".format(self.serial.port, str(e))) from e
 
             self.status = 1
 

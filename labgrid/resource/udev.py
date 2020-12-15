@@ -577,8 +577,8 @@ class DeditecRelais8(USBResource):
 
     def __attrs_post_init__(self):
         self.match['ID_VENDOR'] = 'DEDITEC'
-        # the serial is the same for all boards with the same model
-        self.match['ID_SERIAL_SHORT'] = 'DT000014'
+        # Deditec does not set proper model/vendor IDs, so we use ID_MODEL instead
+        self.match['ID_MODEL'] = 'DEDITEC_USB-OPT_REL-8'
         super().__attrs_post_init__()
 
     @property

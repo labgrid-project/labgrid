@@ -13,14 +13,17 @@ __all__ = [
 
 
 class GraphStrategyError(StrategyError):
+    """Generic GraphStrategy error"""
     pass
 
 
 class InvalidGraphStrategyError(GraphStrategyError):
+    """GraphStrategy error raised during initialization of broken strategies"""
     pass
 
 
 class GraphStrategyRuntimeError(GraphStrategyError):
+    """GraphStrategy error raised during runtime when used in unintended ways"""
     pass
 
 
@@ -96,6 +99,11 @@ class GraphStrategy(Strategy):
         }
 
     def invalidate(self):
+        """
+        Marks the path to the current state as out-of-date. Subsequent transition() calls will
+        start from the root state.
+        Will be called if exceptions in state methods occur.
+        """
         self.path = []
 
         # deactivate all drivers to restore initial state
@@ -103,6 +111,12 @@ class GraphStrategy(Strategy):
 
     @step(args=['state'])
     def transition(self, state, via=None):
+        """
+        Computes the path from root state (via "via" state, if given) to given state.
+        If the computed path is fully incremental to the path executed previously, only the state's
+        methods relative to the previous path are executed. Otherwise all states' methods of the
+        computed path (starting from the root node) are executed.
+        """
         if not isinstance(via, (type(None), list)):
             raise GraphStrategyRuntimeError(
                 "'via' has to be a list or None"
@@ -162,6 +176,9 @@ class GraphStrategy(Strategy):
             self.__transition_running = False
 
     def find_abs_path(self, state, via=None):
+        """
+        Computes the absolute path from the root state, via "via" (if given), to the given state.
+        """
         via = via or []
         via = via[::-1]
         path = [state, ]
@@ -199,6 +216,11 @@ class GraphStrategy(Strategy):
         return path
 
     def find_rel_path(self, path):
+        """
+        If the given path is fully incremental to the path executed before, returns the path
+        relative to the previously executed one.
+        Otherwise the given path is returned.
+        """
         if path[:-(len(path) - len(self.path))] == self.path:
             return path[len(self.path):]
 
@@ -206,6 +228,12 @@ class GraphStrategy(Strategy):
 
     @property
     def graph(self):
+        """
+        Returns a graphviz.Digraph for the directed graph the inerhiting strategy represents.
+
+        The graph can be rendered with:
+        ``mystrategy.graph.render("filename") # renders to filename.png``
+        """
         from graphviz import Digraph
 
         if(self._graph_cache['graph'] and
@@ -258,6 +286,7 @@ class GraphStrategy(Strategy):
 
     @classmethod
     def depends(cls, *dependencies):
+        """``@depends`` decorator used to list states the decorated state directly depends on."""
         def decorator(function):
             function.dependencies = list(dependencies)
 

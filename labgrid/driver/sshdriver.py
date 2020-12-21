@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 
 import attr
 
@@ -15,6 +16,7 @@ from .common import Driver
 from ..step import step
 from .exception import ExecutionError
 from ..util.proxy import proxymanager
+from ..util.timeout import Timeout
 
 
 @target_factory.reg_driver
@@ -58,7 +60,23 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
 
-        timeout = 30
+        timeout = Timeout(30.0)
+
+        # Retry start of controlmaster, to allow handle failures such as
+        # connection refused during target startup
+        connect_timeout = round(timeout.remaining)
+        while True:
+            if connect_timeout == 0:
+                raise Exception("Timeout while waiting for ssh connection")
+            try:
+                return self._start_own_master_once(connect_timeout)
+            except ExecutionError as e:
+                if timeout.expired:
+                    raise e
+                time.sleep(0.5)
+                connect_timeout = round(timeout.remaining)
+
+    def _start_own_master_once(self, timeout):
 
         self.tmpdir = tempfile.mkdtemp(prefix='labgrid-ssh-tmp-')
         control = os.path.join(

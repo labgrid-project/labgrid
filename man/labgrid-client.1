@@ -48,16 +48,16 @@ This is the client to control a boards status and interface with it on remote ma
 .B \-h\fP,\fB  \-\-help
 display command line help
 .TP
-.BI \-p \ PLACE\fP,\fB \ \-\-place \ PLACE
+.BI \-p \ PLACE\fR,\fB \ \-\-place \ PLACE
 specify the place to operate on
 .TP
 .B \-x\fP,\fB  \-\-crossbar\-url
 the crossbar url of the coordinator, defaults to \fBws://127.0.0.1:20408/ws\fP
 .TP
-.BI \-c \ CONFIG\fP,\fB \ \-\-config \ CONFIG
+.BI \-c \ CONFIG\fR,\fB \ \-\-config \ CONFIG
 set the configuration file
 .TP
-.BI \-s \ STATE\fP,\fB \ \-\-state \ STATE
+.BI \-s \ STATE\fR,\fB \ \-\-state \ STATE
 set an initial state before executing a command, requires a configuration
 file and strategy
 .TP
@@ -67,7 +67,7 @@ enable debugging
 .B \-v\fP,\fB  \-\-verbose
 increase verbosity
 .TP
-.BI \-P \ PROXY\fP,\fB \ \-\-proxy \ PROXY
+.BI \-P \ PROXY\fR,\fB \ \-\-proxy \ PROXY
 proxy connections over ssh
 .UNINDENT
 .SH CONFIGURATION FILE
@@ -183,6 +183,8 @@ matches anything.
 \fBvideo\fP                       Start a video stream
 .sp
 \fBtmc\fP command                 Control a USB TMC device
+.sp
+\fBxlx\fP command                 Connect to a Xilinx Vivado hardware server
 .sp
 \fBwrite\-image\fP                 Write images onto block devices (USBSDMux, USB Sticks, …)
 .sp

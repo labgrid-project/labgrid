@@ -9,7 +9,6 @@ import os
 
 class GpioDigitalOutput:
     _gpio_sysfs_path_prefix = '/sys/class/gpio'
-    _buffered_file_access = False
 
     @staticmethod
     def _assert_gpio_line_is_exported(index):
@@ -17,9 +16,8 @@ class GpioDigitalOutput:
                                        'gpio{0}'.format(index))
         if not os.path.exists(gpio_sysfs_path):
             export_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix, 'export')
-            with open(export_sysfs_path, mode='r+',
-                      buffering=GpioDigitalOutput._buffered_file_access) as export:
-                export.write(str(index))
+            with open(export_sysfs_path, mode='wb') as export:
+                export.write(str(index).encode('utf-8'))
         if not os.path.exists(gpio_sysfs_path):
             raise ValueError("Device not found")
 

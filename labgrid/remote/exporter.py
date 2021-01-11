@@ -480,8 +480,8 @@ class GPIOGenericExport(ResourceExport):
         super().__attrs_post_init__()
         local_cls_name = self.cls
         self.data['cls'] = "Network{}".format(self.cls)
-        from ..resource import udev
-        local_cls = getattr(udev, local_cls_name)
+        from ..resource import base
+        local_cls = getattr(base, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):

@@ -7,6 +7,7 @@ import argparse
 import os
 import sys
 import ipaddress
+import subprocess
 
 
 def main(ifname, address, port):
@@ -33,6 +34,12 @@ def main(ifname, address, port):
         prefix = "TCP6:[{}]:{}".format(address, port)
     else:
         raise RuntimeError("Invalid IP version '{}'".format(address.version))
+
+    # Delete the IP lookup cache for the address in case it is stale
+    subprocess.run(["ip", "neigh", "del", str(address), "dev", ifname], 
+        stdout=suprocess.DEVNULL, 
+        stderr=subprocess.DEVNULL
+    )
 
     args.append(','.join([
         prefix,

@@ -54,9 +54,20 @@ class Environment:
         return self.config.get_features()
 
     def get_target_features(self):
+        """
+        Retrieve all entries from the features subkey under all targets in the
+        config
+
+        Returns:
+            set: feature strings
+        """
+        import warnings
+        warnings.warn("Enironment.get_target_features() is deprecated, use {Target,Config}.get_target_features() instead",
+                      DeprecationWarning)
+
         flags = set()
-        for value in self.config.get_targets().values():
-            flags = flags | set(value.get('features', {}))
+        for target in self.targets.keys():
+            flags |= self.config.get_target_features(target)
         return flags
 
     def cleanup(self):

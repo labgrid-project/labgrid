@@ -232,6 +232,25 @@ class Config:
         trg = self.data['targets'].setdefault(target, {})
         trg.setdefault('options', {})[name] = value
 
+    def get_target_features(self, target):
+        """
+        Retrieve all entries from the features subkey under the specified
+        target subkey
+
+        Args:
+            target (str): name of the target
+
+        Returns:
+            set: feature strings
+
+        Raises:
+            KeyError: if the requested target name is not found in the config
+        """
+        if target not in self.data['targets']:
+            raise KeyError("No target '{}' found in configuration".format(target))
+
+        return set(self.data['targets'][target].get('features', tuple()))
+
     def get_targets(self):
         return self.data.get('targets', {})
 

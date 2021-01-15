@@ -221,6 +221,16 @@ class Place:
         """
         return self.getmatch(resource_path) is not None
 
+    def unmatched(self, resource_paths):
+        """Returns a match which could not be matched to the list of resource_path
+
+        A resource_path has the structure (exporter, group, cls, name).
+        """
+        for match in self.matches:
+            if not any([match.ismatch(resource) for resource in resource_paths]):
+                return match
+
+
     def touch(self):
         self.changed = time.time()
 

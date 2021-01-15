@@ -485,3 +485,7 @@ class Target:
     def get_target_features(self):
         """Helper to retrieve all features of this target"""
         return self.env.config.get_target_features(self.name)
+
+    def get_target_option(self, name, default=None):
+        """Helper to retrieve target option of this target"""
+        return self.env.config.get_target_option(self.name, name, default=default)

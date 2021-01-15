@@ -481,3 +481,7 @@ class Target:
         self.deactivate_all_drivers()
         for res in reversed(self.resources):
             self.deactivate(res)
+
+    def get_target_features(self):
+        """Helper to retrieve all features of this target"""
+        return self.env.config.get_target_features(self.name)

@@ -4,6 +4,7 @@ Release 0.3.0 (unreleased)
 New Features in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~
 
+- All `CommandProtocol` drivers support the poll_until_success method.
 - The new `FileDigitalOutputDriver` respresents a digital signal with a file.
 - The new `GpioDigitalOutputDriver` controls the state of a GPIO via the sysfs interface.
 - Crossbar and autobahn have been updated to 19.3.3 and 19.3.5 respectively.
@@ -13,6 +14,9 @@ New Features in 0.3.0
   ``write-image`` command to write images onto block devices.
 - ``labgrid-client ssh`` now also uses port from NetworkService resource if
   available
+- The ``PLACE`` and ``STATE`` variables used by labgrid-client are replaced by
+  ``LG_PLACE`` and ``LG_STATE``, the old variables are still supported for the
+  time being.
 - The SSHDriver's keyfile attribute is now specified relative to the config
   file just like the images are.
 - The ShellDriver's keyfile attribute is now specified relative to the config
@@ -22,6 +26,9 @@ New Features in 0.3.0
   Drivers which run commands via SSH to the exporter still connect directly,
   allowing custom configuration in the user's ``.ssh/config`` as needed.
   Note that not all drivers have been updated to use the ProxyManager yet.
+- Deditec RELAIS8 devices are now supported by the `DeditecRelaisDriver`.
+- The `RKUSBDriver` was added to support the rockchip serial download mode.
+- The `USBStorageDriver` gained support for BMAP.
 - Flashrom support added, by hard-wiring e.g. an exporter to the DUT, the ROM
   on the DUT can be written directly. The flashrom driver implements the
   bootstrap protocol.
@@ -29,15 +36,28 @@ New Features in 0.3.0
 - The coordinator now updates the resource acquired state at the exporter.
   Accordingly, the exporter now starts ser2net only when a resources is
   aquired. Furthermore, resource conflicts between places are now detected.
+- Labgrid now uses the `ProcessWrapper` for externally called processes. This
+  should include output from these calls better inside the test runs.
 - The binding dictionary can now supports type name strings in addition to the
   types themselves, avoiding the need to import a specific protocol or driver
   in some cases.
+- The remote infrastructure gained support for place reservations, for further
+  information check the section in the documentation.
+- The `SigrokDriver` gained support for the Manson HCS-2302, it allows enabling
+  and disabling channels, measurement and setting the current and voltage limit.
 - ``labgrid-client write-image`` gained new arguments: ``--partition``,
   ``--skip``, ``--seek``.
+- Support for Sentry PDUs has been added.
+- Strategies now implement a ``force`` method, to ``force`` a strategy state
+  irrespective of the current state.
+- SSH Connections can now be proxied over the exporter, used by adding a device
+  suffix to the `NetworkService` address.
 - UBootDriver now allows overriding of default boot command (``run bootcmd``)
   via new ``boot_command`` argument.
 - The config file supports per-target options, in addition to global options.
 - Add power driver to support GEMBIRD SiS-PM implementing SiSPMPowerDriver.
+- A cleanup of the cleanup functions was performed, labgrid should now clean up
+  after itself and throws an error if the user needs to handle it himself.
 
 Breaking changes in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -60,6 +80,13 @@ Breaking changes in 0.3.0
   renamed to `USBStorageDriver`.
   A deprecated `NetworkUSBStorageDriver` exists temporarily for compatibility
   reasons.
+
+Known issues in 0.3.0
+~~~~~~~~~~~~~~~~~~~~~~~~~
+- There are several reports of ``sshpass`` used within the SSHDriver not working
+  in call cases or only on the first connection.
+- Some client commands return 0 even if the command failed.
+- Currently empty passwords are not well supported by the ShellDriver
 
 Release 0.2.0 (released Jan 4, 2019)
 ------------------------------------

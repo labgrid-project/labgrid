@@ -205,7 +205,7 @@ validators, see the `attrs documentation <https://attrs.readthedocs.io/en/stable
 Writing a Strategy
 ------------------
 
-labgrid only offers two basic strategies, for complex use cases a customized
+labgrid offers only basic strategies, for complex use cases a customized
 strategy is required.
 Start by creating a strategy skeleton:
 
@@ -216,18 +216,20 @@ Start by creating a strategy skeleton:
     import attr
 
     from labgrid.step import step
-    from labgrid.driver.common import Strategy
+    from labgrid.driver import Strategy, StrategyError
+    from labgrid.factory import target_factory
 
     class Status(enum.Enum):
         unknown = 0
 
+    @target_factory.reg_driver
     class MyStrategy(Strategy):
         bindings = {
         }
 
         status = attr.ib(default=Status.unknown)
 
-        @step
+        @step()
         def transition(self, status, *, step):
             if not isinstance(status, Status):
                 status = Status[status]

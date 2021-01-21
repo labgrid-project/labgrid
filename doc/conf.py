@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'labgrid'
-copyright = '2016-2019 Pengutronix, Jan Luebbe and Rouven Czerwinski'
+copyright = '2016-2021 Pengutronix, Jan Luebbe and Rouven Czerwinski'
 author = 'Jan Luebbe, Rouven Czerwinski'
 
 # The version info for the project you're documenting, acts as replacement for

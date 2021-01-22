@@ -16,7 +16,7 @@ setup(
     data_files=[('share/man/1', ['man/labgrid-client.1',
                                  'man/labgrid-exporter.1',
                                  'man/labgrid-device-config.1'])],
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     extras_require={
         'onewire': ['onewire>=0.2'],
         'snmp': ['pysnmp>=4.4.12', 'pysnmp-mibs>=0.1.6'],
@@ -73,7 +73,6 @@ setup(
         "Topic :: Software Development :: Testing",
         "Framework :: Pytest",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",

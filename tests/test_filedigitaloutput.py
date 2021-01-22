@@ -1,5 +1,4 @@
 import pytest
-import mock
 
 from labgrid.driver import FileDigitalOutputDriver
 
@@ -12,7 +11,7 @@ def test_filedigital_instance(target, mocker):
 
 def test_filedigital_set(target, mocker):
     m_isfile = mocker.patch('os.path.isfile', return_value=True)
-    m_open = mocker.patch('builtins.open', mock.mock_open())
+    m_open = mocker.patch('builtins.open', mocker.mock_open())
     d = FileDigitalOutputDriver(target, name=None, filepath='/dev/null')
     target.activate(d)
     d.set(True)
@@ -22,7 +21,7 @@ def test_filedigital_set(target, mocker):
 
 def test_filedigital_get(target, mocker):
     m_isfile = mocker.patch('os.path.isfile', return_value=True)
-    m_open = mocker.patch('builtins.open', mock.mock_open(read_data='1\n'))
+    m_open = mocker.patch('builtins.open', mocker.mock_open(read_data='1\n'))
     d = FileDigitalOutputDriver(target, name=None, filepath='/dev/null')
     target.activate(d)
     assert d.get() is True

@@ -2,6 +2,8 @@ import os.path
 import subprocess
 import socket
 
+from shutil import which
+
 import attr
 import pytest
 import logging
@@ -79,6 +81,7 @@ def test_sshconnection_get():
     from labgrid.util.ssh import SSHConnection
     SSHConnection("localhost")
 
+@pytest.mark.skipif(not which("ssh"), reason="ssh not available")
 def test_sshconnection_inactive_raise():
     from labgrid.util.ssh import SSHConnection
     con = SSHConnection("localhost")

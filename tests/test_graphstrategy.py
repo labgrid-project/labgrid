@@ -155,6 +155,7 @@ def test_api_works():
 # functional tests ############################################################
 @pytest.mark.dependency(depends=['api-works'])
 def test_graphviz_graph(graph_strategy):
+    pytest.importorskip("graphviz")
     graph_strategy.graph
     graph_strategy.graph  # trigger the caching branch in the graph code
 

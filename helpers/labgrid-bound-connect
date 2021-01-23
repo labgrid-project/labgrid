@@ -37,7 +37,7 @@ def main(ifname, address, port):
 
     # Delete the IP lookup cache for the address in case it is stale
     subprocess.run(["ip", "neigh", "del", str(address), "dev", ifname], 
-        stdout=suprocess.DEVNULL, 
+        stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL
     )
 

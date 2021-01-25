@@ -206,6 +206,14 @@ class USBResource(ManagedResource):
 
         return None
 
+    @property
+    def serial_short(self):
+        device = self._get_usb_device()
+        if device:
+            return device.properties.get('ID_SERIAL_SHORT')
+
+        return None
+
     def read_attr(self, attribute):
         """read uncached attribute value from sysfs
 

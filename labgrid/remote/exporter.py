@@ -321,6 +321,7 @@ class VivadoHWServerExport(ResourceExport):
 
         args = [
             self.local.hw_server_bin,
+            '-e', 'set jtag-port-filter {}'.format(self.local.serial_short),
             '-s{}'.format(self.local.agent_url),
             '-p{}'.format(self.local.gdb_port),
         ]

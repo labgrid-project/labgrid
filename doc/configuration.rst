@@ -563,6 +563,9 @@ A XilinxUSBJTAG resource describes a Xilinx-compatible USB JTAG adapter:
 - Xilinx Platform Cable USB
 - Xilinx Platform Cable USB II
 
+The exporter launches a Vivado hardware server bound to the respective USB JTAG
+adapter.
+
 .. code-block:: yaml
 
    XilinxUSBJTAG:

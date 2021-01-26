@@ -2,9 +2,7 @@ import enum
 
 import attr
 
-from ..driver import ShellDriver
 from ..factory import target_factory
-from ..protocol import PowerProtocol
 from ..step import step
 from .common import Strategy, StrategyError
 
@@ -20,8 +18,8 @@ class Status(enum.Enum):
 class ShellStrategy(Strategy):
     """ShellStrategy - Strategy to switch to shell"""
     bindings = {
-        "power": PowerProtocol,
-        "shell": ShellDriver,
+        "power": "PowerProtocol",
+        "shell": "ShellDriver",
     }
 
     status = attr.ib(default=Status.unknown)

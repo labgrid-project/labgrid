@@ -2,9 +2,7 @@ import enum
 
 import attr
 
-from ..driver import BareboxDriver, ShellDriver
 from ..factory import target_factory
-from ..protocol import PowerProtocol
 from ..step import step
 from .common import Strategy, StrategyError
 
@@ -21,9 +19,9 @@ class Status(enum.Enum):
 class BareboxStrategy(Strategy):
     """BareboxStrategy - Strategy to switch to barebox or shell"""
     bindings = {
-        "power": PowerProtocol,
-        "barebox": BareboxDriver,
-        "shell": ShellDriver,
+        "power": "PowerProtocol",
+        "barebox": "BareboxDriver",
+        "shell": "ShellDriver",
     }
 
     status = attr.ib(default=Status.unknown)

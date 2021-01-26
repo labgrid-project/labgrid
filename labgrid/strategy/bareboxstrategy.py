@@ -20,6 +20,7 @@ class BareboxStrategy(Strategy):
     """BareboxStrategy - Strategy to switch to barebox or shell"""
     bindings = {
         "power": "PowerProtocol",
+        "console": "ConsoleProtocol",
         "barebox": "BareboxDriver",
         "shell": "ShellDriver",
     }
@@ -39,12 +40,12 @@ class BareboxStrategy(Strategy):
             step.skip("nothing to do")
             return  # nothing to do
         elif status == Status.off:
-            self.target.deactivate(self.barebox)
-            self.target.deactivate(self.shell)
+            self.target.deactivate(self.console)
             self.target.activate(self.power)
             self.power.off()
         elif status == Status.barebox:
             self.transition(Status.off)  # pylint: disable=missing-kwoa
+            self.target.activate(self.console)
             # cycle power
             self.power.cycle()
             # interrupt barebox

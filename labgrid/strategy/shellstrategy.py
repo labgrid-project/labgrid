@@ -19,6 +19,7 @@ class ShellStrategy(Strategy):
     """ShellStrategy - Strategy to switch to shell"""
     bindings = {
         "power": "PowerProtocol",
+        "console": "ConsoleProtocol",
         "shell": "ShellDriver",
     }
 
@@ -37,11 +38,12 @@ class ShellStrategy(Strategy):
             step.skip("nothing to do")
             return  # nothing to do
         elif status == Status.off:
-            self.target.deactivate(self.shell)
+            self.target.deactivate(self.console)
             self.target.activate(self.power)
             self.power.off()
         elif status == Status.shell:
             self.transition(Status.off)  # pylint: disable=missing-kwoa
+            self.target.activate(self.console)
             self.power.cycle()
             self.target.activate(self.shell)
         else:

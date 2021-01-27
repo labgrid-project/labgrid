@@ -48,16 +48,16 @@ This is the client to control a boards status and interface with it on remote ma
 .B \-h\fP,\fB  \-\-help
 display command line help
 .TP
-.BI \-p \ PLACE\fP,\fB \ \-\-place \ PLACE
+.BI \-p \ PLACE\fR,\fB \ \-\-place \ PLACE
 specify the place to operate on
 .TP
 .B \-x\fP,\fB  \-\-crossbar\-url
 the crossbar url of the coordinator, defaults to \fBws://127.0.0.1:20408/ws\fP
 .TP
-.BI \-c \ CONFIG\fP,\fB \ \-\-config \ CONFIG
+.BI \-c \ CONFIG\fR,\fB \ \-\-config \ CONFIG
 set the configuration file
 .TP
-.BI \-s \ STATE\fP,\fB \ \-\-state \ STATE
+.BI \-s \ STATE\fR,\fB \ \-\-state \ STATE
 set an initial state before executing a command, requires a configuration
 file and strategy
 .TP
@@ -67,7 +67,7 @@ enable debugging
 .B \-v\fP,\fB  \-\-verbose
 increase verbosity
 .TP
-.BI \-P \ PROXY\fP,\fB \ \-\-proxy \ PROXY
+.BI \-P \ PROXY\fR,\fB \ \-\-proxy \ PROXY
 proxy connections over ssh
 .UNINDENT
 .SH CONFIGURATION FILE
@@ -105,6 +105,14 @@ This variable can be used to set the default crossbar realm to use instead of
 This variable can be used to specify a SSH proxy hostname which should be used
 to connect to the coordinator and any resources which are normally accessed
 directly.
+.SS LG_HOSTNAME
+.sp
+Override the hostname used when accessing a resource. Typically only useful for
+CI pipelines where the hostname may not be consistent between pipeline stages.
+.SS LG_USERNAME
+.sp
+Override the username used when accessing a resource. Typically only useful for
+CI pipelines where the username may not be consistent between pipeline stages.
 .SH MATCHES
 .sp
 Match patterns are used to assign a resource to a specific place. The format is:

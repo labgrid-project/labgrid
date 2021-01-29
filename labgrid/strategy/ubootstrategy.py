@@ -19,6 +19,7 @@ class UBootStrategy(Strategy):
     """UbootStrategy - Strategy to switch to uboot or shell"""
     bindings = {
         "power": "PowerProtocol",
+        "console": "ConsoleProtocol",
         "uboot": "UBootDriver",
         "shell": "ShellDriver",
     }
@@ -36,12 +37,12 @@ class UBootStrategy(Strategy):
         elif status == self.status:
             return # nothing to do
         elif status == Status.off:
-            self.target.deactivate(self.uboot)
-            self.target.deactivate(self.shell)
+            self.target.deactivate(self.console)
             self.target.activate(self.power)
             self.power.off()
         elif status == Status.uboot:
             self.transition(Status.off)  # pylint: disable=missing-kwoa
+            self.target.activate(self.console)
             # cycle power
             self.power.cycle()
             # interrupt uboot

@@ -2,8 +2,6 @@ import enum
 
 import attr
 
-from ..driver import UBootDriver, ShellDriver
-from ..protocol import PowerProtocol
 from ..factory import target_factory
 from .common import Strategy, StrategyError
 
@@ -20,9 +18,9 @@ class Status(enum.Enum):
 class UBootStrategy(Strategy):
     """UbootStrategy - Strategy to switch to uboot or shell"""
     bindings = {
-        "power": PowerProtocol,
-        "uboot": UBootDriver,
-        "shell": ShellDriver,
+        "power": "PowerProtocol",
+        "uboot": "UBootDriver",
+        "shell": "ShellDriver",
     }
 
     status = attr.ib(default=Status.unknown)

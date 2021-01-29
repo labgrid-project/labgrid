@@ -8,6 +8,7 @@ from labgrid import Target, target_factory
 from labgrid.binding import BindingError
 from labgrid.resource import Resource
 from labgrid.driver import Driver
+from labgrid.strategy import Strategy
 from labgrid.exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
 
 
@@ -379,3 +380,91 @@ def test_target_activate_by_string(target):
     target.activate("AActiv")
 
     assert a == target.get_active_driver(AActiv)
+
+def test_allow_binding_by_different_protocols(target):
+    class ADiffProtocol(abc.ABC):
+        pass
+
+    class BDiffProtocol(abc.ABC):
+        pass
+
+    class DiffDriver(Driver, ADiffProtocol, BDiffProtocol):
+        pass
+
+    class DiffStrategy(Strategy):
+        bindings = {
+            "a": ADiffProtocol,
+            "b": BDiffProtocol
+        }
+
+    d = DiffDriver(target, None)
+    s = DiffStrategy(target, None)
+
+    assert s.a == d
+    assert s.b == d
+
+def test_allow_optional_binding_by_different_protocols(target):
+    class AOpt1DiffProtocol(abc.ABC):
+        pass
+
+    class BOpt1DiffProtocol(abc.ABC):
+        pass
+
+    class Opt1DiffDriver(Driver, AOpt1DiffProtocol):
+        pass
+
+    class Opt1DiffStrategy(Strategy):
+        bindings = {
+            "a": AOpt1DiffProtocol,
+            "b": {BOpt1DiffProtocol, None}
+        }
+
+    d = Opt1DiffDriver(target, None)
+    s = Opt1DiffStrategy(target, None)
+
+    assert s.a == d
+    assert s.b == None
+
+def test_allow_optional_available_binding_by_different_protocols(target):
+    class AOpt2DiffProtocol(abc.ABC):
+        pass
+
+    class BOpt2DiffProtocol(abc.ABC):
+        pass
+
+    class Opt2DiffDriver(Driver, AOpt2DiffProtocol, BOpt2DiffProtocol):
+        pass
+
+    class Opt2DiffStrategy(Strategy):
+        bindings = {
+            "a": {AOpt2DiffProtocol, None},
+            "b": {BOpt2DiffProtocol, None}
+        }
+
+    d = Opt2DiffDriver(target, None)
+    s = Opt2DiffStrategy(target, None)
+
+    assert s.a == d
+    assert s.b == d
+
+def test_allow_optional_no_available_binding_by_different_protocols(target):
+    class AOpt3DiffProtocol(abc.ABC):
+        pass
+
+    class BOpt3DiffProtocol(abc.ABC):
+        pass
+
+    class Opt3DiffDriver(Driver):
+        pass
+
+    class Opt3DiffStrategy(Strategy):
+        bindings = {
+            "a": {AOpt3DiffProtocol, None},
+            "b": {BOpt3DiffProtocol, None}
+        }
+
+    d = Opt3DiffDriver(target, None)
+    s = Opt3DiffStrategy(target, None)
+
+    assert s.a == None
+    assert s.b == None

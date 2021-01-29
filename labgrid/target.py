@@ -293,6 +293,7 @@ class Target:
 
         # locate suppliers
         bound_suppliers = []
+        bound_req_pairs = set()
         for name, requirements in client.bindings.items():
             explicit = False
             if isinstance(requirements, Driver.NamedBinding):
@@ -346,6 +347,12 @@ class Target:
                 raise NoSupplierFoundError("conflicting suppliers matching {} found in target {}".format(requirements, self))  # pylint: disable=line-too-long
             else:
                 supplier = suppliers[0]
+            if (requirement, supplier) in bound_req_pairs:
+                raise BindingError(
+                    "duplicate bindings of {} for {} found in target {}".format(
+                        supplier, requirement, self)
+                )
+            bound_req_pairs.add((requirement, supplier))
             setattr(client, name, supplier)
             if supplier is not None:
                 bound_suppliers.append(supplier)
@@ -355,12 +362,6 @@ class Target:
             assert supplier.target is self
             assert client not in supplier.clients
             assert supplier not in client.suppliers
-
-        duplicates = {k for k, c in Counter(bound_suppliers).items() if c > 1}
-        if duplicates:
-            raise BindingError(
-                "duplicate bindings {} found in target {}".format(duplicates, self)
-            )
 
         # make sure drivers consume all given bindings
         if mapping and not isinstance(client, Strategy):

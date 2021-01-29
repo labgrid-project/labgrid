@@ -731,28 +731,30 @@ class ClientSession(ApplicationSession):
                     try:
                         drv = target.get_driver(NetworkPowerDriver)
                     except NoDriverFoundError:
-                        drv = NetworkPowerDriver(target, name=None, delay=delay)
+                        drv = NetworkPowerDriver(target, name=None)
                         break
                 elif isinstance(resource, NetworkUSBPowerPort):
                     try:
                         drv = target.get_driver(USBPowerDriver)
                     except NoDriverFoundError:
-                        drv = USBPowerDriver(target, name=None, delay=delay)
+                        drv = USBPowerDriver(target, name=None)
                         break
                 elif isinstance(resource, NetworkSiSPMPowerPort):
                     try:
                         drv = target.get_driver(SiSPMPowerDriver)
                     except NoDriverFoundError:
-                        drv = SiSPMPowerDriver(target, name=None, delay=delay)
+                        drv = SiSPMPowerDriver(target, name=None)
                     break
                 elif isinstance(resource, PDUDaemonPort):
                     try:
                         drv = target.get_driver(PDUDaemonDriver)
                     except NoDriverFoundError:
-                        drv = PDUDaemonDriver(target, name=None, delay=delay)
+                        drv = PDUDaemonDriver(target, name=None)
                         break
         if not drv:
             raise UserError("target has no compatible resource available")
+        if delay is not None:
+            drv.delay = delay
         target.activate(drv)
         res = getattr(drv, action)()
         if action == 'get':
@@ -1458,7 +1460,7 @@ def main():
                                       aliases=('pw',),
                                       help="change (or get) a place's power status")
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
-    subparser.add_argument('-t', '--delay', type=float, default=1.0,
+    subparser.add_argument('-t', '--delay', type=float, default=None,
                            help='wait time in seconds between off and on during cycle')
     subparser.set_defaults(func=ClientSession.power)
 

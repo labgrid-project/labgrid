@@ -1,5 +1,6 @@
 import shlex
 import time
+import math
 from importlib import import_module
 
 import attr
@@ -338,7 +339,7 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 class PDUDaemonDriver(Driver, PowerResetMixin, PowerProtocol):
     """PDUDaemonDriver - Driver using a PDU port available via pdudaemon"""
     bindings = {"port": "PDUDaemonPort", }
-    delay = attr.ib(default=5, validator=attr.validators.instance_of(int))
+    delay = attr.ib(default=5.0, validator=attr.validators.instance_of(float))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -350,7 +351,7 @@ class PDUDaemonDriver(Driver, PowerResetMixin, PowerProtocol):
         res = "http://{}:{}/power/control/{}?hostname={}&port={}".format(
             self._host, self._port, cmd, self.port.pdu, self.port.index)
         if cmd == 'reboot':
-            res += "&delay={}".format(self.delay)
+            res += "&delay={}".format(math.ceil(self.delay))
         return res
 
     def on_activate(self):

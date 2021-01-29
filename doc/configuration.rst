@@ -1230,7 +1230,7 @@ Implements:
      delay: 5
 
 Arguments:
-  - delay (int): optional delay in seconds between off and on
+  - delay (float): optional delay in seconds between off and on
 
 YKUSHPowerDriver
 ~~~~~~~~~~~~~~~~

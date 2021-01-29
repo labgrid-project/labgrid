@@ -732,7 +732,7 @@ class ClientSession(ApplicationSession):
                     try:
                         drv = target.get_driver(PDUDaemonDriver)
                     except NoDriverFoundError:
-                        drv = PDUDaemonDriver(target, name=None, delay=int(delay))
+                        drv = PDUDaemonDriver(target, name=None, delay=delay)
                         break
         if not drv:
             raise UserError("target has no compatible resource available")

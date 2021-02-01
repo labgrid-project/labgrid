@@ -1411,7 +1411,7 @@ Implements:
      sparse_size: 100M
 
 Arguments:
-  - image (str): optional, filename of an image to upload to the device
+  - boot_image (str): image key referring to the image to boot
   - sparse_size (str): optional, sparse files greater than given size (see
     fastboot manpage -S option for allowed size suffixes). The default is the
     same as the fastboot default, which is computed after querying the target's

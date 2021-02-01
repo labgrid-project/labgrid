@@ -18,8 +18,8 @@ New Features in 0.4.0
 - Network controlled relay providing GET/PUT based REST API
 - Improved LG_PROXY documentation in docs/usage.rst.
 - Exporter now checks /usr/sbin/ser2net for SerialPortExport
-- AndroidFastbootDriver now supports booting images preconfigured in the
-  environment configuration.
+- AndroidFastbootDriver now supports booting/flashing images preconfigured in
+  the environment configuration.
 
 Bug fixes in 0.4.0
 ~~~~~~~~~~~~~~~~~~

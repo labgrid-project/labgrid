@@ -99,6 +99,12 @@ class AndroidFastbootDriver(Driver):
         self("flash", partition, mf.get_remote_path())
 
     @Driver.check_active
+    @step()
+    def flash_all(self):
+        for partition in self.flash_images.keys():
+            self.flash(partition)
+
+    @Driver.check_active
     @step(args=['cmd'])
     def run(self, cmd):
         self("oem", "exec", "--", cmd)

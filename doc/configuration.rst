@@ -1412,6 +1412,8 @@ Implements:
 
 Arguments:
   - boot_image (str): image key referring to the image to boot
+  - flash_images (dict): partition to image key mapping referring to images to
+    flash to the device
   - sparse_size (str): optional, sparse files greater than given size (see
     fastboot manpage -S option for allowed size suffixes). The default is the
     same as the fastboot default, which is computed after querying the target's

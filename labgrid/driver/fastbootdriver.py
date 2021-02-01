@@ -20,6 +20,10 @@ class AndroidFastbootDriver(Driver):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
+    flash_images = attr.ib(
+        default={},
+        validator=attr.validators.optional(attr.validators.instance_of(dict))
+    )
     sparse_size = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
@@ -81,7 +85,15 @@ class AndroidFastbootDriver(Driver):
 
     @Driver.check_active
     @step(args=['partition', 'filename'])
-    def flash(self, partition, filename):
+    def flash(self, partition, filename=None):
+        if filename is None:
+            try:
+                image_key = self.flash_images[partition]
+            except KeyError:
+                raise InvalidConfigError("Partition {} not in flash_images".format(partition))
+
+            filename = self.target.env.config.get_image_path(image_key)
+
         mf = ManagedFile(filename, self.fastboot)
         mf.sync_to_resource()
         self("flash", partition, mf.get_remote_path())

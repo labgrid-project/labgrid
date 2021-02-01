@@ -4,6 +4,7 @@ import attr
 from ..factory import target_factory
 from ..step import step
 from .common import Driver
+from ..exceptions import InvalidConfigError
 from ..util.managedfile import ManagedFile
 from ..util.helper import processwrapper
 
@@ -15,7 +16,10 @@ class AndroidFastbootDriver(Driver):
         "fastboot": {"AndroidFastboot", "NetworkAndroidFastboot"},
     }
 
-    image = attr.ib(default=None)
+    boot_image = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
     sparse_size = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
@@ -64,7 +68,13 @@ class AndroidFastbootDriver(Driver):
 
     @Driver.check_active
     @step(args=['filename'])
-    def boot(self, filename):
+    def boot(self, filename=None):
+        if filename is None:
+            if self.boot_image is None:
+                raise InvalidConfigError("No boot_image set")
+
+            filename = self.target.env.config.get_image_path(self.boot_image)
+
         mf = ManagedFile(filename, self.fastboot)
         mf.sync_to_resource()
         self("boot", mf.get_remote_path())

@@ -580,3 +580,15 @@ class DeditecRelais8(USBResource):
         # Deditec does not set proper model/vendor IDs, so we use ID_MODEL instead
         self.match['ID_MODEL'] = 'DEDITEC_USB-OPT_REL-8'
         super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class HIDRelay(USBResource):
+    index = attr.ib(default=1, validator=attr.validators.instance_of(int))
+    invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+
+    def __attrs_post_init__(self):
+        self.match['ID_VENDOR_ID'] = '16c0'
+        self.match['ID_MODEL_ID'] = '05df'
+        super().__attrs_post_init__()

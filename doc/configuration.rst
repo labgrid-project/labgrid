@@ -274,6 +274,28 @@ NetworkLXAIOBusPIO
 ++++++++++++++++++
 A NetworkLXAIOBusPIO descibes an `LXAIOBusPIO`_ exported over the network.
 
+HIDRelay
+++++++++
+An :any:`HIDRelay` resource describes a single output of a HID protocol based
+USB relays.
+It currently supports the widely used "dcttech USBRelay".
+
+.. code-block:: yaml
+
+   HIDRelay:
+     index: 2
+     invert: False
+
+- index (int): number of the relay to use (defaults to 1)
+- invert (bool): whether to invert the relay
+
+Used by:
+  - `HIDRelayDriver`_
+
+NetworkHIDRelay
++++++++++++++++
+A NetworkHIDRelay descibes an `HIDRelay`_ exported over the network.
+
 NetworkService
 ~~~~~~~~~~~~~~
 A NetworkService describes a remote SSH connection.
@@ -1396,6 +1418,26 @@ Implements:
 .. code-block:: yaml
 
    ModbusCoilDriver: {}
+
+Arguments:
+  - None
+
+HIDRelayDriver
+~~~~~~~~~~~~~~
+A HIDRelayDriver controls a `HIDRelay` or `NetworkHIDRelay` resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  relay:
+    - `HIDRelay`_
+    - `NetworkHIDRelay`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   HIDRelayDriver: {}
 
 Arguments:
   - None

@@ -5,3 +5,7 @@ from .exceptions import NoConfigFoundError
 from .factory import target_factory
 from .step import step, steps
 from .stepreporter import StepReporter
+
+from importlib.metadata import version
+
+__version__ = version("labgrid")

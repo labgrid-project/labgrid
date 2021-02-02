@@ -26,6 +26,7 @@ from .. import Target, target_factory
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
 from ..driver import Mode
+from .. import __version__ as lg_version
 
 txaio.use_asyncio()
 txaio.config.loop = asyncio.get_event_loop()
@@ -1208,6 +1209,9 @@ class ClientSession(ApplicationSession):
             print("Reservation '{}':".format(res.token))
             res.show(level=1)
 
+    async def print_version(self):
+        print("Labgrid version", lg_version)
+
 
 def start_session(url, realm, extra):
     from autobahn.asyncio.wamp import ApplicationRunner
@@ -1572,6 +1576,9 @@ def main():
 
     subparser = subparsers.add_parser('reservations', help="list current reservations")
     subparser.set_defaults(func=ClientSession.print_reservations)
+
+    subparser = subparsers.add_parser('version', help="retrieve installed labgrid version")
+    subparser.set_defaults(func=ClientSession.print_version)
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()

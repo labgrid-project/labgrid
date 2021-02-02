@@ -188,6 +188,8 @@ LABGRID-CLIENT COMMANDS
 
 ``reservations``                List current reservations
 
+``version``                     Print current labgrid version
+
 ADDING NAMED RESOURCES
 ----------------------
 If a target contains multiple Resources of the same type, named matches need to

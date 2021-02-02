@@ -580,10 +580,3 @@ class DeditecRelais8(USBResource):
         # Deditec does not set proper model/vendor IDs, so we use ID_MODEL instead
         self.match['ID_MODEL'] = 'DEDITEC_USB-OPT_REL-8'
         super().__attrs_post_init__()
-
-    @property
-    def path(self):
-        if self.device is not None:
-            return self.device.device_path
-
-        return None

@@ -4,6 +4,9 @@ Release 0.4.0 (unreleased)
 New Features in 0.4.0
 ~~~~~~~~~~~~~~~~~~~~~
 
+- The `NetworkPowerDriver` now additionally supports:
+  - Siglent SPD3000X series power supplies
+
 Breaking changes in 0.4.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

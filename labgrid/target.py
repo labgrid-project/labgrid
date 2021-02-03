@@ -347,7 +347,7 @@ class Target:
                 raise NoSupplierFoundError("conflicting suppliers matching {} found in target {}".format(requirements, self))  # pylint: disable=line-too-long
             else:
                 supplier = suppliers[0]
-            if (requirement, supplier) in bound_req_pairs:
+            if supplier is not None and (requirement, supplier) in bound_req_pairs:
                 raise BindingError(
                     "duplicate bindings of {} for {} found in target {}".format(
                         supplier, requirement, self)

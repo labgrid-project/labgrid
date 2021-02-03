@@ -349,8 +349,8 @@ class Target:
                 supplier = suppliers[0]
             if supplier is not None and (requirement, supplier) in bound_req_pairs:
                 raise BindingError(
-                    "duplicate bindings of {} for {} found in target {}".format(
-                        supplier, requirement, self)
+                    "duplicate bindings of {} to {} for {} found in target {}".format(
+                        supplier, name, requirement, self)
                 )
             bound_req_pairs.add((requirement, supplier))
             setattr(client, name, supplier)

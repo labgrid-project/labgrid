@@ -468,3 +468,28 @@ def test_allow_optional_no_available_binding_by_different_protocols(target):
 
     assert s.a == None
     assert s.b == None
+
+def test_allow_optional_no_double_same_protocol_by_different_protocols(target):
+    class AOpt4DiffProtocol(abc.ABC):
+        pass
+
+    class Opt4DiffDriver(Driver, AOpt4DiffProtocol):
+        pass
+
+    class Opt4DiffStrategy(Strategy):
+        bindings = {
+            "a": {AOpt4DiffProtocol, None},
+            "b": {AOpt4DiffProtocol, None},
+            "c": {AOpt4DiffProtocol, None},
+            "d": {AOpt4DiffProtocol, None},
+        }
+
+    d1 = Opt4DiffDriver(target, name="driver1")
+    d2 = Opt4DiffDriver(target, name="driver2")
+    target.set_binding_map({"c": "driver1", "d": "driver2"})
+    s = Opt4DiffStrategy(target, None)
+
+    assert s.a is None
+    assert s.b is None
+    assert s.c == d1
+    assert s.d == d2

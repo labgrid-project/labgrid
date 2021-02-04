@@ -167,6 +167,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.gude24
         import labgrid.driver.power.netio
         import labgrid.driver.power.netio_kshell
+        import labgrid.driver.power.rest
         import labgrid.driver.power.sentry
 
     def test_import_backend_siglent(self):

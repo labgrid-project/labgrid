@@ -16,9 +16,9 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
     - name: Build docker image
       run: |
-        ./docker/build.sh
-        docker-compose -f docker/staging/docker-compose.yml up --exit-code-from client client
-        docker-compose -f docker/staging/docker-compose.yml down
+        ./dockerfiles/build.sh
+        docker-compose -f dockerfiles/staging/docker-compose.yml up --exit-code-from client client
+        docker-compose -f dockerfiles/staging/docker-compose.yml down
         docker images
         docker tag labgrid-client ${{ secrets.DOCKERHUB_PREFIX }}client
         docker tag labgrid-exporter ${{ secrets.DOCKERHUB_PREFIX }}exporter

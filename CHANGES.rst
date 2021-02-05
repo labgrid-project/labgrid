@@ -1,5 +1,19 @@
-Release 0.3.0 (unreleased)
---------------------------
+Release 0.3.1 (released Feb 5, 2021)
+------------------------------------
+
+Bug Fixes in 0.3.1
+------------------
+- Fixes a typo in labgrid-bound-connect, which should re-enable connection
+  proxying for SSH.
+- Man-Pages have been correctly regenerated.
+- The exporter correctly handles the configured baud-rate for serial ports again.
+- Various tests have been marked with skips if the modules are not available.
+- Docker files have been moved to from the docker directory to the dockerfiles
+  directory, which prevents the tests from incorrectly assuming a docker module
+  is available.
+
+Release 0.3.0 (released Jan 22, 2021)
+-------------------------------------
 
 New Features in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~

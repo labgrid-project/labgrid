@@ -1,6 +1,9 @@
 from labgrid.resource.pyvisa import PyVISADevice
 from labgrid.driver.pyvisadriver import PyVISADriver
 
+import pytest
+
+pytest.importorskip("pyvisa")
 
 def test_pyvisa_resource(target):
     PyVISADevice(target, name=None, type='TCPIP', url='127.0.0.1')

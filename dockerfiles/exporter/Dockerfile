@@ -1,6 +1,6 @@
 FROM labgrid-base
 
-COPY docker/exporter/entrypoint.sh /entrypoint.sh
+COPY dockerfiles/exporter/entrypoint.sh /entrypoint.sh
 
 RUN set -e ;\
     cd /opt/labgrid ;\

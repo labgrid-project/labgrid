@@ -37,9 +37,9 @@ matrix:
       services:
         - docker
       script:
-        - ./docker/build.sh
-        - docker-compose -f docker/staging/docker-compose.yml up --exit-code-from client client
-        - docker-compose -f docker/staging/docker-compose.yml down
+        - ./dockerfiles/build.sh
+        - docker-compose -f dockerfiles/staging/docker-compose.yml up --exit-code-from client client
+        - docker-compose -f dockerfiles/staging/docker-compose.yml down
         - if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ "$TRAVIS_BRANCH" = "master" ] && [ "$DOCKER_USERNAME" != "" ] && [ "$DOCKER_TOKEN" != "" ]; then
           echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin;
           docker images;

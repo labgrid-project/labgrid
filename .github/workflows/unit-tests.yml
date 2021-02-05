@@ -65,9 +65,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build docker images
       run: |
-        ./docker/build.sh
-        docker-compose -f docker/staging/docker-compose.yml up --exit-code-from client client
-        docker-compose -f docker/staging/docker-compose.yml down
+        ./dockerfiles/build.sh
+        docker-compose -f dockerfiles/staging/docker-compose.yml up --exit-code-from client client
+        docker-compose -f dockerfiles/staging/docker-compose.yml down
     - name: Show docker images
       run: |
         docker images

@@ -364,7 +364,7 @@ class AlteraUSBBlaster(USBResource):
 @target_factory.reg_resource
 @attr.s(eq=False)
 class XilinxUSBJTAG(USBResource):
-    hw_server_bin = attr.ib(default='hw_server')
+    hw_server_cmd = attr.ib(default='hw_server')
     serial = attr.ib(factory=str)
     agent_url = attr.ib(factory=str)
     gdb_port = attr.ib(factory=int)

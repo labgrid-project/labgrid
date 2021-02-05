@@ -308,7 +308,7 @@ class VivadoHWServerExport(ResourceExport):
         return {
             'host': self.host,
             'serial': self._get_serial(),
-            'hw_server_bin': self.local.hw_server_bin,
+            'hw_server_cmd': self.local.hw_server_cmd,
             'agent_url': self.local.agent_url,
             'gdb_port': self.local.gdb_port,
             'log_level': self.local.log_level,
@@ -327,8 +327,8 @@ class VivadoHWServerExport(ResourceExport):
             self.local.gdb_port = get_free_port()
 
         args = [
-            self.local.hw_server_bin,
-            '-e', "set jtag-port-filter {}".format(self._get_serial()),
+            self.local.hw_server_cmd,
+            '-e', "'set jtag-port-filter {}'".format(self._get_serial()),
             '-s{}'.format(self.local.agent_url),
             '-p{}'.format(self.local.gdb_port),
         ]
@@ -336,7 +336,8 @@ class VivadoHWServerExport(ResourceExport):
             args.append('-l{}'.format(','.join(self.local.log_level)))
         args.extend(self.local.extra_args)
         # TODO: Add timeout
-        self.child = subprocess.Popen(args, preexec_fn=os.setsid)
+        self.child = subprocess.Popen(' '.join(args), preexec_fn=os.setsid,
+                shell=True)
         self.logger.info("started hw_server on %s", self.local.agent_url)
 
 

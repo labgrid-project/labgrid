@@ -571,15 +571,28 @@ adapter.
    XilinxUSBJTAG:
      match:
       'ID_SERIAL_SHORT': '210308A11F1A'
-     hw_server_bin: '/path/to/Xilinx/Vivado/2018.3/bin/hw_server'
+     hw_server_cmd: '/path/to/Xilinx/Vivado/2018.3/bin/hw_server'
      agent_url: tcp::3121
      gdb_port: 3000
      log_level: [events, protocol]
      extra_args: ['-S']
 
 - match (dict): key and value for a udev match, see `udev Matching`_
-- hw_server_bin (str): optional, path to :program:`hw_server` binary. The
-  minimum Vivado hardware server version supported is 2018.3
+- hw_server_cmd (str): optional, shell command to run the Vivado hardware
+  server (defaults to ``hw_server``). The minimum Vivado hardware server
+  version supported is 2018.3.
+
+  Note that the Vivado Design Suite and Vivado Lab Solutions come with an
+  environment script that must be sourced first, i.e.:
+
+  .. code-block:: yaml
+
+     hw_server_cmd: 'source /path/to/Xilinx/Vivado/2018.3/settings64.sh && hw_server'
+
+  Since for the Vivado Lab Solutions, the environment script only adds the
+  :program:`hw_server` binary to :envvar:`PATH`, you can also directly provide
+  an absolute path as shown in the example; however, this might change in the
+  future.
 - serial: (str): only required for adapters that do not expose the serial
   number via udev, see `Matching a Xilinx Platform Cable USB (II)`_
 - agent_url (str): optional, agent listening port and protocol. By default, a
@@ -1193,7 +1206,7 @@ targets`` to get the serial number of the respective Platform Cable USB (II):
    XilinxUSBJTAG:
      match:
        'sys_name': '3-3'
-     hw_server_bin: '/path/to/Xilinx/Vivado/2018.3/bin/hw_server'
+     hw_server_cmd: '/path/to/Xilinx/Vivado/2018.3/bin/hw_server'
      serial: 00001296718a01
 
 Drivers

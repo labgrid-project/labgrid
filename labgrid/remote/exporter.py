@@ -297,10 +297,17 @@ class VivadoHWServerExport(ResourceExport):
         if self.child is not None:
             self.stop()
 
+    def _get_serial(self):
+        if self.local.serial:
+            return self.local.serial
+        else:
+            return self.local.serial_short
+
     def _get_params(self):
         """Helper function to return parameters"""
         return {
             'host': self.host,
+            'serial': self._get_serial(),
             'hw_server_bin': self.local.hw_server_bin,
             'agent_url': self.local.agent_url,
             'gdb_port': self.local.gdb_port,
@@ -321,7 +328,7 @@ class VivadoHWServerExport(ResourceExport):
 
         args = [
             self.local.hw_server_bin,
-            '-e', 'set jtag-port-filter {}'.format(self.local.serial_short),
+            '-e', "set jtag-port-filter {}".format(self._get_serial()),
             '-s{}'.format(self.local.agent_url),
             '-p{}'.format(self.local.gdb_port),
         ]

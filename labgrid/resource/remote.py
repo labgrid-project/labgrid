@@ -155,6 +155,7 @@ class NetworkAlteraUSBBlaster(RemoteUSBResource):
 @attr.s(eq=False)
 class NetworkXilinxUSBJTAG(NetworkResource, ManagedResource):
     hw_server_bin = attr.ib(default='hw_server')
+    serial = attr.ib(factory=str)
     agent_url = attr.ib(factory=str)
     gdb_port = attr.ib(factory=int)
     log_level = attr.ib(factory=list)

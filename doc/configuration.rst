@@ -560,8 +560,8 @@ A XilinxUSBJTAG resource describes a Xilinx-compatible USB JTAG adapter:
 - Digilent JTAG-HS3
 - Digilent JTAG-SMT2
 - Trenz Electronic TE0790-03
-- Xilinx Platform Cable USB
-- Xilinx Platform Cable USB II
+- Xilinx Platform Cable USB (see `Matching a Xilinx Platform Cable USB (II)`_)
+- Xilinx Platform Cable USB II (see `Matching a Xilinx Platform Cable USB (II)`_)
 
 The exporter launches a Vivado hardware server bound to the respective USB JTAG
 adapter.
@@ -578,15 +578,17 @@ adapter.
      extra_args: ['-S']
 
 - match (dict): key and value for a udev match, see `udev Matching`_
-- hw_server_bin (str): optional, path to `hw_server` binary. The minimum Vivado
-  hardware server version supported is 2018.3
+- hw_server_bin (str): optional, path to :program:`hw_server` binary. The
+  minimum Vivado hardware server version supported is 2018.3
+- serial: (str): only required for adapters that do not expose the serial
+  number via udev, see `Matching a Xilinx Platform Cable USB (II)`_
 - agent_url (str): optional, agent listening port and protocol. By default, a
   random free TCP port is chosen.
 - gdb_port (int): optional, base port number for Xilinx GDB server. By default,
   a random free port is chosen.
 - log_level ([str]): optional, set log level as a list of categories. Run
-  `hw_server -h` to get all available categories.
-- extra_args ([str]): optional, extra arguments passed to `hw_server`
+  ``hw_server -h`` to get all available categories.
+- extra_args ([str]): optional, extra arguments passed to :program:`hw_server`
 
 Used by:
   - `XSDBDriver`_
@@ -1163,6 +1165,36 @@ To check if your device has a serial number, you can use ``udevadm info``:
 
   $ udevadm info /dev/ttyUSB5 | grep SERIAL_SHORT
   E: ID_SERIAL_SHORT=P-00-00679
+
+Matching a Xilinx Platform Cable USB (II)
++++++++++++++++++++++++++++++++++++++++++
+
+A Xilinx Platform Cable USB (II) does not expose its unique serial number via
+udev. Therefore, we have to match the USB device via the respective port
+(directly, without parent match).
+
+Accordingly, one must set the ``serial`` attribute to enable the Vivado
+hardware server to filter for the respective port. Run the XSDB command ``jtag
+targets`` to get the serial number of the respective Platform Cable USB (II):
+
+.. code-block:: console
+   :emphasize-lines: 4
+
+   $ xsdb
+   …
+   xsdb% jtag targets
+     1  Platform Cable USB II 00001296718a01
+        2  xczu9 (idcode 24738093 irlen 12 fpga)
+        3  arm_dap (idcode 5ba00477 irlen 4)
+
+.. code-block:: yaml
+   :emphasize-lines: 5
+
+   XilinxUSBJTAG:
+     match:
+       'sys_name': '3-3'
+     hw_server_bin: '/path/to/Xilinx/Vivado/2018.3/bin/hw_server'
+     serial: 00001296718a01
 
 Drivers
 -------

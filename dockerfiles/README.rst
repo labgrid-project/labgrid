@@ -22,7 +22,7 @@ Example showing how to build labgrid-client image:
 
 .. code-block:: bash
 
-   $ docker build -t labgrid-client -f docker/client/Dockerfile .
+   $ dockerfiles build -t labgrid-client -f dockerfiles/client/Dockerfilesfile .
 
 You can also choose to build all 3 images,
 with the included script
@@ -30,7 +30,7 @@ with the included script
 
 .. code-block:: bash
 
-   $ ./docker/build.sh
+   $ ./dockerfiles/build.sh
 
 
 Usage
@@ -119,13 +119,13 @@ To use the staging environment to conduct a smoke test first build the images as
 
 .. code-block:: bash
 
-   $ ./docker/build.sh
+   $ ./dockerfiles/build.sh
 
 Then use docker compose to start all services except the client:
 
 .. code-block:: bash
 
-   $ cd docker/staging
+   $ cd dockerfiles/staging
    $ CURRENT_UID=$(id -u):$(id -g) docker-compose up -d coordinator exporter dut
 
 To run the smoke test just run the client:

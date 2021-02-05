@@ -6,7 +6,8 @@ from importlib.util import find_spec
 
 import pytest
 import pexpect
-import psutil
+
+psutil = pytest.importorskip("psutil")
 
 pytestmark = pytest.mark.skipif(not find_spec("crossbar"),
                               reason="crossbar required")

@@ -1,3 +1,5 @@
+import pytest
+
 from labgrid.resource import NetworkPowerPort
 from labgrid.driver.powerdriver import ExternalPowerDriver, ManualPowerDriver, NetworkPowerDriver
 
@@ -166,4 +168,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.netio
         import labgrid.driver.power.netio_kshell
         import labgrid.driver.power.sentry
+
+    def test_import_backend_siglent(self):
+        pytest.importorskip("vxi11")
         import labgrid.driver.power.siglent

@@ -132,7 +132,7 @@ def test_place_match(place):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-def test_place_aquire(place):
+def test_place_acquire(place):
     with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
@@ -149,7 +149,7 @@ def test_place_aquire(place):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-def test_place_aquire_enforce(place):
+def test_place_acquire_enforce(place):
     with pexpect.spawn('python -m labgrid.remote.client -p test add-match does/not/exist') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
@@ -172,7 +172,7 @@ def test_place_aquire_enforce(place):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-def test_place_aquire_broken(place, exporter):
+def test_place_acquire_broken(place, exporter):
     with pexpect.spawn('python -m labgrid.remote.client -p test add-match "*/Broken/*"') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()

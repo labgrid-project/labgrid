@@ -106,7 +106,10 @@ def test_all_modules():
     methods = aw.list()
     assert 'sysfsgpio.set' in methods
     assert 'sysfsgpio.get' in methods
-
+    aw.load('usb_hid_relay')
+    methods = aw.list()
+    assert 'usb_hid_relay.set' in methods
+    assert 'usb_hid_relay.get' in methods
 
 def test_import_modules():
     import labgrid.util.agents

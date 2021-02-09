@@ -203,8 +203,11 @@ The example describes port 1 on the hub with the ID_PATH
 Used by:
   - `SiSPMPowerDriver`_
 
+Digital Outputs
+~~~~~~~~~~~~~~~
+
 ModbusTCPCoil
-~~~~~~~~~~~~~
++++++++++++++
 A ModbusTCPCoil describes a coil accessible via ModbusTCP.
 
 .. code-block:: yaml
@@ -222,6 +225,76 @@ The example describes the coil with the address 1 on the ModbusTCP device
 
 Used by:
   - `ModbusCoilDriver`_
+
+OneWirePIO
+++++++++++
+A OneWirePIO describes a onewire programmable I/O pin.
+
+.. code-block:: yaml
+
+   OneWirePIO:
+     host: example.computer
+     path: /29.7D6913000000/PIO.0
+     invert: false
+
+The example describes a `PIO.0` at device address `29.7D6913000000` via the onewire
+server on `example.computer`.
+
+- host (str): hostname of the remote system running the onewire server
+- path (str): path on the server to the programmable I/O pin
+- invert (bool): optional, whether the logic level is be inverted (active-low)
+
+Used by:
+  - `OneWirePIODriver`_
+
+LXAIOBusPIO
++++++++++++
+An :any:`LXAIOBusPIO` resource describes a single PIO pin on an LXAIOBusNode.
+
+.. code-block:: yaml
+
+   LXAIOBusPIO:
+     host: localhost:8080
+     node: IOMux-00000003
+     pin: OUT0
+     invert: False
+
+The example uses an lxa-iobus-server running on localhost:8080, with node
+IOMux-00000003 and pin OUT0.
+
+- host (str): hostname with port of the lxa-io-bus server
+- node (str): name of the node to use
+- pin (str): name of the pin to use
+- invert (bool): whether to invert the pin
+
+Used by:
+  - `LXAIOBusPIODriver`_
+
+NetworkLXAIOBusPIO
+++++++++++++++++++
+A NetworkLXAIOBusPIO descibes an `LXAIOBusPIO`_ exported over the network.
+
+HIDRelay
+++++++++
+An :any:`HIDRelay` resource describes a single output of a HID protocol based
+USB relays.
+It currently supports the widely used "dcttech USBRelay".
+
+.. code-block:: yaml
+
+   HIDRelay:
+     index: 2
+     invert: False
+
+- index (int): number of the relay to use (defaults to 1)
+- invert (bool): whether to invert the relay
+
+Used by:
+  - `HIDRelayDriver`_
+
+NetworkHIDRelay
++++++++++++++++
+A NetworkHIDRelay descibes an `HIDRelay`_ exported over the network.
 
 NetworkService
 ~~~~~~~~~~~~~~
@@ -252,27 +325,6 @@ These and the sudo configuration needs to be prepared by the administrator.
 
 Used by:
   - `SSHDriver`_
-
-OneWirePIO
-~~~~~~~~~~
-A OneWirePIO describes a onewire programmable I/O pin.
-
-.. code-block:: yaml
-
-   OneWirePIO:
-     host: example.computer
-     path: /29.7D6913000000/PIO.0
-     invert: false
-
-The example describes a `PIO.0` at device address `29.7D6913000000` via the onewire
-server on `example.computer`.
-
-- host (str): hostname of the remote system running the onewire server
-- path (str): path on the server to the programmable I/O pin
-- invert (bool): optional, whether the logic level is be inverted (active-low)
-
-Used by:
-  - `OneWirePIODriver`_
 
 USBMassStorage
 ~~~~~~~~~~~~~~
@@ -692,34 +744,6 @@ therefore auto-cleanup is important.
 
 Used by:
   - `DockerDriver`_
-
-LXAIOBusPIO
-~~~~~~~~~~~
-
-An :any:`LXAIOBusPIO` resource describes a single PIO pin on an LXAIOBusNode.
-
-.. code-block:: yaml
-
-   LXAIOBusPIO:
-     host: localhost:8080
-     node: IOMux-00000003
-     pin: OUT0
-     invert: False
-
-The example uses an lxa-iobus-server running on localhost:8080, with node
-IOMux-00000003 and pin OUT0.
-
-- host (str): hostname with port of the lxa-io-bus server
-- node (str): name of the node to use
-- pin (str): name of the pin to use
-- invert (bool): whether to invert the pin
-
-Used by:
-  - `LXAIOBusPIODriver`_
-
-NetworkLXAIOBusPIO
-~~~~~~~~~~~~~~~~~~
-A NetworkLXAIOBusPIO descibes an `LXAIOBusPIO`_ exported over the network.
 
 udev Matching
 ~~~~~~~~~~~~~
@@ -1394,6 +1418,26 @@ Implements:
 .. code-block:: yaml
 
    ModbusCoilDriver: {}
+
+Arguments:
+  - None
+
+HIDRelayDriver
+~~~~~~~~~~~~~~
+A HIDRelayDriver controls a `HIDRelay` or `NetworkHIDRelay` resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  relay:
+    - `HIDRelay`_
+    - `NetworkHIDRelay`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   HIDRelayDriver: {}
 
 Arguments:
   - None

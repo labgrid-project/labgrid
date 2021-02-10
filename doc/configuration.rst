@@ -660,6 +660,27 @@ NetworkUSBVideo
 A :any:`NetworkUSBVideo` resource describes a :any:`USBVideo` resource available
 on a remote computer.
 
+USBAudioInput
+~~~~~~~~~~~~~
+
+A :any:`USBAudioInput` resource describes a USB audio input which is supported
+by an ALSA kernel driver.
+
+.. code-block:: yaml
+
+   USBAudioInput:
+     match:
+       '@sys_name': '1-4'
+
+Used by:
+  - `USBAudioInputDriver`_
+
+NetworkUSBAudioInput
+~~~~~~~~~~~~~~~~~~~~
+
+A :any:`NetworkUSBAudioInput` resource describes a :any:`USBAudioInput` resource
+available on a remote computer.
+
 USBTMC
 ~~~~~~
 
@@ -1824,11 +1845,30 @@ Implements:
   - None yet
 
 Although the driver can be used from Python code by calling the `stream()`
-method, it is currenly mainly useful for the ``video`` subcommand of
+method, it is currently mainly useful for the ``video`` subcommand of
 ``labgrid-client``.
 It supports the `Logitech HD Pro Webcam C920` with the USB ID 046d:082d, but
 other cameras can be added to `get_caps()` in
 ``labgrid/driver/usbvideodriver.py``.
+
+USBAudioInputDriver
+~~~~~~~~~~~~~~~~~~~
+The :any:`USBAudioInputDriver` is used to receive a audio stream from a local
+or remote USB audio input.
+It uses the GStreamer command line utility ``gst-launch`` on the sender side to
+stream the audio to the client.
+For remote resources, this is done via an SSH connection to the exporter.
+On the receiver, it either uses ``gst-launch`` for simple playback or
+`gst-python <https://gitlab.freedesktop.org/gstreamer/gst-python>`_ for more
+complex cases (such as measuring the current volume level).
+
+Binds to:
+  video:
+    - `USBAudioInput`_
+    - `NetworkUSBAudioInput`_
+
+Implements:
+  - None yet
 
 USBTMCDriver
 ~~~~~~~~~~~~

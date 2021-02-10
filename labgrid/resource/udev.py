@@ -555,6 +555,44 @@ class USBVideo(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class USBAudioInput(USBResource):
+    # the ALSA PCM device number (as in hw:CARD=<card>,DEV=<index>)
+    index = attr.ib(default=0, validator=attr.validators.instance_of(int))
+
+    def filter_match(self, device):
+        suffix = "D{}c".format(self.index)
+
+        if not device.sys_name.endswith(suffix):
+            return False
+
+        return super().filter_match(device)
+
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'sound'
+        self.match['@SUBSYSTEM'] = 'usb'
+        super().__attrs_post_init__()
+
+    @property
+    def path(self):
+        "the device node (for example /dev/snd/pcmC3D0c)"
+        if self.device is not None:
+            return self.device.device_node
+
+        return None
+
+    @property
+    def alsa_name(self):
+        "the ALSA device name (for example hw:CARD=3,DEV=0)"
+        if self.device is not None:
+            return "hw:CARD={},DEV={}".format(
+                self.device.parent.attributes.asint('number'),
+                self.index,
+            )
+
+        return None
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class USBTMC(USBResource):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'usbmisc'

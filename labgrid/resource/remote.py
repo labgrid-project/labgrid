@@ -250,6 +250,20 @@ class NetworkUSBVideo(RemoteUSBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class NetworkUSBAudioInput(RemoteUSBResource):
+    """The NetworkUSBAudioInput describes a remotely accessible USB audio input device"""
+    index = attr.ib(default=0, validator=attr.validators.instance_of(int))
+    alsa_name = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class NetworkUSBTMC(RemoteUSBResource):
     """The NetworkUSBTMC describes a remotely accessible USB TMC device"""
     def __attrs_post_init__(self):

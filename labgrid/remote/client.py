@@ -1116,6 +1116,18 @@ class ClientSession(ApplicationSession):
         else:
             drv.stream(quality)
 
+    def audio(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        from ..driver.usbaudiodriver import USBAudioInputDriver
+        drv = None
+        try:
+            drv = target.get_driver(USBAudioInputDriver)
+        except NoDriverFoundError:
+            drv = USBAudioInputDriver(target, name=None)
+        target.activate(drv)
+        drv.play()
+
     def _get_tmc(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
@@ -1565,6 +1577,9 @@ def main():
     subparser.add_argument('-q', '--quality', type=str,
                            help="select a video quality (use 'list' to show options)")
     subparser.set_defaults(func=ClientSession.video)
+
+    subparser = subparsers.add_parser('audio', help="start a audio stream")
+    subparser.set_defaults(func=ClientSession.audio)
 
     subparser = subparsers.add_parser('tmc', help="control a USB TMC device")
     subparser.set_defaults(func=lambda _: subparser.print_help())

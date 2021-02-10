@@ -51,7 +51,7 @@ class USBVideoDriver(Driver):
         caps = self.select_caps(caps_hint)
         pipeline = self.get_pipeline()
 
-        tx_cmd = self.video.command_prefix + ["gst-launch-1.0"]
+        tx_cmd = self.video.command_prefix + ["gst-launch-1.0", "-q"]
         tx_cmd += pipeline.format(self.video.path, caps).split()
         rx_cmd = ["gst-launch-1.0"]
         rx_cmd += "fdsrc ! h264parse ! avdec_h264 ! glimagesink sync=false".split()

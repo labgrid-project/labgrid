@@ -30,6 +30,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         bootstring (str): string that indicates that the Kernel is booting
         boot_command (str): optional boot command to boot target
         login_timeout (int): optional, timeout for login prompt detection
+        boot_timeout (int): optional, timeout for initial Linux version detection
 
     """
     bindings = {"console": ConsoleProtocol, }
@@ -43,6 +44,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
     boot_command = attr.ib(default="run bootcmd", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
+    boot_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -173,7 +175,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """Wait for the initial Linux version string to verify we succesfully
         jumped into the kernel.
         """
-        self.console.expect(self.bootstring)
+        self.console.expect(self.bootstring, timeout=self.boot_timeout)
 
     @Driver.check_active
     @step(args=['name'])

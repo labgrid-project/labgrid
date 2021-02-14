@@ -1,3 +1,4 @@
+import logging
 import os
 import pexpect
 import pytest
@@ -30,12 +31,15 @@ def test(target):
 
 
 @pytest.mark.parametrize(
-    "color_scheme,pytest_extra_param,",
+    "color_scheme,pytest_extra_param",
     (
         ("", ""),
         ("", "--lg-colored-steps"),
         ("dark", "--lg-colored-steps"),
         ("light", "--lg-colored-steps"),
+        ("dark-256color", "--lg-colored-steps"),
+        ("light-256color", "--lg-colored-steps"),
+        ("non-existing-color-scheme", "--lg-colored-steps"),
     )
 )
 def test_step_reporter(power_env, pw_cycle_test, color_scheme, pytest_extra_param):
@@ -72,3 +76,41 @@ def test_step_reporter(power_env, pw_cycle_test, color_scheme, pytest_extra_para
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0
+
+
+@pytest.mark.parametrize(
+    "color_scheme,result_color_scheme,warning_msg",
+    (
+        ("dark", "dark", ""),
+        ("light", "light", ""),
+        ("dark-256color", "dark-256color", ""),
+        ("", "dark", ""),   # the curses_init fixture sets up an 8-color terminal
+        ("non-existing-color-scheme", "dark", "Color scheme 'non-existing-color-scheme' unknown"),
+    )
+)
+def test_step_reporter_color_scheme(caplog, curses_init, color_scheme, result_color_scheme, warning_msg):
+    from labgrid.pytestplugin.reporter import ColoredStepReporter
+
+    class MockTW:
+        _file = None
+    class MockTerminalReporter:
+        def __init__(self, f):
+            self._tw = MockTW()
+            self._tw._file = f
+
+    if color_scheme:
+        os.environ["LG_COLOR_SCHEME"] = color_scheme
+    else:
+        os.environ.pop("LG_COLOR_SCHEME", None)
+
+    caplog.clear()
+
+    with open("/dev/null") as f:
+        csr = ColoredStepReporter(MockTerminalReporter(f))
+    assert csr.color_scheme == ColoredStepReporter.EVENT_COLOR_SCHEMES[result_color_scheme]
+
+    caplog_warnings = [x.message for x in caplog.records if x.levelno == logging.WARNING]
+    if warning_msg:
+        assert warning_msg in caplog_warnings
+    else:
+        assert not caplog_warnings

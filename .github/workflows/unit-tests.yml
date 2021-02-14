@@ -25,7 +25,7 @@ jobs:
           ${{ runner.os }}-pip-
     - name: Install system dependencies
       run: |
-        sudo apt-get install -yq libow-dev openssh-server openssh-client libsnappy-dev
+        sudo apt-get install -yq libow-dev openssh-server openssh-client libsnappy-dev ncurses-term
         sudo mkdir -p /var/cache/labgrid/runner && sudo chown runner /var/cache/labgrid/runner
     - name: Prepare local SSH
       run: |
@@ -51,7 +51,7 @@ jobs:
     #    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"
+        TERM=xterm pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"
     - name: Build documentation
       run: |
         python setup.py build_sphinx

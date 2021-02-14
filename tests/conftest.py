@@ -1,3 +1,4 @@
+import logging
 import sys
 import threading
 from importlib.util import find_spec
@@ -9,6 +10,16 @@ from labgrid import Target
 from labgrid.driver import SerialDriver
 from labgrid.resource import RawSerialPort, NetworkSerialPort
 from labgrid.driver.fake import FakeConsoleDriver
+
+@pytest.fixture(scope="session")
+def curses_init():
+    """ curses only reads the terminfo DB once on the first import, so make
+    sure we prime it correctly."""
+    try:
+        import curses
+        curses.setupterm("linux")
+    except ModuleNotFoundError:
+        logging.warning("curses module not found, not setting up a default terminal – tests may fail")
 
 def keep_reading(spawn):
     "The output from background processes must be read to avoid blocking them."

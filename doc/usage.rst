@@ -344,9 +344,13 @@ Behaves like ``LG_ENV`` for :doc:`labgrid-client <man/client>`.
 
 LG_COLOR_SCHEME
 ^^^^^^^^^^^^^^^
-Influences the color scheme used for the Colored Step Reporter. ``dark``
-(default) is meant for dark terminal background.
+Influences the color scheme used for the Colored Step Reporter.
+``dark`` is meant for dark terminal background.
 ``light`` is optimized for light terminal background.
+``dark-256color`` and ``light-256color`` are respective variants for terminals
+that support 256 colors.
+By default, ``dark`` or ``dark-256color`` (depending on the terminal) are used.
+
 Takes effect only when used with ``--lg-colored-steps``.
 
 LG_PROXY

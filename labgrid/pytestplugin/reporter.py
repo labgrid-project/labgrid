@@ -128,6 +128,22 @@ class StepReporter:
 
 class ColoredStepReporter(StepReporter):
     EVENT_COLORS_DARK = {
+        'expect$': 'blue', # (a lot of output, blend into background)
+        'run': 'magenta',
+        'state_': 'cyan',
+        'transition$': 'yellow',
+        'cycle$|on$|off$': 'white',
+    }
+
+    EVENT_COLORS_LIGHT = {
+        'expect$': 'white', # (a lot of output, blend into background)
+        'run': 'magenta',
+        'state_': 'cyan',
+        'transition$': 'yellow',
+        'cycle$|on$|off$': 'blue',
+    }
+
+    EVENT_COLORS_DARK_256COLOR = {
         'expect$': 8, # dark gray (a lot of output, blend into background)
         'run': 129, # light purple
         'state_': 51, # light blue
@@ -135,7 +151,7 @@ class ColoredStepReporter(StepReporter):
         'cycle$|on$|off$': 246, # light gray
     }
 
-    EVENT_COLORS_LIGHT = {
+    EVENT_COLORS_LIGHT_256COLOR = {
         'expect$': 250, # light gray (a lot of output, blend into background)
         'run': 93, # purple
         'state_': 51, # light blue
@@ -146,15 +162,26 @@ class ColoredStepReporter(StepReporter):
     EVENT_COLOR_SCHEMES = {
         'dark': EVENT_COLORS_DARK,
         'light': EVENT_COLORS_LIGHT,
+        'dark-256color': EVENT_COLORS_DARK_256COLOR,
+        'light-256color': EVENT_COLORS_LIGHT_256COLOR,
     }
 
     def __init__(self, terminalreporter, *, rewrite=False):
         super().__init__(terminalreporter, rewrite=rewrite)
 
-        scheme = os.environ.get('LG_COLOR_SCHEME', 'dark')
-        if not scheme in ColoredStepReporter.EVENT_COLOR_SCHEMES.keys():
-            logging.warning("Color scheme '{}' unknown".format(scheme))
-            scheme = 'dark'
+        try:
+            import curses
+            default_scheme = 'dark'
+            curses.setupterm()
+            if curses.tigetnum("colors") >= 256:
+                default_scheme = 'dark-256color'
+        except ModuleNotFoundError:
+            default_scheme = 'dark-256color'
+
+        scheme = os.environ.get('LG_COLOR_SCHEME', default_scheme)
+        if scheme not in ColoredStepReporter.EVENT_COLOR_SCHEMES.keys():
+            logging.warning("Color scheme '%s' unknown", scheme)
+            scheme = default_scheme
 
         self.color_scheme = ColoredStepReporter.EVENT_COLOR_SCHEMES[scheme]
 

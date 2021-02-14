@@ -143,14 +143,20 @@ class ColoredStepReporter(StepReporter):
         'cycle$|on$|off$': 8, # dark gray
     }
 
+    EVENT_COLOR_SCHEMES = {
+        'dark': EVENT_COLORS_DARK,
+        'light': EVENT_COLORS_LIGHT,
+    }
+
     def __init__(self, terminalreporter, *, rewrite=False):
         super().__init__(terminalreporter, rewrite=rewrite)
 
         scheme = os.environ.get('LG_COLOR_SCHEME', 'dark')
-        if scheme == 'light':
-            self.color_scheme = ColoredStepReporter.EVENT_COLORS_LIGHT
-        else:
-            self.color_scheme = ColoredStepReporter.EVENT_COLORS_DARK
+        if not scheme in ColoredStepReporter.EVENT_COLOR_SCHEMES.keys():
+            logging.warning("Color scheme '{}' unknown".format(scheme))
+            scheme = 'dark'
+
+        self.color_scheme = ColoredStepReporter.EVENT_COLOR_SCHEMES[scheme]
 
     def __event_color(self, event):
         for pattern, color in self.color_scheme.items():

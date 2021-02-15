@@ -63,6 +63,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Install system dependencies
+      run: |
+        sudo apt install -yq python3-pip
+        python3 -m pip install --upgrade pip setuptools wheel
     - name: Build docker images
       run: |
         ./dockerfiles/build.sh

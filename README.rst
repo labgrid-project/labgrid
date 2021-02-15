@@ -5,7 +5,7 @@
 Welcome to labgrid
 ==================
 
-|license| |unit-tests| |coverage-status| |docs-status| |chat|
+|license| |unit-tests| |docker-build| |coverage-status| |docs-status| |chat|
 
 Purpose
 -------
@@ -100,6 +100,10 @@ Tests can now run via:
 .. |unit-tests| image:: https://github.com/labgrid-project/labgrid/workflows/unit%20tests/badge.svg
     :alt: unit tests status
     :target: https://github.com/labgrid-project/labgrid/actions?query=workflow%3A%22unit+tests%22+branch%3Amaster
+
+.. |docker-build| image:: https://github.com/labgrid-project/labgrid/workflows/docker%20build/badge.svg
+    :alt: docker build status
+    :target: https://github.com/labgrid-project/labgrid/actions?query=workflow%3A%22docker+build%22+branch%3Amaster
 
 .. |coverage-status| image:: https://codecov.io/gh/labgrid-project/labgrid/branch/master/graph/badge.svg
     :alt: coverage status

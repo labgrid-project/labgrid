@@ -22,7 +22,10 @@ Example showing how to build labgrid-client image:
 
 .. code-block:: bash
 
-   $ dockerfiles build -t labgrid-client -f dockerfiles/client/Dockerfilesfile .
+   $ docker build --target labgrid-client -t labgrid-client -f dockerfiles/Dockerfile .
+
+Using `BuildKit <https://docs.docker.com/develop/develop-images/build_enhancements/>`_
+is recommended to reduce build times.
 
 You can also choose to build all 3 images,
 with the included script

@@ -21,10 +21,11 @@ FROM labgrid-base AS labgrid-client
 
 RUN set -e ;\
     cd /opt/labgrid ;\
+    pip3 install yq ;\
     pip3 install --no-cache-dir -r requirements.txt ;\
     python3 setup.py install ;\
     apt update -q=2 ;\
-    apt install -q=2 --yes --no-install-recommends microcom openssh-client sshpass rsync; \
+    apt install -q=2 --yes --no-install-recommends microcom openssh-client sshpass rsync jq qemu-system; \
     apt clean ;\
     rm -rf /var/lib/apt/lists/*
 

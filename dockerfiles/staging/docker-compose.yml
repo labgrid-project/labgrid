@@ -48,5 +48,3 @@ services:
     build:
       context: "./dut"
     network_mode: "host"
-    ports:
-      - 2222:2222

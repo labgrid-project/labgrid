@@ -18,12 +18,13 @@ RUN set -e ;\
 # Client
 #
 FROM labgrid-base AS labgrid-client
+ARG VERSION
 
 RUN set -e ;\
     cd /opt/labgrid ;\
     pip3 install yq ;\
     pip3 install --no-cache-dir -r requirements.txt ;\
-    python3 setup.py install ;\
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" python3 setup.py install ;\
     apt update -q=2 ;\
     apt install -q=2 --yes --no-install-recommends microcom openssh-client sshpass rsync jq qemu-system; \
     apt clean ;\
@@ -35,13 +36,14 @@ CMD ["/bin/bash"]
 # Coordinator
 #
 FROM labgrid-base AS labgrid-coordinator
+ARG VERSION
 
 ENV CROSSBAR_DIR=/opt/crossbar
 
 RUN set -e ;\
     cd /opt/labgrid ;\
     pip3 install --no-cache-dir -r crossbar-requirements.txt ;\
-    python3 setup.py install
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" python3 setup.py install
 
 VOLUME /opt/crossbar
 
@@ -101,13 +103,14 @@ RUN cd /src && \
 # Exporter
 #
 FROM labgrid-base AS labgrid-exporter
+ARG VERSION
 
 COPY dockerfiles/exporter/entrypoint.sh /entrypoint.sh
 
 RUN set -e ;\
     cd /opt/labgrid ;\
     pip3 install --no-cache-dir -r requirements.txt ;\
-    python3 setup.py install ;\
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" python3 setup.py install ;\
     apt update -q=2 ;\
     apt install -q=2 --yes --no-install-recommends \
         libyaml-0-2 \

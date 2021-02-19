@@ -34,7 +34,9 @@ class QuartusHPSDriver(Driver):
             self.jtag_tool = 'jtagconfig'
 
     def _get_cable_number(self):
-        """Returns the JTAG cable numer for the USB path of the device"""
+        """
+        Returns the JTAG cable number with an intact JTAG chain for the USB path of the device.
+        """
         cmd = self.interface.command_prefix + [self.jtag_tool]
         jtagconfig_process = subprocess.Popen(
             cmd,
@@ -42,16 +44,17 @@ class QuartusHPSDriver(Driver):
         )
         stdout, _ = jtagconfig_process.communicate()
 
-        regex = re.compile(r".*(\d+)\) .* \[(.*)\]")
-        for line in stdout.decode("utf-8").split("\n"):
-            jtag_mapping = regex.match(line)
-            if jtag_mapping:
-                cable_number, usb_path = jtag_mapping.groups()
-                if usb_path == self.interface.path:
-                    return int(cable_number)
+        regex = rf".*(\d+)\) .* \[{re.escape(self.interface.path)}]\n(.*)\n"
+        jtag_mapping = re.search(regex, stdout.decode("utf-8"), re.MULTILINE)
+        if jtag_mapping is None:
+            raise ExecutionError("Could not get cable number for USB path {}"
+                                 .format(self.interface.path))
 
-        raise ExecutionError("Could not get cable number for USB path {}"
-                             .format(self.interface.path))
+        cable_number, first_chain = jtag_mapping.groups()
+        if "JTAG chain broken" in first_chain:
+            raise ExecutionError(first_chain.strip())
+
+        return int(cable_number)
 
     @Driver.check_active
     @step(args=['filename', 'address'])

@@ -129,7 +129,7 @@ class StepReporter:
 class ColoredStepReporter(StepReporter):
     EVENT_COLORS_DARK = {
         'expect$': 8, # dark gray (a lot of output, blend into background)
-        'run': 10, # green
+        'run': 129, # light purple
         'state_': 51, # light blue
         'transition$': 45, # blue
         'cycle$|on$|off$': 246, # light gray
@@ -137,7 +137,7 @@ class ColoredStepReporter(StepReporter):
 
     EVENT_COLORS_LIGHT = {
         'expect$': 250, # light gray (a lot of output, blend into background)
-        'run': 10, # green
+        'run': 93, # purple
         'state_': 51, # light blue
         'transition$': 45, # blue
         'cycle$|on$|off$': 8, # dark gray

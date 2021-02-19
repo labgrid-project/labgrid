@@ -1499,7 +1499,7 @@ Arguments:
   - delay (float): optional delay in seconds between off and on
 
 SiSPMPowerDriver
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 A SiSPMPowerDriver controls a `SiSPMPowerPort`, allowing control of the target
 power state without user interaction.
 

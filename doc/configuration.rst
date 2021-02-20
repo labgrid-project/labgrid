@@ -359,7 +359,7 @@ A NetworkService describes a remote SSH connection.
 The example describes a remote SSH connection to the computer `example.computer`
 with the username `root`.
 Set the optional password password property to make SSH login with a password
-instead of the key file (needs sshpass to be installed)
+instead of the key file.
 
 When used with ``labgrid-exporter``, the address can contain a device scope
 suffix (such as ``%eth1``), which is especially useful with overlapping address

@@ -28,18 +28,14 @@ class QuartusHPSDriver(Driver):
         # FIXME make sure we always have an environment or config
         if self.target.env:
             self.tool = self.target.env.config.get_tool('quartus_hps') or 'quartus_hps'
+            self.jtag_tool = self.target.env.config.get_tool('jtagconfig') or 'jtagconfig'
         else:
             self.tool = 'quartus_hps'
+            self.jtag_tool = 'jtagconfig'
 
     def _get_cable_number(self):
         """Returns the JTAG cable numer for the USB path of the device"""
-        # FIXME make sure we always have an environment or config
-        if self.target.env:
-            jtagconfig_tool = self.target.env.config.get_tool('jtagconfig') or 'jtagconfig'
-        else:
-            jtagconfig_tool = 'jtagconfig'
-
-        cmd = self.interface.command_prefix + [jtagconfig_tool]
+        cmd = self.interface.command_prefix + [self.jtag_tool]
         jtagconfig_process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE

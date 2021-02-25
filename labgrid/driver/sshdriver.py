@@ -399,7 +399,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _start_keepalive(self):
         """Starts a keepalive connection via the own or external master."""
-        args = ["ssh", *self.ssh_prefix, "cat"]
+        args = ["ssh", *self.ssh_prefix, self.networkservice.address, "cat"]
 
         assert self._keepalive is None
         self._keepalive = subprocess.Popen(

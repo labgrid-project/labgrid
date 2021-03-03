@@ -181,7 +181,9 @@ autodoc_mock_imports = ['onewire',
                         'autobahn.twisted',
                         'autobahn.twisted.wamp',
                         'autobahn.wamp.exception',
-                        'twisted.internet.defer']
+                        'twisted.internet.defer',
+                        'gi',
+                        'gi.repository',]
 
 # -- Options for autosection ----------------------------------------------
 autosectionlabel_prefix_document = True

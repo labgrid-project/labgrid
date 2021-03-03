@@ -328,3 +328,10 @@ class NetworkUSBFlashableDevice(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 30.0
         super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class RemoteNetworkInterface(NetworkResource, ManagedResource):
+    manager_cls = RemotePlaceManager
+
+    ifname = attr.ib(default=None)

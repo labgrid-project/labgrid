@@ -775,11 +775,13 @@ class ClientSession(ApplicationSession):
         from ..resource.remote import NetworkDeditecRelais8
         from ..resource.remote import NetworkSysfsGPIO
         from ..resource.remote import NetworkLXAIOBusPIO
+        from ..resource.remote import NetworkHIDRelay
         from ..driver.modbusdriver import ModbusCoilDriver
         from ..driver.onewiredriver import OneWirePIODriver
         from ..driver.deditecrelaisdriver import DeditecRelaisDriver
         from ..driver.gpiodriver import GpioDigitalOutputDriver
         from ..driver.lxaiobusdriver import LXAIOBusPIODriver
+        from ..driver.usbhidrelay import HIDRelayDriver
 
         drv = None
         try:
@@ -821,6 +823,14 @@ class ClientSession(ApplicationSession):
                         target.set_binding_map({"pio": name})
                         drv = LXAIOBusPIODriver(target, name=name)
                         break
+                elif isinstance(resource, NetworkHIDRelay):
+                    try:
+                        drv = target.get_driver(HIDRelayDriver, name=name)
+                    except NoDriverFoundError:
+                        target.set_binding_map({"relay": name})
+                        drv = HIDRelayDriver(target, name=name)
+                        break
+
         if not drv:
             raise UserError("target has no compatible resource available")
         target.activate(drv)

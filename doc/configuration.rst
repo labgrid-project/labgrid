@@ -493,13 +493,14 @@ An AndroidFastboot resource describes a USB device in the fastboot state.
 Used by:
   - `AndroidFastbootDriver`_
 
-USBEthernetInterface
+USBNetworkInterface
 ~~~~~~~~~~~~~~~~~~~~
-A USBEthernetInterface resource describes a USB ethernet adapter.
+A USBNetworkInterface resource describes a USB network adapter (such as
+Ethernet or WiFi)
 
 .. code-block:: yaml
 
-   USBEthernetInterface:
+   USBNetworkInterface:
      match:
        'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 

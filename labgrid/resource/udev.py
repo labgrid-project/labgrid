@@ -10,7 +10,7 @@ import pyudev
 
 from ..factory import target_factory
 from .common import ManagedResource, ResourceManager
-from .base import SerialPort, EthernetInterface
+from .base import SerialPort, NetworkInterface
 from ..util import Timeout
 
 
@@ -323,7 +323,7 @@ class AndroidFastboot(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
-class USBEthernetInterface(USBResource, EthernetInterface):
+class USBNetworkInterface(USBResource, NetworkInterface):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'net'
         self.match['@SUBSYSTEM'] = 'usb'

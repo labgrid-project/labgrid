@@ -1,12 +1,15 @@
 # pylint: disable=no-member
 import subprocess
 import re
+import time
+
 import attr
 
 from ..factory import target_factory
 from ..step import step
 from .common import Driver
 from .exception import ExecutionError
+from ..util import Timeout
 from ..util.helper import processwrapper
 from ..util.managedfile import ManagedFile
 
@@ -28,34 +31,40 @@ class QuartusHPSDriver(Driver):
         # FIXME make sure we always have an environment or config
         if self.target.env:
             self.tool = self.target.env.config.get_tool('quartus_hps') or 'quartus_hps'
+            self.jtag_tool = self.target.env.config.get_tool('jtagconfig') or 'jtagconfig'
         else:
             self.tool = 'quartus_hps'
+            self.jtag_tool = 'jtagconfig'
 
     def _get_cable_number(self):
-        """Returns the JTAG cable numer for the USB path of the device"""
-        # FIXME make sure we always have an environment or config
-        if self.target.env:
-            jtagconfig_tool = self.target.env.config.get_tool('jtagconfig') or 'jtagconfig'
-        else:
-            jtagconfig_tool = 'jtagconfig'
+        """
+        Returns the JTAG cable number with an intact JTAG chain for the USB path of the device.
+        In case a matching JTAG cable is found, but its chain is broken, keep retrying for a
+        while.
+        """
+        timeout = Timeout(10.0)
+        while not timeout.expired:
+            cmd = self.interface.command_prefix + [self.jtag_tool]
+            jtagconfig_process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE
+            )
+            stdout, _ = jtagconfig_process.communicate()
 
-        cmd = self.interface.command_prefix + [jtagconfig_tool]
-        jtagconfig_process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE
-        )
-        stdout, _ = jtagconfig_process.communicate()
+            regex = rf".*(\d+)\) .* \[{re.escape(self.interface.path)}]\n(.*)\n"
+            jtag_mapping = re.search(regex, stdout.decode("utf-8"), re.MULTILINE)
+            if jtag_mapping is None:
+                raise ExecutionError("Could not get cable number for USB path {}"
+                                     .format(self.interface.path))
 
-        regex = re.compile(r".*(\d+)\) .* \[(.*)\]")
-        for line in stdout.decode("utf-8").split("\n"):
-            jtag_mapping = regex.match(line)
-            if jtag_mapping:
-                cable_number, usb_path = jtag_mapping.groups()
-                if usb_path == self.interface.path:
-                    return int(cable_number)
+            cable_number, first_chain = jtag_mapping.groups()
+            if "JTAG chain broken" in first_chain:
+                time.sleep(0.5)
+                continue
 
-        raise ExecutionError("Could not get cable number for USB path {}"
-                             .format(self.interface.path))
+            return int(cable_number)
+
+        raise ExecutionError("Timeout while waiting for intact JTAG chain")
 
     @Driver.check_active
     @step(args=['filename', 'address'])

@@ -108,6 +108,56 @@ The example describes port 0 on the remote power switch
 - host (str): hostname of the power switch
 - index (int): number of the port to switch
 
+The `model` property selects one of several `backend implementations
+<https://github.com/labgrid-project/labgrid/tree/master/labgrid/driver/power>`_.
+Currently available are:
+
+``apc``
+  Controls an APU PDU via SNMP.
+
+``digipower``
+  Controls a DigiPower PDU via a simple HTTP API.
+
+``gude``
+  Controls a Gude PDU via a simple HTTP API.
+
+``gude24``
+  Controls a Gude Expert Power Control 8008 PDU via a simple HTTP API.
+
+``gude8031``
+  Controls a Gude Expert Power Control 8031 PDU via a simple HTTP API.
+
+``gude8316``
+  Controls a Gude Expert Power Control 8316 PDU via a simple HTTP API.
+
+``netio``
+  Controls a NETIO 4-Port PDU via a simple HTTP API.
+
+``netio_kshell``
+  Controls a NETIO 4C PDU via a Telnet interface.
+
+``rest``
+  This is a generic backend for PDU implementations which can be controled via
+  HTTP PUT and GET requests.
+  See the `docstring in the module
+  <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/rest.py>`__
+  for details.
+
+``senty``
+  Controls a Sentry PDU via SNMP using Sentry3-MIB.
+  It was tested on CW-24VDD and 4805-XLS-16.
+
+``siglent``
+  Controls Siglent SPD3000X series modules via the `vxi11 Python module
+  <https://pypi.org/project/python-vxi11/>`_.
+
+``simplerest``
+  This is a generic backend for PDU implementations which can be controled via
+  HTTP GET requests (both set and get).
+  See the `docstring in the module
+  <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/simplerest.py>`__
+  for details.
+
 Used by:
   - `NetworkPowerDriver`_
 

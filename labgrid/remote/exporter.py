@@ -451,6 +451,16 @@ class USBHIDRelayExport(USBGenericExport):
             'index': self.local.index,
         }
 
+@attr.s(eq=False)
+class USBFlashableExport(USBGenericExport):
+    """ResourceExport for Flashable USB devices"""
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        p = super()._get_params()
+        p['devnode'] = self.local.devnode
+        return p
 
 exports["AndroidFastboot"] = USBGenericExport
 exports["IMXUSBLoader"] = USBGenericExport
@@ -469,6 +479,7 @@ exports["SiSPMPowerPort"] = SiSPMPowerPortExport
 exports["USBPowerPort"] = USBPowerPortExport
 exports["DeditecRelais8"] = USBDeditecRelaisExport
 exports["HIDRelay"] = USBHIDRelayExport
+exports["USBFlashableDevice"] = USBFlashableExport
 
 
 @attr.s

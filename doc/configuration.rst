@@ -716,6 +716,36 @@ NetworkFlashRom
 ~~~~~~~~~~~~~~~
 A NetworkFlashrom descibes an `Flashrom`_ available on a remote computer.
 
+USBFlashableDevice
+~~~~~~~~~~~~~~~~~~
+Represents an "opaque" USB device used by custom flashing programs. There is
+usually not anything useful that can be done with the interface other than
+running a flashing program with `FlashScriptDriver`_.
+
+.. note::
+   This resource is only intended to be used as a last resort when it is
+   impossible or impractical to use a different resource
+
+.. code-block:: yaml
+
+   USBFlashableDevice:
+     match:
+       SUBSYSTEM: 'usb'
+       ID_SERIAL: '1234'
+
+- match (str): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `FlashScriptDriver`_
+
+NetworkUSBFlashableDevice
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkUSBFlashableDevice` resource describes a :any:`USBFlashableDevice`
+resource available on a remote computer
+
+Used by:
+  - `FlashScriptDriver`_
+
 XenaManager
 ~~~~~~~~~~~
 A XenaManager resource describes a Xena Manager instance which is the instance the
@@ -1841,6 +1871,52 @@ flash. The assumption is that the device flashing the DUT e.g. an exporter is wi
 to be flashed. The driver implements the bootstrap protocol.
 The driver uses tool configuration section and the key: flashrom to determine the path of the
 installed flashrom utility.
+
+FlashScriptDriver
+~~~~~~~~~~~~~~~~~
+The :any:`FlashScriptDriver` is used to run a custom script or program to flash
+a device.
+
+.. note::
+   This driver is only intended to be used as a last resort when it is
+   impossible or impractical to use a different driver.
+
+.. code-block:: yaml
+
+   FlashScriptDriver:
+     script: 'foo'
+     args:
+       - '{device.devnode}'
+   images:
+     foo: ../images/flash_device.sh
+
+Binds to:
+  flashabledevice_resource:
+    - `USBFlashableDevice`_
+    - `NetworkUSBFlashableDevice`_
+
+The FlashScriptDriver allows running arbitrary programs to flash a device.
+Some SoC or devices may require custom, one-off, or proprietary programs to
+flash.
+A target image can be bundled with these programs using a tool like `makeself
+<https://makeself.io/>`_,
+which can then be executed by labgrid to flash the device using this driver.
+
+Additional arguments may be passed with the ``args`` parameter.
+These arguments will be expanded as `Python format strings
+<https://docs.python.org/3/library/string.html#format-string-syntax>`_ with the
+following keys:
+
+========== =========================================================
+Key        Description
+========== =========================================================
+``device`` The :any:`Resource` bound to the driver
+``file``   The :any:`ManagedFile` used to track the flashable script
+========== =========================================================
+
+Properties of these keys can be selected using the Python format string syntax,
+e.g. ``{device.devnode}`` to select the device node path of
+:any:`USBFlashableDevice`
 
 XenaDriver
 ~~~~~~~~~~

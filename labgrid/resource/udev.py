@@ -592,3 +592,12 @@ class HIDRelay(USBResource):
         self.match['ID_VENDOR_ID'] = '16c0'
         self.match['ID_MODEL_ID'] = '05df'
         super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class USBFlashableDevice(USBResource):
+    @property
+    def devnode(self):
+        if self.device is not None:
+            return self.device.device_node
+        return None

@@ -31,3 +31,4 @@ from .dockerdriver import DockerDriver
 from .lxaiobusdriver import LXAIOBusPIODriver
 from .pyvisadriver import PyVISADriver
 from .usbhidrelay import HIDRelayDriver
+from .flashscriptdriver import FlashScriptDriver

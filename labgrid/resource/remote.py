@@ -306,3 +306,11 @@ class NetworkLXAIOBusNode(ManagedResource):
 class NetworkLXAIOBusPIO(NetworkLXAIOBusNode):
     pin = attr.ib(validator=attr.validators.instance_of(str))
     invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkUSBFlashableDevice(RemoteUSBResource):
+    devnode = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
+    def __attrs_post_init__(self):
+        self.timeout = 30.0
+        super().__attrs_post_init__()

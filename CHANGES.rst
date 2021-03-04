@@ -15,6 +15,7 @@ New Features in 0.4.0
   supports 8 or 256 colors, and defaults to the respective dark variant.
   The 256-color schemes now use purple instead of green for the ``run`` lines to
   make them easier distinguishable from pytest's "PASSED" output.
+- Network controlled relay providing GET/PUT based REST API
 
 Breaking changes in 0.4.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

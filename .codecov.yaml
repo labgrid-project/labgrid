@@ -1,3 +1,5 @@
 coverage:
   precision: 1
   range: "50..70"
+github_checks:
+  annotations: false

@@ -54,8 +54,8 @@ class ConsoleLoggingReporter:
             try:
                 log = self._logcache[source] = open(name, mode='ab',
                                                     buffering=0)
-            except PermissionError:
-                print("failed to open log file {}".format(name), file=sys.stderr)
+            except OSError as e:
+                print("failed to open log file {}: {}".format(name, e), file=sys.stderr)
                 log = self._logcache[source] = None
             if not log:
                 return None

@@ -30,6 +30,8 @@ class ConsoleLoggingReporter:
     def __init__(self, logpath):
         self._logcache = {}
         self.logpath = logpath
+        if not os.path.exists(self.logpath):
+            os.makedirs(self.logpath)
         steps.subscribe(self.notify)
 
     def _stop(self):

@@ -17,6 +17,12 @@ New Features in 0.4.0
   make them easier distinguishable from pytest's "PASSED" output.
 - Network controlled relay providing GET/PUT based REST API
 
+Bug fixes in 0.4.0
+~~~~~~~~~~~~~~~~~~
+- ``pytest --lg-log foobar`` now creates the folder ``foobar`` before trying to
+  write the log into it, and error handling was improved so that all possible
+  errors that can occur when opening the log file are reported to stderr.
+
 Breaking changes in 0.4.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

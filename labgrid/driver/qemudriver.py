@@ -113,15 +113,18 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 self.target.env.config.get_image_path(self.kernel))
         if self.disk is not None:
             disk_path = self.target.env.config.get_image_path(self.disk)
+            disk_format = "raw"
+            if disk_path.endswith(".qcow2"):
+                disk_format = "qcow2"
             if self.machine == "vexpress-a9":
                 self._cmd.append("-drive")
                 self._cmd.append(
-                    "if=sd,format=raw,file={},id=mmc0".format(disk_path))
+                    "if=sd,format={},file={},id=mmc0".format(disk_format, disk_path))
                 boot_args.append("root=/dev/mmcblk0p1 rootfstype=ext4 rootwait")
             elif self.machine == "pc":
                 self._cmd.append("-drive")
                 self._cmd.append(
-                    "if=virtio,format=raw,file={}".format(disk_path))
+                    "if=virtio,format={},file={}".format(disk_format, disk_path))
                 boot_args.append("root=/dev/vda rootwait")
             else:
                 raise NotImplementedError(

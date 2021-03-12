@@ -42,6 +42,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         flash (str): optional, reference to the images key for the flash image
         rootfs (str): optional, reference to the paths key for use as the virtio-9p filesystem
         dtb (str): optional, reference to the image key for the device tree
+        bios (str): optional, reference to the image key for the bios image
     """
     qemu_bin = attr.ib(validator=attr.validators.instance_of(str))
     machine = attr.ib(validator=attr.validators.instance_of(str))
@@ -64,6 +65,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
     flash = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
+    bios = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
 
@@ -140,6 +144,10 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self._cmd.append(
                 "if=pflash,format=raw,file={},id=nor0".format(
                     self.target.env.config.get_image_path(self.flash)))
+        if self.bios is not None:
+            self._cmd.append("-bios")
+            self._cmd.append(
+                self.target.env.config.get_image_path(self.bios))
 
         if "-append" in shlex.split(self.extra_args):
             raise ExecutionError("-append in extra_args not allowed, use boot_args instead")

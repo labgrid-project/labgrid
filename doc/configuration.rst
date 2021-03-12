@@ -1732,6 +1732,7 @@ Arguments:
   - flash (str): optional, reference to the images key for the flash image
   - rootfs (str): optional, reference to the paths key for use as the virtio-9p filesystem
   - dtb (str): optional, reference to the image key for the device tree
+  - bios (str): optional, reference to the image key for the bios image
 
 The QEMUDriver also requires the specification of:
 

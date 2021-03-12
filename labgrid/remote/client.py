@@ -925,6 +925,25 @@ class ClientSession(ApplicationSession):
             return
         drv(*args)
 
+    def flashscript(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        from ..driver.flashscriptdriver import FlashScriptDriver
+        from ..resource.remote import NetworkUSBFlashableDevice
+
+        drv = None
+        try:
+            drv = target.get_driver(FlashScriptDriver)
+        except NoDriverFoundError:
+            for resource in target.resources:
+                if isinstance(resource, NetworkUSBFlashableDevice):
+                    drv = FlashScriptDriver(target, name=None)
+                    break;
+        if not drv:
+            raise UserError("target has no compatible resource available")
+        target.activate(drv)
+        drv.flash(script=self.args.script, args=self.args.script_args)
+
     def bootstrap(self):
         place = self.get_acquired_place()
         args = self.args.filename
@@ -1494,6 +1513,13 @@ def main():
                            help='fastboot arguments')
     subparser.add_argument('--wait', type=float, default=10.0)
     subparser.set_defaults(func=ClientSession.fastboot)
+
+    subparser = subparsers.add_parser('flashscript',
+                                     help="run flash script")
+    subparser.add_argument('script', help="Flashing script")
+    subparser.add_argument('script_args', metavar='ARG', nargs=argparse.REMAINDER,
+                           help='script arguments')
+    subparser.set_defaults(func=ClientSession.flashscript)
 
     subparser = subparsers.add_parser('bootstrap',
                                       help="start a bootloader")

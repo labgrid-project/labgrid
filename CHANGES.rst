@@ -1,3 +1,10 @@
+Release 0.3.2 (released Mar 14, 2021)
+------------------------------------
+
+Bug Fixes in 0.3.2
+------------------
+- Fix for exporter baud rate handling which prevented ser2net from starting.
+
 Release 0.3.1 (released Feb 5, 2021)
 ------------------------------------
 

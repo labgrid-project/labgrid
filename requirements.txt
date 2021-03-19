@@ -1,5 +1,5 @@
 attrs==20.2.0
-jinja2==2.11.2
+jinja2==2.11.3
 packaging==20.4
 pexpect==4.8.0
 https://github.com/labgrid-project/pyserial/archive/v3.4.0.1.zip#egg=pyserial

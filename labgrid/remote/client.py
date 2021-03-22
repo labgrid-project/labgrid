@@ -2,10 +2,12 @@
 coordinator, acquire a place and interact with the connected resources"""
 import argparse
 import asyncio
+import contextlib
 import os
 import subprocess
 import traceback
 import logging
+import signal
 import sys
 from textwrap import indent
 from socket import gethostname
@@ -1087,6 +1089,29 @@ class ClientSession(ApplicationSession):
 
         res = drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint)
 
+    def forward(self):
+        if not self.args.local and not self.args.remote:
+            print("Nothing to forward")
+            return
+
+        drv = self._get_ssh()
+
+        with contextlib.ExitStack() as stack:
+            for local, remote in self.args.local:
+                localport = stack.enter_context(drv.forward_local_port(remote, localport=local))
+                print("Forwarding local port %d to remote port %d" % (localport, remote))
+
+            for local, remote in self.args.remote:
+                stack.enter_context(drv.forward_remote_port(remote, localport))
+                print("Forwarding remote port %d to local port %d" % (remote, local))
+
+            try:
+                print("Waiting for CTRL+C...")
+                while True:
+                    signal.pause()
+            except KeyboardInterrupt:
+                print("Exiting...")
+
     def telnet(self):
         place = self.get_acquired_place()
         ip = self._get_ip(place)
@@ -1328,6 +1353,40 @@ def find_any_role_with_place(config):
             return (role, place)
     return None, None
 
+class LocalPort(argparse.Action):
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        if nargs is not None:
+            raise ValueError("nargs not allowed")
+        super().__init__(option_strings, dest, nargs=None, default=[], **kwargs)
+
+    def __call__(self, parser, namespace, value, option_string):
+        if ":" in value:
+            (local, remote) = value.split(":")
+            local = int(local)
+            remote = int(remote)
+        else:
+            local = None
+            remote = int(value)
+
+        v = getattr(namespace, self.dest, [])
+        v.append((local, remote))
+        setattr(namespace, self.dest, v)
+
+class RemotePort(argparse.Action):
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        if nargs is not None:
+            raise ValueError("nargs not allowed")
+        super().__init__(option_strings, dest, nargs=None, default=[], **kwargs)
+
+    def __call__(self, parser, namespace, value, option_string):
+        (remote, local) = value.split(":")
+        remote = int(remote)
+        local = int(local)
+
+        v = getattr(namespace, self.dest, [])
+        v.append((local, remote))
+        setattr(namespace, self.dest, v)
+
 def main():
     processwrapper.enable_logging()
     logging.basicConfig(
@@ -1568,6 +1627,16 @@ def main():
     subparser.add_argument('mountpoint', help='local path')
     subparser.set_defaults(func=ClientSession.sshfs)
 
+    subparser = subparsers.add_parser('forward',
+                                      help="forward local port to remote target")
+    subparser.add_argument("--local", "-L", metavar="[LOCAL:]REMOTE",
+                           action=LocalPort,
+                           help="Forward local port LOCAL to remote port REMOTE. If LOCAL is unspecified, an arbitrary port will be chosen")
+    subparser.add_argument("--remote", "-R", metavar="REMOTE:LOCAL",
+                           action=RemotePort,
+                           help="Forward remote port REMOTE to local port LOCAL")
+    subparser.set_defaults(func=ClientSession.forward)
+
     subparser = subparsers.add_parser('telnet',
                                       help="connect via telnet")
     subparser.set_defaults(func=ClientSession.telnet)
@@ -1647,7 +1716,7 @@ def main():
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()
-    if args.command not in ['ssh', 'rsync']:
+    if args.command not in ['ssh', 'rsync', 'forward']:
         args = parser.parse_args()
     else:
         args.leftover = leftover

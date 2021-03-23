@@ -181,3 +181,48 @@ class UUUDriver(Driver, BootstrapProtocol):
         processwrapper.check_output(
             self.loader.command_prefix + [self.tool, mf.get_remote_path(), self.cmd]
         )
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class BDIMXUSBDriver(Driver, BootstrapProtocol):
+    """
+    This is a Driver for the Boundary Devices imx_usb_loader available from
+    https://github.com/boundarydevices/imx_usb_loader
+
+    It supports loading the second stage bootloader to a SDP gadget implemented
+    by the first stage bootloader in SRAM. Accordingly, the image to upload
+    must be specified explicitly.
+    """
+    bindings = {
+        "loader": {"IMXUSBLoader", "NetworkIMXUSBLoader"},
+    }
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('imx_usb') or 'imx_usb'
+        else:
+            self.tool = 'imx_usb'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    @Driver.check_active
+    @step(args=['filename'])
+    def load(self, filename):
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        processwrapper.check_output(
+            self.loader.command_prefix + [
+                self.tool,
+                "--bus={}".format(self.loader.busnum),
+                "--device={}".format(self.loader.devnum),
+                mf.get_remote_path(),
+            ]
+        )

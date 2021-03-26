@@ -2,6 +2,7 @@
 import subprocess
 import re
 import time
+import logging
 
 import attr
 
@@ -28,6 +29,8 @@ class QuartusHPSDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.logger = logging.getLogger("{}({})".format(self, self.target))
+
         # FIXME make sure we always have an environment or config
         if self.target.env:
             self.tool = self.target.env.config.get_tool('quartus_hps') or 'quartus_hps'
@@ -58,7 +61,11 @@ class QuartusHPSDriver(Driver):
                                      .format(self.interface.path))
 
             cable_number, first_chain = jtag_mapping.groups()
-            if "JTAG chain broken" in first_chain:
+            try:
+                jtag_id, _ = first_chain.split(sep="   ", maxsplit=1)
+                int(jtag_id, 16)
+            except ValueError:
+                self.logger.warning("jtagconfig: %s", first_chain.strip())
                 time.sleep(0.5)
                 continue
 

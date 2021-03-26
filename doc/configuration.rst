@@ -1574,6 +1574,7 @@ IMXUSBDriver
 ~~~~~~~~~~~~
 A IMXUSBDriver is used to upload an image into a device in the imx USB loader
 state. This is useful to bootstrap a bootloader onto a device.
+This driver uses the imx-usb-loader tool from barebox.
 
 Binds to:
   loader:
@@ -1596,6 +1597,30 @@ Implements:
 
 Arguments:
   - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
+
+BDIMXUSBDriver
+~~~~~~~~~~~~~~
+The BDIMXUSBDriver is used to upload bootloader images into an i.MX device in
+the USB SDP mode.
+This driver uses the imx_usb tool by Boundary Devices.
+Compared to the IMXUSBLoader, it supports two-stage upload of U-Boot images.
+The images paths need to be specified from code instead of in the YAML
+environment, as the correct image depends on the system state.
+
+Binds to:
+  loader:
+    - `IMXUSBLoader`_
+    - `NetworkIMXUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         BDIMXUSBDriver: {}
 
 RKUSBDriver
 ~~~~~~~~~~~~

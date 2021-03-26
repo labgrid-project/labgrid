@@ -12,10 +12,7 @@ from labgrid.exceptions import NoResourceFoundError
 
 
 def check_external_progs_present():
-    """Determine if host machine has sshpass and a usable docker daemon"""
-    from shutil import which
-    if not which('sshpass'):
-        return False
+    """Determine if host machine has a usable docker daemon"""
     try:
         import docker
         dock = docker.from_env()

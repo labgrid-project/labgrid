@@ -1,8 +1,10 @@
 import pytest
+import socket
 
 from labgrid.driver import SSHDriver, ExecutionError
 from labgrid.exceptions import NoResourceFoundError
 from labgrid.resource import NetworkService
+from labgrid.util.helper import get_free_port
 
 @pytest.fixture(scope='function')
 def ssh_driver_mocked_and_activated(target, mocker):
@@ -131,3 +133,42 @@ def test_local_run_check(ssh_localhost, tmpdir):
 
     res = ssh_localhost.run_check("echo Hello")
     assert res == (["Hello"])
+
+@pytest.mark.sshusername
+def test_local_port_forward(ssh_localhost, tmpdir):
+    remoteport = get_free_port()
+    test_string = "Hello World"
+
+    with ssh_localhost.forward_local_port(remoteport) as localport:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as send_socket:
+                server_socket.bind(("127.0.0.1", remoteport))
+                server_socket.listen(1)
+
+                send_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                send_socket.connect(("127.0.0.1", localport))
+
+                client_socket, address = server_socket.accept()
+                send_socket.send(test_string.encode('utf-8'))
+
+                assert client_socket.recv(16).decode("utf-8") == test_string
+
+@pytest.mark.sshusername
+def test_local_remote_forward(ssh_localhost, tmpdir):
+    remoteport = get_free_port()
+    localport = get_free_port()
+    test_string = "Hello World"
+
+    with ssh_localhost.forward_remote_port(remoteport, localport):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as send_socket:
+                server_socket.bind(("127.0.0.1", localport))
+                server_socket.listen(1)
+
+                send_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                send_socket.connect(("127.0.0.1", remoteport))
+
+                client_socket, address = server_socket.accept()
+                send_socket.send(test_string.encode('utf-8'))
+
+                assert client_socket.recv(16).decode("utf-8") == test_string

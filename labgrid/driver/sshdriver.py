@@ -1,5 +1,6 @@
 # pylint: disable=no-member
 """The SSHDriver uses SSH as a transport to implement CommandProtocol and FileTransferProtocol"""
+import contextlib
 import logging
 import os
 import shutil
@@ -15,6 +16,7 @@ from .commandmixin import CommandMixin
 from .common import Driver
 from ..step import step
 from .exception import ExecutionError
+from ..util.helper import get_free_port
 from ..util.proxy import proxymanager
 from ..util.timeout import Timeout
 
@@ -221,6 +223,76 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             complete_cmd,
         )
         return sub.wait()
+
+    @contextlib.contextmanager
+    def _forward(self, forward):
+        cmd = ["ssh", *self.ssh_prefix,
+               "-O", "forward", forward,
+               self.networkservice.address
+               ]
+        self.logger.debug("Running command: %s", cmd)
+        subprocess.run(cmd, check=True)
+        try:
+            yield
+        finally:
+            cmd = ["ssh", *self.ssh_prefix,
+                   "-O", "cancel", forward,
+                   self.networkservice.address
+                   ]
+            self.logger.debug("Running command: %s", cmd)
+            # Master socket may have been cleaned up already, so don't bother
+            # the user with an error message
+            subprocess.run(cmd, stderr=subprocess.DEVNULL)
+
+    @Driver.check_active
+    @contextlib.contextmanager
+    def forward_local_port(self, remoteport, localport=None):
+        """Forward a local port to a remote port on the target
+
+        A context manager that keeps a local port forwarded to a remote port as
+        long as the context remains valid. A connection can be made to the
+        returned port on localhost and it will be forwarded to the remote port
+        on the target device
+
+        usage:
+            with ssh.forward_local_port(8080) as localport:
+                # Use localhost:localport here to connect to port 8080 on the
+                # target
+
+        returns:
+        localport
+        """
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        if localport is None:
+            localport = get_free_port()
+
+        forward = "-L%d:localhost:%d" % (localport, remoteport)
+        with self._forward(forward):
+            yield localport
+
+    @Driver.check_active
+    @contextlib.contextmanager
+    def forward_remote_port(self, remoteport, localport):
+        """Forward a remote port on the target to a local port
+
+        A context manager that keeps a remote port forwarded to a local port as
+        long as the context remains valid. A connection can be made to the
+        remote on the target device will be forwarded to the returned local
+        port on localhost
+
+        usage:
+            with ssh.forward_remote_port(8080, 8081) as localport:
+                # Connections to port 8080 on the target will be redirected to
+                # localhost:8081
+        """
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        forward = "-R%d:localhost:%d" % (remoteport, localport)
+        with self._forward(forward):
+            yield
 
     @Driver.check_active
     @step(args=['src', 'dst'])

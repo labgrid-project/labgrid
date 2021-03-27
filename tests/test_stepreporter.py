@@ -93,6 +93,8 @@ def test_step_reporter_color_scheme(caplog, curses_init, color_scheme, result_co
 
     class MockTW:
         _file = None
+        def line(self, line):
+            pass
     class MockTerminalReporter:
         def __init__(self, f):
             self._tw = MockTW()

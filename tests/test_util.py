@@ -1,6 +1,7 @@
 import os.path
 import subprocess
 import socket
+import atexit
 
 from shutil import which
 
@@ -183,6 +184,9 @@ def test_sshconnection_get_file(connection_localhost, tmpdir):
 def test_sshconnection_cleanup(connection_localhost_no_cleanup):
 
     connection_localhost_no_cleanup.cleanup()
+
+    # do not call cleanup() again on termination
+    atexit.unregister(connection_localhost_no_cleanup.cleanup)
 
 @pytest.mark.localsshmanager
 def test_sshmanager_open(sshmanager_fix):

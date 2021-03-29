@@ -41,10 +41,11 @@ class USBVideoDriver(Driver, VideoProtocol):
 
     def get_pipeline(self):
         match = (self.video.vendor_id, self.video.model_id)
+        transport = " ! matroskamux streamable=true ! fdsink"
         if match == (0x046d, 0x082d):
-            return "v4l2src device={} ! {} ! h264parse ! fdsink"
+            return "v4l2src device={} ! {} ! h264parse" + transport
         if match == (0x046d, 0x0892):
-            return "v4l2src device={} ! {} ! decodebin ! vaapipostproc ! vaapih264enc ! h264parse ! fdsink"  # pylint: disable=line-too-long
+            return "v4l2src device={} ! {} ! decodebin ! vaapipostproc ! vaapih264enc ! h264parse" + transport  # pylint: disable=line-too-long
         raise InvalidConfigError("Unkown USB video device {:04x}:{:04x}".format(*match))
 
     @Driver.check_active
@@ -55,7 +56,7 @@ class USBVideoDriver(Driver, VideoProtocol):
         tx_cmd = self.video.command_prefix + ["gst-launch-1.0", "-q"]
         tx_cmd += pipeline.format(self.video.path, caps).split()
         rx_cmd = ["gst-launch-1.0"]
-        rx_cmd += "fdsrc ! h264parse ! avdec_h264 ! glimagesink sync=false".split()
+        rx_cmd += "playbin uri=fd://0".split()
 
         tx = subprocess.Popen(
             tx_cmd,

@@ -343,3 +343,26 @@ class RemoteNetworkInterface(NetworkResource, ManagedResource):
     manager_cls = RemotePlaceManager
 
     ifname = attr.ib(default=None)
+
+@attr.s(eq=False)
+class RemoteBaseProvider(NetworkResource):
+    internal = attr.ib(validator=attr.validators.instance_of(str))
+    external = attr.ib(validator=attr.validators.instance_of(str))
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class RemoteTFTPProvider(RemoteBaseProvider):
+    pass
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class RemoteNFSProvider(RemoteBaseProvider):
+    pass
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class RemoteHTTPProvider(RemoteBaseProvider):
+    pass

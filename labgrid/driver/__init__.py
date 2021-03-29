@@ -34,3 +34,4 @@ from .usbhidrelay import HIDRelayDriver
 from .flashscriptdriver import FlashScriptDriver
 from .usbaudiodriver import USBAudioInputDriver
 from .networkinterfacedriver import NetworkInterfaceDriver
+from .provider import TFTPProviderDriver

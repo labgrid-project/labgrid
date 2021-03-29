@@ -12,7 +12,7 @@ class RawSerialPort(SerialPort, Resource):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         if self.port is None:
-            ValueError("RawSerialPort must be configured with a port")
+            raise ValueError("RawSerialPort must be configured with a port")
 
 # This does not derive from SerialPort because it is not directly accessible
 @target_factory.reg_resource

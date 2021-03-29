@@ -29,9 +29,9 @@ class SNMPSwitch:
                 hlapi.ContextData(),
                 hlapi.ObjectType(hlapi.ObjectIdentity('SNMPv2-MIB', 'sysDescr', 0))):
             if errorIndication:
-                Exception("snmp error {}".format(errorIndication))
+                raise Exception("snmp error {}".format(errorIndication))
             elif errorStatus:
-                Exception("snmp error {}".format(errorStatus))
+                raise Exception("snmp error {}".format(errorStatus))
             else:
                 sysDescr = str(varBindTable[0][1])
 
@@ -40,7 +40,7 @@ class SNMPSwitch:
         elif sysDescr.startswith("HP 1810-24G,"):
             self._get_fdb = self._get_fdb_dot1d
         else:
-            Exception("unsupported switch {}".format(sysDescr))
+            raise Exception("unsupported switch {}".format(sysDescr))
 
         self.logger.debug("autodetected switch%s: %s %s", sysDescr, self._get_ports, self._get_fdb)
 
@@ -72,9 +72,9 @@ class SNMPSwitch:
                 *[x[0] for x in variables],
                 lexicographicMode=False):
             if errorIndication:
-                Exception("snmp error {}".format(errorIndication))
+                raise Exception("snmp error {}".format(errorIndication))
             elif errorStatus:
-                Exception("snmp error {}".format(errorStatus))
+                raise Exception("snmp error {}".format(errorStatus))
             else:
                 port = {}
                 for (_, val), (_, label) in zip(varBindTable, variables):
@@ -105,9 +105,9 @@ class SNMPSwitch:
                 hlapi.ObjectType(hlapi.ObjectIdentity('BRIDGE-MIB', 'dot1dTpFdbPort')),
                 lexicographicMode=False):
             if errorIndication:
-                Exception("snmp error {}".format(errorIndication))
+                raise Exception("snmp error {}".format(errorIndication))
             elif errorStatus:
-                Exception("snmp error {}".format(errorStatus))
+                raise Exception("snmp error {}".format(errorStatus))
             else:
                 for varBinds in varBindTable:
                     key, val = varBinds
@@ -138,9 +138,9 @@ class SNMPSwitch:
                 hlapi.ObjectType(hlapi.ObjectIdentity('Q-BRIDGE-MIB', 'dot1qTpFdbPort')),
                 lexicographicMode=False):
             if errorIndication:
-                Exception("snmp error {}".format(errorIndication))
+                raise Exception("snmp error {}".format(errorIndication))
             elif errorStatus:
-                Exception("snmp error {}".format(errorStatus))
+                raise Exception("snmp error {}".format(errorStatus))
             else:
                 for varBinds in varBindTable:
                     key, val = varBinds

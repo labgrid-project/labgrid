@@ -475,7 +475,7 @@ class Target:
         except Exception as e:
             print("An exception occured during cleanup, call the cleanup() "
                   "method on targets yourself to handle exceptions explictly.")
-            print("Error: {}", e)
+            print(f"Error: {e}")
 
     def cleanup(self):
         """Clean up conntected drivers and resources in reversed order"""

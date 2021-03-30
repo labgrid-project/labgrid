@@ -48,7 +48,6 @@ setup(
         'labgrid.driver.power',
         'labgrid.driver.usbtmc',
         'labgrid.protocol',
-        'labgrid.provider',
         'labgrid.pytestplugin',
         'labgrid.remote',
         'labgrid.resource',

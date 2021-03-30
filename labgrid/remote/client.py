@@ -1159,6 +1159,7 @@ class ClientSession(ApplicationSession):
     def video(self):
         place = self.get_acquired_place()
         quality = self.args.quality
+        controls = self.args.controls
         target = self._get_target(place)
         from ..driver.usbvideodriver import USBVideoDriver
         from ..driver.httpvideodriver import HTTPVideoDriver
@@ -1192,7 +1193,7 @@ class ClientSession(ApplicationSession):
                 mark = '*' if default == name else ' '
                 print("{} {:<10s} {:s}".format(mark, name, caps))
         else:
-            drv.stream(quality)
+            drv.stream(quality, controls=controls)
 
     def audio(self):
         place = self.get_acquired_place()
@@ -1703,6 +1704,8 @@ def main():
                                       help="start a video stream")
     subparser.add_argument('-q', '--quality', type=str,
                            help="select a video quality (use 'list' to show options)")
+    subparser.add_argument('-c', '--controls', type=str,
+                           help="configure v4l controls (such as 'focus_auto=0,focus_absolute=40')")
     subparser.set_defaults(func=ClientSession.video)
 
     subparser = subparsers.add_parser('audio', help="start a audio stream")

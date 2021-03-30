@@ -45,24 +45,35 @@ class USBVideoDriver(Driver, VideoProtocol):
         raise InvalidConfigError("Unkown video format {} for device {:04x}:{:04x}".format(
             variant, self.video.vendor_id, self.video.model_id))
 
-    def get_pipeline(self):
+    def get_pipeline(self, path, caps, controls=None):
         match = (self.video.vendor_id, self.video.model_id)
-        transport = " ! matroskamux streamable=true ! fdsink"
         if match == (0x046d, 0x082d):
-            return "v4l2src device={} ! {} ! h264parse" + transport
-        if match == (0x046d, 0x0892):
-            return "v4l2src device={} ! {} ! decodebin ! vaapipostproc ! vaapih264enc ! h264parse" + transport  # pylint: disable=line-too-long
-        if match == (0x534d, 0x2109):
-            return "v4l2src device={} ! {}" + transport
-        raise InvalidConfigError("Unkown USB video device {:04x}:{:04x}".format(*match))
+            controls = controls or "focus_auto=1"
+            inner = "h264parse"
+        elif match == (0x046d, 0x0892):
+            controls = controls or "focus_auto=1"
+            inner = None
+        elif match == (0x534d, 0x2109):
+            inner = None  # just forward the jpeg frames
+        else:
+            raise InvalidConfigError("Unkown USB video device {:04x}:{:04x}".format(*match))
+
+        pipeline = f"v4l2src device={path} "
+        if controls:
+            pipeline += f"extra-controls=c,{controls} "
+        pipeline += f"! {caps} "
+        if inner:
+            pipeline += f"! {inner} "
+        pipeline += "! matroskamux streamable=true ! fdsink"
+        return pipeline
 
     @Driver.check_active
-    def stream(self, caps_hint=None):
+    def stream(self, caps_hint=None, controls=None):
         caps = self.select_caps(caps_hint)
-        pipeline = self.get_pipeline()
+        pipeline = self.get_pipeline(self.video.path, caps, controls)
 
         tx_cmd = self.video.command_prefix + ["gst-launch-1.0", "-q"]
-        tx_cmd += pipeline.format(self.video.path, caps).split()
+        tx_cmd += pipeline.split()
         rx_cmd = ["gst-launch-1.0"]
         rx_cmd += "playbin uri=fd://0".split()
 

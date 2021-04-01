@@ -850,6 +850,19 @@ Such device could be a signal generator.
 Used by:
   - `PyVISADriver`_
 
+HTTPVideoStream
+~~~~~~~~~~~~~~~
+
+A :any:`HTTPVideoStream` resource describes a IP video stream over HTTP or HTTPS.
+
+.. code-block:: yaml
+
+   HTTPVideoStream:
+     url: 'http://192.168.110.11/0.ts'
+
+Used by:
+  - `HTTPVideoDriver`_
+
 Providers
 ~~~~~~~~~
 Providers describe directories that are accessible by the target over a
@@ -2035,13 +2048,13 @@ Binds to:
     - `NetworkUSBVideo`_
 
 Implements:
-  - None yet
+  - :any:`VideoProtocol`
 
 Although the driver can be used from Python code by calling the `stream()`
 method, it is currently mainly useful for the ``video`` subcommand of
 ``labgrid-client``.
 It supports the `Logitech HD Pro Webcam C920` with the USB ID 046d:082d, but
-other cameras can be added to `get_caps()` in
+other cameras can be added to `get_qualities()` in
 ``labgrid/driver/usbvideodriver.py``.
 
 USBAudioInputDriver
@@ -2140,6 +2153,23 @@ Additional arguments may be passed with the ``args`` parameter.
 These arguments will be expanded as `Python format strings
 <https://docs.python.org/3/library/string.html#format-string-syntax>`_ with the
 following keys:
+
+HTTPVideoDriver
+~~~~~~~~~~~~~~~
+The :any:`HTTPVideoDriver` is used to show a video stream over HTTP or HTTPS
+from a remote IP video source in a local window.
+
+Binds to:
+  video:
+    - `HTTPVideoStream`_
+
+Implements:
+  - :any:`VideoProtocol`
+
+Although the driver can be used from Python code by calling the `stream()`
+method, it is currently mainly useful for the ``video`` subcommand of
+``labgrid-client``.
+
 
 ========== =========================================================
 Key        Description

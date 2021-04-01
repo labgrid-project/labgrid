@@ -5,15 +5,16 @@ import attr
 from .common import Driver
 from ..factory import target_factory
 from ..exceptions import InvalidConfigError
+from ..protocol import VideoProtocol
 
 @target_factory.reg_driver
 @attr.s(eq=False)
-class USBVideoDriver(Driver):
+class USBVideoDriver(Driver, VideoProtocol):
     bindings = {
         "video": {"USBVideo", "NetworkUSBVideo"},
     }
 
-    def get_caps(self):
+    def get_qualities(self):
         match = (self.video.vendor_id, self.video.model_id)
         if match == (0x046d, 0x082d):
             return ("mid", [
@@ -30,7 +31,7 @@ class USBVideoDriver(Driver):
         raise InvalidConfigError("Unkown USB video device {:04x}:{:04x}".format(*match))
 
     def select_caps(self, hint=None):
-        default, variants = self.get_caps()
+        default, variants = self.get_qualities()
         variant = hint if hint else default
         for name, caps in variants:
             if name == variant:

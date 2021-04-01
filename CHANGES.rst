@@ -1,9 +1,36 @@
-Release 0.3.2 (released Mar 14, 2021)
+Release 0.3.3 (released Apr 1, 2021)
 ------------------------------------
+
+Bug Fixes in 0.3.3
+------------------
+- limit twisted version within crossbar-requirements.txt
+- the EthernetPort and SerialPort resources now properly raise their exceptions
+  instead of only creating them
+- fixed docker cryptography failure during build
+- remove ports configuration from docker-compose.yml
+- add rsync to docker-client image
+
+Known issues in 0.3.3
+~~~~~~~~~~~~~~~~~~~~~~~~~
+- There are several reports of ``sshpass`` used within the SSHDriver not working
+  in call cases or only on the first connection.
+- Some client commands return 0 even if the command failed.
+- Currently empty passwords are not well supported by the ShellDriver
+
+
+Release 0.3.2 (released Mar 14, 2021)
+-------------------------------------
 
 Bug Fixes in 0.3.2
 ------------------
 - Fix for exporter baud rate handling which prevented ser2net from starting.
+
+Known issues in 0.3.2
+~~~~~~~~~~~~~~~~~~~~~~~~~
+- There are several reports of ``sshpass`` used within the SSHDriver not working
+  in call cases or only on the first connection.
+- Some client commands return 0 even if the command failed.
+- Currently empty passwords are not well supported by the ShellDriver
 
 Release 0.3.1 (released Feb 5, 2021)
 ------------------------------------

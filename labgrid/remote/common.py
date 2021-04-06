@@ -10,6 +10,16 @@ from fnmatch import fnmatchcase
 
 import attr
 
+__all__ = [
+    'TAG_KEY',
+    'TAG_VAL',
+    'ResourceEntry',
+    'ResourceMatch',
+    'Place',
+    'ReservationState',
+    'Reservation',
+    'enable_tcp_nodelay',
+]
 
 TAG_KEY = re.compile(r"[a-z][a-z0-9_]+")
 TAG_VAL = re.compile(r"[a-z0-9_]?")

@@ -616,6 +616,27 @@ NetworkUSBSDMuxDevice
 A :any:`NetworkUSBSDMuxDevice` resource describes a `USBSDMuxDevice`_ available
 on a remote computer.
 
+LXAUSBMux
+~~~~~~~~~
+A :any:`LXAUSBMux` resource describes a Linux Automation GmbH USB-Mux device.
+
+.. code-block:: yaml
+
+   LXAUSBMux:
+     match:
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+
+- match (str): key and value for a udev match, see `udev Matching`_
+
+Used by:
+  - `LXAUSBMuxDriver`_
+
+NetworkLXAUSBMux
+~~~~~~~~~~~~~~~~
+
+A :any:`NetworkLXAUSBMux` resource describes a `LXAUSBMux`_ available on a
+remote computer.
+
 USBSDWireDevice
 ~~~~~~~~~~~~~~~
 A :any:`USBSDWireDevice` resource describes a Tizen
@@ -1841,6 +1862,19 @@ Implements:
 
 The driver can be used in test cases by calling the `set_mode()` function with
 argument being `dut`, `host`, `off`, or `client`.
+
+LXAUSBMuxDriver
+~~~~~~~~~~~~~~~
+The :any:`LXAUSBMuxDriver` uses a LXAUSBMux resource to control a USB-Mux
+device via the `usbmuxctl <https://github.com/linux-automation/usbmuxctl>`_
+tool.
+
+Implements:
+  - None yet
+
+The driver can be used in test cases by calling the `set_links()` function with
+a list containing one or more of "dut-device", "host-dut" and "host-device".
+Not all combinations can be configured at the same time.
 
 USBSDWireDriver
 ~~~~~~~~~~~~~~~

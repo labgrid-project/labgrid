@@ -18,6 +18,7 @@ from .udev import (
     USBEthernetInterface,
     SiSPMPowerPort,
     USBAudioInput,
+    LXAUSBMux,
 )
 from ..util import dump
 
@@ -46,6 +47,7 @@ class Suggester:
         self.resources.append(USBEthernetInterface(**args))
         self.resources.append(SiSPMPowerPort(**args))
         self.resources.append(USBAudioInput(**args))
+        self.resources.append(LXAUSBMux(**args))
 
     def suggest_callback(self, resource, meta, suggestions):
         cls = type(resource).__name__

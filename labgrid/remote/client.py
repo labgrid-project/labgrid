@@ -1022,6 +1022,31 @@ class ClientSession(ApplicationSession):
             raise UserError("sd-wire does only support 'dut' and 'host' modes")
         drv.set_mode(action)
 
+    def usb_mux(self):
+        place = self.get_acquired_place()
+        links = self.args.links
+        if links == 'off':
+            links = []
+        elif links == 'host-dut+host-device':
+            links = ['host-dut', 'host-device']
+        else:
+            links = [links]
+        target = self._get_target(place)
+        from ..driver.lxausbmuxdriver import LXAUSBMuxDriver
+        from ..resource.remote import NetworkLXAUSBMux
+        drv = None
+        for resource in target.resources:
+            if isinstance(resource, NetworkLXAUSBMux):
+                try:
+                    drv = target.get_driver(LXAUSBMuxDriver)
+                except NoDriverFoundError:
+                    drv = LXAUSBMuxDriver(target, name=None)
+                break
+        if not drv:
+            raise UserError("target has no compatible resource available")
+        target.activate(drv)
+        drv.set_links(links)
+
     def _get_ip(self, place):
         target = self._get_target(place)
         from ..resource import EthernetPort, NetworkService
@@ -1604,6 +1629,11 @@ def main():
                                       help="switch USB SD Muxer")
     subparser.add_argument('action', choices=['dut', 'host', 'off', 'client'])
     subparser.set_defaults(func=ClientSession.sd_mux)
+
+    subparser = subparsers.add_parser('usb-mux',
+                                      help="switch USB Muxer")
+    subparser.add_argument('links', choices=['off', 'dut-device', 'host-dut', 'host-device', 'host-dut+host-device'])
+    subparser.set_defaults(func=ClientSession.usb_mux)
 
     subparser = subparsers.add_parser('ssh',
                                       help="connect via ssh (with optional arguments)")

@@ -323,6 +323,14 @@ class NetworkLXAIOBusPIO(NetworkLXAIOBusNode):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class NetworkLXAUSBMux(RemoteUSBResource):
+    """The NetworkLXAUSBMux describes a remotely accessible USBMux device"""
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class NetworkUSBFlashableDevice(RemoteUSBResource):
     devnode = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
     def __attrs_post_init__(self):

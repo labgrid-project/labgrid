@@ -501,6 +501,7 @@ exports["USBPowerPort"] = USBPowerPortExport
 exports["DeditecRelais8"] = USBDeditecRelaisExport
 exports["HIDRelay"] = USBHIDRelayExport
 exports["USBFlashableDevice"] = USBFlashableExport
+exports["LXAUSBMux"] = USBGenericExport
 
 
 @attr.s

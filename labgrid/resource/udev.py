@@ -643,3 +643,15 @@ class USBFlashableDevice(USBResource):
         if self.device is not None:
             return self.device.device_node
         return None
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class LXAUSBMux(USBResource):
+    """The LXAUSBMux describes an attached USBMux device,
+    it is identified via USB using udev.
+    """
+
+    def __attrs_post_init__(self):
+        self.match['ID_VENDOR_ID'] = '33f7'
+        self.match['ID_MODEL_ID'] = '0001'
+        super().__attrs_post_init__()

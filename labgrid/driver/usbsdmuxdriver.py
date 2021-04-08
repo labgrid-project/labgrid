@@ -35,7 +35,6 @@ class USBSDMuxDriver(Driver):
             raise ExecutionError("Setting mode '%s' not supported by USBSDMuxDriver" % mode)
         cmd = self.mux.command_prefix + [
             self.tool,
-            "-c",
             self.mux.control_path,
             mode.lower()
         ]

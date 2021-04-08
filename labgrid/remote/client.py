@@ -1018,9 +1018,13 @@ class ClientSession(ApplicationSession):
         if not drv:
             raise UserError("target has no compatible resource available")
         target.activate(drv)
-        if isinstance(drv, USBSDWireDriver) and action in ['off', 'client']:
-            raise UserError("sd-wire does only support 'dut' and 'host' modes")
-        drv.set_mode(action)
+        if isinstance(drv, USBSDWireDriver) and action in ['off', 'client', 'get']:
+            raise UserError("sd-wire does only supports setting 'dut' and 'host' modes")
+
+        if action == 'get':
+            print(drv.get_mode())
+        else:
+            drv.set_mode(action)
 
     def _get_ip(self, place):
         target = self._get_target(place)
@@ -1601,8 +1605,8 @@ def main():
     subparser.set_defaults(func=ClientSession.bootstrap)
 
     subparser = subparsers.add_parser('sd-mux',
-                                      help="switch USB SD Muxer")
-    subparser.add_argument('action', choices=['dut', 'host', 'off', 'client'])
+                                      help="switch USB SD Muxer or get current mode")
+    subparser.add_argument('action', choices=['dut', 'host', 'off', 'client', 'get'])
     subparser.set_defaults(func=ClientSession.sd_mux)
 
     subparser = subparsers.add_parser('ssh',

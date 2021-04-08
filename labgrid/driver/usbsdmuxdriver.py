@@ -1,4 +1,6 @@
 # pylint: disable=no-member
+import subprocess
+
 import attr
 
 from .common import Driver
@@ -39,3 +41,18 @@ class USBSDMuxDriver(Driver):
             mode.lower()
         ]
         processwrapper.check_output(cmd)
+
+    @Driver.check_active
+    @step(title='sdmux_get')
+    def get_mode(self):
+        cmd = self.mux.command_prefix + [
+            self.tool,
+            self.mux.control_path,
+            "get"
+        ]
+        proc = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            check=True
+        )
+        return proc.stdout.strip().decode()

@@ -504,6 +504,29 @@ exports["HIDRelay"] = USBHIDRelayExport
 exports["USBFlashableDevice"] = USBFlashableExport
 exports["LXAUSBMux"] = USBGenericExport
 
+@attr.s(eq=False)
+class ProviderGenericExport(ResourceExport):
+    """ResourceExport for Resources derived from BaseProvider"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = "Remote{}".format(self.cls)
+        from ..resource import provider
+        local_cls = getattr(provider, local_cls_name)
+        self.local = local_cls(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': self.host,
+            'internal': self.local.internal,
+            'external': self.local.external,
+        }
+
+exports["TFTPProvider"] = ProviderGenericExport
+exports["NFSProvider"] = ProviderGenericExport
+exports["HTTPProvider"] = ProviderGenericExport
 
 @attr.s
 class EthernetPortExport(ResourceExport):

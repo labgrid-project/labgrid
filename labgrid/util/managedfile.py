@@ -8,6 +8,11 @@ import attr
 from .helper import get_user
 from .ssh import sshmanager
 from ..resource.common import Resource, NetworkResource
+from ..driver.exception import ExecutionError
+
+
+class ManagedFileError(Exception):
+    pass
 
 
 @attr.s
@@ -40,7 +45,7 @@ class ManagedFile:
         self.rpath = None
         self._on_nfs_cached = None
 
-    def sync_to_resource(self):
+    def sync_to_resource(self, symlink=None):
         """sync the file to the host specified in a resource
 
         Raises:
@@ -52,17 +57,27 @@ class ManagedFile:
 
             if self._on_nfs(conn):
                 self.logger.info("File %s is accessible on %s, skipping copy", self.local_path, host)
-                return # nothing to do
+                self.rpath = os.path.dirname(self.local_path) + "/"
+            else:
+                self.rpath = "/var/cache/labgrid/{user}/{hash}/".format(
+                    user=get_user(), hash=self.get_hash()
+                )
+                self.logger.info("Synchronizing %s to %s", self.local_path, host)
+                conn.run_check("mkdir -p {}".format(self.rpath))
+                conn.put_file(
+                    self.local_path,
+                    "{}{}".format(self.rpath, os.path.basename(self.local_path))
+                )
 
-            self.rpath = "/var/cache/labgrid/{user}/{hash}/".format(
-                user=get_user(), hash=self.get_hash()
-            )
-            self.logger.info("Synchronizing %s to %s", self.local_path, host)
-            conn.run_check("mkdir -p {}".format(self.rpath))
-            conn.put_file(
-                self.local_path,
-                "{}{}".format(self.rpath, os.path.basename(self.local_path))
-            )
+            if symlink is not None:
+                self.logger.info("Linking")
+                try:
+                    conn.run_check("test ! -e {} -o -L {}".format(symlink, symlink))
+                except ExecutionError:
+                    raise ManagedFileError(f"Path {symlink} exists but is not a symlink.")
+                conn.run_check("ln --symbolic --force --no-dereference {}{} {}".format(
+                    self.rpath, os.path.basename(self.local_path), symlink))
+
 
     def _on_nfs(self, conn):
         if self._on_nfs_cached is not None:

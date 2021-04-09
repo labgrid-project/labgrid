@@ -29,6 +29,7 @@ from .serialdigitaloutput import SerialPortDigitalOutputDriver
 from .xenadriver import XenaDriver
 from .dockerdriver import DockerDriver
 from .lxaiobusdriver import LXAIOBusPIODriver
+from .lxausbmuxdriver import LXAUSBMuxDriver
 from .pyvisadriver import PyVISADriver
 from .usbhidrelay import HIDRelayDriver
 from .flashscriptdriver import FlashScriptDriver

@@ -16,8 +16,8 @@ class SerialPort(Resource):
 
 
 @attr.s(eq=False)
-class EthernetInterface(Resource):
-    """The basic EthernetInterface contains an interfacename
+class NetworkInterface(Resource):
+    """The basic NetworkInterface contains an interface name
 
     Args:
         ifname (str): name of the interface"""

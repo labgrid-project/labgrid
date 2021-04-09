@@ -493,17 +493,23 @@ An AndroidFastboot resource describes a USB device in the fastboot state.
 Used by:
   - `AndroidFastbootDriver`_
 
-USBEthernetInterface
+USBNetworkInterface
 ~~~~~~~~~~~~~~~~~~~~
-A USBEthernetInterface resource describes a USB ethernet adapter.
+A USBNetworkInterface resource describes a USB network adapter (such as
+Ethernet or WiFi)
 
 .. code-block:: yaml
 
-   USBEthernetInterface:
+   USBNetworkInterface:
      match:
        'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 - match (str): key and value for a udev match, see `udev Matching`_
+
+RemoteNetworkInterface
+~~~~~~~~~~~~~~~~~~~~~~
+A :any:`RemoteNetworkInterface` resource describes a :any:`USBNetworkInterface`
+resource available on a remote computer.
 
 AlteraUSBBlaster
 ~~~~~~~~~~~~~~~~
@@ -2090,6 +2096,33 @@ The PyVISADriver uses a PyVISADevice resource to control test equipment manageab
 Binds to:
   pyvisa_resource:
     - `PyVISADevice`_
+
+Implements:
+  - None yet
+
+NetworkInterfaceDriver
+~~~~~~~~~~~~~~~~~~~~~~
+This driver allows controlling a network interface (such as Ethernet or WiFi) on
+the exporter using NetworkManager.
+
+The configuration is based on dictionaries with contents similar to NM's
+connection files in INI-format.
+Currently basic wired and wireless configuration options have been tested.
+
+To use it, `PyGObject <https://pygobject.readthedocs.io/>`_ must be installed
+(on the same system as the network interface).
+For Debian, the necessary packages are `python3-gi` and `gir1.2-nm-1.0`.
+
+It supports:
+- static and DHCP address configuration
+- WiFi client or AP
+- connection sharing (DHCP server with NAT)
+- listing DHCP leases (if the client has sufficient permissions)
+
+Binds to:
+  iface:
+    - `USBNetworkInterface`_
+    - `RemoteNetworkInterface`_
 
 Implements:
   - None yet

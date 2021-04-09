@@ -15,7 +15,7 @@ from .udev import (
     USBSDWireDevice,
     AlteraUSBBlaster,
     RKUSBLoader,
-    USBEthernetInterface,
+    USBNetworkInterface,
     SiSPMPowerPort,
     USBAudioInput,
     LXAUSBMux,
@@ -44,7 +44,7 @@ class Suggester:
         self.resources.append(USBSDWireDevice(**args))
         self.resources.append(AlteraUSBBlaster(**args))
         self.resources.append(RKUSBLoader(**args))
-        self.resources.append(USBEthernetInterface(**args))
+        self.resources.append(USBNetworkInterface(**args))
         self.resources.append(SiSPMPowerPort(**args))
         self.resources.append(USBAudioInput(**args))
         self.resources.append(LXAUSBMux(**args))

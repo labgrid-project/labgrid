@@ -352,6 +352,8 @@ file names refer to a shared filesystem (such as NFS or SMB).
   For exporters which are not directly accessible via SSH, add the host to your
   .ssh/config file, with a ProxyCommand when need.
 
+.. _overview-proxy-mechanism:
+
 Proxy Mechanism
 ~~~~~~~~~~~~~~~
 
@@ -360,17 +362,22 @@ connections to a remote host. To enable and force proxy mode on the exporter use
 the :code:`-i` or :code:`--isolated` command line option. This indicates to clients that all
 connections to remote resources made available by this exporter need to be
 tunneled using a SSH connection.
-On the other hand, clients may need to access the remote infrastrucure using a
-SSH tunnel. In this case the :code:`LG_PROXY` environment variable needs to be
-set to the remote host which should tunnel the connections. The client then
-forwards all network traffic through SSH, even the coordinator connection is
-forwarded. This means that with :code:`LG_PROXY` and :code:`LG_CROSSBAR` labgrid can be used
-fully remotely with only a SSH connection as a requirement.
-One remaining issue here is the forward of UDP connections, which is currently
-not possible. UDP connections are used by some of the power backends in the form
-of SNMP.
+
+On the other hand, clients may need to access the remote coordinator
+infrastrucure using a SSH tunnel. In this case the :code:`LG_PROXY` environment
+variable needs to be set to the remote host which should tunnel the connection
+to the coordinator. The client then forwards all network traffic -
+client-to-coordinator and client-to-exporter - through SSH, via their
+respective proxies. This means that with :code:`LG_PROXY` and
+:code:`LG_CROSSBAR` labgrid can be used fully remotely with only a SSH
+connection as a requirement.
 
 .. note::
-  Labgrid prefers to connect to an isolated exporter over using the LG_PROXY
-  variable. This means that for an isolated exporter, a correct entry for the
-  exporter needs to be set up in the ~/.ssh/config file.
+  Labgrid prefers to connect to an exporter-defined proxy over using the
+  LG_PROXY variable. This means that a correct entry for the exporter needs to
+  be set up in the ~/.ssh/config file. You can view exporter proxies with
+  :code:`labgrid-client -v resources`.
+
+One remaining issue here is the forward of UDP connections, which is currently
+not possible. UDP connections are used by some of the power backends in the
+form of SNMP.

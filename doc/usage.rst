@@ -356,7 +356,10 @@ Takes effect only when used with ``--lg-colored-steps``.
 LG_PROXY
 ^^^^^^^^
 Specifies a SSH proxy host to be used for port forwards to access the
-coordinator and network resources.
+coordinator. Network resources made available by the exporter will prefer their
+own proxy, and only fallback to LG_PROXY.
+
+See also :ref:`overview-proxy-mechanism`.
 
 Simple Example
 ~~~~~~~~~~~~~~

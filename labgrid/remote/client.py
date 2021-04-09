@@ -1271,10 +1271,10 @@ class ClientSession(ApplicationSession):
 
     def _check_xlx_env(self):
         if not "XILINX_VIVADO" in os.environ:
-            print("xlx subcommands must be invoked from within a Vivado environment", file=sys.stderr)
+            print("xsdb must be invoked from within a Vivado environment", file=sys.stderr)
             exit(1)
 
-    def _get_xlx(self, name):
+    def _get_fpga(self, name):
         place = self.get_acquired_place()
         target = self._get_target(place)
         from ..driver.xsdbdriver import XSDBDriver
@@ -1293,17 +1293,17 @@ class ClientSession(ApplicationSession):
         target.activate(drv)
         return drv
 
-    def xlx_run_xsdb(self):
+    def fpga_run_xsdb(self):
         self._check_xlx_env()
-        drv = self._get_xlx(self.args.resource)
+        drv = self._get_fpga(self.args.resource)
 
         processwrapper.enable_print()
         drv.run([self.args.tcl_cmds])
         processwrapper.disable_print()
 
-    def xlx_program_bitstream(self):
+    def fpga_program_bitstream(self):
         self._check_xlx_env()
-        drv = self._get_xlx(self.args.resource)
+        drv = self._get_fpga(self.args.resource)
 
         processwrapper.enable_print()
         drv.program_bitstream(self.args.bitstream)
@@ -1784,23 +1784,23 @@ def main():
     tmc_subparser.add_argument('action', choices=['info', 'values'])
     tmc_subparser.set_defaults(func=ClientSession.tmc_channel)
 
-    subparser = subparsers.add_parser('xlx', help="connect to a Xilinx Vivado hardware server")
+    subparser = subparsers.add_parser('fpga', help="interact with FPGA")
     subparser.set_defaults(func=lambda _: subparser.print_help())
-    xlx_subparsers = subparser.add_subparsers(
+    fpga_subparsers = subparser.add_subparsers(
         dest='subcommand',
         title='available subcommands',
         metavar="SUBCOMMAND",
     )
 
-    xlx_subparser = xlx_subparsers.add_parser('xsdb', help="run XSDB")
-    xlx_subparser.add_argument('-r,', '--resource', help="resource name")
-    xlx_subparser.add_argument('tcl_cmds', help="Tcl commands")
-    xlx_subparser.set_defaults(func=ClientSession.xlx_run_xsdb)
+    fpga_subparser = fpga_subparsers.add_parser('xsdb', help="run XSDB")
+    fpga_subparser.add_argument('-r,', '--resource', help="resource name")
+    fpga_subparser.add_argument('tcl_cmds', help="Tcl commands")
+    fpga_subparser.set_defaults(func=ClientSession.fpga_run_xsdb)
 
-    xlx_subparser = xlx_subparsers.add_parser('program-bitstream', help="program bitstream")
-    xlx_subparser.add_argument('-r,', '--resource', help="resource name")
-    xlx_subparser.add_argument('bitstream', type=pathlib.PurePath, help="bistream file")
-    xlx_subparser.set_defaults(func=ClientSession.xlx_program_bitstream)
+    fpga_subparser = fpga_subparsers.add_parser('program-bitstream', help="program bitstream")
+    fpga_subparser.add_argument('-r,', '--resource', help="resource name")
+    fpga_subparser.add_argument('bitstream', type=pathlib.PurePath, help="bitstream file")
+    fpga_subparser.set_defaults(func=ClientSession.fpga_program_bitstream)
 
     subparser = subparsers.add_parser('write-image', help="write an image onto mass storage")
     subparser.add_argument('-w', '--wait', type=float, default=10.0)

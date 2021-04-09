@@ -336,7 +336,7 @@ class VivadoHWServerExport(ResourceExport):
             args.append('-l{}'.format(','.join(self.local.log_level)))
         args.extend(self.local.extra_args)
         # TODO: Add timeout
-        self.child = subprocess.Popen(' '.join(args), preexec_fn=os.setsid,
+        self.child = subprocess.Popen(' '.join(args), start_new_session=True,
                 shell=True)
         self.logger.info("started hw_server on %s", self.local.agent_url)
 

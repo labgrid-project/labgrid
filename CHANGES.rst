@@ -6,6 +6,8 @@ New Features in 0.5.0
 - Support for Eaton ePDU added, and can be used as a NetworkPowerPort.
 - Consider a combination of multiple "lg_feature" markers instead of
   considering only the closest marker.
+- The labgrid client SSH command is now able to instantiate the SSHDriver when
+  there are multiple NetworkService resources available.
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

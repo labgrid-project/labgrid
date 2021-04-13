@@ -16,6 +16,7 @@ New Features in 0.4.0
   The 256-color schemes now use purple instead of green for the ``run`` lines to
   make them easier distinguishable from pytest's "PASSED" output.
 - Network controlled relay providing GET/PUT based REST API
+- Add exporter argument --ser2net-port.
 
 Bug fixes in 0.4.0
 ~~~~~~~~~~~~~~~~~~

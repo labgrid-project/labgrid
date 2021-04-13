@@ -46,6 +46,8 @@ OPTIONS
     the public name of the exporter
 --hostname
     hostname (or IP) published for accessing resources
+--ser2net-port
+    ser2net port published for accessing resources (defaults to any free port)
 -d, --debug
     enable debug mode
 
@@ -72,6 +74,13 @@ exporter needs to provide a host name to set the exported value of the "host"
 key.
 If the system hostname is not resolvable via DNS, this option can be used to
 override this default with another name (or an IP address).
+
+--ser2net-port
+~~~~~~~~~~~~~~
+For the SerialPortExport resource the exporter needs to provide a port number
+to ser2net for it to expose the serial console on. Use this argument if you
+need a fixed port, for example if running the exporter in a container.  If the
+ser2net port is not set, it will default to any open port.
 
 CONFIGURATION
 -------------

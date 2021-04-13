@@ -177,6 +177,7 @@ class ResourceExport(ResourceEntry):
 @attr.s(eq=False)
 class SerialPortExport(ResourceExport):
     """ResourceExport for a USB or Raw SerialPort"""
+    ser2net_port = attr.ib(default=None)
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -219,7 +220,10 @@ class SerialPortExport(ResourceExport):
         assert self.local.avail
         assert self.child is None
         assert start_params['path'].startswith('/dev/')
-        self.port = get_free_port()
+        if self.ser2net_port:
+            self.port = self.ser2net_port
+        else:
+            self.port = get_free_port()
 
         # Ser2net has switched to using YAML format at version 4.0.0.
         _, _, version = str(subprocess.check_output([self.ser2net_bin,'-v'])).split(' ')
@@ -596,6 +600,7 @@ class ExporterSession(ApplicationSession):
         self.loop = self.config.extra['loop']
         self.name = self.config.extra['name']
         self.hostname = self.config.extra['hostname']
+        self.ser2net_port = self.config.extra['ser2net_port']
         self.isolated = self.config.extra['isolated']
         self.address = self._transport.transport.get_extra_info('sockname')[0]
         self.checkpoint = time.monotonic()
@@ -730,7 +735,11 @@ class ExporterSession(ApplicationSession):
             'params': params,
         }
         proxy_req = self.isolated
-        if issubclass(export_cls, ResourceExport):
+        if issubclass(export_cls, SerialPortExport):
+            group[resource_name] = export_cls(config, host=self.hostname, proxy=getfqdn(),
+                                              proxy_required=proxy_req,
+                                              ser2net_port=self.ser2net_port)
+        elif issubclass(export_cls, ResourceExport):
             group[resource_name] = export_cls(config, host=self.hostname, proxy=getfqdn(),
                                               proxy_required=proxy_req)
         else:
@@ -774,6 +783,13 @@ def main():
         help='hostname (or IP) published for accessing resources (defaults to the system hostname)'
     )
     parser.add_argument(
+        '--ser2net-port',
+        dest='ser2net_port',
+        type=int,
+        default=None,
+        help='port published for accessing console resources (defaults to any free port)'
+    )
+    parser.add_argument(
         '-d',
         '--debug',
         action='store_true',
@@ -801,6 +817,7 @@ def main():
     extra = {
         'name': args.name or gethostname(),
         'hostname': args.hostname or gethostname(),
+        'ser2net_port': args.ser2net_port or get_free_port(),
         'resources': args.resources,
         'isolated': args.isolated
     }

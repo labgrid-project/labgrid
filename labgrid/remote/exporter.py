@@ -6,6 +6,7 @@ import asyncio
 import logging
 import sys
 import os
+import os.path
 import time
 import traceback
 import shutil
@@ -191,8 +192,12 @@ class SerialPortExport(ResourceExport):
         self.port = None
         self.ser2net_bin = shutil.which("ser2net")
         if self.ser2net_bin is None:
-            warnings.warn("ser2net binary not found, falling back to /usr/bin/ser2net")
-            self.ser2net_bin = "/usr/bin/ser2net"
+            if os.path.isfile("/usr/sbin/ser2net"):
+                self.ser2net_bin = "/usr/sbin/ser2net"
+
+            if self.ser2net_bin is None:
+                warnings.warn("ser2net binary not found, falling back to /usr/bin/ser2net")
+                self.ser2net_bin = "/usr/bin/ser2net"
 
     def __del__(self):
         if self.child is not None:

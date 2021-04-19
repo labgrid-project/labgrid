@@ -721,8 +721,10 @@ class ClientSession(ApplicationSession):
         target = self._get_target(place)
         from ..driver.powerdriver import (NetworkPowerDriver, PDUDaemonDriver,
                                           USBPowerDriver, SiSPMPowerDriver)
+        from ..driver.mqtt import TasmotaPowerDriver
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
-        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort
+        from ..resource.remote import (NetworkUSBPowerPort, NetworkSiSPMPowerPort)
+        from ..resource.mqtt import TasmotaPowerPort
 
         drv = None
         try:
@@ -752,6 +754,12 @@ class ClientSession(ApplicationSession):
                         drv = target.get_driver(PDUDaemonDriver)
                     except NoDriverFoundError:
                         drv = PDUDaemonDriver(target, name=None)
+                        break
+                elif isinstance(resource, TasmotaPowerPort):
+                    try:
+                        drv = target.get_driver(TasmotaPowerDriver)
+                    except NoDriverFoundError:
+                        drv = TasmotaPowerDriver(target, name=None)
                         break
         if not drv:
             raise UserError("target has no compatible resource available")

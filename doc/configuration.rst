@@ -253,6 +253,32 @@ The example describes port 1 on the hub with the ID_PATH
 Used by:
   - `SiSPMPowerDriver`_
 
+TasmotaPowerPort
+++++++++++++++++
+A :any:`TasmotaPowerPort` resource describes a switchable Tasmora power outlet
+accessed over MQTT.
+
+.. code-block:: yaml
+
+   TasmotaPowerPort:
+     host: this.is.an.example.host.com
+     status_topic: stat/tasmota_575A2B/POWER
+     power_topic: cmnd/tasmota_575A2B/POWER
+     avail_topic: tele/tasmota_575A2B/LWT
+
+The example uses a mosquitto server at "this.is.an.example.host.com" and has the
+topics setup for a tasmota power port that has the ID 575A2B.
+
+- host (str): hostname of the MQTT server
+- status_topic (str): topic that signals the current status as "ON" of "OFF"
+- power_topic (str): topic that allows switchting the status between "ON" and
+  "OFF"
+- avail_topic (str): topic that signals the availability of the Tasmota power
+  outlet
+
+Used by:
+  - `TasmotaPowerDriver`_
+
 Digital Outputs
 ~~~~~~~~~~~~~~~
 
@@ -1499,7 +1525,7 @@ Arguments:
   - delay (float): optional delay in seconds between off and on
 
 SiSPMPowerDriver
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 A SiSPMPowerDriver controls a `SiSPMPowerPort`, allowing control of the target
 power state without user interaction.
 
@@ -1512,6 +1538,25 @@ Implements:
 .. code-block:: yaml
 
    SiSPMPowerPort:
+     delay: 5.0
+
+Arguments:
+  - delay (float): optional delay in seconds between off and on
+
+TasmotaPowerDriver
+~~~~~~~~~~~~~~~~~~
+A TasmotaPowerDriver contols a `TasmotaPowerPort`, allowing the outlet to be
+switched on and off.
+
+Binds to:
+  - `TasmotaPowerPort`_
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   TasmotaPowerDriver:
      delay: 5.0
 
 Arguments:

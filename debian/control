@@ -30,7 +30,8 @@ Description: Labgrid client
 
 Package: labgrid-coordinator
 Architecture: any
-Depends: labgrid-base
+Pre-Depends: dpkg (>= 1.16.1), python3, ${misc:Pre-Depends}
+Depends: ${python3:Depends}, ${misc:Depends}, ${shlibs:Depends}
 Description: Labgrid coordinator
 
 Package: labgrid-exporter

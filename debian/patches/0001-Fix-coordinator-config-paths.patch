@@ -5,7 +5,7 @@
  - id: coordinator
    type: guest
 -  executable: python3
-+  executable: /opt/venvs/labgrid/bin/python3
++  executable: /opt/venvs/labgrid-coordinator/bin/python3
    arguments:
    - -mlabgrid.remote.coordinator
    options:

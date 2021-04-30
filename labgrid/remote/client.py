@@ -948,7 +948,7 @@ class ClientSession(ApplicationSession):
             for resource in target.resources:
                 if isinstance(resource, NetworkUSBFlashableDevice):
                     drv = FlashScriptDriver(target, name=None)
-                    break;
+                    break
         if not drv:
             raise UserError("target has no compatible resource available")
         target.activate(drv)

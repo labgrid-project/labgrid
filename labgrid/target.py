@@ -2,7 +2,6 @@ import abc
 import atexit
 import logging
 from time import monotonic, sleep
-from collections import Counter
 
 import attr
 

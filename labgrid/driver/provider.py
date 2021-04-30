@@ -1,5 +1,4 @@
 # pylint: disable=no-member
-import subprocess
 import os.path
 import attr
 
@@ -7,8 +6,6 @@ from ..factory import target_factory
 from ..step import step
 from .common import Driver
 from ..util.managedfile import ManagedFile
-from ..util.timeout import Timeout
-from ..util.helper import processwrapper
 
 
 

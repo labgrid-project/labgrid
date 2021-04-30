@@ -26,4 +26,3 @@ class NFSProvider(BaseProvider):
 @attr.s(eq=False)
 class HTTPProvider(BaseProvider):
     pass
-

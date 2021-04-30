@@ -68,4 +68,3 @@ class ShellStrategy(Strategy):
         else:
             raise StrategyError("not setup found for {}".format(status))
         self.status = status
-

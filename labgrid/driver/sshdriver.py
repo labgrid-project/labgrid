@@ -386,7 +386,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 "error executing command: {}".format(complete_cmd)
             )
         except subprocess.TimeoutExpired:  # still running
-            self.logger.info("Started SSHFS on {}. Press CTRL-C to stop.".format(mountpoint))
+            self.logger.info("Started SSHFS on %s. Press CTRL-C to stop.", mountpoint)
 
         sub.wait()
 

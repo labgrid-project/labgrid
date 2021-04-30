@@ -30,6 +30,14 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
+    interface_config = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+    board_config = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -68,6 +76,14 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
             mconfig = ManagedFile(config, self.interface)
             mconfig.sync_to_resource()
             managed_configs.append(mconfig)
+
+        if self.interface_config:
+            cmd.append("--file")
+            cmd.append("interface/{}".format(self.interface_config))
+
+        if self.board_config:
+            cmd.append("--file")
+            cmd.append("board/{}".format(self.board_config))
 
         for mconfig in managed_configs:
             cmd.append("--file")

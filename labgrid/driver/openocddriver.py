@@ -58,6 +58,24 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
             .format(usbpath=self.interface.path, msg=message)
         ]
 
+    def _run_commands(self, commands: list):
+        cmd = self.interface.command_prefix+[self.tool]
+        cmd += chain.from_iterable(("--search", path) for path in self.search)
+        cmd += self._get_usb_path_cmd()
+
+        managed_configs = []
+        for config in self.config:
+            mconfig = ManagedFile(config, self.interface)
+            mconfig.sync_to_resource()
+            managed_configs.append(mconfig)
+
+        for mconfig in managed_configs:
+            cmd.append("--file")
+            cmd.append(mconfig.get_remote_path())
+
+        cmd += chain.from_iterable(("--command", "'{}'".format(command)) for command in commands)
+        processwrapper.check_output(cmd)
+
     @Driver.check_active
     @step(args=['filename'])
     def load(self, filename=None):
@@ -66,43 +84,14 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         mf = ManagedFile(filename, self.interface)
         mf.sync_to_resource()
 
-        managed_configs = []
-        for config in self.config:
-            mconfig = ManagedFile(config, self.interface)
-            mconfig.sync_to_resource()
-            managed_configs.append(mconfig)
-
-        cmd = self.interface.command_prefix+[self.tool]
-        cmd += chain.from_iterable(("--search", path) for path in self.search)
-
-        for mconfig in managed_configs:
-            cmd.append("--file")
-            cmd.append(mconfig.get_remote_path())
-
-        cmd += self._get_usb_path_cmd()
-        cmd += [
-            "--command", "'init'",
-            "--command", "'bootstrap {}'".format(mf.get_remote_path()),
-            "--command", "'shutdown'",
+        commands = [
+            "init",
+            "bootstrap {}".format(mf.get_remote_path()),
+            "shutdown",
         ]
-        processwrapper.check_output(cmd)
+        self._run_commands(commands)
 
     @Driver.check_active
     @step(args=['commands'])
     def execute(self, commands: list):
-        managed_configs = []
-        for config in self.config:
-            mconfig = ManagedFile(config, self.interface)
-            mconfig.sync_to_resource()
-            managed_configs.append(mconfig)
-
-        cmd = self.interface.command_prefix+[self.tool]
-        cmd += chain.from_iterable(("--search", path) for path in self.search)
-        cmd += self._get_usb_path_cmd()
-
-        for mconfig in managed_configs:
-            cmd.append("--file")
-            cmd.append(mconfig.get_remote_path())
-
-        cmd += chain.from_iterable(("--command", "'{}'".format(command)) for command in commands)
-        processwrapper.check_output(cmd)
+        self._run_commands(commands)

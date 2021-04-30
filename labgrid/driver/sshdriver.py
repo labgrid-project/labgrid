@@ -52,7 +52,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self.ssh_prefix += ["-o", "ControlPath={}".format(self.control.replace('%', '%%'))]
 
         self._keepalive = None
-        self._start_keepalive();
+        self._start_keepalive()
 
     def on_deactivate(self):
         try:

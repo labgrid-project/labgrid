@@ -171,8 +171,6 @@ Library
 labgrid can be used directly as a Python library, without the infrastructure
 provided by the pytest plugin.
 
-Creating and Configuring Targets
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The labgrid library provides two ways to configure targets with resources and
 drivers: either create the :any:`Target` directly or use :any:`Environment` to
 load a configuration file.
@@ -182,43 +180,75 @@ load a configuration file.
    targets using the python atexit module.
 
 Targets
-^^^^^^^
+~~~~~~~
+
+.. note::
+   In most cases it is easier to :ref:`use a complete environment from a YAML
+   file <usage_environments>` instead of manually creating and activating objects.
+   Nevertheless, we explain this in the following to clarify the underlying concepts,
+   and how to work with targets on a lower level, e.g. in strategies.
+
 At the lower level, a :any:`Target` can be created directly::
 
   >>> from labgrid import Target
   >>> t = Target('example')
 
-Next, the required :any:`Resources <Resource>` can be created::
+Next, any required :any:`Resource` objects can be created, which each represent
+a piece of hardware to be used with labgrid::
 
   >>> from labgrid.resource import RawSerialPort
   >>> rsp = RawSerialPort(t, name=None, port='/dev/ttyUSB0')
 
 .. note::
    Since we support multiple drivers of the same type, resources and drivers
-   have a required name attribute. If you don't require support for this
-   functionality set the name to `None`.
+   have a required ``name`` attribute. If you don't use multiple drivers of the
+   same type, you can set the name to ``None``.
 
-Then, a :any:`Driver` needs to be created on the `Target`::
+Further on, a :any:`Driver` encapsulates logic how to work with resources.
+Drivers need to be created on the :any:`Target`::
 
   >>> from labgrid.driver import SerialDriver
   >>> sd = SerialDriver(t, name=None)
 
-
-As the `SerialDriver` declares a binding to a SerialPort, the target binds it
-to the resource created above::
+As the :any:`SerialDriver` declares a binding to a :any:`SerialPort`, the target binds it
+to the resource object created above::
 
   >>> sd.port
   RawSerialPort(target=Target(name='example', env=None), name=None, state=<BindingState.bound: 1>, avail=True, port='/dev/ttyUSB0', speed=115200)
   >>> sd.port is rsp
   True
 
-Before the driver can be used, it needs to be activated::
+Driver Activation
+^^^^^^^^^^^^^^^^^
+Before a bound driver can be used, it needs to be activated.
+During activation, the driver makes sure that all hardware represented by the
+resources it is bound to can be used, and, if necessary, it acquires the
+underlying hardware on the OS level.
+For example, activating a :any:`SerialDriver` makes sure that the hardware
+represented by its bound :any:`RawSerialPort` object (e.g. something like
+``/dev/ttyUSB0``) is available, and that it can only be used labgrid and not by
+other applications while the :any:`SerialDriver` is activated.
+
+If we use a car analogy here, binding is the process of screwing the car parts
+together, and activation is igniting the engine.
+
+After activation, we can use the driver to do our work::
 
   >>> t.activate(sd)
   >>> sd.write(b'test')
 
-Active drivers can be accessed by class (any `Driver` or `Protocol`) using some
-syntactic sugar::
+If an underlying hardware resource is not available (or not available after a
+certain timeout, depending on the driver), the activation step will raise an
+exception, e.g.::
+
+  >>> t.activate(sd)
+  Traceback (most recent call last):
+    File "/usr/lib/python3.8/site-packages/serial/serialposix.py", line 288, in open
+      self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+  FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyUSB0'
+
+Active drivers can be accessed by class (any :any:`Driver <labgrid.driver>` or
+:any:`Protocol <labgrid.protocol>`) using some syntactic sugar::
 
   >>> target = Target('main')
   >>> console = FakeConsoleDriver(target, 'console')
@@ -228,17 +258,44 @@ syntactic sugar::
   >>> target[FakeConsoleDriver, 'console']
   FakeConsoleDriver(target=Target(name='main', …), name='console', …)
 
+Driver Deactivation
+^^^^^^^^^^^^^^^^^^^
+Driver deactivation works in a similar manner::
+
+   >>> t.deactivate(sd)
+
+Drivers need to be deactivated in the following cases:
+
+* Some drivers have internal logic depending on the state of the target.
+  For example, the :any:`ShellDriver` remembers whether it has already logged
+  in to the shell.
+  If the target reboots, e.g. through a hardware watchdog timeout,
+  a power cycle, or by issuing a ``reboot`` command on the shell,
+  the ShellDriver's internal state becomes outdated,
+  and the ShellDriver needs to be deactivated and re-activated.
+
+* One of the driver's bound resources is required by another driver which is to
+  be activated.
+  For example, the :any:`ShellDriver` and the :any:`BareboxDriver` both
+  require access to a :any:`SerialPort` resource.
+  If both drivers are bound to the same resource object, labgrid will
+  automatically deactivate the BareboxDriver when activating the ShellDriver.
+
+Target Cleanup
+^^^^^^^^^^^^^^
 After you are done with the target, optionally call the cleanup method on your
-target. While labgrid registers an atexit handler to cleanup targets, this has
-the advantage that exceptions can be handled by your application:::
+target. While labgrid registers an ``atexit`` handler to cleanup targets, this has
+the advantage that exceptions can be handled by your application::
 
   >>> try:
   >>>     target.cleanup()
   >>> except Exception as e:
   >>>     <your code here>
 
+.. _usage_environments:
+
 Environments
-^^^^^^^^^^^^
+~~~~~~~~~~~~
 In practice, is is often useful to separate the `Target` configuration from the
 code which needs to control the board (such as a test case or installation
 script).

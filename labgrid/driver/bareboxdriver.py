@@ -20,6 +20,10 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     """BareboxDriver - Driver to control barebox via the console.
        BareboxDriver binds on top of a ConsoleProtocol.
 
+       On activation, the BareboxDriver will look for the barebox prompt on the
+       console, stopping any autoboot counters if necessary, and provide access
+       to the barebox shell.
+
     Args:
         prompt (str): The default Barebox Prompt
         bootstring (str): string that indicates that the Kernel is booting

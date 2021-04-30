@@ -15,7 +15,10 @@ from .common import Driver
 @attr.s(eq=False)
 class OpenOCDDriver(Driver, BootstrapProtocol):
     bindings = {
-        "interface": {"AlteraUSBBlaster", "NetworkAlteraUSBBlaster"},
+        "interface": {
+            "AlteraUSBBlaster", "NetworkAlteraUSBBlaster",
+            "USBDebugger", "NetworkUSBDebugger",
+        },
     }
 
     config = attr.ib(validator=attr.validators.instance_of((str, list)))

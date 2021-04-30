@@ -20,6 +20,7 @@ from .udev import (
     USBAudioInput,
     LXAUSBMux,
     HIDRelay,
+    USBDebugger,
 )
 from ..util import dump
 
@@ -50,6 +51,7 @@ class Suggester:
         self.resources.append(USBAudioInput(**args))
         self.resources.append(LXAUSBMux(**args))
         self.resources.append(HIDRelay(**args))
+        self.resources.append(USBDebugger(**args))
 
     def suggest_callback(self, resource, meta, suggestions):
         cls = type(resource).__name__

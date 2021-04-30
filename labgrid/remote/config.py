@@ -1,8 +1,9 @@
 from pprint import pprint
 
+import os
+
 import attr
 import jinja2
-import os
 
 from ..util.yaml import load
 from ..exceptions import NoConfigFoundError

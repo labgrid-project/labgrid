@@ -3,8 +3,9 @@ import enum
 import logging
 import os
 import time
-import attr
 import subprocess
+
+import attr
 
 from ..factory import target_factory
 from ..step import step

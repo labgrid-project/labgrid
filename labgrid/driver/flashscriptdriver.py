@@ -1,19 +1,13 @@
 # pylint: disable=no-member
-import enum
 import logging
-import os
-import time
 import attr
-import subprocess
 
 from ..factory import target_factory
 from ..step import step
 from ..util.managedfile import ManagedFile
 from .common import Driver
-from ..driver.exception import ExecutionError
 
 from ..util.helper import processwrapper
-from ..util import Timeout
 
 
 @target_factory.reg_driver

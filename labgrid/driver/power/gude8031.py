@@ -1,6 +1,4 @@
 import requests
-import json
-from ..exception import ExecutionError
 
 # Driver has been tested with:
 # Gude Expert Power Control 8031()

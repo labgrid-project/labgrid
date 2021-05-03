@@ -21,7 +21,10 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         },
     }
 
-    config = attr.ib(validator=attr.validators.instance_of((str, list)))
+    config = attr.ib(
+        default=[],
+        validator=attr.validators.optional(attr.validators.instance_of((str, list)))
+    )
     search = attr.ib(
         default=[],
         validator=attr.validators.optional(attr.validators.instance_of((str, list)))

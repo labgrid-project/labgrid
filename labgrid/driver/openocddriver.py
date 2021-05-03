@@ -66,7 +66,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         # OpenOCD supports "adapter usb location" since a1b308ab, if the command is not known
         # notice user and continue
         message = ("Your OpenOCD version does not support specifying USB paths.\n"
-                   "Consider updating to OpenOCD master when using multiple USB Blasters.")
+                   "Consider updating to OpenOCD v0.11 when using multiple USB Blasters.")
         return [
             "--command",
             "'if {{ [catch {{adapter usb location \"{usbpath}\"}}] }} {{ puts stderr \"{msg}\" }}'"

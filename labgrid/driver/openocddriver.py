@@ -97,7 +97,10 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
             cmd.append(mconfig.get_remote_path())
 
         cmd += chain.from_iterable(("--command", "'{}'".format(command)) for command in commands)
-        processwrapper.check_output(cmd)
+        processwrapper.check_output(
+            cmd,
+            print_on_silent_log=True
+        )
 
     @Driver.check_active
     @step(args=['filename'])

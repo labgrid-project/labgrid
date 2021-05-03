@@ -38,6 +38,10 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
+    load_commands = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(list))
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -100,11 +104,15 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         mf = ManagedFile(filename, self.interface)
         mf.sync_to_resource()
 
-        commands = [
-            "init",
-            "bootstrap {}".format(mf.get_remote_path()),
-            "shutdown",
-        ]
+        if self.load_commands is None:
+            commands = [
+                "init",
+                "bootstrap {}".format(mf.get_remote_path()),
+                "shutdown",
+            ]
+        else:
+            commands = [c.format(filename=mf.get_remote_path()) for c in self.load_commands]
+
         self._run_commands(commands)
 
     @Driver.check_active

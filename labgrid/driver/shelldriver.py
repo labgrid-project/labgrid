@@ -6,6 +6,8 @@ import logging
 import re
 import time
 import shlex
+import ipaddress
+
 import attr
 from pexpect import TIMEOUT
 import xmodem
@@ -565,3 +567,29 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             raise ExecutionError(f"Multiple IPv{version} default routes found")
 
         return matches[0]
+
+    @Driver.check_active
+    def get_ip_addresses(self, device=None):
+        """ Retrieves IP addresses for given interface name.
+
+        Note that although the return type is named IPv4Interface/IPv6Interface, it contains an IP
+        address with the corresponding network prefix.
+
+        Args:
+            device (str): Name of the interface to query, defaults to default route's device name.
+
+        Returns:
+            List of IPv4Interface or IPv6Interface objects
+        """
+        if device is None:
+            device = self.get_default_interface_device_name()
+
+        regex = r"""\d+: # leading number
+                \s+\w+ # interface name
+                \s+inet6?\s+(\S+) # IP address, prefix
+                .*global # global scope, not host scope"""
+
+        ip_show = self._run_check(f"ip -o addr show dev {device}")
+        matches = re.findall(regex, "\n".join(ip_show), re.X)
+
+        return list(map(ipaddress.ip_interface, matches))

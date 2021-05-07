@@ -536,3 +536,32 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             IOError: if the provided localfile could not be found
         """
         return self._run_script_file(scriptfile, *args, timeout=timeout)
+
+    @Driver.check_active
+    def get_default_interface_device_name(self, version=4):
+        """ Retrieve the default route's interface device name.
+
+        Args:
+            version (int): IP version
+
+        Returns:
+            Name of the device of the default route
+
+        Raises:
+            ExecutionError: if no or multiple routes are set up
+        """
+        assert version in (4, 6)
+
+        regex = r"""default\s+via # leading strings
+                \s+\S+ # IP address
+                \s+dev\s+(\w+) # interface"""
+
+        default_route = self._run_check(f"ip -{version} route list default")
+        matches = re.findall(regex, "\n".join(default_route), re.X)
+
+        if not matches:
+            raise ExecutionError(f"No IPv{version} default route found")
+        if len(matches) > 1:
+            raise ExecutionError(f"Multiple IPv{version} default routes found")
+
+        return matches[0]

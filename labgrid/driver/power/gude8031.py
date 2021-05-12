@@ -13,7 +13,7 @@ def power_set(host, port, index, value):
     # access the web interface...
     value = 1 if value else 0
     r = requests.get(
-        "http://{}:{}//status.json?components=769&cmd=1&p={}&s={}".format(host, port, index, value)
+        "http://{}:{}/status.json?components=769&cmd=1&p={}&s={}".format(host, port, index, value)
     )
     r.raise_for_status()
 

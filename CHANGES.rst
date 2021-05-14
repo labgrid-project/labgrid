@@ -1,3 +1,10 @@
+Release 0.3.4 (released Apr 1, 2021)
+------------------------------------
+
+Bug Fixes in 0.3.4
+------------------
+- Fix inclusion of the README file to support PyPi Uploads
+
 Release 0.3.3 (released Apr 1, 2021)
 ------------------------------------
 

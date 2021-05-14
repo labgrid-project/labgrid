@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 
+from os import path
+
 from setuptools import setup
 
 import fastentrypoints  # noqa: F401 # pylint: disable=unused-import
 
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.rst'), encoding='utf-8') as f:
+        long_description = f.read()
 
 setup(
     name='labgrid',
     description='labgrid: lab hardware and software control layer',
+    long_description=long_description,
+    long_description_content_type='text/x-rst',
     author='Rouven Czerwinski and Jan Luebbe',
     author_email='entwicklung@pengutronix.de',
     license='LGPL-2.1',

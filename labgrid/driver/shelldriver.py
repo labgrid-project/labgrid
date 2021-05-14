@@ -120,7 +120,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         timeout = Timeout(float(self.login_timeout))
 
-        expectations = [self.prompt, self.login_prompt, TIMEOUT]
+        expectations = [self.prompt, self.login_prompt, "Password: ", TIMEOUT]
         if self.console_ready != "":
             expectations.append(self.console_ready)
 
@@ -130,6 +130,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # Because pexpect keeps any read data in it's buffer when a timeout
         # occours, we can't lose any data this way.
         last_before = b''
+        did_login = False
 
         while True:
             index, before, _, _ = self.console.expect(
@@ -146,21 +147,15 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             elif index == 1:
                 # we need to login
                 self.console.sendline(self.username)
-                index, _, _, _ = self.console.expect([self.prompt, "Password: "], timeout=10)
-                if index == 1:
-                    if self.password:
-                        self.console.sendline(self.password)
-                        self.console.expect(self.prompt, timeout=timeout.remaining)
-                    else:
-                        raise Exception("Password entry needed but no password set")
-
-                if self.post_login_settle_time > 0:
-                    self.console.settle(self.post_login_settle_time, timeout=timeout.remaining)
-
-                self._check_prompt()
-                break
+                did_login = True
 
             elif index == 2:
+                if self.password:
+                    self.console.sendline(self.password)
+                else:
+                    raise Exception("Password entry needed but no password set")
+
+            elif index == 3:
                 # expect hit a timeout while waiting for a match
                 if before == last_before:
                     # we did not receive anything during
@@ -169,7 +164,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                     # newline to check the state
                     self.console.sendline("")
 
-            elif index == 3:
+            elif index == 4:
                 # we have just activated a console here
                 # lets start over again and see if login or prompt will appear
                 # now.
@@ -179,6 +174,11 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
             if timeout.expired:
                 raise TIMEOUT("Timeout of {} seconds exceeded during waiting for login".format(self.login_timeout))  # pylint: disable=line-too-long
+
+        if did_login:
+            if self.post_login_settle_time > 0:
+                self.console.settle(self.post_login_settle_time, timeout=timeout.remaining)
+            self._check_prompt()
 
     @step()
     def get_status(self):

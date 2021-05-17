@@ -19,6 +19,7 @@ from .udev import (
     SiSPMPowerPort,
     USBAudioInput,
     LXAUSBMux,
+    HIDRelay,
 )
 from ..util import dump
 
@@ -48,6 +49,7 @@ class Suggester:
         self.resources.append(SiSPMPowerPort(**args))
         self.resources.append(USBAudioInput(**args))
         self.resources.append(LXAUSBMux(**args))
+        self.resources.append(HIDRelay(**args))
 
     def suggest_callback(self, resource, meta, suggestions):
         cls = type(resource).__name__

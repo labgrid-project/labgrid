@@ -21,8 +21,9 @@ setup(
     use_scm_version=True,
     url='https://github.com/labgrid-project',
     data_files=[('share/man/1', ['man/labgrid-client.1',
-                                 'man/labgrid-exporter.1',
-                                 'man/labgrid-device-config.1'])],
+                                 'man/labgrid-exporter.1']),
+                ('share/man/5', ['man/labgrid-device-config.5']),
+                ('share/man/7', ['man/labgrid-pytest.7'])],
     python_requires='>=3.6',
     extras_require={
         'onewire': ['onewire>=0.2'],

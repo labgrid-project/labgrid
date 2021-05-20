@@ -112,4 +112,4 @@ Same as above, but with name ``myname``:
 SEE ALSO
 --------
 
-``labgrid-client``\(1), ``labgrid-device-config``\(1)
+``labgrid-client``\(1), ``labgrid-device-config``\(5)

@@ -54,7 +54,7 @@ OPTIONS
 
 CONFIGURATION FILE
 ------------------
-The configuration file follows the description in ``labgrid-device-config``\(1).
+The configuration file follows the description in ``labgrid-device-config``\(5).
 
 ENVIRONMENT VARIABLES
 ---------------------

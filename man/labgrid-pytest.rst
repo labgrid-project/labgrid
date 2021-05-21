@@ -14,7 +14,7 @@ labgrid-pytest labgrid integration for pytest
             Foundation; either version 2.1 of the License, or (at your option)
             any later version.
 :Version: 0.0.1
-:Manual section: 1
+:Manual section: 7
 :Manual group: embedded testing
 
 SYNOPSIS
@@ -28,7 +28,7 @@ Labgrid ships a pytest plugin to integrate with the pytest infrastructure. It is
 activated if the `--lg-env` parameter is supplied to the pytest command.
 
 The labgrid plugin parses the supplied configuration yaml file as described in
-``labgrid-device-config``\(1) and allows the usage of the target and environment
+``labgrid-device-config``\(5) and allows the usage of the target and environment
 fixtures.
 The complete documentation is available at
 https://labgrid.readthedocs.io/en/latest/usage.html#pytest-plugin.
@@ -46,4 +46,4 @@ Start tests with ``myconfig.yaml`` and directory ``tests``:
 SEE ALSO
 --------
 
-``labgrid-device-config``\(1)
+``labgrid-device-config``\(5)

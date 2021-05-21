@@ -15,7 +15,7 @@ labgrid test configuration files
             Foundation; either version 2.1 of the License, or (at your option)
             any later version.
 :Version: 0.0.1
-:Manual section: 1
+:Manual section: 5
 :Manual group: embedded testing
 
 

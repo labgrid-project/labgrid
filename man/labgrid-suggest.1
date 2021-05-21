@@ -1,8 +1,8 @@
 .\" Man page generated from reStructuredText.
 .
-.TH LABGRID-PYTEST 1 "2017-04-15" "0.0.1" "embedded testing"
+.TH LABGRID-SUGGEST 1 "2021-05-20" "0.0.1" "embedded testing"
 .SH NAME
-labgrid-pytest \- labgrid-pytest labgrid integration for pytest
+labgrid-suggest \- labgrid-suggest generator for YAML config files
 .
 .nr rst2man-indent-level 0
 .
@@ -32,39 +32,48 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .SH SYNOPSIS
 .sp
-\fBpytest \-\-lg\-env\fP \fB*.yaml\fP
+\fBlabgrid\-suggest\fP \fB\-\-help\fP
+.sp
+\fBlabgrid\-suggest\fP \fB\-\-debug\fP
 .SH DESCRIPTION
 .sp
-Labgrid ships a pytest plugin to integrate with the pytest infrastructure. It is
-activated if the \fI\-\-lg\-env\fP parameter is supplied to the pytest command.
+Labgrid is a scalable infrastructure and test architecture for embedded (linux) systems.
 .sp
-The labgrid plugin parses the supplied configuration yaml file as described in
-\fBlabgrid\-device\-config\fP(1) and allows the usage of the target and environment
-fixtures.
-The complete documentation is available at
-\fI\%https://labgrid.readthedocs.io/en/latest/usage.html#pytest\-plugin\fP\&.
+This is the man page for a helper tool which will output the proper YAML formatted
+snippets for udev scanned devices.
+The snippets can be added under the resource key in an environment configuration.
+.SH OPTIONS
+.INDENT 0.0
+.TP
+.B \-h\fP,\fB  \-\-help
+display command line help
+.TP
+.B \-d\fP,\fB  \-\-debug
+enable debug mode
+.UNINDENT
 .SH EXAMPLES
 .sp
-Start tests with \fBmyconfig.yaml\fP and directory \fBtests\fP:
+For a device that has an \fBID_SERIAL_SHORT\fP key with a unique ID embedded
+in the USB\-serial converter, the resource match configuration is:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ pytest \-\-lg\-env myconfig.yaml tests
+USBSerialPort:
+  match:
+    \(aq@ID_SERIAL_SHORT\(aq: \(aqP\-00\-00682\(aq
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .SH SEE ALSO
 .sp
-\fBlabgrid\-device\-config\fP(1)
-.SH AUTHOR
-Rouven Czerwinski <r.czerwinski@pengutronix.de>
+\fBlabgrid\-device\-config\fP(5)
 
 Organization: Labgrid-Project
 .SH COPYRIGHT
-Copyright (C) 2016-2017 Pengutronix. This library is free software;
+Copyright (C) 2016-2021 Pengutronix. This library is free software;
 you can redistribute it and/or modify it under the terms of the GNU
 Lesser General Public License as published by the Free Software
 Foundation; either version 2.1 of the License, or (at your option)

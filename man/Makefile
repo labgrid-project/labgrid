@@ -1,11 +1,11 @@
-PAGES := labgrid-client.1 labgrid-exporter.1 labgrid-device-config.1 labgrid-pytest.1
-COMPRESSED := labgrid-client.1.gz labgrid-exporter.1.gz labgrid-device-config.1.gz labgrid-pytest.1.gz
+PAGES := labgrid-client.1 labgrid-exporter.1 labgrid-device-config.5 labgrid-pytest.7 labgrid-suggest.1
+COMPRESSED := labgrid-client.1.gz labgrid-exporter.1.gz labgrid-device-config.5.gz labgrid-pytest.7.gz labgrid-suggest.1.gz
 
-%.1: %.rst
+%.1 %.5 %.7: %.rst
 	rst2man.py $< >$@.tmp
 	mv -f $@.tmp $@
 
-%.1.gz : %.1
+%.gz : %
 	gzip $<
 
 

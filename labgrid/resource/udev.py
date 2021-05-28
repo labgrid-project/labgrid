@@ -7,6 +7,8 @@ from collections import OrderedDict
 
 import attr
 import pyudev
+import usb.core
+import usb.util
 
 from ..factory import target_factory
 from .common import ManagedResource, ResourceManager
@@ -629,11 +631,42 @@ class DeditecRelais8(USBResource):
 class HIDRelay(USBResource):
     index = attr.ib(default=1, validator=attr.validators.instance_of(int))
     invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    serial = attr.ib(default="", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         self.match['ID_VENDOR_ID'] = '16c0'
         self.match['ID_MODEL_ID'] = '05df'
         super().__attrs_post_init__()
+
+    def filter_match(self, device):
+        if not self.serial:
+            return super().filter_match(device)
+
+        busnum = device.get('BUSNUM')
+        devnum = device.get('DEVNUM')
+        if not busnum or not devnum:
+            return False
+
+        busnum = int(busnum.lstrip('0'))
+        devnum = int(devnum.lstrip('0'))
+
+        try:
+            usbdev = usb.core.find(bus=busnum, address=devnum)
+            if usbdev is None:
+                return False
+
+            data = usbdev.ctrl_transfer(
+                usb.util.CTRL_TYPE_CLASS | usb.util.CTRL_RECIPIENT_DEVICE | usb.util.ENDPOINT_IN,
+                0x01,
+                0x300,
+                0,
+                8
+            )
+        except usb.core.USBError:
+            return False
+
+        serial = data[0:5].tobytes().decode("utf-8")
+        return serial == self.serial
 
 @target_factory.reg_resource
 @attr.s(eq=False)

@@ -115,6 +115,7 @@ RUN set -e ;\
     apt install -q=2 --yes --no-install-recommends \
         libyaml-0-2 \
         libsctp1 \
+        libusb-1.0-0 \
     ; \
     apt clean ;\
     rm -rf /var/lib/apt/lists/*

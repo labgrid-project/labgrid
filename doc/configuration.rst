@@ -361,9 +361,11 @@ It currently supports the widely used "dcttech USBRelay".
    HIDRelay:
      index: 2
      invert: False
+     serial: 6QMBS
 
 - index (int): number of the relay to use (defaults to 1)
 - invert (bool): whether to invert the relay
+- serial (str): relay serial number (defaults to "")
 
 Used by:
   - `HIDRelayDriver`_

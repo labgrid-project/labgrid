@@ -15,6 +15,7 @@ class ModbusCoilDriver(Driver, DigitalOutputProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self._module = import_module('pyModbusTCP.client')
+        self._consts = import_module('pyModbusTCP.constants')
         self.client = None
 
     def on_activate(self):
@@ -26,21 +27,31 @@ class ModbusCoilDriver(Driver, DigitalOutputProtocol):
     def on_deactivate(self):
         self.client = None
 
+    def _handle_error(self, action):
+        error_code = self.client.last_error()
+        if error_code == self._consts.MB_EXCEPT_ERR:
+            exc = self.client.last_except()
+            if exc not in [self._consts.EXP_ACKNOWLEDGE, self._consts.EXP_NONE]:
+                raise ExecutionError(
+                    'Could not {} coil (code={}/exception={})'.format(action,
+                                                                      error_code,
+                                                                      exc))
+        raise ExecutionError('Could not {} coil (code={})'.format(action,
+                                                                  error_code))
+
     @Driver.check_active
     def set(self, status):
         if self.coil.invert:
             status = not status
         write_status = self.client.write_single_coil(self.coil.coil, bool(status))
         if write_status is None:
-            error_code = self.client.last_error()
-            raise ExecutionError('Could not write coil (code={})'.format(error_code))
+            self._handle_error("write")
 
     @Driver.check_active
     def get(self):
         status = self.client.read_coils(self.coil.coil)
         if status is None:
-            error_code = self.client.last_error()
-            raise ExecutionError('Could not read coil (code={})'.format(error_code))
+            self._handle_error("read")
 
         status = status[0]
         if self.coil.invert:

@@ -655,3 +655,15 @@ class LXAUSBMux(USBResource):
         self.match['ID_VENDOR_ID'] = '33f7'
         self.match['ID_MODEL_ID'] = '0001'
         super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class USBDebugger(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("0403", "6010"),
+                         ]:
+            return False
+
+        return super().filter_match(device)

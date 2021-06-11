@@ -497,6 +497,7 @@ exports["SigrokUSBDevice"] = USBSigrokExport
 exports["SigrokUSBSerialDevice"] = USBSigrokExport
 exports["USBSDMuxDevice"] = USBSDMuxExport
 exports["USBSDWireDevice"] = USBSDWireExport
+exports["USBDebugger"] = USBGenericExport
 
 exports["USBMassStorage"] = USBGenericExport
 exports["USBVideo"] = USBGenericExport

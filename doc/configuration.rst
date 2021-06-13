@@ -2663,7 +2663,8 @@ which contains targets, drivers and resources.
   The order is important here:
   Objects are instantiated in the order they appear in the YAML file,
   so if drivers depend on other drivers or resources which are only instantiated later,
-  loading the environment will fail.
+  loading the environment will fail. It is possible to include files to extend or overwrite
+  individual attributes.
 
 The skeleton for an environment consists of:
 
@@ -2708,6 +2709,9 @@ The skeleton for an environment consists of:
    imports:
      - <import.py>
      - <python module>
+   includes:
+     - !include specific_target1.yaml
+     - !include specific_target2.yaml
 
 If you have a single target in your environment, name it "main", as the
 ``get_target`` function defaults to "main".

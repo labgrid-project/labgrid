@@ -100,3 +100,58 @@ def test_template_bad_key(tmpdir):
     with pytest.raises(InvalidConfigError) as excinfo:
         Config(str(p))
     assert "unknown variable" in excinfo.value.msg
+
+def test_includes(tmpdir):
+    a = tmpdir.join("a.yaml")
+    b = tmpdir.join("b.yaml")
+    c1 = tmpdir.join("c1.yaml")
+    c2 = tmpdir.join("c2.yaml")
+    a.write(
+        """
+        targets:
+          main:
+            options:
+              foo: bar
+              spam: apple
+        includes:
+            - !include %s
+        """ % (b)
+    )
+    b.write(
+        """
+        targets:
+          main:
+            options:
+              foo: bar
+              spam: banana
+        includes:
+            - !include %s
+            - !include %s
+        """ % (c1,c2)
+    )
+
+    c1.write(
+        """
+        targets:
+          main:
+            options:
+              foo: bar
+              spam: pinapple
+              blub: bla
+        """
+    )
+
+    c2.write(
+        """
+        targets:
+          main:
+            options:
+              foo: bar
+              spam: orange
+              blub: bla
+        """
+    )
+
+    d = Config(str(a))
+
+    assert d.get_target_option("main", "spam") == "orange"

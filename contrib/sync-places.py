@@ -61,17 +61,20 @@ def main():
                     await session.call("org.labgrid.coordinator.add_place", name)
                 changed = True
 
-        for name in seen_places:
-            place = session.places[name]
+        for name in config["places"]:
             matches = config["places"][name].get("matches", [])
             seen_matches = set()
             remove_matches = set()
-            for m in place.matches:
-                m = repr(m)
-                if m in matches:
-                    seen_matches.add(m)
-                else:
-                    remove_matches.add(m)
+            place_tags = {}
+            if name in seen_places:
+                place = session.places[name]
+                for m in place.matches:
+                    m = repr(m)
+                    if m in matches:
+                        seen_matches.add(m)
+                    else:
+                        remove_matches.add(m)
+                place_tags = place.tags
 
             for m in remove_matches:
                 print("Deleting match '%s' for place %s" % (m, name))
@@ -91,7 +94,7 @@ def main():
                     changed = True
 
             tags = config["places"][name].get("tags", {}).copy()
-            if place.tags != tags:
+            if place_tags != tags:
                 print(
                     "Setting tags for place %s to %s"
                     % (
@@ -103,7 +106,7 @@ def main():
                 )
 
                 # Set the empty string for tags that should be removed
-                for k in place.tags:
+                for k in place_tags:
                     if k not in tags:
                         tags[k] = ""
 

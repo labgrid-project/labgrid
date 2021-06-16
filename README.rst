@@ -52,7 +52,7 @@ Contributing
 ------------
 `Development Docs <http://labgrid.readthedocs.io/en/latest/development.html>`_
 
-IRC channel ``#labgrid`` on freenode (bridged to the `Matrix channel
+IRC channel ``#labgrid`` on libera.chat (bridged to the `Matrix channel
 #labgrid:matrix.org <https://app.element.io/#/room/#labgrid:matrix.org>`_)
 
 Background

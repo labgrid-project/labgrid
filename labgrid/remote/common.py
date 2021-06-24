@@ -181,7 +181,7 @@ class Place:
     def show(self, level=0):
         indent = '  ' * level
         if self.aliases:
-            print(indent + "aliases: {}".format(', '.join(self.aliases)))
+            print(indent + "aliases: {}".format(', '.join(sorted(self.aliases))))
         if self.comment:
             print(indent + "comment: {}".format(self.comment))
         if self.tags:
@@ -189,12 +189,12 @@ class Place:
                 ', '.join(k+"="+v for k, v in sorted(self.tags.items()))
             ))
         print(indent + "matches:")
-        for match in self.matches:  # pylint: disable=not-an-iterable
+        for match in sorted(self.matches):  # pylint: disable=not-an-iterable
             print(indent + "  {}".format(match))
         print(indent + "acquired: {}".format(self.acquired))
         print(indent + "acquired resources:")
         # in the coordinator, we have resource objects, otherwise just a path
-        for resource in self.acquired_resources:  # pylint: disable=not-an-iterable
+        for resource in sorted(self.acquired_resources):  # pylint: disable=not-an-iterable
             if isinstance(resource, (tuple, list)):
                 resource_path = resource
             else:

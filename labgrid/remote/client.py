@@ -952,8 +952,8 @@ class ClientSession(ApplicationSession):
 
     def bootstrap(self):
         place = self.get_acquired_place()
-        args = self.args.filename
         target = self._get_target(place)
+        args = dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
         from ..protocol.bootstrapprotocol import BootstrapProtocol
         from ..driver.usbloader import IMXUSBDriver, MXSUSBDriver, RKUSBDriver
         from ..driver.openocddriver import OpenOCDDriver
@@ -977,7 +977,6 @@ class ClientSession(ApplicationSession):
                         drv = MXSUSBDriver(target, name=None)
                     drv.loader.timeout = self.args.wait
                 elif isinstance(resource, NetworkAlteraUSBBlaster):
-                    args = dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
                     try:
                         drv = target.get_driver(OpenOCDDriver)
                     except NoDriverFoundError:
@@ -995,7 +994,7 @@ class ClientSession(ApplicationSession):
         if not drv:
             raise UserError("target has no compatible resource available")
         target.activate(drv)
-        drv.load(self.args.filename)
+        drv.load(self.args.filename, **args)
 
     def sd_mux(self):
         place = self.get_acquired_place()

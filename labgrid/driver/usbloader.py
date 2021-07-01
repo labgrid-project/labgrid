@@ -36,7 +36,7 @@ class MXSUSBDriver(Driver, BootstrapProtocol):
 
     @Driver.check_active
     @step(args=['filename'])
-    def load(self, filename=None):
+    def load(self, filename=None, **args):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
         mf = ManagedFile(filename, self.loader)
@@ -72,7 +72,7 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
 
     @Driver.check_active
     @step(args=['filename'])
-    def load(self, filename=None):
+    def load(self, filename=None, **args):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
         mf = ManagedFile(filename, self.loader)
@@ -110,7 +110,7 @@ class RKUSBDriver(Driver, BootstrapProtocol):
 
     @Driver.check_active
     @step(args=['filename'])
-    def load(self, filename=None):
+    def load(self, filename=None, **args):
         if self.target.env:
             usb_loader = self.target.env.config.get_image_path(self.usb_loader)
             mf = ManagedFile(usb_loader, self.loader)
@@ -172,7 +172,7 @@ class UUUDriver(Driver, BootstrapProtocol):
 
     @Driver.check_active
     @step(args=['filename'])
-    def load(self, filename=None):
+    def load(self, filename=None, **args):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
         mf = ManagedFile(filename, self.loader)
@@ -214,7 +214,7 @@ class BDIMXUSBDriver(Driver, BootstrapProtocol):
 
     @Driver.check_active
     @step(args=['filename'])
-    def load(self, filename):
+    def load(self, filename, **args):
         mf = ManagedFile(filename, self.loader)
         mf.sync_to_resource()
 

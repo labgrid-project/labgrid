@@ -53,7 +53,7 @@ class FlashromDriver(Driver, BootstrapProtocol):
 
     @Driver.check_active
     @step(args=['filename'])
-    def load(self, filename=None):
+    def load(self, filename=None, **args):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
         filename = os.path.abspath(filename)

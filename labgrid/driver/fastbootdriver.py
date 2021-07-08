@@ -32,7 +32,6 @@ class AndroidFastbootDriver(Driver):
     def _get_fastboot_prefix(self):
         prefix = self.fastboot.command_prefix+[
             self.tool,
-            "-i", hex(self.fastboot.vendor_id),
             "-s", "usb:{}".format(self.fastboot.path),
         ]
 

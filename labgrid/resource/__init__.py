@@ -20,3 +20,4 @@ from .lxaiobus import LXAIOBusPIO
 from .pyvisa import PyVISADevice
 from .provider import TFTPProvider
 from .mqtt import TasmotaPowerPort
+from .httpvideostream import HTTPVideoStream

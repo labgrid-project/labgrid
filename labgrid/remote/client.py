@@ -1164,14 +1164,33 @@ class ClientSession(ApplicationSession):
         quality = self.args.quality
         target = self._get_target(place)
         from ..driver.usbvideodriver import USBVideoDriver
+        from ..driver.httpvideodriver import HTTPVideoDriver
+        from ..resource.httpvideostream import HTTPVideoStream
+        from ..resource.udev import USBVideo
+        from ..resource.remote import NetworkUSBVideo
         drv = None
         try:
-            drv = target.get_driver(USBVideoDriver)
+            drv = target.get_driver("VideoProtocol")
         except NoDriverFoundError:
-            drv = USBVideoDriver(target, name=None)
+            for resource in target.resources:
+                if isinstance(resource, (USBVideo, NetworkUSBVideo)):
+                    try:
+                        drv = target.get_driver(USBVideoDriver)
+                    except NoDriverFoundError:
+                        drv = USBVideoDriver(target, name=None)
+                        break
+                elif isinstance(resource, HTTPVideoStream):
+                    try:
+                        drv = target.get_driver(HTTPVideoDriver)
+                    except NoDriverFoundError:
+                        drv = HTTPVideoDriver(target, name=None)
+                        break
+        if not drv:
+            raise UserError("target has no compatible resource available")
+
         target.activate(drv)
         if quality == 'list':
-            default, variants = drv.get_caps()
+            default, variants = drv.get_qualities()
             for name, caps in variants:
                 mark = '*' if default == name else ' '
                 print("{} {:<10s} {:s}".format(mark, name, caps))

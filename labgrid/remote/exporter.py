@@ -601,6 +601,20 @@ class NetworkServiceExport(ResourceExport):
 
 exports["NetworkService"] = NetworkServiceExport
 
+@attr.s
+class HTTPVideoStreamExport(ResourceExport):
+    """ResourceExport for an HTTPVideoStream"""
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.httpvideostream import HTTPVideoStream
+        self.data['cls'] = "HTTPVideoStream"
+        self.local = HTTPVideoStream(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return self.local_params
+
+exports["HTTPVideoStream"] = HTTPVideoStreamExport
+
 @attr.s(eq=False)
 class LXAIOBusNodeExport(ResourceExport):
     """ResourceExport for LXAIOBusNode devices accessed via the HTTP API"""

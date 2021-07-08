@@ -152,20 +152,26 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         enter the password.
         """
         self.console.expect(self.boot_expression, timeout=self.login_timeout)
-        index, _, _, _ = self.console.expect(
-            [self.prompt, self.autoboot, self.password_prompt]
-        )
-        if index == 0:
-            self._status = 1
-        elif index == 2:
-            if self.password:
-                self.console.sendline(self.password)
-                self._check_prompt()
-            else:
-                raise Exception("Password entry needed but no password set")
-        else:
-            self.console.write(self.interrupt.encode('ASCII'))
+        while True:
+            index, _, _, _ = self.console.expect(
+                [self.prompt, self.autoboot, self.password_prompt]
+            )
+            if index == 0:
+                self._status = 1
+                break
+
+            elif index == 1:
+                self.console.write(self.interrupt.encode('ASCII'))
+
+            elif index == 2:
+                if self.password:
+                    self.console.sendline(self.password)
+                else:
+                    raise Exception("Password entry needed but no password set")
+
+        if self.prompt:
             self._check_prompt()
+
         for command in self.init_commands:  #pylint: disable=not-an-iterable
             self._run_check(command)
 

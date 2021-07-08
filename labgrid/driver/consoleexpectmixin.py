@@ -1,6 +1,7 @@
-from time import sleep
+import time
+import pexpect
 
-from ..util import PtxExpect
+from ..util import PtxExpect, Timeout
 from ..step import step
 from .common import Driver
 
@@ -33,7 +34,7 @@ class ConsoleExpectMixin:
                               len(data), data, self.txdelay)
             count = 0
             for i in range(len(data)):
-                sleep(self.txdelay)
+                time.sleep(self.txdelay)
                 count += self._write(data[i:i+1])
             return count
 
@@ -53,6 +54,16 @@ class ConsoleExpectMixin:
     def expect(self, pattern, timeout=-1):
         index = self._expect.expect(pattern, timeout=timeout)
         return index, self._expect.before, self._expect.match, self._expect.after
+
+    @Driver.check_active
+    @step(args=['quiet_time'])
+    def settle(self, quiet_time, timeout=120.0):
+        t = Timeout(timeout)
+        while not t.expired:
+            try:
+                self.read(timeout=quiet_time)
+            except pexpect.TIMEOUT:
+                break
 
     def resolve_conflicts(self, client):
         for other in self.clients:

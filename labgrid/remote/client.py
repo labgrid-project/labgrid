@@ -736,31 +736,29 @@ class ClientSession(ApplicationSession):
                         drv = target.get_driver(NetworkPowerDriver)
                     except NoDriverFoundError:
                         drv = NetworkPowerDriver(target, name=None)
-                        break
                 elif isinstance(resource, NetworkUSBPowerPort):
                     try:
                         drv = target.get_driver(USBPowerDriver)
                     except NoDriverFoundError:
                         drv = USBPowerDriver(target, name=None)
-                        break
                 elif isinstance(resource, NetworkSiSPMPowerPort):
                     try:
                         drv = target.get_driver(SiSPMPowerDriver)
                     except NoDriverFoundError:
                         drv = SiSPMPowerDriver(target, name=None)
-                    break
                 elif isinstance(resource, PDUDaemonPort):
                     try:
                         drv = target.get_driver(PDUDaemonDriver)
                     except NoDriverFoundError:
                         drv = PDUDaemonDriver(target, name=None)
-                        break
                 elif isinstance(resource, TasmotaPowerPort):
                     try:
                         drv = target.get_driver(TasmotaPowerDriver)
                     except NoDriverFoundError:
                         drv = TasmotaPowerDriver(target, name=None)
-                        break
+                if drv:
+                    break
+
         if not drv:
             raise UserError("target has no compatible resource available")
         if delay is not None:
@@ -804,42 +802,38 @@ class ClientSession(ApplicationSession):
                     except NoDriverFoundError:
                         target.set_binding_map({"coil": name})
                         drv = ModbusCoilDriver(target, name=name)
-                        break
                 elif isinstance(resource, OneWirePIO):
                     try:
                         drv = target.get_driver(OneWirePIODriver, name=name)
                     except NoDriverFoundError:
                         target.set_binding_map({"port": name})
                         drv = OneWirePIODriver(target, name=name)
-                        break
                 elif isinstance(resource, NetworkDeditecRelais8):
                     try:
                         drv = target.get_driver(DeditecRelaisDriver, name=name)
                     except NoDriverFoundError:
                         target.set_binding_map({"relais": name})
                         drv = DeditecRelaisDriver(target, name=name)
-                        break
                 elif isinstance(resource, NetworkSysfsGPIO):
                     try:
                         drv = target.get_driver(GpioDigitalOutputDriver, name=name)
                     except NoDriverFoundError:
                         target.set_binding_map({"gpio": name})
                         drv = GpioDigitalOutputDriver(target, name=name)
-                        break
                 elif isinstance(resource, NetworkLXAIOBusPIO):
                     try:
                         drv = target.get_driver(LXAIOBusPIODriver, name=name)
                     except NoDriverFoundError:
                         target.set_binding_map({"pio": name})
                         drv = LXAIOBusPIODriver(target, name=name)
-                        break
                 elif isinstance(resource, NetworkHIDRelay):
                     try:
                         drv = target.get_driver(HIDRelayDriver, name=name)
                     except NoDriverFoundError:
                         target.set_binding_map({"relay": name})
                         drv = HIDRelayDriver(target, name=name)
-                        break
+                if drv:
+                    break
 
         if not drv:
             raise UserError("target has no compatible resource available")
@@ -974,14 +968,12 @@ class ClientSession(ApplicationSession):
                     except NoDriverFoundError:
                         drv = IMXUSBDriver(target, name=None)
                     drv.loader.timeout = self.args.wait
-                    break
                 elif isinstance(resource, NetworkMXSUSBLoader):
                     try:
                         drv = target.get_driver(MXSUSBDriver)
                     except NoDriverFoundError:
                         drv = MXSUSBDriver(target, name=None)
                     drv.loader.timeout = self.args.wait
-                    break
                 elif isinstance(resource, NetworkAlteraUSBBlaster):
                     args = dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
                     try:
@@ -989,14 +981,15 @@ class ClientSession(ApplicationSession):
                     except NoDriverFoundError:
                         drv = OpenOCDDriver(target, name=None, **args)
                     drv.interface.timeout = self.args.wait
-                    break
                 elif isinstance(resource, NetworkRKUSBLoader):
                     try:
                         drv = target.get_driver(RKUSBDriver)
                     except NoDriverFoundError:
                         drv = RKUSBDriver(target, name=None)
                     drv.loader.timeout = self.args.wait
+                if drv:
                     break
+
         if not drv:
             raise UserError("target has no compatible resource available")
         target.activate(drv)
@@ -1009,6 +1002,7 @@ class ClientSession(ApplicationSession):
         from ..driver.usbsdmuxdriver import USBSDMuxDriver
         from ..driver.usbsdwiredriver import USBSDWireDriver
         from ..resource.remote import NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice
+
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkUSBSDMuxDevice):
@@ -1016,13 +1010,14 @@ class ClientSession(ApplicationSession):
                     drv = target.get_driver(USBSDMuxDriver)
                 except NoDriverFoundError:
                     drv = USBSDMuxDriver(target, name=None)
-                break
-            if isinstance(resource, NetworkUSBSDWireDevice):
+            elif isinstance(resource, NetworkUSBSDWireDevice):
                 try:
                     drv = target.get_driver(USBSDWireDriver)
                 except NoDriverFoundError:
                     drv = USBSDWireDriver(target, name=None)
+            if drv:
                 break
+
         if not drv:
             raise UserError("target has no compatible resource available")
         target.activate(drv)
@@ -1046,6 +1041,7 @@ class ClientSession(ApplicationSession):
         target = self._get_target(place)
         from ..driver.lxausbmuxdriver import LXAUSBMuxDriver
         from ..resource.remote import NetworkLXAUSBMux
+
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkLXAUSBMux):
@@ -1054,6 +1050,7 @@ class ClientSession(ApplicationSession):
                 except NoDriverFoundError:
                     drv = LXAUSBMuxDriver(target, name=None)
                 break
+
         if not drv:
             raise UserError("target has no compatible resource available")
         target.activate(drv)
@@ -1178,13 +1175,13 @@ class ClientSession(ApplicationSession):
                         drv = target.get_driver(USBVideoDriver)
                     except NoDriverFoundError:
                         drv = USBVideoDriver(target, name=None)
-                        break
                 elif isinstance(resource, HTTPVideoStream):
                     try:
                         drv = target.get_driver(HTTPVideoDriver)
                     except NoDriverFoundError:
                         drv = HTTPVideoDriver(target, name=None)
-                        break
+                if drv:
+                    break
         if not drv:
             raise UserError("target has no compatible resource available")
 

@@ -3,12 +3,16 @@
 %:
 	dh $@ --with python-virtualenv
 
+override_dh_installsystemd:
+	dh_installsystemd --name labgrid-coordinator
+	dh_installsystemd --name labgrid-exporter
+
 override_dh_shlibs:
 	dh_shlibs -l/opt
 
 override_dh_virtualenv:
 	dh_virtualenv \
-		--package labgrid-base \
+		--package labgrid-venv \
 		--install-suffix labgrid \
 		--python /usr/bin/python3 \
 		--builtin-venv \
@@ -19,7 +23,7 @@ override_dh_virtualenv:
 		--extra-pip-arg='cffi,numpy'
 
 	dh_virtualenv \
-		--package labgrid-coordinator \
+		--package labgrid-coordinator-venv \
 		--install-suffix labgrid-coordinator \
 		--python /usr/bin/python3 \
 		--builtin-venv \

@@ -2,4 +2,4 @@
 
 cmd="crossbar"
 
-exec /opt/venvs/labgrid/bin/$cmd "$@"
+exec /opt/venvs/labgrid-coordinator/bin/$cmd "$@"

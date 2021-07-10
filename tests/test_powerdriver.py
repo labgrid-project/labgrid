@@ -171,6 +171,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.netio_kshell
         import labgrid.driver.power.rest
         import labgrid.driver.power.sentry
+        import labgrid.driver.power.eg_pms2_network
 
     def test_import_backend_siglent(self):
         pytest.importorskip("vxi11")

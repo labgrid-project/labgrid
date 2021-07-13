@@ -230,16 +230,16 @@ class SerialPortExport(ResourceExport):
         _, _, version = str(subprocess.check_output([self.ser2net_bin,'-v'])).split(' ')
         major_version = version.split('.')[0]
         if int(major_version) >= 4:
-            self.child = subprocess.Popen([
+            cmd = [
                 self.ser2net_bin,
                 '-d',
                 '-n',
                 '-Y', 'connection: &con01#  accepter: telnet(rfc2217,mode=server),{}'.format(self.port),
                 '-Y', '  connector: serialdev(nouucplock=true),{},{}n81,local'.format(start_params['path'], self.local.speed,
                 ),
-            ])
+            ]
         else:
-            self.child = subprocess.Popen([
+            cmd = [
                 self.ser2net_bin,
                 '-d',
                 '-n',
@@ -248,7 +248,9 @@ class SerialPortExport(ResourceExport):
                 '{}:telnet:0:{}:{} NONE 8DATABITS 1STOPBIT LOCAL'.format(
                     self.port, start_params['path'], self.local.speed
                 ),
-            ])
+            ]
+        self.logger.info("Starting ser2net with: {}".format(" ".join(cmd)))
+        self.child = subprocess.Popen(cmd)
         try:
             self.child.wait(timeout=0.5)
             raise ExporterError("ser2net for {} exited immediately".format(start_params['path']))

@@ -1,0 +1,36 @@
+abstracts:
+  resources:
+    - MyPDU: &pdu_resource
+        model: "apc"
+        host: *pdu_ip
+
+targets:
+  main:
+    resources:
+    - NetworkService:
+        name: 'ssh-root'
+        address: *target_ip
+        username: "root"
+        password: "root"
+    - NetworkPowerPort:
+        name: "target_resource"
+        <<: *pdu_resource
+        index: 2
+    - NetworkPowerPort:
+        name: "network_power_resource"
+        <<: *pdu_resource
+        index: 1
+    drivers:
+    - SSHDriver:
+        name: "ssh-root-driver"
+        bindings:
+          networkservice: "ssh-root"
+        keyfile: ""
+    - NetworkPowerDriver:
+        name: "target"
+        bindings:
+          port: "target_resource"
+    - NetworkPowerDriver:
+        name: "network_power"
+        bindings:
+          port: "network_power_resource"

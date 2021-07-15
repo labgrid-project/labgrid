@@ -1,0 +1,8 @@
+defines:
+  pdu_ip: &pdu_ip
+    "1.2.3.4"
+  m_system_ip: &target_ip
+    "1.2.3.5"
+
+includes:
+  - "common.yaml"

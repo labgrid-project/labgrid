@@ -6,19 +6,31 @@ from collections import OrderedDict, UserString
 from string import Template
 
 import yaml
+import os
+import re
 
 class Loader(yaml.SafeLoader):
     pass
 class Dumper(yaml.SafeDumper):
     pass
 
-def _dict_constructor(loader, node):
-    return OrderedDict(loader.construct_pairs(node))
+# TODO: Is this constructor below important? `<<: *ref` does not work with `OrderedDict`. Produces the following error, though the yaml is valid:
+# INTERNALERROR>   File "<attrs generated init labgrid.config.Config>", line 5, in __init__
+# INTERNALERROR>     self.__attrs_post_init__()
+# INTERNALERROR>   File "/home/test/work/labgrid/labgrid/config.py", line 28, in __attrs_post_init__
+# INTERNALERROR>     raise InvalidConfigError("Error in configuration file: {}".format(err))
+# INTERNALERROR> labgrid.exceptions.InvalidConfigError: Error in configuration file: could not determine a constructor for the tag 'tag:yaml.org,2002:merge'
+# INTERNALERROR>   in "<unicode string>", line 37, column 9:
+# INTERNALERROR>             <<: *pdu_resource
+# INTERNALERROR>             ^
+#
+# def _dict_constructor(loader, node):
+#     return OrderedDict(loader.construct_pairs(node))
 
 
-Loader.add_constructor(
-    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _dict_constructor
-)
+# Loader.add_constructor(
+#     yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _dict_constructor
+# )
 
 
 def _dict_representer(dumper, data):
@@ -52,11 +64,71 @@ Loader.add_constructor(
 )
 
 
-def load(stream):
+
+def _include_block(content: str, remove: bool) -> str:
+    ret = ""
+    lines = content.splitlines()
+    found = False
+
+    for line in lines:
+        if not found and re.match("^includes:\\s*(#.*)?$", line):
+            found = True
+            if not remove:
+                ret = ret + line + '\n'
+        elif found and re.match("^\\s+\\-\\s[\"'].*[\"']\\s*(#.*)?$", line):
+            if not remove:
+                ret = ret + line + '\n'
+        elif found and re.match("^\\s*$", line):
+            # just ignore blank lines in the include block
+            pass
+        else:
+            # this is no longer in the include block
+            found = False
+            if remove:
+                ret = ret + line + '\n'
+
+    return ret
+
+
+def _get_include_block(content: str) -> str:
+    return _include_block(content, remove=False)
+
+
+def _remove_include_block(content: str) -> str:
+    return _include_block(content, remove=True)
+
+
+def _load_from_content(content: str, base: str) -> str:
+    """
+    Load a configuration yaml and copy/paste included files.
+    """
+    include_block = _get_include_block(content)
+    ret = _remove_include_block(content)
+
+    if not include_block:
+        return ret
+
+    _includes = yaml.load(include_block, Loader=Loader)
+    for _include in _includes['includes']:
+        print(_include)
+        _filename = os.path.join(base, _include)
+        _base = os.path.dirname(os.path.abspath(_filename))
+
+        with open(_filename) as _f:
+            _content = _f.read()
+            ret = _load_from_content(ret + _content, _base)
+
+    return ret
+
+
+def load(stream, base):
     """
     Wrapper for yaml load function with custom loader.
     """
-    return yaml.load(stream, Loader=Loader)
+    mergen_content = _load_from_content(stream.read(), base)
+    ret = yaml.load(mergen_content, Loader=Loader)
+
+    return ret
 
 
 def dump(data, stream=None):

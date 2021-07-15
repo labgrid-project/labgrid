@@ -37,7 +37,7 @@ def test_labgrid_loader():
     bar: False
     """
     stream = io.StringIO(doc)
-    data = load(stream)
+    data = load(stream, '.')
 
     assert isinstance(data, dict)
     assert isinstance(data['foo'], UserString)

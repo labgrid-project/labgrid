@@ -75,7 +75,7 @@ def test_drivers():
 
 
 def test_convert_dict(foo_yaml):
-    data = load(foo_yaml)
+    data = load(foo_yaml, '.')
     l = target_factory._convert_to_named_list(data)
     assert l == [
         {
@@ -90,7 +90,7 @@ def test_convert_dict(foo_yaml):
 
 
 def test_convert_simple_list(foo_yaml):
-    data = load(foo_yaml)
+    data = load(foo_yaml, '.')
     l = target_factory._convert_to_named_list(data)
     assert l == [
         {
@@ -105,7 +105,7 @@ def test_convert_simple_list(foo_yaml):
 
 
 def test_convert_explicit_list(list_yaml):
-    data = load(list_yaml)
+    data = load(list_yaml, '.')
     l = target_factory._convert_to_named_list(data)
     assert l == [
         {
@@ -123,14 +123,14 @@ def test_convert_error():
     with pytest.raises(InvalidConfigError) as excinfo:
         data = load(io.StringIO("""
                 - {}
-                """))
+                """), '.')
         target_factory._convert_to_named_list(data)
     assert "invalid empty dict as list item" in excinfo.value.msg
 
     with pytest.raises(InvalidConfigError) as excinfo:
         data = load(io.StringIO("""
                 - "error"
-                """))
+                """), '.')
         target_factory._convert_to_named_list(data)
     assert "invalid list item type <class 'str'> (should be dict)" in excinfo.value.msg
 
@@ -138,7 +138,7 @@ def test_convert_error():
         data = load(io.StringIO("""
                 - name: "bar"
                   extra: "baz"
-                """))
+                """), '.')
         target_factory._convert_to_named_list(data)
     assert "missing 'cls' key in " in excinfo.value.msg
 
@@ -146,7 +146,7 @@ def test_convert_error():
         data = load(io.StringIO("""
                 - one:
                 - two: {}
-                """))
+                """), '.')
         target_factory._convert_to_named_list(data)
     assert "invalid list item, add empty dict for no arguments" in excinfo.value.msg
 

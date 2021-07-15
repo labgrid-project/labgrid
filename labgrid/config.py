@@ -19,7 +19,7 @@ class Config:
         self.base = os.path.dirname(os.path.abspath(self.filename))
         try:
             with open(self.filename) as file:
-                self.data = load(file)
+                self.data = load(file, self.base)
         except FileNotFoundError:
             raise NoConfigFoundError(
                 "configuration file '{}' could not be found".format(self.filename)

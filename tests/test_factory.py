@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 import attr
 import pytest
+import io
 
 from labgrid import Target, target_factory
 from labgrid.driver import Driver
@@ -9,6 +10,26 @@ from labgrid.resource import Resource
 from labgrid.exceptions import InvalidConfigError, RegistrationError
 from labgrid.resource import SerialPort
 from labgrid.util.yaml import load
+
+@pytest.fixture(scope='function')
+def foo_yaml():
+    string = """
+    FooPort: {}
+    BarPort:
+      name: bar
+    """
+    return io.StringIO(string)
+
+
+@pytest.fixture(scope='function')
+def list_yaml():
+    string = """
+    - cls: FooPort
+    - cls: BarPort
+      name: bar
+    """
+    return io.StringIO(string)
+
 
 def test_empty():
     t = target_factory.make_target('dummy', {})
@@ -53,12 +74,8 @@ def test_drivers():
     assert t.get_resource(SerialPort) is not None
 
 
-def test_convert_dict():
-    data = load("""
-    FooPort: {}
-    BarPort:
-      name: bar
-    """)
+def test_convert_dict(foo_yaml):
+    data = load(foo_yaml)
     l = target_factory._convert_to_named_list(data)
     assert l == [
         {
@@ -72,12 +89,8 @@ def test_convert_dict():
     ]
 
 
-def test_convert_simple_list():
-    data = load("""
-    - FooPort: {}
-    - BarPort:
-        name: bar
-    """)
+def test_convert_simple_list(foo_yaml):
+    data = load(foo_yaml)
     l = target_factory._convert_to_named_list(data)
     assert l == [
         {
@@ -91,12 +104,8 @@ def test_convert_simple_list():
     ]
 
 
-def test_convert_explicit_list():
-    data = load("""
-    - cls: FooPort
-    - cls: BarPort
-      name: bar
-    """)
+def test_convert_explicit_list(list_yaml):
+    data = load(list_yaml)
     l = target_factory._convert_to_named_list(data)
     assert l == [
         {
@@ -112,32 +121,32 @@ def test_convert_explicit_list():
 
 def test_convert_error():
     with pytest.raises(InvalidConfigError) as excinfo:
-        data = load("""
-        - {}
-        """)
+        data = load(io.StringIO("""
+                - {}
+                """))
         target_factory._convert_to_named_list(data)
     assert "invalid empty dict as list item" in excinfo.value.msg
 
     with pytest.raises(InvalidConfigError) as excinfo:
-        data = load("""
-        - "error"
-        """)
+        data = load(io.StringIO("""
+                - "error"
+                """))
         target_factory._convert_to_named_list(data)
     assert "invalid list item type <class 'str'> (should be dict)" in excinfo.value.msg
 
     with pytest.raises(InvalidConfigError) as excinfo:
-        data = load("""
-        - name: "bar"
-          extra: "baz"
-        """)
+        data = load(io.StringIO("""
+                - name: "bar"
+                  extra: "baz"
+                """))
         target_factory._convert_to_named_list(data)
-    assert "missing 'cls' key in OrderedDict(" in excinfo.value.msg
+    assert "missing 'cls' key in " in excinfo.value.msg
 
     with pytest.raises(InvalidConfigError) as excinfo:
-        data = load("""
-        - one:
-        - two: {}
-        """)
+        data = load(io.StringIO("""
+                - one:
+                - two: {}
+                """))
         target_factory._convert_to_named_list(data)
     assert "invalid list item, add empty dict for no arguments" in excinfo.value.msg
 

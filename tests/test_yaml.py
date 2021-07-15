@@ -2,6 +2,7 @@ from collections import OrderedDict, UserString
 
 import pytest
 import yaml
+import io
 
 from labgrid.util.yaml import *
 
@@ -35,9 +36,11 @@ def test_labgrid_loader():
       line
     bar: False
     """
-    data = load(doc)
-    assert type(data) == OrderedDict
-    assert type(data["foo"]) == UserString
+    stream = io.StringIO(doc)
+    data = load(stream)
+
+    assert isinstance(data, dict)
+    assert isinstance(data['foo'], UserString)
     assert data["foo"].start_mark.line == 1
     assert data["foo"].end_mark.line == 4
 

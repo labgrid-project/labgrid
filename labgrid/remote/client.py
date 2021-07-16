@@ -1613,7 +1613,7 @@ def main():
                                       aliases=('pw',),
                                       help="change (or get) a place's power status")
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
-    subparser.add_argument('-t', '--delay', type=float, default=None,
+    subparser.add_argument('-t', '--delay', type=float, default=1.0
                            help='wait time in seconds between off and on during cycle')
     subparser.set_defaults(func=ClientSession.power)
 

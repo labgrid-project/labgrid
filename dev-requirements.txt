@@ -9,6 +9,7 @@ psutil==5.8.0
 -r crossbar-requirements.txt
 -r onewire-requirements.txt
 -r modbus-requirements.txt
+-r modbusrtu-requirements.txt
 -r snmp-requirements.txt
 -r xena-requirements.txt
 -r graph-requirements.txt

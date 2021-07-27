@@ -9,6 +9,10 @@ from ..resource.common import Resource
 __all__ = ['proxymanager']
 
 
+class ProxyError(Exception):
+    pass
+
+
 class ProxyManager:
     """The ProxyManager class is only used inside labgrid.util.proxy (similar
     to a singleton), don't instanciate this class, use the exported
@@ -71,6 +75,12 @@ class ProxyManager:
 
         hostname = s.hostname
         port = s.port or default_port
+
+        if hostname is None:
+            raise ProxyError(f"Invalid url: {url} does not contain a host")
+
+        if port is None:
+            raise ProxyError(f"Invalid url: {url} does not contain a port and no default set")
 
         if cls._force_proxy:
             port = sshmanager.request_forward(cls._force_proxy, hostname, port)

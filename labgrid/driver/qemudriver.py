@@ -99,11 +99,11 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._socket.bind(sockpath)
         self._socket.listen(0)
 
-        self.qemu_bin = self.target.env.config.get_tool(self.qemu_bin)
-        if self.qemu_bin is None:
+        qemu_bin = self.target.env.config.get_tool(self.qemu_bin)
+        if qemu_bin is None:
             raise KeyError(
                 "QEMU Binary Path not configured in tools configuration key")
-        self._cmd = [self.qemu_bin]
+        self._cmd = [qemu_bin]
 
         boot_args = []
 

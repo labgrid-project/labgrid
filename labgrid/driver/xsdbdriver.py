@@ -34,8 +34,8 @@ class XSDBDriver(Driver):
     @step(args=['tcl_cmds'])
     def run(self, tcl_cmds):
         url = self.interface.agent_url.split(":")
-        if not url[2]:
-            url[2] = self.interface.host
+        if not url[1]:
+            url[1] = self.interface.host
 
         tcl_cmd = "connect -url {}; ".format(":".join(url))
         tcl_cmd += "; ".join(tcl_cmds)

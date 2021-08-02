@@ -1717,6 +1717,23 @@ Implements:
 Arguments:
   - None
 
+ManualSwitchDriver
+~~~~~~~~~~~~~~~~~~
+A ManualSwitchDriver requires the user to control a switch or jumper on the
+target. This can be used if a driver binds to a :any:`DigitalOutputProtocol`,
+but no automatic control is available.
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   ManualSwitchDriver:
+     description: 'Jumper 5'
+
+Arguments:
+  - description (str): optional description of the switch or jumper on the target
+
 MXSUSBDriver
 ~~~~~~~~~~~~
 A MXUSBDriver is used to upload an image into a device in the mxs USB loader

@@ -846,7 +846,7 @@ class ClientSession(ApplicationSession):
         elif action == 'low':
             drv.set(False)
 
-    async def _console(self, place, target):
+    async def _console(self, place, target, *, logfile=None):
         name = self.args.name
         from ..resource import NetworkSerialPort
         resource = target.get_resource(NetworkSerialPort, name=name)
@@ -859,6 +859,8 @@ class ClientSession(ApplicationSession):
             'microcom', '-s', str(resource.speed), '-t',
             "{}:{}".format(host, port)
         ]
+        if logfile:
+            call.append("--logfile={}".format(logfile))
         print("connecting to {} calling {}".format(resource, " ".join(call)))
         try:
             p = await asyncio.create_subprocess_exec(*call)
@@ -889,7 +891,7 @@ class ClientSession(ApplicationSession):
 
     async def console(self, place, target):
         while True:
-            res = await self._console(place, target)
+            res = await self._console(place, target, logfile=self.args.logfile)
             if res:
                 break
             if not self.args.loop:
@@ -1630,6 +1632,7 @@ def main():
     subparser.add_argument('-l', '--loop', action='store_true',
                            help="keep trying to connect if the console is unavailable")
     subparser.add_argument('name', help="optional resource name", nargs='?')
+    subparser.add_argument('--logfile', metavar="FILE", help="Log output to FILE", default=None)
     subparser.set_defaults(func=ClientSession.console)
 
     subparser = subparsers.add_parser('fastboot',

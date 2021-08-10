@@ -296,7 +296,7 @@ the advantage that exceptions can be handled by your application::
 
 Environments
 ~~~~~~~~~~~~
-In practice, is is often useful to separate the `Target` configuration from the
+In practice, it is often useful to separate the `Target` configuration from the
 code which needs to control the board (such as a test case or installation
 script).
 For this use-case, labgrid can construct targets from a configuration file in

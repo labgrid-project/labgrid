@@ -37,3 +37,4 @@ from .usbaudiodriver import USBAudioInputDriver
 from .networkinterfacedriver import NetworkInterfaceDriver
 from .provider import TFTPProviderDriver
 from .mqtt import TasmotaPowerDriver
+from .manualswitchdriver import ManualSwitchDriver

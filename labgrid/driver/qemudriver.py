@@ -230,7 +230,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         if not self.status:
             raise ExecutionError(
                 "Can't use monitor command on non-running target")
-        self.qmp.execute(command)
+        return self.qmp.execute(command)
 
     def _read(self, size=1, timeout=10):
         ready, _, _ = select.select([self._clientsocket], [], [], timeout)

@@ -45,7 +45,7 @@ class QMPMonitor:
             answer = self._read_parse_json()
         if "error" in answer:
             raise QMPError(answer['error'])
-        return answer
+        return answer['return']
 
 @attr.s(eq=False)
 class QMPError(Exception):

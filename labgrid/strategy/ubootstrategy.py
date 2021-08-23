@@ -53,6 +53,7 @@ class UBootStrategy(Strategy):
             self.uboot.boot("")
             self.uboot.await_boot()
             self.target.activate(self.shell)
+            self.shell.run("systemctl is-system-running --wait")
         else:
             raise StrategyError(f"no transition found from {self.status} to {status}")
         self.status = status

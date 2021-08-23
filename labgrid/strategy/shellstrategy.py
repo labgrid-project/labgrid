@@ -46,6 +46,7 @@ class ShellStrategy(Strategy):
             self.target.activate(self.console)
             self.power.cycle()
             self.target.activate(self.shell)
+            self.shell.run("systemctl is-system-running --wait")
         else:
             raise StrategyError(
                 f"no transition found from {self.status} to {status}"

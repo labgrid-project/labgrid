@@ -56,6 +56,7 @@ class BareboxStrategy(Strategy):
             self.barebox.boot("")
             self.barebox.await_boot()
             self.target.activate(self.shell)
+            self.shell.run("systemctl is-system-running --wait")
         else:
             raise StrategyError(
                 "no transition found from {} to {}".

@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 import attr
 
 from .target import Target
@@ -34,7 +35,7 @@ class Environment:
                 module = importlib.import_module(user_import)
             sys.modules[module_name] = module
 
-    def get_target(self, role: str = 'main') -> Target:
+    def get_target(self, role: str = 'main') -> Optional[Target]:
         """Returns the specified target or None if not found.
 
         Each target is initialized as needed.

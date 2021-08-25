@@ -12,6 +12,7 @@ import traceback
 import shutil
 import subprocess
 import warnings
+from typing import Dict, Type
 from socket import gethostname, getfqdn
 import attr
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
@@ -27,7 +28,7 @@ except pkg_resources.DistributionNotFound:
     __version__ = "unknown"
 
 
-exports = {}
+exports: Dict[str, Type[ResourceEntry]] = {}
 reexec = False
 
 class ExporterError(Exception):

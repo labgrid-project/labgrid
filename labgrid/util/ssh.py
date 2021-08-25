@@ -108,6 +108,22 @@ class SSHConnectionManager:
             self.remove_by_name(name)
 
 
+def _check_connected(func):
+    """Check if an SSHConnection is connected as a decorator"""
+
+    @wraps(func)
+    def wrapper(self, *_args, **_kwargs):
+        if not self.isconnected():
+            raise ExecutionError(
+                "{} can not be called ({} is not connected)".format(
+                    func.__qualname__, self
+                )
+            )
+        return func(self, *_args, **_kwargs)  # pylint: disable=not-callable
+
+    return wrapper
+
+
 @attr.s
 class SSHConnection:
     """SSHConnections are individual connections to hosts managed by a control
@@ -179,21 +195,6 @@ class SSHConnection:
             stderr=subprocess.STDOUT,
             timeout=2,
         )
-
-    def _check_connected(func):  # pylint: disable=no-self-argument
-        """Check if an SSHConnection is connected as a decorator"""
-
-        @wraps(func)
-        def wrapper(self, *_args, **_kwargs):
-            if not self.isconnected():
-                raise ExecutionError(
-                    "{} can not be called ({} is not connected)".format(
-                        func.__qualname__, self
-                    )
-                )
-            return func(self, *_args, **_kwargs)  # pylint: disable=not-callable
-
-        return wrapper
 
     @_check_connected
     def get_prefix(self):

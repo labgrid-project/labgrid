@@ -1,4 +1,7 @@
 "Xilinx System Debugger (XSDB) driver"
+import logging
+import subprocess
+
 import attr
 
 from .common import Driver
@@ -23,6 +26,7 @@ class XSDBDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self.logger = logging.getLogger("{}({})".format(self, self.target))
 
         # FIXME make sure we always have an environment or config
         if self.target.env:
@@ -31,8 +35,8 @@ class XSDBDriver(Driver):
             self.xsdb_bin = 'xsdb'
 
     @Driver.check_active
-    @step(args=['tcl_cmds'])
-    def run(self, tcl_cmds):
+    @step(args=['tcl_cmds', 'interactive'])
+    def run(self, tcl_cmds, interactive=False):
         url = self.interface.agent_url.split(":")
         if not url[1]:
             url[1] = self.interface.host
@@ -41,7 +45,12 @@ class XSDBDriver(Driver):
         tcl_cmd += "; ".join(tcl_cmds)
 
         cmd = [self.xsdb_bin, "-eval", tcl_cmd]
-        processwrapper.check_output(cmd)
+        if interactive:
+            cmd.append('-interactive')
+
+        # Do not use ProcessWrapper because it garbles output up
+        self.logger.debug("Running command: %s", cmd)
+        subprocess.run(cmd, check=True)
 
     @Driver.check_active
     @step(args=['filename'])

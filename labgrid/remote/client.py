@@ -1297,17 +1297,14 @@ class ClientSession(ApplicationSession):
         self._check_xlx_env()
         drv = self._get_fpga(self.args.resource)
 
-        processwrapper.enable_print()
-        drv.run([self.args.tcl_cmds])
-        processwrapper.disable_print()
+        drv.run([self.args.tcl_cmds],
+                interactive=self.args.interactive or not bool(self.args.tcl_cmds))
 
     def fpga_program_bitstream(self):
         self._check_xlx_env()
         drv = self._get_fpga(self.args.resource)
 
-        processwrapper.enable_print()
         drv.program_bitstream(self.args.bitstream)
-        processwrapper.disable_print()
 
     def write_image(self):
         place = self.get_acquired_place()
@@ -1792,9 +1789,10 @@ def main():
         metavar="SUBCOMMAND",
     )
 
-    fpga_subparser = fpga_subparsers.add_parser('xsdb', help="run XSDB")
+    fpga_subparser = fpga_subparsers.add_parser('xsdb', help="run XSDB and connect to Vivado hardware server")
     fpga_subparser.add_argument('-r,', '--resource', help="resource name")
-    fpga_subparser.add_argument('tcl_cmds', help="Tcl commands")
+    fpga_subparser.add_argument('tcl_cmds', nargs='?', default='', help="execute Tcl command then exit")
+    fpga_subparser.add_argument('-i', '--interactive', action='store_true', help="enter interactive mode after executing Tcl command")
     fpga_subparser.set_defaults(func=ClientSession.fpga_run_xsdb)
 
     fpga_subparser = fpga_subparsers.add_parser('program-bitstream', help="program bitstream")

@@ -1,5 +1,6 @@
 import enum
 from functools import wraps
+from typing import Any, Dict
 
 import attr
 
@@ -36,7 +37,7 @@ class BindingMixin:
     callback).
     """
 
-    bindings = {}
+    bindings: Dict[str, Any] = {}
 
     # these are controlled by the Target
     target = attr.ib()

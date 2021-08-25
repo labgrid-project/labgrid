@@ -1,3 +1,4 @@
+from typing import Dict, Type
 import attr
 
 from ..binding import BindingMixin
@@ -81,10 +82,10 @@ class NetworkResource(Resource):
 
 @attr.s(eq=False)
 class ResourceManager:
-    instances = {}
+    instances: 'Dict[Type[ResourceManager], ResourceManager]' = {}
 
     @classmethod
-    def get(cls):
+    def get(cls) -> 'ResourceManager':
         instance = ResourceManager.instances.get(cls)
         if instance is None:
             instance = cls()
@@ -92,13 +93,13 @@ class ResourceManager:
         return instance
 
     def __attrs_post_init__(self):
-        self.resources = []
+        self.resources: List[ManagedResource] = []
 
-    def _add_resource(self, resource):
+    def _add_resource(self, resource: 'ManagedResource'):
         self.resources.append(resource)
         self.on_resource_added(resource)
 
-    def on_resource_added(self, resource):
+    def on_resource_added(self, resource: 'ManagedResource'):
         pass
 
     def poll(self):

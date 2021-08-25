@@ -7,6 +7,7 @@ import subprocess
 import os
 from select import select
 from functools import wraps
+from typing import Dict
 
 import attr
 from ..driver.exception import ExecutionError
@@ -22,7 +23,7 @@ class SSHConnectionManager:
     should not be directly instantiated, use the exported sshmanager from this
     module instead.
     """
-    _connections = attr.ib(
+    _connections: 'Dict[str, SSHConnection]' = attr.ib(
         default=attr.Factory(dict),
         init=False,
         validator=attr.validators.optional(attr.validators.instance_of(dict))

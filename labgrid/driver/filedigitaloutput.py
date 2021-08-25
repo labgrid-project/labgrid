@@ -20,7 +20,6 @@ class FileDigitalOutputDriver(Driver, DigitalOutputProtocol):
     A prime example for using this driver is Linux's sysfs.
     """
 
-    bindings = {}
     filepath = attr.ib(validator=attr.validators.instance_of(str))
     false_repr = attr.ib(default='0\n', validator=attr.validators.instance_of(str))
     true_repr = attr.ib(default='1\n', validator=attr.validators.instance_of(str))

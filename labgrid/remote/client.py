@@ -1298,6 +1298,36 @@ class ClientSession(ApplicationSession):
         except FileNotFoundError as e:
             raise UserError(e)
 
+    def write_file(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        drv = None
+        from ..resource.remote import NetworkUSBMassStorage, NetworkUSBSDMuxDevice, \
+            NetworkUSBSDWireDevice
+        from ..driver import USBStorageDriver
+        try:
+            drv = target.get_driver(USBStorageDriver)
+        except NoDriverFoundError:
+            for resource in target.resources:
+                if isinstance(resource, (NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice,
+                                         NetworkUSBMassStorage)):
+                    try:
+                        drv = target.get_driver(USBStorageDriver)
+                    except NoDriverFoundError:
+                        drv = USBStorageDriver(target, name=None)
+                    drv.storage.timeout = self.args.wait
+                    break
+        if not drv:
+            raise UserError("target has no compatible resource available")
+        target.activate(drv)
+        try:
+            drv.write_file(srcfile=self.args.srcfile, dstpath=self.args.dstpath,
+                           partition=self.args.partition)
+        except subprocess.CalledProcessError as e:
+            raise UserError("could not write file: {}".format(e))
+        except FileNotFoundError as e:
+            raise UserError(e)
+
     async def create_reservation(self):
         filters = ' '.join(self.args.filters)
         prio = self.args.prio
@@ -1755,6 +1785,14 @@ def main():
                            help="Choose tool for writing images (default: %(default)s)")
     subparser.add_argument('filename', help='filename to boot on the target')
     subparser.set_defaults(func=ClientSession.write_image)
+
+    subparser = subparsers.add_parser('write-file', help="write a file to a mass storage partition")
+    subparser.add_argument('-w', '--wait', type=float, default=10.0)
+    subparser.add_argument('-p', '--partition', type=int, help="partition number to mount")
+    subparser.add_argument('srcfile', help='source filename to copy')
+    subparser.add_argument('dstpath', default='/', nargs='?',
+                           help='destination path to write to on target file system (default: /)')
+    subparser.set_defaults(func=ClientSession.write_file)
 
     subparser = subparsers.add_parser('reserve', help="create a reservation")
     subparser.add_argument('--wait', action='store_true',

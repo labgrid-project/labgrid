@@ -180,6 +180,8 @@ LABGRID-CLIENT COMMANDS
 
 ``write-image``                 Write images onto block devices (USBSDMux, USB Sticks, …)
 
+``write-file``                  Write file onto a file system on a block device (USBSDMux, USB Sticks, …)
+
 ``reserve`` filter              Create a reservation
 
 ``cancel-reservation`` token    Cancel a pending reservation

@@ -18,6 +18,8 @@ New Features in 0.4.0
 - Network controlled relay providing GET/PUT based REST API
 - Improved LG_PROXY documentation in docs/usage.rst.
 - Exporter now checks /usr/sbin/ser2net for SerialPortExport
+- labgrid-client ``write-file`` subcommand: labgrid client now has a
+  ``write-file`` command to mount block devices and write a single file.
 
 Bug fixes in 0.4.0
 ~~~~~~~~~~~~~~~~~~

@@ -26,7 +26,7 @@ RUN set -e ;\
     pip3 install --no-cache-dir -r requirements.txt ;\
     SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" python3 setup.py install ;\
     apt update -q=2 ;\
-    apt install -q=2 --yes --no-install-recommends microcom openssh-client rsync jq qemu-system; \
+    apt install -q=2 --yes --no-install-recommends microcom openssh-client rsync pmount jq qemu-system; \
     apt clean ;\
     rm -rf /var/lib/apt/lists/*
 

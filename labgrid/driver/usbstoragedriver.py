@@ -25,6 +25,12 @@ class Mode(enum.Enum):
         return self.value
 
 
+def escape(path):
+    if path.startswith("/dev/"):
+        path = path[len("/dev/"):]
+    return path.replace('/', '_')
+
+
 @target_factory.reg_driver
 @attr.s(eq=False)
 class USBStorageDriver(Driver):
@@ -53,6 +59,19 @@ class USBStorageDriver(Driver):
     def on_deactivate(self):
         pass
 
+    def await_medium(self):
+        timeout = Timeout(10.0)
+        while not timeout.expired:
+            try:
+                if self.get_size() > 0:
+                    break
+                time.sleep(0.5)
+            except ValueError:
+                # when the medium gets ready the sysfs attribute is empty for a short time span
+                continue
+        else:
+            raise ExecutionError("Timeout while waiting for medium")
+
     @Driver.check_active
     @step(args=['filename'])
     def write_image(self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0):
@@ -74,18 +93,7 @@ class USBStorageDriver(Driver):
         mf = ManagedFile(filename, self.storage)
         mf.sync_to_resource()
 
-        # wait for medium
-        timeout = Timeout(10.0)
-        while not timeout.expired:
-            try:
-                if self.get_size() > 0:
-                    break
-                time.sleep(0.5)
-            except ValueError:
-                # when the medium gets ready the sysfs attribute is empty for a short time span
-                continue
-        else:
-            raise ExecutionError("Timeout while waiting for medium")
+        self.await_medium()
 
         partition = "" if partition is None else partition
         remote_path = mf.get_remote_path()
@@ -151,6 +159,67 @@ class USBStorageDriver(Driver):
         args = ["cat", "/sys/class/block/{}/size".format(self.storage.path[5:])]
         size = subprocess.check_output(self.storage.command_prefix + args)
         return int(size)*512
+
+    @Driver.check_active
+    @step(args=['srcfile'])
+    def write_file(self, srcfile, dstpath="/", partition=None):
+        """
+        Writes the file specified by filename to the filesystem on the bound USB storage
+        root device or partition.
+
+        Args:
+            srcfile(str): path to the file to write to bound USB storage filesystem
+            dstpath (str): optional, destination path to write filename to (defaults to /)
+            partition (int or None): optional, mount the specified partition or None for mounting
+                the root device (defaults to None)
+        """
+        assert srcfile, "write_file requires srcfile"
+        mf = ManagedFile(srcfile, self.storage)
+        mf.sync_to_resource()
+
+        self.await_medium()
+
+        partition = "" if partition is None else partition
+        remote_path = mf.get_remote_path()
+        target = "{}{}".format(self.storage.path, partition)
+
+        label = escape(target)
+        dstpath = os.path.normpath(dstpath)
+        if not dstpath.startswith("/"):
+            raise ValueError("dstpath must be ab absolute path")
+
+        dstpath = "/media/{}/{}".format(label, dstpath)
+
+        self.logger.info('Copying %s to %s via rsync', remote_path, dstpath)
+
+        args = ["pmount {} {}".format(target, label)]
+
+        processwrapper.check_output(
+            self.storage.command_prefix + args,
+            print_on_silent_log=True
+        )
+
+        caught = None
+
+        try:
+            args = ["rsync -v {} {}".format(remote_path, dstpath)]
+
+            processwrapper.check_output(
+                self.storage.command_prefix + args,
+                print_on_silent_log=True
+            )
+        except Exception as e:
+            caught = e
+
+        args = ["pumount {}".format(target)]
+
+        processwrapper.check_output(
+            self.storage.command_prefix + args,
+            print_on_silent_log=True
+        )
+
+        if caught:
+            raise caught
 
 
 @target_factory.reg_driver

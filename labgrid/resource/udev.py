@@ -32,7 +32,7 @@ class UdevManager(ResourceManager):
         devices.match_subsystem(resource.match['SUBSYSTEM'])
         for device in devices:
             if resource.try_match(device):
-                break
+                self.log.debug(" matched successfully against %s", resource.device)
 
     def _insert_into_queue(self, device):
         self.queue.put(device)
@@ -46,9 +46,8 @@ class UdevManager(ResourceManager):
                 break
             self.log.debug("%s: %s", device.action, device)
             for resource in self.resources:
-                self.log.debug(" %s", resource)
                 if resource.try_match(device):
-                    break
+                    self.log.debug(" matched successfully")
 
 @attr.s(eq=False)
 class USBResource(ManagedResource):

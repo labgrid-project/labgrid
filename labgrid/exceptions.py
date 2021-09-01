@@ -31,5 +31,10 @@ class NoResourceFoundError(NoSupplierFoundError):
 
 
 @attr.s(eq=False)
+class NoStrategyFoundError(NoSupplierFoundError):
+    pass
+
+
+@attr.s(eq=False)
 class RegistrationError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))

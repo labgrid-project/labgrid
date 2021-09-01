@@ -9,7 +9,7 @@ from labgrid.binding import BindingError
 from labgrid.resource import Resource
 from labgrid.driver import Driver
 from labgrid.strategy import Strategy
-from labgrid.exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
+from labgrid.exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError, NoStrategyFoundError
 
 
 # test basic construction
@@ -250,6 +250,27 @@ def test_suppliers_optional_named_a_missing(target):
     d = DriverWithOptionalNamedA(target, "driver")
     assert d.res is None
 
+
+
+class StrategyA(Strategy):
+    bindings = {
+        "drv": DriverWithA,
+    }
+
+
+def test_get_strategy(target):
+    ra = ResourceA(target, "resource")
+    d = DriverWithA(target, "driver")
+
+    with pytest.raises(NoStrategyFoundError):
+        target.get_strategy()
+
+    s1 = StrategyA(target, "s1")
+    assert target.get_strategy() is s1
+
+    s2 = StrategyA(target, "s2")
+    with pytest.raises(NoStrategyFoundError):
+        target.get_strategy()
 
 
 # test nested resource creation

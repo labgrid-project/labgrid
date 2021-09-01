@@ -7,7 +7,7 @@ import attr
 
 from .binding import BindingError, BindingState
 from .driver import Driver
-from .exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
+from .exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError, NoStrategyFoundError
 from .resource import Resource
 from .strategy import Strategy
 from .util import Timeout
@@ -211,6 +211,24 @@ class Target:
         activate -- activate the driver (default True)
         """
         return self._get_driver(cls, name=name, activate=activate)
+
+    def get_strategy(self):
+        """
+        Helper function to get the strategy of the target.
+
+        Returns the Strategy, if exactly one exists and raises a
+        NoStrategyFoundError otherwise.
+        """
+        found = []
+        for drv in self.drivers:
+            if not isinstance(drv, Strategy):
+                continue
+            found.append(drv)
+        if not found:
+            raise NoStrategyFoundError(f"no Strategy found in {self}")
+        elif len(found) > 1:
+            raise NoStrategyFoundError(f"multiple Strategies found in {self}")
+        return found[0]
 
     def __getitem__(self, key):
         """

@@ -2206,6 +2206,9 @@ Binds to:
     - `Flashrom`_
     - `NetworkFlashrom`_
 
+Implements:
+  - :any:`BootstrapProtocol`
+
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of an image to bootstrap onto the target
@@ -2238,6 +2241,9 @@ Binds to:
   flashabledevice_resource:
     - `USBFlashableDevice`_
     - `NetworkUSBFlashableDevice`_
+
+Implements:
+  - None (yet)
 
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path

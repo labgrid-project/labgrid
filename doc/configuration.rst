@@ -1640,11 +1640,11 @@ Implements:
 .. code-block:: yaml
 
    SerialPortDigitalOutputDriver:
-     signal: "DTR"
+     signal: "dtr"
      bindings: { serial : "nameOfSerial" }
 
 Arguments:
-  - signal (str): control signal to use: DTR or RTS
+  - signal (str): control signal to use: "dtr" or "rts"
   - bindings (dict): A named ressource of the type SerialDriver to
     bind against. This is only needed if you have multiple
     SerialDriver in your environment (what is likely to be the case

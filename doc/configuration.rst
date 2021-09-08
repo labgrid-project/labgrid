@@ -1584,7 +1584,7 @@ Implements:
 
 .. code-block:: yaml
 
-   SiSPMPowerPort:
+   SiSPMPowerDriver:
      delay: 5.0
 
 Arguments:

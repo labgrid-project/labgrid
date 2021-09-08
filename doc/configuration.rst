@@ -1437,6 +1437,8 @@ A ManualPowerDriver requires the user to control the target power states. This
 is required if a strategy is used with the target, but no automatic power
 control is available.
 
+The driver's name will be displayed during interaction.
+
 Implements:
   - :any:`PowerProtocol`
 
@@ -1446,7 +1448,7 @@ Implements:
      name: 'example-board'
 
 Arguments:
-  - name (str): name of the driver (will be displayed during interaction)
+  - None
 
 ExternalPowerDriver
 ~~~~~~~~~~~~~~~~~~~

@@ -37,9 +37,13 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         password (str): password to login with
         keyfile (str): keyfile to bind mount over users authorized keys
         login_timeout (int): optional, timeout for login prompt detection
+        console_ready (regex): optional, pattern used by the kernel to inform the user that a
+            console can be activated by pressing enter.
+        await_login_timeout (int): optional, time in seconds of silence that needs to pass before
+            sending a newline to device.
         post_login_settle_time (int): optional, seconds of silence after logging in
             before check for a prompt. Useful when the console is interleaved with boot
-            output which may interrupt prompt detection
+            output which may interrupt prompt detection.
     """
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(validator=attr.validators.instance_of(str))

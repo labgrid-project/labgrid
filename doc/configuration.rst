@@ -1621,11 +1621,10 @@ Implements:
 
 .. code-block:: yaml
 
-   GpioDigitalOutputDriver:
-     index: 42
+   GpioDigitalOutputDriver: {}
 
 Arguments:
-  - index (int): The index of a GPIO line
+  - None
 
 SerialPortDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

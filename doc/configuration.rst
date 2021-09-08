@@ -1465,7 +1465,7 @@ Implements:
 Arguments:
   - cmd_on (str): command to turn power to the board on
   - cmd_off (str): command to turn power to the board off
-  - cycle (str): optional command to switch the board off and on
+  - cmd_cycle (str): optional command to switch the board off and on
   - delay (float): configurable delay in seconds between off and on if cycle is not set
 
 NetworkPowerDriver

@@ -304,6 +304,23 @@ The example describes the coil with the address 1 on the ModbusTCP device
 Used by:
   - `ModbusCoilDriver`_
 
+DeditecRelais8
+++++++++++++++
+A DeditecRelais8 describes a Deditec USB GPO module with 8 relays.
+
+.. code-block:: yaml
+
+   DeditecRelais8:
+     index: 1
+     invert: false
+
+- index (int): number of the relay to use
+- invert (bool, default=False): whether the logic level is inverted (active-low)
+- match (str): key and value for a udev match, see `udev Matching`_
+
+Used by:
+  - `DeditecRelaisDriver`_
+
 OneWirePIO
 ++++++++++
 A OneWirePIO describes a onewire programmable I/O pin.
@@ -1747,6 +1764,25 @@ Implements:
 
 Arguments:
   - description (str): optional, description of the switch or jumper on the target
+
+DeditecRelaisDriver
+~~~~~~~~~~~~~~~~~~~
+A DeditecRelaisDriver controls a Deditec relay resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  relais:
+    - `DeditecRelais8`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   DeditecRelaisDriver: {}
+
+Arguments:
+  - None
 
 MXSUSBDriver
 ~~~~~~~~~~~~

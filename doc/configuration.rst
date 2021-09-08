@@ -1549,7 +1549,7 @@ Binds to:
 .. code-block:: yaml
 
    DigitalOutputPowerDriver:
-     delay: Delay for a power cycle
+     delay: 2.0
 
 Arguments:
   - delay (float): configurable delay in seconds between off and on

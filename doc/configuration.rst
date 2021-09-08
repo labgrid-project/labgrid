@@ -222,6 +222,7 @@ The example describes port 1 on the hub with the ID_PATH
 (use ``udevadm info /sys/bus/usb/devices/...`` to find the ID_PATH value)
 
 - index (int): number of the port to switch
+- match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBPowerDriver`_
@@ -249,6 +250,7 @@ The example describes port 1 on the hub with the ID_PATH
 "platform-1c1a400.usb-usb-0:2".
 
 - index (int): number of the port to switch
+- match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SiSPMPowerDriver`_
@@ -364,6 +366,7 @@ It currently supports the widely used "dcttech USBRelay".
 
 - index (int, default=1): number of the relay to use
 - invert (bool, default=False): whether to invert the relay
+- match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `HIDRelayDriver`_
@@ -637,6 +640,7 @@ of a USB serial port instead of being a USB device itself (see
        '@ID_SERIAL_SHORT': P-00-02389
 
 - driver (str): name of the sigrok driver to use
+- channels (str): optional, channel mapping as desribed in the sigrok-cli man page
 
 Used by:
   - `SigrokPowerDriver`_
@@ -720,6 +724,8 @@ Video4Linux2 kernel driver.
      match:
        '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
 
+- match (str): key and value for a udev match, see `udev Matching`_
+
 Used by:
   - `USBVideoDriver`_
 
@@ -740,6 +746,9 @@ by an ALSA kernel driver.
    USBAudioInput:
      match:
        '@sys_name': '1-4'
+
+- index (int, default=0): ALSA PCM device number (as in `hw:CARD=<card>,DEV=<index>`)
+- match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBAudioInputDriver`_
@@ -763,6 +772,8 @@ The low-level communication is handled by the ``usbtmc`` kernel driver.
    USBTMC:
      match:
        '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+
+- match (str): key and value for a udev match, see `udev Matching`_
 
 A udev rules file may be needed to allow access for non-root users:
 
@@ -788,6 +799,8 @@ It is assumed that flashrom is installed on the host and the executable is confi
 
   tools:
     flashrom: '/usr/sbin/flashrom'
+
+- programmer (str): programmer device as desribed in `-p, --programmer` in `man 8 flashrom`
 
 The resource must configure which programmer to use and the parameters to the programmer.
 The programmer parameter is passed directly to the flashrom bin hence man(8) flashrom
@@ -846,6 +859,8 @@ A XenaManager resource describes a Xena Manager instance which is the instance t
    XenaManager:
      hostname: "example.computer"
 
+- hostname (str): hostname or IP of the management address of the Xena tester
+
 Used by:
   - `XenaDriver`_
 
@@ -875,6 +890,8 @@ A :any:`HTTPVideoStream` resource describes a IP video stream over HTTP or HTTPS
 
    HTTPVideoStream:
      url: 'http://192.168.110.11/0.ts'
+
+- url (str): URI of the IP video stream
 
 Used by:
   - `HTTPVideoDriver`_
@@ -1250,6 +1267,7 @@ Arguments:
   - bootstring (str): optional, regex to match on Linux Kernel boot
   - boot_command (str, default="run bootcmd"): boot command for booting target
   - login_timeout (int, default=30): timeout for login prompt detection in seconds
+  - boot_timeout (int, default=30): timeout for initial Linux Kernel version detection
 
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~
@@ -1811,6 +1829,9 @@ Implements:
        drivers:
          BDIMXUSBDriver: {}
 
+Arguments:
+  - None
+
 RKUSBDriver
 ~~~~~~~~~~~~
 A RKUSBDriver is used to upload an image into a device in the rockchip USB loader
@@ -2021,6 +2042,9 @@ Binds to:
 Implements:
   - None yet
 
+Arguments:
+  - None
+
 The driver can be used in test cases by calling the `capture`, `stop` and
 `analyze` functions.
 
@@ -2058,6 +2082,9 @@ tool.
 Implements:
   - None yet
 
+Arguments:
+  - None
+
 The driver can be used in test cases by calling the `set_mode()` function with
 argument being `dut`, `host`, `off`, or `client`.
 
@@ -2069,6 +2096,9 @@ tool.
 
 Implements:
   - None yet
+
+Arguments:
+  - None
 
 The driver can be used in test cases by calling the `set_links()` function with
 a list containing one or more of "dut-device", "host-dut" and "host-device".
@@ -2082,6 +2112,9 @@ tool.
 
 Implements:
   - None yet
+
+Arguments:
+  - None
 
 The driver can be used in test cases by calling the `set_mode()` function with
 argument being `dut`, `host`, `off`, or `client`.
@@ -2100,6 +2133,9 @@ Binds to:
 
 Implements:
   - :any:`VideoProtocol`
+
+Arguments:
+  - None
 
 Although the driver can be used from Python code by calling the `stream()`
 method, it is currently mainly useful for the ``video`` subcommand of
@@ -2127,6 +2163,9 @@ Binds to:
 Implements:
   - None yet
 
+Arguments:
+  - None
+
 USBTMCDriver
 ~~~~~~~~~~~~
 The :any:`USBTMCDriver` is used to control a oscilloscope via the USB TMC
@@ -2139,6 +2178,9 @@ Binds to:
 
 Implements:
   - None yet
+
+Arguments:
+  - None
 
 Currently, it can be used by the ``labgrid-client`` ``tmc`` subcommands to show
 (and save) a screenshot, to show per channel measurements and to execute raw
@@ -2163,6 +2205,10 @@ Binds to:
   flashrom_resource:
     - `Flashrom`_
     - `NetworkFlashrom`_
+
+Arguments:
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of an image to bootstrap onto the target
 
 The FlashromDriver allows using the linux util "flashrom" to write directly to a ROM e.g. a NOR SPI
 flash. The assumption is that the device flashing the DUT e.g. an exporter is wired to the Flash
@@ -2192,6 +2238,11 @@ Binds to:
   flashabledevice_resource:
     - `USBFlashableDevice`_
     - `NetworkUSBFlashableDevice`_
+
+Arguments:
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of an image to bootstrap onto the target
+  - args (list): optional, list of arguments for flash script execution
 
 The FlashScriptDriver allows running arbitrary programs to flash a device.
 Some SoC or devices may require custom, one-off, or proprietary programs to
@@ -2298,6 +2349,9 @@ Binds to:
 Implements:
   - :any:`DigitalOutputProtocol`
 
+Arguments:
+  - None
+
 PyVISADriver
 ~~~~~~~~~~~~
 The PyVISADriver uses a PyVISADevice resource to control test equipment manageable by PyVISA.
@@ -2308,6 +2362,9 @@ Binds to:
 
 Implements:
   - None yet
+
+Arguments:
+  - None
 
 NetworkInterfaceDriver
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -2335,6 +2392,9 @@ Binds to:
 
 Implements:
   - None yet
+
+Arguments:
+  - None
 
 Strategies
 ----------

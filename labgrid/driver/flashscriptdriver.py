@@ -24,7 +24,7 @@ class FlashScriptDriver(Driver):
         validator=attr.validators.optional(attr.validators.instance_of(str)),
     )
     args = attr.ib(
-        default=[],
+        default=attr.Factory(list),
         validator=attr.validators.optional(attr.validators.instance_of(list)),
     )
 

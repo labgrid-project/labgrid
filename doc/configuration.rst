@@ -234,7 +234,7 @@ Used by:
    the ``usb`` driver.
 
 SiSPMPowerPort
-+++++++++++++++++
+++++++++++++++
 A SiSPMPowerPort describes a GEMBIRD SiS-PM as supported by
 `sispmctl <https://sourceforge.net/projects/sispmctl/>`_.
 
@@ -584,7 +584,7 @@ accessible via SNMP.
 - interface (str): interface name
 
 SigrokUSBDevice
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 A SigrokUSBDevice resource describes a sigrok USB device.
 
 .. code-block:: yaml
@@ -1187,7 +1187,7 @@ Arguments:
     the user that a console can be activated by pressing enter.
   - post_login_settle_time (int): optional, seconds of silence after logging in
     before check for a prompt. Useful when the console is interleaved with boot
-    output which may interrupt prompt detection
+    output which may interrupt prompt detection.
 
 .. _conf-sshdriver:
 
@@ -1195,11 +1195,11 @@ SSHDriver
 ~~~~~~~~~
 A SSHDriver requires a `NetworkService` resource and allows the execution of
 commands and file upload via network.
-It uses SSH's ServerAliveInterval option to detect failed connections.
+It uses SSH's `ServerAliveInterval` option to detect failed connections.
 
 If a shared SSH connection to the target is already open, it will reuse it when
 running commands.
-In that case, ServerAliveInterval should be set outside of labgrid, as it
+In that case, `ServerAliveInterval` should be set outside of labgrid, as it
 cannot be enabled for an existing connection.
 
 Binds to:
@@ -1535,7 +1535,7 @@ Arguments:
 DigitalOutputPowerDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~
 A DigitalOutputPowerDriver can be used to control the power of a
-Device using a DigitalOutputDriver.
+device using a DigitalOutputDriver.
 
 Using this driver you probably want an external relay to switch the
 power of your DUT.
@@ -1844,7 +1844,7 @@ Arguments:
   - usb_loader (srt): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
 
 UUUDriver
-~~~~~~~~~~~~
+~~~~~~~~~
 A UUUDriver is used to upload an image into a device in the NXP USB loader
 state. This is useful to bootstrap a bootloader onto a device.
 
@@ -1875,7 +1875,7 @@ Arguments:
   - cmd (str): single command used for mfgtool (default: spl)
 
 USBStorageDriver
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 A USBStorageDriver allows access to a USB stick or similar local or
 remote device.
 
@@ -1915,7 +1915,6 @@ Implements:
 
    OneWirePIODriver: {}
 
-
 Arguments:
   - None
 
@@ -1923,8 +1922,8 @@ Arguments:
 .. _NFSProviderDriver:
 .. _HTTPProviderDriver:
 
-TFTPProviderDriver  / NFSProviderDriver / HTTPProviderDriver
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TFTPProviderDriver / NFSProviderDriver / HTTPProviderDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 These drivers control their corresponding Provider resources, either locally or
 remotely.
 

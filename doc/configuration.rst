@@ -1725,6 +1725,25 @@ Arguments:
   - false_repr (str, default="0\\n"): representation for False
   - true_repr (str, default="1\\n"): representation for True
 
+DigitalOutputResetDriver
+~~~~~~~~~~~~~~~~~~~~~~~~
+A DigitalOutputResetDriver uses a DigitalOutput to reset the target.
+
+Binds to:
+  output:
+    - :any:`DigitalOutputProtocol`
+
+Implements:
+  - :any:`ResetProtocol`
+
+.. code-block:: yaml
+
+   DigitalOutputResetDriver:
+     delay: 2.0
+
+Arguments:
+  - delay (float, default=1.0): delay in seconds between setting the output 0 and 1.
+
 ModbusCoilDriver
 ~~~~~~~~~~~~~~~~
 A ModbusCoilDriver controls a `ModbusTCPCoil` resource.

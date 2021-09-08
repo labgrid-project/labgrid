@@ -346,7 +346,7 @@ The plugin is configured by providing an environment config file
 (via the --lg-env pytest option, or the LG_ENV environment variable)
 and automatically creates the targets described in the environment.
 
-Two `pytest fixtures <http://docs.pytest.org/en/latest/fixture.html>`_ are provided:
+These `pytest fixtures <http://docs.pytest.org/en/latest/fixture.html>`_ are provided:
 
 env (session scope)
   Used to access the :any:`Environment` object created from the configuration
@@ -355,6 +355,9 @@ env (session scope)
 
 target (session scope)
   Used to access the 'main' :any:`Target` defined in the configuration file.
+
+strategy (session scope)
+  Used to access the :any:`Strategy` configured in the 'main' :any:`Target`.
 
 Command-Line Options
 ~~~~~~~~~~~~~~~~~~~~

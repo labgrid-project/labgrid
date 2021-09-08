@@ -25,8 +25,10 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
        to the barebox shell.
 
     Args:
-        prompt (str): The default Barebox Prompt
-        bootstring (str): string that indicates that the Kernel is booting
+        prompt (str): barebox prompt to match
+        autoboot (regex): optional, autoboot message to match
+        interrupt (str): optional, string to interrupt autoboot (use "\x03" for CTRL-C)
+        bootstring (regex): optional, regex indicating that the Linux Kernel is booting
         password (str): optional, password to use for access to the shell
         login_timeout (int): optional, timeout for access to the shell
     """

@@ -36,7 +36,7 @@ The example would access the serial port /dev/ttyUSB0 on the local computer with
 a baud rate of 115200.
 
 - port (str): path to the serial device
-- speed (int): desired baud rate
+- speed (int, default=115200): desired baud rate
 
 Used by:
   - `SerialDriver`_
@@ -58,8 +58,8 @@ port 53867 and use a baud rate of 115200 with the RFC2217 protocol.
 
 - host (str): hostname of the remote host
 - port (str): TCP port on the remote host to connect to
-- speed (int): baud rate of the serial port
-- protocol (str): optional, protocol used for connection: raw or rfc2217
+- speed (int, default=115200): baud rate of the serial port
+- protocol (str, default="rfc2217"): protocol used for connection: raw or rfc2217
 
 Used by:
   - `SerialDriver`_
@@ -82,7 +82,7 @@ The example would search for a USB serial converter with the key
 of 115200.
 
 - match (str): key and value for a udev match, see `udev Matching`_
-- speed (int): baud rate of the serial port
+- speed (int, default=115200): baud rate of the serial port
 
 Used by:
   - `SerialDriver`_
@@ -222,6 +222,7 @@ The example describes port 1 on the hub with the ID_PATH
 (use ``udevadm info /sys/bus/usb/devices/...`` to find the ID_PATH value)
 
 - index (int): number of the port to switch
+- match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBPowerDriver`_
@@ -234,7 +235,7 @@ Used by:
    the ``usb`` driver.
 
 SiSPMPowerPort
-+++++++++++++++++
+++++++++++++++
 A SiSPMPowerPort describes a GEMBIRD SiS-PM as supported by
 `sispmctl <https://sourceforge.net/projects/sispmctl/>`_.
 
@@ -249,6 +250,7 @@ The example describes port 1 on the hub with the ID_PATH
 "platform-1c1a400.usb-usb-0:2".
 
 - index (int): number of the port to switch
+- match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SiSPMPowerDriver`_
@@ -297,10 +299,27 @@ The example describes the coil with the address 1 on the ModbusTCP device
 
 - host (str): hostname of the Modbus TCP server e.g. "192.168.23.42:502"
 - coil (int): index of the coil e.g. 3
-- invert (bool): optional, whether the logic level is be inverted (active-low)
+- invert (bool, default=False): whether the logic level is inverted (active-low)
 
 Used by:
   - `ModbusCoilDriver`_
+
+DeditecRelais8
+++++++++++++++
+A DeditecRelais8 describes a Deditec USB GPO module with 8 relays.
+
+.. code-block:: yaml
+
+   DeditecRelais8:
+     index: 1
+     invert: false
+
+- index (int): number of the relay to use
+- invert (bool, default=False): whether the logic level is inverted (active-low)
+- match (str): key and value for a udev match, see `udev Matching`_
+
+Used by:
+  - `DeditecRelaisDriver`_
 
 OneWirePIO
 ++++++++++
@@ -318,7 +337,7 @@ server on `example.computer`.
 
 - host (str): hostname of the remote system running the onewire server
 - path (str): path on the server to the programmable I/O pin
-- invert (bool): optional, whether the logic level is be inverted (active-low)
+- invert (bool, default=False): whether the logic level is inverted (active-low)
 
 Used by:
   - `OneWirePIODriver`_
@@ -341,7 +360,7 @@ IOMux-00000003 and pin OUT0.
 - host (str): hostname with port of the lxa-io-bus server
 - node (str): name of the node to use
 - pin (str): name of the pin to use
-- invert (bool): whether to invert the pin
+- invert (bool, default=False): whether to invert the pin
 
 Used by:
   - `LXAIOBusPIODriver`_
@@ -362,8 +381,9 @@ It currently supports the widely used "dcttech USBRelay".
      index: 2
      invert: False
 
-- index (int): number of the relay to use (defaults to 1)
-- invert (bool): whether to invert the relay
+- index (int, default=1): number of the relay to use
+- invert (bool, default=False): whether to invert the relay
+- match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `HIDRelayDriver`_
@@ -396,8 +416,8 @@ These and the sudo configuration needs to be prepared by the administrator.
 
 - address (str): hostname of the remote system
 - username (str): username used by SSH
-- password (str): password used by SSH
-- port (int): optional, port used by SSH (default 22)
+- password (str, default=""): password used by SSH
+- port (int, default=22): port used by SSH
 
 Used by:
   - `SSHDriver`_
@@ -584,7 +604,7 @@ accessible via SNMP.
 - interface (str): interface name
 
 SigrokUSBDevice
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 A SigrokUSBDevice resource describes a sigrok USB device.
 
 .. code-block:: yaml
@@ -637,6 +657,7 @@ of a USB serial port instead of being a USB device itself (see
        '@ID_SERIAL_SHORT': P-00-02389
 
 - driver (str): name of the sigrok driver to use
+- channels (str): optional, channel mapping as desribed in the sigrok-cli man page
 
 Used by:
   - `SigrokPowerDriver`_
@@ -720,8 +741,23 @@ Video4Linux2 kernel driver.
      match:
        '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
 
+- match (str): key and value for a udev match, see `udev Matching`_
+
 Used by:
   - `USBVideoDriver`_
+
+SysfsGPIO
+~~~~~~~~~
+
+A :any:`SysfsGPIO` resource describes a GPIO line.
+
+.. code-block:: yaml
+
+   SysfsGPIO:
+     index: 12
+
+Used by:
+  - `GpioDigitalOutputDriver`_
 
 NetworkUSBVideo
 ~~~~~~~~~~~~~~~
@@ -740,6 +776,9 @@ by an ALSA kernel driver.
    USBAudioInput:
      match:
        '@sys_name': '1-4'
+
+- index (int, default=0): ALSA PCM device number (as in `hw:CARD=<card>,DEV=<index>`)
+- match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBAudioInputDriver`_
@@ -763,6 +802,8 @@ The low-level communication is handled by the ``usbtmc`` kernel driver.
    USBTMC:
      match:
        '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+
+- match (str): key and value for a udev match, see `udev Matching`_
 
 A udev rules file may be needed to allow access for non-root users:
 
@@ -788,6 +829,8 @@ It is assumed that flashrom is installed on the host and the executable is confi
 
   tools:
     flashrom: '/usr/sbin/flashrom'
+
+- programmer (str): programmer device as desribed in `-p, --programmer` in `man 8 flashrom`
 
 The resource must configure which programmer to use and the parameters to the programmer.
 The programmer parameter is passed directly to the flashrom bin hence man(8) flashrom
@@ -846,6 +889,8 @@ A XenaManager resource describes a Xena Manager instance which is the instance t
    XenaManager:
      hostname: "example.computer"
 
+- hostname (str): hostname or IP of the management address of the Xena tester
+
 Used by:
   - `XenaDriver`_
 
@@ -875,6 +920,8 @@ A :any:`HTTPVideoStream` resource describes a IP video stream over HTTP or HTTPS
 
    HTTPVideoStream:
      url: 'http://192.168.110.11/0.ts'
+
+- url (str): URI of the IP video stream
 
 Used by:
   - `HTTPVideoDriver`_
@@ -1149,9 +1196,9 @@ Implements:
   - :any:`ConsoleProtocol`
 
 Arguments:
-  - txdelay (float): time in seconds to wait before sending each byte
-  - timeout (float): time in seconds to wait for a network serial port before
-    an error occurs. Default is 3 seconds.
+  - txdelay (float, default=0.0): time in seconds to wait before sending each byte
+  - timeout (float, default=3.0): time in seconds to wait for a network serial port before
+    an error occurs
 
 ShellDriver
 ~~~~~~~~~~~
@@ -1176,18 +1223,18 @@ Arguments:
   - prompt (regex): shell prompt to match after logging in
   - login_prompt (regex): match for the login prompt
   - username (str): username to use during login
-  - password (str): password to use during login
-  - keyfile (str): optional keyfile to upload after login, making the
+  - password (str): optional, password to use during login
+  - keyfile (str): optional, keyfile to upload after login, making the
     `SSHDriver`_ usable
-  - login_timeout (int): optional, timeout for login prompt detection in
-    seconds (default 60)
-  - await_login_timeout (int): optional, time in seconds of silence that needs
+  - login_timeout (int, default=60): timeout for login prompt detection in
+    seconds
+  - await_login_timeout (int, default=2): time in seconds of silence that needs
     to pass before sending a newline to device.
   - console_ready (regex): optional, pattern used by the kernel to inform
     the user that a console can be activated by pressing enter.
-  - post_login_settle_time (int): optional, seconds of silence after logging in
+  - post_login_settle_time (int, default=0): seconds of silence after logging in
     before check for a prompt. Useful when the console is interleaved with boot
-    output which may interrupt prompt detection
+    output which may interrupt prompt detection.
 
 .. _conf-sshdriver:
 
@@ -1195,11 +1242,11 @@ SSHDriver
 ~~~~~~~~~
 A SSHDriver requires a `NetworkService` resource and allows the execution of
 commands and file upload via network.
-It uses SSH's ServerAliveInterval option to detect failed connections.
+It uses SSH's `ServerAliveInterval` option to detect failed connections.
 
 If a shared SSH connection to the target is already open, it will reuse it when
 running commands.
-In that case, ServerAliveInterval should be set outside of labgrid, as it
+In that case, `ServerAliveInterval` should be set outside of labgrid, as it
 cannot be enabled for an existing connection.
 
 Binds to:
@@ -1216,9 +1263,9 @@ Implements:
      keyfile: example.key
 
 Arguments:
-  - keyfile (str): filename of private key to login into the remote system
-    (only used if password is not set)
-  - stderr_merge (bool): set to True to make `run()` return stderr merged with
+  - keyfile (str): optional, filename of private key to login into the remote system
+    (has precedence over `NetworkService`'s password)
+  - stderr_merge (bool, default=False): set to True to make `run()` return stderr merged with
       stdout, and an empty list as second element.
 
 UBootDriver
@@ -1238,20 +1285,19 @@ Implements:
      prompt: 'Uboot> '
 
 Arguments:
-  - prompt (regex): U-Boot prompt to match
+  - prompt (regex, default=""): U-Boot prompt to match
   - autoboot (regex, default="stop autoboot"): autoboot message to match
   - password (str): optional, U-Boot unlock password
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
-  - init_commands (tuple): tuple of commands to execute after matching the
+  - init_commands (tuple): optional, tuple of commands to execute after matching the
     prompt
   - password_prompt (str): optional, regex to match the U-Boot password prompt,
     defaults to "enter Password: "
-  - boot_expression (str): optional, regex to match the U-Boot start string
-    defaults to "U-Boot 20\d+"
+  - boot_expression (str, default="U-Boot 20\\d+"): regex to match the U-Boot start string
   - bootstring (str): optional, regex to match on Linux Kernel boot
-  - boot_command (str): optional, boot command for booting target (default 'run bootcmd')
-  - login_timeout (int): optional, timeout for login prompt detection in
-    seconds (default 60)
+  - boot_command (str, default="run bootcmd"): boot command for booting target
+  - login_timeout (int, default=30): timeout for login prompt detection in seconds
+  - boot_timeout (int, default=30): timeout for initial Linux Kernel version detection
 
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~
@@ -1298,13 +1344,9 @@ Implements:
      boot_secret: "tpl"
 
 Arguments:
-  - prompt (regex): U-Boot prompt to match
-  - init_commands (tuple): tuple of commands to execute after matching the
-    prompt
-  - boot_secret (str): optional, secret used to unlock prompt
-  - boot_expression (str): optional, regex to match the U-Boot start string
-    defaults to "U-Boot 20\d+"
-  - login_timeout (int): optional, timeout for the password/login detection
+  - boot_secret (str, default="a"): secret used to unlock prompt
+  - login_timeout (int, default=60): timeout for password/login prompt detection
+  - for other arguments, see `UBootDriver`_
 
 BareboxDriver
 ~~~~~~~~~~~~~
@@ -1324,12 +1366,13 @@ Implements:
      prompt: 'barebox@[^:]+:[^ ]+ '
 
 Arguments:
-  - prompt (regex): barebox prompt to match
+  - prompt (regex, default=""): barebox prompt to match
   - autoboot (regex, default="stop autoboot"): autoboot message to match
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
-  - bootstring (regex, default="Linux version \d"): succesfully jumped into the kernel
+  - bootstring (regex, default="Linux version \\d"): regex that indicating that the Linux Kernel is
+    booting
   - password (str): optional, password to use for access to the shell
-  - login_timeout (int): optional, timeout for access to the shell
+  - login_timeout (int, default=60): timeout for access to the shell
 
 ExternalConsoleDriver
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1347,7 +1390,7 @@ Implements:
 
 Arguments:
   - cmd (str): command to execute and then bind to.
-  - txdelay (float): time in seconds to wait before sending each byte
+  - txdelay (float, default=0.0): time in seconds to wait before sending each byte
 
 AndroidFastbootDriver
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1368,7 +1411,7 @@ Implements:
      sparse_size: 100M
 
 Arguments:
-  - image (str): filename of the image to upload to the device
+  - image (str): optional, filename of an image to upload to the device
   - sparse_size (str): optional, sparse files greater than given size (see
     fastboot manpage -S option for allowed size suffixes). The default is the
     same as the fastboot default, which is computed after querying the target's
@@ -1426,7 +1469,7 @@ Implements:
   - None
 
 Arguments:
-  - image (str): filename of image to flash QSPI
+  - image (str): optional, filename of image to write into QSPI flash
 
 The driver can be used in test cases by calling the `flash` function. An
 example strategy is included in labgrid.
@@ -1437,6 +1480,8 @@ A ManualPowerDriver requires the user to control the target power states. This
 is required if a strategy is used with the target, but no automatic power
 control is available.
 
+The driver's name will be displayed during interaction.
+
 Implements:
   - :any:`PowerProtocol`
 
@@ -1446,7 +1491,7 @@ Implements:
      name: 'example-board'
 
 Arguments:
-  - name (str): name of the driver (will be displayed during interaction)
+  - None
 
 ExternalPowerDriver
 ~~~~~~~~~~~~~~~~~~~
@@ -1465,8 +1510,8 @@ Implements:
 Arguments:
   - cmd_on (str): command to turn power to the board on
   - cmd_off (str): command to turn power to the board off
-  - cycle (str): optional command to switch the board off and on
-  - delay (float): configurable delay in seconds between off and on if cycle is not set
+  - cmd_cycle (str): optional command to switch the board off and on
+  - delay (float, default=2.0): delay in seconds between off and on, if cmd_cycle is not set
 
 NetworkPowerDriver
 ~~~~~~~~~~~~~~~~~~
@@ -1486,7 +1531,7 @@ Implements:
      delay: 5.0
 
 Arguments:
-  - delay (float): optional delay in seconds between off and on
+  - delay (float, default=2.0): delay in seconds between off and on
 
 PDUDaemonDriver
 ~~~~~~~~~~~~~~~
@@ -1507,10 +1552,10 @@ Implements:
 .. code-block:: yaml
 
    PDUDaemonDriver:
-     delay: 5
+     delay: 5.0
 
 Arguments:
-  - delay (float): optional delay in seconds between off and on
+  - delay (float, default=5.0): delay in seconds between off and on
 
 YKUSHPowerDriver
 ~~~~~~~~~~~~~~~~
@@ -1530,12 +1575,12 @@ Implements:
      delay: 5.0
 
 Arguments:
-  - delay (float): optional delay in seconds between off and on
+  - delay (float, default=2.0): delay in seconds between off and on
 
 DigitalOutputPowerDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~
 A DigitalOutputPowerDriver can be used to control the power of a
-Device using a DigitalOutputDriver.
+device using a DigitalOutputDriver.
 
 Using this driver you probably want an external relay to switch the
 power of your DUT.
@@ -1547,10 +1592,10 @@ Binds to:
 .. code-block:: yaml
 
    DigitalOutputPowerDriver:
-     delay: Delay for a power cycle
+     delay: 2.0
 
 Arguments:
-  - delay (float): configurable delay in seconds between off and on
+  - delay (float, default=1.0): delay in seconds between off and on
 
 USBPowerDriver
 ~~~~~~~~~~~~~~
@@ -1565,11 +1610,11 @@ Implements:
 
 .. code-block:: yaml
 
-   USBPowerPort:
+   USBPowerDriver:
      delay: 5.0
 
 Arguments:
-  - delay (float): optional delay in seconds between off and on
+  - delay (float, default=2.0): delay in seconds between off and on
 
 SiSPMPowerDriver
 ~~~~~~~~~~~~~~~~
@@ -1584,11 +1629,11 @@ Implements:
 
 .. code-block:: yaml
 
-   SiSPMPowerPort:
+   SiSPMPowerDriver:
      delay: 5.0
 
 Arguments:
-  - delay (float): optional delay in seconds between off and on
+  - delay (float, default=2.0): delay in seconds between off and on
 
 TasmotaPowerDriver
 ~~~~~~~~~~~~~~~~~~
@@ -1607,7 +1652,7 @@ Implements:
      delay: 5.0
 
 Arguments:
-  - delay (float): optional delay in seconds between off and on
+  - delay (float, default=2.0): delay in seconds between off and on
 
 GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -1616,16 +1661,18 @@ The GpioDigitalOutputDriver writes a digital signal to a GPIO line.
 This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`.
 While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.
 
+Binds to:
+  - `SysfsGPIO`_
+
 Implements:
   - :any:`DigitalOutputProtocol`
 
 .. code-block:: yaml
 
-   GpioDigitalOutputDriver:
-     index: 42
+   GpioDigitalOutputDriver: {}
 
 Arguments:
-  - index (int): The index of a GPIO line
+  - None
 
 SerialPortDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1641,11 +1688,11 @@ Implements:
 .. code-block:: yaml
 
    SerialPortDigitalOutputDriver:
-     signal: "DTR"
+     signal: "dtr"
      bindings: { serial : "nameOfSerial" }
 
 Arguments:
-  - signal (str): control signal to use: DTR or RTS
+  - signal (str): control signal to use: "dtr" or "rts"
   - bindings (dict): A named ressource of the type SerialDriver to
     bind against. This is only needed if you have multiple
     SerialDriver in your environment (what is likely to be the case
@@ -1674,9 +1721,28 @@ Implements:
      filepath: "/sys/class/leds/myled/brightness"
 
 Arguments:
-  - filepath (str): A file that is used for reads and writes.
-  - false_repr (str): A representation for False (default: "0\n")
-  - true_repr (str): A representation for True (default: "1\n")
+  - filepath (str): file that is used for reads and writes.
+  - false_repr (str, default="0\\n"): representation for False
+  - true_repr (str, default="1\\n"): representation for True
+
+DigitalOutputResetDriver
+~~~~~~~~~~~~~~~~~~~~~~~~
+A DigitalOutputResetDriver uses a DigitalOutput to reset the target.
+
+Binds to:
+  output:
+    - :any:`DigitalOutputProtocol`
+
+Implements:
+  - :any:`ResetProtocol`
+
+.. code-block:: yaml
+
+   DigitalOutputResetDriver:
+     delay: 2.0
+
+Arguments:
+  - delay (float, default=1.0): delay in seconds between setting the output 0 and 1.
 
 ModbusCoilDriver
 ~~~~~~~~~~~~~~~~
@@ -1732,7 +1798,26 @@ Implements:
      description: 'Jumper 5'
 
 Arguments:
-  - description (str): optional description of the switch or jumper on the target
+  - description (str): optional, description of the switch or jumper on the target
+
+DeditecRelaisDriver
+~~~~~~~~~~~~~~~~~~~
+A DeditecRelaisDriver controls a Deditec relay resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  relais:
+    - `DeditecRelais8`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   DeditecRelaisDriver: {}
+
+Arguments:
+  - None
 
 MXSUSBDriver
 ~~~~~~~~~~~~
@@ -1759,7 +1844,8 @@ Implements:
      mybootloaderkey: path/to/mybootloader.img
 
 Arguments:
-  - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of an image to bootstrap onto the target
 
 IMXUSBDriver
 ~~~~~~~~~~~~
@@ -1787,7 +1873,8 @@ Implements:
      mybootloaderkey: path/to/mybootloader.img
 
 Arguments:
-  - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of an image to bootstrap onto the target
 
 BDIMXUSBDriver
 ~~~~~~~~~~~~~~
@@ -1812,6 +1899,9 @@ Implements:
      main:
        drivers:
          BDIMXUSBDriver: {}
+
+Arguments:
+  - None
 
 RKUSBDriver
 ~~~~~~~~~~~~
@@ -1840,11 +1930,13 @@ Implements:
      myloaderkey: path/to/myloader.bin
 
 Arguments:
-  - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
-  - usb_loader (srt): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of an image to bootstrap onto the target
+  - usb_loader (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of a first-stage bootloader image to write
 
 UUUDriver
-~~~~~~~~~~~~
+~~~~~~~~~
 A UUUDriver is used to upload an image into a device in the NXP USB loader
 state. This is useful to bootstrap a bootloader onto a device.
 
@@ -1871,11 +1963,12 @@ Implements:
      mybootloaderkey: path/to/mybootloader.img
 
 Arguments:
-  - image (str): The key in :ref:`images <labgrid-device-config-images>` containing the path of an image to bootstrap onto the target
-  - cmd (str): single command used for mfgtool (default: spl)
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of an image to bootstrap onto the target
+  - cmd (str, default="spl"): single command used for mfgtool
 
 USBStorageDriver
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 A USBStorageDriver allows access to a USB stick or similar local or
 remote device.
 
@@ -1897,7 +1990,8 @@ Implements:
      flashimage: ../images/myusb.image
 
 Arguments:
-  - image (str): filename of the image to write to the remote usb storage
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of an image to write to the target
 
 OneWirePIODriver
 ~~~~~~~~~~~~~~~~
@@ -1915,7 +2009,6 @@ Implements:
 
    OneWirePIODriver: {}
 
-
 Arguments:
   - None
 
@@ -1923,8 +2016,8 @@ Arguments:
 .. _NFSProviderDriver:
 .. _HTTPProviderDriver:
 
-TFTPProviderDriver  / NFSProviderDriver / HTTPProviderDriver
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TFTPProviderDriver / NFSProviderDriver / HTTPProviderDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 These drivers control their corresponding Provider resources, either locally or
 remotely.
 
@@ -2020,6 +2113,9 @@ Binds to:
 Implements:
   - None yet
 
+Arguments:
+  - None
+
 The driver can be used in test cases by calling the `capture`, `stop` and
 `analyze` functions.
 
@@ -2042,12 +2138,11 @@ Implements:
      delay: 3.0
 
 Arguments:
-  - delay (float): optional delay in seconds between off and on, defaults to
-    3.0
-  - max_voltage (float): maximum allowed voltage for protection against
-    accidental damage (optional, in volts)
-  - max_current (float): maximum allowed current for protection against
-    accidental damage (optional, in ampere)
+  - delay (float, default=3.0): delay in seconds between off and on
+  - max_voltage (float): optional, maximum allowed voltage for protection against
+    accidental damage (in volts)
+  - max_current (float): optional, maximum allowed current for protection against
+    accidental damage
 
 USBSDMuxDriver
 ~~~~~~~~~~~~~~
@@ -2057,6 +2152,9 @@ tool.
 
 Implements:
   - None yet
+
+Arguments:
+  - None
 
 The driver can be used in test cases by calling the `set_mode()` function with
 argument being `dut`, `host`, `off`, or `client`.
@@ -2070,6 +2168,9 @@ tool.
 Implements:
   - None yet
 
+Arguments:
+  - None
+
 The driver can be used in test cases by calling the `set_links()` function with
 a list containing one or more of "dut-device", "host-dut" and "host-device".
 Not all combinations can be configured at the same time.
@@ -2082,6 +2183,9 @@ tool.
 
 Implements:
   - None yet
+
+Arguments:
+  - None
 
 The driver can be used in test cases by calling the `set_mode()` function with
 argument being `dut`, `host`, `off`, or `client`.
@@ -2100,6 +2204,9 @@ Binds to:
 
 Implements:
   - :any:`VideoProtocol`
+
+Arguments:
+  - None
 
 Although the driver can be used from Python code by calling the `stream()`
 method, it is currently mainly useful for the ``video`` subcommand of
@@ -2127,6 +2234,9 @@ Binds to:
 Implements:
   - None yet
 
+Arguments:
+  - None
+
 USBTMCDriver
 ~~~~~~~~~~~~
 The :any:`USBTMCDriver` is used to control a oscilloscope via the USB TMC
@@ -2139,6 +2249,9 @@ Binds to:
 
 Implements:
   - None yet
+
+Arguments:
+  - None
 
 Currently, it can be used by the ``labgrid-client`` ``tmc`` subcommands to show
 (and save) a screenshot, to show per channel measurements and to execute raw
@@ -2163,6 +2276,13 @@ Binds to:
   flashrom_resource:
     - `Flashrom`_
     - `NetworkFlashrom`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+Arguments:
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of an image to bootstrap onto the target
 
 The FlashromDriver allows using the linux util "flashrom" to write directly to a ROM e.g. a NOR SPI
 flash. The assumption is that the device flashing the DUT e.g. an exporter is wired to the Flash
@@ -2192,6 +2312,14 @@ Binds to:
   flashabledevice_resource:
     - `USBFlashableDevice`_
     - `NetworkUSBFlashableDevice`_
+
+Implements:
+  - None (yet)
+
+Arguments:
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of an image to bootstrap onto the target
+  - args (list): optional, list of arguments for flash script execution
 
 The FlashScriptDriver allows running arbitrary programs to flash a device.
 Some SoC or devices may require custom, one-off, or proprietary programs to
@@ -2298,6 +2426,9 @@ Binds to:
 Implements:
   - :any:`DigitalOutputProtocol`
 
+Arguments:
+  - None
+
 PyVISADriver
 ~~~~~~~~~~~~
 The PyVISADriver uses a PyVISADevice resource to control test equipment manageable by PyVISA.
@@ -2308,6 +2439,9 @@ Binds to:
 
 Implements:
   - None yet
+
+Arguments:
+  - None
 
 NetworkInterfaceDriver
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -2335,6 +2469,9 @@ Binds to:
 
 Implements:
   - None yet
+
+Arguments:
+  - None
 
 Strategies
 ----------

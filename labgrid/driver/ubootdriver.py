@@ -21,16 +21,16 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     UBootDriver binds on top of a ConsoleProtocol.
 
     Args:
-        prompt (str): The default UBoot Prompt
-        password (str): optional password to unlock UBoot
-        init_commands (Tuple[str]): a tuple of commands to run after unlock
-        interrupt(str): interrupt character to use to go to prompt
-        password_prompt (str): string to detect the password prompt
-        boot_expression (str): string to search for on UBoot start
-        bootstring (str): string that indicates that the Kernel is booting
+        prompt (str): optional, U-Boot prompt
+        password (str): optional, password to unlock U-Boot
+        init_commands (tuple): optional, tuple of commands to run after unlock
+        interrupt(str): optional, interrupt character to use to go to prompt
+        password_prompt (str): optional, string to detect the password prompt
+        boot_expression (str): optional, string to search for on U-Boot start
+        bootstring (str): optional, string that indicates that the Kernel is booting
         boot_command (str): optional boot command to boot target
         login_timeout (int): optional, timeout for login prompt detection
-        boot_timeout (int): optional, timeout for initial Linux version detection
+        boot_timeout (int): optional, timeout for initial Linux Kernel version detection
 
     """
     bindings = {"console": ConsoleProtocol, }

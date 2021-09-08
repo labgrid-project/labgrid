@@ -22,11 +22,11 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
     }
 
     config = attr.ib(
-        default=[],
+        default=attr.Factory(list),
         validator=attr.validators.optional(attr.validators.instance_of((str, list)))
     )
     search = attr.ib(
-        default=[],
+        default=attr.Factory(list),
         validator=attr.validators.optional(attr.validators.instance_of((str, list)))
     )
     image = attr.ib(

@@ -2652,6 +2652,8 @@ The skeleton for an environment consists of:
          <driver-1>:
            <driver-1 parameters>
          <driver-2>: {} # no parameters for driver-2
+       features:
+         - <target-feature-1>
      <target-2>:
        resources:
          <resources>
@@ -2664,6 +2666,8 @@ The skeleton for an environment consists of:
    options:
      <option-1 name>: <value for option-1>
      <more options>
+   features:
+     - <global-feature-1>
    paths:
      <path-1 name>: <absolute or relative path for path-1>
      <more paths>

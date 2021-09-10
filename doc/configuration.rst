@@ -2664,6 +2664,9 @@ The skeleton for an environment consists of:
    options:
      <option-1 name>: <value for option-1>
      <more options>
+   paths:
+     <path-1 name>: <absolute or relative path for path-1>
+     <more paths>
    images:
      <image-1 name>: <absolute or relative path for image-1>
      <more images>

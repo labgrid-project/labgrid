@@ -80,7 +80,7 @@ def env(request, record_testsuite_property):
         record_testsuite_property('PATH_{}'.format(name.upper()), path)
         try:
             sha = subprocess.check_output(
-                "git rev-parse HEAD".split(), cwd=path)
+                "git rev-parse HEAD".split(), cwd=path, stderr=subprocess.DEVNULL)
         except subprocess.CalledProcessError:
             continue
         except FileNotFoundError:
@@ -94,7 +94,8 @@ def env(request, record_testsuite_property):
             'IMAGE_{}'.format(name.upper()), image)
         try:
             sha = subprocess.check_output(
-                "git rev-parse HEAD".split(), cwd=os.path.dirname(image))
+                "git rev-parse HEAD".split(), cwd=os.path.dirname(image),
+                stderr=subprocess.DEVNULL)
         except subprocess.CalledProcessError:
             continue
         except FileNotFoundError:

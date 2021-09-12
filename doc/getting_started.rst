@@ -462,7 +462,7 @@ retrieve it in your test and call the ``transition(status)`` function.
 
 .. code-block:: python
 
-   >>> strategy = target.get_driver(strategy)
+   >>> strategy = target.get_driver("Strategy")
    >>> strategy.transition("barebox")
 
 An example using the pytest plugin is provided under `examples/strategy`.

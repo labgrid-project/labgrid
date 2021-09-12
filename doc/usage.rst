@@ -326,8 +326,7 @@ Without an argument, `get_target` would default to 'main'::
 To access the target's console, the correct driver object can be found by using
 :any:`Target.get_driver`::
 
-  >>> from labgrid.protocol import ConsoleProtocol
-  >>> cp = t.get_driver(ConsoleProtocol)
+  >>> cp = t.get_driver('ConsoleProtocol')
   >>> cp
   SerialDriver(target=Target(name='example', env=Environment(config_file='example.yaml')), name=None, state=<BindingState.active: 2>, txdelay=0.0)
   >>> cp.write(b'test')
@@ -445,10 +444,8 @@ access this board:
 
 We then add the following test in a file called ``test_example.py``::
 
-  from labgrid.protocol import CommandProtocol
-
   def test_echo(target):
-      command = target.get_driver(CommandProtocol)
+      command = target.get_driver('CommandProtocol')
       result = command.run_check('echo OK')
       assert 'OK' in result
 
@@ -477,11 +474,9 @@ we can define additional fixtures there::
 
   import pytest
 
-  from labgrid.protocol import CommandProtocol
-
   @pytest.fixture(scope='session')
   def command(target):
-      return target.get_driver(CommandProtocol)
+      return target.get_driver('CommandProtocol')
 
 With this fixture, we can simplify the ``test_example.py`` file to::
 
@@ -496,8 +491,6 @@ useful to define a function scope fixture per state in ``conftest.py``::
 
   import pytest
 
-  from labgrid.protocol import CommandProtocol
-
   @pytest.fixture(scope='function')
   def switch_off(target, strategy, capsys):
       with capsys.disabled():
@@ -507,13 +500,13 @@ useful to define a function scope fixture per state in ``conftest.py``::
   def bootloader_command(target, strategy, capsys):
       with capsys.disabled():
           strategy.transition('barebox')
-      return target.get_active_driver(CommandProtocol)
+      return target.get_active_driver('CommandProtocol')
 
   @pytest.fixture(scope='function')
   def shell_command(target, strategy, capsys):
       with capsys.disabled():
           strategy.transition('shell')
-      return target.get_active_driver(CommandProtocol)
+      return target.get_active_driver('CommandProtocol')
 
 .. note::
   The ``capsys.disabled()`` context manager is only needed when using the

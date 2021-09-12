@@ -29,9 +29,9 @@ requirements from the `requirements.txt` file:
 
 .. code-block:: bash
 
-    $ git clone https://github.com/labgrid-project/labgrid
-    $ cd labgrid && pip install -r requirements.txt
-    $ python3 setup.py install
+    labgrid-venv $ git clone https://github.com/labgrid-project/labgrid
+    labgrid-venv $ cd labgrid && pip install -r requirements.txt
+    labgrid-venv $ python3 setup.py install
 
 .. note::
    Previous documentation recommended the installation as via pip (`pip3 install
@@ -66,7 +66,7 @@ Test your installation by running:
 
 .. code-block:: bash
 
-    $ labgrid-client --help
+    labgrid-venv $ labgrid-client --help
     usage: labgrid-client [-h] [-x URL] [-c CONFIG] [-p PLACE] [-d] COMMAND ...
     ...
 
@@ -82,7 +82,7 @@ seperate requirements file. An example for snmp support is:
 
 .. code-block:: bash
 
-    $ pip install -r snmp-requirements.txt
+    labgrid-venv $ pip install -r snmp-requirements.txt
 
 Onewire
 +++++++
@@ -139,7 +139,7 @@ your board (manually) and run your first test:
 
 .. code-block:: bash
 
-    $ pytest --lg-env local.yaml test_shell.py
+    labgrid-venv $ pytest --lg-env local.yaml test_shell.py
 
 It should return successfully, in case it does not, open an `Issue
 <https://github.com/labgrid-project/labgrid/issues>`_.
@@ -174,9 +174,9 @@ extra virtualenv and install the dependencies via the requirements file.
     $ sudo apt install libsnappy-dev
     $ virtualenv -p python3 crossbar-venv
     $ source crossbar-venv/bin/activate
-    $ git clone https://github.com/labgrid-project/labgrid
-    $ cd labgrid && pip install -r crossbar-requirements.txt
-    $ python setup.py install
+    crossbar-venv $ git clone https://github.com/labgrid-project/labgrid
+    crossbar-venv $ cd labgrid && pip install -r crossbar-requirements.txt
+    crossbar-venv $ python setup.py install
 
 All necessary dependencies should be installed now, we can start the coordinator
 by running ``crossbar start`` inside of the repository.
@@ -218,7 +218,7 @@ The exporter can now be started by running:
 
 .. code-block:: bash
 
-    $ labgrid-exporter configuration.yaml
+    labgrid-venv $ labgrid-exporter configuration.yaml
 
 Additional groups and resources can be added:
 
@@ -260,7 +260,7 @@ Finally we can test the client functionality, run:
 
 .. code-block:: bash
 
-    $ labgrid-client resources
+    labgrid-venv $ labgrid-client resources
     kiwi/example-group/NetworkPowerPort
     kiwi/example-group/NetworkSerialPort
     kiwi/example-group-2/NetworkSerialPort
@@ -272,7 +272,7 @@ To show more details on the exported resources, use ``-v`` (or ``-vv``):
 
 .. code-block:: bash
 
-    $ labgrid-client -v resources
+    labgrid-venv $ labgrid-client -v resources
     Exporter 'kiwi':
       Group 'example-group' (kiwi/example-group/*):
         Resource 'NetworkPowerPort' (kiwi/example-group/NetworkPowerPort[/NetworkPowerPort]):
@@ -286,26 +286,26 @@ You can now add a place with:
 
 .. code-block:: bash
 
-    $ labgrid-client --place example-place create
+    labgrid-venv $ labgrid-client --place example-place create
 
 And add resources to this place (``-p`` is short for ``--place``):
 
 .. code-block:: bash
 
-    $ labgrid-client -p example-place add-match */example-group/*
+    labgrid-venv $ labgrid-client -p example-place add-match */example-group/*
 
 Which adds the previously defined resource from the exporter to the place.
 To interact with this place, it needs to be acquired first, this is done by
 
 .. code-block:: bash
 
-    $ labgrid-client -p example-place acquire
+    labgrid-venv $ labgrid-client -p example-place acquire
 
 Now we can connect to the serial console:
 
 .. code-block:: bash
 
-    $ labgrid-client -p example-place console
+    labgrid-venv $ labgrid-client -p example-place console
 
 .. note:: Using remote connection requires ``microcom`` installed on the host
    where the labgrid-client is called.

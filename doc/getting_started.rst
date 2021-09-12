@@ -171,11 +171,11 @@ extra virtualenv and install the dependencies via the requirements file.
 
 .. code-block:: bash
 
-    $ git clone https://github.com/labgrid-project/labgrid
-    $ cd labgrid && virtualenv -p python3 crossbar-venv
-    $ source crossbar-venv/bin/activate
     $ sudo apt install libsnappy-dev
-    $ pip install -r crossbar-requirements.txt
+    $ virtualenv -p python3 crossbar-venv
+    $ source crossbar-venv/bin/activate
+    $ git clone https://github.com/labgrid-project/labgrid
+    $ cd labgrid && pip install -r crossbar-requirements.txt
     $ python setup.py install
 
 All necessary dependencies should be installed now, we can start the coordinator

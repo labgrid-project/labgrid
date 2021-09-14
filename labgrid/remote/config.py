@@ -15,6 +15,7 @@ class ResourceConfig:
 
     def __attrs_post_init__(self):
         env = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(os.path.dirname(self.filename)),
             line_statement_prefix='#',
             line_comment_prefix='##',
         )

@@ -497,14 +497,6 @@ useful to define a function scope fixture per state in ``conftest.py``::
   import pytest
 
   from labgrid.protocol import CommandProtocol
-  from labgrid.strategy import BareboxStrategy
-
-  @pytest.fixture(scope='session')
-  def strategy(target):
-      try:
-          return target.get_driver(BareboxStrategy)
-      except NoDriverFoundError:
-          pytest.skip("strategy not found")
 
   @pytest.fixture(scope='function')
   def switch_off(target, strategy, capsys):

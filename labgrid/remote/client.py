@@ -615,6 +615,8 @@ class ClientSession(ApplicationSession):
                     name = resource_name
                     if match.rename:
                         name = match.rename
+                    if resource.acquired == place.name:
+                        continue
                     print("Matching resource '{}' ({}/{}/{}/{}) already acquired by place '{}'"
                           .format(name, exporter, group_name, resource.cls, resource_name,
                                   resource.acquired))

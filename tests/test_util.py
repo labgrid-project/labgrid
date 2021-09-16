@@ -221,6 +221,7 @@ def test_sshmanager_remove_raise(sshmanager_fix):
     with pytest.raises(ExecutionError):
         sshmanager_fix.remove_connection(con)
 
+@pytest.mark.skipif(not which("ssh"), reason="ssh not available")
 def test_sshmanager_add_duplicate(sshmanager_fix):
     host = 'localhost'
     con = SSHConnection(host)
@@ -231,6 +232,7 @@ def test_sshmanager_add_duplicate(sshmanager_fix):
 
     assert con_now == con_there
 
+@pytest.mark.skipif(not which("ssh"), reason="ssh not available")
 def test_sshmanager_add_new(sshmanager_fix):
     host = 'other_host'
     con = SSHConnection(host)
@@ -239,6 +241,7 @@ def test_sshmanager_add_new(sshmanager_fix):
 
     assert con_now == con
 
+@pytest.mark.skipif(not which("ssh"), reason="ssh not available")
 def test_sshmanager_invalid_host_raise():
     con = SSHConnection("nosuchhost.notavailable")
     with pytest.raises(ExecutionError):

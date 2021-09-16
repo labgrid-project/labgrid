@@ -9,11 +9,13 @@ import subprocess
 import tempfile
 import time
 from functools import cached_property
+from contextlib import contextmanager
 
 import attr
+import pexpect
 
 from ..factory import target_factory
-from ..protocol import CommandProtocol, FileTransferProtocol
+from ..protocol import CommandProtocol, CommandProcessProtocol, FileTransferProtocol
 from .commandmixin import CommandMixin
 from .common import Driver
 from ..step import step
@@ -22,6 +24,56 @@ from ..util.helper import get_free_port
 from ..util.proxy import proxymanager
 from ..util.timeout import Timeout
 from ..util.ssh import get_ssh_connect_timeout
+from ..util.readmixin import ReadMixIn
+
+
+class SSHDriverProcess(CommandProcessProtocol, ReadMixIn):
+    def __init__(self, sub):
+        self._sub = sub
+
+    @property
+    def exitcode(self):
+        if self._sub.isalive():
+            return None
+
+        if self._sub.exitstatus is None:
+            return -self._sub.signalstatus
+        return self._sub.exitstatus
+
+    def read(self, size=1, timeout=-1):
+        return self._sub.read_nonblocking(size, timeout)
+
+    @step(args=['data'])
+    def write(self, data):
+        self._sub.write(data)
+
+    @step(result=True)
+    def poll(self):
+        return self.exitcode
+
+    @step(result=True)
+    def stop(self):
+        self._sub.close(True)
+
+    @step(args=['pattern', 'timeout'], result=True)
+    def expect(self, pattern, *, timeout=-1):
+        index = self._sub.expect(pattern, timeout=timeout)
+        return index, self._sub.before, self._sub.match, self._sub.after
+
+    @step(result=True)
+    def wait(self):
+        return self._sub.wait()
+
+    @step(args=['char'])
+    def sendcontrol(self, char):
+        self._sub.sendcontrol(char)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, typ, value, traceback):
+        self.stop()
+        return False
 
 
 @target_factory.reg_driver
@@ -45,6 +97,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._scp = self._get_tool("scp")
         self._sshfs = self._get_tool("sshfs")
         self._rsync = self._get_tool("rsync")
+        self._processes = []
 
     def _get_tool(self, name):
         if self.target.env:
@@ -78,6 +131,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._start_keepalive()
 
     def on_deactivate(self):
+        assert not self._processes, "Deactivating while a command process is running is not allowed"
         try:
             self._stop_keepalive()
         finally:
@@ -239,6 +293,33 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             stderr.pop()
         return (stdout, stderr, sub.returncode)
 
+    @Driver.check_active
+    @step(args=['cmd'])
+    @contextmanager
+    def start_process(self, cmd: str):
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        complete_cmd = ["ssh", "-o", "LogLevel=QUIET", "-x", *self.ssh_prefix,
+                        "-p", str(self.networkservice.port), "-l", self.networkservice.username,
+                        self.networkservice.address, "-T", "--", '/bin/sh -c {}'.format(shlex.quote(cmd)),
+                        ]
+        self.logger.debug("Sending command: %s", complete_cmd)
+
+        try:
+            sub = pexpect.spawn(complete_cmd[0], complete_cmd[1:])
+        except:
+            raise ExecutionError(
+                "error executing command: {}".format(complete_cmd)
+            )
+
+        with SSHDriverProcess(sub) as p:
+            self._processes.append(p)
+            try:
+                yield p
+            finally:
+                self._processes.remove(p)
+
     def interact(self, cmd=None):
         assert cmd is None or isinstance(cmd, list)
 
@@ -374,7 +455,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 "-o", f"ControlPath={self.control.replace('%', '%%')}",
                 src, dst,
         ]
-        
+
         if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
             complete_cmd.insert(1, "-s")
         if self.explicit_scp_mode and self._scp_supports_explicit_scp_mode():

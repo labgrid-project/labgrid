@@ -1,5 +1,5 @@
 from .bootstrapprotocol import BootstrapProtocol
-from .commandprotocol import CommandProtocol
+from .commandprotocol import CommandProtocol, CommandProcessProtocol
 from .consoleprotocol import ConsoleProtocol
 from .linuxbootprotocol import LinuxBootProtocol
 from .powerprotocol import PowerProtocol

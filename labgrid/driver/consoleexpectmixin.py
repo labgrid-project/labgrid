@@ -54,6 +54,14 @@ class ConsoleExpectMixin:
         self._expect.sendcontrol(char)
 
     @Driver.check_active
+    def expect_no_step(self, pattern, timeout=-1):
+        """
+        Expect a pattern without logging the output.
+        """
+        index = self._expect.expect(pattern, timeout=timeout)
+        return index, self._expect.before, self._expect.match, self._expect.after
+
+    @Driver.check_active
     @step(args=['pattern'], result=True)
     def expect(self, pattern, timeout=-1):
         index = self._expect.expect(pattern, timeout=timeout)

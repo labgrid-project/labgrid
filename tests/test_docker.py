@@ -10,6 +10,8 @@ from labgrid.driver import DockerDriver
 from labgrid.resource.docker import DockerConstants
 from labgrid.exceptions import NoResourceFoundError
 
+pytest.importorskip("docker")
+
 
 def check_external_progs_present():
     """Determine if host machine has a usable docker daemon"""

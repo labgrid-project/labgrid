@@ -1,5 +1,6 @@
 import pytest
 import socket
+from pexpect import TIMEOUT, EOF
 
 from labgrid import Environment
 from labgrid.driver import SSHDriver, ExecutionError
@@ -218,3 +219,93 @@ def test_unix_socket_forward(ssh_localhost, tmpdir):
                 send_socket.send(test_string.encode("utf-8"))
 
                 assert client_socket.recv(16).decode("utf-8") == test_string
+
+@pytest.mark.sshusername
+def test_start_process_simple(ssh_localhost):
+    with ssh_localhost.start_process("echo Hello World") as p:
+        assert p.read_full(6, timeout=10.0) == b"Hello "
+        assert p.read(7) == b"World\r\n"
+        assert p.read_full(1, timeout=10.0) == b""
+        assert p.read_full(timeout=10.0) == b""
+        with pytest.raises(EOF):
+            p.read(10)
+
+    with ssh_localhost.start_process("echo Hello World") as p:
+        p.expect("Hello World")
+        p.expect(EOF)
+        with pytest.raises(EOF):
+            p.expect(r".")
+
+
+@pytest.mark.sshusername
+def test_start_process_timeout(ssh_localhost):
+    with ssh_localhost.start_process("cat") as p:
+        with pytest.raises(TIMEOUT):
+            p.read(100, timeout=5) == b""
+
+        with pytest.raises(TIMEOUT):
+            p.expect("Never found", timeout=5)
+
+@pytest.mark.sshusername
+def test_start_process_stream(ssh_localhost):
+    with ssh_localhost.start_process("cat") as p:
+        p.write(b"Hello World\n")
+        data = p.read_full(timeout=10.0)
+        data = data.decode("utf-8").splitlines()
+        # Two lines are expected; one for the echoed input and one for the output
+        assert data == ["Hello World"] * 2
+
+        assert p.poll() is None
+        p.sendcontrol('d')
+        p.expect(EOF)
+
+        assert p.poll() == 0
+
+    with ssh_localhost.start_process("cat") as p:
+        p.write(b"ABCDEF\n")
+
+        p.expect(b"ABCDEF", timeout=10.0)
+        p.expect(b"ABCDEF", timeout=10.0)
+
+        assert p.poll() is None
+        p.stop()
+
+        code = p.poll()
+        assert code is not None
+        assert code != 0
+
+
+@pytest.mark.sshusername
+def test_start_process_read_to_end(ssh_localhost):
+    with ssh_localhost.start_process("echo Hello World") as p:
+        p.read_to_end() == b"Hello World"
+        p.read_to_end() == b""
+
+
+@pytest.mark.sshusername
+def test_start_process_read_to_end_timeout(ssh_localhost):
+    with ssh_localhost.start_process("cat") as p:
+        p.write(b"Hello World\n")
+        with pytest.raises(TIMEOUT):
+            p.read_to_end(timeout=5)
+
+        p.sendcontrol('d')
+        assert p.read_to_end() == b""
+
+
+@pytest.mark.sshusername
+def test_start_process_read_exact(ssh_localhost):
+    with ssh_localhost.start_process("cat") as p:
+        p.write(b"Hello World\n")
+        assert p.read_exact(6) == b"Hello "
+        assert p.read_exact(5) == b"World"
+
+        # Discard the remaining data (echoed data)
+        p.read_full(-1, timeout=1)
+
+        with pytest.raises(TIMEOUT):
+            p.read_exact(1, timeout=5)
+        p.sendcontrol('d')
+
+        with pytest.raises(EOF):
+            p.read_exact(1, timeout=5)

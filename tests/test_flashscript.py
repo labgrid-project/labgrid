@@ -2,6 +2,7 @@ import pytest
 import subprocess
 import tempfile
 import attr
+from pathlib import Path
 from labgrid.driver.flashscriptdriver import FlashScriptDriver
 from labgrid.resource.common import ManagedResource
 from labgrid import target_factory
@@ -50,10 +51,12 @@ def capture_argument_expansion(d, var):
         return f.read().decode("utf-8")
 
 
+@pytest.mark.skipif(not Path("/bin/true").exists(), reason="true not available")
 def test_script_success(target, driver):
     driver.flash("/bin/true")
 
 
+@pytest.mark.skipif(not Path('/bin/false').exists(), reason="false not available")
 def test_script_failure(target, driver):
     with pytest.raises(subprocess.CalledProcessError):
         driver.flash("/bin/false")

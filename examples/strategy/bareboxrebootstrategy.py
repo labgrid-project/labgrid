@@ -65,7 +65,7 @@ class BareboxRebootStrategy(Strategy):
             new_status = Status[new_status]
 
         if new_status == Status.unknown:
-            raise StrategyError("can not transition to {}".format(new_status))
+            raise StrategyError(f"can not transition to {new_status}")
 
         elif self.status == new_status:
             step.skip("nothing to do")
@@ -97,8 +97,7 @@ class BareboxRebootStrategy(Strategy):
 
         else:
             raise StrategyError(
-                "no transition found from {} to {}".
-                format(self.status, new_status)
+                f"no transition found from {self.status} to {new_status}"
             )
 
         self.status = new_status

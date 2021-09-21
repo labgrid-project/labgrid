@@ -234,14 +234,13 @@ Start by creating a strategy skeleton:
             if not isinstance(status, Status):
                 status = Status[status]
             if status == Status.unknown:
-                raise StrategyError("can not transition to {}".format(status))
+                raise StrategyError(f"can not transition to {status}")
             elif status == self.status:
                 step.skip("nothing to do")
                 return  # nothing to do
             else:
                 raise StrategyError(
-                    "no transition found from {} to {}".
-                    format(self.status, status)
+                    f"no transition found from {self.status,} to {status}"
                 )
             self.status = status
 

@@ -60,7 +60,7 @@ def test_getitem(target):
     assert "matching resources with other names" in excinfo.value.msg
     with pytest.raises(NoDriverFoundError) as excinfo:
         target[B, "adriver"]
-    assert re.match("no active .*? driver named '{}' found in Target".format(a.name),
+    assert re.match(f"no active .*? driver named '{a.name}' found in Target",
                     excinfo.value.msg)
 
     a2 = A(target, None)

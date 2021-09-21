@@ -123,7 +123,7 @@ class ProcessWrapper:
     def print_callback(message, _):
         """Prints process output message."""
         message = message.decode(encoding="utf-8", errors="replace")
-        print("\r{}".format(message), end='')
+        print(f"\r{message}", end='')
 
     def enable_logging(self):
         """Enables process output to the logging interface."""

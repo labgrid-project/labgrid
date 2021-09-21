@@ -39,8 +39,8 @@ class ManagedFile:
 
     def __attrs_post_init__(self):
         if not os.path.isfile(self.local_path):
-            raise FileNotFoundError("Local file {} not found".format(self.local_path))
-        self.logger = logging.getLogger("{}".format(self))
+            raise FileNotFoundError(f"Local file {self.local_path} not found")
+        self.logger = logging.getLogger(f"{self}")
         self.hash = None
         self.rpath = None
         self._on_nfs_cached = None
@@ -59,20 +59,18 @@ class ManagedFile:
                 self.logger.info("File %s is accessible on %s, skipping copy", self.local_path, host)
                 self.rpath = os.path.dirname(self.local_path) + "/"
             else:
-                self.rpath = "/var/cache/labgrid/{user}/{hash}/".format(
-                    user=get_user(), hash=self.get_hash()
-                )
+                self.rpath = f"/var/cache/labgrid/{get_user()}/{self.get_hash()}/"
                 self.logger.info("Synchronizing %s to %s", self.local_path, host)
-                conn.run_check("mkdir -p {}".format(self.rpath))
+                conn.run_check(f"mkdir -p {self.rpath}")
                 conn.put_file(
                     self.local_path,
-                    "{}{}".format(self.rpath, os.path.basename(self.local_path))
+                    f"{self.rpath}{os.path.basename(self.local_path)}"
                 )
 
             if symlink is not None:
                 self.logger.info("Linking")
                 try:
-                    conn.run_check("test ! -e {} -o -L {}".format(symlink, symlink))
+                    conn.run_check(f"test ! -e {symlink} -o -L {symlink}")
                 except ExecutionError:
                     raise ManagedFileError(f"Path {symlink} exists but is not a symlink.")
                 conn.run_check("ln --symbolic --force --no-dereference {}{} {}".format(
@@ -95,7 +93,7 @@ class ManagedFile:
             self.logger.debug("local: stat: unsuccessful error code %d", local.returncode)
             return False
 
-        remote = conn.run("stat --format '{}' {}".format(fmt, self.local_path),
+        remote = conn.run(f"stat --format '{fmt}' {self.local_path}",
                           decodeerrors="backslashreplace")
         if remote[2] != 0:
             self.logger.debug("remote: stat: unsuccessful error code %d", remote[2])
@@ -121,7 +119,7 @@ class ManagedFile:
             str: path to the file on the remote host
         """
         if isinstance(self.resource, NetworkResource):
-            return "{}{}".format(self.rpath, os.path.basename(self.local_path))
+            return f"{self.rpath}{os.path.basename(self.local_path)}"
 
         return self.local_path
 

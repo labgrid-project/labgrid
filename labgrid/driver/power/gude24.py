@@ -28,13 +28,13 @@ def power_set(host, port, index, value):
     # access the web interface...
     value = 1 if value else 0
     response = requests.get(
-        "http://{}:{}/ov.html?cmd=1&p={}&s={}".format(host, port, index, value)
+        f"http://{host}:{port}/ov.html?cmd=1&p={index}&s={value}"
     )
 
     # Check, that the port is in the desired state
     state = get_state(response, index)
     if state != value:
-        raise ExecutionError("failed to set port {} to status {}".format(index, value))
+        raise ExecutionError(f"failed to set port {index} to status {value}")
 
 
 def power_get(host, port, index):
@@ -44,7 +44,7 @@ def power_get(host, port, index):
     index = int(index)
     assert 1 <= index <= 24
     # get the contents of the main page
-    response = requests.get("http://{}:{}/ov.html".format(host, port))
+    response = requests.get(f"http://{host}:{port}/ov.html")
     state = get_state(response, index)
     return state
 
@@ -62,7 +62,7 @@ def get_state(request, index):
     # raise an exception if the state cannot be determined.
 
     for line in request.text.splitlines():
-        if line.find("content=\"Power Port {}".format(index)) > 0:
+        if line.find(f"content=\"Power Port {index}") > 0:
             if line.find(",0") > 0:
                 return False
             if line.find(",1") > 0:
@@ -72,7 +72,7 @@ def get_state(request, index):
 
     m = re.search(r"Device is blocked by another user with IP ([^\s<]+)", request.text)
     if m:
-        raise ExecutionError("device is blocked by another user with IP {}".format(m.group(1)))
+        raise ExecutionError(f"device is blocked by another user with IP {m.group(1)}")
 
     # if we got this far, something is wrong with the website
-    raise ExecutionError("failed to determine status of power port {}".format(index))
+    raise ExecutionError(f"failed to determine status of power port {index}")

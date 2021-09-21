@@ -20,7 +20,7 @@ def power_set(host, port, index, value):
     # access the web interface...
     value = 1 if value else 0
     r = requests.get(
-        "http://{}:{}/status.json?components=0&cmd=1&p={}&s={}".format(host, port, index, value)
+        f"http://{host}:{port}/status.json?components=0&cmd=1&p={index}&s={value}"
     )
     r.raise_for_status()
 
@@ -29,7 +29,7 @@ def power_get(host, port, index):
     assert 1 <= index <= 8
 
     # get the component status
-    r = requests.get("http://{}:{}/status.json?components=1".format(host, port))
+    r = requests.get(f"http://{host}:{port}/status.json?components=1")
     r.raise_for_status()
 
     state = r.json()['outputs'][index - 1]['state']

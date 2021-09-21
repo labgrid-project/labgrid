@@ -67,7 +67,7 @@ class ClientSession(ApplicationSession):
         enable_tcp_nodelay(self)
         self.join(
             self.config.realm, authmethods=["ticket"],
-            authid="client/{}/{}".format(self.gethostname(), self.getuser())
+            authid=f"client/{self.gethostname()}/{self.getuser()}"
         )
 
     def onChallenge(self, challenge):
@@ -113,24 +113,19 @@ class ClientSession(ApplicationSession):
             group[resource_name].data = resource
         if self.monitor:
             if resource and not old:
-                print("Resource {}/{}/{} created: {}".format(
-                    exporter, group_name, resource_name, resource
-                ))
+                print(f"Resource {exporter}/{group_name}/{resource_name} created: {resource}")
             elif resource and old:
-                print("Resource {}/{}/{} changed:".format(
-                    exporter, group_name, resource_name,
-                ))
+                print(f"Resource {exporter}/{group_name}/{resource_name} changed:")
                 for k, v_old, v_new in diff_dict(flat_dict(old), flat_dict(resource)):
-                    print("  {}: {} -> {}".format(k, v_old, v_new))
+                    print(f"  {k}: {v_old} -> {v_new}")
             else:
-                print("Resource {}/{}/{} deleted".format(
-                    exporter, group_name, resource_name))
+                print(f"Resource {exporter}/{group_name}/{resource_name} deleted")
 
     async def on_place_changed(self, name, config):
         if not config:
             del self.places[name]
             if self.monitor:
-                print("Place {} deleted".format(name))
+                print(f"Place {name} deleted")
             return
         config = config.copy()
         config['name'] = name
@@ -141,16 +136,16 @@ class ClientSession(ApplicationSession):
             place = Place(**config)
             self.places[name] = place
             if self.monitor:
-                print("Place {} created: {}".format(name, place))
+                print(f"Place {name} created: {place}")
         else:
             place = self.places[name]
             old = flat_dict(place.asdict())
             place.update(config)
             new = flat_dict(place.asdict())
             if self.monitor:
-                print("Place {} changed:".format(name))
+                print(f"Place {name} changed:")
                 for k, v_old, v_new in diff_dict(old, new):
-                    print("  {}: {} -> {}".format(k, v_old, v_new))
+                    print(f"  {k}: {v_old} -> {v_new}")
 
     async def do_monitor(self):
         self.monitor = True
@@ -162,7 +157,7 @@ class ClientSession(ApplicationSession):
             for exporter, groups in sorted(self.resources.items()):
                 for group_name, group in sorted(groups.items()):
                     for _, resource in sorted(group.items()):
-                        print("{}/{}/{}".format(exporter, group_name, resource.cls))
+                        print(f"{exporter}/{group_name}/{resource.cls}")
         elif self.args.type == 'places':
             for name in sorted(self.places.keys()):
                 print(name)
@@ -199,7 +194,7 @@ class ClientSession(ApplicationSession):
         # print the filtered resources
         if self.args.verbose and not self.args.sort_by_matched_place_change:
             for exporter, groups in sorted(filtered.items()):
-                print("Exporter '{}':".format(exporter))
+                print(f"Exporter '{exporter}':")
                 for group_name, group in sorted(groups.items()):
                     print("  Group '{group}' ({exporter}/{group}/*):".format(
                         group=group_name, exporter=exporter))
@@ -228,7 +223,7 @@ class ClientSession(ApplicationSession):
             for places, exporter, group_name, resource_cls in results:
                 if self.args.sort_by_matched_place_change:
                     places_strs = [
-                        "{}: {:%Y-%m-%d}".format(p.name, datetime.fromtimestamp(p.changed))
+                        f"{p.name}: {datetime.fromtimestamp(p.changed):%Y-%m-%d}"
                         for p in places
                     ]
                     places_info = ", ".join(places_strs) if places_strs else "not used by any place"
@@ -236,9 +231,9 @@ class ClientSession(ApplicationSession):
                 else:
                     places_info = None
 
-                line = "{}/{}/{}".format(exporter, group_name, resource_cls)
+                line = f"{exporter}/{group_name}/{resource_cls}"
                 if places_info is not None:
-                    print("{0:<50s} {1}".format(line, places_info))
+                    print(f"{line:<50s} {places_info}")
                 else:
                     print(line)
 
@@ -253,15 +248,15 @@ class ClientSession(ApplicationSession):
             if self.args.acquired and place.acquired is None:
                 continue
             if self.args.verbose:
-                print("Place '{}':".format(name))
+                print(f"Place '{name}':")
                 place.show(level=1)
             else:
-                line = "{}".format(name)
+                line = f"{name}"
 
                 if place.aliases:
-                    line += " ({})".format(' '.join(place.aliases))
+                    line += f" ({' '.join(place.aliases)})"
 
-                print("{0:<40s} {1}".format(line, place.comment))
+                print(f"{line:<40s} {place.comment}")
 
     def print_who(self):
         """Print acquired places by user"""
@@ -297,7 +292,7 @@ class ClientSession(ApplicationSession):
                 if place.reservation == token:
                     result.add(name)
             if not result:
-                raise UserError("reservation token {} matches nothing".format(token))
+                raise UserError(f"reservation token {token} matches nothing")
             return list(result)
 
         # name and alias lookup
@@ -317,7 +312,7 @@ class ClientSession(ApplicationSession):
 
     def _check_allowed(self, place):
         if not place.acquired:
-            raise UserError("place {} is not acquired".format(place.name))
+            raise UserError(f"place {place.name} is not acquired")
         if self.gethostname()+'/'+self.getuser() not in place.allowed:
             host, user = place.acquired.split('/')
             if user != self.getuser():
@@ -333,21 +328,19 @@ class ClientSession(ApplicationSession):
             raise UserError("place pattern not specified")
         places = self._match_places(pattern)
         if not places:
-            raise UserError("place pattern {} matches nothing".format(pattern))
+            raise UserError(f"place pattern {pattern} matches nothing")
         if pattern in places:
             return self.places[pattern]
         if len(places) > 1:
             raise UserError(
-                "pattern {} matches multiple places ({})".
-                format(pattern, ', '.join(places))
+                f"pattern {pattern} matches multiple places ({', '.join(places)})"
             )
         return self.places[places[0]]
 
     def get_idle_place(self, place=None):
         place = self.get_place(place)
         if place.acquired:
-            raise UserError("place {} is not idle (acquired by {})".format(
-                place.name, place.acquired))
+            raise UserError(f"place {place.name} is not idle (acquired by {place.acquired})")
         return place
 
     def get_acquired_place(self, place=None):
@@ -358,7 +351,7 @@ class ClientSession(ApplicationSession):
     async def print_place(self):
         """Print out the current place and related resources"""
         place = self.get_place()
-        print("Place '{}':".format(place.name))
+        print(f"Place '{place.name}':")
         place.show(level=1)
         if place.acquired:
             for resource_path in place.acquired_resources:
@@ -393,10 +386,10 @@ class ClientSession(ApplicationSession):
         if not name:
             raise UserError("missing place name. Set with -p <place> or via env var $PLACE")
         if name in self.places:
-            raise UserError("{} already exists".format(name))
+            raise UserError(f"{name} already exists")
         res = await self.call('org.labgrid.coordinator.add_place', name)
         if not res:
-            raise ServerError("failed to add place {}".format(name))
+            raise ServerError(f"failed to add place {name}")
         return res
 
     async def del_place(self):
@@ -406,16 +399,15 @@ class ClientSession(ApplicationSession):
             raise UserError("deletes require an exact place name")
         place = self.places[pattern]
         if place.acquired:
-            raise UserError("place {} is not idle (acquired by {})".format(
-                place.name, place.acquired))
+            raise UserError(f"place {place.name} is not idle (acquired by {place.acquired})")
         name = place.name
         if not name:
             raise UserError("missing place name. Set with -p <place> or via env var $PLACE")
         if name not in self.places:
-            raise UserError("{} does not exist".format(name))
+            raise UserError(f"{name} does not exist")
         res = await self.call('org.labgrid.coordinator.del_place', name)
         if not res:
-            raise ServerError("failed to delete place {}".format(name))
+            raise ServerError(f"failed to delete place {name}")
         return res
 
     async def add_alias(self):
@@ -424,14 +416,14 @@ class ClientSession(ApplicationSession):
         alias = self.args.alias
         if alias in place.aliases:
             raise UserError(
-                "place {} already has alias {}".format(place.name, alias)
+                f"place {place.name} already has alias {alias}"
             )
         res = await self.call(
             'org.labgrid.coordinator.add_place_alias', place.name, alias
         )
         if not res:
             raise ServerError(
-                "failed to add alias {} for place {}".format(alias, place.name)
+                f"failed to add alias {alias} for place {place.name}"
             )
         return res
 
@@ -440,13 +432,13 @@ class ClientSession(ApplicationSession):
         place = self.get_idle_place()
         alias = self.args.alias
         if alias not in place.aliases:
-            raise UserError("place {} has no alias {}".format(place.name, alias))
+            raise UserError(f"place {place.name} has no alias {alias}")
         res = await self.call(
             'org.labgrid.coordinator.del_place_alias', place.name, alias
         )
         if not res:
             raise ServerError(
-                "failed to delete alias {} for place {}".format(alias, place.name)
+                f"failed to delete alias {alias} for place {place.name}"
             )
         return res
 
@@ -459,7 +451,7 @@ class ClientSession(ApplicationSession):
         )
         if not res:
             raise ServerError(
-                "failed to set comment {} for place {}".format(comment, place.name)
+                f"failed to set comment {comment} for place {place.name}"
             )
         return res
 
@@ -471,14 +463,14 @@ class ClientSession(ApplicationSession):
             try:
                 k, v = pair.split('=')
             except ValueError:
-                raise UserError("tag '{}' needs to match '<key>=<value>'".format(pair))
+                raise UserError(f"tag '{pair}' needs to match '<key>=<value>'")
             if not TAG_KEY.match(k):
                 raise UserError(
-                    "tag key '{}' needs to match the rexex '{}'".format(k, TAG_KEY.pattern)
+                    f"tag key '{k}' needs to match the rexex '{TAG_KEY.pattern}'"
                 )
             if not TAG_VAL.match(v):
                 raise UserError(
-                    "tag value '{}' needs to match the rexex '{}'".format(v, TAG_VAL.pattern)
+                    f"tag value '{v}' needs to match the rexex '{TAG_VAL.pattern}'"
                 )
             tags[k] = v
         res = await self.call(
@@ -486,7 +478,7 @@ class ClientSession(ApplicationSession):
         )
         if not res:
             raise ServerError(
-                "failed to set tags {} for place {}".format(' '.join(self.args.tags), place.name)
+                f"failed to set tags {' '.join(self.args.tags)} for place {place.name}"
             )
         return res
 
@@ -495,45 +487,42 @@ class ClientSession(ApplicationSession):
         client"""
         place = self.get_idle_place()
         if place.acquired:
-            raise UserError("can not change acquired place {}".format(place.name))
+            raise UserError(f"can not change acquired place {place.name}")
         for pattern in self.args.patterns:
             if pattern in map(repr, place.matches):
-                print("pattern '{}' exists, skipping".format(pattern))
+                print(f"pattern '{pattern}' exists, skipping")
                 continue
             if not 2 <= pattern.count("/") <= 3:
                 raise UserError(
-                    "invalid pattern format '{}' (use 'exporter/group/cls/name')".
-                    format(pattern)
+                    f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
                 )
             res = await self.call(
                 'org.labgrid.coordinator.add_place_match', place.name, pattern
             )
             if not res:
                 raise ServerError(
-                    "failed to add match {} for place {}".format(pattern, place.name)
+                    f"failed to add match {pattern} for place {place.name}"
                 )
 
     async def del_match(self):
         """Delete a match for a place"""
         place = self.get_idle_place()
         if place.acquired:
-            raise UserError("can not change acquired place {}".format(place.name))
+            raise UserError(f"can not change acquired place {place.name}")
         for pattern in self.args.patterns:
             if pattern not in map(repr, place.matches):
-                print("pattern '{}' not found, skipping".format(pattern))
+                print(f"pattern '{pattern}' not found, skipping")
                 continue
             if not 2 <= pattern.count("/") <= 3:
                 raise UserError(
-                    "invalid pattern format '{}' (use 'exporter/group/cls/name')".
-                    format(pattern)
+                    f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
                 )
             res = await self.call(
                 'org.labgrid.coordinator.del_place_match', place.name, pattern
             )
             if not res:
                 raise ServerError(
-                    "failed to delete match {} for place {}".
-                    format(pattern, place.name)
+                    f"failed to delete match {pattern} for place {place.name}"
                 )
 
     async def add_named_match(self):
@@ -542,32 +531,29 @@ class ClientSession(ApplicationSession):
         Fuzzy matching is not allowed to avoid accidental names conflicts."""
         place = self.get_idle_place()
         if place.acquired:
-            raise UserError("can not change acquired place {}".format(place.name))
+            raise UserError(f"can not change acquired place {place.name}")
         pattern = self.args.pattern
         name = self.args.name
         if pattern in map(repr, place.matches):
-            raise UserError("pattern '{}' exists".format(pattern))
+            raise UserError(f"pattern '{pattern}' exists")
         if not 2 <= pattern.count("/") <= 3:
             raise UserError(
-                "invalid pattern format '{}' (use 'exporter/group/cls/name')".
-                format(pattern)
+                f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
             )
         if '*' in pattern:
             raise UserError(
-                "invalid pattern '{}' ('*' not allowed for named matches)".
-                format(pattern)
+                f"invalid pattern '{pattern}' ('*' not allowed for named matches)"
             )
         if not name:
             raise UserError(
-                "invalid name '{}'".
-                format(name)
+                f"invalid name '{name}'"
             )
         res = await self.call(
             'org.labgrid.coordinator.add_place_match', place.name, pattern, name
         )
         if not res:
             raise ServerError(
-                "failed to add match {} for place {}".format(pattern, place.name)
+                f"failed to add match {pattern} for place {place.name}"
             )
 
     def check_matches(self, place):
@@ -580,15 +566,14 @@ class ClientSession(ApplicationSession):
 
         match = place.unmatched(resources)
         if match:
-            raise UserError("Match {} has no matching remote resource".format(match))
+            raise UserError(f"Match {match} has no matching remote resource")
 
     async def acquire(self):
         """Acquire a place, marking it unavailable for other clients"""
         place = self.get_place()
         if place.acquired:
             raise UserError(
-                "place {} is already acquired by {}".
-                format(place.name, place.acquired)
+                f"place {place.name} is already acquired by {place.acquired}"
             )
 
         if not self.args.allow_unmatched:
@@ -599,7 +584,7 @@ class ClientSession(ApplicationSession):
         )
 
         if res:
-            print("acquired place {}".format(place.name))
+            print(f"acquired place {place.name}")
             return
 
         # check potential failure causes
@@ -619,45 +604,45 @@ class ClientSession(ApplicationSession):
                           .format(name, exporter, group_name, resource.cls, resource_name,
                                   resource.acquired))
 
-        raise ServerError("failed to acquire place {}".format(place.name))
+        raise ServerError(f"failed to acquire place {place.name}")
 
     async def release(self):
         """Release a previously acquired place"""
         place = self.get_place()
         if not place.acquired:
-            raise UserError("place {} is not acquired".format(place.name))
+            raise UserError(f"place {place.name} is not acquired")
         _, user = place.acquired.split('/')
         if user != self.getuser():
             if not self.args.kick:
-                raise UserError("place {} is acquired by a different user ({}), use --kick if you are sure".format(place.name, place.acquired))  # pylint: disable=line-too-long
-            print("warning: kicking user ({})".format(place.acquired))
+                raise UserError(f"place {place.name} is acquired by a different user ({place.acquired}), use --kick if you are sure")  # pylint: disable=line-too-long
+            print(f"warning: kicking user ({place.acquired})")
         res = await self.call(
             'org.labgrid.coordinator.release_place', place.name
         )
         if not res:
-            raise ServerError("failed to release place {}".format(place.name))
+            raise ServerError(f"failed to release place {place.name}")
 
-        print("released place {}".format(place.name))
+        print(f"released place {place.name}")
 
     async def allow(self):
         """Allow another use access to a previously acquired place"""
         place = self.get_place()
         if not place.acquired:
-            raise UserError("place {} is not acquired".format(place.name))
+            raise UserError(f"place {place.name} is not acquired")
         _, user = place.acquired.split('/')
         if user != self.getuser():
             raise UserError(
-                "place {} is acquired by a different user ({})".format(place.name, place.acquired)
+                f"place {place.name} is acquired by a different user ({place.acquired})"
             )
         if not '/' in self.args.user:
             raise UserError(
-                "user {} must be in <host>/<username> format".format(self.args.user)
+                f"user {self.args.user} must be in <host>/<username> format"
             )
         res = await self.call('org.labgrid.coordinator.allow_place', place.name, self.args.user)
         if not res:
-            raise ServerError("failed to allow {} for place {}".format(self.args.user, place.name))
+            raise ServerError(f"failed to allow {self.args.user} for place {place.name}")
 
-        print("allowed {} for place {}".format(self.args.user, place.name))
+        print(f"allowed {self.args.user} for place {place.name}")
 
     def get_target_resources(self, place):
         self._check_allowed(place)
@@ -705,7 +690,7 @@ class ClientSession(ApplicationSession):
                 from labgrid.strategy import Strategy
                 from labgrid.driver import SerialDriver
                 strategy = target.get_driver(Strategy)
-                print("Transitioning into state {}".format(self.args.state))
+                print(f"Transitioning into state {self.args.state}")
                 strategy.transition(self.args.state)
                 serial = target.get_active_driver(SerialDriver)
                 target.deactivate(serial)
@@ -767,10 +752,7 @@ class ClientSession(ApplicationSession):
         res = getattr(drv, action)()
         if action == 'get':
             print(
-                "power for place {} is {}".format(
-                    place.name,
-                    'on' if res else 'off',
-                )
+                f"power for place {place.name} is {'on' if res else 'off'}"
             )
 
     def digital_io(self):
@@ -839,8 +821,7 @@ class ClientSession(ApplicationSession):
             raise UserError("target has no compatible resource available")
         target.activate(drv)
         if action == 'get':
-            print("digital IO {} for place {} is {}".format(
-                name, place.name, 'high' if drv.get() else 'low'))
+            print(f"digital IO {name} for place {place.name} is {'high' if drv.get() else 'low'}")
         elif action == 'high':
             drv.set(True)
         elif action == 'low':
@@ -857,15 +838,15 @@ class ClientSession(ApplicationSession):
 
         call = [
             'microcom', '-s', str(resource.speed), '-t',
-            "{}:{}".format(host, port)
+            f"{host}:{port}"
         ]
         if logfile:
-            call.append("--logfile={}".format(logfile))
-        print("connecting to {} calling {}".format(resource, " ".join(call)))
+            call.append(f"--logfile={logfile}")
+        print(f"connecting to {resource} calling {' '.join(call)}")
         try:
             p = await asyncio.create_subprocess_exec(*call)
         except FileNotFoundError as e:
-            raise ServerError("failed to execute microcom: {}".format(e))
+            raise ServerError(f"failed to execute microcom: {e}")
         while p.returncode is None:
             try:
                 await asyncio.wait_for(p.wait(), 1.0)
@@ -1076,7 +1057,7 @@ class ClientSession(ApplicationSession):
         matches.sort()
         newest = matches[-1][1]
         if len(ips) > 1:
-            print("multiple IPs found: {}".format(ips))
+            print(f"multiple IPs found: {ips}")
             return None
         return newest[0]
 
@@ -1108,7 +1089,7 @@ class ClientSession(ApplicationSession):
         if res == 255:
             print("connection lost (SSH error)")
         elif res:
-            print("connection lost (remote exit code {})".format(res))
+            print(f"connection lost (remote exit code {res})")
 
     def scp(self):
         drv = self._get_ssh()
@@ -1193,7 +1174,7 @@ class ClientSession(ApplicationSession):
             default, variants = drv.get_qualities()
             for name, caps in variants:
                 mark = '*' if default == name else ' '
-                print("{} {:<10s} {:s}".format(mark, name, caps))
+                print(f"{mark} {name:<10s} {caps:s}")
         else:
             drv.stream(quality, controls=controls)
 
@@ -1253,7 +1234,7 @@ class ClientSession(ApplicationSession):
             extension, data = drv.get_screenshot()
             filename = 'tmc-screen_{0:%Y-%m-%d}_{0:%H:%M:%S}.{1}'.format(datetime.now(), extension)
             open(filename, 'wb').write(data)
-            print("Saved as {}".format(filename))
+            print(f"Saved as {filename}")
             if action == 'show':
                 subprocess.call(['xdg-open', filename])
 
@@ -1266,7 +1247,7 @@ class ClientSession(ApplicationSession):
         elif action == 'values':
             data = drv.get_channel_values(channel)
         for k, v in sorted(data.items()):
-            print("{:<16s} {:<10s}".format(k, str(v)))
+            print(f"{k:<16s} {str(v):<10s}")
 
     def write_image(self):
         place = self.get_acquired_place()
@@ -1294,7 +1275,7 @@ class ClientSession(ApplicationSession):
             drv.write_image(self.args.filename, partition=self.args.partition, skip=self.args.skip,
                             seek=self.args.seek, mode=self.args.write_mode)
         except subprocess.CalledProcessError as e:
-            raise UserError("could not write image to network usb storage: {}".format(e))
+            raise UserError(f"could not write image to network usb storage: {e}")
         except FileNotFoundError as e:
             raise UserError(e)
 
@@ -1308,9 +1289,9 @@ class ClientSession(ApplicationSession):
         config = filter_dict(config, Reservation, warn=True)
         res = Reservation(token=token, **config)
         if self.args.shell:
-            print("export LG_TOKEN={}".format(res.token))
+            print(f"export LG_TOKEN={res.token}")
         else:
-            print("Reservation '{}':".format(res.token))
+            print(f"Reservation '{res.token}':")
             res.show(level=1)
         if self.args.wait:
             if not self.args.shell:
@@ -1321,7 +1302,7 @@ class ClientSession(ApplicationSession):
         token = self.args.token
         res = await self.call('org.labgrid.coordinator.cancel_reservation', token)
         if not res:
-            raise ServerError("failed to cancel reservation {}".format(token))
+            raise ServerError(f"failed to cancel reservation {token}")
 
     async def _wait_reservation(self, token, verbose=True):
         while True:
@@ -1346,7 +1327,7 @@ class ClientSession(ApplicationSession):
         for token, config in sorted(reservations.items(), key=lambda x: (-x[1]['prio'], x[1]['created'])):  # pylint: disable=line-too-long
             config = filter_dict(config, Reservation, warn=True)
             res = Reservation(token=token, **config)
-            print("Reservation '{}':".format(res.token))
+            print(f"Reservation '{res.token}':")
             res.show(level=1)
 
 
@@ -1807,16 +1788,16 @@ def main():
         if args.place:
             role = find_role_by_place(env.config.get_targets(), args.place)
             if not role:
-                print("RemotePlace {} not found in configuration file".format(args.place),
+                print(f"RemotePlace {args.place} not found in configuration file",
                       file=sys.stderr)
                 exit(1)
-            print("Selected role {} from configuration file".format(role))
+            print(f"Selected role {role} from configuration file")
         else:
             role, args.place = find_any_role_with_place(env.config.get_targets())
             if not role:
                 print("No RemotePlace found in configuration file", file=sys.stderr)
                 exit(1)
-            print("Selected role {} and place {} from configuration file".format(role, args.place))
+            print(f"Selected role {role} and place {args.place} from configuration file")
 
     extra = {
         'args': args,
@@ -1847,31 +1828,31 @@ def main():
             if args.debug:
                 traceback.print_exc()
             else:
-                print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
+                print(f"{parser.prog}: error: {e}", file=sys.stderr)
             print("This may be caused by disconnected exporter or wrong match entries.\nYou can use the 'show' command to review all matching resources.", file=sys.stderr)  # pylint: disable=line-too-long
             exitcode = 1
         except NoDriverFoundError as e:
             if args.debug:
                 traceback.print_exc()
             else:
-                print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
+                print(f"{parser.prog}: error: {e}", file=sys.stderr)
             print("This is likely caused by an error or missing driver in the environment configuration.", file=sys.stderr)  # pylint: disable=line-too-long
             exitcode = 1
         except InvalidConfigError as e:
             if args.debug:
                 traceback.print_exc()
             else:
-                print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
+                print(f"{parser.prog}: error: {e}", file=sys.stderr)
             print("This is likely caused by an error in the environment configuration or invalid\nresource information provided by the coordinator.", file=sys.stderr)  # pylint: disable=line-too-long
             exitcode = 1
         except ConnectionError as e:
-            print("Could not connect to coordinator: {}".format(e))
+            print(f"Could not connect to coordinator: {e}")
             exitcode = 1
         except Error as e:
             if args.debug:
                 traceback.print_exc()
             else:
-                print("{}: error: {}".format(parser.prog, e), file=sys.stderr)
+                print(f"{parser.prog}: error: {e}", file=sys.stderr)
             exitcode = 1
         except KeyboardInterrupt:
             exitcode = 0

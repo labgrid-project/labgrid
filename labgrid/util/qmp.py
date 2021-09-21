@@ -9,7 +9,7 @@ class QMPMonitor:
     monitor_in = attr.ib()
 
     def __attrs_post_init__(self):
-        self.logger = logging.getLogger("{}:".format(self))
+        self.logger = logging.getLogger(f"{self}:")
         self._negotiate_capabilities()
 
     def _negotiate_capabilities(self):
@@ -23,7 +23,7 @@ class QMPMonitor:
 
         answer = self._read_parse_json()
         if not "return" in answer:
-            raise QMPError("Could not connect to QMP: {0}".format(answer))
+            raise QMPError(f"Could not connect to QMP: {answer}")
 
     def _read_parse_json(self):
         line = self.monitor_out.readline().decode('utf-8')

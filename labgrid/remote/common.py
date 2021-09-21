@@ -100,15 +100,14 @@ class ResourceMatch:
     def fromstr(cls, pattern):
         if not 2 <= pattern.count("/") <= 3:
             raise ValueError(
-                "invalid pattern format '{}' (use 'exporter/group/cls/name')".
-                format(pattern)
+                f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
             )
         return cls(*pattern.split("/"))
 
     def __repr__(self):
-        result = "{}/{}/{}".format(self.exporter, self.group, self.cls)
+        result = f"{self.exporter}/{self.group}/{self.cls}"
         if self.name is not None:
-            result += "/{}".format(self.name)
+            result += f"/{self.name}"
         return result
 
     def __str__(self):
@@ -181,17 +180,15 @@ class Place:
     def show(self, level=0):
         indent = '  ' * level
         if self.aliases:
-            print(indent + "aliases: {}".format(', '.join(sorted(self.aliases))))
+            print(indent + f"aliases: {', '.join(sorted(self.aliases))}")
         if self.comment:
-            print(indent + "comment: {}".format(self.comment))
+            print(indent + f"comment: {self.comment}")
         if self.tags:
-            print(indent + "tags: {}".format(
-                ', '.join(k+"="+v for k, v in sorted(self.tags.items()))
-            ))
+            print(indent + f"tags: {', '.join(k + '=' + v for k, v in sorted(self.tags.items()))}")
         print(indent + "matches:")
         for match in sorted(self.matches):  # pylint: disable=not-an-iterable
-            print(indent + "  {}".format(match))
-        print(indent + "acquired: {}".format(self.acquired))
+            print(indent + f"  {match}")
+        print(indent + f"acquired: {self.acquired}")
         print(indent + "acquired resources:")
         # in the coordinator, we have resource objects, otherwise just a path
         for resource in sorted(self.acquired_resources):  # pylint: disable=not-an-iterable
@@ -201,17 +198,15 @@ class Place:
                 resource_path = resource.path
             match = self.getmatch(resource_path)
             if match.rename:
-                print(indent + "  {} -> {}".format(
-                    '/'.join(resource_path), match.rename))
+                print(indent + f"  {'/'.join(resource_path)} -> {match.rename}")
             else:
-                print(indent + "  {}".format(
-                    '/'.join(resource_path)))
+                print(indent + f"  {'/'.join(resource_path)}")
         if self.allowed:
-            print(indent + "allowed: {}".format(', '.join(self.allowed)))
-        print(indent + "created: {}".format(datetime.fromtimestamp(self.created)))
-        print(indent + "changed: {}".format(datetime.fromtimestamp(self.changed)))
+            print(indent + f"allowed: {', '.join(self.allowed)}")
+        print(indent + f"created: {datetime.fromtimestamp(self.created)}")
+        print(indent + f"changed: {datetime.fromtimestamp(self.changed)}")
         if self.reservation:
-            print(indent + "reservation: {}".format(self.reservation))
+            print(indent + f"reservation: {self.reservation}")
 
     def getmatch(self, resource_path):
         """Return the ResourceMatch object for the given resource path or None if not found.
@@ -290,20 +285,20 @@ class Reservation:
 
     def show(self, level=0):
         indent = '  ' * level
-        print(indent + "owner: {}".format(self.owner))
-        print(indent + "token: {}".format(self.token))
-        print(indent + "state: {}".format(self.state.name))
+        print(indent + f"owner: {self.owner}")
+        print(indent + f"token: {self.token}")
+        print(indent + f"state: {self.state.name}")
         if self.prio:
-            print(indent + "prio: {}".format(self.prio))
+            print(indent + f"prio: {self.prio}")
         print(indent + "filters:")
         for name, filter in self.filters.items():
-            print(indent + "  {}: {}".format(name, " ".join([k+"="+v for k, v in filter.items()])))
+            print(indent + f"  {name}: {' '.join([(k + '=' + v) for k, v in filter.items()])}")
         if self.allocations:
             print(indent + "allocations:")
             for name, allocation in self.allocations.items():
-                print(indent + "  {}: {}".format(name, ", ".join(allocation)))
-        print(indent + "created: {}".format(datetime.fromtimestamp(self.created)))
-        print(indent + "timeout: {}".format(datetime.fromtimestamp(self.timeout)))
+                print(indent + f"  {name}: {', '.join(allocation)}")
+        print(indent + f"created: {datetime.fromtimestamp(self.created)}")
+        print(indent + f"timeout: {datetime.fromtimestamp(self.timeout)}")
 
 
 def enable_tcp_nodelay(session):

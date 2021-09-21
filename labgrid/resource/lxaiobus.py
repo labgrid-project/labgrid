@@ -19,7 +19,7 @@ class LXAIOBusNodeManager(ResourceManager):
 
     def _get_nodes(self, host):
         try:
-            r = requests.get('http://{}/nodes/'.format(host))
+            r = requests.get(f'http://{host}/nodes/')
             r.raise_for_status()
             j = r.json()
             return j["result"]

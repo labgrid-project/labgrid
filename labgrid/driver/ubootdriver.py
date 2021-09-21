@@ -51,7 +51,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         self.re_vt100 = re.compile(
             r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
         )
-        self.logger = logging.getLogger("{}:{}".format(self, self.target))
+        self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
 
     def on_activate(self):
@@ -128,9 +128,9 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         marker = gen_marker()
         # hide marker from expect
-        self.console.sendline("echo '{}''{}'".format(marker[:4], marker[4:]))
+        self.console.sendline(f"echo '{marker[:4]}''{marker[4:]}'")
         try:
-            self.console.expect("{}".format(marker), timeout=2)
+            self.console.expect(f"{marker}", timeout=2)
             self.console.expect(self.prompt, timeout=1)
             self._status = 1
         except TIMEOUT:
@@ -191,6 +191,6 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Args:
             name (str): name of the entry to boot"""
         if name:
-            self.console.sendline("boot -v {}".format(name))
+            self.console.sendline(f"boot -v {name}")
         else:
             self.console.sendline(self.boot_command)

@@ -45,7 +45,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         self.re_vt100 = re.compile(
             r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
         )
-        self.logger = logging.getLogger("{}:{}".format(self, self.target))
+        self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
 
     def on_activate(self):
@@ -82,7 +82,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # FIXME: use codec, decodeerrors
         marker = gen_marker()
         # hide marker from expect
-        hidden_marker = '"{}""{}"'.format(marker[:4], marker[4:])
+        hidden_marker = f'"{marker[:4]}""{marker[4:]}"'
         cmp_command = '''echo -o /cmd {cmd}; echo {marker}; sh /cmd; echo {marker} $?;'''.format(
             cmd=shlex.quote(cmd), marker=hidden_marker)
         if self._status == 1:
@@ -125,10 +125,10 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         marker = gen_marker()
         # hide marker from expect
-        hidden_marker = '"{}""{}"'.format(marker[:4], marker[4:])
-        self.console.sendline("echo {}".format(hidden_marker))
+        hidden_marker = f'"{marker[:4]}""{marker[4:]}"'
+        self.console.sendline(f"echo {hidden_marker}")
         try:
-            self.console.expect("{}".format(marker), timeout=2)
+            self.console.expect(f"{marker}", timeout=2)
             self.console.expect(self.prompt, timeout=1)
             self._status = 1
         except TIMEOUT:
@@ -206,6 +206,6 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Args:
             name (str): name of the entry to boot"""
         if name:
-            self.console.sendline("boot -v {}".format(name))
+            self.console.sendline(f"boot -v {name}")
         else:
             self.console.sendline("boot -v")

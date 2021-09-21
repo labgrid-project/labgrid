@@ -72,7 +72,7 @@ def connection_from_dict(data):
                 continue
 
             if k == 'mac-address':
-                v = ':'.join("%02X" % x for x in v)
+                v = ':'.join(f"{x:02X}" for x in v)
             elif k == 'ssid':
                 if isinstance(v, str):
                     v = v.encode()
@@ -88,7 +88,7 @@ def connection_from_dict(data):
             try:
                 setting.set_property(k, v)
             except TypeError as e:
-                raise TypeError("Failed to set propery {}".format(k)) from e
+                raise TypeError(f"Failed to set propery {k}") from e
         con.add_setting(setting)
     return con
 
@@ -114,7 +114,7 @@ class NMDev:
         )
 
     def get_settings(self):
-        lg_con = nm.get_connection_by_id("labgrid-{}".format(self._interface))
+        lg_con = nm.get_connection_by_id(f"labgrid-{self._interface}")
         if lg_con:
             return dict(lg_con.to_dbus(NM.ConnectionSerializationFlags.ALL))
 
@@ -125,11 +125,11 @@ class NMDev:
             return dict(con.to_dbus(NM.ConnectionSerializationFlags.ALL))
 
     def configure(self, data):
-        lg_con = nm.get_connection_by_id("labgrid-{}".format(self._interface))
+        lg_con = nm.get_connection_by_id(f"labgrid-{self._interface}")
         if lg_con:
             self._delete_connection(lg_con)
         data['connection'].update({
-            'id': "labgrid-{}".format(self._interface),
+            'id': f"labgrid-{self._interface}",
             'autoconnect': False,
             'interface-name': self._interface,
         })
@@ -158,7 +158,7 @@ class NMDev:
     def wait_state(self, expected, timeout):
         res, out_value, _ = NM.utils_enum_from_str(NM.DeviceState, expected)
         if not res:
-            raise ValueError("invalid state '{}'".format(expected))
+            raise ValueError(f"invalid state '{expected}'")
         expected = NM.DeviceState(out_value)
 
         timeout = monotonic() + timeout
@@ -172,7 +172,7 @@ class NMDev:
                 expected.value_nick))
 
     def disable(self):
-        lg_con = nm.get_connection_by_id("labgrid-{}".format(self._interface))
+        lg_con = nm.get_connection_by_id(f"labgrid-{self._interface}")
         if lg_con:
             self._delete_connection(lg_con)
 
@@ -219,10 +219,7 @@ class NMDev:
             cfg = {}
             cfg['addresses'] = []
             for address in ip_cfg.get_addresses():
-                cfg['addresses'].append("{}/{}".format(
-                    address.get_address(),
-                    address.get_prefix(),
-                    ))
+                cfg['addresses'].append(f"{address.get_address()}/{address.get_prefix()}")
             cfg['gateway'] = ip_cfg.get_gateway()
             state[name] = cfg
 
@@ -275,7 +272,7 @@ class NMDev:
 
     def get_dhcpd_leases(self):
         leases = []
-        for line in open("/var/lib/NetworkManager/dnsmasq-{}.leases".format(self._interface)):
+        for line in open(f"/var/lib/NetworkManager/dnsmasq-{self._interface}.leases"):
             line = line.strip().split()
             if line[3] == '*':
                 line[3] = None

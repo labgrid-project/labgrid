@@ -48,4 +48,4 @@ class Driver(BindingMixin):
 
 def check_file(filename, *, command_prefix=[]):
     if subprocess.call(command_prefix + ['test', '-r', filename]) != 0:
-        raise ExecutionError("File {} is not readable".format(filename))
+        raise ExecutionError(f"File {filename} is not readable")

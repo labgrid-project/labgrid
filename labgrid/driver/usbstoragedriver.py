@@ -45,7 +45,7 @@ class USBStorageDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}:{}".format(self, self.target))
+        self.logger = logging.getLogger(f"{self}:{self.target}")
 
     def on_activate(self):
         pass
@@ -89,20 +89,20 @@ class USBStorageDriver(Driver):
 
         partition = "" if partition is None else partition
         remote_path = mf.get_remote_path()
-        target = "{}{}".format(self.storage.path, partition)
+        target = f"{self.storage.path}{partition}"
 
         if mode == Mode.DD:
             self.logger.info('Writing %s to %s using dd.', remote_path, target)
             block_size = '512' if skip or seek else '4M'
             args = [
                 "dd",
-                "if={}".format(remote_path),
-                "of={}".format(target),
+                f"if={remote_path}",
+                f"of={target}",
                 "oflag=direct",
                 "status=progress",
-                "bs={}".format(block_size),
-                "skip={}".format(skip),
-                "seek={}".format(seek),
+                f"bs={block_size}",
+                f"skip={skip}",
+                f"seek={seek}",
                 "conv=fdatasync"
             ]
         elif mode == Mode.BMAPTOOL:
@@ -115,7 +115,7 @@ class USBStorageDriver(Driver):
             mf_bmap = None
             image_path = filename
             while True:
-                bmap_path = "{}.bmap".format(image_path)
+                bmap_path = f"{image_path}.bmap"
                 if os.path.exists(bmap_path):
                     mf_bmap = ManagedFile(bmap_path, self.storage)
                     mf_bmap.sync_to_resource()
@@ -129,14 +129,14 @@ class USBStorageDriver(Driver):
             args = [
                 "bmaptool",
                 "copy",
-                "{}".format(remote_path),
-                "{}".format(target),
+                f"{remote_path}",
+                f"{target}",
             ]
 
             if mf_bmap is None:
                 args.append("--nobmap")
             else:
-                args.append("--bmap={}".format(mf_bmap.get_remote_path()))
+                args.append(f"--bmap={mf_bmap.get_remote_path()}")
         else:
             raise ValueError
 
@@ -148,7 +148,7 @@ class USBStorageDriver(Driver):
     @Driver.check_active
     @step(result=True)
     def get_size(self):
-        args = ["cat", "/sys/class/block/{}/size".format(self.storage.path[5:])]
+        args = ["cat", f"/sys/class/block/{self.storage.path[5:]}/size"]
         size = subprocess.check_output(self.storage.command_prefix + args)
         return int(size)*512
 

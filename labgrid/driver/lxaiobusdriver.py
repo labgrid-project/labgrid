@@ -22,8 +22,7 @@ class LXAIOBusPIODriver(Driver, DigitalOutputProtocol):
     def on_activate(self):
         # we can only forward if the backend knows which port to use
         host, port = proxymanager.get_host_and_port(self.pio)
-        self._url = 'http://{}:{}/nodes/{}/pins/{}/'.format(
-            host, port, self.pio.node, self.pio.pin)
+        self._url = f'http://{host}:{port}/nodes/{self.pio.node}/pins/{self.pio.pin}/'
 
     @Driver.check_active
     @step(args=['status'])
@@ -36,7 +35,7 @@ class LXAIOBusPIODriver(Driver, DigitalOutputProtocol):
         r.raise_for_status()
         j = r.json()
         if j["code"] != 0:
-            raise ExecutionError("failed to set value: {}".format(j["error_message"]))
+            raise ExecutionError(f"failed to set value: {j['error_message']}")
 
     @Driver.check_active
     @step(result=['True'])
@@ -45,10 +44,10 @@ class LXAIOBusPIODriver(Driver, DigitalOutputProtocol):
         r.raise_for_status()
         j = r.json()
         if j["code"] != 0:
-            raise ExecutionError("failed to get value: {}".format(j["error_message"]))
+            raise ExecutionError(f"failed to get value: {j['error_message']}")
         result = j["result"]
         if result not in (0, 1):
-            raise ExecutionError("invalid input value: {}".format(repr(result)))
+            raise ExecutionError(f"invalid input value: {repr(result)}")
         status = bool(result)
         if self.pio.invert:
             status = not status

@@ -36,9 +36,9 @@ class Agent:
 
     def load(self, name, source):
         module = types.ModuleType(name)
-        exec(compile(source, '<loaded {}>'.format(name), 'exec'), module.__dict__)
+        exec(compile(source, f'<loaded {name}>', 'exec'), module.__dict__)
         for k, v in module.methods.items():
-            self.register('{}.{}'.format(name, k), v)
+            self.register(f'{name}.{k}', v)
 
     def list(self):
         return list(self.methods.keys())
@@ -51,7 +51,7 @@ class Agent:
             try:
                 request = json.loads(line)
             except json.JSONDecodeError:
-                self.send({'error': 'request parsing failed for {}'.format(repr(line))})
+                self.send({'error': f'request parsing failed for {repr(line)}'})
                 break
 
             if request.get('close', False):
@@ -80,7 +80,7 @@ def handle_error(message):
 def handle_usbtmc(index, cmd, read=False):
     assert isinstance(index, int)
     cmd = s2b(cmd)
-    fd = os.open('/dev/usbtmc{}'.format(index), os.O_RDWR)
+    fd = os.open(f'/dev/usbtmc{index}', os.O_RDWR)
     os.write(fd, cmd)
     if not read:
         os.close(fd)

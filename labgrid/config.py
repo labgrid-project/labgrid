@@ -22,10 +22,10 @@ class Config:
                 self.data = load(file)
         except FileNotFoundError:
             raise NoConfigFoundError(
-                "configuration file '{}' could not be found".format(self.filename)
+                f"configuration file '{self.filename}' could not be found"
             )
         except YAMLError as err:
-            raise InvalidConfigError("Error in configuration file: {}".format(err))
+            raise InvalidConfigError(f"Error in configuration file: {err}")
 
         substitutions = {
             'BASE': self.base,
@@ -40,15 +40,11 @@ class Config:
             resolve_templates(self.data, substitutions)
         except KeyError as e:
             raise InvalidConfigError(
-                "configuration file '{}' refers to unknown variable '{}'".format(
-                    self.filename, e.args[0]
-                )
+                f"configuration file '{self.filename}' refers to unknown variable '{e.args[0]}'"
             )
         except ValueError as e:
             raise InvalidConfigError(
-                "configuration file '{}' is invalid: {}".format(
-                    self.filename, e
-                )
+                f"configuration file '{self.filename}' is invalid: {e}"
             )
 
     def resolve_path(self, path):
@@ -120,7 +116,7 @@ class Config:
             path = str(self.data['images'][kind])
             return self.resolve_path(path)
         except KeyError as e:
-            raise KeyError("no path configured for image '{}'".format(kind)) from e
+            raise KeyError(f"no path configured for image '{kind}'") from e
 
     def get_path(self, kind):
         """Retrieve an entry from the paths subkey
@@ -139,7 +135,7 @@ class Config:
             path = str(self.data['paths'][kind])
             return self.resolve_path(path)
         except KeyError as e:
-            raise KeyError("no path configured for path '{}'".format(kind)) from e
+            raise KeyError(f"no path configured for path '{kind}'") from e
 
     def get_option(self, name, default=None):
         """Retrieve an entry from the options subkey
@@ -160,7 +156,7 @@ class Config:
             return str(self.data['options'][name])
         except KeyError:
             if default is None:
-                raise KeyError("no option '{}' found in configuration".format(name))
+                raise KeyError(f"no option '{name}' found in configuration")
 
             return default
 
@@ -193,7 +189,7 @@ class Config:
                 configuration.
         """
         if target not in self.data['targets']:
-            raise KeyError("No target '{}' found in configuration".format(target))
+            raise KeyError(f"No target '{target}' found in configuration")
 
         try:
             return str(self.data['targets'][target]['options'][name])
@@ -201,7 +197,7 @@ class Config:
             # Empty target declarations become None in the target dict, hence
             # TypeError when we try to subscript it.
             if default is None:
-                raise KeyError("No option '{}' found in configuration for target '{}'".format(name, target))
+                raise KeyError(f"No option '{name}' found in configuration for target '{target}'")
             else:
                 return default
 
@@ -222,7 +218,7 @@ class Config:
         assert isinstance(value, str)
 
         if target not in self.data['targets']:
-            raise KeyError("No target '{}' found in configuration".format(target))
+            raise KeyError(f"No target '{target}' found in configuration")
 
         # Empty targets become None in the target dict. Delete it to enable
         # setdefault below to work on the actual default instead of None.

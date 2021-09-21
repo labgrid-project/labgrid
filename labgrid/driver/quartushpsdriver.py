@@ -29,7 +29,7 @@ class QuartusHPSDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self.logger = logging.getLogger(f"{self}({self.target})")
 
         # FIXME make sure we always have an environment or config
         if self.target.env:
@@ -86,9 +86,9 @@ class QuartusHPSDriver(Driver):
         cable_number = self._get_cable_number()
         cmd = self.interface.command_prefix + [self.tool]
         cmd += [
-            "--cable={}".format(cable_number),
-            "--addr=0x{:X}".format(address),
-            "--operation=P {}".format(mf.get_remote_path()),
+            f"--cable={cable_number}",
+            f"--addr=0x{address:X}",
+            f"--operation=P {mf.get_remote_path()}",
         ]
         processwrapper.check_output(cmd)
 
@@ -99,11 +99,11 @@ class QuartusHPSDriver(Driver):
         cable_number = self._get_cable_number()
         cmd = self.interface.command_prefix + [self.tool]
         cmd += [
-            "--cable={}".format(cable_number),
+            f"--cable={cable_number}",
             "--operation=E",
         ]
         if address:
-            cmd += ["--addr=0x{:X}".format(address)]
+            cmd += [f"--addr=0x{address:X}"]
         if size:
-            cmd += ["--size=0x{:X}".format(size)]
+            cmd += [f"--size=0x{size:X}"]
         processwrapper.check_output(cmd)

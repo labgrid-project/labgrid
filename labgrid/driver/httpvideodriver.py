@@ -27,14 +27,14 @@ class HTTPVideoDriver(Driver, VideoProtocol):
         elif s.scheme == "https":
             default_port = 443
         else:
-            print("Unknown scheme: {}".format(s.scheme))
+            print(f"Unknown scheme: {s.scheme}")
             return
 
         url = proxymanager.get_url(self.video.url, default_port=default_port)
         pipeline = [
             "gst-launch-1.0",
             "souphttpsrc",
-            "location=%s" % url,
+            f"location={url}",
             "!",
             "decodebin",
             "!",

@@ -88,9 +88,9 @@ class ProxyManager:
 
         if ':' in hostname:
             # IPv6 address
-            s = s._replace(netloc="[{}]:{}".format(hostname, port))
+            s = s._replace(netloc=f"[{hostname}]:{port}")
         else:
-            s = s._replace(netloc="{}:{}".format(hostname, port))
+            s = s._replace(netloc=f"{hostname}:{port}")
 
         return urlunsplit(s)
 
@@ -118,9 +118,9 @@ class ProxyManager:
             ]
         else:
             if ':' in host:  # IPv6
-                host = "[{}]".format(host)
+                host = f"[{host}]"
             command += [
-                "-W", "{}:{}".format(host, port)
+                "-W", f"{host}:{port}"
             ]
         return command
 

@@ -101,16 +101,15 @@ class Relais8:
             reset = True
         if status > 255 or status < 0:
             return
-        data = '0123{}000000001{:02X}00000000000000'.format(
-            0 if reset else 8, status)
+        data = f'0123{0 if reset else 8}000000001{status:02X}00000000000000'
         self.write(unhexlify(Relais8._padding + data))
         self.read(255)
 
     def set_output(self, number, status):
         if status:
-            data = '238000000001{:02X}00000000000000'.format(1 << (number - 1))
+            data = f'238000000001{1 << number - 1:02X}00000000000000'
         else:
-            data = '23A000000001{:02X}00000000000000'.format(1 << (number - 1))
+            data = f'23A000000001{1 << number - 1:02X}00000000000000'
         complete_request = unhexlify(Relais8._padding)
         complete_request += bytes([self._sequence_number])
         complete_request += unhexlify(data)

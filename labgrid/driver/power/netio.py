@@ -12,8 +12,7 @@ def power_set(host, port, index, value):
     else:
         portstring = {1: "0uuu", 2: "u0uu", 3: "uu0u", 4: "uuu0"}
     r = requests.get(
-        "http://{}:{}/tgi/control.tgi?l=p:admin:admin&p={}".
-        format(host, port, portstring[index])
+        f"http://{host}:{port}/tgi/control.tgi?l=p:admin:admin&p={portstring[index]}"
     )
     r.raise_for_status()
 
@@ -22,7 +21,7 @@ def power_get(host, port, index):
     index = int(index)
     assert 1 <= index <= 4
     # get the contents of the main page
-    r = requests.get("http://{}:{}/tgi/control.tgi?l=p:admin:admin&p=l".format(host, port))
+    r = requests.get(f"http://{host}:{port}/tgi/control.tgi?l=p:admin:admin&p=l")
     r.raise_for_status()
     m = re.match(r".*(\d) (\d) (\d) (\d).*", r.text)
     states = {"0": False, "1": True}

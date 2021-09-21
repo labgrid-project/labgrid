@@ -24,7 +24,7 @@ def power_set(host, port, index, value):
     # access the web interface...
     value = 1 if value else 0
     r = requests.get(
-        "http://{}:{}/ov.html?cmd=1&p={}&s={}".format(host, port, index, value)
+        f"http://{host}:{port}/ov.html?cmd=1&p={index}&s={value}"
     )
     r.raise_for_status()
 
@@ -42,7 +42,7 @@ def power_get(host, port, index):
     index = int(index)
     assert 1 <= index <= 8
     # get the contents of the main page
-    r = requests.get("http://{}:{}/ov.html".format(host, port))
+    r = requests.get(f"http://{host}:{port}/ov.html")
     r.raise_for_status()
     for line_no, line in enumerate(r.text.splitlines()):
         if line_no == index and line.find("content=\"Power Port ") > 0:

@@ -16,7 +16,7 @@ class TargetFactory:
         Returns the class to allow using it as a decorator."""
         cls_name = cls.__name__
         if cls_name in self.all_classes:
-            raise RegistrationError("resource with name {} was already registered".format(cls_name))
+            raise RegistrationError(f"resource with name {cls_name} was already registered")
         self.resources[cls.__name__] = cls
         self._insert_into_all(cls)
         return cls
@@ -27,7 +27,7 @@ class TargetFactory:
         Returns the class to allow using it as a decorator."""
         cls_name = cls.__name__
         if cls_name in self.all_classes:
-            raise RegistrationError("driver with name {} was already registered".format(cls_name))
+            raise RegistrationError(f"driver with name {cls_name} was already registered")
         self.drivers[cls_name] = cls
         self._insert_into_all(cls)
         return cls
@@ -66,14 +66,14 @@ class TargetFactory:
             for item in data:
                 if not isinstance(item, dict):
                     raise InvalidConfigError(
-                        "invalid list item type {} (should be dict)".format(type(item)))
+                        f"invalid list item type {type(item)} (should be dict)")
                 if not item:
                     raise InvalidConfigError("invalid empty dict as list item")
                 if len(item) > 1:
                     if 'cls' in item:
                         item = item.copy()
                     else:
-                        raise InvalidConfigError("missing 'cls' key in {}".format(item))
+                        raise InvalidConfigError(f"missing 'cls' key in {item}")
                 else:
                     # only one pair left
                     (key, value), = item.items()
@@ -90,7 +90,7 @@ class TargetFactory:
                 args.setdefault('cls', cls)
                 result.append(args)
         else:
-            raise InvalidConfigError("invalid type {} (should be dict or list)".format(type(data)))
+            raise InvalidConfigError(f"invalid type {type(data)} (should be dict or list)")
         for item in result:
             item.setdefault('name', None)
             assert 'cls' in item
@@ -116,29 +116,27 @@ class TargetFactory:
     def make_resource(self, target, resource, name, args):
         assert isinstance(args, dict)
         if not resource in self.resources:
-            raise InvalidConfigError("unknown resource class {}".format(resource))
+            raise InvalidConfigError(f"unknown resource class {resource}")
         try:
             cls = self.resources[resource]
             args = filter_dict(args, cls, warn=True)
             r = cls(target, name, **args)
         except TypeError as e:
             raise InvalidConfigError(
-                "failed to create {} for target '{}' using {} ".format(
-                    resource, target, args)) from e
+                f"failed to create {resource} for target '{target}' using {args} ") from e
         return r
 
     def make_driver(self, target, driver, name, args):
         assert isinstance(args, dict)
         if not driver in self.drivers:
-            raise InvalidConfigError("unknown driver class {}".format(driver))
+            raise InvalidConfigError(f"unknown driver class {driver}")
         try:
             cls = self.drivers[driver]
             args = filter_dict(args, cls, warn=True)
             d = cls(target, name, **args)
         except TypeError as e:
             raise InvalidConfigError(
-                "failed to create {} for target '{}' using {} ".format(
-                    driver, target, args)) from e
+                f"failed to create {driver} for target '{target}' using {args} ") from e
         return d
 
     def make_target(self, name, config, *, env=None):
@@ -163,7 +161,7 @@ class TargetFactory:
         try:
             return self.all_classes[string]
         except KeyError:
-            raise KeyError("No driver/resource/protocol of type '{}' in factory, perhaps not registered?".format(string))
+            raise KeyError(f"No driver/resource/protocol of type '{string}' in factory, perhaps not registered?")
 
     def _insert_into_all(self, cls):
         classes = inspect.getmro(cls)

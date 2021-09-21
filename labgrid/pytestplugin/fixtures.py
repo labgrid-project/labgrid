@@ -72,12 +72,12 @@ def env(request, record_testsuite_property):
             remote_place = target.get_resource(RemotePlace, wait_avail=False)
             remote_name = remote_place.name
             record_testsuite_property(
-                'TARGET_{}_REMOTE'.format(target_name.upper()), remote_name)
+                f'TARGET_{target_name.upper()}_REMOTE', remote_name)
         except NoResourceFoundError:
             pass
 
     for name, path in env.config.get_paths().items():
-        record_testsuite_property('PATH_{}'.format(name.upper()), path)
+        record_testsuite_property(f'PATH_{name.upper()}', path)
         try:
             sha = subprocess.check_output(
                 "git rev-parse HEAD".split(), cwd=path, stderr=subprocess.DEVNULL)
@@ -86,12 +86,12 @@ def env(request, record_testsuite_property):
         except FileNotFoundError:
             continue
         record_testsuite_property(
-            'PATH_{}_GIT_COMMIT'.format(name.upper()),
+            f'PATH_{name.upper()}_GIT_COMMIT',
             sha.decode("utf-8").strip("\n"))
 
     for name, image in env.config.get_images().items():
         record_testsuite_property(
-            'IMAGE_{}'.format(name.upper()), image)
+            f'IMAGE_{name.upper()}', image)
         try:
             sha = subprocess.check_output(
                 "git rev-parse HEAD".split(), cwd=os.path.dirname(image),
@@ -101,7 +101,7 @@ def env(request, record_testsuite_property):
         except FileNotFoundError:
             continue
         record_testsuite_property(
-            'IMAGE_{}_GIT_COMMIT'.format(name.upper()),
+            f'IMAGE_{name.upper()}_GIT_COMMIT',
             sha.decode("utf-8").strip("\n"))
 
     yield env

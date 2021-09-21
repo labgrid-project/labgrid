@@ -143,7 +143,7 @@ class USBResource(ManagedResource):
 
         if device.action in [None, 'add']:
             if self.avail:
-                warnings.warn("udev device {} is already available".format(device))
+                warnings.warn(f"udev device {device} is already available")
             self.device = device
         elif device.action in ['change', 'move']:
             self.device = device
@@ -563,7 +563,7 @@ class USBAudioInput(USBResource):
     index = attr.ib(default=0, validator=attr.validators.instance_of(int))
 
     def filter_match(self, device):
-        suffix = "D{}c".format(self.index)
+        suffix = f"D{self.index}c"
 
         if not device.sys_name.endswith(suffix):
             return False
@@ -587,10 +587,7 @@ class USBAudioInput(USBResource):
     def alsa_name(self):
         "the ALSA device name (for example hw:CARD=3,DEV=0)"
         if self.device is not None:
-            return "hw:CARD={},DEV={}".format(
-                self.device.parent.attributes.asint('number'),
-                self.index,
-            )
+            return f"hw:CARD={self.device.parent.attributes.asint('number')},DEV={self.index}"
 
         return None
 

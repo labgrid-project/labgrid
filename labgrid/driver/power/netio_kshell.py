@@ -13,7 +13,7 @@ def power_set(host, port, index, value):
     tn.read_until(b"\r\n", 0.5)
     tn.write(b"login admin admin\n")
     tn.read_until(b"250 OK\r\n", 0.5)
-    tn.write("port {} {}\n".format(index, value).encode())
+    tn.write(f"port {index} {value}\n".encode())
     tn.read_until(b"250 OK\r\n", 0.5)
     tn.write(b"quit\n")
     tn.close()
@@ -26,7 +26,7 @@ def power_get(host, port, index):
     tn.read_until(b"\r\n", 0.5)
     tn.write(b"login admin admin\n")
     tn.read_until(b"250 OK\r\n", 0.5)
-    tn.write("port {}\n".format(index).encode())
+    tn.write(f"port {index}\n".encode())
     read = tn.read_until(b"\r\n", 0.5)
     m = re.match(r".*250 (\d).*", read.decode())
     if m is None:

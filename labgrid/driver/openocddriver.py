@@ -48,7 +48,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}:{}".format(self, self.target))
+        self.logger = logging.getLogger(f"{self}:{self.target}")
 
         # FIXME make sure we always have an environment or config
         if self.target.env:
@@ -86,17 +86,17 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
 
         if self.interface_config:
             cmd.append("--file")
-            cmd.append("interface/{}".format(self.interface_config))
+            cmd.append(f"interface/{self.interface_config}")
 
         if self.board_config:
             cmd.append("--file")
-            cmd.append("board/{}".format(self.board_config))
+            cmd.append(f"board/{self.board_config}")
 
         for mconfig in managed_configs:
             cmd.append("--file")
             cmd.append(mconfig.get_remote_path())
 
-        cmd += chain.from_iterable(("--command", "'{}'".format(command)) for command in commands)
+        cmd += chain.from_iterable(("--command", f"'{command}'") for command in commands)
         processwrapper.check_output(
             cmd,
             print_on_silent_log=True
@@ -113,7 +113,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         if self.load_commands is None:
             commands = [
                 "init",
-                "bootstrap {}".format(mf.get_remote_path()),
+                f"bootstrap {mf.get_remote_path()}",
                 "shutdown",
             ]
         else:

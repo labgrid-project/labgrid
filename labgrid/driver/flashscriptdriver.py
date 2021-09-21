@@ -30,7 +30,7 @@ class FlashScriptDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}:{}".format(self, self.target))
+        self.logger = logging.getLogger(f"{self}:{self.target}")
 
     def on_activate(self):
         pass

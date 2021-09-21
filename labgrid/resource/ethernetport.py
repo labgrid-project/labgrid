@@ -13,7 +13,7 @@ class SNMPSwitch:
     hostname = attr.ib(validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
-        self.logger = logging.getLogger("{}".format(self))
+        self.logger = logging.getLogger(f"{self}")
         self.ports = {}
         self.fdb = {}
         self.macs_by_port = {}
@@ -29,9 +29,9 @@ class SNMPSwitch:
                 hlapi.ContextData(),
                 hlapi.ObjectType(hlapi.ObjectIdentity('SNMPv2-MIB', 'sysDescr', 0))):
             if errorIndication:
-                raise Exception("snmp error {}".format(errorIndication))
+                raise Exception(f"snmp error {errorIndication}")
             elif errorStatus:
-                raise Exception("snmp error {}".format(errorStatus))
+                raise Exception(f"snmp error {errorStatus}")
             else:
                 sysDescr = str(varBindTable[0][1])
 
@@ -40,7 +40,7 @@ class SNMPSwitch:
         elif sysDescr.startswith("HP 1810-24G,"):
             self._get_fdb = self._get_fdb_dot1d
         else:
-            raise Exception("unsupported switch {}".format(sysDescr))
+            raise Exception(f"unsupported switch {sysDescr}")
 
         self.logger.debug("autodetected switch%s: %s %s", sysDescr, self._get_ports, self._get_fdb)
 
@@ -72,9 +72,9 @@ class SNMPSwitch:
                 *[x[0] for x in variables],
                 lexicographicMode=False):
             if errorIndication:
-                raise Exception("snmp error {}".format(errorIndication))
+                raise Exception(f"snmp error {errorIndication}")
             elif errorStatus:
-                raise Exception("snmp error {}".format(errorStatus))
+                raise Exception(f"snmp error {errorStatus}")
             else:
                 port = {}
                 for (_, val), (_, label) in zip(varBindTable, variables):
@@ -105,9 +105,9 @@ class SNMPSwitch:
                 hlapi.ObjectType(hlapi.ObjectIdentity('BRIDGE-MIB', 'dot1dTpFdbPort')),
                 lexicographicMode=False):
             if errorIndication:
-                raise Exception("snmp error {}".format(errorIndication))
+                raise Exception(f"snmp error {errorIndication}")
             elif errorStatus:
-                raise Exception("snmp error {}".format(errorStatus))
+                raise Exception(f"snmp error {errorStatus}")
             else:
                 for varBinds in varBindTable:
                     key, val = varBinds
@@ -138,9 +138,9 @@ class SNMPSwitch:
                 hlapi.ObjectType(hlapi.ObjectIdentity('Q-BRIDGE-MIB', 'dot1qTpFdbPort')),
                 lexicographicMode=False):
             if errorIndication:
-                raise Exception("snmp error {}".format(errorIndication))
+                raise Exception(f"snmp error {errorIndication}")
             elif errorStatus:
-                raise Exception("snmp error {}".format(errorStatus))
+                raise Exception(f"snmp error {errorStatus}")
             else:
                 for varBinds in varBindTable:
                     key, val = varBinds
@@ -182,7 +182,7 @@ class EthernetPortManager(ResourceManager):
     """The EthernetPortManager periodically polls the switch for new updates."""
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}".format(self))
+        self.logger = logging.getLogger(f"{self}")
         self.loop = None
         self.poll_tasks = []
         self.switches = {}

@@ -25,7 +25,7 @@ class FlashromDriver(Driver, BootstrapProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger('{}'.format(self))
+        self.logger = logging.getLogger(f'{self}')
         if self.target.env:
             self.tool = self.target.env.config.get_tool('flashrom')
         else:
@@ -48,7 +48,7 @@ class FlashromDriver(Driver, BootstrapProtocol):
     def __call__(self, *args):
         arg_list = list(args)
         arg_list.append('-p')
-        arg_list.append('{}'.format(self.flashrom_resource.programmer))
+        arg_list.append(f'{self.flashrom_resource.programmer}')
         processwrapper.check_output(self._get_flashrom_prefix() + arg_list)
 
     @Driver.check_active

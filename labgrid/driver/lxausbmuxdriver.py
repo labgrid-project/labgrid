@@ -37,7 +37,7 @@ class LXAUSBMuxDriver(Driver):
             elif link == 'host-device':
                 args.append('--host-device')
             else:
-                raise ExecutionError("Link '%s' not supported by LXAUSBMuxDriver" % link)
+                raise ExecutionError(f"Link '{link}' not supported by LXAUSBMuxDriver")
 
         cmd = self.mux.command_prefix + [
             self.tool,

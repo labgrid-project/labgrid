@@ -95,8 +95,8 @@ class SmallUBootDriver(UBootDriver):
             '', before.decode('utf-8'), count=1000000
         ).replace("\r", "").split("\n")
         data = data[1:]
-        data = data[data.index("Unknown command 'echo{}' - try 'help'".format(marker)) +1 :]
-        data = data[:data.index("Unknown command 'echo{}' - try 'help'".format(marker))]
+        data = data[data.index(f"Unknown command 'echo{marker}' - try 'help'") +1 :]
+        data = data[:data.index(f"Unknown command 'echo{marker}' - try 'help'")]
         if len(data) >= 1:
             if data[0].startswith("Unknown command '"):
                 return (data, [], 1)
@@ -111,4 +111,4 @@ class SmallUBootDriver(UBootDriver):
         Args:
             name (str): address to boot
         """
-        self.console.sendline("bootm {}".format(name))
+        self.console.sendline(f"bootm {name}")

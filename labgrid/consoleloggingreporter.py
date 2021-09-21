@@ -49,15 +49,15 @@ class ConsoleLoggingReporter:
             log = self._logcache[source]
         except KeyError:
             if source.name:
-                name = 'console_{}_{}'.format(source.target.name, source.name)
+                name = f'console_{source.target.name}_{source.name}'
             else:
-                name = 'console_{}'.format(source.target.name)
+                name = f'console_{source.target.name}'
             name = os.path.join(self.logpath, name)
             try:
                 log = self._logcache[source] = open(name, mode='ab',
                                                     buffering=0)
             except OSError as e:
-                print("failed to open log file {}: {}".format(name, e), file=sys.stderr)
+                print(f"failed to open log file {name}: {e}", file=sys.stderr)
                 log = self._logcache[source] = None
             if not log:
                 return None
@@ -69,11 +69,11 @@ class ConsoleLoggingReporter:
                 )
             else:
                 log.write(
-                    "Labgrid Console Logfile for {}\n".format(source.target.name)
+                    f"Labgrid Console Logfile for {source.target.name}\n"
                     .encode("utf-8")
                 )
             log.write(
-                "Logfile started at {}\n".format(datetime.now()).encode("utf-8")
+                f"Logfile started at {datetime.now()}\n".encode("utf-8")
             )
             log.write("=== Log starts here ===\n".encode('utf-8'))
 

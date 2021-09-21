@@ -44,9 +44,7 @@ class GraphStrategy(Strategy):
 
             if not callable(method):
                 raise InvalidGraphStrategyError(
-                    "GraphStrategy state '{}' is not callable".format(
-                        state_name,
-                    )
+                    f"GraphStrategy state '{state_name}' is not callable"
                 )
 
             state_name = '_'.join(state_name.split('_')[1:])
@@ -139,10 +137,7 @@ class GraphStrategy(Strategy):
             # check if state is known
             if state not in self.states:
                 raise GraphStrategyRuntimeError(
-                    "Unknown state '{}'. State names are: {}".format(
-                        state,
-                        ', '.join(self.states.keys()),
-                    )
+                    f"Unknown state '{state}'. State names are: {', '.join(self.states.keys())}"
                 )
 
             # find path

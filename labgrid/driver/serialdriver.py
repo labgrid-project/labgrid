@@ -39,7 +39,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self.logger = logging.getLogger(f"{self}({self.target})")
         if isinstance(self.port, SerialPort):
             self.serial = serial.Serial()
         else:
@@ -58,9 +58,9 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         else:
             host, port = proxymanager.get_host_and_port(self.port)
             if self.port.protocol == "rfc2217":
-                self.serial.port = "rfc2217://{}:{}?ign_set_control&timeout={}".format(host, port, self.timeout)
+                self.serial.port = f"rfc2217://{host}:{port}?ign_set_control&timeout={self.timeout}"
             elif self.port.protocol == "raw":
-                self.serial.port = "socket://{}:{}/".format(host, port)
+                self.serial.port = f"socket://{host}:{port}/"
             else:
                 raise Exception("SerialDriver: unknown protocol")
             self.serial.baudrate = self.port.speed
@@ -80,7 +80,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         self.serial.timeout = timeout
         res = self.serial.read(reading)
         if not res:
-            raise TIMEOUT("Timeout of %.2f seconds exceeded or connection closed by peer" % timeout)
+            raise TIMEOUT(f"Timeout of {timeout:.2f} seconds exceeded or connection closed by peer")
         return res
 
     def _write(self, data: bytes):
@@ -99,7 +99,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
                 self.serial.open()
             except serial.SerialException as e:
                 raise serial.SerialException(
-                    "Could not open serial port {}: {}".format(self.serial.port, str(e))) from e
+                    f"Could not open serial port {self.serial.port}: {str(e)}") from e
 
             self.status = 1
 

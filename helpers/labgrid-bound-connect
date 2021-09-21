@@ -14,14 +14,14 @@ def main(ifname, address, port):
     if not ifname:
         raise ValueError("Empty interface name.")
     if any((c == "/" or c.isspace()) for c in ifname):
-        raise ValueError("Interface name '{}' contains invalid characters.".format(ifname))
+        raise ValueError(f"Interface name '{ifname}' contains invalid characters.")
     if len(ifname) > 16:
-        raise ValueError("Interface name '{}' is too long.".format(ifname))
+        raise ValueError(f"Interface name '{ifname}' is too long.")
 
     address = ipaddress.ip_address(address)
 
     if not 0 < port < 0xFFFF:
-        raise ValueError("Invalid port '{}'.".format(port))
+        raise ValueError(f"Invalid port '{port}'.")
 
     args = [
         "socat",
@@ -29,11 +29,11 @@ def main(ifname, address, port):
     ]
 
     if address.version == 4:
-        prefix = "TCP4:{}:{}".format(address, port)
+        prefix = f"TCP4:{address}:{port}"
     elif address.version == 6:
-        prefix = "TCP6:[{}]:{}".format(address, port)
+        prefix = f"TCP6:[{address}]:{port}"
     else:
-        raise RuntimeError("Invalid IP version '{}'".format(address.version))
+        raise RuntimeError(f"Invalid IP version '{address.version}'")
 
     # Delete the IP lookup cache for the address in case it is stale
     subprocess.run(["ip", "neigh", "del", str(address), "dev", ifname], 
@@ -43,7 +43,7 @@ def main(ifname, address, port):
 
     args.append(','.join([
         prefix,
-        'so-bindtodevice={}'.format(ifname),
+        f'so-bindtodevice={ifname}',
         'connect-timeout=15',
         'keepalive',
         'keepcnt=3',
@@ -77,5 +77,5 @@ if __name__ == "__main__":
         if args.debug:
             import traceback
             traceback.print_exc()
-        print("ERROR: {}".format(e), file=sys.stderr)
+        print(f"ERROR: {e}", file=sys.stderr)
 

@@ -5,4 +5,4 @@ def test_shell(target):
     stdout, stderr, returncode = ssh_driver.run('uname -r')
 
     assert stdout
-    print('Kernel {}'.format(stdout))
+    print(f'Kernel {stdout}')

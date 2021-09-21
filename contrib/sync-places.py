@@ -49,14 +49,14 @@ def main():
                 remove_places.add(name)
 
         for name in remove_places:
-            print("Removing place %s" % name)
+            print(f"Removing place {name}")
             if not args.dry_run:
                 await session.call("org.labgrid.coordinator.del_place", name)
             changed = True
 
         for name in config["places"]:
             if not name in seen_places:
-                print("Adding place %s" % name)
+                print(f"Adding place {name}")
                 if not args.dry_run:
                     await session.call("org.labgrid.coordinator.add_place", name)
                 changed = True
@@ -77,7 +77,7 @@ def main():
                 place_tags = place.tags
 
             for m in remove_matches:
-                print("Deleting match '%s' for place %s" % (m, name))
+                print(f"Deleting match '{m}' for place {name}")
                 if not args.dry_run:
                     await session.call(
                         "org.labgrid.coordinator.del_place_match", name, m
@@ -86,7 +86,7 @@ def main():
 
             for m in matches:
                 if not m in seen_matches:
-                    print("Adding match '%s' for place %s" % (m, name))
+                    print(f"Adding match '{m}' for place {name}")
                     if not args.dry_run:
                         await session.call(
                             "org.labgrid.coordinator.add_place_match", name, m

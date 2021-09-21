@@ -28,7 +28,7 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
         # we can only forward if the backend knows which port to use
         host, port = proxymanager.get_host_and_port(self.port)
         self._onewire = self._module.Onewire(
-            "{}:{}".format(host, port)
+            f"{host}:{port}"
         )
 
     def on_deactivate(self):
@@ -50,9 +50,9 @@ class OneWirePIODriver(Driver, DigitalOutputProtocol):
         path = self.port.path.replace("PIO", "sensed")
         status = self._onewire.get(path)
         if status is None:
-            raise ExecutionError("Failed to get OneWire value for {}".format(path))
+            raise ExecutionError(f"Failed to get OneWire value for {path}")
         if status not in ['0', '1']:
-            raise ExecutionError("Invalid OneWire value ({})".format(repr(status)))
+            raise ExecutionError(f"Invalid OneWire value ({repr(status)})")
         status = (status == '1')
         if self.port.invert:
             status = not status

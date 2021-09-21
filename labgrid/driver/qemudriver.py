@@ -73,7 +73,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}:".format(self))
+        self.logger = logging.getLogger(f"{self}:")
         self.status = 0
         self.txdelay = None
         self._child = None
@@ -94,7 +94,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
     def on_activate(self):
         self._tempdir = tempfile.mkdtemp(prefix="labgrid-qemu-tmp-")
-        sockpath = "{}/serialrw".format(self._tempdir)
+        sockpath = f"{self._tempdir}/serialrw"
         self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self._socket.bind(sockpath)
         self._socket.listen(0)
@@ -119,16 +119,16 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             if self.machine == "vexpress-a9":
                 self._cmd.append("-drive")
                 self._cmd.append(
-                    "if=sd,format={},file={},id=mmc0".format(disk_format, disk_path))
+                    f"if=sd,format={disk_format},file={disk_path},id=mmc0")
                 boot_args.append("root=/dev/mmcblk0p1 rootfstype=ext4 rootwait")
             elif self.machine == "pc":
                 self._cmd.append("-drive")
                 self._cmd.append(
-                    "if=virtio,format={},file={}".format(disk_format, disk_path))
+                    f"if=virtio,format={disk_format},file={disk_path}")
                 boot_args.append("root=/dev/vda rootwait")
             else:
                 raise NotImplementedError(
-                    "QEMU disk image support not implemented for machine '{}'".format(self.machine)
+                    f"QEMU disk image support not implemented for machine '{self.machine}'"
                 )
         if self.rootfs is not None:
             self._cmd.append("-fsdev")
@@ -167,7 +167,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._cmd.append(self.memory)
         self._cmd.append("-nographic")
         self._cmd.append("-chardev")
-        self._cmd.append("socket,id=serialsocket,path={}".format(sockpath))
+        self._cmd.append(f"socket,id=serialsocket,path={sockpath}")
         self._cmd.append("-serial")
         self._cmd.append("chardev:serialsocket")
 
@@ -240,7 +240,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             # Always read a page, regardless of size
             res = self._clientsocket.recv(4096)
         else:
-            raise TIMEOUT("Timeout of %.2f seconds exceeded" % timeout)
+            raise TIMEOUT(f"Timeout of {timeout:.2f} seconds exceeded")
         return res
 
     @step(args=['data'])

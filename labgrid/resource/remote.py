@@ -10,7 +10,7 @@ from .common import NetworkResource, ManagedResource, ResourceManager
 class RemotePlaceManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}".format(self))
+        self.logger = logging.getLogger(f"{self}")
         self.url = None
         self.realm = None
         self.loop = None
@@ -26,7 +26,7 @@ class RemotePlaceManager(ResourceManager):
         try:
             self.session = start_session(self.url, self.realm, {'env': self.env})
         except ConnectionRefusedError as e:
-            raise ConnectionRefusedError("Could not connect to coordinator {}".format(self.url)) \
+            raise ConnectionRefusedError(f"Could not connect to coordinator {self.url}") \
                 from e
 
         self.loop = self.session.loop

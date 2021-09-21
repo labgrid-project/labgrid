@@ -63,7 +63,7 @@ BASE_CTRL_OID = ".1.3.6.1.4.1.1718.3.2.3.1.11"
 
 def _snmp_get(host, oid):
     out = processwrapper.check_output(
-        "snmpget -v1 -c private -O qn {} {}".format(host, oid).split()
+        f"snmpget -v1 -c private -O qn {host} {oid}".split()
     ).decode('ascii')
     out_oid, value = out.strip().split(' ', 1)
     assert oid == out_oid
@@ -75,7 +75,7 @@ def _snmp_get(host, oid):
 def _snmp_set(host, oid, value):
     try:
         processwrapper.check_output(
-            "snmpset -v1 -c private {} {} {}".format(host, oid, value).split()
+            f"snmpset -v1 -c private {host} {oid} {value}".split()
         )
     except Exception as e:
         raise ExecutionError("failed to set SNMP value") from e
@@ -87,7 +87,7 @@ def power_set(host, port, index, value):
     value = 1 if value else 2
     assert 1 <= index <= 48
 
-    _snmp_set(host, "{}.{}".format(BASE_CTRL_OID, INDEX_TO_OID[index]), "int {}".format(value))
+    _snmp_set(host, f"{BASE_CTRL_OID}.{INDEX_TO_OID[index]}", f"int {value}")
 
 
 def power_get(host, port, index):
@@ -96,4 +96,4 @@ def power_get(host, port, index):
     index = int(index)
     assert 1 <= index <= 48
 
-    return _snmp_get(host, "{}.{}".format(BASE_STATUS_OID, INDEX_TO_OID[index]))
+    return _snmp_get(host, f"{BASE_STATUS_OID}.{INDEX_TO_OID[index]}")

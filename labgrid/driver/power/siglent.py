@@ -8,7 +8,7 @@ def power_set(host, index, value):
     assert 1 <= index <= 2
     value = "ON" if value else "OFF"
     psu = vxi11.Instrument(host)
-    psu.write("OUTPUT CH{},{}".format(index, value))
+    psu.write(f"OUTPUT CH{index},{value}")
 
 
 def power_get(host, index):

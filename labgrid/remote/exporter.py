@@ -43,7 +43,7 @@ def log_subprocess_kernel_stack(logger, child):
     if child.poll() is not None:  # nothing to check if no longer running
         return
     try:
-        with open('/proc/{}/stack'.format(child.pid), 'r') as f:
+        with open(f'/proc/{child.pid}/stack', 'r') as f:
             stack = f.read()
             stack = stack.strip()
     except PermissionError:
@@ -65,7 +65,7 @@ class ResourceExport(ResourceEntry):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("ResourceExport({})".format(self.cls))
+        self.logger = logging.getLogger(f"ResourceExport({self.cls})")
         # move the params to local_params
         self.local_params = self.params.copy()
         for key in self.local_params:
@@ -165,13 +165,13 @@ class ResourceExport(ResourceEntry):
 
     def acquire(self, *args, **kwargs):  # pylint: disable=arguments-differ
         if self.broken:
-            raise BrokenResourceError("cannot acquire broken resource (original reason): {}".format(self.broken))
+            raise BrokenResourceError(f"cannot acquire broken resource (original reason): {self.broken}")
         super().acquire(*args, **kwargs)
         self.poll()
 
     def release(self, *args, **kwargs):  # pylint: disable=arguments-differ
         if self.broken:
-            raise BrokenResourceError("cannot release broken resource (original reason): {}".format(self.broken))
+            raise BrokenResourceError(f"cannot release broken resource (original reason): {self.broken}")
         super().release(*args, **kwargs)
         self.poll()
 
@@ -235,7 +235,7 @@ class SerialPortExport(ResourceExport):
                 self.ser2net_bin,
                 '-d',
                 '-n',
-                '-Y', 'connection: &con01#  accepter: telnet(rfc2217,mode=server),{}'.format(self.port),
+                '-Y', f'connection: &con01#  accepter: telnet(rfc2217,mode=server),{self.port}',
                 '-Y', '  connector: serialdev(nouucplock=true),{},{}n81,local'.format(start_params['path'], self.local.speed,
                 ),
             ]
@@ -254,7 +254,7 @@ class SerialPortExport(ResourceExport):
         self.child = subprocess.Popen(cmd)
         try:
             self.child.wait(timeout=0.5)
-            raise ExporterError("ser2net for {} exited immediately".format(start_params['path']))
+            raise ExporterError(f"ser2net for {start_params['path']} exited immediately")
         except subprocess.TimeoutExpired:
             # good, ser2net didn't exit immediately
             pass
@@ -310,7 +310,7 @@ class USBGenericExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = "Network{}".format(self.cls)
+        self.data['cls'] = f"Network{self.cls}"
         from ..resource import udev
         local_cls = getattr(udev, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
@@ -520,7 +520,7 @@ class ProviderGenericExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = "Remote{}".format(self.cls)
+        self.data['cls'] = f"Remote{self.cls}"
         from ..resource import provider
         local_cls = getattr(provider, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
@@ -565,7 +565,7 @@ class GPIOGenericExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = "Network{}".format(self.cls)
+        self.data['cls'] = f"Network{self.cls}"
         from ..resource import base
         local_cls = getattr(base, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
@@ -625,7 +625,7 @@ class LXAIOBusNodeExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = "Network{}".format(self.cls)
+        self.data['cls'] = f"Network{self.cls}"
         from ..resource import lxaiobus
         local_cls = getattr(lxaiobus, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
@@ -652,8 +652,7 @@ class ExporterSession(ApplicationSession):
         self.groups = {}
 
         enable_tcp_nodelay(self)
-        self.join(self.config.realm, authmethods=["ticket"], authid="exporter/{}".format(
-            self.name))
+        self.join(self.config.realm, authmethods=["ticket"], authid=f"exporter/{self.name}")
 
     def onChallenge(self, challenge):
         """Function invoked on received challege, returns just a dummy ticket
@@ -667,10 +666,10 @@ class ExporterSession(ApplicationSession):
         """
         print(details)
 
-        prefix = 'org.labgrid.exporter.{}'.format(self.name)
-        await self.register(self.acquire, '{}.acquire'.format(prefix))
-        await self.register(self.release, '{}.release'.format(prefix))
-        await self.register(self.version, '{}.version'.format(prefix))
+        prefix = f'org.labgrid.exporter.{self.name}'
+        await self.register(self.acquire, f'{prefix}.acquire')
+        await self.register(self.release, f'{prefix}.release')
+        await self.register(self.version, f'{prefix}.version')
 
         try:
             resource_config = ResourceConfig(self.config.extra['resources'])
@@ -740,7 +739,7 @@ class ExporterSession(ApplicationSession):
                 try:
                     changed = resource.poll()
                 except Exception:  # pylint: disable=broad-except
-                    print("Exception while polling {}".format(resource), file=sys.stderr)
+                    print(f"Exception while polling {resource}", file=sys.stderr)
                     traceback.print_exc()
                     continue
                 if changed:
@@ -760,14 +759,13 @@ class ExporterSession(ApplicationSession):
                 traceback.print_exc()
             age = time.monotonic() - self.checkpoint
             if age > 300:
-                print("missed checkpoint, exiting (last was {} seconds ago)".format(age))
+                print(f"missed checkpoint, exiting (last was {age} seconds ago)")
                 self.disconnect()
 
     async def add_resource(self, group_name, resource_name, cls, params):
         """Add a resource to the exporter and update status on the coordinator"""
         print(
-            "add resource {}/{}: {}/{}".
-            format(group_name, resource_name, cls, params)
+            f"add resource {group_name}/{resource_name}: {cls}/{params}"
         )
         group = self.groups.setdefault(group_name, {})
         assert resource_name not in group
@@ -856,11 +854,11 @@ def main():
     crossbar_url = args.crossbar
     crossbar_realm = os.environ.get("LG_CROSSBAR_REALM", "realm1")
 
-    print("crossbar URL: {}".format(crossbar_url))
-    print("crossbar realm: {}".format(crossbar_realm))
-    print("exporter name: {}".format(extra['name']))
-    print("exporter hostname: {}".format(extra['hostname']))
-    print("resource config file: {}".format(extra['resources']))
+    print(f"crossbar URL: {crossbar_url}")
+    print(f"crossbar realm: {crossbar_realm}")
+    print(f"exporter name: {extra['name']}")
+    print(f"exporter hostname: {extra['hostname']}")
+    print(f"resource config file: {extra['resources']}")
 
     extra['loop'] = loop = asyncio.get_event_loop()
     if args.debug:

@@ -33,7 +33,7 @@ class Handler(multiprocessing.Process):
         if not snippet:
             return None
 
-        code = 'def {}():\n{}'.format(name, textwrap.indent(snippet, ' '))
+        code = f"def {name}():\n{textwrap.indent(snippet, ' ')}"
         tree = ast.parse(code, filename=self.env.config_file)
         ast.increment_lineno(tree, snippet.start_mark.line)
         co = compile(tree, filename=self.env.config_file, mode='exec')

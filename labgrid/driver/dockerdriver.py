@@ -62,7 +62,7 @@ class DockerDriver(PowerProtocol, Driver):
             attr.validators.instance_of(list)))
 
     def __attrs_post_init__(self):
-        self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self.logger = logging.getLogger(f"{self}({self.target})")
         super().__attrs_post_init__()
         self._client = None
         self._container = None

@@ -64,7 +64,7 @@ class StepReporter:
         if key == 'duration':
             if value < 0.001:
                 return
-            value = '{:.3f}'.format(value)
+            value = f'{value:.3f}'
         if self.elements and self.elements[-1][0] == key:
             self.elements.pop()
         if value is not None:
@@ -72,7 +72,7 @@ class StepReporter:
 
     def __format_elements(self):
         return [
-            "{}={}".format(colors.color(k, style='underline'), repr(v)) \
+            f"{colors.color(k, style='underline')}={repr(v)}" \
                 for k, v in self.elements if v is not None
         ]
 
@@ -100,7 +100,7 @@ class StepReporter:
 
     def _line_format(self, event):
         indent = '  '*event.step.level
-        title = '{}.{}'.format(event.step.source.__class__.__name__, event.step.title)
+        title = f'{event.step.source.__class__.__name__}.{event.step.title}'
         line = [indent, colors.color(title, style='bold')]
         if event.resource:
             line.append(event.resource)
@@ -195,14 +195,14 @@ class ColoredStepReporter(StepReporter):
     def __format_elements(self, color):
         return [
             colors.color(k, fg=color, style='underline') + \
-                colors.color('={}'.format(repr(v)), fg=color) \
+                colors.color(f'={repr(v)}', fg=color) \
                     for k, v in self.elements if v is not None
         ]
 
     def _line_format(self, event):
         indent = '  '*event.step.level
         color = self.__event_color(event)
-        title = '{}.{}'.format(event.step.source.__class__.__name__, event.step.title)
+        title = f'{event.step.source.__class__.__name__}.{event.step.title}'
         line = [indent, colors.color(title, fg=color, style='bold')]
         if event.resource:
             line.append(event.resource)

@@ -28,12 +28,12 @@ class USBAudioInputDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}".format(self))
+        self.logger = logging.getLogger(f"{self}")
         self._prepared = False
 
     def _get_pipeline(self):
         return [
-            "alsasrc", "device={}".format(self.res.alsa_name), "!",
+            "alsasrc", f"device={self.res.alsa_name}", "!",
             "matroskamux", "streamable=true", "!",
             "fdsink"
         ]

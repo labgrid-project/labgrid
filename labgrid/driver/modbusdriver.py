@@ -33,11 +33,8 @@ class ModbusCoilDriver(Driver, DigitalOutputProtocol):
             exc = self.client.last_except()
             if exc not in [self._consts.EXP_ACKNOWLEDGE, self._consts.EXP_NONE]:
                 raise ExecutionError(
-                    'Could not {} coil (code={}/exception={})'.format(action,
-                                                                      error_code,
-                                                                      exc))
-        raise ExecutionError('Could not {} coil (code={})'.format(action,
-                                                                  error_code))
+                    f'Could not {action} coil (code={error_code}/exception={exc})')
+        raise ExecutionError(f'Could not {action} coil (code={error_code})')
 
     @Driver.check_active
     def set(self, status):

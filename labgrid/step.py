@@ -41,7 +41,7 @@ class Steps:
             try:
                 subscriber(event)
             except Exception as e:  # pylint: disable=broad-except
-                warnings.warn("unhandled exception during event notification: {}".format(e))
+                warnings.warn(f"unhandled exception during event notification: {e}")
 
 steps = Steps()
 
@@ -60,9 +60,9 @@ class StepEvent:
             result.append(self.resource.__class__.__name__)
         data = self.data.copy()
         duration = data.pop('duration', 0.0)
-        pairs = ["{}={}".format(k, repr(v)) for k, v in data.items() if v is not None]
+        pairs = [f"{k}={repr(v)}" for k, v in data.items() if v is not None]
         if duration >= 0.001:
-            pairs.append("duration={:.3f}".format(duration))
+            pairs.append(f"duration={duration:.3f}")
         result.append(", ".join(pairs))
         return " ".join(result)
 
@@ -111,26 +111,22 @@ class Step:
 
     def __repr__(self):
         result = [
-            "Step(title={!r}, level={}, status={}".format(
-                self.title,
-                self.level,
-                self.status,
-            )
+            f"Step(title={self.title!r}, level={self.level}, status={self.status}"
         ]
         if self.args is not None:
-            result.append(", args={}".format(self.args))
+            result.append(f", args={self.args}")
         if self.exception is not None:
-            result.append(", exception={}".format(self.exception))
+            result.append(f", exception={self.exception}")
         if self.result is not None:
-            result.append(", result={}".format(self.result))
+            result.append(f", result={self.result}")
         duration = self.duration
         if duration >= 0.001:
-            result.append(", duration={:.3f}".format(duration))
+            result.append(f", duration={duration:.3f}")
         result.append(")")
         return "".join(result)
 
     def __str__(self):
-        return "{}".format(self.title)
+        return f"{self.title}"
 
     @property
     def duration(self):
@@ -192,7 +188,7 @@ class Step:
 
     def __del__(self):
         if not self.is_done:
-            warnings.warn("__del__ called before {} was done".format(step))
+            warnings.warn(f"__del__ called before {step} was done")
 
 
 def step(*, title=None, args=[], result=False, tag=None):  # pylint: disable=unused-argument

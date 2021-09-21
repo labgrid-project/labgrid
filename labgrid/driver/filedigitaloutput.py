@@ -28,7 +28,7 @@ class FileDigitalOutputDriver(Driver, DigitalOutputProtocol):
         super().__attrs_post_init__()
 
         if not os.path.isfile(self.filepath):
-            raise Exception("{} is not a file.".format(self.filepath))
+            raise Exception(f"{self.filepath} is not a file.")
 
     @Driver.check_active
     @step()

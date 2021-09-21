@@ -40,7 +40,7 @@ class AndroidFastbootDriver(Driver):
     def _get_fastboot_prefix(self):
         prefix = self.fastboot.command_prefix+[
             self.tool,
-            "-s", "usb:{}".format(self.fastboot.path),
+            "-s", f"usb:{self.fastboot.path}",
         ]
 
         if self.sparse_size is not None:
@@ -90,7 +90,7 @@ class AndroidFastbootDriver(Driver):
             try:
                 image_key = self.flash_images[partition]
             except KeyError:
-                raise InvalidConfigError("Partition {} not in flash_images".format(partition))
+                raise InvalidConfigError(f"Partition {partition} not in flash_images")
 
             filename = self.target.env.config.get_image_path(image_key)
 
@@ -124,7 +124,7 @@ class AndroidFastbootDriver(Driver):
         cmd = ['getvar', var]
         output = processwrapper.check_output(self._get_fastboot_prefix() + cmd)
         values = AndroidFastbootDriver._filter_fastboot_output(
-            output, '{}: '.format(var)
+            output, f'{var}: '
         )
         assert len(values) == 1, 'fastboot did not return exactly one line'
         return values[0]

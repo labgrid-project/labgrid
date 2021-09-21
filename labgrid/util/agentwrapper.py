@@ -32,14 +32,14 @@ class ModuleProxy:
         self.name = name
 
     def __getattr__(self, name):
-        return MethodProxy(self.wrapper, '{}.{}'.format(self.name, name))
+        return MethodProxy(self.wrapper, f'{self.name}.{name}')
 
 class AgentWrapper:
 
     def __init__(self, host=None):
         self.agent = None
         self.loaded = {}
-        self.logger = logging.getLogger("ResourceExport({})".format(host))
+        self.logger = logging.getLogger(f"ResourceExport({host})")
 
         agent = os.path.join(
             os.path.abspath(os.path.dirname(__file__)),
@@ -48,11 +48,11 @@ class AgentWrapper:
             # copy agent.py and run via ssh
             agent_data = open(agent, 'rb').read()
             agent_hash = hashlib.sha256(agent_data).hexdigest()
-            agent_remote = '.labgrid_agent_{}.py'.format(agent_hash)
+            agent_remote = f'.labgrid_agent_{agent_hash}.py'
             ssh_opts = 'ssh -x -o ConnectTimeout=5 -o PasswordAuthentication=no'.split()
             subprocess.check_call(
                 ['rsync', '-e', ' '.join(ssh_opts), '-tq', agent,
-                 '{}:{}'.format(host, agent_remote)],
+                 f'{host}:{agent_remote}'],
             )
             self.agent = subprocess.Popen(
                 ssh_opts + [host, '--', 'python3', agent_remote],
@@ -101,7 +101,7 @@ class AgentWrapper:
             self.agent = None
             raise AgentError(response['error'])
 
-        raise AgentError("unknown response from agent: {}".format(response))
+        raise AgentError(f"unknown response from agent: {response}")
 
     def load(self, name):
         if name in self.loaded:
@@ -109,7 +109,7 @@ class AgentWrapper:
 
         filename = os.path.join(
             os.path.abspath(os.path.dirname(__file__)),
-            'agents', '{}.py'.format(name))
+            'agents', f'{name}.py')
         source = open(filename, 'r').read()
 
         self.call('load', name, source)

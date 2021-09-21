@@ -42,7 +42,7 @@ class SigrokCommon(Driver):
 
     def _create_tmpdir(self):
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
-            self._tmpdir = '/tmp/labgrid-sigrok-{}'.format(uuid.uuid1())
+            self._tmpdir = f'/tmp/labgrid-sigrok-{uuid.uuid1()}'
             command = self.sigrok.command_prefix + [
                 'mkdir', '-p', self._tmpdir
             ]
@@ -85,13 +85,9 @@ class SigrokCommon(Driver):
     def _get_sigrok_prefix(self):
         prefix = [self.tool]
         if isinstance(self.sigrok, (NetworkSigrokUSBDevice, SigrokUSBDevice)):
-            prefix += ["-d", "{}:conn={}.{}".format(
-                self.sigrok.driver, self.sigrok.busnum, self.sigrok.devnum
-            )]
+            prefix += ["-d", f"{self.sigrok.driver}:conn={self.sigrok.busnum}.{self.sigrok.devnum}"]
         elif isinstance(self.sigrok, (NetworkSigrokUSBSerialDevice, SigrokUSBSerialDevice)):
-            prefix += ["-d", "{}:conn={}".format(
-                self.sigrok.driver, self.sigrok.path
-            )]
+            prefix += ["-d", f"{self.sigrok.driver}:conn={self.sigrok.path}"]
         else:
             prefix += ["-d", self.sigrok.driver]
         if self.sigrok.channels:
@@ -146,7 +142,7 @@ class SigrokDriver(SigrokCommon):
             "Saving to: %s with basename: %s", self._filename, self._basename
         )
         cmd = [
-            "-l", "4", "--config", "samplerate={}".format(samplerate),
+            "-l", "4", "--config", f"samplerate={samplerate}",
             "--continuous", "-o"
         ]
         filename = os.path.join(self._tmpdir, self._basename)
@@ -165,7 +161,7 @@ class SigrokDriver(SigrokCommon):
         self._running = False
         fnames = ['time']
         fnames.extend(self.sigrok.channels.split(','))
-        csv_filename = '{}.csv'.format(os.path.splitext(self._basename)[0])
+        csv_filename = f'{os.path.splitext(self._basename)[0]}.csv'
 
         self._process.send_signal(signal.SIGINT)
         stdout, stderr = self._process.communicate()
@@ -184,10 +180,7 @@ class SigrokDriver(SigrokCommon):
         self.log.debug("stdout:\n %s\n ----- \n stderr:\n %s", stdout, stderr)
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
             subprocess.call([
-                'scp', '{}:{}'.format(
-                    self.sigrok.host,
-                    os.path.join(self._tmpdir, self._basename)
-                ),
+                'scp', f'{self.sigrok.host}:{os.path.join(self._tmpdir, self._basename)}',
                 os.path.join(self._local_tmpdir, self._filename)
             ],
                             stdin=subprocess.DEVNULL,
@@ -195,9 +188,7 @@ class SigrokDriver(SigrokCommon):
                             stderr=subprocess.DEVNULL)
             # get csv from remote host
             subprocess.call([
-                'scp', '{}:{}'.format(
-                    self.sigrok.host, os.path.join(self._tmpdir, csv_filename)
-                ),
+                'scp', f'{self.sigrok.host}:{os.path.join(self._tmpdir, csv_filename)}',
                 os.path.join(self._local_tmpdir, csv_filename)
             ],
                             stdin=subprocess.DEVNULL,
@@ -292,9 +283,9 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
     def set_voltage_target(self, value):
         if self.max_voltage is not None and value > self.max_voltage:
             raise ValueError(
-                "Requested voltage target({}) is higher than configured maximum ({})".format(value, self.max_voltage))  # pylint: disable=line-too-long
+                f"Requested voltage target({value}) is higher than configured maximum ({self.max_voltage})")  # pylint: disable=line-too-long
         processwrapper.check_output(
-            self._get_sigrok_prefix() + ["--config", "voltage_target={:f}".format(value), "--set"]
+            self._get_sigrok_prefix() + ["--config", f"voltage_target={value:f}", "--set"]
         )
 
     @Driver.check_active
@@ -302,9 +293,9 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
     def set_current_limit(self, value):
         if self.max_current is not None and value > self.max_current:
             raise ValueError(
-                "Requested current limit ({}) is higher than configured maximum ({})".format(value, self.max_current))  # pylint: disable=line-too-long
+                f"Requested current limit ({value}) is higher than configured maximum ({self.max_current})")  # pylint: disable=line-too-long
         processwrapper.check_output(
-            self._get_sigrok_prefix() + ["--config", "current_limit={:f}".format(value), "--set"]
+            self._get_sigrok_prefix() + ["--config", f"current_limit={value:f}", "--set"]
         )
 
     @Driver.check_active
@@ -318,7 +309,7 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
         elif out == b'false':
             return False
 
-        raise ExecutionError("Unkown enable status {}".format(out))
+        raise ExecutionError(f"Unkown enable status {out}")
 
     @Driver.check_active
     @step(result=True)
@@ -337,5 +328,5 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
             elif k == b'current':
                 res['current'] = float(v)
         if len(res) != 2:
-            raise ExecutionError("Cannot parse --show output {}".format(out))
+            raise ExecutionError(f"Cannot parse --show output {out}")
         return res

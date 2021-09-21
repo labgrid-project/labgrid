@@ -48,7 +48,6 @@ class DockerStrategy(Strategy):
             self.target.deactivate(self.docker_driver)
         else:
             raise StrategyError(
-                "no transition found from {} to {}".
-                format(self.status, status)
+                f"no transition found from {self.status} to {status}"
             )
         self.status = status

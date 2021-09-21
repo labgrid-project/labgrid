@@ -62,7 +62,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.re_vt100 = re.compile(
             r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
         )  # pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
-        self.logger = logging.getLogger("{}:{}".format(self, self.target))
+        self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0  # pylint: disable=attribute-defined-outside-init
 
         self._xmodem_cached_rx_cmd = ""
@@ -97,9 +97,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._check_prompt()
         marker = gen_marker()
         # hide marker from expect
-        cmp_command = '''MARKER='{}''{}' run {}'''.format(
-            marker[:4], marker[4:], shlex.quote(cmd)
-        )
+        cmp_command = f'''MARKER='{marker[:4]}''{marker[4:]}' run {shlex.quote(cmd)}'''
         self.console.sendline(cmp_command)
         _, _, match, _ = self.console.expect(r'{marker}(.*){marker}\s+(\d+)\s+{prompt}'.format(
             marker=marker, prompt=self.prompt
@@ -177,7 +175,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             last_before = before
 
             if timeout.expired:
-                raise TIMEOUT("Timeout of {} seconds exceeded during waiting for login".format(self.login_timeout))  # pylint: disable=line-too-long
+                raise TIMEOUT(f"Timeout of {self.login_timeout} seconds exceeded during waiting for login")  # pylint: disable=line-too-long
 
         if did_login:
             if self.post_login_settle_time > 0:
@@ -197,7 +195,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """
         marker = gen_marker()
         # hide marker from expect
-        self.console.sendline("echo '{}''{}'".format(marker[:4], marker[4:]))
+        self.console.sendline(f"echo '{marker[:4]}''{marker[4:]}'")
         try:
             self.console.expect(
                 r"{marker}\s+{prompt}".format(marker=marker, prompt=self.prompt),
@@ -230,8 +228,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 new_key = match.groupdict()
             else:
                 raise IOError(
-                    "Could not parse SSH-Key from file: {}".
-                    format(keyfile)
+                    f"Could not parse SSH-Key from file: {keyfile}"
                 )
         self.logger.debug("Read Key: %s", new_key)
         auth_keys, _, read_keys = self._run("cat ~/.ssh/authorized_keys")
@@ -256,7 +253,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         if test_write == 0 and read_keys == 0:
             self.logger.debug("Key not on target and writeable, concatenating...")
-            self._run_check('echo "{}" >> ~/.ssh/authorized_keys'.format(keyline))
+            self._run_check(f'echo "{keyline}" >> ~/.ssh/authorized_keys')
             self._run_check("rm ~/.test")
             return
 
@@ -268,14 +265,14 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 self._run("mkdir ~/.ssh/")
             self._run_check("chmod 700 ~/.ssh/")
             self.logger.debug("Creating ~/.ssh/authorized_keys")
-            self._run_check('echo "{}" > ~/.ssh/authorized_keys'.format(keyline))
+            self._run_check(f'echo "{keyline}" > ~/.ssh/authorized_keys')
             self._run_check("rm ~/.test")
             return
 
         self.logger.debug("Key not on target and not writeable, using bind mount...")
         self._run_check('mkdir -m 700 /tmp/labgrid-ssh/')
         self._run("cp -a ~/.ssh/* /tmp/labgrid-ssh/")
-        self._run_check('echo "{}" >> /tmp/labgrid-ssh/authorized_keys'.format(keyline))
+        self._run_check(f'echo "{keyline}" >> /tmp/labgrid-ssh/authorized_keys')
         self._run_check('chmod 600 /tmp/labgrid-ssh/authorized_keys')
         out, err, exitcode = self._run('mount --bind /tmp/labgrid-ssh/ ~/.ssh/')
         if exitcode != 0:
@@ -314,7 +311,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """
 
         marker = gen_marker()
-        marked_cmd = "echo '{}''{}'; {}".format(marker[:4], marker[4:], cmd)
+        marked_cmd = f"echo '{marker[:4]}''{marker[4:]}'; {cmd}"
         self.console.sendline(marked_cmd)
         self.console.expect(marker, timeout=30)
 
@@ -357,7 +354,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # file ourselves.
 
         def _target_cleanup(tmpfile):
-            self._run("rm -f '{}'".format(tmpfile))
+            self._run(f"rm -f '{tmpfile}'")
 
         stream = io.BytesIO(buf)
 
@@ -383,14 +380,13 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.console.expect(self.prompt, timeout=30)
 
         # truncate the file to get rid of CPMEOF padding
-        dd_cmd = "dd if='{}' of='{}' bs=1 count={}".format(tmpfile, remotefile, len(buf))
+        dd_cmd = f"dd if='{tmpfile}' of='{remotefile}' bs=1 count={len(buf)}"
         self.logger.debug('dd command: %s', dd_cmd)
         out, _, ret = self._run(dd_cmd)
 
         _target_cleanup(tmpfile)
         if ret != 0:
-            raise ExecutionError('Could not truncate destination file: dd returned {}: {}'.
-                                 format(ret, out))
+            raise ExecutionError(f'Could not truncate destination file: dd returned {ret}: {out}')
 
     @Driver.check_active
     def put_bytes(self, buf: bytes, remotefile: str):
@@ -435,10 +431,10 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.logger.info('XMODEM send command on target: %s', cmd)
 
         # get file size to remove XMODEM's CPMEOF padding at the end of the last packet
-        out, _, ret = self._run("stat '{}'".format(remotefile))
+        out, _, ret = self._run(f"stat '{remotefile}'")
         match = re.search(r'Size:\s+(?P<size>\d+)', '\n'.join(out))
         if ret != 0 or not match or not match.group("size"):
-            raise ExecutionError("Could not stat '{}' on target".format(remotefile))
+            raise ExecutionError(f"Could not stat '{remotefile}' on target")
 
         file_size = int(match.group('size'))
         self.logger.debug('file size on target is %d', file_size)
@@ -451,8 +447,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         # remove CPMEOF (0x1a) padding
         if recvd_size < file_size:
-            raise ExecutionError('Only received {} bytes of {} expected'.
-                                 format(recvd_size, file_size))
+            raise ExecutionError(f'Only received {recvd_size} bytes of {file_size} expected')
 
         self.logger.debug('received %d bytes of payload', file_size)
         buf.truncate(file_size)
@@ -503,7 +498,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def _run_script(self, data: bytes, timeout: int = 60):
         hardcoded_remote_file = '/tmp/labgrid-run-script'
         self._put_bytes(data, hardcoded_remote_file)
-        self._run_check("chmod +x '{}'".format(hardcoded_remote_file))
+        self._run_check(f"chmod +x '{hardcoded_remote_file}'")
         return self._run(hardcoded_remote_file, timeout=timeout)
 
     @Driver.check_active
@@ -526,10 +521,10 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def _run_script_file(self, scriptfile: str, *args, timeout: int = 60):
         hardcoded_remote_file = '/tmp/labgrid-run-script'
         self._put(scriptfile, hardcoded_remote_file)
-        self._run_check("chmod +x '{}'".format(hardcoded_remote_file))
+        self._run_check(f"chmod +x '{hardcoded_remote_file}'")
 
         shargs = [shlex.quote(a) for a in args]
-        cmd = "{} {}".format(hardcoded_remote_file, ' '.join(shargs))
+        cmd = f"{hardcoded_remote_file} {' '.join(shargs)}"
         return self._run(cmd, timeout=timeout)
 
     @Driver.check_active

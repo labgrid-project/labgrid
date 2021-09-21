@@ -33,7 +33,7 @@ class UBootStrategy(Strategy):
         if not isinstance(status, Status):
             status = Status[status]
         if status == Status.unknown:
-            raise StrategyError("can not transition to {}".format(status))
+            raise StrategyError(f"can not transition to {status}")
         elif status == self.status:
             return # nothing to do
         elif status == Status.off:
@@ -54,5 +54,5 @@ class UBootStrategy(Strategy):
             self.uboot.await_boot()
             self.target.activate(self.shell)
         else:
-            raise StrategyError("no transition found from {} to {}".format(self.status, status))
+            raise StrategyError(f"no transition found from {self.status} to {status}")
         self.status = status

@@ -34,7 +34,7 @@ class USBSDMuxDriver(Driver):
     @step(title='sdmux_set', args=['mode'])
     def set_mode(self, mode):
         if not mode.lower() in ['dut', 'host', 'off', 'client']:
-            raise ExecutionError("Setting mode '%s' not supported by USBSDMuxDriver" % mode)
+            raise ExecutionError(f"Setting mode '{mode}' not supported by USBSDMuxDriver")
         cmd = self.mux.command_prefix + [
             self.tool,
             self.mux.control_path,

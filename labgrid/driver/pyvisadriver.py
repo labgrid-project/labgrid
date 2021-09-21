@@ -22,7 +22,7 @@ class PyVISADriver(Driver):
         self.pyvisa_device = None
 
     def on_activate(self):
-        device_identifier = '{}::{}::INSTR'.format(self.pyvisa_resource.type, self.pyvisa_resource.url)
+        device_identifier = f'{self.pyvisa_resource.type}::{self.pyvisa_resource.url}::INSTR'
         self.pyvisa_device = self._pyvisa_resource_manager.open_resource(device_identifier)
 
     def on_deactivate(self):

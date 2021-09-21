@@ -221,8 +221,8 @@ class BDIMXUSBDriver(Driver, BootstrapProtocol):
         processwrapper.check_output(
             self.loader.command_prefix + [
                 self.tool,
-                "--bus={}".format(self.loader.busnum),
-                "--device={}".format(self.loader.devnum),
+                f"--bus={self.loader.busnum}",
+                f"--device={self.loader.devnum}",
                 mf.get_remote_path(),
             ]
         )

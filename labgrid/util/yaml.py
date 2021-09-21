@@ -81,7 +81,7 @@ def resolve_templates(data, mapping):
                 data[k] = val.substitute(mapping)
             except ValueError as error:
                 raise ValueError(
-                    "Invalid template string '{}'".format(val.template)
+                    f"Invalid template string '{val.template}'"
                 ) from error
 
         elif isinstance(val, (list, dict)):

@@ -59,12 +59,12 @@ class Suggester:
             print("=== added device ===")
         else:
             print("=== existing device ===")
-        print("  {} for {}".format(cls, resource.device.device_path))
+        print(f"  {cls} for {resource.device.device_path}")
 
         if meta:
             print("  === device properties ===")
         for k, v in meta.items():
-            print("  {}: {}".format(k, v))
+            print(f"  {k}: {v}")
         if not suggestions:
             print("  === no suggested matches found ===")
             print()

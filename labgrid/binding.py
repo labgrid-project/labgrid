@@ -58,13 +58,9 @@ class BindingMixin:
     @property
     def display_name(self):
         if self.name:
-            return "{}(target={}, name={})".format(
-                self.__class__.__name__, self.target.name, self.name
-            )
+            return f"{self.__class__.__name__}(target={self.target.name}, name={self.name})"
 
-        return "{}(target={})".format(
-            self.__class__.__name__, self.target.name
-        )
+        return f"{self.__class__.__name__}(target={self.target.name})"
 
     def on_supplier_bound(self, supplier):
         """Called by the Target after a new supplier has been bound"""
@@ -110,4 +106,4 @@ class BindingMixin:
             self.value = value
 
         def __repr__(self):
-            return "Binding.Named({})".format(repr(self.value))
+            return f"Binding.Named({repr(self.value)})"

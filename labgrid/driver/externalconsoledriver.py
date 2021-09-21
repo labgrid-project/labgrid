@@ -25,7 +25,7 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self.logger = logging.getLogger(f"{self}({self.target})")
         self.status = 0  #pylint: disable=attribute-defined-outside-init
         self._child = None
         self.open()

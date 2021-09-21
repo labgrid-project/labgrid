@@ -17,7 +17,7 @@ class XenaDriver(Driver):
         super().__attrs_post_init__()
         self._xena_app = import_module('xenavalkyrie.xena_app')
         self._tgn_utils = import_module('trafficgenerator.tgn_utils')
-        self._logger = logging.getLogger("{}".format(self))
+        self._logger = logging.getLogger(f"{self}")
         self._xm = None
 
     def on_activate(self):

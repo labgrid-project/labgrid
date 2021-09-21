@@ -28,4 +28,4 @@ class StepReporter:
 
         step = event.step
         indent = '  '*step.level
-        print("{}{}".format(indent, event))
+        print(f"{indent}{event}")

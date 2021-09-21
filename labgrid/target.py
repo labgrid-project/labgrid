@@ -20,7 +20,7 @@ class Target:
     env = attr.ib(default=None)
 
     def __attrs_post_init__(self):
-        self.log = logging.getLogger("target({})".format(self.name))
+        self.log = logging.getLogger(f"target({self.name})")
         self.resources = []
         self.drivers = []
         self.last_update = 0.0
@@ -36,7 +36,7 @@ class Target:
 
     def interact(self, msg):
         if self.env:
-            self.env.interact("{}: {}".format(self.name, msg))
+            self.env.interact(f"{self.name}: {msg}")
         else:
             input(msg)
 
@@ -89,8 +89,7 @@ class Target:
 
         if waiting:
             raise NoResourceFoundError(
-                "Not all resources are {}: {}".format(
-                    "available" if avail else "unavailable", waiting),
+                f"Not all resources are {'available' if avail else 'unavailable'}: {waiting}",
                 filter=waiting
             )
 
@@ -120,7 +119,7 @@ class Target:
                 continue
             found.append(res)
         if not found:
-            name_msg = " named '{}'".format(name) if name else ""
+            name_msg = f" named '{name}'" if name else ""
             if other_names:
                 raise NoResourceFoundError(
                     "no {cls} resource{name} found in {target}, matching resources with other names: {other_names}".format(  # pylint: disable=line-too-long
@@ -128,12 +127,11 @@ class Target:
                 )
 
             raise NoResourceFoundError(
-                "no {cls} resource{name} found in {target}".format(
-                    cls=cls, name=name_msg, target=self)
+                f"no {cls} resource{name_msg} found in {self}"
             )
         elif len(found) > 1:
             raise NoResourceFoundError(
-                "multiple resources matching {cls} found in {target}".format(cls=cls, target=self)
+                f"multiple resources matching {cls} found in {self}"
             )
         if wait_avail:
             self.await_resources(found)
@@ -157,7 +155,7 @@ class Target:
                 continue
             found.append(drv)
         if not found:
-            name_msg = " named '{}'".format(name) if name else ""
+            name_msg = f" named '{name}'" if name else ""
             if other_names:
                 raise NoDriverFoundError(
                     "no {active}{cls} driver{name} found in {target}, matching resources with other names: {other_names}".format(  # pylint: disable=line-too-long
@@ -166,9 +164,7 @@ class Target:
                 )
 
             raise NoDriverFoundError(
-                "no {active}{cls} driver{name} found in {target}".format(
-                    active="active " if active else "", cls=cls, name=name_msg, target=self
-                )
+                f"no {'active ' if active else ''}{cls} driver{name_msg} found in {self}"
             )
         elif len(found) > 1:
             prio_last = -255
@@ -238,7 +234,7 @@ class Target:
             cls = target_factory.class_from_string(cls)
         if not issubclass(cls, (Driver, abc.ABC)): # all Protocols derive from ABC
             raise NoDriverFoundError(
-                "invalid driver class {}".format(cls)
+                f"invalid driver class {cls}"
             )
 
         return self.get_active_driver(cls, name=name)
@@ -255,7 +251,7 @@ class Target:
         """
         if resource.state is not BindingState.idle:
             raise BindingError(
-                "{} is not in state {}".format(resource, BindingState.idle)
+                f"{resource} is not in state {BindingState.idle}"
             )
 
         # consistency check
@@ -279,7 +275,7 @@ class Target:
         """
         if client.state is not BindingState.idle:
             raise BindingError(
-                "{} is not in state {}".format(client, BindingState.idle)
+                f"{client} is not in state {BindingState.idle}"
             )
 
         # consistency check
@@ -329,7 +325,7 @@ class Target:
                             self.get_driver(requirement, name=supplier_name, activate=False),
                         )
                     else:
-                        raise NoSupplierFoundError("invalid binding type {}".format(requirement))
+                        raise NoSupplierFoundError(f"invalid binding type {requirement}")
                 except NoSupplierFoundError as e:
                     errors.append(e)
             if not suppliers:
@@ -343,7 +339,7 @@ class Target:
                             requirements=requirements, target=self, errors=errors)
                     )
             elif len(suppliers) > 1:
-                raise NoSupplierFoundError("conflicting suppliers matching {} found in target {}".format(requirements, self))  # pylint: disable=line-too-long
+                raise NoSupplierFoundError(f"conflicting suppliers matching {requirements} found in target {self}")  # pylint: disable=line-too-long
             else:
                 supplier = suppliers[0]
             if supplier is not None and (requirement, supplier) in bound_req_pairs:
@@ -365,7 +361,7 @@ class Target:
         # make sure drivers consume all given bindings
         if mapping and not isinstance(client, Strategy):
             raise BindingError(
-                "{} got unexpected bindings: {}".format(client, list(mapping.keys()))
+                f"{client} got unexpected bindings: {list(mapping.keys())}"
             )
 
         # update relationship in both directions
@@ -391,7 +387,7 @@ class Target:
         if isinstance(bindable, Driver):
             return self.bind_driver(bindable)
 
-        raise BindingError("object {} is not bindable".format(bindable))
+        raise BindingError(f"object {bindable} is not bindable")
 
     def activate(self, client, name=None):
         """
@@ -413,7 +409,7 @@ class Target:
 
         if client.state is not BindingState.bound:
             raise BindingError(
-                "{} is not in state {}".format(client, BindingState.bound)
+                f"{client} is not in state {BindingState.bound}"
             )
 
         # consistency check
@@ -450,7 +446,7 @@ class Target:
 
         if client.state is not BindingState.active:
             raise BindingError(
-                "{} is not in state {}".format(client, BindingState.active)
+                f"{client} is not in state {BindingState.active}"
             )
 
         # consistency check

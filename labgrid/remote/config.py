@@ -24,7 +24,7 @@ class ResourceConfig:
                 template = env.from_string(file.read())
         except FileNotFoundError:
             raise NoConfigFoundError(
-                "{} could not be found".format(self.filename)
+                f"{self.filename} could not be found"
             )
         rendered = template.render(env=os.environ)
         pprint(('rendered', rendered))

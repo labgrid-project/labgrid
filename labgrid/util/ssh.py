@@ -30,7 +30,7 @@ class SSHConnectionManager:
     )
 
     def __attrs_post_init__(self):
-        self.logger = logging.getLogger("{}".format(self))
+        self.logger = logging.getLogger(f"{self}")
         atexit.register(self.close_all)
 
     def get(self, host: str):
@@ -115,9 +115,7 @@ def _check_connected(func):
     def wrapper(self, *_args, **_kwargs):
         if not self.isconnected():
             raise ExecutionError(
-                "{} can not be called ({} is not connected)".format(
-                    func.__qualname__, self
-                )
+                f"{func.__qualname__} can not be called ({self} is not connected)"
             )
         return func(self, *_args, **_kwargs)  # pylint: disable=not-callable
 
@@ -145,7 +143,7 @@ class SSHConnection:
     _forwards = attr.ib(init=False, default=attr.Factory(dict))
 
     def __attrs_post_init__(self):
-        self._logger = logging.getLogger("{}".format(self))
+        self._logger = logging.getLogger(f"{self}")
         self._socket = None
         self._master = None
         self._keepalive = None
@@ -159,7 +157,7 @@ class SSHConnection:
         if self._socket:
             return [
                 "-o", "ControlMaster=no",
-                "-o", "ControlPath={}".format(self._socket),
+                "-o", f"ControlPath={self._socket}",
             ]
         return []
 
@@ -241,7 +239,7 @@ class SSHConnection:
             )
         except:
             raise ExecutionError(
-                "error executing command: {}".format(complete_cmd)
+                f"error executing command: {complete_cmd}"
             )
 
         stdout = []
@@ -312,8 +310,8 @@ class SSHConnection:
         """Get a file from the remote host"""
         complete_cmd = ["scp"] + self._get_ssh_control_args()
         complete_cmd += [
-            "{}:{}".format(self.host, remote_file),
-            "{}".format(local_file)
+            f"{self.host}:{remote_file}",
+            f"{local_file}"
         ]
         self._logger.debug("Running command: %s", complete_cmd)
         subprocess.check_call(
@@ -327,8 +325,8 @@ class SSHConnection:
         complete_cmd = ["rsync", "--compress=1", "--sparse", "--copy-links", "--verbose", "--progress", "--times", "-e",
                         " ".join(['ssh'] + self._get_ssh_args())]
         complete_cmd += [
-            "{}".format(local_file),
-            "{}:{}".format(self.host, remote_path)
+            f"{local_file}",
+            f"{self.host}:{remote_path}"
         ]
         self._logger.debug("Running command: %s", complete_cmd)
         subprocess.check_call(
@@ -340,16 +338,14 @@ class SSHConnection:
     def add_port_forward(self, remote_host, remote_port):
         """forward command"""
         local_port = get_free_port()
-        destination = "{}:{}".format(remote_host, remote_port)
+        destination = f"{remote_host}:{remote_port}"
 
         # pylint: disable=not-an-iterable
         if destination in self._forwards:
             return self._forwards[destination]
         self._run_socket_command(
             "forward", [
-                "-L"
-                "{local}:{destination}".
-                format(local=local_port, destination=destination)
+                f"-L{local_port}:{destination}"
             ]
         )
         self._forwards[destination] = local_port
@@ -358,7 +354,7 @@ class SSHConnection:
     @_check_connected
     def remove_port_forward(self, remote_host, remote_port):
         """cancel command"""
-        destination = "{}:{}".format(remote_host, remote_port)
+        destination = f"{remote_host}:{remote_port}"
         local_port = self._forwards.pop(destination, None)
 
         # pylint: disable=not-an-iterable
@@ -367,9 +363,7 @@ class SSHConnection:
 
         self._run_socket_command(
             "cancel", [
-                "-L"
-                "{local}:localhost:{remote}".
-                format(local=local_port, remote=remote_port)
+                f"-L{local_port}:localhost:{remote_port}"
             ]
         )
 
@@ -381,7 +375,7 @@ class SSHConnection:
         return self._connected and self._check_keepalive()
 
     def _check_external_master(self):
-        args = ["ssh", "-O", "check", "{}".format(self.host)]
+        args = ["ssh", "-O", "check", f"{self.host}"]
         # We don't want to confuse the use with SSHs output here, so we need to
         # capture and parse it.
         proc = subprocess.Popen(
@@ -404,7 +398,7 @@ class SSHConnection:
 
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
-        control = os.path.join(self._tmpdir, 'control-{}'.format(self.host))
+        control = os.path.join(self._tmpdir, f'control-{self.host}')
 
         self._logger.debug("ControlSocket: %s", control)
         args = ["ssh"] + SSHConnection._get_ssh_base_args()
@@ -413,7 +407,7 @@ class SSHConnection:
             "-o", "ConnectTimeout=30",
             "-o", "ControlPersist=300",
             "-o", "ControlMaster=yes",
-            "-o", "ControlPath={}".format(control),
+            "-o", f"ControlPath={control}",
             # We don't want to ask the user to confirm host keys here.
             "-o", "StrictHostKeyChecking=yes",
             self.host,
@@ -446,7 +440,7 @@ class SSHConnection:
             )
 
         if not os.path.exists(control):
-            raise ExecutionError("no control socket to {}".format(self.host))
+            raise ExecutionError(f"no control socket to {self.host}")
 
         self._socket = control
 

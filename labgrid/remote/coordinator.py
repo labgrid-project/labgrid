@@ -250,15 +250,15 @@ class CoordinatorComponent(ApplicationSession):
         for session in list(self.sessions.values()):
             if isinstance(session, ExporterSession):
                 fut = self.call(
-                    'org.labgrid.exporter.{}.version'.format(session.name)
+                    f'org.labgrid.exporter.{session.name}.version'
                 )
                 done, _ = await asyncio.wait([fut], timeout=5)
                 if not done:
-                    print('kicking exporter ({}/{})'.format(session.key, session.name))
+                    print(f'kicking exporter ({session.key}/{session.name})')
                     await self.call('wamp.session.kill', session.key, message="timeout detected by coordinator")
-                    print('cleaning up exporter ({}/{})'.format(session.key, session.name))
+                    print(f'cleaning up exporter ({session.key}/{session.name})')
                     await self.on_session_leave(session.key)
-                    print('removed exporter ({}/{})'.format(session.key, session.name))
+                    print(f'removed exporter ({session.key}/{session.name})')
                     continue
                 try:
                     session.version = done.pop().result()
@@ -390,7 +390,7 @@ class CoordinatorComponent(ApplicationSession):
 
     @locked
     async def on_session_leave(self, session_id):
-        print('leave ({})'.format(session_id))
+        print(f'leave ({session_id})')
         try:
             session = self.sessions.pop(session_id)
         except KeyError:
@@ -579,11 +579,11 @@ class CoordinatorComponent(ApplicationSession):
             for resource in resources:
                 # this triggers an update from the exporter which is published
                 # to the clients
-                await self.call('org.labgrid.exporter.{}.acquire'.format(resource.path[0]),
+                await self.call(f'org.labgrid.exporter.{resource.path[0]}.acquire',
                                 resource.path[1], resource.path[3], place.name)
                 acquired.append(resource)
         except:
-            print("failed to acquire {}".format(resource))
+            print(f"failed to acquire {resource}")
             # cleanup
             await self._release_resources(place, acquired)
             return False
@@ -607,10 +607,10 @@ class CoordinatorComponent(ApplicationSession):
                 # this triggers an update from the exporter which is published
                 # to the clients
                 if callback:
-                    await self.call('org.labgrid.exporter.{}.release'.format(resource.path[0]),
+                    await self.call(f'org.labgrid.exporter.{resource.path[0]}.release',
                                     resource.path[1], resource.path[3])
             except:
-                print("failed to release {}".format(resource))
+                print(f"failed to release {resource}")
                 # at leaset try to notify the clients
                 try:
                     self._publish_resource(resource)
@@ -710,10 +710,10 @@ class CoordinatorComponent(ApplicationSession):
                 res.state = ReservationState.expired
                 res.allocations.clear()
                 res.refresh()
-                print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))
+                print(f'reservation ({res.owner}/{res.token}) is now {res.state.name}')
             else:
                 del self.reservations[res.token]
-                print('removed {} reservation ({}/{})'.format(res.state.name, res.owner, res.token))
+                print(f'removed {res.state.name} reservation ({res.owner}/{res.token})')
 
         # check which places are already allocated and handle state transitions
         allocated_places = set()
@@ -727,7 +727,7 @@ class CoordinatorComponent(ApplicationSession):
                         res.state = ReservationState.invalid
                         res.allocations.clear()
                         res.refresh(300)
-                        print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))  # pylint: disable=line-too-long
+                        print(f'reservation ({res.owner}/{res.token}) is now {res.state.name}')
                     if place.acquired is not None:
                         acquired_places.add(name)
                     assert name not in allocated_places, "conflicting allocation"
@@ -736,12 +736,12 @@ class CoordinatorComponent(ApplicationSession):
                 # an allocated place was acquired
                 res.state = ReservationState.acquired
                 res.refresh()
-                print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))
+                print(f'reservation ({res.owner}/{res.token}) is now {res.state.name}')
             if not acquired_places and res.state is ReservationState.acquired:
                 # all allocated places were released
                 res.state = ReservationState.allocated
                 res.refresh()
-                print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))
+                print(f'reservation ({res.owner}/{res.token}) is now {res.state.name}')
 
         # check which places are available for allocation
         available_places = set()
@@ -777,7 +777,7 @@ class CoordinatorComponent(ApplicationSession):
             res.allocations = {'main': [place_name]}
             res.state = ReservationState.allocated
             res.refresh()
-            print('reservation ({}/{}) is now {}'.format(res.owner, res.token, res.state.name))
+            print(f'reservation ({res.owner}/{res.token}) is now {res.state.name}')
 
         # update reservation property of each place and notify
         old_map = {}

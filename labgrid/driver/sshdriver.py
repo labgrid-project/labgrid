@@ -33,7 +33,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger("{}({})".format(self, self.target))
+        self.logger = logging.getLogger(f"{self}({self.target})")
         self._keepalive = None
 
     def on_activate(self):
@@ -49,7 +49,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.control = self._start_own_master()
         self.ssh_prefix += ["-F", "none"]
         if self.control:
-            self.ssh_prefix += ["-o", "ControlPath={}".format(self.control.replace('%', '%%'))]
+            self.ssh_prefix += ["-o", f"ControlPath={self.control.replace('%', '%%')}"]
 
         self._keepalive = None
         self._start_keepalive()
@@ -83,10 +83,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         self.tmpdir = tempfile.mkdtemp(prefix='labgrid-ssh-tmp-')
         control = os.path.join(
-            self.tmpdir, 'control-{}'.format(self.networkservice.address)
+            self.tmpdir, f'control-{self.networkservice.address}'
         )
 
-        args = ["ssh", "-f", *self.ssh_prefix, "-x", "-o", "ConnectTimeout={}".format(timeout),
+        args = ["ssh", "-f", *self.ssh_prefix, "-x", "-o", f"ConnectTimeout={timeout}",
                  "-o", "ControlPersist=300", "-o",
                  "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
                  "-o", "ServerAliveInterval=15", "-MN", "-S", control.replace('%', '%%'), "-p",
@@ -96,7 +96,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # proxy via the exporter if we have an ifname suffix
         address = self.networkservice.address
         if address.count('%') > 1:
-            raise ValueError("Multiple '%' found in '{}'.".format(address))
+            raise ValueError(f"Multiple '%' found in '{address}'.")
         if '%' in address:
             address, ifname = address.split('%', 1)
         else:
@@ -105,10 +105,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         proxy_cmd = proxymanager.get_command(self.networkservice, address, self.networkservice.port, ifname)
         if proxy_cmd:  # only proxy if needed
             args += [
-                "-o", "ProxyCommand={} 2>{}".format(
-                    ' '.join(proxy_cmd),
-                    self.tmpdir+'/proxy-stderr',
-                )
+                "-o", f"ProxyCommand={' '.join(proxy_cmd)} 2>{self.tmpdir}/proxy-stderr"
             ]
 
         env = os.environ.copy()
@@ -154,8 +151,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 )
         except subprocess.TimeoutExpired:
             raise ExecutionError(
-                "Subprocess timed out [{}s] while executing {}".
-                format(subprocess_timeout, args),
+                f"Subprocess timed out [{subprocess_timeout}s] while executing {args}",
             )
         finally:
             if self.networkservice.password and os.path.exists(pass_file):
@@ -163,7 +159,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         if not os.path.exists(control):
             raise ExecutionError(
-                "no control socket to {}".format(self.networkservice.address)
+                f"no control socket to {self.networkservice.address}"
             )
 
         self.logger.info('Connected to %s', self.networkservice.address)
@@ -203,7 +199,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             )
         except:
             raise ExecutionError(
-                "error executing command: {}".format(complete_cmd)
+                f"error executing command: {complete_cmd}"
             )
 
         stdout, stderr = sub.communicate(timeout=timeout)
@@ -320,7 +316,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         complete_cmd = ["scp",
                 "-F", "none",
-                "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
+                "-o", f"ControlPath={self.control.replace('%', '%%')}",
                 src, dst,
         ]
         self.logger.info("Running command: %s", complete_cmd)
@@ -344,12 +340,12 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         ssh_cmd = ["ssh",
                 "-F", "none",
-                "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
+                "-o", f"ControlPath={self.control.replace('%', '%%')}",
         ]
 
         complete_cmd = ["rsync",
                 "-v",
-                "--rsh={}".format(' '.join(ssh_cmd)),
+                f"--rsh={' '.join(ssh_cmd)}",
                 "-rlpt",  # --recursive --links --perms --times
                 "--one-file-system",
                 "--progress",
@@ -371,8 +367,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         complete_cmd = ["sshfs",
                 "-F", "none",
                 "-f",
-                "-o", "ControlPath={}".format(self.control.replace('%', '%%')),
-                ":{}".format(path),
+                "-o", f"ControlPath={self.control.replace('%', '%%')}",
+                f":{path}",
                 mountpoint,
         ]
 
@@ -383,7 +379,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         try:
             sub.wait(1)
             raise ExecutionError(
-                "error executing command: {}".format(complete_cmd)
+                f"error executing command: {complete_cmd}"
             )
         except subprocess.TimeoutExpired:  # still running
             self.logger.info("Started SSHFS on %s. Press CTRL-C to stop.", mountpoint)
@@ -403,10 +399,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             "-P", str(self.networkservice.port),
             "-r",
             filename,
-            "{user}@{host}:{remotepath}".format(
-                user=self.networkservice.username,
-                host=self.networkservice.address,
-                remotepath=remotepath)
+            f"{self.networkservice.username}@{self.networkservice.address}:{remotepath}"
             ]
 
         try:
@@ -415,11 +408,11 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             )  #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except:
             raise ExecutionError(
-                "error executing command: {}".format(transfer_cmd)
+                f"error executing command: {transfer_cmd}"
             )
         if sub != 0:
             raise ExecutionError(
-                "error executing command: {}".format(transfer_cmd)
+                f"error executing command: {transfer_cmd}"
             )
 
     @Driver.check_active
@@ -430,10 +423,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             *self.ssh_prefix,
             "-P", str(self.networkservice.port),
             "-r",
-            "{user}@{host}:{filename}".format(
-                user=self.networkservice.username,
-                host=self.networkservice.address,
-                filename=filename),
+            f"{self.networkservice.username}@{self.networkservice.address}:{filename}",
             destination
             ]
 
@@ -443,11 +433,11 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             )  #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except:
             raise ExecutionError(
-                "error executing command: {}".format(transfer_cmd)
+                f"error executing command: {transfer_cmd}"
             )
         if sub != 0:
             raise ExecutionError(
-                "error executing command: {}".format(transfer_cmd)
+                f"error executing command: {transfer_cmd}"
             )
 
     def _cleanup_own_master(self):

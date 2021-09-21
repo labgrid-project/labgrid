@@ -39,22 +39,21 @@ class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     @step()
     def on(self):
         self.target.interact(
-            "Turn the target {name} ON and press enter".format(name=self.target.name)
+            f"Turn the target {self.target.name} ON and press enter"
         )
 
     @Driver.check_active
     @step()
     def off(self):
         self.target.interact(
-            "Turn the target {name} OFF and press enter".
-            format(name=self.target.name)
+            f"Turn the target {self.target.name} OFF and press enter"
         )
 
     @Driver.check_active
     @step()
     def cycle(self):
         self.target.interact(
-            "CYCLE the target {name} and press enter".format(name=self.target.name)
+            f"CYCLE the target {self.target.name} and press enter"
         )
 
 
@@ -77,7 +76,7 @@ class SiSPMPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     def _get_sispmctl_prefix(self):
         return self.port.command_prefix + [
             self.tool,
-            "-U", "{:03d}:{:03d}".format(self.port.busnum, self.port.devnum),
+            "-U", f"{self.port.busnum:03d}:{self.port.devnum:03d}",
         ]
 
     @Driver.check_active
@@ -108,8 +107,7 @@ class SiSPMPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             return True
         if output.strip() == b"off":
             return False
-        raise ExecutionError("Did not find port status in sispmctl output ({})"
-                             .format(repr(output)))
+        raise ExecutionError(f"Did not find port status in sispmctl output ({repr(output)})")
 
 
 @target_factory.reg_driver
@@ -159,7 +157,7 @@ class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
         super().__attrs_post_init__()
         # TODO: allow backends to register models with other names
         self.backend = import_module(
-            ".power.{}".format(self.port.model),
+            f".power.{self.port.model}",
             __package__
         )
         self._host = None
@@ -331,7 +329,7 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
                 return True
             if b"off" in status:
                 return False
-        raise ExecutionError("Did not find port status in uhubctl output ({})".format(repr(output)))
+        raise ExecutionError(f"Did not find port status in uhubctl output ({repr(output)})")
 
 
 @target_factory.reg_driver
@@ -351,7 +349,7 @@ class PDUDaemonDriver(Driver, PowerResetMixin, PowerProtocol):
         res = "http://{}:{}/power/control/{}?hostname={}&port={}".format(
             self._host, self._port, cmd, self.port.pdu, self.port.index)
         if cmd == 'reboot':
-            res += "&delay={}".format(math.ceil(self.delay))
+            res += f"&delay={math.ceil(self.delay)}"
         return res
 
     def on_activate(self):

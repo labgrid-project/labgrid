@@ -38,7 +38,7 @@ class USBTMCDriver(Driver):
 
         # TODO: allow backends to register models with other names
         self.backend = import_module(
-            ".usbtmc.{}".format(model),
+            f".usbtmc.{model}",
             __package__
         )
 

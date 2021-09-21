@@ -20,7 +20,7 @@ def test_hwclock_value(command):
 
     def set_time(time):
         time = time.strftime('%Y-%m-%d %H:%M:%S.%f+0:00')
-        command.run_check('hwclock --utc --set --date "{}"'.format(time))
+        command.run_check(f'hwclock --utc --set --date "{time}"')
 
     offset = abs((get_time() - datetime.utcnow()).total_seconds())
     if offset > 60:

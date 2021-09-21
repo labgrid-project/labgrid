@@ -21,11 +21,11 @@ class TestGpioAgent:
             with open(export_file_path, mode='r') as export_file:
                 export_content = export_file.readline()
                 assert export_content == str(index)
-            self.gpio_line_directory = os.path.join(self.sysfs_mock_directory.name, 'gpio{}'.format(index))
+            self.gpio_line_directory = os.path.join(self.sysfs_mock_directory.name, f'gpio{index}')
             os.mkdir(self.gpio_line_directory)
             for control_file in ['direction', 'value']:
                 control_file_path = os.path.join(self.gpio_line_directory, control_file)
-                print('creating control file `{}`'.format(control_file_path))
+                print(f'creating control file `{control_file_path}`')
                 os.mknod(control_file_path)
             super().__init__(**kwargs)
 

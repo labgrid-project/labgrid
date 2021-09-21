@@ -66,13 +66,13 @@ class Test:
         )
         p = tmpdir.join("config.yaml")
         p.write(
-    """
+    f"""
 targets:
   main:
-    drivers: {}
+    drivers: {{}}
 imports:
-  - {}
-""".format("{}",str(i))
+  - {str(i)}
+"""
         )
         e = Environment(str(p))
         assert (isinstance(e, Environment))

@@ -22,7 +22,7 @@ def test(env):
 """
     )
 
-    with pexpect.spawn('pytest --lg-env {} {}'.format(conf, test)) as spawn:
+    with pexpect.spawn(f'pytest --lg-env {conf} {test}') as spawn:
         spawn.expect("1 passed")
         spawn.expect(pexpect.EOF)
         spawn.close()
@@ -50,7 +50,7 @@ def test(env):
 """
     )
 
-    with pexpect.spawn('pytest --lg-env {} {}'.format(conf, test)) as spawn:
+    with pexpect.spawn(f'pytest --lg-env {conf} {test}') as spawn:
         spawn.expect("1 skipped")
         spawn.expect(pexpect.EOF)
         spawn.close()
@@ -78,7 +78,7 @@ def test(env):
 """
     )
 
-    with pexpect.spawn('pytest --lg-env {} {}'.format(conf, test)) as spawn:
+    with pexpect.spawn(f'pytest --lg-env {conf} {test}') as spawn:
         spawn.expect("1 skipped")
         spawn.expect(pexpect.EOF)
         spawn.close()
@@ -107,7 +107,7 @@ def test(env):
 """
     )
 
-    with pexpect.spawn('pytest --lg-env {} {}'.format(conf, test)) as spawn:
+    with pexpect.spawn(f'pytest --lg-env {conf} {test}') as spawn:
         spawn.expect("1 passed")
         spawn.expect(pexpect.EOF)
         spawn.close()

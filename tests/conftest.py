@@ -111,7 +111,7 @@ def crossbar(tmpdir, pytestconfig):
         spawn.expect('Guest .* started')
         spawn.expect('Coordinator ready')
     except:
-        print("crossbar startup failed with {}".format(spawn.before))
+        print(f"crossbar startup failed with {spawn.before}")
         raise
     reader = threading.Thread(target=keep_reading, name='crossbar-reader', args=(spawn,), daemon=True)
     reader.start()
@@ -142,7 +142,7 @@ def exporter(tmpdir, crossbar):
     try:
         spawn.expect('SessionDetails')
     except:
-        print("exporter startup failed with {}".format(spawn.before))
+        print(f"exporter startup failed with {spawn.before}")
         raise
     reader = threading.Thread(target=keep_reading, name='exporter-reader', args=(spawn,), daemon=True)
     reader.start()

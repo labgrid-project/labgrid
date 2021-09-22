@@ -247,7 +247,7 @@ class SerialPortExport(ResourceExport):
                 '-C',
                 f'{self.port}:telnet:0:{start_params["path"]}:{self.local.speed} NONE 8DATABITS 1STOPBIT LOCAL',  # pylint: disable=line-too-long
             ]
-        self.logger.info("Starting ser2net with: {}".format(" ".join(cmd)))
+        self.logger.info("Starting ser2net with: %s", " ".join(cmd))
         self.child = subprocess.Popen(cmd)
         try:
             self.child.wait(timeout=0.5)

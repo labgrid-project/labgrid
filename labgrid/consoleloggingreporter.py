@@ -64,8 +64,8 @@ class ConsoleLoggingReporter:
 
             if source.name:
                 log.write(
-                    "Labgrid Console Logfile for {} {}\n".
-                    format(source.target.name, source.name).encode("utf-8")
+                    f"Labgrid Console Logfile for {source.target.name} {source.name}\n"
+                    .encode("utf-8")
                 )
             else:
                 log.write(

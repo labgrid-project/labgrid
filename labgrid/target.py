@@ -68,8 +68,9 @@ class Target:
         waiting = set(r for r in resources if r.avail != avail)
         static = set(r for r in waiting if r.get_managed_parent() is None)
         if static:
-            raise NoResourceFoundError("Static resources are not {}: {}".format(
-                "available" if avail else "unavailable", static))
+            raise NoResourceFoundError(
+                f"Static resources are not {'available' if avail else 'unavailable'}: {static}"
+            )
 
         if not waiting:
             return
@@ -122,8 +123,7 @@ class Target:
             name_msg = f" named '{name}'" if name else ""
             if other_names:
                 raise NoResourceFoundError(
-                    "no {cls} resource{name} found in {target}, matching resources with other names: {other_names}".format(  # pylint: disable=line-too-long
-                        cls=cls, name=name_msg, target=self, other_names=other_names)
+                    f"no {cls} resource{name_msg} found in {self}, matching resources with other names: {other_names}"  # pylint: disable=line-too-long
                 )
 
             raise NoResourceFoundError(
@@ -297,8 +297,7 @@ class Target:
             supplier_name = mapping.pop(name, None)
             if explicit and supplier_name is None:
                 raise BindingError(
-                    "supplier for {name} ({requirements}) of {driver} in {target} requires an explicit name".format(  # pylint: disable=line-too-long
-                        name=name, requirements=requirements, driver=client, target=self)
+                    f"supplier for {name} ({requirements}) of {client} in {self} requires an explicit name"  # pylint: disable=line-too-long
                 )
             # use sets even for a single requirement and make a local copy
             if not isinstance(requirements, set):
@@ -335,8 +334,7 @@ class Target:
                     raise errors[0]
                 else:
                     raise NoSupplierFoundError(
-                        "no supplier matching {requirements} found in {target} (errors: {errors})".format(  # pylint: disable=line-too-long
-                            requirements=requirements, target=self, errors=errors)
+                        f"no supplier matching {requirements} found in {self} (errors: {errors})"
                     )
             elif len(suppliers) > 1:
                 raise NoSupplierFoundError(f"conflicting suppliers matching {requirements} found in target {self}")  # pylint: disable=line-too-long
@@ -344,8 +342,7 @@ class Target:
                 supplier = suppliers[0]
             if supplier is not None and (requirement, supplier) in bound_req_pairs:
                 raise BindingError(
-                    "duplicate bindings of {} to {} for {} found in target {}".format(
-                        supplier, name, requirement, self)
+                    f"duplicate bindings of {supplier} to {name} for {requirement} found in target {self}"  # pylint: disable=line-too-long
                 )
             bound_req_pairs.add((requirement, supplier))
             setattr(client, name, supplier)

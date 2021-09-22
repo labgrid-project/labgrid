@@ -1,16 +1,16 @@
 def get_channel_info(driver, channel):
     info = {}
-    info['SELECTED'] = driver.get_str("SELect:CH%i?" % channel).strip()
-    info['BWLIMIT'] = driver.get_str(":CH%i:BANdwidth?" % channel).strip()
-    info['COUPLING'] = driver.get_str(":CH%i:COUPling?" % channel).strip()
-    info['INVERT'] = driver.get_str(":CH%i:INVert?" % channel).strip()
-    info['POSITION'] = driver.get_decimal(":CH%i:POSition?" % channel)
-    info['PROBE'] = driver.get_decimal(":CH%i:PRObe?" % channel)
-    info['SCALE'] = driver.get_decimal(":CH%i:SCAle?" % channel)
+    info['SELECTED'] = driver.get_str(f"SELect:CH{channel:d)}?").strip()
+    info['BWLIMIT'] = driver.get_str(f":CH{channel:d}:BANdwidth?").strip()
+    info['COUPLING'] = driver.get_str(f":CH{channel:d}:COUPling?").strip()
+    info['INVERT'] = driver.get_str(f":CH{channel:d}:INVert?").strip()
+    info['POSITION'] = driver.get_decimal(f":CH{channel:d}:POSition?")
+    info['PROBE'] = driver.get_decimal(f":CH{channel:d}:PRObe?")
+    info['SCALE'] = driver.get_decimal(f":CH{channel:d}:SCAle?")
     return info
 
 def get_channel_values(driver, channel):
-    driver.command(":MEASUrement:IMMed:SOUrce1 CH%i" % channel)
+    driver.command(f":MEASUrement:IMMed:SOUrce1 CH{channel:d}")
     info = {}
     driver.command(":MEASUrement:IMMed:TYPe MEAN")
     info['MEAN'] = driver.get_decimal(":MEASUrement:IMMed:VALue?")

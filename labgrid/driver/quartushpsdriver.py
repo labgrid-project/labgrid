@@ -57,8 +57,9 @@ class QuartusHPSDriver(Driver):
             regex = rf".*(\d+)\) .* \[{re.escape(self.interface.path)}]\n(.*)\n"
             jtag_mapping = re.search(regex, stdout.decode("utf-8"), re.MULTILINE)
             if jtag_mapping is None:
-                raise ExecutionError("Could not get cable number for USB path {}"
-                                     .format(self.interface.path))
+                raise ExecutionError(
+                    f"Could not get cable number for USB path {self.interface.path}"
+                )
 
             cable_number, first_chain = jtag_mapping.groups()
             try:

@@ -196,8 +196,7 @@ class ClientSession(ApplicationSession):
             for exporter, groups in sorted(filtered.items()):
                 print(f"Exporter '{exporter}':")
                 for group_name, group in sorted(groups.items()):
-                    print("  Group '{group}' ({exporter}/{group}/*):".format(
-                        group=group_name, exporter=exporter))
+                    print(f"  Group '{group_name}' ({exporter}/{group_name}/*):")
                     for resource_name, resource in sorted(group.items()):
                         print("    Resource '{res}' ({exporter}/{group}/{res_cls}[/{res}]):"
                               .format(res=resource_name, exporter=exporter, group=group_name,
@@ -316,11 +315,13 @@ class ClientSession(ApplicationSession):
         if self.gethostname()+'/'+self.getuser() not in place.allowed:
             host, user = place.acquired.split('/')
             if user != self.getuser():
-                raise UserError("place {} is not acquired by your user, acquired by {}".format(
-                    place.name, user))
+                raise UserError(
+                    f"place {place.name} is not acquired by your user, acquired by {user}"
+                )
             if host != self.gethostname():
-                raise UserError("place {} is not acquired on this computer, acquired on {}".format(
-                    place.name, host))
+                raise UserError(
+                    f"place {place.name} is not acquired on this computer, acquired on {host}"
+                )
 
     def get_place(self, place=None):
         pattern = place or self.args.place
@@ -361,8 +362,7 @@ class ClientSession(ApplicationSession):
                 if match.rename:
                     name = match.rename
                 resource = self.resources[exporter][group_name][resource_name]
-                print("Acquired resource '{}' ({}/{}/{}/{}):".format(
-                    name, exporter, group_name, resource.cls, resource_name))
+                print(f"Acquired resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}):")  # pylint: disable=line-too-long
                 print(indent(pformat(resource.asdict()), prefix="  "))
                 assert resource.cls == cls
         else:
@@ -376,8 +376,7 @@ class ClientSession(ApplicationSession):
                         name = resource_name
                         if match.rename:
                             name = match.rename
-                        print("Matching resource '{}' ({}/{}/{}/{}):".format(
-                            name, exporter, group_name, resource.cls, resource_name))
+                        print(f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}):")  # pylint: disable=line-too-long
                         print(indent(pformat(resource.asdict()), prefix="  "))
 
     async def add_place(self):
@@ -600,9 +599,7 @@ class ClientSession(ApplicationSession):
                     name = resource_name
                     if match.rename:
                         name = match.rename
-                    print("Matching resource '{}' ({}/{}/{}/{}) already acquired by place '{}'"
-                          .format(name, exporter, group_name, resource.cls, resource_name,
-                                  resource.acquired))
+                    print(f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}) already acquired by place '{resource.acquired}'")  # pylint: disable=line-too-long
 
         raise ServerError(f"failed to acquire place {place.name}")
 
@@ -1116,11 +1113,11 @@ class ClientSession(ApplicationSession):
         with contextlib.ExitStack() as stack:
             for local, remote in self.args.local:
                 localport = stack.enter_context(drv.forward_local_port(remote, localport=local))
-                print("Forwarding local port %d to remote port %d" % (localport, remote))
+                print(f"Forwarding local port {localport:d} to remote port {remote:d}")
 
             for local, remote in self.args.remote:
                 stack.enter_context(drv.forward_remote_port(remote, localport))
-                print("Forwarding remote port %d to local port %d" % (remote, local))
+                print(f"Forwarding remote port {remote:d} to local port {local:d}")
 
             try:
                 print("Waiting for CTRL+C...")

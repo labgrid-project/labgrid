@@ -27,11 +27,7 @@ class ManualSwitchDriver(Driver, DigitalOutputProtocol):
             description = self.name
 
         self.target.interact(
-            "Set {description} for target {name} to {status} and press enter".format(
-                description=description,
-                name=self.target.name,
-                status="ON" if status else "OFF",
-            )
+            f"Set {description} for target {self.target.name} to {'ON' if status else 'OFF'} and press enter"  # pylint: disable=line-too-long
         )
         self.status = status
 

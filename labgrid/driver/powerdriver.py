@@ -346,8 +346,7 @@ class PDUDaemonDriver(Driver, PowerResetMixin, PowerProtocol):
         self._port = None
 
     def _build_url(self, cmd):
-        res = "http://{}:{}/power/control/{}?hostname={}&port={}".format(
-            self._host, self._port, cmd, self.port.pdu, self.port.index)
+        res = f"http://{self._host}:{self._port}/power/control/{cmd}?hostname={self.port.pdu}&port={self.port.index}"  # pylint: disable=line-too-long
         if cmd == 'reboot':
             res += f"&delay={math.ceil(self.delay)}"
         return res

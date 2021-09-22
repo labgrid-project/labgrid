@@ -73,13 +73,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # TODO: use codec, decodeerrors
         # TODO: Shell Escaping for the U-Boot Shell
         marker = gen_marker()
-        cmp_command = """echo '{}''{}'; {}; echo "$?"; echo '{}''{}';""".format(
-            marker[:4],
-            marker[4:],
-            cmd,
-            marker[:4],
-            marker[4:],
-        )
+        cmp_command = f"""echo '{marker[:4]}''{marker[4:]}'; {cmd}; echo "$?"; echo '{marker[:4]}''{marker[4:]}';"""  # pylint: disable=line-too-long
         if self._status == 1:
             self.console.sendline(cmp_command)
             _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)

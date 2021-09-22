@@ -123,7 +123,8 @@ class TargetFactory:
             r = cls(target, name, **args)
         except TypeError as e:
             raise InvalidConfigError(
-                f"failed to create {resource} for target '{target}' using {args} ") from e
+                f"failed to create {resource} for target '{target}' using {args} "
+            ) from e
         return r
 
     def make_driver(self, target, driver, name, args):

@@ -137,16 +137,14 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                     proxy_error = open(self.tmpdir+'/proxy-stderr').read().strip()
                     if proxy_error:
                         raise ExecutionError(
-                            "Failed to connect to {} with {}: error from SSH ProxyCommand: {}".
-                            format(self.networkservice.address, " ".join(args), proxy_error),
+                            f"Failed to connect to {self.networkservice.address} with {' '.join(args)}: error from SSH ProxyCommand: {proxy_error}",  # pylint: disable=line-too-long
                             stdout=stdout,
                         )
                 except FileNotFoundError:
                     pass
 
                 raise ExecutionError(
-                    "Failed to connect to {} with {}: return code {}".
-                    format(self.networkservice.address, " ".join(args), return_value),
+                    f"Failed to connect to {self.networkservice.address} with {' '.join(args)}: return code {return_value}",  # pylint: disable=line-too-long
                     stdout=stdout,
                 )
         except subprocess.TimeoutExpired:
@@ -275,7 +273,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if localport is None:
             localport = get_free_port()
 
-        forward = "-L%d:localhost:%d" % (localport, remoteport)
+        forward = f"-L{localport:d}:localhost:{remoteport:d}"
         with self._forward(forward):
             yield localport
 
@@ -297,7 +295,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if not self._check_keepalive():
             raise ExecutionError("Keepalive no longer running")
 
-        forward = "-R%d:localhost:%d" % (remoteport, localport)
+        forward = f"-R{remoteport:d}:localhost:{localport:d}"
         with self._forward(forward):
             yield
 
@@ -442,12 +440,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _cleanup_own_master(self):
         """Exit the controlmaster and delete the tmpdir"""
-        complete_cmd = "ssh -x -o ControlPath={cpath} -O exit -p {port} -l {user} {host}".format(
-            cpath=self.control,
-            port=self.networkservice.port,
-            user=self.networkservice.username,
-            host=self.networkservice.address
-        ).split(' ')
+        complete_cmd = f"ssh -x -o ControlPath={self.control} -O exit -p {self.networkservice.port} -l {self.networkservice.username} {self.networkservice.address}".split(' ')  # pylint: disable=line-too-long
         res = subprocess.call(
             complete_cmd,
             stdin=subprocess.DEVNULL,

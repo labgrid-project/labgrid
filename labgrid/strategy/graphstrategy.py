@@ -65,9 +65,7 @@ class GraphStrategy(Strategy):
             for dependency in self.states[state_name]['dependencies']:
                 if dependency not in state_names:
                     raise InvalidGraphStrategyError(
-                        "{}: State '{}' is unknown. State names are: {}".format(
-                            state_name, dependency, ', '.join(state_names),
-                        )
+                        f"{state_name}: State '{dependency}' is unknown. State names are: {', '.join(state_names)}"  # pylint: disable=line-too-long
                     )
 
         # find root state
@@ -182,10 +180,7 @@ class GraphStrategy(Strategy):
         for via_state in via:
             if via_state not in self.states.keys():
                 raise GraphStrategyRuntimeError(
-                    "Unknown state '{}' in via. State names are: {}".format(
-                        via_state,
-                        ', '.join(self.states.keys()),
-                    )
+                    f"Unknown state '{via_state}' in via. State names are: {', '.join(self.states.keys())}"  # pylint: disable=line-too-long
                 )
 
         while current_state['dependencies']:

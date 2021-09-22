@@ -4,8 +4,11 @@ Release 0.4.0 (unreleased)
 New Features in 0.4.0
 ~~~~~~~~~~~~~~~~~~~~~
 
+- Duplicate bindings for the same driver are now allowed (see the QEMUDriver)
 - The `NetworkPowerDriver` now additionally supports:
   - Siglent SPD3000X series power supplies
+- Labgrid client lock now enforces that all matches need to be fulfilled.
+- Support for USB HID relays has been added.
 - UBootDriver now allows overriding of currently fixed await boot timeout
   via new ``boot_timeout`` argument.
 - With ``--lg-colored-steps``, two new ``dark`` and ``light`` color schemes
@@ -16,8 +19,29 @@ New Features in 0.4.0
   The 256-color schemes now use purple instead of green for the ``run`` lines to
   make them easier distinguishable from pytest's "PASSED" output.
 - Network controlled relay providing GET/PUT based REST API
+- The QEMUDriver gains support for -bios and qcow2 images.
+- Support for audio input has been added.
+- Usage of sshpass for SSH password input has been replaced with the SSH_ASKPASS
+  environment variable.
+- Labgrid supports the Linux Automation GmBH USB Mux now.
+- NetworkManager control support on the exporter has been added. This allows
+  control of bluetooth and wifi connected to the exporter.
+- TFTP-/NFS-/HTTPProvider has been added, allowing easy staging of files for the
+  DUT to later retrieve.
 - Improved LG_PROXY documentation in docs/usage.rst.
 - Exporter now checks /usr/sbin/ser2net for SerialPortExport
+- Support for Tasmota-flashed power outlets controlled via MQTT has been added.
+- The OpenOCDDriver has been reworked with new options and better output.
+- A script to synchronize places to an external description was added.
+- ShellDriver has regained the support to retrieve the active interface and IP
+  addresses.
+- Labgrid has gained support for HTTP Video streams.
+- A settle time for the ShellDriver has been added to wait for chatty systems to
+  settle before interacting with the shell.
+- Support for Macrosilicon HDMI to USB (MJPEG) adapters was added.
+- Console logfiles can now be created by the labgrid client command.
+- A ManualSwitchDriver has been added to prompt the user to flip a switch or set
+  a jumper.
 - AndroidFastbootDriver now supports booting/flashing images preconfigured in
   the environment configuration.
 
@@ -26,12 +50,17 @@ Bug fixes in 0.4.0
 - ``pytest --lg-log foobar`` now creates the folder ``foobar`` before trying to
   write the log into it, and error handling was improved so that all possible
   errors that can occur when opening the log file are reported to stderr.
+- gstreamer log messages are now suppressed when using labgrid-client video.
+- Travis CI has been dropped for Github Actions.
 
 Breaking changes in 0.4.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+- ``EthernetInterface`` has been renamed to ``NetworkInterface``.
 
 Known issues in 0.4.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+- Some client commands return 0 even if the command failed.
+- Currently empty passwords are not well supported by the ShellDriver
 
 Release 0.3.0 (released Jan 22, 2021)
 -------------------------------------

@@ -1,4 +1,19 @@
-Release 0.4.0 (unreleased)
+Release 0.5.0 (unreleased)
+-------------------------------------
+
+New Features in 0.5.0
+~~~~~~~~~~~~~~~~~~~~~
+
+Bug fixes in 0.5.0
+~~~~~~~~~~~~~~~~~~
+
+Breaking changes in 0.5.0
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Known issues in 0.5.0
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Release 0.4.0 (Released Sep 22, 2021)
 -------------------------------------
 
 New Features in 0.4.0

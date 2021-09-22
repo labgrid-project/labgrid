@@ -25,7 +25,7 @@ setup(
                                  'man/labgrid-suggest.1']),
                 ('share/man/5', ['man/labgrid-device-config.5']),
                 ('share/man/7', ['man/labgrid-pytest.7'])],
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     extras_require={
         'onewire': ['onewire>=0.2'],
         'snmp': ['pysnmp>=4.4.12', 'pysnmp-mibs>=0.1.6'],
@@ -81,7 +81,6 @@ setup(
         "Topic :: Software Development :: Testing",
         "Framework :: Pytest",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

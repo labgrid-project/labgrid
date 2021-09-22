@@ -133,8 +133,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         if self.rootfs is not None:
             self._cmd.append("-fsdev")
             self._cmd.append(
-                "local,id=rootfs,security_model=none,path={}".format(
-                    self.target.env.config.get_path(self.rootfs)))
+                f"local,id=rootfs,security_model=none,path={self.target.env.config.get_path(self.rootfs)}")  # pylint: disable=line-too-long
             self._cmd.append("-device")
             self._cmd.append(
                 "virtio-9p-device,fsdev=rootfs,mount_tag=/dev/root")
@@ -145,8 +144,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         if self.flash is not None:
             self._cmd.append("-drive")
             self._cmd.append(
-                "if=pflash,format=raw,file={},id=nor0".format(
-                    self.target.env.config.get_image_path(self.flash)))
+                f"if=pflash,format=raw,file={self.target.env.config.get_image_path(self.flash)},id=nor0")  # pylint: disable=line-too-long
         if self.bios is not None:
             self._cmd.append("-bios")
             self._cmd.append(
@@ -201,8 +199,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self.qmp = QMPMonitor(self._child.stdout, self._child.stdin)
         except QMPError as exc:
             if self._child.poll() is not None:
-                raise IOError("QEMU process terminated with exit code {}"
-                              .format(self._child.returncode)) from exc
+                raise IOError(
+                    f"QEMU process terminated with exit code {self._child.returncode}"
+                ) from exc
             raise
 
         self.status = 1

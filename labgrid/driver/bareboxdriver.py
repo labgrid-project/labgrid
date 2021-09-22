@@ -83,13 +83,11 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         marker = gen_marker()
         # hide marker from expect
         hidden_marker = f'"{marker[:4]}""{marker[4:]}"'
-        cmp_command = '''echo -o /cmd {cmd}; echo {marker}; sh /cmd; echo {marker} $?;'''.format(
-            cmd=shlex.quote(cmd), marker=hidden_marker)
+        cmp_command = f'''echo -o /cmd {shlex.quote(cmd)}; echo {hidden_marker}; sh /cmd; echo {hidden_marker} $?;'''  # pylint: disable=line-too-long
         if self._status == 1:
             self.console.sendline(cmp_command)
             _, _, match, _ = self.console.expect(
-                r'{marker}(.*){marker}\s+(\d+)\s+.*{prompt}'.format(
-                    marker=marker, prompt=self.prompt),
+                rf'{marker}(.*){marker}\s+(\d+)\s+.*{self.prompt}',
                 timeout=timeout)
             # Remove VT100 Codes and split by newline
             data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
@@ -185,8 +183,9 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                     self.console.sendline("")
 
                 if timeout.expired:
-                    raise TIMEOUT("Timeout of {} seconds exceeded during waiting for login"
-                                  .format(self.login_timeout))
+                    raise TIMEOUT(
+                        f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"  # pylint: disable=line-too-long
+                    )
 
             last_before = before
 

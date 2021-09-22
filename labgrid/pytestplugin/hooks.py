@@ -76,9 +76,11 @@ def pytest_collection_modifyitems(config, items):
         missing_feature = want_feature - have_feature
         if missing_feature:
             if len(missing_feature) == 1:
-                skip = pytest.mark.skip(reason="Skipping because feature \"{}\" is not supported"
-                                        .format(missing_feature))
+                skip = pytest.mark.skip(
+                    reason=f'Skipping because feature "{missing_feature}" is not supported'
+                )
             else:
-                skip = pytest.mark.skip(reason="Skipping because features \"{}\" are not supported"
-                                        .format(missing_feature))
+                skip = pytest.mark.skip(
+                    reason=f'Skipping because features "{missing_feature}" are not supported'
+                )
             item.add_marker(skip)

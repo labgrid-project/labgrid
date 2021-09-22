@@ -99,9 +99,10 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # hide marker from expect
         cmp_command = f'''MARKER='{marker[:4]}''{marker[4:]}' run {shlex.quote(cmd)}'''
         self.console.sendline(cmp_command)
-        _, _, match, _ = self.console.expect(r'{marker}(.*){marker}\s+(\d+)\s+{prompt}'.format(
-            marker=marker, prompt=self.prompt
-        ), timeout=timeout)
+        _, _, match, _ = self.console.expect(
+            rf'{marker}(.*){marker}\s+(\d+)\s+{self.prompt}',
+            timeout=timeout
+        )
         # Remove VT100 Codes, split by newline and remove surrounding newline
         data = self.re_vt100.sub('', match.group(1).decode(codec, decodeerrors)).split('\r\n')
         if data and not data[-1]:
@@ -198,7 +199,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.console.sendline(f"echo '{marker[:4]}''{marker[4:]}'")
         try:
             self.console.expect(
-                r"{marker}\s+{prompt}".format(marker=marker, prompt=self.prompt),
+                rf"{marker}\s+{self.prompt}",
                 timeout=5
             )
             self._status = 1

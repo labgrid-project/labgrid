@@ -73,8 +73,9 @@ class ManagedFile:
                     conn.run_check(f"test ! -e {symlink} -o -L {symlink}")
                 except ExecutionError:
                     raise ManagedFileError(f"Path {symlink} exists but is not a symlink.")
-                conn.run_check("ln --symbolic --force --no-dereference {}{} {}".format(
-                    self.rpath, os.path.basename(self.local_path), symlink))
+                conn.run_check(
+                    f"ln --symbolic --force --no-dereference {self.rpath}{os.path.basename(self.local_path)} {symlink}"  # pylint: disable=line-too-long
+                )
 
 
     def _on_nfs(self, conn):

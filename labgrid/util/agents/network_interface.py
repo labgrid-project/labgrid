@@ -167,9 +167,9 @@ class NMDev:
             if self._nm_dev.get_state() == expected:
                 break
         else:
-            raise TimeoutError("state is '{}' instead of '{}'".format(
-                self._nm_dev.get_state().value_nick,
-                expected.value_nick))
+            raise TimeoutError(
+                f"state is '{self._nm_dev.get_state().value_nick}' instead of '{expected.value_nick}'"  # pylint: disable=line-too-long
+            )
 
     def disable(self):
         lg_con = nm.get_connection_by_id(f"labgrid-{self._interface}")

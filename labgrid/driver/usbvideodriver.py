@@ -42,8 +42,9 @@ class USBVideoDriver(Driver, VideoProtocol):
         for name, caps in variants:
             if name == variant:
                 return caps
-        raise InvalidConfigError("Unkown video format {} for device {:04x}:{:04x}".format(
-            variant, self.video.vendor_id, self.video.model_id))
+        raise InvalidConfigError(
+            f"Unkown video format {variant} for device {self.video.vendor_id:04x}:{self.video.model_id:04x}"  # pylint: disable=line-too-long
+        )
 
     def get_pipeline(self, path, caps, controls=None):
         match = (self.video.vendor_id, self.video.model_id)

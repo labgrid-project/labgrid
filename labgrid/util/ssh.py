@@ -425,18 +425,11 @@ class SSHConnection:
         try:
             if self._master.wait(timeout=30) != 0:
                 raise ExecutionError(
-                    "failed to connect to {} with args {}, returncode={} {},{} ".format(
-                        self.host, args, self._master.wait(),
-                        self._master.stdout.readlines(),
-                        self._master.stderr.readlines()
-                    )
+                    f"failed to connect to {self.host} with args {args}, returncode={self._master.wait()} {self._master.stdout.readlines()},{self._master.stderr.readlines()} "  # pylint: disable=line-too-long
                 )
         except subprocess.TimeoutExpired:
             raise ExecutionError(
-                "failed to connect (timeout) to {} with args {} {},{}".format(
-                    self.host, args, self._master.stdout.readlines(),
-                    self._master.stderr.readlines()
-                )
+                f"failed to connect (timeout) to {self.host} with args {args} {self._master.stdout.readlines()},{self._master.stderr.readlines()}"  # pylint: disable=line-too-long
             )
 
         if not os.path.exists(control):

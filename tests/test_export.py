@@ -1,7 +1,7 @@
 import pytest
 
-from labgrid.resource import Resource
-from labgrid.driver import Driver
+from labgrid.resource import Resource, NetworkSerialPort
+from labgrid.driver import Driver, SerialDriver
 from labgrid.strategy import Strategy
 from labgrid.binding import StateError
 
@@ -60,4 +60,17 @@ def test_export_custom(target):
     exported = target.export()
     assert exported == {
         "LG__CUSTOM_NAME_A": "b",
+    }
+
+
+def test_export_network_serial(target):
+    NetworkSerialPort(target, None, host='testhost', port=12345, speed=115200)
+    SerialDriver(target, None)
+
+    exported = target.export()
+    assert exported == {
+        'LG__SERIALDRIVER_HOST': 'testhost',
+        'LG__SERIALDRIVER_PORT': '12345',
+        'LG__SERIALDRIVER_PROTOCOL': 'rfc2217',
+        'LG__SERIALDRIVER_SPEED': '115200'
     }

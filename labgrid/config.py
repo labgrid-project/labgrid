@@ -142,18 +142,18 @@ class Config:
 
         Args:
             name (str): name of the option
-            default (str): A default parameter in case the option can not be
+            default (any): A default parameter in case the option can not be
                 found
 
         Returns:
-            str: value of the option or default parameter
+            any: value of the option or default parameter
 
         Raises:
             KeyError: if the requested image can not be found in the
                 configuration
         """
         try:
-            return str(self.data['options'][name])
+            return self.data['options'][name]
         except KeyError:
             if default is None:
                 raise KeyError(f"no option '{name}' found in configuration")
@@ -165,9 +165,8 @@ class Config:
 
         Args:
             name (str): name of the option
-            value (str): the new value
+            value (any): the new value
         """
-        assert isinstance(value, str)
         self.data.setdefault('options', {})[name] = value
 
     def get_target_option(self, target, name, default=None):

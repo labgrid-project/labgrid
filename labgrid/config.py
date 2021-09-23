@@ -176,11 +176,11 @@ class Config:
         Args:
             target (str): name of the target
             name (str): name of the option
-            default (str): A default parameter in case the option can not be
+            default (any): A default parameter in case the option can not be
                 found
 
         Returns:
-            str: value of the option or default parameter
+            any: value of the option or default parameter
 
         Raises:
             KeyError: if the requested key can not be found in the
@@ -191,7 +191,7 @@ class Config:
             raise KeyError(f"No target '{target}' found in configuration")
 
         try:
-            return str(self.data['targets'][target]['options'][name])
+            return self.data['targets'][target]['options'][name]
         except (KeyError, TypeError):
             # Empty target declarations become None in the target dict, hence
             # TypeError when we try to subscript it.
@@ -206,7 +206,7 @@ class Config:
         Args:
             target (str): name of the target
             name (str): name of the option
-            value (str): the new value
+            value (any): the new value
 
         Raises:
             KeyError: if the requested target can not be found in the
@@ -214,7 +214,6 @@ class Config:
         """
         assert isinstance(target, str)
         assert isinstance(name, str)
-        assert isinstance(value, str)
 
         if target not in self.data['targets']:
             raise KeyError(f"No target '{target}' found in configuration")

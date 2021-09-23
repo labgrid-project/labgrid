@@ -13,6 +13,8 @@ Bug fixes in 0.5.0
 
 Breaking changes in 0.5.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+- ``Config``'s ``get_option()``/``get_target_option()`` convert non-string
+  options no longer to strings.
 
 Known issues in 0.5.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

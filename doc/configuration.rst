@@ -74,7 +74,7 @@ This allows identification through hot-plugging or rebooting.
 
    USBSerialPort:
      match:
-       'ID_SERIAL_SHORT': 'P-00-00682'
+       ID_SERIAL_SHORT: 'P-00-00682'
      speed: 115200
 
 The example would search for a USB serial converter with the key

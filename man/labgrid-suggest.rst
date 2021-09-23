@@ -51,7 +51,7 @@ in the USB-serial converter, the resource match configuration is:
 
    USBSerialPort:
      match:
-       '@ID_SERIAL_SHORT': 'P-00-00682'
+       ID_SERIAL_SHORT: 'P-00-00682'
 
 
 SEE ALSO

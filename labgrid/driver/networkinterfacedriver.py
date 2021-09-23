@@ -35,6 +35,13 @@ class NetworkInterfaceDriver(Driver):
             self.wrapper = None
             self.proxy = None
 
+    @Driver.check_bound
+    def get_export_vars(self):
+        return {
+            "host": self.iface.host,
+            "ifname": self.iface.ifname or "",
+        }
+
     # basic
     @Driver.check_active
     @step()

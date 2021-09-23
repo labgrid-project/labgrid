@@ -1,7 +1,8 @@
 import pytest
 
 from labgrid.resource import Resource, NetworkSerialPort
-from labgrid.driver import Driver, SerialDriver
+from labgrid.resource.remote import RemoteNetworkInterface
+from labgrid.driver import Driver, SerialDriver, NetworkInterfaceDriver
 from labgrid.strategy import Strategy
 from labgrid.binding import StateError
 
@@ -73,4 +74,15 @@ def test_export_network_serial(target):
         'LG__SERIALDRIVER_PORT': '12345',
         'LG__SERIALDRIVER_PROTOCOL': 'rfc2217',
         'LG__SERIALDRIVER_SPEED': '115200'
+    }
+
+
+def test_export_remote_network_interface(target):
+    RemoteNetworkInterface(target, None, host='testhost', ifname='wlan0')
+    NetworkInterfaceDriver(target, "netif")
+
+    exported = target.export()
+    assert exported == {
+        'LG__NETIF_HOST': 'testhost',
+        'LG__NETIF_IFNAME': 'wlan0'
     }

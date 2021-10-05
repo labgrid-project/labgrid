@@ -1,8 +1,5 @@
 .\" Man page generated from reStructuredText.
 .
-.TH LABGRID-EXPORTER 1 "2017-04-15" "0.0.1" "embedded testing"
-.SH NAME
-labgrid-exporter \- labgrid-exporter interface to control boards
 .
 .nr rst2man-indent-level 0
 .
@@ -30,6 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
+.TH "LABGRID-EXPORTER" 1 "2017-04-15" "0.0.1" "embedded testing"
+.SH NAME
+labgrid-exporter \- labgrid-exporter interface to control boards
 .SH SYNOPSIS
 .sp
 \fBlabgrid\-exporter\fP \fB\-\-help\fP
@@ -44,22 +44,22 @@ USB devices and various other controllers.
 .SH OPTIONS
 .INDENT 0.0
 .TP
-.B \-h\fP,\fB  \-\-help
+.B  \-h\fP,\fB  \-\-help
 display command line help
 .TP
-.B \-x\fP,\fB  \-\-crossbar\-url
+.B  \-x\fP,\fB  \-\-crossbar\-url
 the crossbar url of the coordinator
 .TP
-.B \-i\fP,\fB  \-\-isolated
+.B  \-i\fP,\fB  \-\-isolated
 enable isolated mode (always request SSH forwards)
 .TP
-.B \-n\fP,\fB  \-\-name
+.B  \-n\fP,\fB  \-\-name
 the public name of the exporter
 .TP
-.B \-\-hostname
+.B  \-\-hostname
 hostname (or IP) published for accessing resources
 .TP
-.B \-d\fP,\fB  \-\-debug
+.B  \-d\fP,\fB  \-\-debug
 enable debug mode
 .UNINDENT
 .SS \-i / \-\-isolated

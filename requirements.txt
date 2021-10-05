@@ -12,6 +12,3 @@ PyYAML==5.4
 ansicolors==1.1.8
 pyusb==1.1.0
 six>=1.13.0
-# Workaround for crossbar/autobahn regression with twisted>=21.2.0 (we still
-# suppport python 3.6)
-twisted<21.2.0

@@ -1,1 +1,1 @@
-pyModbusTCP==0.1.8
+pyModbusTCP==0.1.10

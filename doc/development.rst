@@ -308,11 +308,11 @@ serial driver to a file in specified directory::
 This can help understanding what happened and why it happened.
 However, when debugging tests, it might be more helpful to get a live
 impression of what is going on.
-For this, you can use ``tail -f`` to read the content written to the log file
+For this, you can use ``tail -F`` to read the content written to the log file
 as if you would be connected to the devices serial console (except that it is
 read-only)::
 
-  $ tail -f logdir/console_main # for the 'main' target
+  $ tail -F logdir/console_main # for the 'main' target
 
 For getting information about timing, the ``annotate-output`` command turned
 out to be quite helpful.
@@ -323,7 +323,7 @@ with::
 
 To use it, run::
 
-  $ annotate-output tail -f logdir/console_main
+  $ annotate-output tail -F logdir/console_main
 
 This will print your system time before each line, allowing you to both see
 relative delays between steps in your tests as well as absolute timing of

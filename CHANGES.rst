@@ -8,6 +8,9 @@ New Features in 0.5.0
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~
 
+- Fixed a bug where using ``labgrid-client io get`` always returned ``low``
+  when reading a ``sysfsgpio``.
+
 Breaking changes in 0.5.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -26,10 +26,15 @@ class GpioDigitalOutput:
         GpioDigitalOutput._assert_gpio_line_is_exported(index)
         gpio_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix,
                                        f'gpio{index}')
+
         gpio_sysfs_direction_path = os.path.join(gpio_sysfs_path, 'direction')
-        self._logger.debug("Configuring GPIO %d as output.", index)
-        with open(gpio_sysfs_direction_path, 'wb') as direction_fd:
-            direction_fd.write(b'out')
+        with open(gpio_sysfs_direction_path, 'rb') as direction_fd:
+            literal_value = direction_fd.read(3)
+        if literal_value != b"out":
+            self._logger.debug("Configuring GPIO %d as output.", index)
+            with open(gpio_sysfs_direction_path, 'wb') as direction_fd:
+                direction_fd.write(b'out')
+
         gpio_sysfs_value_path = os.path.join(gpio_sysfs_path, 'value')
         self.gpio_sysfs_value_fd = os.open(gpio_sysfs_value_path, flags=(os.O_RDWR | os.O_SYNC))
 

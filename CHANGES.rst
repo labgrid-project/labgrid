@@ -1,5 +1,20 @@
+Release 0.4.1 (unreleased)
+--------------------------
+
+New Features in 0.4.1
+~~~~~~~~~~~~~~~~~~~~~
+
+Bug fixes in 0.4.1
+~~~~~~~~~~~~~~~~~~
+
+- Fixed a bug where using ``labgrid-client io get`` always returned ``low``
+  when reading a ``sysfsgpio``.
+
+Known issues in 0.4.1
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Release 0.4.0 (unreleased)
--------------------------------------
+--------------------------
 
 New Features in 0.4.0
 ~~~~~~~~~~~~~~~~~~~~~

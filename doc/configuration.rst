@@ -80,6 +80,7 @@ This allows identification through hot-plugging or rebooting.
 The example would search for a USB serial converter with the key
 `ID_SERIAL_SHORT` and the value `P-00-00682` and use it with a baud rate
 of 115200.
+The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
 
 - match (str): key and value for a udev match, see `udev Matching`_
 - speed (int, default=115200): baud rate of the serial port
@@ -1164,14 +1165,39 @@ changes or a board has been moved between host systems.
 
   USBSerialPort:
     match:
-      'ID_SERIAL_SHORT': 'P-00-00679'
+      'ID_SERIAL_SHORT': 'P-00-03564'
 
 To check if your device has a serial number, you can use ``udevadm info``:
 
 .. code-block:: bash
 
   $ udevadm info /dev/ttyUSB5 | grep SERIAL_SHORT
-  E: ID_SERIAL_SHORT=P-00-00679
+  E: ID_SERIAL_SHORT=P-00-03564
+
+In the background, the additional properties are provided by the builtin ``usb_id``
+udev helper::
+
+  $ udevadm test-builtin usb_id /sys/class/tty/ttyUSB0
+  Load module index
+  Parsed configuration file /lib/systemd/network/99-default.link
+  Parsed configuration file /lib/systemd/network/73-usb-net-by-mac.link
+  Created link configuration context.
+  ID_VENDOR=Silicon_Labs
+  ID_VENDOR_ENC=Silicon\x20Labs
+  ID_VENDOR_ID=10c4
+  ID_MODEL=CP2102_USB_to_UART_Bridge_Controller
+  ID_MODEL_ENC=CP2102\x20USB\x20to\x20UART\x20Bridge\x20Controller
+  ID_MODEL_ID=ea60
+  ID_REVISION=0100
+  ID_SERIAL=Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_P-00-03564
+  ID_SERIAL_SHORT=P-00-03564
+  ID_TYPE=generic
+  ID_BUS=usb
+  ID_USB_INTERFACES=:ff0000:
+  ID_USB_INTERFACE_NUM=00
+  ID_USB_DRIVER=cp210x
+  Unload module index
+  Unloaded link configuration context.
 
 Drivers
 -------

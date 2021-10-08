@@ -2,13 +2,17 @@
 coordinator, acquire a place and interact with the connected resources"""
 import argparse
 import asyncio
+import atexit
 import contextlib
+import enum
 import os
 import subprocess
 import traceback
 import logging
 import signal
 import sys
+import shlex
+import json
 from textwrap import indent
 from socket import gethostname
 from getpass import getuser
@@ -27,6 +31,7 @@ from ..util.yaml import dump
 from .. import Target, target_factory
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
+from ..util import atomic_replace
 from ..driver import Mode
 
 txaio.use_asyncio()
@@ -1327,6 +1332,34 @@ class ClientSession(ApplicationSession):
             print(f"Reservation '{res.token}':")
             res.show(level=1)
 
+    async def export(self, place, target):
+        exported = target.export()
+        exported["LG__CLIENT_PID"] = str(os.getpid())
+        if self.args.format is ExportFormat.SHELL:
+            lines = []
+            for k, v in sorted(exported.items()):
+                lines.append(f"{k}={shlex.quote(v)}")
+            data = "\n".join(lines)
+        elif self.args.format is ExportFormat.SHELL_EXPORT:
+            lines = []
+            for k, v in sorted(exported.items()):
+                lines.append(f"export {k}={shlex.quote(v)}")
+            data = "\n".join(lines)+"\n"
+        elif self.args.format is ExportFormat.JSON:
+            data = json.dumps(exported)
+        if self.args.filename == "-":
+            sys.stdout.write(data)
+        else:
+            atomic_replace(self.args.filename, data.encode())
+            print(f"Exported to {self.args.filename}", file=sys.stderr)
+        try:
+            print("Waiting for CTRL+C or SIGTERM...", file=sys.stderr)
+            while True:
+                await asyncio.sleep(1.0)
+        except GeneratorExit:
+            print("Exiting...\n", file=sys.stderr)
+    export.needs_target = True
+
 
 def start_session(url, realm, extra):
     from autobahn.asyncio.wamp import ApplicationRunner
@@ -1420,6 +1453,16 @@ class RemotePort(argparse.Action):
         v = getattr(namespace, self.dest, [])
         v.append((local, remote))
         setattr(namespace, self.dest, v)
+
+
+class ExportFormat(enum.Enum):
+    SHELL = "shell"
+    SHELL_EXPORT = "shell-export"
+    JSON = "json"
+
+    def __str__(self):
+        return self.value
+
 
 def main():
     processwrapper.enable_logging()
@@ -1756,6 +1799,13 @@ def main():
     subparser = subparsers.add_parser('reservations', help="list current reservations")
     subparser.set_defaults(func=ClientSession.print_reservations)
 
+    subparser = subparsers.add_parser('export', help="export driver information to a file (needs environment with drivers)")
+    subparser.add_argument('--format', dest='format',
+                           type=ExportFormat, choices=ExportFormat, default=ExportFormat.SHELL_EXPORT,
+                           help="output format (default: %(default)s)")
+    subparser.add_argument('filename', help='output filename')
+    subparser.set_defaults(func=ClientSession.export)
+
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()
     if args.command not in ['ssh', 'rsync', 'forward']:
@@ -1806,6 +1856,8 @@ def main():
     if args.command and args.command != 'help':
         exitcode = 0
         try:
+            signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+
             session = start_session(args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"),
                                     extra)
             try:

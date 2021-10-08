@@ -14,6 +14,14 @@ class BaseProviderDriver(Driver):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
+    @Driver.check_bound
+    def get_export_vars(self):
+        return {
+            "host": self.provider.host,
+            "internal": self.provider.internal,
+            "external": self.provider.external,
+        }
+
     @Driver.check_active
     @step(args=['filename'], result=True)
     def stage(self, filename):

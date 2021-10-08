@@ -45,6 +45,19 @@ class Driver(BindingMixin):
 
         return 0
 
+    def get_export_name(self):
+        """Get the name to be used for exported variables.
+
+        Falls back to the class name if the driver has no name.
+        """
+        if self.name:
+            return self.name
+        return self.__class__.__name__
+
+    def get_export_vars(self):
+        """Get a dictionary of variables to be exported."""
+        return {}
+
 
 def check_file(filename, *, command_prefix=[]):
     if subprocess.call(command_prefix + ['test', '-r', filename]) != 0:

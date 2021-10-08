@@ -48,3 +48,10 @@ class Strategy(Driver):  # reuse driver handling
 
     def force(self, status):
         raise NotImplementedError(f"Strategy.force() is not implemented for {self.__class__.__name__}")
+
+    def prepare_export(self):
+        """By default, export all drivers bound by the strategy."""
+        name_map = {}
+        for name in self.bindings.keys():
+            name_map[getattr(self, name)] = name
+        return name_map

@@ -7,7 +7,7 @@ import attr
 
 from .binding import BindingError, BindingState
 from .driver import Driver
-from .exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError
+from .exceptions import NoSupplierFoundError, NoDriverFoundError, NoResourceFoundError, NoStrategyFoundError
 from .resource import Resource
 from .strategy import Strategy
 from .util import Timeout
@@ -211,6 +211,24 @@ class Target:
         activate -- activate the driver (default True)
         """
         return self._get_driver(cls, name=name, activate=activate)
+
+    def get_strategy(self):
+        """
+        Helper function to get the strategy of the target.
+
+        Returns the Strategy, if exactly one exists and raises a
+        NoStrategyFoundError otherwise.
+        """
+        found = []
+        for drv in self.drivers:
+            if not isinstance(drv, Strategy):
+                continue
+            found.append(drv)
+        if not found:
+            raise NoStrategyFoundError(f"no Strategy found in {self}")
+        elif len(found) > 1:
+            raise NoStrategyFoundError(f"multiple Strategies found in {self}")
+        return found[0]
 
     def __getitem__(self, key):
         """
@@ -468,6 +486,39 @@ class Target:
             print("An exception occured during cleanup, call the cleanup() "
                   "method on targets yourself to handle exceptions explictly.")
             print(f"Error: {e}")
+
+    def export(self):
+        """
+        Export information from drivers.
+
+        All drivers are deactivated before being exported.
+
+        The Strategy can decide for which driver the export method is called and
+        with which name. Otherwise, all drivers are exported.
+        """
+        try:
+            name_map = self.get_strategy().prepare_export()
+            selection = set(name_map.keys())
+        except NoStrategyFoundError:
+            name_map = {}
+            selection = set(driver for driver in self.drivers if not isinstance(driver, Strategy))
+
+        assert len(name_map) == len(set(name_map.values())), "duplicate export name"
+
+        # drivers need to be deactivated for export to avoid conflicts
+        self.deactivate_all_drivers()
+
+        export_vars = {}
+        for driver in selection:
+            name = name_map.get(driver)
+            if not name:
+                name = driver.get_export_name()
+            for k, v in driver.get_export_vars().items():
+                assert isinstance(k, str), f"key {k} from {driver} is not a string"
+                assert isinstance(v, str), f"value {v} for key {k} from {driver} is not a string"
+                export_vars[f"LG__{name}_{k}".upper()] = v
+        return export_vars
+
 
     def cleanup(self):
         """Clean up conntected drivers and resources in reversed order"""

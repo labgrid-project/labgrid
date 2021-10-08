@@ -97,6 +97,22 @@ class BindingMixin:
 
         return wrapper
 
+    @classmethod
+    def check_bound(cls, func):
+        @wraps(func)
+        def wrapper(self, *_args, **_kwargs):
+            if self.state is BindingState.active:
+                raise StateError(
+                    f'{self} is active, but must be deactivated to call {func.__qualname__}'  # pylint: disable=line-too-long
+                )
+            elif self.state is not BindingState.bound:
+                raise StateError(
+                    f'{self} has not been bound, {func.__qualname__} cannot be called in state "{self.state.name}"'  # pylint: disable=line-too-long
+                )
+            return func(self, *_args, **_kwargs)
+
+        return wrapper
+
     class NamedBinding:
         """
         Marks a binding (or binding set) as requiring an explicit name.

@@ -69,6 +69,20 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     def on_deactivate(self):
         self.close()
 
+    @Driver.check_bound
+    def get_export_vars(self):
+        vars = {
+            "speed": str(self.port.speed)
+        }
+        if isinstance(self.port, SerialPort):
+            vars["port"] = self.port.port
+        else:
+            host, port = proxymanager.get_host_and_port(self.port)
+            vars["host"] = host
+            vars["port"] = str(port)
+            vars["protocol"] = self.port.protocol
+        return vars
+
     def _read(self, size: int = 1, timeout: float = 0.0):
         """
         Reads 'size' or more bytes from the serialport

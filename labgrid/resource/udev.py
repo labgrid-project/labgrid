@@ -85,17 +85,18 @@ class USBResource(ManagedResource):
         if self.device.properties.get('ID_REVISION'):
             meta['revision'] = self.device.properties.get('ID_REVISION')
 
-        if self.match.get('SUBSYSTEM', None) == 'usb':
-            path = self._get_usb_device().properties.get('ID_PATH')
-            if path:
-                suggestions.append({'ID_PATH': path})
-            serial = self._get_usb_device().properties.get('ID_SERIAL_SHORT')
-            if serial:
-                suggestions.append({'ID_SERIAL_SHORT': serial})
+        path = self.device.properties.get('ID_PATH')
+        if path:
+            suggestions.append({'ID_PATH': path})
         elif self.match.get('@SUBSYSTEM', None) == 'usb':
             path = self._get_usb_device().properties.get('ID_PATH')
             if path:
                 suggestions.append({'@ID_PATH': path})
+
+        serial = self.device.properties.get('ID_SERIAL_SHORT')
+        if serial:
+            suggestions.append({'ID_SERIAL_SHORT': serial})
+        elif self.match.get('@SUBSYSTEM', None) == 'usb':
             serial = self._get_usb_device().properties.get('ID_SERIAL_SHORT')
             if serial:
                 suggestions.append({'@ID_SERIAL_SHORT': serial})

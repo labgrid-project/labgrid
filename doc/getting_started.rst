@@ -228,7 +228,7 @@ Additional groups and resources can be added:
      location: example-location
      USBSerialPort:
        match:
-         'ID_SERIAL_SHORT': 'P-00-00682'
+         ID_SERIAL_SHORT: P-00-00682
        speed: 115200
      NetworkPowerPort:
        model: netio

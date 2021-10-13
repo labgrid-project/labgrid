@@ -54,15 +54,30 @@ enable debug mode
 .SH EXAMPLES
 .sp
 For a device that has an \fBID_SERIAL_SHORT\fP key with a unique ID embedded
-in the USB\-serial converter, the resource match configuration is:
+in the USB\-serial converter, \fBlabgrid\-suggest\fP shows two alternatives:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
+=== added device ===
+USBSerialPort for /devices/pci0000:00/0000:00:01.3/0000:02:00.0/usb1/1\-3/1\-3.1/1\-3.1:1.0/ttyUSB0/tty/ttyUSB0
+=== device properties ===
+device node: /dev/ttyUSB0
+udev tags: , systemd
+vendor: Silicon_Labs
+vendor (DB): Advanced Micro Devices, Inc. [AMD]
+model: CP2102_USB_to_UART_Bridge_Controller
+revision: 0100
+=== suggested matches ===
 USBSerialPort:
   match:
-    \(aq@ID_SERIAL_SHORT\(aq: \(aqP\-00\-00682\(aq
+    ID_PATH: pci\-0000:02:00.0\-usb\-0:3.1:1.0
+\-\-\-
+USBSerialPort:
+  match:
+    ID_SERIAL_SHORT: P\-00\-03564
+\-\-\-
 .ft P
 .fi
 .UNINDENT

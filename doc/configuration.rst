@@ -74,12 +74,13 @@ This allows identification through hot-plugging or rebooting.
 
    USBSerialPort:
      match:
-       'ID_SERIAL_SHORT': 'P-00-00682'
+       ID_SERIAL_SHORT: P-00-00682
      speed: 115200
 
 The example would search for a USB serial converter with the key
 `ID_SERIAL_SHORT` and the value `P-00-00682` and use it with a baud rate
 of 115200.
+The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
 
 - match (str): key and value for a udev match, see `udev Matching`_
 - speed (int, default=115200): baud rate of the serial port
@@ -430,7 +431,7 @@ A USBMassStorage resource describes a USB memory stick or similar device.
 
    USBMassStorage:
      match:
-       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0-scsi-0:0:0:3'
+       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0-scsi-0:0:0:3
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
@@ -473,7 +474,7 @@ An IMXUSBLoader resource describes a USB device in the imx loader state.
 
    IMXUSBLoader:
      match:
-       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
@@ -489,7 +490,7 @@ An MXSUSBLoader resource describes a USB device in the mxs loader state.
 
    MXSUSBLoader:
      match:
-       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
@@ -505,7 +506,7 @@ An RKUSBLoader resource describes a USB device in the rockchip loader state.
 
    RKUSBLoader:
      match:
-       'sys_name': '1-3'
+       sys_name: '1-3'
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
@@ -532,7 +533,7 @@ An AndroidFastboot resource describes a USB device in the fastboot state.
 
    AndroidFastboot:
      match:
-       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
@@ -548,7 +549,7 @@ Ethernet or WiFi)
 
    USBNetworkInterface:
      match:
-       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
@@ -565,7 +566,7 @@ An AlteraUSBBlaster resource describes an Altera USB blaster.
 
    AlteraUSBBlaster:
      match:
-       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 - match (dict): key and value for a udev match, see `udev Matching`_
 
@@ -582,7 +583,7 @@ FT2232H).
 
    USBDebugger:
      match:
-       ID_PATH: 'pci-0000:00:10.0-usb-0:1.4'
+       ID_PATH: pci-0000:00:10.0-usb-0:1.4
 
 - match (dict): key and value for a udev match, see `udev Matching`_
 
@@ -613,7 +614,7 @@ A SigrokUSBDevice resource describes a sigrok USB device.
      driver: fx2lafw
      channel: "D0=CLK,D1=DATA"
      match:
-       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 - driver (str): name of the sigrok driver to use
 - channel (str): optional, channel mapping as described in the sigrok-cli man page
@@ -633,7 +634,7 @@ host which is exported over the network. The SigrokDriver will access it via SSH
      driver: fx2lafw
      channel: "D0=CLK,D1=DATA"
      match:
-       'ID_PATH': 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
+       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
      host: remote.example.computer
 
 - driver (str): name of the sigrok driver to use
@@ -672,7 +673,7 @@ device.
 
    USBSDMuxDevice:
      match:
-       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+       '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
@@ -693,7 +694,7 @@ A :any:`LXAUSBMux` resource describes a Linux Automation GmbH USB-Mux device.
 
    LXAUSBMux:
      match:
-       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+       '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
@@ -716,7 +717,7 @@ device.
 
    USBSDWireDevice:
      match:
-       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+       '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
@@ -739,7 +740,7 @@ Video4Linux2 kernel driver.
 
    USBVideo:
      match:
-       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+       '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
@@ -801,7 +802,7 @@ The low-level communication is handled by the ``usbtmc`` kernel driver.
 
    USBTMC:
      match:
-       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+       '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
 - match (str): key and value for a udev match, see `udev Matching`_
 
@@ -863,7 +864,7 @@ running a flashing program with `FlashScriptDriver`_.
 
    USBFlashableDevice:
      match:
-       SUBSYSTEM: 'usb'
+       SUBSYSTEM: usb
        ID_SERIAL: '1234'
 
 - match (str): key and value pairs for a udev match, see `udev Matching`_
@@ -919,7 +920,7 @@ A :any:`HTTPVideoStream` resource describes a IP video stream over HTTP or HTTPS
 .. code-block:: yaml
 
    HTTPVideoStream:
-     url: 'http://192.168.110.11/0.ts'
+     url: http://192.168.110.11/0.ts
 
 - url (str): URI of the IP video stream
 
@@ -1008,7 +1009,7 @@ created through interaction with that daemon.
 .. code-block:: yaml
 
    DockerDaemon:
-     docker_daemon_url: 'unix://var/run/docker.sock'
+     docker_daemon_url: unix://var/run/docker.sock
 
 The example describes a docker daemon accessible via the
 '/var/run/docker.sock' unix socket. When used by a `DockerDriver`, the
@@ -1098,7 +1099,7 @@ don't use a parent match.
 
   AndroidFastboot:
     match:
-      'sys_name': '1-1.2.3'
+      sys_name: '1-1.2.3'
 
 Matching a Specific UART in a Dual-Port Adapter
 +++++++++++++++++++++++++++++++++++++++++++++++
@@ -1150,7 +1151,7 @@ We use the ``ID_USB_INTERFACE_NUM`` to distinguish between the two ports:
   USBSerialPort:
     match:
       '@sys_name': '3-10.2.2.2'
-      'ID_USB_INTERFACE_NUM': '01'
+      ID_USB_INTERFACE_NUM: '01'
 
 Matching a USB UART by Serial Number
 ++++++++++++++++++++++++++++++++++++
@@ -1164,14 +1165,39 @@ changes or a board has been moved between host systems.
 
   USBSerialPort:
     match:
-      'ID_SERIAL_SHORT': 'P-00-00679'
+      ID_SERIAL_SHORT: P-00-03564
 
 To check if your device has a serial number, you can use ``udevadm info``:
 
 .. code-block:: bash
 
   $ udevadm info /dev/ttyUSB5 | grep SERIAL_SHORT
-  E: ID_SERIAL_SHORT=P-00-00679
+  E: ID_SERIAL_SHORT=P-00-03564
+
+In the background, the additional properties are provided by the builtin ``usb_id``
+udev helper::
+
+  $ udevadm test-builtin usb_id /sys/class/tty/ttyUSB0
+  Load module index
+  Parsed configuration file /lib/systemd/network/99-default.link
+  Parsed configuration file /lib/systemd/network/73-usb-net-by-mac.link
+  Created link configuration context.
+  ID_VENDOR=Silicon_Labs
+  ID_VENDOR_ENC=Silicon\x20Labs
+  ID_VENDOR_ID=10c4
+  ID_MODEL=CP2102_USB_to_UART_Bridge_Controller
+  ID_MODEL_ENC=CP2102\x20USB\x20to\x20UART\x20Bridge\x20Controller
+  ID_MODEL_ID=ea60
+  ID_REVISION=0100
+  ID_SERIAL=Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_P-00-03564
+  ID_SERIAL_SHORT=P-00-03564
+  ID_TYPE=generic
+  ID_BUS=usb
+  ID_USB_INTERFACES=:ff0000:
+  ID_USB_INTERFACE_NUM=00
+  ID_USB_DRIVER=cp210x
+  Unload module index
+  Unloaded link configuration context.
 
 Drivers
 -------
@@ -1217,7 +1243,7 @@ Implements:
    ShellDriver:
      prompt: 'root@\w+:[^ ]+ '
      login_prompt: ' login: '
-     username: 'root'
+     username: root
 
 Arguments:
   - prompt (regex): shell prompt to match after logging in

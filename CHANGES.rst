@@ -9,6 +9,9 @@ Bug fixes in 0.4.1
 
 - Fixed a bug where using ``labgrid-client io get`` always returned ``low``
   when reading a ``sysfsgpio``.
+- Fixed ``labgrid-client forward --remote``/``-R``, which used either the LOCAL
+  part of ``--local``/``-L`` accidentally (if specified) or raised an
+  UnboundLocalError.
 
 Known issues in 0.4.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~

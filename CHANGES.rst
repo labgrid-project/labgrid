@@ -12,6 +12,7 @@ Bug fixes in 0.4.1
 - Fixed ``labgrid-client forward --remote``/``-R``, which used either the LOCAL
   part of ``--local``/``-L`` accidentally (if specified) or raised an
   UnboundLocalError.
+- Fix labgrid-client exit code on keyboard interrupt.
 
 Known issues in 0.4.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~

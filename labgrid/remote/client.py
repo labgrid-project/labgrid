@@ -1904,7 +1904,7 @@ def main():
                 print(f"{parser.prog}: error: {e}", file=sys.stderr)
             exitcode = 1
         except KeyboardInterrupt:
-            exitcode = 0
+            exitcode = 1
         except Exception:  # pylint: disable=broad-except
             traceback.print_exc()
             exitcode = 2

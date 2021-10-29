@@ -53,7 +53,6 @@ def pytest_configure(config):
 def pytest_collection_modifyitems(config, items):
     """This function matches function feature flags with those found in the
     environment and disables the item if no match is found"""
-    have_feature = []
     env = config._labgrid_env
 
     if not env:

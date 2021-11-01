@@ -4,6 +4,8 @@ Release 0.5.0 (unreleased)
 New Features in 0.5.0
 ~~~~~~~~~~~~~~~~~~~~~
 - Support for Eaton ePDU added, and can be used as a NetworkPowerPort.
+- Consider a combination of multiple "lg_feature" markers instead of
+  considering only the closest marker.
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

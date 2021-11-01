@@ -53,7 +53,6 @@ def pytest_configure(config):
 def pytest_collection_modifyitems(config, items):
     """This function matches function feature flags with those found in the
     environment and disables the item if no match is found"""
-    have_feature = []
     env = config._labgrid_env
 
     if not env:
@@ -62,17 +61,16 @@ def pytest_collection_modifyitems(config, items):
     have_feature = env.get_features() | env.get_target_features()
 
     for item in items:
-        marker = item.get_closest_marker("lg_feature")
-        if not marker:
-            continue
+        want_feature = set()
 
-        arg = marker.args[0]
-        if isinstance(arg, str):
-            want_feature = set([arg])
-        elif isinstance(arg, list):
-            want_feature = set(arg)
-        else:
-            raise Exception("Unsupported feature argument type")
+        for marker in item.iter_markers("lg_feature"):
+            arg = marker.args[0]
+            if isinstance(arg, str):
+                want_feature.add(arg)
+            elif isinstance(arg, list):
+                want_feature.update(arg)
+            else:
+                raise Exception("Unsupported feature argument type")
         missing_feature = want_feature - have_feature
         if missing_feature:
             if len(missing_feature) == 1:

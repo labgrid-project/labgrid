@@ -9,6 +9,7 @@ New Features in 0.5.0
   considering only the closest marker.
 - The labgrid client SSH command is now able to instantiate the SSHDriver when
   there are multiple NetworkService resources available.
+- Allow to pass dd arguments to USBMassStorage.write_image() function
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

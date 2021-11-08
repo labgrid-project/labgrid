@@ -16,3 +16,4 @@ psutil==5.8.0
 -r pyvisa-requirements.txt
 -r vxi11-requirements.txt
 -r mqtt-requirements.txt
+-r kasa-requirements.txt

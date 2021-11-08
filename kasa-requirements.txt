@@ -1,0 +1,1 @@
+python-kasa==0.4.0

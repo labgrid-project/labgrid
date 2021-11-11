@@ -40,6 +40,12 @@ class USBVideoDriver(Driver, VideoProtocol):
                 ("mid", "image/jpeg,width=1280,height=720,framerate=10/1"),
                 ("high", "image/jpeg,width=1920,height=1080,framerate=10/1"),
                 ])
+        if match == (0x1d6c, 0x0103): # HD 2MP WEBCAM
+            return ("mid", [
+                ("low", "video/x-h264,width=640,height=480,framerate=25/1"),
+                ("mid", "video/x-h264,width=1280,height=720,framerate=25/1"),
+                ("high", "video/x-h264,width=1920,height=1080,framerate=25/1"),
+                ])
         raise InvalidConfigError("Unknown USB video device {:04x}:{:04x}".format(*match))
 
     def select_caps(self, hint=None):
@@ -65,6 +71,9 @@ class USBVideoDriver(Driver, VideoProtocol):
             inner = None
         elif match == (0x534d, 0x2109):
             inner = None  # just forward the jpeg frames
+        elif match == (0x1d6c, 0x0103):
+            controls = controls or "focus_auto=1"
+            inner = "h264parse"
         else:
             raise InvalidConfigError("Unknown USB video device {:04x}:{:04x}".format(*match))
 

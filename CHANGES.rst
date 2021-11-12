@@ -7,6 +7,8 @@ New Features in 0.4.1
 Bug fixes in 0.4.1
 ~~~~~~~~~~~~~~~~~~
 
+- The exporter now exports sysfsgpios during place acquire/release, fixing a
+  race in the sysfspgio agent interface.
 - Fixed a bug where using ``labgrid-client io get`` always returned ``low``
   when reading a ``sysfsgpio``.
 - Fixed ``labgrid-client forward --remote``/``-R``, which used either the LOCAL

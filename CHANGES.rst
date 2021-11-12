@@ -10,6 +10,8 @@ New Features in 0.5.0
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~
 
+- The exporter now exports sysfsgpios during place acquire/release, fixing a
+  race in the sysfspgio agent interface.
 - Fixed a bug where using ``labgrid-client io get`` always returned ``low``
   when reading a ``sysfsgpio``.
 - Fix labgrid-client exit code on keyboard interrupt.

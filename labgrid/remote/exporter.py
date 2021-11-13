@@ -12,6 +12,7 @@ import traceback
 import shutil
 import subprocess
 import warnings
+from pathlib import Path
 from typing import Dict, Type
 from socket import gethostname, getfqdn
 import attr
@@ -556,7 +557,9 @@ exports["SNMPEthernetPort"] = EthernetPortExport
 
 
 @attr.s(eq=False)
-class GPIOGenericExport(ResourceExport):
+class GPIOSysFSExport(ResourceExport):
+    _gpio_sysfs_path_prefix = '/sys/class/gpio'
+
     """ResourceExport for GPIO lines accessed directly from userspace"""
 
     def __attrs_post_init__(self):
@@ -566,6 +569,9 @@ class GPIOGenericExport(ResourceExport):
         from ..resource import base
         local_cls = getattr(base, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
+        self.export_path = Path(GPIOSysFSExport._gpio_sysfs_path_prefix,
+                                f'gpio{self.local.index}')
+        self.system_exported = False
 
     def _get_params(self):
         """Helper function to return parameters"""
@@ -574,7 +580,35 @@ class GPIOGenericExport(ResourceExport):
             'index': self.local.index,
         }
 
-exports["SysfsGPIO"] = GPIOGenericExport
+    def _get_start_params(self):
+        return {
+            'index': self.local.index,
+        }
+
+    def _start(self, start_params):
+        """Start a GPIO export to userspace"""
+        index = start_params['index']
+
+        if self.export_path.exists():
+            self.system_exported = True
+            return
+
+        export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, 'export')
+        with open(export_sysfs_path, mode='wb') as export:
+            export.write(str(index).encode('utf-8'))
+
+    def _stop(self, start_params):
+        """Disable a GPIO export to userspace"""
+        index = start_params['index']
+
+        if self.system_exported:
+            return
+
+        export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, 'unexport')
+        with open(export_sysfs_path, mode='wb') as unexport:
+            unexport.write(str(index).encode('utf-8'))
+
+exports["SysfsGPIO"] = GPIOSysFSExport
 
 
 @attr.s

@@ -14,6 +14,8 @@ class GpioDigitalOutput:
     def _assert_gpio_line_is_exported(index):
         gpio_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix,
                                        f'gpio{index}')
+        # Deprecated: the exporter can export on acquire, we are leaving this
+        # in for now to support exporters which have not been updated yet.
         if not os.path.exists(gpio_sysfs_path):
             export_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix, 'export')
             with open(export_sysfs_path, mode='wb') as export:

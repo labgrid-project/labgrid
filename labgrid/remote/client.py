@@ -1069,18 +1069,19 @@ class ClientSession(ApplicationSession):
 
         from ..resource import NetworkService
         try:
-            target.get_resource(NetworkService)
+            resource = target.get_resource(NetworkService, name=self.args.name)
         except NoResourceFoundError:
             ip = self._get_ip(place)
             if not ip:
                 return
-            NetworkService(target, address=str(ip), username='root')
+            resource = NetworkService(target, address=str(ip), username='root')
 
         from ..driver.sshdriver import SSHDriver
         try:
             drv = target.get_driver(SSHDriver)
         except NoDriverFoundError:
-            drv = SSHDriver(target, name=None)
+            target.set_binding_map({"networkservice": resource.name})
+            drv = SSHDriver(target, name=resource.name)
         target.activate(drv)
         return drv
 
@@ -1690,6 +1691,7 @@ def main():
 
     subparser = subparsers.add_parser('ssh',
                                       help="connect via ssh (with optional arguments)")
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.ssh)
 
     subparser = subparsers.add_parser('scp',

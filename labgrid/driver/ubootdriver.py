@@ -24,7 +24,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         prompt (str): optional, U-Boot prompt
         password (str): optional, password to unlock U-Boot
         init_commands (tuple): optional, tuple of commands to run after unlock
-        interrupt(str): optional, interrupt character to use to go to prompt
+        autoboot (str): optional, string to search for to interrupt autoboot
+        interrupt (str): optional, character to interrupt autoboot and go to prompt
         password_prompt (str): optional, string to detect the password prompt
         boot_expression (str): optional, string to search for on U-Boot start
         bootstring (str): optional, string that indicates that the Kernel is booting

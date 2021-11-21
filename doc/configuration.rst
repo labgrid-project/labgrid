@@ -1313,6 +1313,8 @@ Implements:
 Arguments:
   - prompt (regex, default=""): U-Boot prompt to match
   - autoboot (regex, default="stop autoboot"): autoboot message to match
+  - preinterruptsleep (float, default=0.0): optional, time to sleep after
+    matching the autoboot pattern before sending the interrupt character
   - password (str): optional, U-Boot unlock password
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
   - init_commands (tuple): optional, tuple of commands to execute after matching the

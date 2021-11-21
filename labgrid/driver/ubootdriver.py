@@ -4,6 +4,7 @@ import logging
 import re
 
 import attr
+import time
 from pexpect import TIMEOUT
 
 from ..factory import target_factory
@@ -25,6 +26,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         password (str): optional, password to unlock U-Boot
         init_commands (tuple): optional, tuple of commands to run after unlock
         autoboot (str): optional, string to search for to interrupt autoboot
+        preinterruptsleep (float): optional, time to sleep after matching the
+            autoboot pattern before sending the interrupt character
         interrupt (str): optional, character to interrupt autoboot and go to prompt
         password_prompt (str): optional, string to detect the password prompt
         boot_expression (str): optional, string to search for on U-Boot start
@@ -37,6 +40,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
     autoboot = attr.ib(default="stop autoboot", validator=attr.validators.instance_of(str))
+    preinterruptsleep = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
     interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
     init_commands = attr.ib(default=attr.Factory(tuple), converter=tuple)
@@ -156,6 +160,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 break
 
             elif index == 1:
+                time.sleep(self.preinterruptsleep)
                 self.console.write(self.interrupt.encode('ASCII'))
 
             elif index == 2:

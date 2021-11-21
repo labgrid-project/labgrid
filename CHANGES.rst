@@ -8,6 +8,9 @@ New Features in 0.5.0
   considering only the closest marker.
 - The labgrid client SSH command is now able to instantiate the SSHDriver when
   there are multiple NetworkService resources available.
+- The UBootDriver acquired the new parameter ``preinterruptsleep`` which
+  configures the number of seconds to sleep after matching the ``autoboot``
+  prompt but before sending the ``interrupt`` characters.
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

@@ -51,8 +51,15 @@ class Target:
         for resource in self.resources:
             resource.poll()
             if not resource.avail and resource.state is BindingState.active:
-                self.log.info("deactivating unavailable resource %s", resource.display_name)  # pylint: disable=line-too-long
-                self.deactivate(resource)
+                deactivated = self.deactivate(resource)
+                deactivated.remove(resource)
+                if deactivated:
+                    self.log.info("deactivating unavailable resource %s used by %s",
+                        resource.display_name,
+                        ", ".join(d.display_name for d in deactivated)
+                    )
+                else:
+                    self.log.debug("deactivating unavailable resource %s (unused)", resource.display_name)  # pylint: disable=line-too-long
 
     def await_resources(self, resources, timeout=None, avail=True):
         """
@@ -449,6 +456,8 @@ class Target:
         Recursively deactivate the client's clients and itself.
 
         This is needed to ensure that no client has an inactive supplier.
+
+        Returns the list of all objects that were deactivated
         """
         if isinstance(client, str):
             cls = target_factory.class_from_string(client)
@@ -457,7 +466,7 @@ class Target:
         assert client is not None
 
         if client.state is BindingState.bound:
-            return  # nothing to do
+            return [] # nothing to do
 
         if client.state is not BindingState.active:
             raise BindingError(
@@ -467,12 +476,15 @@ class Target:
         # consistency check
         assert client in self.resources or client in self.drivers
 
+        deactivated = [client]
+
         for cli in client.clients:
-            self.deactivate(cli)
+            deactivated.extend(self.deactivate(cli))
 
         # update state
         client.on_deactivate()
         client.state = BindingState.bound
+        return deactivated
 
     def deactivate_all_drivers(self):
         """Deactivates all drivers in reversed order they were activated"""

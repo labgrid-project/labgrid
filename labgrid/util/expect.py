@@ -9,14 +9,10 @@ class PtxExpect(pexpect.spawn):
     """
 
     def __init__(self, driver):
-        "Initializes a pexpect spawn instanse with required configuration"
+        "Initializes a pexpect spawn instance with the required configuration"
         self.driver = driver
         self.linesep = b"\n"
-        pexpect.spawn.__init__(
-            self,
-            None,
-            maxread=1,
-        )
+        pexpect.spawn.__init__(self, None, maxread=1)
 
     def send(self, s):
         "Write to underlying transport, return number of bytes written"

@@ -3,6 +3,7 @@ Release 0.5.0 (unreleased)
 
 New Features in 0.5.0
 ~~~~~~~~~~~~~~~~~~~~~
+- ModbusRTU driver for instruments
 - Support for Eaton ePDU and TP-Link power strips added, either can be used as a NetworkPowerPort.
 - Consider a combination of multiple "lg_feature" markers instead of
   considering only the closest marker.

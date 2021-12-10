@@ -20,6 +20,7 @@ from .usbsdwiredriver import USBSDWireDriver
 from .common import Driver
 from .qemudriver import QEMUDriver
 from .modbusdriver import ModbusCoilDriver
+from .modbusrtudriver import ModbusRTUDriver
 from .sigrokdriver import SigrokDriver
 from .usbstoragedriver import USBStorageDriver, NetworkUSBStorageDriver, Mode
 from .resetdriver import DigitalOutputResetDriver

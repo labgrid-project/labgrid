@@ -64,6 +64,42 @@ port 53867 and use a baud rate of 115200 with the RFC2217 protocol.
 Used by:
   - `SerialDriver`_
 
+ModbusRTU
++++++++++
+Describes the resource required to use the ModbusRTU driver.
+`Modbus RTU <https://en.wikipedia.org/wiki/Modbus>`_ is a communication
+protocol used to control many different kinds of electronic systems, such as
+thermostats, power plants, etc.
+Modbus is normally implemented on top of RS-485, though this is not strictly
+necessary, as long as the Modbus network only has one master (and up to 256
+slaves).
+
+The labgrid driver is implemented using the minimalmodbus Python library.
+The implementation only supports that labgrid will be the master on the Modbus
+network.
+For more information, see `minimalmodbus
+<https://minimalmodbus.readthedocs.io/en/stable/>`_.
+
+This resource and driver only supports local usage and will not work with an
+exporter.
+
+.. code-block:: yaml
+
+    ModbusRTU:
+      port: "/dev/ttyUSB0"
+      address: 16
+      speed: 115200
+      timeout: 0.25
+
+Arguments:
+  - port (str): tty the instrument is connected to, e.g. '/dev/ttyUSB0'
+  - address (int): slave address on the modbus, e.g. 16
+  - baudrate (bool): optional, default is 115200
+  - timeout (bool): optional, timeout in seconds. Default is 0.25 s
+
+Used by:
+  - `ModbusRTUDriver`_
+
 USBSerialPort
 +++++++++++++
 A USBSerialPort describes a serial port which is connected via USB and is
@@ -1225,6 +1261,19 @@ Arguments:
   - txdelay (float, default=0.0): time in seconds to wait before sending each byte
   - timeout (float, default=3.0): time in seconds to wait for a network serial port before
     an error occurs
+
+ModbusRTUDriver
+~~~~~~~~~~~~~~~
+A ModbusRTUDriver connects to a ModbusRTU resource. This driver only supports
+local usage and will not work with an exporter.
+
+.. code-block:: yaml
+
+    ModbusRTUDriver: {}
+
+Binds to:
+  port:
+    - `ModbusRTU`_
 
 ShellDriver
 ~~~~~~~~~~~

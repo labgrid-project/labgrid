@@ -100,6 +100,10 @@ Modbus
 Modbus support requires an additional package `pyModbusTCP`. It is included in
 the `modbus-requirements.txt` file.
 
+ModbusRTU
++++++++++
+Modbus support requires an additional package `minimalmodbus`. It is included in
+the `modbusrtu-requirements.txt` file.
 
 Running Your First Test
 -----------------------

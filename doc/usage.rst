@@ -563,7 +563,7 @@ For this example, you should get a report similar to this:
 
 .. code-block:: bash
 
-  $ pytest --lg-env strategy-example.yaml -v
+  $ pytest -s --lg-env strategy-example.yaml -v
   ============================= test session starts ==============================
   platform linux -- Python 3.5.3, pytest-3.0.6, py-1.4.32, pluggy-0.4.0
   …

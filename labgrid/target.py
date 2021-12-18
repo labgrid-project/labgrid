@@ -533,7 +533,7 @@ class Target:
 
 
     def cleanup(self):
-        """Clean up conntected drivers and resources in reversed order"""
+        """Clean up connected drivers and resources in reversed order"""
         self.deactivate_all_drivers()
         for res in reversed(self.resources):
             self.deactivate(res)

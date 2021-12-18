@@ -48,7 +48,7 @@ class UBootStrategy(Strategy):
             # interrupt uboot
             self.target.activate(self.uboot)
         elif status == Status.shell:
-            # tansition to uboot
+            # transition to uboot
             self.transition(Status.uboot)
             self.uboot.boot("")
             self.uboot.await_boot()

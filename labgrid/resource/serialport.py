@@ -18,7 +18,7 @@ class RawSerialPort(SerialPort, Resource):
 @target_factory.reg_resource
 @attr.s(eq=False)
 class NetworkSerialPort(NetworkResource):
-    """A NetworkSerialPort is a remotely accessable serialport, usually
+    """A NetworkSerialPort is a remotely accessible serialport, usually
     accessed via rfc2217 or tcp raw.
 
     Args:

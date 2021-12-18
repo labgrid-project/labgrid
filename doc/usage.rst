@@ -497,7 +497,7 @@ useful to define a function scope fixture per state in ``conftest.py``::
   import pytest
 
   @pytest.fixture(scope='function')
-  def switch_off(target, strategy, capsys):
+  def switch_off(strategy, capsys):
       with capsys.disabled():
           strategy.transition('off')
 

@@ -60,7 +60,7 @@ into your new driver file.
 
     import attr
 
-    from labgrid.driver.common import Driver
+    from labgrid.driver import Driver
     from labgrid.protocol import ConsoleProtocol
 
 Next, define your new class and list the protocols as subclasses of the new
@@ -72,7 +72,7 @@ provided by connecting drivers and resources on a given target at runtime.
 
     import attr
 
-    from labgrid.driver.common import Driver
+    from labgrid.driver import Driver
     from labgrid.protocol import ConsoleProtocol
 
     @attr.s(eq=False)
@@ -89,7 +89,7 @@ be added into multiple drivers.
 
     import attr
 
-    from labgrid.driver.common import Driver
+    from labgrid.driver import Driver
     from labgrid.driver.consoleexpectmixin import ConsoleExpectMixin
     from labgrid.protocol import ConsoleProtocol
 
@@ -106,7 +106,7 @@ dependencies on other drivers or resources.
     import attr
 
     from labgrid.factory import target_factory
-    from labgrid.driver.common import Driver
+    from labgrid.driver import Driver
     from labgrid.driver.consoleexpectmixin import ConsoleExpectMixin
     from labgrid.protocol import ConsoleProtocol
 
@@ -139,7 +139,7 @@ The minimum requirement is a call to :code:`super().__attrs_post_init__()`.
     import attr
 
     from labgrid.factory import target_factory
-    from labgrid.driver.common import Driver
+    from labgrid.driver import Driver
     from labgrid.driver.consoleexpectmixin import ConsoleExpectMixin
     from labgrid.protocol import ConsoleProtocol
 
@@ -512,13 +512,13 @@ To use the SSHManager in your code, import it from :any:`labgrid.util.ssh`:
 
 .. code-block:: python
 
-   from labgrid.util.ssh import sshmanager
+   from labgrid.util import sshmanager
 
 you can now request or remove port forwardings:
 
 .. code-block:: python
 
-   from labgrid.util.ssh import sshmanager
+   from labgrid.util import sshmanager
 
    localport = sshmanager.request_forward('localhost', 'somehost', 3000)
 
@@ -528,7 +528,7 @@ or get and put files:
 
 .. code-block:: python
 
-   from labgrid.util.ssh import sshmanager
+   from labgrid.util import sshmanager
 
    sshmanager.put_file('somehost', '/path/to/local/file', '/path/to/remote/file')
 

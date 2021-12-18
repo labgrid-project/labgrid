@@ -2656,7 +2656,7 @@ The StepReporter outputs individual labgrid steps to `STDOUT`.
 
 ::
 
-    from labgrid.stepreporter import StepReporter
+    from labgrid import StepReporter
 
     StepReporter.start()
 
@@ -2664,7 +2664,7 @@ The Reporter can be stopped with a call to the stop function:
 
 ::
 
-    from labgrid.stepreporter import StepReporter
+    from labgrid import StepReporter
 
     StepReporter.stop()
 
@@ -2683,7 +2683,7 @@ files. It takes the path as a parameter.
 
 ::
 
-    from labgrid.consoleloggingreporter import ConsoleLoggingReporter
+    from labgrid import ConsoleLoggingReporter
 
     ConsoleLoggingReporter.start(".")
 
@@ -2691,7 +2691,7 @@ The Reporter can be stopped with a call to the stop function:
 
 ::
 
-    from labgrid.consoleloggingreporter import ConsoleLoggingReporter
+    from labgrid import ConsoleLoggingReporter
 
     ConsoleLoggingReporter.stop()
 

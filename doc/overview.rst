@@ -127,6 +127,10 @@ Each driver and resource can have an optional name. This parameter is required
 for all manual creations of drivers and resources. To manually bind to a
 specific driver set a binding mapping before creating the driver:
 
+  >>> from labgrid import Target
+  >>> from labgrid.resource import SerialPort
+  >>> from labgrid.driver import SerialDriver
+  >>>
   >>> t = Target("Test")
   >>> SerialPort(t, "First")
   SerialPort(target=Target(name='Test', env=None), name='First', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
@@ -135,7 +139,7 @@ specific driver set a binding mapping before creating the driver:
   >>> t.set_binding_map({"port": "Second"})
   >>> sd = SerialDriver(t, "Driver")
   >>> sd
-  SerialDriver(target=Target(name='Test', env=None), name='Driver', state=<BindingState.bound: 1>, txdelay=0.0)
+  SerialDriver(target=Target(name='Test', env=None), name='Driver', state=<BindingState.bound: 1>, txdelay=0.0, timeout=3.0)
   >>> sd.port
   SerialPort(target=Target(name='Test', env=None), name='Second', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
 
@@ -164,9 +168,13 @@ name `priorities`, e.g.
 
 .. code-block:: python
 
+   import attr
+   from labgrid.driver import Driver
+   from labgrid.protocol import PowerProtocol, ResetProtocol
+
    @attr.s
    class NetworkPowerDriver(Driver, PowerProtocol, ResetProtocol):
-       priorities: {PowerProtocol: -10}
+       priorities = {PowerProtocol: -10}
 
 Strategies
 ~~~~~~~~~~

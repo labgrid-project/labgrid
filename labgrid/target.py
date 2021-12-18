@@ -242,13 +242,16 @@ class Target:
         Syntactic sugar to access drivers by class (optionally filtered by
         name).
 
+        >>> from labgrid import Target
+        >>> from labgrid.driver.fake import FakeConsoleDriver
+        >>>
         >>> target = Target('main')
         >>> console = FakeConsoleDriver(target, 'console')
         >>> target.activate(console)
         >>> target[FakeConsoleDriver]
-        FakeConsoleDriver(target=Target(name='main', …), name='console', …)
+        FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0)
         >>> target[FakeConsoleDriver, 'console']
-        FakeConsoleDriver(target=Target(name='main', …), name='console', …)
+        FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0)
         """
         name = None
         if not isinstance(key, tuple):

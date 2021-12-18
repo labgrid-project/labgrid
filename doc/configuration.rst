@@ -2557,8 +2557,11 @@ to transition to the shell state:
 
 ::
 
-   t = get_target("main")
-   s = BareboxStrategy(t)
+   from labgrid import Environment
+
+   e = Environment("local.yaml")
+   t = e.get_target("main")
+   s = t.get_driver("BareboxStrategy")
    s.transition("shell")
 
 
@@ -2578,8 +2581,11 @@ to transition to the shell state:
 
 ::
 
-   t = get_target("main")
-   s = ShellStrategy(t)
+   from labgrid import Environment
+
+   e = Environment("local.yaml")
+   t = e.get_target("main")
+   s = t.get_driver("ShellStrategy")
    s.transition("shell")
 
 
@@ -2600,8 +2606,11 @@ to transition to the shell state:
 
 ::
 
-   t = get_target("main")
-   s = UBootStrategy(t)
+   from labgrid import Environment
+
+   e = Environment("local.yaml")
+   t = e.get_target("main")
+   s = t.get_driver("UBootStrategy")
    s.transition("shell")
 
 
@@ -2621,8 +2630,11 @@ To transition to the shell state:
 
 ::
 
-   t = get_target("main")
-   s = DockerShellStrategy(t)
+   from labgrid import Environment
+
+   e = Environment("local.yaml")
+   t = e.get_target("main")
+   s = t.get_driver("DockerShellStrategy")
    s.transition("shell")
 
 

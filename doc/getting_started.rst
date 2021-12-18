@@ -466,6 +466,9 @@ retrieve it in your test and call the ``transition(status)`` function.
 
 .. code-block:: python
 
+   >>> from labgrid import Environment
+   >>> env = Environment("env.yaml")
+   >>> target = env.get_target("main")
    >>> strategy = target.get_driver("Strategy")
    >>> strategy.transition("barebox")
 

@@ -94,7 +94,7 @@ be added into multiple drivers.
     from labgrid.protocol import ConsoleProtocol
 
     @attr.s(eq=False)
-    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
+    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         pass
 
 Additionally the driver needs to be registered with the :any:`target_factory`
@@ -112,9 +112,8 @@ dependencies on other drivers or resources.
 
     @target_factory.reg_driver
     @attr.s(eq=False)
-    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
-        bindings = { "port": SerialPort }
-        pass
+    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
+        bindings = { "port": "SerialPort" }
 
 The listed resource :code:`SerialPort` will be bound to :code:`self.port`,
 making it usable in the class.
@@ -124,11 +123,11 @@ otherwise an error will be raised.
 If your driver can support alternative resources, you can use a set of classes
 instead of a single class::
 
-    bindings = { "port": {SerialPort, NetworkSerialPort}}
+    bindings = { "port": {"SerialPort", "NetworkSerialPort"} }
 
 Optional bindings can be declared by including ``None`` in the set::
 
-    bindings = { "port": {SerialPort, NetworkSerialPort, None}}
+    bindings = { "port": {"SerialPort", "NetworkSerialPort", None} }
 
 If you need to do something during instantiation, you need to add a
 :code:`__attrs_post_init__` method (instead of the usual :code:`__init__` used
@@ -146,8 +145,8 @@ The minimum requirement is a call to :code:`super().__attrs_post_init__()`.
 
     @target_factory.reg_driver
     @attr.s(eq=False)
-    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
-        bindings = { "port": SerialPort }
+    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
+        bindings = { "port": "SerialPort" }
 
         def __attrs_post_init__(self):
             super().__attrs_post_init__()
@@ -166,7 +165,7 @@ Additionally we need the :any:`target_factory` and the common ``Resource`` class
     import attr
 
     from labgrid.factory import target_factory
-    from labgrid.driver.common import Resource
+    from labgrid.resource import Resource
 
 Next we add our own resource with the :code:`Resource` parent class and
 register it with the :any:`target_factory`.
@@ -176,7 +175,7 @@ register it with the :any:`target_factory`.
     import attr
 
     from labgrid.factory import target_factory
-    from labgrid.driver.common import Resource
+    from labgrid.resource import Resource
 
     @target_factory.reg_resource
     @attr.s(eq=False)
@@ -191,7 +190,7 @@ variables.
     import attr
 
     from labgrid.factory import target_factory
-    from labgrid.driver.common import Resource
+    from labgrid.resource import Resource
 
     @target_factory.reg_resource
     @attr.s(eq=False)
@@ -216,7 +215,7 @@ Start by creating a strategy skeleton:
     import attr
 
     from labgrid.step import step
-    from labgrid.driver import Strategy, StrategyError
+    from labgrid.strategy import Strategy, StrategyError
     from labgrid.factory import target_factory
 
     class Status(enum.Enum):
@@ -521,9 +520,9 @@ you can now request or remove port forwardings:
 
    from labgrid.util.ssh import sshmanager
 
-   localport = sshmanager.request_forward('somehost', 3000)
+   localport = sshmanager.request_forward('localhost', 'somehost', 3000)
 
-   sshmanager.remove_forward('somehost', 3000)
+   sshmanager.remove_forward('localhost', 'somehost', 3000)
 
 or get and put files:
 

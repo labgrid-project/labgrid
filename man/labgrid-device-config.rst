@@ -162,8 +162,8 @@ in the loaded local python file:
            prompt: 'root@\w+:[^ ]+ '
            login_prompt: ' login: '
            username: 'root'
+	 IMXUSBDriver: {}
          MyStrategy: {}
-	 IMXUSBLoader: {}
    tools:
      imx-usb-loader: "/opt/lg-tools/imx-usb-loader"
    imports:

@@ -174,13 +174,13 @@ Currently available are:
   Controls a NETIO 4C PDU via a Telnet interface.
 
 ``rest``
-  This is a generic backend for PDU implementations which can be controled via
+  This is a generic backend for PDU implementations which can be controlled via
   HTTP PUT and GET requests.
   See the `docstring in the module
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/rest.py>`__
   for details.
 
-``senty``
+``sentry``
   Controls a Sentry PDU via SNMP using Sentry3-MIB.
   It was tested on CW-24VDD and 4805-XLS-16.
 
@@ -189,7 +189,7 @@ Currently available are:
   <https://pypi.org/project/python-vxi11/>`_.
 
 ``simplerest``
-  This is a generic backend for PDU implementations which can be controled via
+  This is a generic backend for PDU implementations which can be controlled via
   HTTP GET requests (both set and get).
   See the `docstring in the module
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/simplerest.py>`__
@@ -294,7 +294,7 @@ Used by:
 
 TasmotaPowerPort
 ++++++++++++++++
-A :any:`TasmotaPowerPort` resource describes a switchable Tasmora power outlet
+A :any:`TasmotaPowerPort` resource describes a switchable Tasmota power outlet
 accessed over MQTT.
 
 .. code-block:: yaml
@@ -309,8 +309,8 @@ The example uses a mosquitto server at "this.is.an.example.host.com" and has the
 topics setup for a tasmota power port that has the ID 575A2B.
 
 - host (str): hostname of the MQTT server
-- status_topic (str): topic that signals the current status as "ON" of "OFF"
-- power_topic (str): topic that allows switchting the status between "ON" and
+- status_topic (str): topic that signals the current status as "ON" or "OFF"
+- power_topic (str): topic that allows switching the status between "ON" and
   "OFF"
 - avail_topic (str): topic that signals the availability of the Tasmota power
   outlet
@@ -427,7 +427,7 @@ Used by:
 
 NetworkHIDRelay
 +++++++++++++++
-A NetworkHIDRelay descibes an `HIDRelay`_ exported over the network.
+A NetworkHIDRelay describes an `HIDRelay`_ exported over the network.
 
 NetworkService
 ~~~~~~~~~~~~~~
@@ -694,7 +694,7 @@ of a USB serial port instead of being a USB device itself (see
        '@ID_SERIAL_SHORT': P-00-02389
 
 - driver (str): name of the sigrok driver to use
-- channels (str): optional, channel mapping as desribed in the sigrok-cli man page
+- channels (str): optional, channel mapping as described in the sigrok-cli man page
 
 Used by:
   - `SigrokPowerDriver`_
@@ -867,7 +867,7 @@ It is assumed that flashrom is installed on the host and the executable is confi
   tools:
     flashrom: '/usr/sbin/flashrom'
 
-- programmer (str): programmer device as desribed in `-p, --programmer` in `man 8 flashrom`
+- programmer (str): programmer device as described in `-p, --programmer` in `man 8 flashrom`
 
 The resource must configure which programmer to use and the parameters to the programmer.
 The programmer parameter is passed directly to the flashrom bin hence man(8) flashrom
@@ -1616,7 +1616,7 @@ A PDUDaemonDriver controls a `PDUDaemonPort`, allowing control of the target
 power state without user interaction.
 
 .. note::
-  PDUDaemon processess commands in the background, so the actual state change
+  PDUDaemon processes commands in the background, so the actual state change
   may happen several seconds after calls to PDUDaemonDriver return.
 
 Binds to:
@@ -1714,7 +1714,7 @@ Arguments:
 
 TasmotaPowerDriver
 ~~~~~~~~~~~~~~~~~~
-A TasmotaPowerDriver contols a `TasmotaPowerPort`, allowing the outlet to be
+A TasmotaPowerDriver controls a `TasmotaPowerPort`, allowing the outlet to be
 switched on and off.
 
 Binds to:
@@ -1770,7 +1770,7 @@ Implements:
 
 Arguments:
   - signal (str): control signal to use: "dtr" or "rts"
-  - bindings (dict): A named ressource of the type SerialDriver to
+  - bindings (dict): A named resource of the type SerialDriver to
     bind against. This is only needed if you have multiple
     SerialDriver in your environment (what is likely to be the case
     if you are using this driver).
@@ -2579,7 +2579,7 @@ to transition to the shell state:
 
 
 this command would transition from the bootloader into a Linux shell and
-activate the shelldriver.
+activate the ShellDriver.
 
 ShellStrategy
 ~~~~~~~~~~~~~
@@ -2600,7 +2600,7 @@ to transition to the shell state:
 
 
 this command would transition directly into a Linux shell and
-activate the shelldriver.
+activate the ShellDriver.
 
 UBootStrategy
 ~~~~~~~~~~~~~
@@ -2622,7 +2622,7 @@ to transition to the shell state:
 
 
 this command would transition from the bootloader into a Linux shell and
-activate the shelldriver.
+activate the ShellDriver.
 
 DockerShellStrategy
 ~~~~~~~~~~~~~~~~~~~
@@ -2792,7 +2792,7 @@ becomes:
   - SerialDriver: {}
   - SerialDriver: {}
 
-This configuration doesn't specifiy which :any:`RawSerialPort` to use for each
+This configuration doesn't specify which :any:`RawSerialPort` to use for each
 :any:`SerialDriver`, so it will cause an exception when instantiating the
 :any:`Target`.
 To bind the correct driver to the correct resource, explicit ``name`` and

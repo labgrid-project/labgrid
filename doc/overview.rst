@@ -219,7 +219,7 @@ These components communicate over the `WAMP <http://wamp-proto.org/>`_
 implementation `Autobahn <http://autobahn.ws/>`_ and the `Crossbar
 <http://crossbar.io/>`_ WAMP router.
 
-The following sections describe the resposibilities of each component. See
+The following sections describe the responsibilities of each component. See
 :ref:`remote-usage` for usage information.
 
 .. _overview-coordinator:
@@ -364,7 +364,7 @@ connections to remote resources made available by this exporter need to be
 tunneled using a SSH connection.
 
 On the other hand, clients may need to access the remote coordinator
-infrastrucure using a SSH tunnel. In this case the :code:`LG_PROXY` environment
+infrastructure using a SSH tunnel. In this case the :code:`LG_PROXY` environment
 variable needs to be set to the remote host which should tunnel the connection
 to the coordinator. The client then forwards all network traffic -
 client-to-coordinator and client-to-exporter - through SSH, via their

@@ -240,7 +240,7 @@ Start by creating a strategy skeleton:
                 return  # nothing to do
             else:
                 raise StrategyError(
-                    f"no transition found from {self.status,} to {status}"
+                    f"no transition found from {self.status} to {status}"
                 )
             self.status = status
 
@@ -266,7 +266,7 @@ The Status enum for the BareboxStrategy:
        barebox = 2
        shell = 3
 
-defines 3 custom states and the `unknown` state as the start point.
+defines three custom states and the `unknown` state as the start point.
 These three states are handled in the transition function:
 
 ::
@@ -283,15 +283,16 @@ These three states are handled in the transition function:
         # interrupt barebox
         self.target.activate(self.barebox)
     elif status == Status.shell:
-        # tansition to barebox
+        # transition to barebox
         self.transition(Status.barebox)
         self.barebox.boot("")
         self.barebox.await_boot()
         self.target.activate(self.shell)
 
-Here the `barebox` state simply cycles the board and activates the driver, while
-the `shell` state uses the barebox state to cycle the board and than boot the
-linux kernel. The `off` states switch the power off.
+Here, the `barebox` state simply cycles the board and activates the driver,
+while the `shell` state uses the barebox state to cycle the board and then boot
+the linux kernel.
+The `off` state switches the power off.
 
 
 Tips for Writing and Debugging Tests
@@ -309,7 +310,7 @@ This can help understanding what happened and why it happened.
 However, when debugging tests, it might be more helpful to get a live
 impression of what is going on.
 For this, you can use ``tail -F`` to read the content written to the log file
-as if you would be connected to the devices serial console (except that it is
+as if you would be connected to the device's serial console (except that it is
 read-only)::
 
   $ tail -F logdir/console_main # for the 'main' target
@@ -514,7 +515,7 @@ To use the SSHManager in your code, import it from :any:`labgrid.util.ssh`:
 
    from labgrid.util.ssh import sshmanager
 
-you can now request or remove forwards:
+you can now request or remove port forwardings:
 
 .. code-block:: python
 

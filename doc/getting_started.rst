@@ -336,7 +336,7 @@ Follow these instructions to install the systemd files on your machine(s):
 #. Adapt the ``ExecStart`` paths of the service files to the respective Python
    virtual environments of the coordinator and exporter.
 #. Create the coordinator configuration file referenced in the ``ExecStart``
-   option of the :file:`systemd-coordinator.service` file by using
+   option of the :file:`labgrid-coordinator.service` file by using
    :file:`.crossbar/config.yaml` as a starting point. You most likely want to
    make sure that the ``workdir`` option matches the path given via the
    ``--cbdir`` option in the service file; see
@@ -373,7 +373,7 @@ Follow these instructions to install the systemd files on your machine(s):
       # systemctl start labgrid-coordinator
 
 #. After creating the exporter configuration file referenced in the
-   ``ExecStart`` option of the :file:`systemd-exporter.service` file, start the
+   ``ExecStart`` option of the :file:`labgrid-exporter.service` file, start the
    exporter:
 
    .. code-block:: console
@@ -394,7 +394,7 @@ udev Matching
 
 labgrid allows the exporter (or the client-side environment) to match resources
 via udev rules.
-The udev resources become available to the test/exporter as soon es they are
+The udev resources become available to the test/exporter as soon as they are
 plugged into the computer, e.g. allowing an exporter to export all USB ports on
 a specific hub and making a ``NetworkSerialPort`` available as soon as it is
 plugged into one of the hub's ports.

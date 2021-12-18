@@ -492,12 +492,12 @@ from all connected supported devices use the `SigrokUSBDevice`_.
 
 .. code-block:: yaml
 
-   SigrokUSBDevice:
+   SigrokDevice:
      driver: fx2lafw
-     channel: "D0=CLK,D1=DATA"
+     channels: "D0=CLK,D1=DATA"
 
 - driver (str): name of the sigrok driver to use
-- channel (str): optional, channel mapping as described in the sigrok-cli man page
+- channels (str): optional, channel mapping as described in the sigrok-cli man page
 
 Used by:
   - `SigrokDriver`_
@@ -648,12 +648,12 @@ A SigrokUSBDevice resource describes a sigrok USB device.
 
    SigrokUSBDevice:
      driver: fx2lafw
-     channel: "D0=CLK,D1=DATA"
+     channels: "D0=CLK,D1=DATA"
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 - driver (str): name of the sigrok driver to use
-- channel (str): optional, channel mapping as described in the sigrok-cli man page
+- channels (str): optional, channel mapping as described in the sigrok-cli man page
 - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
@@ -663,22 +663,6 @@ NetworkSigrokUSBDevice
 ~~~~~~~~~~~~~~~~~~~~~~
 A NetworkSigrokUSBDevice resource describes a sigrok USB device connected to a
 host which is exported over the network. The SigrokDriver will access it via SSH.
-
-.. code-block:: yaml
-
-   NetworkSigrokUSBDevice:
-     driver: fx2lafw
-     channel: "D0=CLK,D1=DATA"
-     match:
-       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
-     host: remote.example.computer
-
-- driver (str): name of the sigrok driver to use
-- channel (str): optional, channel mapping as described in the sigrok-cli man page
-- match (str): key and value for a udev match, see `udev Matching`_
-
-Used by:
-  - `SigrokDriver`_
 
 SigrokUSBSerialDevice
 ~~~~~~~~~~~~~~~~~~~~~

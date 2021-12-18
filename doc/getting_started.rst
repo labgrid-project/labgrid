@@ -213,7 +213,8 @@ For example, to export a ``USBSerialPort`` with ``ID_SERIAL_SHORT`` of
    example-group:
      location: example-location
      USBSerialPort:
-       ID_SERIAL_SHORT: ID23421JLK
+       match:
+         ID_SERIAL_SHORT: ID23421JLK
 
 .. note:: Use ``labgrid-suggest`` to generate the YAML snippets for most
 	  exportable resources.
@@ -240,7 +241,8 @@ Additional groups and resources can be added:
        index: 3
    example-group-2:
      USBSerialPort:
-       ID_SERIAL_SHORT: KSLAH2341J
+       match:
+         ID_SERIAL_SHORT: KSLAH2341J
 
 Restart the exporter to activate the new configuration.
 

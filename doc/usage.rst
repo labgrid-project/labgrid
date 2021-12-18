@@ -395,6 +395,13 @@ Other labgrid-related pytest plugin options are:
   color schemes are available.
   See :ref:`LG_COLOR_SCHEME <usage-lgcolorscheme>`.
 
+``--lg-initial-state=STATE_NAME``
+  Sets the Strategy's initial state.
+  This is useful during development if the board is known to be in a defined
+  state already.
+  The Strategy used must implement the ``force()`` method.
+  See the shipped :any:`ShellStrategy` for an example.
+
 ``pytest --help`` shows these options in a separate *labgrid* section.
 
 Environment Variables

@@ -303,7 +303,7 @@ Live-Reading Console Output
 When starting labgrid with ``--lg-log`` option, it will dump the input from the
 serial driver to a file in specified directory::
 
-  $ pytest .. --lg-log=logdir test-dir/
+  $ pytest [OPTIONS] --lg-log=logdir test-dir/
 
 This can help understanding what happened and why it happened.
 However, when debugging tests, it might be more helpful to get a live

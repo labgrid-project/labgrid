@@ -87,7 +87,7 @@ class ManagedFile:
 
         self._on_nfs_cached = False
 
-        fmt = "inode=%i,size=%s,birth=%W,modified=%Y"
+        fmt = "inode=%i,size=%s,modified=%Y"
         local = subprocess.run(["stat", "--format", fmt, self.local_path],
                                stdout=subprocess.PIPE)
         if local.returncode != 0:

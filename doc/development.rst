@@ -565,7 +565,7 @@ available both locally and remotely via the same path:
 
   - check if GNU coreutils stat(1) with option --format exists on local and
     remote system
-  - check if inode number, total size and birth/modification timestamps match
+  - check if inode number, total size and modification timestamp match
     on local and remote system
 
 If this is the case the actual file transfer in ``sync_to_resource`` is

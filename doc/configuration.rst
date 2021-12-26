@@ -691,6 +691,7 @@ of a USB serial port instead of being a USB device itself (see
 
 - driver (str): name of the sigrok driver to use
 - channels (str): optional, channel mapping as described in the sigrok-cli man page
+- match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SigrokPowerDriver`_

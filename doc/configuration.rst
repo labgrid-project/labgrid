@@ -1769,11 +1769,11 @@ Implements:
 
 Arguments:
   - signal (str): control signal to use: "dtr" or "rts"
-  - bindings (dict): A named resource of the type SerialDriver to
+  - invert (bool): whether to invert the signal
+  - bindings (dict): optional, a named resource of the type SerialDriver to
     bind against. This is only needed if you have multiple
     SerialDriver in your environment (what is likely to be the case
     if you are using this driver).
-  - invert (bool): whether to invert the signal
 
 FileDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~

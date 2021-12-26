@@ -358,6 +358,8 @@ A DeditecRelais8 describes a Deditec USB GPO module with 8 relays.
    DeditecRelais8:
      index: 1
      invert: false
+     match:
+       ID_PATH: pci-0000:00:14.0-usb-0:2:1.0
 
 - index (int): number of the relay to use
 - invert (bool, default=False): whether the logic level is inverted (active-low)
@@ -425,6 +427,8 @@ It currently supports the widely used "dcttech USBRelay".
    HIDRelay:
      index: 2
      invert: False
+     match:
+       ID_PATH: pci-0000:00:14.0-usb-0:2:1.0
 
 - index (int, default=1): number of the relay to use
 - invert (bool, default=False): whether to invert the relay

@@ -156,6 +156,9 @@ Currently available are:
 ``digipower``
   Controls a DigiPower PDU via a simple HTTP API.
 
+``eaton``
+  Controls Eaton ePDUs via SNMP.
+
 ``gude``
   Controls a Gude PDU via a simple HTTP API.
 
@@ -195,6 +198,10 @@ Currently available are:
   See the `docstring in the module
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/simplerest.py>`__
   for details.
+
+``tplink``
+  Controls TP-Link power strips via `python-kasa
+  <https://github.com/python-kasa/python-kasa>`_.
 
 Used by:
   - `NetworkPowerDriver`_

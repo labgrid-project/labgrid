@@ -790,6 +790,8 @@ A :any:`SysfsGPIO` resource describes a GPIO line.
    SysfsGPIO:
      index: 12
 
+- index (int): index of the GPIO line
+
 Used by:
   - `GpioDigitalOutputDriver`_
 

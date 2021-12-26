@@ -2384,6 +2384,9 @@ a device.
      script: 'foo'
      args:
        - '{device.devnode}'
+
+.. code-block:: yaml
+
    images:
      foo: ../images/flash_device.sh
 

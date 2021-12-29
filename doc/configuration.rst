@@ -35,8 +35,9 @@ enumeration order.
 The example would access the serial port /dev/ttyUSB0 on the local computer with
 a baud rate of 115200.
 
-- port (str): path to the serial device
-- speed (int, default=115200): desired baud rate
+Arguments:
+  - port (str): path to the serial device
+  - speed (int, default=115200): desired baud rate
 
 Used by:
   - `SerialDriver`_
@@ -56,10 +57,12 @@ usually using RFC2217 or raw tcp.
 The example would access the serial port on computer remote.example.computer via
 port 53867 and use a baud rate of 115200 with the RFC2217 protocol.
 
-- host (str): hostname of the remote host
-- port (str): TCP port on the remote host to connect to
-- speed (int, default=115200): baud rate of the serial port
-- protocol (str, default="rfc2217"): protocol used for connection: raw or rfc2217
+Arguments:
+  - host (str): hostname of the remote host
+  - port (str): TCP port on the remote host to connect to
+  - speed (int, default=115200): baud rate of the serial port
+  - protocol (str, default="rfc2217"): protocol used for connection: raw or
+    rfc2217
 
 Used by:
   - `SerialDriver`_
@@ -119,8 +122,9 @@ The example would search for a USB serial converter with the key
 of 115200.
 The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
 
-- match (str): key and value for a udev match, see `udev Matching`_
-- speed (int, default=115200): baud rate of the serial port
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
+  - speed (int, default=115200): baud rate of the serial port
 
 Used by:
   - `SerialDriver`_
@@ -142,9 +146,10 @@ A NetworkPowerPort describes a remotely switchable power port.
 The example describes port 0 on the remote power switch
 `powerswitch.example.computer`, which is a `gude` model.
 
-- model (str): model of the power switch
-- host (str): hostname of the power switch
-- index (int): number of the port to switch
+Arguments:
+  - model (str): model of the power switch
+  - host (str): hostname of the power switch
+  - index (int): number of the port to switch
 
 The `model` property selects one of several `backend implementations
 <https://github.com/labgrid-project/labgrid/tree/master/labgrid/driver/power>`_.
@@ -223,9 +228,10 @@ PDUDaemon configuration file needs to be specified.
 The example describes port 1 on the PDU configured as `apc-snmpv3-noauth`, with
 PDUDaemon running on the host `pduserver`.
 
-- host (str): name of the host running the PDUDaemon
-- pdu (str): name of the PDU in the configuration file
-- index (int): index of the power port on the PDU
+Arguments:
+  - host (str): name of the host running the PDUDaemon
+  - pdu (str): name of the PDU in the configuration file
+  - index (int): index of the power port on the PDU
 
 Used by:
   - `PDUDaemonDriver`_
@@ -244,8 +250,9 @@ The example describes port 1 on the YKUSH USB hub with the
 serial "YK12345".
 (use "pykush -l" to get your serial...)
 
-- serial (str): serial number of the YKUSH hub
-- index (int): number of the port to switch
+Arguments:
+  - serial (str): serial number of the YKUSH hub
+  - index (int): number of the port to switch
 
 Used by:
   - `YKUSHPowerDriver`_
@@ -266,8 +273,9 @@ The example describes port 1 on the hub with the ID_PATH
 "pci-0000:00:14.0-usb-0:2:1.0".
 (use ``udevadm info /sys/bus/usb/devices/...`` to find the ID_PATH value)
 
-- index (int): number of the port to switch
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - index (int): number of the port to switch
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBPowerDriver`_
@@ -294,8 +302,9 @@ A SiSPMPowerPort describes a GEMBIRD SiS-PM as supported by
 The example describes port 1 on the hub with the ID_PATH
 "platform-1c1a400.usb-usb-0:2".
 
-- index (int): number of the port to switch
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - index (int): number of the port to switch
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SiSPMPowerDriver`_
@@ -316,12 +325,13 @@ accessed over MQTT.
 The example uses a mosquitto server at "this.is.an.example.host.com" and has the
 topics setup for a tasmota power port that has the ID 575A2B.
 
-- host (str): hostname of the MQTT server
-- status_topic (str): topic that signals the current status as "ON" or "OFF"
-- power_topic (str): topic that allows switching the status between "ON" and
-  "OFF"
-- avail_topic (str): topic that signals the availability of the Tasmota power
-  outlet
+Arguments:
+  - host (str): hostname of the MQTT server
+  - status_topic (str): topic that signals the current status as "ON" or "OFF"
+  - power_topic (str): topic that allows switching the status between "ON" and
+    "OFF"
+  - avail_topic (str): topic that signals the availability of the Tasmota power
+    outlet
 
 Used by:
   - `TasmotaPowerDriver`_
@@ -342,9 +352,11 @@ A ModbusTCPCoil describes a coil accessible via ModbusTCP.
 The example describes the coil with the address 1 on the ModbusTCP device
 `192.168.23.42`.
 
-- host (str): hostname of the Modbus TCP server e.g. "192.168.23.42:502"
-- coil (int): index of the coil e.g. 3
-- invert (bool, default=False): whether the logic level is inverted (active-low)
+Arguments:
+  - host (str): hostname of the Modbus TCP server e.g. "192.168.23.42:502"
+  - coil (int): index of the coil e.g. 3
+  - invert (bool, default=False): whether the logic level is inverted
+    (active-low)
 
 Used by:
   - `ModbusCoilDriver`_
@@ -361,9 +373,11 @@ A DeditecRelais8 describes a Deditec USB GPO module with 8 relays.
      match:
        ID_PATH: pci-0000:00:14.0-usb-0:2:1.0
 
-- index (int): number of the relay to use
-- invert (bool, default=False): whether the logic level is inverted (active-low)
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - index (int): number of the relay to use
+  - invert (bool, default=False): whether the logic level is inverted
+    (active-low)
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `DeditecRelaisDriver`_
@@ -382,9 +396,11 @@ A OneWirePIO describes a onewire programmable I/O pin.
 The example describes a `PIO.0` at device address `29.7D6913000000` via the onewire
 server on `example.computer`.
 
-- host (str): hostname of the remote system running the onewire server
-- path (str): path on the server to the programmable I/O pin
-- invert (bool, default=False): whether the logic level is inverted (active-low)
+Arguments:
+  - host (str): hostname of the remote system running the onewire server
+  - path (str): path on the server to the programmable I/O pin
+  - invert (bool, default=False): whether the logic level is inverted
+    (active-low)
 
 Used by:
   - `OneWirePIODriver`_
@@ -404,10 +420,11 @@ An :any:`LXAIOBusPIO` resource describes a single PIO pin on an LXAIOBusNode.
 The example uses an lxa-iobus-server running on localhost:8080, with node
 IOMux-00000003 and pin OUT0.
 
-- host (str): hostname with port of the lxa-io-bus server
-- node (str): name of the node to use
-- pin (str): name of the pin to use
-- invert (bool, default=False): whether to invert the pin
+Arguments:
+  - host (str): hostname with port of the lxa-io-bus server
+  - node (str): name of the node to use
+  - pin (str): name of the pin to use
+  - invert (bool, default=False): whether to invert the pin
 
 Used by:
   - `LXAIOBusPIODriver`_
@@ -430,9 +447,10 @@ It currently supports the widely used "dcttech USBRelay".
      match:
        ID_PATH: pci-0000:00:14.0-usb-0:2:1.0
 
-- index (int, default=1): number of the relay to use
-- invert (bool, default=False): whether to invert the relay
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - index (int, default=1): number of the relay to use
+  - invert (bool, default=False): whether to invert the relay
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `HIDRelayDriver`_
@@ -463,10 +481,11 @@ In that case, the SSH connection will be proxied via the exporter, using
 ``socat`` and the ``labgrid-bound-connect`` sudo helper.
 These and the sudo configuration needs to be prepared by the administrator.
 
-- address (str): hostname of the remote system
-- username (str): username used by SSH
-- password (str, default=""): password used by SSH
-- port (int, default=22): port used by SSH
+Arguments:
+  - address (str): hostname of the remote system
+  - username (str): username used by SSH
+  - password (str, default=""): password used by SSH
+  - port (int, default=22): port used by SSH
 
 Used by:
   - `SSHDriver`_
@@ -481,7 +500,8 @@ A USBMassStorage resource describes a USB memory stick or similar device.
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0-scsi-0:0:0:3
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBStorageDriver`_
@@ -508,8 +528,10 @@ from all connected supported devices use the `SigrokUSBDevice`_.
      driver: fx2lafw
      channels: "D0=CLK,D1=DATA"
 
-- driver (str): name of the sigrok driver to use
-- channels (str): optional, channel mapping as described in the sigrok-cli man page
+Arguments:
+  - driver (str): name of the sigrok driver to use
+  - channels (str): optional, channel mapping as described in the sigrok-cli
+    man page
 
 Used by:
   - `SigrokDriver`_
@@ -524,7 +546,8 @@ An IMXUSBLoader resource describes a USB device in the imx loader state.
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `IMXUSBDriver`_
@@ -540,7 +563,8 @@ An MXSUSBLoader resource describes a USB device in the mxs loader state.
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `MXSUSBDriver`_
@@ -556,7 +580,8 @@ An RKUSBLoader resource describes a USB device in the rockchip loader state.
      match:
        sys_name: '1-3'
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `RKUSBDriver`_
@@ -583,7 +608,8 @@ An AndroidFastboot resource describes a USB device in the fastboot state.
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `AndroidFastbootDriver`_
@@ -599,7 +625,8 @@ Ethernet or WiFi)
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 RemoteNetworkInterface
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -616,7 +643,8 @@ An AlteraUSBBlaster resource describes an Altera USB blaster.
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- match (dict): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `OpenOCDDriver`_
@@ -633,7 +661,8 @@ FT2232H).
      match:
        ID_PATH: pci-0000:00:10.0-usb-0:1.4
 
-- match (dict): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `OpenOCDDriver`_
@@ -649,8 +678,9 @@ accessible via SNMP.
      switch: "switch-012"
      interface: "17"
 
-- switch (str): host name of the Ethernet switch
-- interface (str): interface name
+Arguments:
+  - switch (str): host name of the Ethernet switch
+  - interface (str): interface name
 
 SigrokUSBDevice
 ~~~~~~~~~~~~~~~
@@ -664,9 +694,11 @@ A SigrokUSBDevice resource describes a sigrok USB device.
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- driver (str): name of the sigrok driver to use
-- channels (str): optional, channel mapping as described in the sigrok-cli man page
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - driver (str): name of the sigrok driver to use
+  - channels (str): optional, channel mapping as described in the sigrok-cli
+    man page
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SigrokDriver`_
@@ -689,9 +721,11 @@ of a USB serial port instead of being a USB device itself (see
      match:
        '@ID_SERIAL_SHORT': P-00-02389
 
-- driver (str): name of the sigrok driver to use
-- channels (str): optional, channel mapping as described in the sigrok-cli man page
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - driver (str): name of the sigrok driver to use
+  - channels (str): optional, channel mapping as described in the sigrok-cli
+    man page
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SigrokPowerDriver`_
@@ -708,7 +742,8 @@ device.
      match:
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBSDMUXDriver`_
@@ -729,7 +764,8 @@ A :any:`LXAUSBMux` resource describes a Linux Automation GmbH USB-Mux device.
      match:
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `LXAUSBMuxDriver`_
@@ -752,7 +788,8 @@ device.
      match:
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBSDWireDriver`_
@@ -775,7 +812,8 @@ Video4Linux2 kernel driver.
      match:
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBVideoDriver`_
@@ -790,7 +828,8 @@ A :any:`SysfsGPIO` resource describes a GPIO line.
    SysfsGPIO:
      index: 12
 
-- index (int): index of the GPIO line
+Arguments:
+  - index (int): index of the GPIO line
 
 Used by:
   - `GpioDigitalOutputDriver`_
@@ -813,8 +852,10 @@ by an ALSA kernel driver.
      match:
        '@sys_name': '1-4'
 
-- index (int, default=0): ALSA PCM device number (as in `hw:CARD=<card>,DEV=<index>`)
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - index (int, default=0): ALSA PCM device number (as in
+    `hw:CARD=<card>,DEV=<index>`)
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBAudioInputDriver`_
@@ -839,7 +880,8 @@ The low-level communication is handled by the ``usbtmc`` kernel driver.
      match:
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 A udev rules file may be needed to allow access for non-root users:
 
@@ -866,7 +908,9 @@ It is assumed that flashrom is installed on the host and the executable is confi
   tools:
     flashrom: '/usr/sbin/flashrom'
 
-- programmer (str): programmer device as described in `-p, --programmer` in `man 8 flashrom`
+Arguments:
+  - programmer (str): programmer device as described in `-p, --programmer` in
+    `man 8 flashrom`
 
 The resource must configure which programmer to use and the parameters to the programmer.
 The programmer parameter is passed directly to the flashrom bin hence man(8) flashrom
@@ -902,7 +946,8 @@ running a flashing program with `FlashScriptDriver`_.
        SUBSYSTEM: usb
        ID_SERIAL: '1234'
 
-- match (str): key and value pairs for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value pairs for a udev match, see `udev Matching`_
 
 Used by:
   - `FlashScriptDriver`_
@@ -925,7 +970,8 @@ A XenaManager resource describes a Xena Manager instance which is the instance t
    XenaManager:
      hostname: "example.computer"
 
-- hostname (str): hostname or IP of the management address of the Xena tester
+Arguments:
+  - hostname (str): hostname or IP of the management address of the Xena tester
 
 Used by:
   - `XenaDriver`_
@@ -941,8 +987,11 @@ Such device could be a signal generator.
      type: "TCPIP"
      url: "192.168.110.11"
 
-- type (str): device resource type following the pyVISA resource syntax, e.g. ASRL, TCPIP...
-- url (str): device identifier on selected resource, e.g. <ip> for TCPIP resource
+Arguments:
+  - type (str): device resource type following the pyVISA resource syntax, e.g.
+    ASRL, TCPIP...
+  - url (str): device identifier on selected resource, e.g. <ip> for TCPIP
+    resource
 
 Used by:
   - `PyVISADriver`_
@@ -957,7 +1006,8 @@ A :any:`HTTPVideoStream` resource describes a IP video stream over HTTP or HTTPS
    HTTPVideoStream:
      url: http://192.168.110.11/0.ts
 
-- url (str): URI of the IP video stream
+Arguments:
+  - url (str): URI of the IP video stream
 
 Used by:
   - `HTTPVideoDriver`_
@@ -995,8 +1045,9 @@ TFTPProvider / NFSProvider / HTTPProvider
      internal: "/srv/www/board-23/"
      external: "http://192.168.1.1/board-23/"
 
-- internal (str): path prefix to the local directory accessible by the target
-- external (str): corresponding path prefix for use by the target
+Arguments:
+  - internal (str): path prefix to the local directory accessible by the target
+  - external (str): corresponding path prefix for use by the target
 
 Used by:
   - `TFTPProviderDriver`_
@@ -1030,7 +1081,8 @@ The example describes the remote place `example-place`. It will connect to the
 labgrid remote coordinator, wait until the resources become available and expose
 them to the internal environment.
 
-- name (str): name or pattern of the remote place
+Arguments:
+  - name (str): name or pattern of the remote place
 
 Used by:
   - potentially all drivers
@@ -1061,7 +1113,8 @@ cleans up the created docker container; programming errors, keyboard
 interrupts or unix kill signals may lead to hanging containers, however;
 therefore auto-cleanup is important.
 
-- docker_daemon_url (str): The url of the daemon to use for this target.
+Arguments:
+  - docker_daemon_url (str): The url of the daemon to use for this target
 
 Used by:
   - `DockerDriver`_

@@ -2399,8 +2399,8 @@ Implements:
   - None (yet)
 
 Arguments:
-  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
-    of an image to bootstrap onto the target
+  - script (str): optional, key in :ref:`images <labgrid-device-config-images>`
+    containing the script to execute for writing of the flashable device
   - args (list): optional, list of arguments for flash script execution
 
 The FlashScriptDriver allows running arbitrary programs to flash a device.

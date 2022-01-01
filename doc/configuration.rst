@@ -2628,12 +2628,11 @@ to transition to the shell state:
 
 ::
 
-   from labgrid import Environment
-
-   e = Environment("local.yaml")
-   t = e.get_target("main")
-   s = t.get_driver("BareboxStrategy")
-   s.transition("shell")
+   >>> from labgrid import Environment
+   >>> e = Environment("local.yaml")
+   >>> t = e.get_target("main")
+   >>> s = t.get_driver("BareboxStrategy")
+   >>> s.transition("shell")
 
 
 this command would transition from the bootloader into a Linux shell and
@@ -2652,12 +2651,11 @@ to transition to the shell state:
 
 ::
 
-   from labgrid import Environment
-
-   e = Environment("local.yaml")
-   t = e.get_target("main")
-   s = t.get_driver("ShellStrategy")
-   s.transition("shell")
+   >>> from labgrid import Environment
+   >>> e = Environment("local.yaml")
+   >>> t = e.get_target("main")
+   >>> s = t.get_driver("ShellStrategy")
+   >>> s.transition("shell")
 
 
 this command would transition directly into a Linux shell and
@@ -2677,12 +2675,11 @@ to transition to the shell state:
 
 ::
 
-   from labgrid import Environment
-
-   e = Environment("local.yaml")
-   t = e.get_target("main")
-   s = t.get_driver("UBootStrategy")
-   s.transition("shell")
+   >>> from labgrid import Environment
+   >>> e = Environment("local.yaml")
+   >>> t = e.get_target("main")
+   >>> s = t.get_driver("UBootStrategy")
+   >>> s.transition("shell")
 
 
 this command would transition from the bootloader into a Linux shell and
@@ -2701,12 +2698,11 @@ To transition to the shell state:
 
 ::
 
-   from labgrid import Environment
-
-   e = Environment("local.yaml")
-   t = e.get_target("main")
-   s = t.get_driver("DockerShellStrategy")
-   s.transition("shell")
+   >>> from labgrid import Environment
+   >>> e = Environment("local.yaml")
+   >>> t = e.get_target("main")
+   >>> s = t.get_driver("DockerShellStrategy")
+   >>> s.transition("shell")
 
 
 These commands would activate the docker driver which creates and starts
@@ -2727,17 +2723,15 @@ The StepReporter outputs individual labgrid steps to `STDOUT`.
 
 ::
 
-    from labgrid import StepReporter
-
-    StepReporter.start()
+    >>> from labgrid import StepReporter
+    >>> StepReporter.start()
 
 The Reporter can be stopped with a call to the stop function:
 
 ::
 
-    from labgrid import StepReporter
-
-    StepReporter.stop()
+    >>> from labgrid import StepReporter
+    >>> StepReporter.stop()
 
 Stopping the StepReporter if it has not been started will raise an
 AssertionError, as will starting an already started StepReporter.
@@ -2754,17 +2748,15 @@ files. It takes the path as a parameter.
 
 ::
 
-    from labgrid import ConsoleLoggingReporter
-
-    ConsoleLoggingReporter.start(".")
+    >>> from labgrid import ConsoleLoggingReporter
+    >>> ConsoleLoggingReporter.start(".")
 
 The Reporter can be stopped with a call to the stop function:
 
 ::
 
-    from labgrid import ConsoleLoggingReporter
-
-    ConsoleLoggingReporter.stop()
+    >>> from labgrid import ConsoleLoggingReporter
+    >>> ConsoleLoggingReporter.stop()
 
 
 Stopping the ConsoleLoggingReporter if it has not been started will raise an

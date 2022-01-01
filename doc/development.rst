@@ -515,25 +515,22 @@ To use the SSHManager in your code, import it from :any:`labgrid.util.ssh`:
 
 .. code-block:: python
 
-   from labgrid.util import sshmanager
+   >>> from labgrid.util import sshmanager
 
 you can now request or remove port forwardings:
 
 .. code-block:: python
 
-   from labgrid.util import sshmanager
-
-   localport = sshmanager.request_forward('localhost', 'somehost', 3000)
-
-   sshmanager.remove_forward('localhost', 'somehost', 3000)
+   >>> from labgrid.util import sshmanager
+   >>> localport = sshmanager.request_forward('localhost', 'somehost', 3000)
+   >>> sshmanager.remove_forward('localhost', 'somehost', 3000)
 
 or get and put files:
 
 .. code-block:: python
 
-   from labgrid.util import sshmanager
-
-   sshmanager.put_file('somehost', '/path/to/local/file', '/path/to/remote/file')
+   >>> from labgrid.util import sshmanager
+   >>> sshmanager.put_file('somehost', '/path/to/local/file', '/path/to/remote/file')
 
 .. note::
   The SSHManager will reuse existing Control Sockets and set up a keepalive loop
@@ -556,11 +553,10 @@ To use it in conjunction with a `Resource` and a file:
 
 .. code-block:: python
 
-   from labgrid.util.managedfile import ManagedFile
-
-   mf = ManagedFile(<your-file>, <your-resource>)
-   mf.sync_to_resource()
-   path = mf.get_remote_path()
+   >>> from labgrid.util.managedfile import ManagedFile
+   >>> mf = ManagedFile(<your-file>, <your-resource>)
+   >>> mf.sync_to_resource()
+   >>> path = mf.get_remote_path()
 
 Unless constructed with `ManagedFile(..., detect_nfs=False)`, ManagedFile
 employs the following heuristic to check if a file is stored on a NFS share
@@ -585,9 +581,8 @@ Usage:
 
 .. code-block:: python
 
-   from labgrid.util.proxy import proxymanager
-
-   proxymanager.get_host_and_port(<resource>)
+   >>> from labgrid.util.proxy import proxymanager
+   >>> proxymanager.get_host_and_port(<resource>)
 
 
 .. _contributing:

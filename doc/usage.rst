@@ -292,9 +292,9 @@ target. While labgrid registers an ``atexit`` handler to cleanup targets, this h
 the advantage that exceptions can be handled by your application::
 
   >>> try:
-  >>>     target.cleanup()
-  >>> except Exception as e:
-  >>>     <your code here>
+  ...     target.cleanup()
+  ... except Exception as e:
+  ...     pass  # your code here
 
 .. _usage_environments:
 

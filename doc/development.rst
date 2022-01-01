@@ -384,10 +384,12 @@ Example
 ~~~~~~~
 
 .. code-block:: python
-   :caption: conftest.py
+   :caption: teststrategy.py
 
    from labgrid.strategy import GraphStrategy
+   from labgrid.factory import target_factory
 
+   @target_factory.reg_driver
    class TestStrategy(GraphStrategy):
        def state_unknown(self):
            pass
@@ -416,25 +418,26 @@ The class can also render a graph as PNG (using GraphViz):
    targets:
      main:
        resources: {}
-       drivers: {}
+       drivers:
+         TestStrategy: {}
 
-.. code-block:: python
-   :caption: render_teststrategy.py
+   imports:
+   - teststrategy.py
 
-   from labgrid.environment import Environment
-   from conftest import TestStrategy
-   env = Environment('test.yaml')
-   strategy = TestStrategy(env.get_target(), "strategy name")
 
-   strategy.transition('barebox', via=['boot_via_nfs'])
-   # returned: ['unknown', 'boot_via_nfs', 'barebox']
-   strategy.graph.render("teststrategy-via-nfs")
-   # returned: 'teststrategy-via-nfs.png'
+::
 
-   strategy.transition('barebox', via=['boot_via_nand'])
-   # returned: ['unknown', 'boot_via_nand', 'barebox']
-   strategy.graph.render("teststrategy-via-nand")
-   # returned: 'teststrategy-via-nand.png'
+   >>> from labgrid.environment import Environment
+   >>> env = Environment('test.yaml')
+   >>> strategy = env.get_target().get_driver('Strategy')
+   >>> strategy.transition('barebox', via=['boot_via_nfs'])
+   ['unknown', 'boot_via_nfs', 'barebox']
+   >>> strategy.graph.render("teststrategy-via-nfs")
+   'teststrategy-via-nfs.png'
+   >>> strategy.transition('barebox', via=['boot_via_nand'])
+   ['unknown', 'boot_via_nand', 'barebox']
+   >>> strategy.graph.render("teststrategy-via-nand")
+   'teststrategy-via-nand.png'
 
 .. figure:: res/graphstrategy-via-nfs.png
 

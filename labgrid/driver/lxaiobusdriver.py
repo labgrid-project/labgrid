@@ -1,6 +1,6 @@
-import attr
+from importlib import import_module
 
-import requests
+import attr
 
 from ..factory import target_factory
 from ..protocol import DigitalOutputProtocol
@@ -18,6 +18,7 @@ class LXAIOBusPIODriver(Driver, DigitalOutputProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self._requests = import_module('requests')
 
     def on_activate(self):
         # we can only forward if the backend knows which port to use
@@ -29,7 +30,7 @@ class LXAIOBusPIODriver(Driver, DigitalOutputProtocol):
     def set(self, status):
         if self.pio.invert:
             status = not status
-        r = requests.post(
+        r = self._requests.post(
                 self._url, data={'value': '1' if status else '0'}
         )
         r.raise_for_status()
@@ -40,7 +41,7 @@ class LXAIOBusPIODriver(Driver, DigitalOutputProtocol):
     @Driver.check_active
     @step(result=['True'])
     def get(self):
-        r = requests.get(self._url)
+        r = self._requests.get(self._url)
         r.raise_for_status()
         j = r.json()
         if j["code"] != 0:

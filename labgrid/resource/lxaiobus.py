@@ -1,8 +1,8 @@
 import logging
 from time import monotonic
+from importlib import import_module
 
 import attr
-import requests
 
 from ..factory import target_factory
 from .common import ManagedResource, ResourceManager
@@ -12,6 +12,7 @@ from .common import ManagedResource, ResourceManager
 class LXAIOBusNodeManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+        self._requests = import_module('requests')
 
         self.log = logging.getLogger('LXAIOBusNodeManager')
 
@@ -19,11 +20,11 @@ class LXAIOBusNodeManager(ResourceManager):
 
     def _get_nodes(self, host):
         try:
-            r = requests.get(f'http://{host}/nodes/')
+            r = self._requests.get(f'http://{host}/nodes/')
             r.raise_for_status()
             j = r.json()
             return j["result"]
-        except requests.exceptions.ConnectionError:
+        except self._requests.exceptions.ConnectionError:
             self.log.exception("failed to connect to host %s", host)
             return []
 

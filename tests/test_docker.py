@@ -17,8 +17,11 @@ def check_external_progs_present():
     """Determine if host machine has a usable docker daemon"""
     try:
         import docker
-        dock = docker.from_env()
-        dock.info()
+        try:
+            dock = docker.from_env()
+            dock.info()
+        except docker.errors.DockerException:
+            return False
     except OSError:
         return False
     return True

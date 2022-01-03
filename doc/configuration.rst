@@ -35,8 +35,9 @@ enumeration order.
 The example would access the serial port /dev/ttyUSB0 on the local computer with
 a baud rate of 115200.
 
-- port (str): path to the serial device
-- speed (int, default=115200): desired baud rate
+Arguments:
+  - port (str): path to the serial device
+  - speed (int, default=115200): desired baud rate
 
 Used by:
   - `SerialDriver`_
@@ -56,10 +57,12 @@ usually using RFC2217 or raw tcp.
 The example would access the serial port on computer remote.example.computer via
 port 53867 and use a baud rate of 115200 with the RFC2217 protocol.
 
-- host (str): hostname of the remote host
-- port (str): TCP port on the remote host to connect to
-- speed (int, default=115200): baud rate of the serial port
-- protocol (str, default="rfc2217"): protocol used for connection: raw or rfc2217
+Arguments:
+  - host (str): hostname of the remote host
+  - port (str): TCP port on the remote host to connect to
+  - speed (int, default=115200): baud rate of the serial port
+  - protocol (str, default="rfc2217"): protocol used for connection: raw or
+    rfc2217
 
 Used by:
   - `SerialDriver`_
@@ -95,6 +98,7 @@ Arguments:
   - port (str): tty the instrument is connected to, e.g. '/dev/ttyUSB0'
   - address (int): slave address on the modbus, e.g. 16
   - baudrate (bool): optional, default is 115200
+  - speed (int, default=115200): baud rate of the serial port
   - timeout (bool): optional, timeout in seconds. Default is 0.25 s
 
 Used by:
@@ -118,8 +122,9 @@ The example would search for a USB serial converter with the key
 of 115200.
 The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
 
-- match (str): key and value for a udev match, see `udev Matching`_
-- speed (int, default=115200): baud rate of the serial port
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
+  - speed (int, default=115200): baud rate of the serial port
 
 Used by:
   - `SerialDriver`_
@@ -141,9 +146,10 @@ A NetworkPowerPort describes a remotely switchable power port.
 The example describes port 0 on the remote power switch
 `powerswitch.example.computer`, which is a `gude` model.
 
-- model (str): model of the power switch
-- host (str): hostname of the power switch
-- index (int): number of the port to switch
+Arguments:
+  - model (str): model of the power switch
+  - host (str): hostname of the power switch
+  - index (int): number of the port to switch
 
 The `model` property selects one of several `backend implementations
 <https://github.com/labgrid-project/labgrid/tree/master/labgrid/driver/power>`_.
@@ -154,6 +160,9 @@ Currently available are:
 
 ``digipower``
   Controls a DigiPower PDU via a simple HTTP API.
+
+``eaton``
+  Controls Eaton ePDUs via SNMP.
 
 ``gude``
   Controls a Gude PDU via a simple HTTP API.
@@ -174,13 +183,13 @@ Currently available are:
   Controls a NETIO 4C PDU via a Telnet interface.
 
 ``rest``
-  This is a generic backend for PDU implementations which can be controled via
+  This is a generic backend for PDU implementations which can be controlled via
   HTTP PUT and GET requests.
   See the `docstring in the module
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/rest.py>`__
   for details.
 
-``senty``
+``sentry``
   Controls a Sentry PDU via SNMP using Sentry3-MIB.
   It was tested on CW-24VDD and 4805-XLS-16.
 
@@ -189,11 +198,15 @@ Currently available are:
   <https://pypi.org/project/python-vxi11/>`_.
 
 ``simplerest``
-  This is a generic backend for PDU implementations which can be controled via
+  This is a generic backend for PDU implementations which can be controlled via
   HTTP GET requests (both set and get).
   See the `docstring in the module
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/simplerest.py>`__
   for details.
+
+``tplink``
+  Controls TP-Link power strips via `python-kasa
+  <https://github.com/python-kasa/python-kasa>`_.
 
 Used by:
   - `NetworkPowerDriver`_
@@ -215,9 +228,10 @@ PDUDaemon configuration file needs to be specified.
 The example describes port 1 on the PDU configured as `apc-snmpv3-noauth`, with
 PDUDaemon running on the host `pduserver`.
 
-- host (str): name of the host running the PDUDaemon
-- pdu (str): name of the PDU in the configuration file
-- index (int): index of the power port on the PDU
+Arguments:
+  - host (str): name of the host running the PDUDaemon
+  - pdu (str): name of the PDU in the configuration file
+  - index (int): index of the power port on the PDU
 
 Used by:
   - `PDUDaemonDriver`_
@@ -236,8 +250,9 @@ The example describes port 1 on the YKUSH USB hub with the
 serial "YK12345".
 (use "pykush -l" to get your serial...)
 
-- serial (str): serial number of the YKUSH hub
-- index (int): number of the port to switch
+Arguments:
+  - serial (str): serial number of the YKUSH hub
+  - index (int): number of the port to switch
 
 Used by:
   - `YKUSHPowerDriver`_
@@ -258,8 +273,9 @@ The example describes port 1 on the hub with the ID_PATH
 "pci-0000:00:14.0-usb-0:2:1.0".
 (use ``udevadm info /sys/bus/usb/devices/...`` to find the ID_PATH value)
 
-- index (int): number of the port to switch
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - index (int): number of the port to switch
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBPowerDriver`_
@@ -286,15 +302,16 @@ A SiSPMPowerPort describes a GEMBIRD SiS-PM as supported by
 The example describes port 1 on the hub with the ID_PATH
 "platform-1c1a400.usb-usb-0:2".
 
-- index (int): number of the port to switch
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - index (int): number of the port to switch
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SiSPMPowerDriver`_
 
 TasmotaPowerPort
 ++++++++++++++++
-A :any:`TasmotaPowerPort` resource describes a switchable Tasmora power outlet
+A :any:`TasmotaPowerPort` resource describes a switchable Tasmota power outlet
 accessed over MQTT.
 
 .. code-block:: yaml
@@ -308,12 +325,13 @@ accessed over MQTT.
 The example uses a mosquitto server at "this.is.an.example.host.com" and has the
 topics setup for a tasmota power port that has the ID 575A2B.
 
-- host (str): hostname of the MQTT server
-- status_topic (str): topic that signals the current status as "ON" of "OFF"
-- power_topic (str): topic that allows switchting the status between "ON" and
-  "OFF"
-- avail_topic (str): topic that signals the availability of the Tasmota power
-  outlet
+Arguments:
+  - host (str): hostname of the MQTT server
+  - status_topic (str): topic that signals the current status as "ON" or "OFF"
+  - power_topic (str): topic that allows switching the status between "ON" and
+    "OFF"
+  - avail_topic (str): topic that signals the availability of the Tasmota power
+    outlet
 
 Used by:
   - `TasmotaPowerDriver`_
@@ -334,9 +352,11 @@ A ModbusTCPCoil describes a coil accessible via ModbusTCP.
 The example describes the coil with the address 1 on the ModbusTCP device
 `192.168.23.42`.
 
-- host (str): hostname of the Modbus TCP server e.g. "192.168.23.42:502"
-- coil (int): index of the coil e.g. 3
-- invert (bool, default=False): whether the logic level is inverted (active-low)
+Arguments:
+  - host (str): hostname of the Modbus TCP server e.g. "192.168.23.42:502"
+  - coil (int): index of the coil e.g. 3
+  - invert (bool, default=False): whether the logic level is inverted
+    (active-low)
 
 Used by:
   - `ModbusCoilDriver`_
@@ -350,10 +370,14 @@ A DeditecRelais8 describes a Deditec USB GPO module with 8 relays.
    DeditecRelais8:
      index: 1
      invert: false
+     match:
+       ID_PATH: pci-0000:00:14.0-usb-0:2:1.0
 
-- index (int): number of the relay to use
-- invert (bool, default=False): whether the logic level is inverted (active-low)
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - index (int): number of the relay to use
+  - invert (bool, default=False): whether the logic level is inverted
+    (active-low)
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `DeditecRelaisDriver`_
@@ -372,9 +396,11 @@ A OneWirePIO describes a onewire programmable I/O pin.
 The example describes a `PIO.0` at device address `29.7D6913000000` via the onewire
 server on `example.computer`.
 
-- host (str): hostname of the remote system running the onewire server
-- path (str): path on the server to the programmable I/O pin
-- invert (bool, default=False): whether the logic level is inverted (active-low)
+Arguments:
+  - host (str): hostname of the remote system running the onewire server
+  - path (str): path on the server to the programmable I/O pin
+  - invert (bool, default=False): whether the logic level is inverted
+    (active-low)
 
 Used by:
   - `OneWirePIODriver`_
@@ -394,10 +420,11 @@ An :any:`LXAIOBusPIO` resource describes a single PIO pin on an LXAIOBusNode.
 The example uses an lxa-iobus-server running on localhost:8080, with node
 IOMux-00000003 and pin OUT0.
 
-- host (str): hostname with port of the lxa-io-bus server
-- node (str): name of the node to use
-- pin (str): name of the pin to use
-- invert (bool, default=False): whether to invert the pin
+Arguments:
+  - host (str): hostname with port of the lxa-io-bus server
+  - node (str): name of the node to use
+  - pin (str): name of the pin to use
+  - invert (bool, default=False): whether to invert the pin
 
 Used by:
   - `LXAIOBusPIODriver`_
@@ -417,17 +444,20 @@ It currently supports the widely used "dcttech USBRelay".
    HIDRelay:
      index: 2
      invert: False
+     match:
+       ID_PATH: pci-0000:00:14.0-usb-0:2:1.0
 
-- index (int, default=1): number of the relay to use
-- invert (bool, default=False): whether to invert the relay
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - index (int, default=1): number of the relay to use
+  - invert (bool, default=False): whether to invert the relay
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `HIDRelayDriver`_
 
 NetworkHIDRelay
 +++++++++++++++
-A NetworkHIDRelay descibes an `HIDRelay`_ exported over the network.
+A NetworkHIDRelay describes an `HIDRelay`_ exported over the network.
 
 NetworkService
 ~~~~~~~~~~~~~~
@@ -451,10 +481,11 @@ In that case, the SSH connection will be proxied via the exporter, using
 ``socat`` and the ``labgrid-bound-connect`` sudo helper.
 These and the sudo configuration needs to be prepared by the administrator.
 
-- address (str): hostname of the remote system
-- username (str): username used by SSH
-- password (str, default=""): password used by SSH
-- port (int, default=22): port used by SSH
+Arguments:
+  - address (str): hostname of the remote system
+  - username (str): username used by SSH
+  - password (str, default=""): password used by SSH
+  - port (int, default=22): port used by SSH
 
 Used by:
   - `SSHDriver`_
@@ -469,7 +500,8 @@ A USBMassStorage resource describes a USB memory stick or similar device.
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0-scsi-0:0:0:3
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBStorageDriver`_
@@ -492,12 +524,14 @@ from all connected supported devices use the `SigrokUSBDevice`_.
 
 .. code-block:: yaml
 
-   SigrokUSBDevice:
+   SigrokDevice:
      driver: fx2lafw
-     channel: "D0=CLK,D1=DATA"
+     channels: "D0=CLK,D1=DATA"
 
-- driver (str): name of the sigrok driver to use
-- channel (str): optional, channel mapping as described in the sigrok-cli man page
+Arguments:
+  - driver (str): name of the sigrok driver to use
+  - channels (str): optional, channel mapping as described in the sigrok-cli
+    man page
 
 Used by:
   - `SigrokDriver`_
@@ -512,7 +546,8 @@ An IMXUSBLoader resource describes a USB device in the imx loader state.
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `IMXUSBDriver`_
@@ -528,7 +563,8 @@ An MXSUSBLoader resource describes a USB device in the mxs loader state.
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `MXSUSBDriver`_
@@ -544,7 +580,8 @@ An RKUSBLoader resource describes a USB device in the rockchip loader state.
      match:
        sys_name: '1-3'
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `RKUSBDriver`_
@@ -571,7 +608,8 @@ An AndroidFastboot resource describes a USB device in the fastboot state.
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `AndroidFastbootDriver`_
@@ -587,7 +625,8 @@ Ethernet or WiFi)
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 RemoteNetworkInterface
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -604,7 +643,8 @@ An AlteraUSBBlaster resource describes an Altera USB blaster.
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- match (dict): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `OpenOCDDriver`_
@@ -621,7 +661,8 @@ FT2232H).
      match:
        ID_PATH: pci-0000:00:10.0-usb-0:1.4
 
-- match (dict): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `OpenOCDDriver`_
@@ -637,8 +678,9 @@ accessible via SNMP.
      switch: "switch-012"
      interface: "17"
 
-- switch (str): host name of the Ethernet switch
-- interface (str): interface name
+Arguments:
+  - switch (str): host name of the Ethernet switch
+  - interface (str): interface name
 
 SigrokUSBDevice
 ~~~~~~~~~~~~~~~
@@ -648,13 +690,15 @@ A SigrokUSBDevice resource describes a sigrok USB device.
 
    SigrokUSBDevice:
      driver: fx2lafw
-     channel: "D0=CLK,D1=DATA"
+     channels: "D0=CLK,D1=DATA"
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
-- driver (str): name of the sigrok driver to use
-- channel (str): optional, channel mapping as described in the sigrok-cli man page
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - driver (str): name of the sigrok driver to use
+  - channels (str): optional, channel mapping as described in the sigrok-cli
+    man page
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SigrokDriver`_
@@ -663,22 +707,6 @@ NetworkSigrokUSBDevice
 ~~~~~~~~~~~~~~~~~~~~~~
 A NetworkSigrokUSBDevice resource describes a sigrok USB device connected to a
 host which is exported over the network. The SigrokDriver will access it via SSH.
-
-.. code-block:: yaml
-
-   NetworkSigrokUSBDevice:
-     driver: fx2lafw
-     channel: "D0=CLK,D1=DATA"
-     match:
-       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
-     host: remote.example.computer
-
-- driver (str): name of the sigrok driver to use
-- channel (str): optional, channel mapping as described in the sigrok-cli man page
-- match (str): key and value for a udev match, see `udev Matching`_
-
-Used by:
-  - `SigrokDriver`_
 
 SigrokUSBSerialDevice
 ~~~~~~~~~~~~~~~~~~~~~
@@ -693,8 +721,11 @@ of a USB serial port instead of being a USB device itself (see
      match:
        '@ID_SERIAL_SHORT': P-00-02389
 
-- driver (str): name of the sigrok driver to use
-- channels (str): optional, channel mapping as desribed in the sigrok-cli man page
+Arguments:
+  - driver (str): name of the sigrok driver to use
+  - channels (str): optional, channel mapping as described in the sigrok-cli
+    man page
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SigrokPowerDriver`_
@@ -711,7 +742,8 @@ device.
      match:
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBSDMUXDriver`_
@@ -732,7 +764,8 @@ A :any:`LXAUSBMux` resource describes a Linux Automation GmbH USB-Mux device.
      match:
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `LXAUSBMuxDriver`_
@@ -755,7 +788,8 @@ device.
      match:
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBSDWireDriver`_
@@ -778,7 +812,8 @@ Video4Linux2 kernel driver.
      match:
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBVideoDriver`_
@@ -792,6 +827,9 @@ A :any:`SysfsGPIO` resource describes a GPIO line.
 
    SysfsGPIO:
      index: 12
+
+Arguments:
+  - index (int): index of the GPIO line
 
 Used by:
   - `GpioDigitalOutputDriver`_
@@ -814,8 +852,10 @@ by an ALSA kernel driver.
      match:
        '@sys_name': '1-4'
 
-- index (int, default=0): ALSA PCM device number (as in `hw:CARD=<card>,DEV=<index>`)
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - index (int, default=0): ALSA PCM device number (as in
+    `hw:CARD=<card>,DEV=<index>`)
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBAudioInputDriver`_
@@ -840,7 +880,8 @@ The low-level communication is handled by the ``usbtmc`` kernel driver.
      match:
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
-- match (str): key and value for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value for a udev match, see `udev Matching`_
 
 A udev rules file may be needed to allow access for non-root users:
 
@@ -867,7 +908,9 @@ It is assumed that flashrom is installed on the host and the executable is confi
   tools:
     flashrom: '/usr/sbin/flashrom'
 
-- programmer (str): programmer device as desribed in `-p, --programmer` in `man 8 flashrom`
+Arguments:
+  - programmer (str): programmer device as described in `-p, --programmer` in
+    `man 8 flashrom`
 
 The resource must configure which programmer to use and the parameters to the programmer.
 The programmer parameter is passed directly to the flashrom bin hence man(8) flashrom
@@ -903,7 +946,8 @@ running a flashing program with `FlashScriptDriver`_.
        SUBSYSTEM: usb
        ID_SERIAL: '1234'
 
-- match (str): key and value pairs for a udev match, see `udev Matching`_
+Arguments:
+  - match (str): key and value pairs for a udev match, see `udev Matching`_
 
 Used by:
   - `FlashScriptDriver`_
@@ -926,7 +970,8 @@ A XenaManager resource describes a Xena Manager instance which is the instance t
    XenaManager:
      hostname: "example.computer"
 
-- hostname (str): hostname or IP of the management address of the Xena tester
+Arguments:
+  - hostname (str): hostname or IP of the management address of the Xena tester
 
 Used by:
   - `XenaDriver`_
@@ -942,8 +987,11 @@ Such device could be a signal generator.
      type: "TCPIP"
      url: "192.168.110.11"
 
-- type (str): device resource type following the pyVISA resource syntax, e.g. ASRL, TCPIP...
-- url (str): device identifier on selected resource, e.g. <ip> for TCPIP resource
+Arguments:
+  - type (str): device resource type following the pyVISA resource syntax, e.g.
+    ASRL, TCPIP...
+  - url (str): device identifier on selected resource, e.g. <ip> for TCPIP
+    resource
 
 Used by:
   - `PyVISADriver`_
@@ -958,7 +1006,8 @@ A :any:`HTTPVideoStream` resource describes a IP video stream over HTTP or HTTPS
    HTTPVideoStream:
      url: http://192.168.110.11/0.ts
 
-- url (str): URI of the IP video stream
+Arguments:
+  - url (str): URI of the IP video stream
 
 Used by:
   - `HTTPVideoDriver`_
@@ -996,8 +1045,9 @@ TFTPProvider / NFSProvider / HTTPProvider
      internal: "/srv/www/board-23/"
      external: "http://192.168.1.1/board-23/"
 
-- internal (str): path prefix to the local directory accessible by the target
-- external (str): corresponding path prefix for use by the target
+Arguments:
+  - internal (str): path prefix to the local directory accessible by the target
+  - external (str): corresponding path prefix for use by the target
 
 Used by:
   - `TFTPProviderDriver`_
@@ -1031,7 +1081,8 @@ The example describes the remote place `example-place`. It will connect to the
 labgrid remote coordinator, wait until the resources become available and expose
 them to the internal environment.
 
-- name (str): name or pattern of the remote place
+Arguments:
+  - name (str): name or pattern of the remote place
 
 Used by:
   - potentially all drivers
@@ -1062,7 +1113,8 @@ cleans up the created docker container; programming errors, keyboard
 interrupts or unix kill signals may lead to hanging containers, however;
 therefore auto-cleanup is important.
 
-- docker_daemon_url (str): The url of the daemon to use for this target.
+Arguments:
+  - docker_daemon_url (str): The url of the daemon to use for this target
 
 Used by:
   - `DockerDriver`_
@@ -1482,13 +1534,13 @@ Implements:
 .. code-block:: yaml
 
    AndroidFastbootDriver:
-     image: mylocal.image
+     boot_image: mylocal.image
      sparse_size: 100M
 
 Arguments:
-  - boot_image (str): image key referring to the image to boot
-  - flash_images (dict): partition to image key mapping referring to images to
-    flash to the device
+  - boot_image (str): optional, image key referring to the image to boot
+  - flash_images (dict): optional, partition to image key mapping referring to
+    images to flash to the device
   - sparse_size (str): optional, sparse files greater than given size (see
     fastboot manpage -S option for allowed size suffixes). The default is the
     same as the fastboot default, which is computed after querying the target's
@@ -1616,7 +1668,7 @@ A PDUDaemonDriver controls a `PDUDaemonPort`, allowing control of the target
 power state without user interaction.
 
 .. note::
-  PDUDaemon processess commands in the background, so the actual state change
+  PDUDaemon processes commands in the background, so the actual state change
   may happen several seconds after calls to PDUDaemonDriver return.
 
 Binds to:
@@ -1714,7 +1766,7 @@ Arguments:
 
 TasmotaPowerDriver
 ~~~~~~~~~~~~~~~~~~
-A TasmotaPowerDriver contols a `TasmotaPowerPort`, allowing the outlet to be
+A TasmotaPowerDriver controls a `TasmotaPowerPort`, allowing the outlet to be
 switched on and off.
 
 Binds to:
@@ -1770,11 +1822,11 @@ Implements:
 
 Arguments:
   - signal (str): control signal to use: "dtr" or "rts"
-  - bindings (dict): A named ressource of the type SerialDriver to
+  - invert (bool): whether to invert the signal
+  - bindings (dict): optional, a named resource of the type SerialDriver to
     bind against. This is only needed if you have multiple
     SerialDriver in your environment (what is likely to be the case
     if you are using this driver).
-  - invert (bool): whether to invert the signal
 
 FileDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -2348,7 +2400,7 @@ The :any:`FlashromDriver` is used to flash a rom, using the flashrom utility.
 .. code-block:: yaml
 
    FlashromDriver:
-        image: 'foo'
+     image: 'foo'
    images:
      foo: ../images/image_to_load.raw
 
@@ -2385,6 +2437,9 @@ a device.
      script: 'foo'
      args:
        - '{device.devnode}'
+
+.. code-block:: yaml
+
    images:
      foo: ../images/flash_device.sh
 
@@ -2397,8 +2452,8 @@ Implements:
   - None (yet)
 
 Arguments:
-  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
-    of an image to bootstrap onto the target
+  - script (str): optional, key in :ref:`images <labgrid-device-config-images>`
+    containing the script to execute for writing of the flashable device
   - args (list): optional, list of arguments for flash script execution
 
 The FlashScriptDriver allows running arbitrary programs to flash a device.
@@ -2573,13 +2628,15 @@ to transition to the shell state:
 
 ::
 
-   t = get_target("main")
-   s = BareboxStrategy(t)
-   s.transition("shell")
+   >>> from labgrid import Environment
+   >>> e = Environment("local.yaml")
+   >>> t = e.get_target("main")
+   >>> s = t.get_driver("BareboxStrategy")
+   >>> s.transition("shell")
 
 
 this command would transition from the bootloader into a Linux shell and
-activate the shelldriver.
+activate the ShellDriver.
 
 ShellStrategy
 ~~~~~~~~~~~~~
@@ -2594,13 +2651,15 @@ to transition to the shell state:
 
 ::
 
-   t = get_target("main")
-   s = ShellStrategy(t)
-   s.transition("shell")
+   >>> from labgrid import Environment
+   >>> e = Environment("local.yaml")
+   >>> t = e.get_target("main")
+   >>> s = t.get_driver("ShellStrategy")
+   >>> s.transition("shell")
 
 
 this command would transition directly into a Linux shell and
-activate the shelldriver.
+activate the ShellDriver.
 
 UBootStrategy
 ~~~~~~~~~~~~~
@@ -2616,13 +2675,15 @@ to transition to the shell state:
 
 ::
 
-   t = get_target("main")
-   s = UBootStrategy(t)
-   s.transition("shell")
+   >>> from labgrid import Environment
+   >>> e = Environment("local.yaml")
+   >>> t = e.get_target("main")
+   >>> s = t.get_driver("UBootStrategy")
+   >>> s.transition("shell")
 
 
 this command would transition from the bootloader into a Linux shell and
-activate the shelldriver.
+activate the ShellDriver.
 
 DockerShellStrategy
 ~~~~~~~~~~~~~~~~~~~
@@ -2637,9 +2698,11 @@ To transition to the shell state:
 
 ::
 
-   t = get_target("main")
-   s = DockerShellStrategy(t)
-   s.transition("shell")
+   >>> from labgrid import Environment
+   >>> e = Environment("local.yaml")
+   >>> t = e.get_target("main")
+   >>> s = t.get_driver("DockerShellStrategy")
+   >>> s.transition("shell")
 
 
 These commands would activate the docker driver which creates and starts
@@ -2660,17 +2723,15 @@ The StepReporter outputs individual labgrid steps to `STDOUT`.
 
 ::
 
-    from labgrid.stepreporter import StepReporter
-
-    StepReporter.start()
+    >>> from labgrid import StepReporter
+    >>> StepReporter.start()
 
 The Reporter can be stopped with a call to the stop function:
 
 ::
 
-    from labgrid.stepreporter import StepReporter
-
-    StepReporter.stop()
+    >>> from labgrid import StepReporter
+    >>> StepReporter.stop()
 
 Stopping the StepReporter if it has not been started will raise an
 AssertionError, as will starting an already started StepReporter.
@@ -2687,17 +2748,15 @@ files. It takes the path as a parameter.
 
 ::
 
-    from labgrid.consoleloggingreporter import ConsoleLoggingReporter
-
-    ConsoleLoggingReporter.start(".")
+    >>> from labgrid import ConsoleLoggingReporter
+    >>> ConsoleLoggingReporter.start(".")
 
 The Reporter can be stopped with a call to the stop function:
 
 ::
 
-    from labgrid.consoleloggingreporter import ConsoleLoggingReporter
-
-    ConsoleLoggingReporter.stop()
+    >>> from labgrid import ConsoleLoggingReporter
+    >>> ConsoleLoggingReporter.stop()
 
 
 Stopping the ConsoleLoggingReporter if it has not been started will raise an
@@ -2792,7 +2851,7 @@ becomes:
   - SerialDriver: {}
   - SerialDriver: {}
 
-This configuration doesn't specifiy which :any:`RawSerialPort` to use for each
+This configuration doesn't specify which :any:`RawSerialPort` to use for each
 :any:`SerialDriver`, so it will cause an exception when instantiating the
 :any:`Target`.
 To bind the correct driver to the correct resource, explicit ``name`` and

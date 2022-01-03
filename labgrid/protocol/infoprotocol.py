@@ -6,7 +6,7 @@ class InfoProtocol(abc.ABC):
 
     @abc.abstractmethod
     def get_ip(self, interface: str = 'eth0'):
-        """Implementations should return the IP-adress for the supplied
+        """Implementations should return the IP address for the supplied
         interface."""
         raise NotImplementedError
 

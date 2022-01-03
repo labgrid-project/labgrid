@@ -101,7 +101,7 @@ New Features in 0.3.0
 ~~~~~~~~~~~~~~~~~~~~~
 
 - All `CommandProtocol` drivers support the poll_until_success method.
-- The new `FileDigitalOutputDriver` respresents a digital signal with a file.
+- The new `FileDigitalOutputDriver` represents a digital signal with a file.
 - The new `GpioDigitalOutputDriver` controls the state of a GPIO via the sysfs interface.
 - Crossbar and autobahn have been updated to 19.3.3 and 19.3.5 respectively.
 - The InfoDriver was removed. The functions have been integrated into the
@@ -117,7 +117,7 @@ New Features in 0.3.0
   file just like the images are.
 - The ShellDriver's keyfile attribute is now specified relative to the config
   file just like the images are.
-- ``labgrid-client -P <PROXY>`` and the ``LG_PROXY`` enviroment variable can be
+- ``labgrid-client -P <PROXY>`` and the ``LG_PROXY`` environment variable can be
   used to access the coordinator and network resources via that SSH proxy host.
   Drivers which run commands via SSH to the exporter still connect directly,
   allowing custom configuration in the user's ``.ssh/config`` as needed.
@@ -131,7 +131,7 @@ New Features in 0.3.0
 - AndroidFastbootDriver now supports 'getvar' and 'oem getenv' subcommands.
 - The coordinator now updates the resource acquired state at the exporter.
   Accordingly, the exporter now starts ser2net only when a resources is
-  aquired. Furthermore, resource conflicts between places are now detected.
+  acquired. Furthermore, resource conflicts between places are now detected.
 - Labgrid now uses the `ProcessWrapper` for externally called processes. This
   should include output from these calls better inside the test runs.
 - The binding dictionary can now supports type name strings in addition to the

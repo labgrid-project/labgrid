@@ -63,7 +63,7 @@ and is currently in active use and development.
 Quickstart
 ----------
 See the `Installation section
-<http://labgrid.readthedocs.io/en/latest/getting_started.html#Installation>`_
+<http://labgrid.readthedocs.io/en/latest/getting_started.html#installation>`_
 for more details.
 
 Clone the git repository:

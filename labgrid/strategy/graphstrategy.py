@@ -219,7 +219,7 @@ class GraphStrategy(Strategy):
     @property
     def graph(self):
         """
-        Returns a graphviz.Digraph for the directed graph the inerhiting strategy represents.
+        Returns a graphviz.Digraph for the directed graph the inheriting strategy represents.
 
         The graph can be rendered with:
         ``mystrategy.graph.render("filename") # renders to filename.png``

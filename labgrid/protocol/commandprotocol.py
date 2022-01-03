@@ -14,7 +14,7 @@ class CommandProtocol(abc.ABC):
     @abc.abstractmethod
     def run_check(self, command: str):
         """
-        Run a command, return str if succesful, ExecutionError otherwise
+        Run a command, return str if successful, ExecutionError otherwise
         """
         raise NotImplementedError
 

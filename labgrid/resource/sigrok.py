@@ -11,7 +11,7 @@ class SigrokDevice(Resource):
 
     Args:
         driver (str): driver to use with sigrok
-        channels (str): a sigrok channel mapping as desribed in the sigrok-cli man page
+        channels (str): a sigrok channel mapping as described in the sigrok-cli man page
     """
     driver = attr.ib(default="demo")
     channels = attr.ib(

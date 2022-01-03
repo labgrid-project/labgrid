@@ -363,7 +363,7 @@ class SigrokUSBDevice(USBResource):
 
     Args:
         driver (str): driver to use with sigrok
-        channels (str): a sigrok channel mapping as desribed in the sigrok-cli man page
+        channels (str): a sigrok channel mapping as described in the sigrok-cli man page
     """
     driver = attr.ib(
         default=None,
@@ -388,7 +388,7 @@ class SigrokUSBSerialDevice(USBResource):
 
     Args:
         driver (str): driver to use with sigrok
-        channels (str): a sigrok channel mapping as desribed in the sigrok-cli man page
+        channels (str): a sigrok channel mapping as described in the sigrok-cli man page
     """
     driver = attr.ib(
         default=None,

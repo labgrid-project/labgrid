@@ -236,6 +236,7 @@ After activation, we can use the driver to do our work::
 
   >>> t.activate(sd)
   >>> sd.write(b'test')
+  4
 
 If an underlying hardware resource is not available (or not available after a
 certain timeout, depending on the driver), the activation step will raise an
@@ -250,19 +251,22 @@ exception, e.g.::
 Active drivers can be accessed by class (any :any:`Driver <labgrid.driver>` or
 :any:`Protocol <labgrid.protocol>`) using some syntactic sugar::
 
+  >>> from labgrid import Target
+  >>> from labgrid.driver.fake import FakeConsoleDriver
   >>> target = Target('main')
   >>> console = FakeConsoleDriver(target, 'console')
   >>> target.activate(console)
   >>> target[FakeConsoleDriver]
-  FakeConsoleDriver(target=Target(name='main', …), name='console', …)
+  FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0)
   >>> target[FakeConsoleDriver, 'console']
-  FakeConsoleDriver(target=Target(name='main', …), name='console', …)
+  FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0)
 
 Driver Deactivation
 ^^^^^^^^^^^^^^^^^^^
 Driver deactivation works in a similar manner::
 
-   >>> t.deactivate(sd)
+  >>> target.deactivate(console)
+  [FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.bound: 1>, txdelay=0.0)]
 
 Drivers need to be deactivated in the following cases:
 
@@ -288,9 +292,9 @@ target. While labgrid registers an ``atexit`` handler to cleanup targets, this h
 the advantage that exceptions can be handled by your application::
 
   >>> try:
-  >>>     target.cleanup()
-  >>> except Exception as e:
-  >>>     <your code here>
+  ...     target.cleanup()
+  ... except Exception as e:
+  ...     pass  # your code here
 
 .. _usage_environments:
 
@@ -328,8 +332,9 @@ To access the target's console, the correct driver object can be found by using
 
   >>> cp = t.get_driver('ConsoleProtocol')
   >>> cp
-  SerialDriver(target=Target(name='example', env=Environment(config_file='example.yaml')), name=None, state=<BindingState.active: 2>, txdelay=0.0)
+  SerialDriver(target=Target(name='example', env=Environment(config_file='example-env.yaml')), name=None, state=<BindingState.active: 2>, txdelay=0.0, timeout=3.0)
   >>> cp.write(b'test')
+  4
 
 When using the ``get_driver`` method, the driver is automatically activated.
 The driver activation will also wait for unavailable resources when needed.
@@ -389,6 +394,13 @@ Other labgrid-related pytest plugin options are:
   In order to make less important output "blend into the background" different
   color schemes are available.
   See :ref:`LG_COLOR_SCHEME <usage-lgcolorscheme>`.
+
+``--lg-initial-state=STATE_NAME``
+  Sets the Strategy's initial state.
+  This is useful during development if the board is known to be in a defined
+  state already.
+  The Strategy used must implement the ``force()`` method.
+  See the shipped :any:`ShellStrategy` for an example.
 
 ``pytest --help`` shows these options in a separate *labgrid* section.
 
@@ -492,7 +504,7 @@ useful to define a function scope fixture per state in ``conftest.py``::
   import pytest
 
   @pytest.fixture(scope='function')
-  def switch_off(target, strategy, capsys):
+  def switch_off(strategy, capsys):
       with capsys.disabled():
           strategy.transition('off')
 
@@ -563,7 +575,7 @@ For this example, you should get a report similar to this:
 
 .. code-block:: bash
 
-  $ pytest --lg-env strategy-example.yaml -v
+  $ pytest --lg-env strategy-example.yaml -v --capture=no
   ============================= test session starts ==============================
   platform linux -- Python 3.5.3, pytest-3.0.6, py-1.4.32, pluggy-0.4.0
   …

@@ -57,7 +57,7 @@ class ExampleStrategy(Strategy):
             # interrupt barebox
             self.target.activate(self.barebox)
         elif status == Status.shell:
-            # tansition to barebox
+            # transition to barebox
             self.transition(Status.barebox)
             self.barebox.boot("")
             self.barebox.await_boot()

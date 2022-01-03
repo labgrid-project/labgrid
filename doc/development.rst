@@ -60,7 +60,7 @@ into your new driver file.
 
     import attr
 
-    from labgrid.driver.common import Driver
+    from labgrid.driver import Driver
     from labgrid.protocol import ConsoleProtocol
 
 Next, define your new class and list the protocols as subclasses of the new
@@ -72,7 +72,7 @@ provided by connecting drivers and resources on a given target at runtime.
 
     import attr
 
-    from labgrid.driver.common import Driver
+    from labgrid.driver import Driver
     from labgrid.protocol import ConsoleProtocol
 
     @attr.s(eq=False)
@@ -89,12 +89,12 @@ be added into multiple drivers.
 
     import attr
 
-    from labgrid.driver.common import Driver
+    from labgrid.driver import Driver
     from labgrid.driver.consoleexpectmixin import ConsoleExpectMixin
     from labgrid.protocol import ConsoleProtocol
 
     @attr.s(eq=False)
-    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
+    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         pass
 
 Additionally the driver needs to be registered with the :any:`target_factory`
@@ -106,15 +106,14 @@ dependencies on other drivers or resources.
     import attr
 
     from labgrid.factory import target_factory
-    from labgrid.driver.common import Driver
+    from labgrid.driver import Driver
     from labgrid.driver.consoleexpectmixin import ConsoleExpectMixin
     from labgrid.protocol import ConsoleProtocol
 
     @target_factory.reg_driver
     @attr.s(eq=False)
-    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
-        bindings = { "port": SerialPort }
-        pass
+    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
+        bindings = { "port": "SerialPort" }
 
 The listed resource :code:`SerialPort` will be bound to :code:`self.port`,
 making it usable in the class.
@@ -124,11 +123,11 @@ otherwise an error will be raised.
 If your driver can support alternative resources, you can use a set of classes
 instead of a single class::
 
-    bindings = { "port": {SerialPort, NetworkSerialPort}}
+    bindings = { "port": {"SerialPort", "NetworkSerialPort"} }
 
 Optional bindings can be declared by including ``None`` in the set::
 
-    bindings = { "port": {SerialPort, NetworkSerialPort, None}}
+    bindings = { "port": {"SerialPort", "NetworkSerialPort", None} }
 
 If you need to do something during instantiation, you need to add a
 :code:`__attrs_post_init__` method (instead of the usual :code:`__init__` used
@@ -140,14 +139,14 @@ The minimum requirement is a call to :code:`super().__attrs_post_init__()`.
     import attr
 
     from labgrid.factory import target_factory
-    from labgrid.driver.common import Driver
+    from labgrid.driver import Driver
     from labgrid.driver.consoleexpectmixin import ConsoleExpectMixin
     from labgrid.protocol import ConsoleProtocol
 
     @target_factory.reg_driver
     @attr.s(eq=False)
-    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol)
-        bindings = { "port": SerialPort }
+    class ExampleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
+        bindings = { "port": "SerialPort" }
 
         def __attrs_post_init__(self):
             super().__attrs_post_init__()
@@ -166,7 +165,7 @@ Additionally we need the :any:`target_factory` and the common ``Resource`` class
     import attr
 
     from labgrid.factory import target_factory
-    from labgrid.driver.common import Resource
+    from labgrid.resource import Resource
 
 Next we add our own resource with the :code:`Resource` parent class and
 register it with the :any:`target_factory`.
@@ -176,7 +175,7 @@ register it with the :any:`target_factory`.
     import attr
 
     from labgrid.factory import target_factory
-    from labgrid.driver.common import Resource
+    from labgrid.resource import Resource
 
     @target_factory.reg_resource
     @attr.s(eq=False)
@@ -191,7 +190,7 @@ variables.
     import attr
 
     from labgrid.factory import target_factory
-    from labgrid.driver.common import Resource
+    from labgrid.resource import Resource
 
     @target_factory.reg_resource
     @attr.s(eq=False)
@@ -216,7 +215,7 @@ Start by creating a strategy skeleton:
     import attr
 
     from labgrid.step import step
-    from labgrid.driver import Strategy, StrategyError
+    from labgrid.strategy import Strategy, StrategyError
     from labgrid.factory import target_factory
 
     class Status(enum.Enum):
@@ -240,7 +239,7 @@ Start by creating a strategy skeleton:
                 return  # nothing to do
             else:
                 raise StrategyError(
-                    f"no transition found from {self.status,} to {status}"
+                    f"no transition found from {self.status} to {status}"
                 )
             self.status = status
 
@@ -266,7 +265,7 @@ The Status enum for the BareboxStrategy:
        barebox = 2
        shell = 3
 
-defines 3 custom states and the `unknown` state as the start point.
+defines three custom states and the `unknown` state as the start point.
 These three states are handled in the transition function:
 
 ::
@@ -283,15 +282,16 @@ These three states are handled in the transition function:
         # interrupt barebox
         self.target.activate(self.barebox)
     elif status == Status.shell:
-        # tansition to barebox
+        # transition to barebox
         self.transition(Status.barebox)
         self.barebox.boot("")
         self.barebox.await_boot()
         self.target.activate(self.shell)
 
-Here the `barebox` state simply cycles the board and activates the driver, while
-the `shell` state uses the barebox state to cycle the board and than boot the
-linux kernel. The `off` states switch the power off.
+Here, the `barebox` state simply cycles the board and activates the driver,
+while the `shell` state uses the barebox state to cycle the board and then boot
+the linux kernel.
+The `off` state switches the power off.
 
 
 Tips for Writing and Debugging Tests
@@ -303,13 +303,13 @@ Live-Reading Console Output
 When starting labgrid with ``--lg-log`` option, it will dump the input from the
 serial driver to a file in specified directory::
 
-  $ pytest .. --lg-log=logdir test-dir/
+  $ pytest [OPTIONS] --lg-log=logdir test-dir/
 
 This can help understanding what happened and why it happened.
 However, when debugging tests, it might be more helpful to get a live
 impression of what is going on.
 For this, you can use ``tail -F`` to read the content written to the log file
-as if you would be connected to the devices serial console (except that it is
+as if you would be connected to the device's serial console (except that it is
 read-only)::
 
   $ tail -F logdir/console_main # for the 'main' target
@@ -384,10 +384,12 @@ Example
 ~~~~~~~
 
 .. code-block:: python
-   :caption: conftest.py
+   :caption: teststrategy.py
 
    from labgrid.strategy import GraphStrategy
+   from labgrid.factory import target_factory
 
+   @target_factory.reg_driver
    class TestStrategy(GraphStrategy):
        def state_unknown(self):
            pass
@@ -416,25 +418,26 @@ The class can also render a graph as PNG (using GraphViz):
    targets:
      main:
        resources: {}
-       drivers: {}
+       drivers:
+         TestStrategy: {}
 
-.. code-block:: python
-   :caption: render_teststrategy.py
+   imports:
+   - teststrategy.py
 
-   from labgrid.environment import Environment
-   from conftest import TestStrategy
-   env = Environment('test.yaml')
-   strategy = TestStrategy(env.get_target(), "strategy name")
 
-   strategy.transition('barebox', via=['boot_via_nfs'])
-   # returned: ['unknown', 'boot_via_nfs', 'barebox']
-   strategy.graph.render("teststrategy-via-nfs")
-   # returned: 'teststrategy-via-nfs.png'
+::
 
-   strategy.transition('barebox', via=['boot_via_nand'])
-   # returned: ['unknown', 'boot_via_nand', 'barebox']
-   strategy.graph.render("teststrategy-via-nand")
-   # returned: 'teststrategy-via-nand.png'
+   >>> from labgrid.environment import Environment
+   >>> env = Environment('test.yaml')
+   >>> strategy = env.get_target().get_driver('Strategy')
+   >>> strategy.transition('barebox', via=['boot_via_nfs'])
+   ['unknown', 'boot_via_nfs', 'barebox']
+   >>> strategy.graph.render("teststrategy-via-nfs")
+   'teststrategy-via-nfs.png'
+   >>> strategy.transition('barebox', via=['boot_via_nand'])
+   ['unknown', 'boot_via_nand', 'barebox']
+   >>> strategy.graph.render("teststrategy-via-nand")
+   'teststrategy-via-nand.png'
 
 .. figure:: res/graphstrategy-via-nfs.png
 
@@ -512,25 +515,22 @@ To use the SSHManager in your code, import it from :any:`labgrid.util.ssh`:
 
 .. code-block:: python
 
-   from labgrid.util.ssh import sshmanager
+   >>> from labgrid.util import sshmanager
 
-you can now request or remove forwards:
+you can now request or remove port forwardings:
 
 .. code-block:: python
 
-   from labgrid.util.ssh import sshmanager
-
-   localport = sshmanager.request_forward('somehost', 3000)
-
-   sshmanager.remove_forward('somehost', 3000)
+   >>> from labgrid.util import sshmanager
+   >>> localport = sshmanager.request_forward('localhost', 'somehost', 3000)
+   >>> sshmanager.remove_forward('localhost', 'somehost', 3000)
 
 or get and put files:
 
 .. code-block:: python
 
-   from labgrid.util.ssh import sshmanager
-
-   sshmanager.put_file('somehost', '/path/to/local/file', '/path/to/remote/file')
+   >>> from labgrid.util import sshmanager
+   >>> sshmanager.put_file('somehost', '/path/to/local/file', '/path/to/remote/file')
 
 .. note::
   The SSHManager will reuse existing Control Sockets and set up a keepalive loop
@@ -553,11 +553,10 @@ To use it in conjunction with a `Resource` and a file:
 
 .. code-block:: python
 
-   from labgrid.util.managedfile import ManagedFile
-
-   mf = ManagedFile(<your-file>, <your-resource>)
-   mf.sync_to_resource()
-   path = mf.get_remote_path()
+   >>> from labgrid.util.managedfile import ManagedFile
+   >>> mf = ManagedFile(<your-file>, <your-resource>)
+   >>> mf.sync_to_resource()
+   >>> path = mf.get_remote_path()
 
 Unless constructed with `ManagedFile(..., detect_nfs=False)`, ManagedFile
 employs the following heuristic to check if a file is stored on a NFS share
@@ -582,9 +581,8 @@ Usage:
 
 .. code-block:: python
 
-   from labgrid.util.proxy import proxymanager
-
-   proxymanager.get_host_and_port(<resource>)
+   >>> from labgrid.util.proxy import proxymanager
+   >>> proxymanager.get_host_and_port(<resource>)
 
 
 .. _contributing:

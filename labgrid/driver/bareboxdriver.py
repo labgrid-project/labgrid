@@ -193,7 +193,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     @Driver.check_active
     def await_boot(self):
-        """Wait for the initial Linux version string to verify we succesfully
+        """Wait for the initial Linux version string to verify we successfully
         jumped into the kernel.
         """
         self.console.expect(self.bootstring)

@@ -4,9 +4,9 @@ import os
 import queue
 import warnings
 from collections import OrderedDict
+from importlib import import_module
 
 import attr
-import pyudev
 
 from ..factory import target_factory
 from .common import ManagedResource, ResourceManager
@@ -21,9 +21,10 @@ class UdevManager(ResourceManager):
         self.queue = queue.Queue()
 
         self.log = logging.getLogger('UdevManager')
-        self._context = pyudev.Context()
-        self._monitor = pyudev.Monitor.from_netlink(self._context)
-        self._observer = pyudev.MonitorObserver(self._monitor,
+        self._pyudev = import_module('pyudev')
+        self._context = self._pyudev.Context()
+        self._monitor = self._pyudev.Monitor.from_netlink(self._context)
+        self._observer = self._pyudev.MonitorObserver(self._monitor,
                                                 callback=self._insert_into_queue)
         self._observer.start()
 

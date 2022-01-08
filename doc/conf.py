@@ -207,6 +207,20 @@ def setup(app):
 
 # -- Options for doctest --------------------------------------------------
 
+doctest_global_setup = '''
+import os
+
+doctest_dir = '.build/doctest'
+
+if not os.getcwd().endswith(doctest_dir):
+    os.chdir(doctest_dir)
+'''
+
+doctest_global_cleanup = '''
+if os.getcwd().endswith(doctest_dir):
+    os.chdir('../..')
+'''
+
 def write_literal_blocks(app, doctree):
     """
     Writes named literal blocks to a file with that respective name in the temporary doctest build

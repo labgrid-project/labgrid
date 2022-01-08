@@ -209,6 +209,8 @@ def setup(app):
 
 doctest_global_setup = '''
 import os
+import shutil
+from unittest.mock import Mock, patch
 
 doctest_dir = '.build/doctest'
 

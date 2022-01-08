@@ -2623,19 +2623,44 @@ A BareboxStrategy has four states:
 - barebox
 - shell
 
+Here is an example environment config:
 
-to transition to the shell state:
+.. code-block:: yaml
+   :name: barebox-env.yaml
 
-::
+   targets:
+     main:
+       resources:
+         RawSerialPort:
+           port: '/dev/ttyUSB0'
+       drivers:
+         ManualPowerDriver: {}
+         SerialDriver: {}
+         BareboxDriver: {}
+         ShellDriver:
+           prompt: 'root@\w+:[^ ]+ '
+           login_prompt: ' login: '
+           username: root
+         BareboxStrategy: {}
+
+In order to use the BareboxStrategy via labgrid as a library and transition to
+the ``shell`` state:
+
+.. testsetup:: barebox-strategy
+
+   from labgrid.strategy import BareboxStrategy
+
+   BareboxStrategy.transition = Mock(return_value=None)
+
+.. doctest:: barebox-strategy
 
    >>> from labgrid import Environment
-   >>> e = Environment("local.yaml")
+   >>> e = Environment("barebox-env.yaml")
    >>> t = e.get_target("main")
    >>> s = t.get_driver("BareboxStrategy")
    >>> s.transition("shell")
 
-
-this command would transition from the bootloader into a Linux shell and
+This command would transition from the bootloader into a Linux shell and
 activate the ShellDriver.
 
 ShellStrategy
@@ -2646,19 +2671,42 @@ A ShellStrategy has three states:
 - off
 - shell
 
+Here is an example environment config:
 
-to transition to the shell state:
+.. code-block:: yaml
+   :name: shell-env.yaml
 
-::
+   targets:
+     main:
+       resources:
+         RawSerialPort:
+           port: '/dev/ttyUSB0'
+       drivers:
+         ManualPowerDriver: {}
+         SerialDriver: {}
+         ShellDriver:
+           prompt: 'root@\w+:[^ ]+ '
+           login_prompt: ' login: '
+           username: root
+         ShellStrategy: {}
+
+In order to use the ShellStrategy via labgrid as a library and transition to
+the ``shell`` state:
+
+.. testsetup:: shell-strategy
+
+   from labgrid.strategy import ShellStrategy
+
+   ShellStrategy.transition = Mock(return_value=None)
+
+.. doctest:: shell-strategy
 
    >>> from labgrid import Environment
-   >>> e = Environment("local.yaml")
+   >>> e = Environment("shell-env.yaml")
    >>> t = e.get_target("main")
    >>> s = t.get_driver("ShellStrategy")
-   >>> s.transition("shell")
 
-
-this command would transition directly into a Linux shell and
+This command would transition directly into a Linux shell and
 activate the ShellDriver.
 
 UBootStrategy
@@ -2670,19 +2718,44 @@ A UBootStrategy has four states:
 - uboot
 - shell
 
+Here is an example environment config:
 
-to transition to the shell state:
+.. code-block:: yaml
+   :name: uboot-env.yaml
 
-::
+   targets:
+     main:
+       resources:
+         RawSerialPort:
+           port: '/dev/ttyUSB0'
+       drivers:
+         ManualPowerDriver: {}
+         SerialDriver: {}
+         UBootDriver: {}
+         ShellDriver:
+           prompt: 'root@\w+:[^ ]+ '
+           login_prompt: ' login: '
+           username: root
+         UBootStrategy: {}
+
+In order to use the UBootStrategy via labgrid as a library and transition to
+the ``shell`` state:
+
+.. testsetup:: uboot-strategy
+
+   from labgrid.strategy import UBootStrategy
+
+   UBootStrategy.transition = Mock(return_value=None)
+
+.. doctest:: uboot-strategy
 
    >>> from labgrid import Environment
-   >>> e = Environment("local.yaml")
+   >>> e = Environment("uboot-env.yaml")
    >>> t = e.get_target("main")
    >>> s = t.get_driver("UBootStrategy")
    >>> s.transition("shell")
 
-
-this command would transition from the bootloader into a Linux shell and
+This command would transition from the bootloader into a Linux shell and
 activate the ShellDriver.
 
 DockerStrategy
@@ -2693,14 +2766,37 @@ A DockerStrategy has three states:
 - gone
 - accessible
 
+Here is an example environment config:
+
+.. code-block:: yaml
+   :name: docker-env.yaml
+
+   targets:
+     main:
+       resources:
+         DockerDaemon:
+           docker_daemon_url: unix://var/run/docker.sock
+       drivers:
+         DockerDriver:
+           image_uri: "rastasheep/ubuntu-sshd:16.04"
+           container_name: "ubuntu-lg-example"
+           host_config: {"network_mode":"bridge"}
+           network_services: [{"port":22,"username":"root","password":"root"}]
+         DockerStrategy: {}
 
 In order to use the DockerStrategy via labgrid as a library and transition to
 the ``accessible`` state:
 
-::
+.. testsetup:: docker-strategy
+
+   from labgrid.strategy import DockerStrategy
+
+   DockerStrategy.transition = Mock(return_value=None)
+
+.. doctest:: docker-strategy
 
    >>> from labgrid import Environment
-   >>> e = Environment("local.yaml")
+   >>> e = Environment("docker-env.yaml")
    >>> t = e.get_target("main")
    >>> s = t.get_driver("DockerStrategy")
    >>> s.transition("accessible")

@@ -2608,6 +2608,8 @@ Implements:
 Arguments:
   - None
 
+.. _conf-strategies:
+
 Strategies
 ----------
 

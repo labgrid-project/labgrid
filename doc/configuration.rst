@@ -2685,34 +2685,29 @@ to transition to the shell state:
 this command would transition from the bootloader into a Linux shell and
 activate the ShellDriver.
 
-DockerShellStrategy
-~~~~~~~~~~~~~~~~~~~
-A DockerShellStrategy has three states:
+DockerStrategy
+~~~~~~~~~~~~~~
+A DockerStrategy has three states:
 
 - unknown
-- off
-- shell
+- gone
+- accessible
 
 
-To transition to the shell state:
+In order to use the DockerStrategy via labgrid as a library and transition to
+the ``accessible`` state:
 
 ::
 
    >>> from labgrid import Environment
    >>> e = Environment("local.yaml")
    >>> t = e.get_target("main")
-   >>> s = t.get_driver("DockerShellStrategy")
-   >>> s.transition("shell")
-
+   >>> s = t.get_driver("DockerStrategy")
+   >>> s.transition("accessible")
 
 These commands would activate the docker driver which creates and starts
 a docker container. This will subsequently make `NetworkService`_ instance(s)
 available which can be used for e.g. SSH access.
-
-Note: Transitioning to the "off" state will make any `NetworkService`_
-instance(s) unresponsive - which may in turn invalidate SSH connection
-sharing. Therefore, during automated test suites, refrain from transitioning
-to the "off" state.
 
 Reporters
 ---------

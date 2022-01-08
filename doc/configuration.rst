@@ -2814,14 +2814,14 @@ StepReporter
 ~~~~~~~~~~~~
 The StepReporter outputs individual labgrid steps to `STDOUT`.
 
-::
+.. doctest::
 
     >>> from labgrid import StepReporter
     >>> StepReporter.start()
 
 The Reporter can be stopped with a call to the stop function:
 
-::
+.. doctest::
 
     >>> from labgrid import StepReporter
     >>> StepReporter.stop()
@@ -2839,14 +2839,14 @@ ConsoleLoggingReporter
 The ConsoleLoggingReporter outputs read calls from the console transports into
 files. It takes the path as a parameter.
 
-::
+.. doctest::
 
     >>> from labgrid import ConsoleLoggingReporter
     >>> ConsoleLoggingReporter.start(".")
 
 The Reporter can be stopped with a call to the stop function:
 
-::
+.. doctest::
 
     >>> from labgrid import ConsoleLoggingReporter
     >>> ConsoleLoggingReporter.stop()

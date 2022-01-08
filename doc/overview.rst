@@ -127,6 +127,8 @@ Each driver and resource can have an optional name. This parameter is required
 for all manual creations of drivers and resources. To manually bind to a
 specific driver set a binding mapping before creating the driver:
 
+.. doctest::
+
   >>> from labgrid import Target
   >>> from labgrid.resource import SerialPort
   >>> from labgrid.driver import SerialDriver
@@ -166,7 +168,7 @@ Otherwise, `0` is returned as the default priority.
 To set the priority of a protocol for a driver, add a class variable with the
 name `priorities`, e.g.
 
-.. code-block:: python
+.. testcode::
 
    import attr
    from labgrid.driver import Driver

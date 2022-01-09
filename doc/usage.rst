@@ -500,6 +500,7 @@ The following environment config file (``shell-example.yaml``) describes how to
 access this board:
 
 .. code-block:: yaml
+  :name: shell-example.yaml
 
   targets:
     main:
@@ -516,6 +517,7 @@ access this board:
 We then add the following test in a file called ``test_example.py``:
 
 .. code-block:: python
+  :name: test_shell.py
 
   def test_echo(target):
       command = target.get_driver('CommandProtocol')
@@ -524,6 +526,35 @@ We then add the following test in a file called ``test_example.py``:
 
 To run this test, we simply execute pytest in the same directory with the
 environment config:
+
+.. testsetup:: pytest-example
+
+  from labgrid.driver import SerialDriver, ShellDriver
+
+  patch('serial.Serial').start()
+  patch.object(
+      SerialDriver,
+      '_read',
+      Mock(return_value=b'root@example:~ ')
+  ).start()
+  patch.object(
+      ShellDriver,
+      '_run',
+      Mock(return_value=(['OK'], [], 0))
+  ).start()
+
+.. testcode:: pytest-example
+  :hide:
+
+  import pytest
+
+  plugins = ['labgrid.pytestplugin']
+  pytest.main(['--lg-env', 'shell-example.yaml', 'test_shell.py'], plugins)
+
+.. testoutput:: pytest-example
+  :hide:
+
+  ... 1 passed...
 
 .. code-block:: bash
 
@@ -546,6 +577,7 @@ As pytest always executes the ``conftest.py`` file in the test suite directory,
 we can define additional fixtures there:
 
 .. code-block:: python
+  :name: conftest_fixture.py
 
   import pytest
 
@@ -556,10 +588,24 @@ we can define additional fixtures there:
 With this fixture, we can simplify the ``test_example.py`` file to:
 
 .. code-block:: python
+  :name: test_custom_fixture.py
 
   def test_echo(command):
       result = command.run_check('echo OK')
       assert 'OK' in result
+
+.. testcode:: pytest-example
+  :hide:
+
+  import pytest
+
+  plugins = ['labgrid.pytestplugin', 'conftest_fixture']
+  pytest.main(['--lg-env', 'shell-example.yaml', 'test_custom_fixture.py'], plugins)
+
+.. testoutput:: pytest-example
+  :hide:
+
+  ... 1 passed...
 
 Strategy Fixture Example
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -667,6 +713,7 @@ Adding a ``@pytest.mark.lg_feature`` decorator to a test ensures it is only
 executed if the desired feature is available:
 
 .. code-block:: python
+   :name: test_feature_flags.py
 
    import pytest
 
@@ -677,6 +724,7 @@ executed if the desired feature is available:
 Here's an example environment configuration:
 
 .. code-block:: yaml
+  :name: feature-flag-env.yaml
 
   targets:
     main:
@@ -685,10 +733,24 @@ Here's an example environment configuration:
       resources: {}
       drivers: {}
 
+.. testcode:: pytest-example
+  :hide:
+
+  import pytest
+
+  plugins = ['labgrid.pytestplugin']
+  pytest.main(['--lg-env', 'feature-flag-env.yaml', 'test_feature_flags.py'], plugins)
+
+.. testoutput:: pytest-example
+  :hide:
+
+  ... 1 passed...
+
 This would run the above test, however the following configuration would skip the
 test because of the missing feature:
 
 .. code-block:: yaml
+  :name: feature-flag-skip-env.yaml
 
   targets:
     main:
@@ -697,11 +759,25 @@ test because of the missing feature:
       resources: {}
       drivers: {}
 
+.. testcode:: pytest-example
+  :hide:
+
+  import pytest
+
+  plugins = ['labgrid.pytestplugin']
+  pytest.main(['--lg-env', 'feature-flag-skip-env.yaml', 'test_feature_flags.py'], plugins)
+
+.. testoutput:: pytest-example
+  :hide:
+
+  ... 1 skipped...
+
 pytest will record the missing feature as the skip reason.
 
 For tests with multiple required features, pass them as a list to pytest:
 
 .. code-block:: python
+   :name: test_feature_flags_global.py
 
    import pytest
 
@@ -713,6 +789,7 @@ Features do not have to be set per target, they can also be set via the global
 features key:
 
 .. code-block:: yaml
+  :name: feature-flag-global-env.yaml
 
   features:
     - camera
@@ -722,6 +799,20 @@ features key:
         - console
       resources: {}
       drivers: {}
+
+.. testcode:: pytest-example
+  :hide:
+
+  import pytest
+
+  plugins = ['labgrid.pytestplugin']
+  pytest.main(['--lg-env', 'feature-flag-global-env.yaml', 'test_feature_flags_global.py'],
+              plugins)
+
+.. testoutput:: pytest-example
+  :hide:
+
+  ... 1 passed...
 
 This YAML configuration would combine both the global and the target features.
 

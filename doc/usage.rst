@@ -188,13 +188,17 @@ Targets
    Nevertheless, we explain this in the following to clarify the underlying concepts,
    and how to work with targets on a lower level, e.g. in strategies.
 
-At the lower level, a :any:`Target` can be created directly::
+At the lower level, a :any:`Target` can be created directly:
+
+.. doctest::
 
   >>> from labgrid import Target
   >>> t = Target('example')
 
 Next, any required :any:`Resource` objects can be created, which each represent
-a piece of hardware to be used with labgrid::
+a piece of hardware to be used with labgrid:
+
+.. doctest::
 
   >>> from labgrid.resource import RawSerialPort
   >>> rsp = RawSerialPort(t, name=None, port='/dev/ttyUSB0')
@@ -205,13 +209,17 @@ a piece of hardware to be used with labgrid::
    same type, you can set the name to ``None``.
 
 Further on, a :any:`Driver` encapsulates logic how to work with resources.
-Drivers need to be created on the :any:`Target`::
+Drivers need to be created on the :any:`Target`:
+
+.. doctest::
 
   >>> from labgrid.driver import SerialDriver
   >>> sd = SerialDriver(t, name=None)
 
 As the :any:`SerialDriver` declares a binding to a :any:`SerialPort`, the target binds it
-to the resource object created above::
+to the resource object created above:
+
+.. doctest::
 
   >>> sd.port
   RawSerialPort(target=Target(name='example', env=None), name=None, state=<BindingState.bound: 1>, avail=True, port='/dev/ttyUSB0', speed=115200)
@@ -232,7 +240,21 @@ other applications while the :any:`SerialDriver` is activated.
 If we use a car analogy here, binding is the process of screwing the car parts
 together, and activation is igniting the engine.
 
-After activation, we can use the driver to do our work::
+After activation, we can use the driver to do our work:
+
+.. testsetup:: driver-activation
+
+  from labgrid.resource import RawSerialPort
+  from labgrid.driver import SerialDriver
+  from labgrid import Target
+
+  t = Target('example')
+  rsp = RawSerialPort(t, name=None, port='/dev/ttyUSB0')
+  sd = SerialDriver(t, name=None)
+  sd.serial.open = Mock()
+  sd.serial.write = Mock(return_value=4)
+
+.. doctest:: driver-activation
 
   >>> t.activate(sd)
   >>> sd.write(b'test')
@@ -249,7 +271,9 @@ exception, e.g.::
   FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyUSB0'
 
 Active drivers can be accessed by class (any :any:`Driver <labgrid.driver>` or
-:any:`Protocol <labgrid.protocol>`) using some syntactic sugar::
+:any:`Protocol <labgrid.protocol>`) using some syntactic sugar:
+
+.. doctest::
 
   >>> from labgrid import Target
   >>> from labgrid.driver.fake import FakeConsoleDriver
@@ -263,7 +287,17 @@ Active drivers can be accessed by class (any :any:`Driver <labgrid.driver>` or
 
 Driver Deactivation
 ^^^^^^^^^^^^^^^^^^^
-Driver deactivation works in a similar manner::
+Driver deactivation works in a similar manner:
+
+.. testsetup:: driver-deactivation
+
+  from labgrid import Target
+  from labgrid.driver.fake import FakeConsoleDriver
+  target = Target('main')
+  console = FakeConsoleDriver(target, 'console')
+  target.activate(console)
+
+.. doctest:: driver-deactivation
 
   >>> target.deactivate(console)
   [FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.bound: 1>, txdelay=0.0)]
@@ -289,7 +323,14 @@ Target Cleanup
 ^^^^^^^^^^^^^^
 After you are done with the target, optionally call the cleanup method on your
 target. While labgrid registers an ``atexit`` handler to cleanup targets, this has
-the advantage that exceptions can be handled by your application::
+the advantage that exceptions can be handled by your application:
+
+.. testsetup:: target-cleanup
+
+  from labgrid import Target
+  target = Target('main')
+
+.. doctest:: target-cleanup
 
   >>> try:
   ...     target.cleanup()
@@ -307,6 +348,7 @@ For this use-case, labgrid can construct targets from a configuration file in
 YAML format:
 
 .. code-block:: yaml
+  :name: example-env.yaml
 
   targets:
     example:
@@ -316,19 +358,36 @@ YAML format:
       drivers:
         SerialDriver: {}
 
-To parse this configuration file, use the :any:`Environment` class::
+To parse this configuration file, use the :any:`Environment` class:
+
+.. doctest::
 
   >>> from labgrid import Environment
   >>> env = Environment('example-env.yaml')
 
 Using :any:`Environment.get_target`, the configured `Targets` can be retrieved
 by name.
-Without an argument, `get_target` would default to 'main'::
+Without an argument, `get_target` would default to 'main':
+
+.. doctest::
 
   >>> t = env.get_target('example')
 
 To access the target's console, the correct driver object can be found by using
-:any:`Target.get_driver`::
+:any:`Target.get_driver`:
+
+.. testsetup:: get-driver
+
+  from labgrid import Environment
+
+  env = Environment('example-env.yaml')
+  t = env.get_target('example')
+
+  s = t.get_driver('SerialDriver', activate=False)
+  s.serial.open = Mock()
+  s.serial.write = Mock(return_value=4)
+
+.. doctest:: get-driver
 
   >>> cp = t.get_driver('ConsoleProtocol')
   >>> cp
@@ -441,6 +500,7 @@ The following environment config file (``shell-example.yaml``) describes how to
 access this board:
 
 .. code-block:: yaml
+  :name: shell-example.yaml
 
   targets:
     main:
@@ -454,7 +514,10 @@ access this board:
           login_prompt: ' login: '
           username: 'root'
 
-We then add the following test in a file called ``test_example.py``::
+We then add the following test in a file called ``test_example.py``:
+
+.. code-block:: python
+  :name: test_shell.py
 
   def test_echo(target):
       command = target.get_driver('CommandProtocol')
@@ -463,6 +526,35 @@ We then add the following test in a file called ``test_example.py``::
 
 To run this test, we simply execute pytest in the same directory with the
 environment config:
+
+.. testsetup:: pytest-example
+
+  from labgrid.driver import SerialDriver, ShellDriver
+
+  patch('serial.Serial').start()
+  patch.object(
+      SerialDriver,
+      '_read',
+      Mock(return_value=b'root@example:~ ')
+  ).start()
+  patch.object(
+      ShellDriver,
+      '_run',
+      Mock(return_value=(['OK'], [], 0))
+  ).start()
+
+.. testcode:: pytest-example
+  :hide:
+
+  import pytest
+
+  plugins = ['labgrid.pytestplugin']
+  pytest.main(['--lg-env', 'shell-example.yaml', 'test_shell.py'], plugins)
+
+.. testoutput:: pytest-example
+  :hide:
+
+  ... 1 passed...
 
 .. code-block:: bash
 
@@ -482,7 +574,10 @@ Custom Fixture Example
 When writing many test cases which use the same driver, we can get rid of some
 common code by wrapping the `CommandProtocol` in a fixture.
 As pytest always executes the ``conftest.py`` file in the test suite directory,
-we can define additional fixtures there::
+we can define additional fixtures there:
+
+.. code-block:: python
+  :name: conftest_fixture.py
 
   import pytest
 
@@ -490,16 +585,34 @@ we can define additional fixtures there::
   def command(target):
       return target.get_driver('CommandProtocol')
 
-With this fixture, we can simplify the ``test_example.py`` file to::
+With this fixture, we can simplify the ``test_example.py`` file to:
+
+.. code-block:: python
+  :name: test_custom_fixture.py
 
   def test_echo(command):
       result = command.run_check('echo OK')
       assert 'OK' in result
 
+.. testcode:: pytest-example
+  :hide:
+
+  import pytest
+
+  plugins = ['labgrid.pytestplugin', 'conftest_fixture']
+  pytest.main(['--lg-env', 'shell-example.yaml', 'test_custom_fixture.py'], plugins)
+
+.. testoutput:: pytest-example
+  :hide:
+
+  ... 1 passed...
+
 Strategy Fixture Example
 ~~~~~~~~~~~~~~~~~~~~~~~~
 When using a :any:`Strategy` to transition the target between states, it is
-useful to define a function scope fixture per state in ``conftest.py``::
+useful to define a function scope fixture per state in ``conftest.py``:
+
+.. code-block:: python
 
   import pytest
 
@@ -528,7 +641,9 @@ useful to define a function scope fixture per state in ``conftest.py``::
   <http://doc.pytest.org/en/latest/capture.html#accessing-captured-output-from-a-test-function>`_.
 
 With the fixtures defined above, switching between bootloader and Linux shells
-is easy::
+is easy:
+
+.. code-block:: python
 
   def test_barebox_initial(bootloader_command):
       stdout = bootloader_command.run_check('version')
@@ -595,17 +710,21 @@ Feature Flags
 ~~~~~~~~~~~~~
 labgrid includes support for feature flags on a global and target scope.
 Adding a ``@pytest.mark.lg_feature`` decorator to a test ensures it is only
-executed if the desired feature is available::
+executed if the desired feature is available:
+
+.. code-block:: python
+   :name: test_feature_flags.py
 
    import pytest
 
    @pytest.mark.lg_feature("camera")
    def test_camera(target):
-      [...]
+      pass
 
 Here's an example environment configuration:
 
 .. code-block:: yaml
+  :name: feature-flag-env.yaml
 
   targets:
     main:
@@ -614,10 +733,24 @@ Here's an example environment configuration:
       resources: {}
       drivers: {}
 
+.. testcode:: pytest-example
+  :hide:
+
+  import pytest
+
+  plugins = ['labgrid.pytestplugin']
+  pytest.main(['--lg-env', 'feature-flag-env.yaml', 'test_feature_flags.py'], plugins)
+
+.. testoutput:: pytest-example
+  :hide:
+
+  ... 1 passed...
+
 This would run the above test, however the following configuration would skip the
 test because of the missing feature:
 
 .. code-block:: yaml
+  :name: feature-flag-skip-env.yaml
 
   targets:
     main:
@@ -626,20 +759,37 @@ test because of the missing feature:
       resources: {}
       drivers: {}
 
+.. testcode:: pytest-example
+  :hide:
+
+  import pytest
+
+  plugins = ['labgrid.pytestplugin']
+  pytest.main(['--lg-env', 'feature-flag-skip-env.yaml', 'test_feature_flags.py'], plugins)
+
+.. testoutput:: pytest-example
+  :hide:
+
+  ... 1 skipped...
+
 pytest will record the missing feature as the skip reason.
 
-For tests with multiple required features, pass them as a list to pytest::
+For tests with multiple required features, pass them as a list to pytest:
+
+.. code-block:: python
+   :name: test_feature_flags_global.py
 
    import pytest
 
    @pytest.mark.lg_feature(["camera", "console"])
    def test_camera(target):
-      [...]
+      pass
 
 Features do not have to be set per target, they can also be set via the global
 features key:
 
 .. code-block:: yaml
+  :name: feature-flag-global-env.yaml
 
   features:
     - camera
@@ -649,6 +799,20 @@ features key:
         - console
       resources: {}
       drivers: {}
+
+.. testcode:: pytest-example
+  :hide:
+
+  import pytest
+
+  plugins = ['labgrid.pytestplugin']
+  pytest.main(['--lg-env', 'feature-flag-global-env.yaml', 'test_feature_flags_global.py'],
+              plugins)
+
+.. testoutput:: pytest-example
+  :hide:
+
+  ... 1 passed...
 
 This YAML configuration would combine both the global and the target features.
 

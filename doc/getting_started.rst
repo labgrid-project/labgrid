@@ -465,13 +465,7 @@ strategies.
 
 To use a strategy, add it and its dependencies to your configuration YAML,
 retrieve it in your test and call the ``transition(status)`` function.
-
-.. code-block:: python
-
-   >>> from labgrid import Environment
-   >>> env = Environment("env.yaml")
-   >>> target = env.get_target("main")
-   >>> strategy = target.get_driver("Strategy")
-   >>> strategy.transition("barebox")
+See the section about the various :ref:`shipped strategies <conf-strategies>`
+for examples on this.
 
 An example using the pytest plugin is provided under `examples/strategy`.

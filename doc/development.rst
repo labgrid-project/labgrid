@@ -56,7 +56,7 @@ classes.
 First of all import attr, the protocol and the common driver class
 into your new driver file.
 
-::
+.. testcode::
 
     import attr
 
@@ -68,7 +68,7 @@ driver class.
 Try to avoid subclassing existing other drivers, as this limits the flexibility
 provided by connecting drivers and resources on a given target at runtime.
 
-::
+.. testcode::
 
     import attr
 
@@ -85,7 +85,7 @@ subclass list.
 Using the mixin class allows sharing common code, which would otherwise need to
 be added into multiple drivers.
 
-::
+.. testcode::
 
     import attr
 
@@ -101,7 +101,12 @@ Additionally the driver needs to be registered with the :any:`target_factory`
 and provide a bindings dictionary, so that the :any:`Target` can resolve
 dependencies on other drivers or resources.
 
-::
+.. testsetup:: example-driver1
+
+    from labgrid.factory import target_factory
+    target_factory.all_classes.pop('ExampleDriver', None)
+
+.. testcode:: example-driver1
 
     import attr
 
@@ -134,7 +139,12 @@ If you need to do something during instantiation, you need to add a
 for non-attr-classes).
 The minimum requirement is a call to :code:`super().__attrs_post_init__()`.
 
-::
+.. testsetup:: example-driver2
+
+    from labgrid.factory import target_factory
+    target_factory.all_classes.pop('ExampleDriver', None)
+
+.. testcode:: example-driver2
 
     import attr
 
@@ -160,7 +170,7 @@ Writing a Resource
 To add a new resource to labgrid, we import attr into our new resource file.
 Additionally we need the :any:`target_factory` and the common ``Resource`` class.
 
-::
+.. testcode::
 
     import attr
 
@@ -170,7 +180,7 @@ Additionally we need the :any:`target_factory` and the common ``Resource`` class
 Next we add our own resource with the :code:`Resource` parent class and
 register it with the :any:`target_factory`.
 
-::
+.. testcode::
 
     import attr
 
@@ -185,7 +195,12 @@ register it with the :any:`target_factory`.
 All that is left now is to add attributes via :code:`attr.ib()` member
 variables.
 
-::
+.. testsetup:: example-resource
+
+    from labgrid.factory import target_factory
+    target_factory.all_classes.pop('ExampleResource', None)
+
+.. testcode:: example-resource
 
     import attr
 
@@ -208,7 +223,7 @@ labgrid offers only basic strategies, for complex use cases a customized
 strategy is required.
 Start by creating a strategy skeleton:
 
-::
+.. testcode::
 
     import enum
 
@@ -383,8 +398,10 @@ duplication.
 Example
 ~~~~~~~
 
+``teststrategy.py``:
+
 .. code-block:: python
-   :caption: teststrategy.py
+   :name: teststrategy.py
 
    from labgrid.strategy import GraphStrategy
    from labgrid.factory import target_factory
@@ -410,10 +427,10 @@ Example
        def state_linux_shell(self):
            pass
 
-The class can also render a graph as PNG (using GraphViz):
+``test.yaml``:
 
 .. code-block:: yaml
-   :caption: test.yaml
+   :name: test.yaml
 
    targets:
      main:
@@ -424,8 +441,10 @@ The class can also render a graph as PNG (using GraphViz):
    imports:
    - teststrategy.py
 
+The class can also render a graph as PNG (using GraphViz):
 
-::
+.. doctest::
+   :skipif: shutil.which('dot') is None
 
    >>> from labgrid.environment import Environment
    >>> env = Environment('test.yaml')
@@ -513,13 +532,18 @@ SSHManager
 labgrid provides a SSHManager to allow connection reuse with control sockets.
 To use the SSHManager in your code, import it from :any:`labgrid.util.ssh`:
 
-.. code-block:: python
+.. doctest::
 
    >>> from labgrid.util import sshmanager
 
 you can now request or remove port forwardings:
 
-.. code-block:: python
+.. testsetup:: sshmanager
+
+   from labgrid.util import sshmanager
+   sshmanager.get = Mock()
+
+.. doctest:: sshmanager
 
    >>> from labgrid.util import sshmanager
    >>> localport = sshmanager.request_forward('localhost', 'somehost', 3000)
@@ -527,7 +551,7 @@ you can now request or remove port forwardings:
 
 or get and put files:
 
-.. code-block:: python
+.. doctest:: sshmanager
 
    >>> from labgrid.util import sshmanager
    >>> sshmanager.put_file('somehost', '/path/to/local/file', '/path/to/remote/file')
@@ -551,10 +575,20 @@ Additionally it provides `get_remote_path()` to retrieve the complete file path,
 to easily employ it for driver implementations.
 To use it in conjunction with a `Resource` and a file:
 
-.. code-block:: python
+.. testsetup:: managed-file
+
+   import tempfile
+   from labgrid.resource import Resource
+   from labgrid import Target
+
+   f = tempfile.NamedTemporaryFile()
+   your_file = f.name
+   your_resource = Resource(Target("main"), "example")
+
+.. doctest:: managed-file
 
    >>> from labgrid.util.managedfile import ManagedFile
-   >>> mf = ManagedFile(<your-file>, <your-resource>)
+   >>> mf = ManagedFile(your_file, your_resource)
    >>> mf.sync_to_resource()
    >>> path = mf.get_remote_path()
 
@@ -579,10 +613,18 @@ used in the `SerialDriver` for proxy connections.
 
 Usage:
 
-.. code-block:: python
+.. testsetup:: proxy-manager
+
+   from labgrid.resource import Resource
+   from labgrid import Target
+
+   your_resource = Resource(Target("main"), "example")
+   your_resource.host = "localhost"
+
+.. doctest:: proxy-manager
 
    >>> from labgrid.util.proxy import proxymanager
-   >>> proxymanager.get_host_and_port(<resource>)
+   >>> host, port = proxymanager.get_host_and_port(your_resource)
 
 
 .. _contributing:

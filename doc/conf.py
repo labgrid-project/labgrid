@@ -36,6 +36,7 @@ import sphinx_rtd_theme
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.doctest',
               'sphinx.ext.napoleon',
               'sphinx.ext.coverage',
               'sphinx.ext.viewcode',
@@ -202,3 +203,45 @@ def run_apidoc(app):
 
 def setup(app):
     app.connect('builder-inited', run_apidoc)
+    app.connect('doctree-read', write_literal_blocks)
+
+# -- Options for doctest --------------------------------------------------
+
+doctest_global_setup = '''
+import os
+import shutil
+from unittest.mock import Mock, patch
+
+doctest_dir = '.build/doctest'
+
+if not os.getcwd().endswith(doctest_dir):
+    os.chdir(doctest_dir)
+'''
+
+doctest_global_cleanup = '''
+if os.getcwd().endswith(doctest_dir):
+    os.chdir('../..')
+'''
+
+def write_literal_blocks(app, doctree):
+    """
+    Writes named literal blocks to a file with that respective name in the temporary doctest build
+    directory. This allows doctest to test code snippets referring to these files as-is.
+    """
+    blocks = doctree.traverse(
+        condition=lambda node: node.tagname == 'literal_block'
+    )
+
+    for block in blocks:
+        name = '_'.join(block['names'])
+
+        if not name:
+            continue
+
+        out_path = os.path.join(app.outdir, name)
+
+        if os.path.exists(out_path):
+            raise Exception(f'literal block name "{name}" used multiple times')
+
+        with open(out_path, 'w') as f:
+            f.write(block.astext())

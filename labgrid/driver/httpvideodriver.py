@@ -1,7 +1,8 @@
 # pylint: disable=no-member
 import subprocess
-import attr
 from urllib.parse import urlsplit, urlunsplit
+
+import attr
 
 from .common import Driver
 from ..factory import target_factory

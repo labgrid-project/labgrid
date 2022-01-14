@@ -208,6 +208,12 @@ Currently available are:
   Controls TP-Link power strips via `python-kasa
   <https://github.com/python-kasa/python-kasa>`_.
 
+``eg_pms2_network``
+  Controls the EG_PMS2_LAN & EG_PMS2_WLAN devices, through simple HTTP POST and
+  GET requests.  The device requires a password for logging into the control
+  interface, this module deliberately uses the standard password '1' and is
+  not compatible with a different password.
+
 Used by:
   - `NetworkPowerDriver`_
 

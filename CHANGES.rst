@@ -9,6 +9,8 @@ New Features in 0.5.0
   considering only the closest marker.
 - The labgrid client SSH command is now able to instantiate the SSHDriver when
   there are multiple NetworkService resources available.
+- eg_pms2_network power port driver supports controlling the Energenie power
+  management series with devices like the EG_PMS2_LAN & EG_PMS2_WLAN
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

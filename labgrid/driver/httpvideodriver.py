@@ -1,6 +1,6 @@
 # pylint: disable=no-member
 import subprocess
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit
 
 import attr
 

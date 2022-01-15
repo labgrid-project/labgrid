@@ -112,6 +112,10 @@ html_static_path = []
 # of the sidebar.
 html_logo = 'images/labgrid_logo_outline.svg'
 
+# The name of an image file (within the static path) to use as favicon of the
+# docs.
+html_favicon = 'images/favicon.png'
+
 
 # -- Options for HTMLHelp output ------------------------------------------
 

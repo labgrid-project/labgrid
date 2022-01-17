@@ -108,6 +108,14 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
 
+# The name of an image file (relative to this directory) to place at the top
+# of the sidebar.
+html_logo = 'images/labgrid_logo_outline.svg'
+
+# The name of an image file (within the static path) to use as favicon of the
+# docs.
+html_favicon = 'images/favicon.png'
+
 
 # -- Options for HTMLHelp output ------------------------------------------
 

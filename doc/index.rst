@@ -14,12 +14,17 @@ Please see :doc:`design_decisions` for more background information.
 
 It currently supports:
 
-- pytest plugin to write tests for embedded systems connecting serial console or
-  SSH
 - remote client-exporter-coordinator infrastructure to make boards available
   from different computers on a network
-- power/reset management via drivers for power switches or onewire PIOs
-- upload of binaries via USB: imxusbloader/mxsusbloader (bootloader) or fastboot (kernel)
+- pytest plugin to write automated tests for embedded systems
+- CLI and library usage for development and automation
+- interaction with bootloader and Linux shells on top of serial console or SSH
+- power/reset management via drivers for power switches
+- upload of binaries and device bootstrapping via USB
+- control of digital outputs, SD card and USB multiplexers
+- integration of audio/video/measurement devices for remote development and
+  testing
+- Docker/QEMU integration
 - functions to control external services such as emulated USB-Sticks and the
   `hawkBit <https://github.com/eclipse/hawkbit>`_ deployment service
 

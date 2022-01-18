@@ -2,7 +2,6 @@
 coordinator, acquire a place and interact with the connected resources"""
 import argparse
 import asyncio
-import atexit
 import contextlib
 import enum
 import os

@@ -4,7 +4,6 @@
 import io
 import logging
 import re
-import time
 import shlex
 import ipaddress
 

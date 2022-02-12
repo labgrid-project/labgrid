@@ -1,10 +1,10 @@
 pytest-cov==3.0.0
-pytest-isort==2.0.0
-pytest-mock==3.6.1
+pytest-isort==3.0.0
+pytest-mock==3.7.0
 pytest-pylint==0.18.0
 pytest-dependency==0.5.1
-yapf==0.31.0
-psutil==5.8.0
+yapf==0.29.0
+psutil==5.9.0
 -r doc-requirements.txt
 -r crossbar-requirements.txt
 -r onewire-requirements.txt

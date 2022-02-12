@@ -1,1 +1,1 @@
-graphviz==0.17.0
+graphviz==0.19.1

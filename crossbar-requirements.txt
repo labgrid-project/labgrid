@@ -2,3 +2,4 @@
 setuptools>=38.0.0
 crossbar==22.2.1
 werkzeug>=0.14.1,<2.1
+vmprof @ git+https://github.com/vmprof/vmprof-python.git@1a591272a62e8e75267a15b19620f67853e7b523

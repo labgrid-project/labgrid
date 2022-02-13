@@ -35,6 +35,7 @@ workers:
     endpoint:
       type: tcp
       port: 20408
+      user_timeout: 5000
     paths:
       /:
         type: static

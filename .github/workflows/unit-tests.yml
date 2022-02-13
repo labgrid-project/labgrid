@@ -25,7 +25,7 @@ jobs:
           ${{ runner.os }}-pip-
     - name: Install system dependencies
       run: |
-        sudo apt-get install -yq libow-dev openssh-server openssh-client libsnappy-dev ncurses-term graphviz
+        sudo apt-get install -yq libow-dev openssh-server openssh-client libsnappy-dev ncurses-term graphviz libgirepository1.0-dev libunwind-dev
         sudo mkdir -p /var/cache/labgrid/runner && sudo chown runner /var/cache/labgrid/runner
     - name: Prepare local SSH
       run: |

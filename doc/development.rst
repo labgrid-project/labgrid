@@ -23,7 +23,7 @@ Install required dependencies:
 
 .. code-block:: bash
 
-   sudo apt install python3-dev libow-dev libsnappy-dev
+   sudo apt install python3-dev libow-dev libsnappy-dev libgirepository1.0-dev libunwind-dev
 
 Install the development requirements:
 

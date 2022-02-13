@@ -2,6 +2,7 @@ import os.path
 import subprocess
 import socket
 import atexit
+import warnings
 
 from shutil import which
 
@@ -61,9 +62,9 @@ def test_filter_dict():
 
     d_orig = {'foo': 1, 'bar': 2, 'baz': 3}
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         d_filtered = filter_dict(d_orig, A)
-    assert not record
     assert d_filtered is not d_orig
     assert d_filtered == {'foo': 1}
 

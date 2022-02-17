@@ -320,7 +320,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if not self._xmodem_cached_rx_cmd:
             if self._run('which rx')[0]:
                 # busybox rx
-                self._xmodem_cached_rx_cmd = "rx '{filename}'"
+                # lrz may provide rx so redirect stderr for the same reason as below
+                self._xmodem_cached_rx_cmd = "rx '{filename}' 2>/dev/null"
             elif self._run('which lrz')[0]:
                 # redirect stderr to prevent lrz from printing "ready to receive
                 # $file", which will confuse the XMODEM instance

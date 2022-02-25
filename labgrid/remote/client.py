@@ -625,6 +625,17 @@ class ClientSession(ApplicationSession):
 
         print(f"released place {place.name}")
 
+    async def release_from(self):
+        """Release a place, but only if acquired by a specific user"""
+        place = self.get_place()
+        res = await self.call(
+            'org.labgrid.coordinator.release_place_from', place.name, self.args.acquired,
+        )
+        if not res:
+            raise ServerError(f"failed to release place {place.name}")
+
+        print(f"{self.args.acquired} has released place {place.name}")
+
     async def allow(self):
         """Allow another use access to a previously acquired place"""
         place = self.get_place()
@@ -1624,6 +1635,13 @@ def main():
     subparser.add_argument('-k', '--kick', action='store_true',
                            help="release a place even if it is acquired by a different user")
     subparser.set_defaults(func=ClientSession.release)
+
+    subparser = subparsers.add_parser('release-from',
+                                     help="atomically release a place, but only if locked by a specific user")
+    subparser.add_argument("acquired",
+                           metavar="HOST/USER",
+                           help="User and host to match against when releasing")
+    subparser.set_defaults(func=ClientSession.release_from)
 
     subparser = subparsers.add_parser('allow', help="allow another user to access a place")
     subparser.add_argument('user', help="<host>/<username>")

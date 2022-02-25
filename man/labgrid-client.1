@@ -155,6 +155,12 @@ matches anything.
 \fBallow\fP user                  Allow another user to access a place
 .sp
 \fBrelease (unlock)\fP            Release a place
+.INDENT 0.0
+.TP
+.B \fBrelease\-from\fP host/user      Atomically release a place, but only if acquired by a specific user. Note that this
+command returns success as long as specified user no longer owns the place, meaning it may
+be acquired by another user or not at all.
+.UNINDENT
 .sp
 \fBenv\fP                         Generate a labgrid environment file for a place
 .sp

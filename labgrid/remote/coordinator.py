@@ -195,6 +195,11 @@ class CoordinatorComponent(ApplicationSession):
             options=RegisterOptions(details_arg='details')
         )
         await self.register(
+            self.release_place_from,
+            'org.labgrid.coordinator.release_place_from',
+            options=RegisterOptions(details_arg='details')
+        )
+        await self.register(
             self.allow_place,
             'org.labgrid.coordinator.allow_place',
             options=RegisterOptions(details_arg='details')
@@ -661,6 +666,42 @@ class CoordinatorComponent(ApplicationSession):
             return False
         if not place.acquired:
             return False
+
+        await self._release_resources(place, place.acquired_resources)
+
+        place.acquired = None
+        place.allowed = set()
+        place.touch()
+        self._publish_place(place)
+        self.save_later()
+        self.schedule_reservations()
+        return True
+
+    @locked
+    async def release_place_from(self, name, acquired, details=None):
+        """
+        Release a place, but only if acquired by a specific user
+
+        Note that unlike the release_place API, this function returns True as
+        long as the specific place is not acquired by the specified user. This
+        may mean that the place was not acquired at all, is acquired by
+        another, or was released; which of these states cannot be inferred from
+        the return code. This is intentional as the purpose of the command is
+        to validate that the specified user no longer owns the place, and the
+        exact state is irrelevant as long as that condition is met.
+
+        Returns:
+            bool: True if the user no longer owns the place, or False if there
+            was an error that prevented releasing the place
+        """
+        try:
+            place = self.places[name]
+        except KeyError:
+            return False
+        if not place.acquired:
+            return True
+        if place.acquired != acquired:
+            return True
 
         await self._release_resources(place, place.acquired_resources)
 

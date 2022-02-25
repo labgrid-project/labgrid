@@ -11,6 +11,10 @@ New Features in 0.5.0
   there are multiple NetworkService resources available.
 - eg_pms2_network power port driver supports controlling the Energenie power
   management series with devices like the EG_PMS2_LAN & EG_PMS2_WLAN
+- The client and coordinator received a new "--from" parameter for the release
+  command. It only releases a place if it acquired by a specific user. This can
+  be used to prevent race conditions when attempting to automate the cleanup of
+  unused places (e.g. in CI jobs)
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

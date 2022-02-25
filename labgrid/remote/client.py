@@ -613,13 +613,18 @@ class ClientSession(ApplicationSession):
         if not place.acquired:
             raise UserError(f"place {place.name} is not acquired")
         _, user = place.acquired.split('/')
-        if user != self.getuser():
+        if user != self.getuser() and not self.args.release_from:
             if not self.args.kick:
                 raise UserError(f"place {place.name} is acquired by a different user ({place.acquired}), use --kick if you are sure")  # pylint: disable=line-too-long
             print(f"warning: kicking user ({place.acquired})")
-        res = await self.call(
-            'org.labgrid.coordinator.release_place', place.name
-        )
+        if self.args.release_from:
+            res = await self.call(
+                'org.labgrid.coordinator.release_place', place.name, acquired=self.args.release_from
+            )
+        else:
+            res = await self.call(
+                'org.labgrid.coordinator.release_place', place.name
+            )
         if not res:
             raise ServerError(f"failed to release place {place.name}")
 
@@ -1623,6 +1628,8 @@ def main():
                                       help="release a place")
     subparser.add_argument('-k', '--kick', action='store_true',
                            help="release a place even if it is acquired by a different user")
+    subparser.add_argument('-f', '--from', dest="release_from", metavar="HOST/USER",
+                           help="release a place if you supply the specific user who acquired it")
     subparser.set_defaults(func=ClientSession.release)
 
     subparser = subparsers.add_parser('allow', help="allow another user to access a place")

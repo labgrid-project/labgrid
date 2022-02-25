@@ -16,7 +16,7 @@ from autobahn.wamp.types import RegisterOptions
 
 from .common import *
 from .scheduler import TagSet, schedule
-from ..util import atomic_replace
+from ..util import atomic_replace, load, dump
 
 
 class Action(Enum):
@@ -292,10 +292,10 @@ class CoordinatorComponent(ApplicationSession):
         self.save_scheduled = False
 
         resources = self._get_resources()
-        resources = yaml.dump(resources, default_flow_style=False)
+        resources = dump(resources, default_flow_style=False)
         resources = resources.encode()
         places = self._get_places()
-        places = yaml.dump(places, default_flow_style=False)
+        places = dump(places, default_flow_style=False)
         places = places.encode()
 
         loop = asyncio.get_event_loop()
@@ -306,7 +306,7 @@ class CoordinatorComponent(ApplicationSession):
         try:
             self.place = {}
             with open('places.yaml', 'r') as f:
-                self.places = yaml.load(f.read())
+                self.places = load(f.read())
             for placename, config in self.places.items():
                 config['name'] = placename
                 # FIXME maybe recover previously acquired places here?
@@ -653,12 +653,27 @@ class CoordinatorComponent(ApplicationSession):
         return True
 
     @locked
-    async def release_place(self, name, details=None):
+    async def release_place(self, name, acquired=None, details=None):
         print(details)
         try:
             place = self.places[name]
         except KeyError:
             return False
+        """
+        New logic to handle the release --from mechanic.
+
+        Note that with the --from parameter, this function returns True as
+        long as the specific place is not acquired by the specified user. This
+        may mean that the place was not acquired at all, is acquired by
+        another, or was released; which of these states cannot be inferred from
+        the return code. This is intentional as the purpose of the command is
+        to validate that the specified user no longer owns the place, and the
+        exact state is irrelevant as long as that condition is met.
+        """
+        if not place.acquired and acquired is not None:
+            return True
+        if acquired is not None and place.acquired != acquired:
+            return True
         if not place.acquired:
             return False
 

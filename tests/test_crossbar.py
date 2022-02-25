@@ -192,6 +192,52 @@ def test_place_acquire_broken(place, exporter):
         print(spawn.before.decode())
         assert spawn.exitstatus == 0, spawn.before.strip()
 
+def test_place_release_from(monkeypatch, place, exporter):
+    user = "test-user"
+    host = "test-host"
+    monkeypatch.setenv("LG_USERNAME", user)
+    monkeypatch.setenv("LG_HOSTNAME", host)
+
+    # Acquire place
+    with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # Ensure place is acquired by user
+    with pexpect.spawn('python -m labgrid.remote.client who') as spawn:
+        spawn.expect(f"{user}\\s+{host}\\s+test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # Use release --from to release for a different user
+    with pexpect.spawn('python -m labgrid.remote.client -p test release --from foo/bar') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # Ensure place is still acquired by this user
+    with pexpect.spawn('python -m labgrid.remote.client who') as spawn:
+        spawn.expect(f"{user}\\s+{host}\\s+test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # Use release --from to release place for this user
+    with pexpect.spawn(f'python -m labgrid.remote.client -p test release --from {host}/{user}') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # Ensure place is still no longer acquired
+    with pexpect.spawn('python -m labgrid.remote.client who') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        before = spawn.before.decode("utf-8").strip()
+        assert user not in before and not host in before, before
+
 def test_place_add_no_name(crossbar):
     with pexpect.spawn('python -m labgrid.remote.client create') as spawn:
         spawn.expect("missing place name")

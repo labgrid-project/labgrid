@@ -197,6 +197,13 @@ client commands support the name as an optional parameter and will inform the
 user that a name is required if multiple resources are found, but no name is
 given.
 
+RELEASE COMMAND
+---------------
+``-f,--from`` host/user         Atomically release a place, but only if acquired by a specific user. Note that this changes the return code of the release command, it returns success as long as the specified user no longer owns the place, meaning it may be acquired by another user or not at all.
+
+``-k,--kick``                   Release a place even if it is not acquired by
+your current host/user combination.
+
 EXAMPLES
 --------
 

@@ -201,6 +201,12 @@ be used to address the individual resources. In addition to the \fImatch\fP take
 client commands support the name as an optional parameter and will inform the
 user that a name is required if multiple resources are found, but no name is
 given.
+.SH RELEASE COMMAND
+.sp
+\fB\-f,\-\-from\fP host/user         Atomically release a place, but only if acquired by a specific user. Note that this changes the return code of the release command, it returns success as long as the specified user no longer owns the place, meaning it may be acquired by another user or not at all.
+.sp
+\fB\-k,\-\-kick\fP                   Release a place even if it is not acquired by
+your current host/user combination.
 .SH EXAMPLES
 .sp
 To retrieve a list of places run:

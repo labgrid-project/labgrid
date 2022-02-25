@@ -1695,24 +1695,28 @@ def main():
 
     subparser = subparsers.add_parser('scp',
                                       help="transfer file via scp")
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.add_argument('src', help='source path (use :dir/file for remote side)')
     subparser.add_argument('dst', help='destination path (use :dir/file for remote side)')
     subparser.set_defaults(func=ClientSession.scp)
 
     subparser = subparsers.add_parser('rsync',
                                       help="transfer files via rsync")
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.add_argument('src', help='source path (use :dir/file for remote side)')
     subparser.add_argument('dst', help='destination path (use :dir/file for remote side)')
     subparser.set_defaults(func=ClientSession.rsync)
 
     subparser = subparsers.add_parser('sshfs',
                                       help="mount via sshfs (blocking)")
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.add_argument('path', help='remote path on the target')
     subparser.add_argument('mountpoint', help='local path')
     subparser.set_defaults(func=ClientSession.sshfs)
 
     subparser = subparsers.add_parser('forward',
                                       help="forward local port to remote target")
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.add_argument("--local", "-L", metavar="[LOCAL:]REMOTE",
                            action=LocalPort,
                            help="Forward local port LOCAL to remote port REMOTE. If LOCAL is unspecified, an arbitrary port will be chosen")

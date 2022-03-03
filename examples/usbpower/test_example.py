@@ -3,14 +3,6 @@ import pytest
 from labgrid.exceptions import NoDriverFoundError
 
 
-@pytest.fixture()
-def strategy(target):
-    try:
-        return target.get_driver('ExampleStrategy')
-    except NoDriverFoundError:
-        pytest.skip("strategy not found")
-
-
 @pytest.fixture(scope="function")
 def bootloader(target, strategy, capsys):
     with capsys.disabled():

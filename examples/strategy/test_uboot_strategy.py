@@ -1,14 +1,6 @@
 import pytest
 
 
-@pytest.fixture()
-def strategy(target):
-    try:
-        return target.get_driver('UBootStrategy')
-    except NoDriverFoundError:
-        pytest.skip("strategy not found")
-
-
 @pytest.fixture(scope="function")
 def in_bootloader(strategy, capsys):
     with capsys.disabled():

@@ -62,3 +62,16 @@ class BareboxStrategy(Strategy):
                 f"no transition found from {self.status} to {status}"
             )
         self.status = status
+
+    @step(args=['status'])
+    def force(self, status):
+        if not isinstance(status, Status):
+            status = Status[status]
+        self.target.activate(self.power)
+        if status == Status.barebox:
+            self.target.activate(self.barebox)
+        elif status == Status.shell:
+            self.target.activate(self.shell)
+        else:
+            raise StrategyError("can not force state {}".format(status))
+        self.status = status

@@ -195,7 +195,6 @@ imports:
         """
         )
         e = Environment(str(p))
-        with pytest.warns(None) as record:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
             t = e.get_target("test1")
-        for i in record.list:
-            assert i.category != 'UserWarning'

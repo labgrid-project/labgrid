@@ -57,3 +57,6 @@ Indices and Tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. meta::
+   :google-site-verification: wLmZ0Ehh9wAjp6f23ckkSFyQtNEIW2wUfpv-r5kYv2M

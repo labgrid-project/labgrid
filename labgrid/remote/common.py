@@ -118,14 +118,19 @@ class ResourceMatch:
 
     def ismatch(self, resource_path):
         """Return True if this matches the given resource"""
-        exporter, group, cls, name = resource_path
+        try:
+            exporter, group, cls, name = resource_path
+        except ValueError:
+            exporter, group, cls = resource_path
+            name = None
+
         if not fnmatchcase(exporter, self.exporter):
             return False
         if not fnmatchcase(group, self.group):
             return False
         if not fnmatchcase(cls, self.cls):
             return False
-        if self.name and not fnmatchcase(name, self.name):
+        if name and self.name and not fnmatchcase(name, self.name):
             return False
 
         return True

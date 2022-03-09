@@ -133,6 +133,26 @@ def test_place_match(place):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
+def test_place_match_duplicates(place):
+    # first given match should succeed, second should be skipped
+    matches = (
+        ("e1/g1/r1", "e1/g1/r1"),
+        ("e1/g1/r1/n1", "e1/g1/r1/n1"),
+        ("e1/g1/r1/n1", "e1/g1/r1"),
+        ("e1/g1/r1", "e1/g1/r1/n1"),
+    )
+    for match in matches:
+        with pexpect.spawn(f'python -m labgrid.remote.client -p test add-match "{match[0]}" "{match[1]}"') as spawn:
+            spawn.expect(f"pattern '{match[1]}' exists, skipping")
+            spawn.expect(pexpect.EOF)
+            spawn.close()
+            assert spawn.exitstatus == 0, spawn.before.strip()
+
+        with pexpect.spawn(f'python -m labgrid.remote.client -p test del-match "{match[0]}"') as spawn:
+            spawn.expect(pexpect.EOF)
+            spawn.close()
+            assert spawn.exitstatus == 0, spawn.before.strip()
+
 def test_place_acquire(place):
     with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
         spawn.expect(pexpect.EOF)

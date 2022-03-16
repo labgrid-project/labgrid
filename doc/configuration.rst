@@ -99,7 +99,7 @@ Arguments:
   - address (int): slave address on the modbus, e.g. 16
   - baudrate (bool): optional, default is 115200
   - speed (int, default=115200): baud rate of the serial port
-  - timeout (bool): optional, timeout in seconds. Default is 0.25 s
+  - timeout (float): optional, timeout in seconds. Default is 0.25 s
 
 Used by:
   - `ModbusRTUDriver`_
@@ -123,7 +123,7 @@ of 115200.
 The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
   - speed (int, default=115200): baud rate of the serial port
 
 Used by:
@@ -281,7 +281,7 @@ The example describes port 1 on the hub with the ID_PATH
 
 Arguments:
   - index (int): number of the port to switch
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBPowerDriver`_
@@ -310,7 +310,7 @@ The example describes port 1 on the hub with the ID_PATH
 
 Arguments:
   - index (int): number of the port to switch
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SiSPMPowerDriver`_
@@ -383,7 +383,7 @@ Arguments:
   - index (int): number of the relay to use
   - invert (bool, default=False): whether the logic level is inverted
     (active-low)
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `DeditecRelaisDriver`_
@@ -456,7 +456,7 @@ It currently supports the widely used "dcttech USBRelay".
 Arguments:
   - index (int, default=1): number of the relay to use
   - invert (bool, default=False): whether to invert the relay
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `HIDRelayDriver`_
@@ -507,7 +507,7 @@ A USBMassStorage resource describes a USB memory stick or similar device.
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0-scsi-0:0:0:3
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBStorageDriver`_
@@ -553,7 +553,7 @@ An IMXUSBLoader resource describes a USB device in the imx loader state.
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `IMXUSBDriver`_
@@ -570,7 +570,7 @@ An MXSUSBLoader resource describes a USB device in the mxs loader state.
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `MXSUSBDriver`_
@@ -587,7 +587,7 @@ An RKUSBLoader resource describes a USB device in the rockchip loader state.
        sys_name: '1-3'
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `RKUSBDriver`_
@@ -615,7 +615,7 @@ An AndroidFastboot resource describes a USB device in the fastboot state.
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `AndroidFastbootDriver`_
@@ -632,7 +632,7 @@ Ethernet or WiFi)
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 RemoteNetworkInterface
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -704,7 +704,7 @@ Arguments:
   - driver (str): name of the sigrok driver to use
   - channels (str): optional, channel mapping as described in the sigrok-cli
     man page
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SigrokDriver`_
@@ -731,7 +731,7 @@ Arguments:
   - driver (str): name of the sigrok driver to use
   - channels (str): optional, channel mapping as described in the sigrok-cli
     man page
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `SigrokPowerDriver`_
@@ -749,7 +749,7 @@ device.
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBSDMUXDriver`_
@@ -771,7 +771,7 @@ A :any:`LXAUSBMux` resource describes a Linux Automation GmbH USB-Mux device.
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `LXAUSBMuxDriver`_
@@ -795,7 +795,7 @@ device.
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBSDWireDriver`_
@@ -819,7 +819,7 @@ Video4Linux2 kernel driver.
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBVideoDriver`_
@@ -861,7 +861,7 @@ by an ALSA kernel driver.
 Arguments:
   - index (int, default=0): ALSA PCM device number (as in
     `hw:CARD=<card>,DEV=<index>`)
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 Used by:
   - `USBAudioInputDriver`_
@@ -887,7 +887,7 @@ The low-level communication is handled by the ``usbtmc`` kernel driver.
        '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
 
 Arguments:
-  - match (str): key and value for a udev match, see `udev Matching`_
+  - match (dict): key and value for a udev match, see `udev Matching`_
 
 A udev rules file may be needed to allow access for non-root users:
 
@@ -953,7 +953,7 @@ running a flashing program with `FlashScriptDriver`_.
        ID_SERIAL: '1234'
 
 Arguments:
-  - match (str): key and value pairs for a udev match, see `udev Matching`_
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
 
 Used by:
   - `FlashScriptDriver`_
@@ -2460,7 +2460,7 @@ Implements:
 Arguments:
   - script (str): optional, key in :ref:`images <labgrid-device-config-images>`
     containing the script to execute for writing of the flashable device
-  - args (list): optional, list of arguments for flash script execution
+  - args (list of str): optional, list of arguments for flash script execution
 
 The FlashScriptDriver allows running arbitrary programs to flash a device.
 Some SoC or devices may require custom, one-off, or proprietary programs to

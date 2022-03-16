@@ -12,9 +12,9 @@ class ModbusRTU(SerialPort, Resource):
 
     Args:
         port (str): tty the instrument is connected to, e.g. '/dev/ttyUSB0'
-        speed (bool): optional, default is 115200
+        speed (int): optional, default is 115200
         address (int): slave address on the modbus, e.g. 16
-        timeout (bool): optional, timeout in seconds. Default is 0.25 s
+        timeout (float): optional, timeout in seconds. Default is 0.25 s
     """
 
     address = attr.ib(default=None, validator=attr.validators.instance_of(int))

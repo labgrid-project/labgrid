@@ -97,7 +97,6 @@ exporter.
 Arguments:
   - port (str): tty the instrument is connected to, e.g. '/dev/ttyUSB0'
   - address (int): slave address on the modbus, e.g. 16
-  - baudrate (bool): optional, default is 115200
   - speed (int, default=115200): baud rate of the serial port
   - timeout (float): optional, timeout in seconds. Default is 0.25 s
 

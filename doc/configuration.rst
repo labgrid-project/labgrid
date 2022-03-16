@@ -98,7 +98,7 @@ Arguments:
   - port (str): tty the instrument is connected to, e.g. '/dev/ttyUSB0'
   - address (int): slave address on the modbus, e.g. 16
   - speed (int, default=115200): baud rate of the serial port
-  - timeout (float): optional, timeout in seconds. Default is 0.25 s
+  - timeout (float, default=0.25): optional, timeout in seconds
 
 Used by:
   - `ModbusRTUDriver`_
@@ -1423,8 +1423,7 @@ Arguments:
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
   - init_commands (tuple): optional, tuple of commands to execute after matching the
     prompt
-  - password_prompt (str): optional, regex to match the U-Boot password prompt,
-    defaults to "enter Password: "
+  - password_prompt (str, default="enter Password: "): regex to match the U-Boot password prompt
   - boot_expression (str, default="U-Boot 20\\d+"): regex to match the U-Boot start string
   - bootstring (str): optional, regex to match on Linux Kernel boot
   - boot_command (str, default="run bootcmd"): boot command for booting target

@@ -2275,7 +2275,7 @@ Arguments:
   - max_voltage (float): optional, maximum allowed voltage for protection against
     accidental damage (in volts)
   - max_current (float): optional, maximum allowed current for protection against
-    accidental damage
+    accidental damage (in ampere)
 
 USBSDMuxDriver
 ~~~~~~~~~~~~~~

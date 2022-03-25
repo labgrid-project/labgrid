@@ -150,6 +150,10 @@ LABGRID-CLIENT COMMANDS
 
 ``release (unlock)``            Release a place
 
+``release-from`` host/user      Atomically release a place, but only if acquired by a specific user. Note that this
+                                command returns success as long as specified user no longer owns the place, meaning it may
+                                be acquired by another user or not at all.
+
 ``env``                         Generate a labgrid environment file for a place
 
 ``power (pw)`` action           Change (or get) a place's power status, where action is one of get, on, off, status

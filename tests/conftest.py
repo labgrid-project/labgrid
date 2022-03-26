@@ -136,7 +136,7 @@ def exporter(tmpdir, crossbar):
     """
     )
     spawn = pexpect.spawn(
-            'labgrid-exporter exports.yaml',
+            f'{sys.executable} -m labgrid.remote.exporter exports.yaml',
             logfile=Prefixer(sys.stdout.buffer, 'exporter'),
             cwd=str(tmpdir))
     try:

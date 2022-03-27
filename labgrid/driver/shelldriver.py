@@ -318,16 +318,19 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def _get_xmodem_rx_cmd(self, filename):
         """ Detect which XMODEM receive command can be used on the target, and cache the result. """
         if not self._xmodem_cached_rx_cmd:
-            if self._run('which rx')[0]:
-                # busybox rx
-                # lrz may provide rx so redirect stderr for the same reason as below
-                self._xmodem_cached_rx_cmd = "rx '{filename}' 2>/dev/null"
-            elif self._run('which lrz')[0]:
+            if self._run('which lrz')[2] == 0:
                 # redirect stderr to prevent lrz from printing "ready to receive
                 # $file", which will confuse the XMODEM instance
                 self._xmodem_cached_rx_cmd = "lrz -X -y -c -b '{filename}' 2>/dev/null"
+            elif self._run('which rz')[2] == 0:
+                # renamed binaries packaged by some distros
+                self._xmodem_cached_rx_cmd = "rz -X -y -c -b '{filename}' 2>/dev/null"
+            elif self._run('which rx')[2] == 0:
+                # busybox rx
+                # lrz may provide rx so redirect stderr for the same reason as above
+                self._xmodem_cached_rx_cmd = "rx '{filename}' 2>/dev/null"
             else:
-                raise ExecutionError('No XMODEM receiver (rx, lrz) available on target')
+                raise ExecutionError('No XMODEM receiver (lrz, rz, rx) available on target')
 
         # use the cached string template to make the full command with parameters
         return self._xmodem_cached_rx_cmd.format(filename=filename)
@@ -335,12 +338,15 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def _get_xmodem_sx_cmd(self, filename):
         """ Detect which XMODEM send command can be used on the target, and cache the result. """
         if not self._xmodem_cached_sx_cmd:
-            if self._run('which lsz')[0]:
+            if self._run('which lsz')[2] == 0:
                 # redirect stderr to prevent lsz from printing "Give XMODEM receive
                 # cmd now", which will confuse the XMODEM instance
                 self._xmodem_cached_sx_cmd = "lsz -b -X -m 1200 -M 10 '{filename}' 2>/dev/null"
+            elif self._run('which sz')[2] == 0:
+                # renamed binaries packaged by some distros
+                self._xmodem_cached_sx_cmd = "sz -b -X -m 1200 -M 10 '{filename}' 2>/dev/null"
             else:
-                raise ExecutionError('No XMODEM sender (lsz) available on target')
+                raise ExecutionError('No XMODEM sender (lsz, sz) available on target')
 
         # use the cached string template to make the full command with parameters
         return self._xmodem_cached_sx_cmd.format(filename=filename)

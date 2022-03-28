@@ -12,7 +12,7 @@ RUN set -e ;\
     pip3 install -U pip;\
     apt clean ;\
     rm -rf /var/lib/apt/lists/* ;\
-    git clone git://github.com/vishnubob/wait-for-it.git opt/wait-for-it && cd opt/wait-for-it  && git reset --hard 54d1f0bfeb6557adf8a3204455389d0901652242
+    git clone https://github.com/vishnubob/wait-for-it.git opt/wait-for-it && cd opt/wait-for-it  && git reset --hard 54d1f0bfeb6557adf8a3204455389d0901652242
 
 #
 # Client

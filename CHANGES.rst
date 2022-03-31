@@ -14,6 +14,8 @@ New Features in 0.5.0
 - The client and coordinator learned of a new "release-from" operation that only releases a place
   if it acquired by a specific user. This can be used to prevent race conditions when attempting to
   automate the cleanup of unused places (e.g. in CI jobs)
+- ModbusTCPCoil driver supports writing using multiple coils write method
+  in order to make driver usable with Papouch Quido I/O modules
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

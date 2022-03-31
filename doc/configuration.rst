@@ -362,6 +362,8 @@ Arguments:
   - coil (int): index of the coil e.g. 3
   - invert (bool, default=False): whether the logic level is inverted
     (active-low)
+  - write_multiple_coils (bool, default=False): whether to perform write
+    using "write multiple coils" method instead of "write single coil"
 
 Used by:
   - `ModbusCoilDriver`_

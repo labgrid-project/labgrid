@@ -38,9 +38,15 @@ class ModbusCoilDriver(Driver, DigitalOutputProtocol):
 
     @Driver.check_active
     def set(self, status):
+        write_status = None
         if self.coil.invert:
             status = not status
-        write_status = self.client.write_single_coil(self.coil.coil, bool(status))
+        if self.coil.write_multiple_coils:
+            write_status = self.client.write_multiple_coils(
+                self.coil.coil, [bool(status)]
+            )
+        else:
+            write_status = self.client.write_single_coil(self.coil.coil, bool(status))
         if write_status is None:
             self._handle_error("write")
 

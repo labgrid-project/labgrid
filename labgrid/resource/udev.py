@@ -546,6 +546,14 @@ class SiSPMPowerPort(USBResource):
 @target_factory.reg_resource
 @attr.s(eq=False)
 class USBVideo(USBResource):
+    def filter_match(self, device):
+        capabilities = device.properties.get('ID_V4L_CAPABILITIES').split(':')
+
+        if 'capture' not in capabilities:
+            return False
+
+        return super().filter_match(device)
+
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'video4linux'
         self.match['@SUBSYSTEM'] = 'usb'

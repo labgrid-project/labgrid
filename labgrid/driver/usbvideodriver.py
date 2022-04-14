@@ -1,11 +1,13 @@
 # pylint: disable=no-member
 import subprocess
+
 import attr
 
-from .common import Driver
-from ..factory import target_factory
 from ..exceptions import InvalidConfigError
+from ..factory import target_factory
 from ..protocol import VideoProtocol
+from .common import Driver
+
 
 @target_factory.reg_driver
 @attr.s(eq=False)

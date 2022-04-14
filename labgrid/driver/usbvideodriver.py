@@ -1,4 +1,5 @@
 # pylint: disable=no-member
+import logging
 import subprocess
 
 import attr
@@ -15,6 +16,11 @@ class USBVideoDriver(Driver, VideoProtocol):
     bindings = {
         "video": {"USBVideo", "NetworkUSBVideo"},
     }
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self.logger = logging.getLogger(f"{self}")
+        self._prepared = False
 
     def get_qualities(self):
         match = (self.video.vendor_id, self.video.model_id)
@@ -60,7 +66,14 @@ class USBVideoDriver(Driver, VideoProtocol):
                 ("mid", "video/x-h264,width=1280,height=720,framerate=25/1"),
                 ("high", "video/x-h264,width=1920,height=1080,framerate=25/1"),
                 ])
-        raise InvalidConfigError("Unknown USB video device {:04x}:{:04x}".format(*match))
+        self.logger.warning(
+            "Unkown USB video device {:04x}:{:04x}, using fallback pipeline."
+            .format(*match))
+        return ("mid", [
+            ("low", "image/jpeg,width=640,height=480,framerate=30/1"),
+            ("mid", "image/jpeg,width=1280,height=720,framerate=30/1"),
+            ("high", "image/jpeg,width=1920,height=1080,framerate=30/1"),
+            ])
 
     def select_caps(self, hint=None):
         default, variants = self.get_qualities()
@@ -92,8 +105,8 @@ class USBVideoDriver(Driver, VideoProtocol):
         elif match == (0x1d6c, 0x0103):
             controls = controls or "focus_auto=1"
             inner = "h264parse"
-        else:
-            raise InvalidConfigError("Unknown USB video device {:04x}:{:04x}".format(*match))
+        else: # fallback pipeline
+            inner = None  # just forward the jpeg frames
 
         pipeline = f"v4l2src device={path} "
         if controls:

@@ -36,6 +36,12 @@ class USBVideoDriver(Driver, VideoProtocol):
                 ("mid", "image/jpeg,width=1280,height=720,framerate=15/2"),
                 ("high", "image/jpeg,width=1920,height=1080,framerate=10/1"),
                 ])
+        if match == (0x1224, 0x2825): # LogiLink UA0371
+            return ("mid", [
+                ("low", "image/jpeg,width=640,height=480,framerate=30/1"),
+                ("mid", "image/jpeg,width=1280,height=720,framerate=30/1"),
+                ("high", "image/jpeg,width=1920,height=1080,framerate=30/1"),
+                ])
         if match == (0x534d, 0x2109): # MacroSilicon
             return ("mid", [
                 ("low", "image/jpeg,width=720,height=480,framerate=10/1"),
@@ -71,6 +77,8 @@ class USBVideoDriver(Driver, VideoProtocol):
         elif match == (0x046d, 0x08e5):
             controls = controls or "focus_auto=1"
             inner = None
+        elif match == (0x1224, 0x2825): # LogiLink UA0371
+            inner = None  # just forward the jpeg frames
         elif match == (0x534d, 0x2109):
             inner = None  # just forward the jpeg frames
         elif match == (0x1d6c, 0x0103):

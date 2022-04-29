@@ -20,10 +20,14 @@ class ConsoleExpectMixin:
 
     @Driver.check_active
     @step(result=True, tag='console')
-    def read(self, size=1, timeout=0.0):
-        res = self._read(size=size, timeout=timeout)
-        self.logger.debug("Read %i bytes: %s, timeout %.2f, requested size %i",
-                          len(res), res, timeout, size)
+    def read(self, size=1, timeout=0.0, max_size=None):
+        res = self._read(size=size, timeout=timeout, max_size=max_size)
+        if max_size:
+            self.logger.debug("Read %i bytes: %s, timeout %.2f, requested size %i, max size %i",
+                              len(res), res, timeout, size, max_size)
+        else:
+            self.logger.debug("Read %i bytes: %s, timeout %.2f, requested size %i",
+                              len(res), res, timeout, size)
         return res
 
     @Driver.check_active

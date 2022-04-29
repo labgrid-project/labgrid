@@ -23,14 +23,18 @@ class TestSerialDriver:
         serial_mock.return_value.open.assert_called_once_with()
         serial_mock.return_value.write.assert_called_once_with(b"testdata")
 
-    def test_read(self, target, serial_port, mocker):
+    @pytest.mark.parametrize("param", [[1, 1, None, 1],  # old test case
+                                       [3, 2, None, 3], [3, 2, 5, 3], [3, 2, 1, 1], [1, 2, 1, 1]])
+    # param = [size, in_waiting, max_size, out]
+    def test_read(self, target, serial_port, mocker, param):
         serial_mock = mocker.patch('serial.Serial')
-        serial_mock.return_value.in_waiting = 0
+        serial_mock.return_value.in_waiting = param[1]
         s = SerialDriver(target, "serial")
         target.activate(s)
-        s.read()
+        s.read(size=param[0], max_size=param[2])
         serial_mock.return_value.open.assert_called_once_with()
-        serial_mock.return_value.read.assert_called_once_with(1)
+        # assert 'read' called once with correct return:
+        serial_mock.return_value.read.assert_called_once_with(param[3])
 
     def test_close(self, target, serial_port, mocker):
         serial_mock = mocker.patch('serial.Serial')

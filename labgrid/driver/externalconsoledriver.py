@@ -70,17 +70,23 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         self._child = None
         self.status = 0
 
-    def _read(self, size: int = 1024, timeout: int = 0):
+    def _read(self, size: int = 1024, timeout: int = 0, max_size: int = None):
         """
         Reads 'size' bytes from the serialport
 
         Keyword Arguments:
         size -- amount of bytes to read, defaults to 1024
+        max_size -- maximal amount of bytes to read
         """
+        if max_size:
+            read_size = min(size, max_size)
+        else:
+            read_size = size
+
         if self._child.poll() is not None:
             raise ExecutionError("child has vanished")
         if self._poll.poll(timeout):
-            return self._child.stdout.read(size)
+            return self._child.stdout.read(read_size)
 
         return b''
 

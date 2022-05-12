@@ -196,6 +196,8 @@ class SerialPortExport(ResourceExport):
         if self.ser2net_bin is None:
             if os.path.isfile("/usr/sbin/ser2net"):
                 self.ser2net_bin = "/usr/sbin/ser2net"
+            elif os.path.isfile("/usr/local/sbin/ser2net"):
+                self.ser2net_bin = "/usr/local/sbin/ser2net"
 
             if self.ser2net_bin is None:
                 warnings.warn("ser2net binary not found, falling back to /usr/bin/ser2net")

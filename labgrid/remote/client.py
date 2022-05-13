@@ -19,6 +19,7 @@ from collections import defaultdict, OrderedDict
 from datetime import datetime
 from pprint import pformat
 import txaio
+txaio.use_asyncio()
 from autobahn.asyncio.wamp import ApplicationSession
 
 from .common import *
@@ -33,7 +34,6 @@ from ..util.helper import processwrapper
 from ..util import atomic_replace
 from ..driver import Mode
 
-txaio.use_asyncio()
 txaio.config.loop = asyncio.get_event_loop()
 
 

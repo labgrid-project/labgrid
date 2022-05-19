@@ -109,7 +109,7 @@ class USBResource(ManagedResource):
             def match_single(dev, key, value):
                 if dev.properties.get(key) == value:
                     return True
-                if dev.attributes.get(key) == value:
+                if dev.attributes.get(key) and dev.attributes.asstring(key) == value:
                     return True
                 if getattr(dev, key, None) == value:
                     return True

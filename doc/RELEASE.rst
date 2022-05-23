@@ -83,6 +83,7 @@ Test the upload by using pypi dev as a download source
 
    virtualenv -p python3 labgrid-release-<your-version-number>
    source labgrid-release-<your-version-number>/bin/activate
+   pip install --upgrade pip setuptools wheel
    pip install --index-url https://test.pypi.org/simple/ labgrid
 
 And optionally run the tests:

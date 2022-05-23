@@ -17,6 +17,7 @@ Create and activate a virtualenv for labgrid:
 
    virtualenv -p python3 venv
    source venv/bin/activate
+   pip install --upgrade pip setuptools wheel
 
 Install required dependencies:
 
@@ -676,10 +677,11 @@ Building the documentation
 When contributing to documentation it's practical to be able to build it also locally.
 
 .. code-block:: bash
-    
+
     # Optional - install requirements in a virtualenv
     virtualenv -p python3 labgrid-venv
     source labgrid-venv/bin/activate
+    pip install --upgrade pip setuptools wheel
 
     git clone https://github.com/labgrid-project/labgrid.git
     cd labgrid

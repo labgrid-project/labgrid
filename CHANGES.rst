@@ -16,6 +16,9 @@ New Features in 0.5.0
   automate the cleanup of unused places (e.g. in CI jobs)
 - ModbusTCPCoil driver supports writing using multiple coils write method
   in order to make driver usable with Papouch Quido I/O modules
+- SmallUBootDriver driver now supports wide range of Ralink/mt7621 devices
+  which expects ``boot_secret`` without new line with new ``boot_secret_nolf``
+  boolean config option.
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

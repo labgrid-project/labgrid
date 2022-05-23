@@ -42,10 +42,12 @@ class SmallUBootDriver(UBootDriver):
 
     Args:
         boot_secret (str): optional, secret used to unlock prompt
+        boot_secret_nolf (bool): optional, send boot_secret without new line
         login_timeout (int): optional, timeout for login prompt detection,
     """
 
     boot_secret = attr.ib(default="a", validator=attr.validators.instance_of(str))
+    boot_secret_nolf = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
 
     @step()
@@ -57,7 +59,10 @@ class SmallUBootDriver(UBootDriver):
 
         # wait for boot expression. Afterwards enter secret
         self.console.expect(self.boot_expression, timeout=self.login_timeout)
-        self.console.sendline(self.boot_secret)
+        if self.boot_secret_nolf:
+            self.console.write(self.boot_secret.encode('ASCII'))
+        else:
+            self.console.sendline(self.boot_secret)
         self._status = 1
 
         # wait until UBoot has reached it's prompt

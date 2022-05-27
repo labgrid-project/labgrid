@@ -616,6 +616,10 @@ An AndroidFastboot resource describes a USB device in the fastboot state.
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 Arguments:
+  - usb_vendor_id (str, default="1d6b"): USB vendor ID to be compared with the
+    ``ID_VENDOR_ID`` udev property
+  - usb_product_id (str, default="0104"): USB product ID, to be compared with
+    the ``ID_MODEL_ID`` udev property
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
 
 Used by:

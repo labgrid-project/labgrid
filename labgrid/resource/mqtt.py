@@ -37,10 +37,10 @@ class MQTTManager(ResourceManager):
     def _on_message(self, client, userdata, msg):
         payload = msg.payload.decode('utf-8')
         topic = msg.topic
-        if payload == "Online":
+        if payload.lower() == "online":
             with self._avail_lock:
                 self._available.add(topic)
-        if payload == "Offline":
+        elif payload.lower() == "offline":
             with self._avail_lock:
                 self._available.discard(topic)
 

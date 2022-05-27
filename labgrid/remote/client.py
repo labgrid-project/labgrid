@@ -492,13 +492,13 @@ class ClientSession(ApplicationSession):
         if place.acquired:
             raise UserError(f"can not change acquired place {place.name}")
         for pattern in self.args.patterns:
-            if pattern in map(repr, place.matches):
-                print(f"pattern '{pattern}' exists, skipping")
-                continue
             if not 2 <= pattern.count("/") <= 3:
                 raise UserError(
                     f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
                 )
+            if place.hasmatch(pattern.split("/")):
+                print(f"pattern '{pattern}' exists, skipping")
+                continue
             res = await self.call(
                 'org.labgrid.coordinator.add_place_match', place.name, pattern
             )
@@ -513,13 +513,12 @@ class ClientSession(ApplicationSession):
         if place.acquired:
             raise UserError(f"can not change acquired place {place.name}")
         for pattern in self.args.patterns:
-            if pattern not in map(repr, place.matches):
-                print(f"pattern '{pattern}' not found, skipping")
-                continue
             if not 2 <= pattern.count("/") <= 3:
                 raise UserError(
                     f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
                 )
+            if not place.hasmatch(pattern.split("/")):
+                print(f"pattern '{pattern}' not found, skipping")
             res = await self.call(
                 'org.labgrid.coordinator.del_place_match', place.name, pattern
             )
@@ -537,12 +536,12 @@ class ClientSession(ApplicationSession):
             raise UserError(f"can not change acquired place {place.name}")
         pattern = self.args.pattern
         name = self.args.name
-        if pattern in map(repr, place.matches):
-            raise UserError(f"pattern '{pattern}' exists")
         if not 2 <= pattern.count("/") <= 3:
             raise UserError(
                 f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
             )
+        if place.hasmatch(pattern.split("/")):
+            raise UserError(f"pattern '{pattern}' exists")
         if '*' in pattern:
             raise UserError(
                 f"invalid pattern '{pattern}' ('*' not allowed for named matches)"

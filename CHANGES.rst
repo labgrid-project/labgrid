@@ -19,6 +19,7 @@ New Features in 0.5.0
 - SmallUBootDriver driver now supports wide range of Ralink/mt7621 devices
   which expects ``boot_secret`` without new line with new ``boot_secret_nolf``
   boolean config option.
+- labgrid-client add-match/add-named-match check for duplicate matches
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

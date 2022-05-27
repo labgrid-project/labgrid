@@ -28,6 +28,7 @@ Bug fixes in 0.5.0
 - Fixed ``labgrid-client forward --remote``/``-R``, which used either the LOCAL
   part of ``--local``/``-L`` accidentally (if specified) or raised an
   UnboundLocalError.
+- Fix udev matching by attributes
 
 Breaking changes in 0.5.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

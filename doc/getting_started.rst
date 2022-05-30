@@ -23,6 +23,7 @@ In many cases, the easiest way is to install labgrid into a virtualenv:
 
     $ virtualenv -p python3 labgrid-venv
     $ source labgrid-venv/bin/activate
+    labgrid-venv $ pip install --upgrade pip setuptools wheel
 
 Start installing labgrid by cloning the repository and installing the
 requirements from the `requirements.txt` file:
@@ -178,6 +179,7 @@ extra virtualenv and install the dependencies via the requirements file.
     $ sudo apt install libsnappy-dev
     $ virtualenv -p python3 crossbar-venv
     $ source crossbar-venv/bin/activate
+    crossbar-venv $ pip install --upgrade pip setuptools wheel
     crossbar-venv $ git clone https://github.com/labgrid-project/labgrid
     crossbar-venv $ cd labgrid && pip install -r crossbar-requirements.txt
     crossbar-venv $ python setup.py install

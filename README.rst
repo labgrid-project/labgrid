@@ -83,19 +83,21 @@ Create and activate a virtualenv for labgrid:
 
    $ virtualenv -p python3 venv
    $ source venv/bin/activate
+   venv $ pip install --upgrade pip setuptools wheel
+
 
 Install labgrid into the virtualenv:
 
 .. code-block:: bash
 
-   $ pip install -r requirements.txt
-   $ python setup.py install
+   venv $ pip install -r requirements.txt
+   venv $ python setup.py install
 
 Tests can now run via:
 
 .. code-block:: bash
 
-   $ python -m pytest --lg-env <config>
+   venv $ python -m pytest --lg-env <config>
 
 
 .. |license| image:: https://img.shields.io/badge/license-LGPLv2.1-blue.svg

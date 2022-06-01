@@ -64,7 +64,7 @@ class CommandMixin:
         return False
 
     def _run_check(self, cmd: str, *, timeout=30, codec: str = "utf-8",
-                   decodeerrors: str = "strict"):
+                   decodeerrors: str = "strict", cmd_input: str = None):
         """
         Internal function which runs the specified command on the shell and
         returns the output if successful, raises ExecutionError otherwise.
@@ -83,7 +83,7 @@ class CommandMixin:
 
     @Driver.check_active
     @step(args=['cmd'], result=True)
-    def run_check(self, cmd: str, *, timeout=30, codec="utf-8", decodeerrors="strict"):
+    def run_check(self, cmd: str, *, timeout=30, codec="utf-8", decodeerrors="strict", cmd_input=None):
         """
         External run_check function, only available if the driver is active.
         Runs the supplied command and returns the stdout, raises an
@@ -95,4 +95,4 @@ class CommandMixin:
         Returns:
             List[str]: stdout of the executed command
         """
-        return self._run_check(cmd, timeout=timeout, codec=codec, decodeerrors=decodeerrors)
+        return self._run_check(cmd, timeout=timeout, codec=codec, decodeerrors=decodeerrors, cmd_input=cmd_input)

@@ -20,6 +20,7 @@ New Features in 0.5.0
   which expects ``boot_secret`` without new line with new ``boot_secret_nolf``
   boolean config option.
 - labgrid-client add-match/add-named-match check for duplicate matches
+- sshdriver.run accepts an cmd_input optional argument to pipe a bytes sequence to the SSH command
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

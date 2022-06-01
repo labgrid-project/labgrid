@@ -68,7 +68,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     def run(self, cmd: str, *, timeout: int = 30):  # pylint: disable=unused-argument
         return self._run(cmd, timeout=timeout)
 
-    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
+    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict", cmd_input: str = None):  # pylint: disable=unused-argument,line-too-long
         """
         Runs the specified command on the shell and returns the output.
 

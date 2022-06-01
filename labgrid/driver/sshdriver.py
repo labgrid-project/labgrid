@@ -166,10 +166,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     @step(args=['cmd'], result=True)
-    def run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
+    def run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None, cmd_input=None): # pylint: disable=unused-argument
         return self._run(cmd, codec=codec, decodeerrors=decodeerrors)
 
-    def _run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
+    def _run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None, cmd_input=None): # pylint: disable=unused-argument
         """Execute `cmd` on the target.
 
         This method runs the specified `cmd` as a command on its target.
@@ -187,20 +187,21 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                         self.networkservice.address
                         ] + cmd.split(" ")
         self.logger.debug("Sending command: %s", complete_cmd)
+        stdin = subprocess.PIPE if cmd_input else None
         if self.stderr_merge:
             stderr_pipe = subprocess.STDOUT
         else:
             stderr_pipe = subprocess.PIPE
         try:
             sub = subprocess.Popen(
-                complete_cmd, stdout=subprocess.PIPE, stderr=stderr_pipe
+                complete_cmd, stdin=stdin, stdout=subprocess.PIPE, stderr=stderr_pipe
             )
         except:
             raise ExecutionError(
                 f"error executing command: {complete_cmd}"
             )
 
-        stdout, stderr = sub.communicate(timeout=timeout)
+        stdout, stderr = sub.communicate(input=cmd_input, timeout=timeout)
         stdout = stdout.decode(codec, decodeerrors).split('\n')
         if stdout[-1] == '':
             stdout.pop()

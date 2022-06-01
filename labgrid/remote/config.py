@@ -12,6 +12,9 @@ from ..exceptions import NoConfigFoundError
 @attr.s(eq=False)
 class ResourceConfig:
     filename = attr.ib(validator=attr.validators.instance_of(str))
+    template_env = attr.ib(
+        default=attr.Factory(dict), validator=attr.validators.instance_of(dict)
+    )
 
     def __attrs_post_init__(self):
         env = jinja2.Environment(
@@ -26,7 +29,7 @@ class ResourceConfig:
             raise NoConfigFoundError(
                 f"{self.filename} could not be found"
             )
-        rendered = template.render(env=os.environ)
+        rendered = template.render(self.template_env)
         pprint(('rendered', rendered))
         self.data = load(rendered)
         pprint(('loaded', self.data))

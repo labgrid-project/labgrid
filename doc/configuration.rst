@@ -3116,5 +3116,16 @@ Statements like ``{{ 4000 + idx }}`` are expanded based on variables in the
 Jinja2 template.
 
 The template processing also supports use of OS environment variables, using
-something like `{{ env['FOOBAR'] }}` to insert the content of environment
-variable `FOOBAR`.
+something like ``{{ env['FOOBAR'] }}`` to insert the content of environment
+variable ``FOOBAR``.
+In addition to ``env`` the template also has access to the following variables:
+
+isolated
+  ``True`` or ``False``, depending on the :code:`--isolated` command line option.
+
+hostname
+  The hostname of the exporter host. Can be used to e.g. construct URLs to the
+  current host (``http://{{ hostname }}/``).
+
+name
+  The name of the exporter.

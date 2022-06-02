@@ -71,7 +71,6 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         self._status = 0
 
     def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
-        # TODO: use codec, decodeerrors
         # TODO: Shell Escaping for the U-Boot Shell
         marker = gen_marker()
         cmp_command = f"""echo '{marker[:4]}''{marker[4:]}'; {cmd}; echo "$?"; echo '{marker[:4]}''{marker[4:]}';"""  # pylint: disable=line-too-long
@@ -80,7 +79,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
             # Remove VT100 Codes and split by newline
             data = self.re_vt100.sub(
-                '', before.decode('utf-8'), count=1000000
+                '', before.decode(codec, decodeerrors), count=1000000
             ).replace("\r", "").split("\n")
             self.logger.debug("Received Data: %s", data)
             # Remove first element, the invoked cmd

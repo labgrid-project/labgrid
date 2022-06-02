@@ -32,6 +32,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         boot_command (str): optional boot command to boot target
         login_timeout (int): optional, timeout for login prompt detection
         boot_timeout (int): optional, timeout for initial Linux Kernel version detection
+        console_decodeerrors (str): optional, handling of console byte decoding errors
 
     """
     bindings = {"console": ConsoleProtocol, }
@@ -46,6 +47,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     boot_command = attr.ib(default="run bootcmd", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
     boot_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
+    console_decodeerrors = attr.ib(default="strict", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -104,7 +106,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Returns:
             Tuple[List[str],List[str], int]: if successful, None otherwise
         """
-        return self._run(cmd, timeout=timeout)
+        return self._run(cmd, decodeerrors=self.console_decodeerrors, timeout=timeout)
 
     def get_status(self):
         """Retrieve status of the UBootDriver.
@@ -167,7 +169,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             self._check_prompt()
 
         for command in self.init_commands:  #pylint: disable=not-an-iterable
-            self._run_check(command)
+            self._run_check(command, decodeerrors=self.console_decodeerrors)
 
     @Driver.check_active
     @step()

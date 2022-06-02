@@ -68,7 +68,7 @@ class SmallUBootDriver(UBootDriver):
         # wait until UBoot has reached it's prompt
         self.console.expect(self.prompt)
         for command in self.init_commands:  #pylint: disable=not-an-iterable
-            self._run(command)
+            self._run(command, decodeerrors=self.console_decodeerrors)
 
     def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
         """

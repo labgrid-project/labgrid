@@ -28,7 +28,7 @@ class TestUBootDriver:
         d._run.reset_mock()
         res = d.run("test")
         assert res == (['success'], [], 0)
-        d._run.assert_called_once_with("test", timeout=30)
+        d._run.assert_called_once_with("test", decodeerrors='strict', timeout=30)
 
     def test_uboot_run_error(self, target_with_fakeconsole, mocker):
         t = target_with_fakeconsole
@@ -42,4 +42,4 @@ class TestUBootDriver:
         d._run.reset_mock()
         res = d.run("test")
         assert res == (['error'], [], 1)
-        d._run.assert_called_once_with("test", timeout=30)
+        d._run.assert_called_once_with("test", decodeerrors='strict', timeout=30)

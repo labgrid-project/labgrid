@@ -3,6 +3,9 @@ Release 0.5.0 (unreleased)
 
 New Features in 0.5.0
 ~~~~~~~~~~~~~~~~~~~~~
+- Exporter config templates now have access to the following new variables:
+  isolated (all resource accesses must be tunneled True/False),
+  hostname (of the exporter host), name (of the exporter).
 - ModbusRTU driver for instruments
 - Support for Eaton ePDU and TP-Link power strips added, either can be used as a NetworkPowerPort.
 - Consider a combination of multiple "lg_feature" markers instead of

@@ -705,7 +705,15 @@ class ExporterSession(ApplicationSession):
         await self.register(self.version, f'{prefix}.version')
 
         try:
-            resource_config = ResourceConfig(self.config.extra['resources'])
+            config_template_env = {
+                'env': os.environ,
+                'isolated': self.isolated,
+                'hostname': self.hostname,
+                'name': self.name,
+            }
+            resource_config = ResourceConfig(
+                self.config.extra['resources'], config_template_env
+            )
             for group_name, group in resource_config.data.items():
                 group_name = str(group_name)
                 for resource_name, params in group.items():

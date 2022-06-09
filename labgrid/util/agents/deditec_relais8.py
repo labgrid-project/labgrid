@@ -16,6 +16,29 @@ from binascii import unhexlify, hexlify
 
 import usb.core
 import usb.util
+import fcntl
+import os
+
+def touch(fname):
+    if os.path.exists(fname):
+        os.utime(fname, None)
+    else:
+        open(fname, 'a').close()
+
+class Locker:
+    def __init__(self, busnum, devnum):
+        self.busnum = busnum
+        self.devnum = devnum
+
+    def __enter__ (self):
+        touch(f"./{self.busnum}:{self.devnum}.lock")
+        self.fp = open(f"./{self.busnum}:{self.devnum}.lock")
+        fcntl.flock(self.fp.fileno(), fcntl.LOCK_EX)
+        return self
+
+    def __exit__ (self, _type, value, tb):
+        fcntl.flock(self.fp.fileno(), fcntl.LOCK_UN)
+        self.fp.close()
 
 
 class Relais8:
@@ -135,13 +158,15 @@ class Relais8:
 
 
 def handle_set(busnum, devnum, number, status):
-    relais8 = Relais8(bus=busnum, address=devnum)
-    relais8.set_output(number, status)
+    with Locker(busnum, devnum):
+        relais8 = Relais8(bus=busnum, address=devnum)
+        relais8.set_output(number, status)
 
 
 def handle_get(busnum, devnum, number):
-    relais8 = Relais8(bus=busnum, address=devnum)
-    return relais8.get_output(number)
+    with Locker(busnum, devnum):
+        relais8 = Relais8(bus=busnum, address=devnum)
+        return relais8.get_output(number)
 
 
 methods = {

@@ -9,14 +9,13 @@ from enum import Enum
 from functools import wraps
 
 import attr
-import yaml
 from autobahn import wamp
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 from autobahn.wamp.types import RegisterOptions
 
 from .common import *
 from .scheduler import TagSet, schedule
-from ..util import atomic_replace
+from ..util import atomic_replace, yaml
 
 
 class Action(Enum):
@@ -297,10 +296,10 @@ class CoordinatorComponent(ApplicationSession):
         self.save_scheduled = False
 
         resources = self._get_resources()
-        resources = yaml.dump(resources, default_flow_style=False)
+        resources = yaml.dump(resources)
         resources = resources.encode()
         places = self._get_places()
-        places = yaml.dump(places, default_flow_style=False)
+        places = yaml.dump(places)
         places = places.encode()
 
         loop = asyncio.get_event_loop()

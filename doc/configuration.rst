@@ -1573,6 +1573,25 @@ Arguments:
     same as the fastboot default, which is computed after querying the target's
     ``max-download-size`` variable.
 
+DFUDriver
+~~~~~~~~~
+A DFUDriver allows the download of images to a device in DFU (Device Firmware
+Upgrade) mode.
+
+Binds to:
+  dfu:
+    - `DFUDevice`_
+
+Implements:
+  - None (yet)
+
+.. code-block:: yaml
+
+   DFUDriver: {}
+
+Arguments:
+  - None
+
 OpenOCDDriver
 ~~~~~~~~~~~~~
 An OpenOCDDriver controls OpenOCD to bootstrap a target with a bootloader.

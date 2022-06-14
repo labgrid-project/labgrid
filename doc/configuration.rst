@@ -625,6 +625,23 @@ Arguments:
 Used by:
   - `AndroidFastbootDriver`_
 
+DFUDevice
+~~~~~~~~~
+A DFUDevice resource describes a USB device in DFU (Device Firmware Upgrade)
+mode.
+
+.. code-block:: yaml
+
+   DFUDevice:
+     match:
+       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `DFUDriver`_
+
 USBNetworkInterface
 ~~~~~~~~~~~~~~~~~~~~
 A USBNetworkInterface resource describes a USB network adapter (such as

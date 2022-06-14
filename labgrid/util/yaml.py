@@ -7,10 +7,14 @@ from string import Template
 
 import yaml
 
+
 class Loader(yaml.SafeLoader):
     pass
+
+
 class Dumper(yaml.SafeDumper):
     pass
+
 
 def _dict_constructor(loader, node):
     return OrderedDict(loader.construct_pairs(node))

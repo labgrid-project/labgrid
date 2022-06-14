@@ -891,6 +891,25 @@ class ClientSession(ApplicationSession):
             await asyncio.sleep(1.0)
     console.needs_target = True
 
+    def dfu(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        if self.args.action == 'download' and not self.args.filename:
+            raise UserError('not enough arguments for dfu download')
+        from ..driver.dfudriver import DFUDriver
+        try:
+            drv = target.get_driver(DFUDriver)
+        except NoDriverFoundError:
+            drv = DFUDriver(target, name=None)
+        drv.dfu.timeout = self.args.wait
+        target.activate(drv)
+        if self.args.action == 'download':
+            drv.download(self.args.altsetting, os.path.abspath(self.args.filename))
+        if self.args.action == 'detach':
+            drv.detach(self.args.altsetting)
+        if self.args.action == 'list':
+            drv.list()
+
     def fastboot(self):
         place = self.get_acquired_place()
         args = self.args.fastboot_args
@@ -1672,6 +1691,15 @@ def main():
     subparser.add_argument('name', help="optional resource name", nargs='?')
     subparser.add_argument('--logfile', metavar="FILE", help="Log output to FILE", default=None)
     subparser.set_defaults(func=ClientSession.console)
+
+    subparser = subparsers.add_parser('dfu',
+                                      help="communicate with device in DFU mode")
+    subparser.add_argument('action', choices=['download', 'detach', 'list'], help='action')
+    subparser.add_argument('altsetting', help='altsetting name or number (download, detach only)',
+                           nargs='?')
+    subparser.add_argument('filename', help='file to write into device (download only)', nargs='?')
+    subparser.add_argument('--wait', type=float, default=10.0)
+    subparser.set_defaults(func=ClientSession.dfu)
 
     subparser = subparsers.add_parser('fastboot',
                                       help="run fastboot")

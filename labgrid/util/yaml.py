@@ -23,6 +23,10 @@ def _dict_constructor(loader, node):
 Loader.add_constructor(
     yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _dict_constructor
 )
+Loader.add_constructor(
+    "tag:yaml.org,2002:python/tuple",
+    yaml.constructor.FullConstructor.construct_python_tuple,
+)
 
 
 def _dict_representer(dumper, data):

@@ -7,6 +7,7 @@ from .sshdriver import SSHDriver
 from .externalconsoledriver import ExternalConsoleDriver
 from .exception import CleanUpError, ExecutionError
 from .fastbootdriver import AndroidFastbootDriver
+from .dfudriver import DFUDriver
 from .openocddriver import OpenOCDDriver
 from .quartushpsdriver import QuartusHPSDriver
 from .flashromdriver import FlashromDriver

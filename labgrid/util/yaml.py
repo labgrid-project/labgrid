@@ -63,11 +63,12 @@ def load(stream):
     return yaml.load(stream, Loader=Loader)
 
 
-def dump(data, stream=None):
+def dump(data, stream=None, **kwargs):
     """
     Wrapper for yaml dump function with custom dumper.
     """
-    return yaml.dump(data, stream, Dumper=Dumper, default_flow_style=False)
+    kwargs.pop("Dumper", None)
+    return yaml.dump(data, stream, Dumper=Dumper, **kwargs)
 
 
 def resolve_templates(data, mapping):

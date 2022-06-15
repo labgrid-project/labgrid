@@ -38,7 +38,7 @@ OPTIONS
     display command line help
 -p PLACE, --place PLACE
     specify the place to operate on
--x, --crossbar-url
+-x URL, --crossbar URL
     the crossbar url of the coordinator, defaults to ``ws://127.0.0.1:20408/ws``
 -c CONFIG, --config CONFIG
     set the configuration file

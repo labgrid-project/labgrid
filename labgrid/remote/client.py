@@ -263,17 +263,28 @@ class ClientSession(ApplicationSession):
 
     def print_who(self):
         """Print acquired places by user"""
-        result = [tuple('User Host Place Changed'.split())]
+        result = ['User Host Place Changed'.split()]
+        if self.args.show_exporters:
+            result[0].append('Exporters')
+
         for name, place in self.places.items():
             if place.acquired is None:
                 continue
             host, user = place.acquired.split('/')
-            result.append((user, host, name, str(datetime.fromtimestamp(place.changed))))
+            result.append([user, host, name, str(datetime.fromtimestamp(place.changed))])
+            if self.args.show_exporters:
+                exporters = {resource_path[0] for resource_path in place.acquired_resources}
+                result[-1].append(', '.join(sorted(exporters)))
         result.sort()
+
         widths = [max(map(len, c)) for c in zip(*result)]
-        for user, host, name, changed in result:
-            print("{0:<{width[0]}s}  {1:<{width[1]}s}  {2:<{width[2]}s}  {3}".format(
-                user, host, name, changed, width=widths))
+        layout = []
+        for i, w  in enumerate(widths):
+            layout.append("{%i:<%is}" % (i, w))
+        layout = "  ".join(layout)
+
+        for entry in result:
+            print(layout.format(*entry))
 
     def _match_places(self, pattern):
         """search for substring matches of pattern in place names and aliases
@@ -1572,6 +1583,8 @@ def main():
 
     subparser = subparsers.add_parser('who',
                                       help="list acquired places by user")
+    subparser.add_argument('-e', '--show-exporters', action='store_true',
+                           help='show exporters currently used by each place')
     subparser.set_defaults(func=ClientSession.print_who)
 
     subparser = subparsers.add_parser('show',

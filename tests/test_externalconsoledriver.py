@@ -14,5 +14,8 @@ class TestExternalConsoleDriver:
         target.activate(d)
         d.write(data)
         time.sleep(0.1)
-        assert d.read(1024) == data
+        assert d.read(1024) == data  # assert written data is read
+        d.write(data)
+        time.sleep(0.1)
+        assert d.read(5, max_size=5) == data[:5]  # assert max_size limits read bytes
         d.close()

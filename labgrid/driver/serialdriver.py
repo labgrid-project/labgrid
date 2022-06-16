@@ -83,14 +83,19 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
             vars["protocol"] = self.port.protocol
         return vars
 
-    def _read(self, size: int = 1, timeout: float = 0.0):
+    def _read(self, size: int = 1, timeout: float = 0.0, max_size: int = None):
         """
         Reads 'size' or more bytes from the serialport
 
         Keyword Arguments:
         size -- amount of bytes to read, defaults to 1
+        max_size -- maximal amount of bytes to read, values 'None' or '0' do not restrict the read
+                    length, defaults to None
+        if size == max_size: read and return exactly size = max_size bytes
         """
         reading = max(size, self.serial.in_waiting)
+        if max_size:  # limit reading to max_size if provided
+            reading = min(reading, max_size)
         self.serial.timeout = timeout
         res = self.serial.read(reading)
         if not res:

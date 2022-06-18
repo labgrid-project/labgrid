@@ -77,29 +77,20 @@ class ClientSession(ApplicationSession):
 
     async def onJoin(self, details):
         # FIXME race condition?
-        resources = await self.call(
-            'org.labgrid.coordinator.get_resources'
-        )
+        resources = await self.call('org.labgrid.coordinator.get_resources')
         self.resources = {}
         for exporter, groups in resources.items():
             for group_name, group in sorted(groups.items()):
                 for resource_name, resource in sorted(group.items()):
-                    await self.on_resource_changed(
-                        exporter, group_name, resource_name, resource
-                    )
+                    await self.on_resource_changed(exporter, group_name, resource_name, resource)
 
         places = await self.call('org.labgrid.coordinator.get_places')
         self.places = {}
         for placename, config in places.items():
             await self.on_place_changed(placename, config)
 
-        await self.subscribe(
-            self.on_resource_changed,
-            'org.labgrid.coordinator.resource_changed'
-        )
-        await self.subscribe(
-            self.on_place_changed, 'org.labgrid.coordinator.place_changed'
-        )
+        await self.subscribe(self.on_resource_changed, 'org.labgrid.coordinator.resource_changed')
+        await self.subscribe(self.on_place_changed, 'org.labgrid.coordinator.place_changed')
         await self.connected(self)
 
     async def on_resource_changed(self, exporter, group_name, resource_name, resource):
@@ -131,8 +122,7 @@ class ClientSession(ApplicationSession):
             return
         config = config.copy()
         config['name'] = name
-        config['matches'] = [ResourceMatch(**match) \
-            for match in config['matches']]
+        config['matches'] = [ResourceMatch(**match) for match in config['matches']]
         config = filter_dict(config, Place, warn=True)
         if name not in self.places:
             place = Place(**config)
@@ -346,9 +336,7 @@ class ClientSession(ApplicationSession):
         if pattern in places:
             return self.places[pattern]
         if len(places) > 1:
-            raise UserError(
-                f"pattern {pattern} matches multiple places ({', '.join(places)})"
-            )
+            raise UserError(f"pattern {pattern} matches multiple places ({', '.join(places)})")
         return self.places[places[0]]
 
     def get_idle_place(self, place=None):
@@ -427,16 +415,10 @@ class ClientSession(ApplicationSession):
         place = self.get_idle_place()
         alias = self.args.alias
         if alias in place.aliases:
-            raise UserError(
-                f"place {place.name} already has alias {alias}"
-            )
-        res = await self.call(
-            'org.labgrid.coordinator.add_place_alias', place.name, alias
-        )
+            raise UserError(f"place {place.name} already has alias {alias}")
+        res = await self.call('org.labgrid.coordinator.add_place_alias', place.name, alias)
         if not res:
-            raise ServerError(
-                f"failed to add alias {alias} for place {place.name}"
-            )
+            raise ServerError(f"failed to add alias {alias} for place {place.name}")
         return res
 
     async def del_alias(self):
@@ -445,26 +427,18 @@ class ClientSession(ApplicationSession):
         alias = self.args.alias
         if alias not in place.aliases:
             raise UserError(f"place {place.name} has no alias {alias}")
-        res = await self.call(
-            'org.labgrid.coordinator.del_place_alias', place.name, alias
-        )
+        res = await self.call('org.labgrid.coordinator.del_place_alias', place.name, alias)
         if not res:
-            raise ServerError(
-                f"failed to delete alias {alias} for place {place.name}"
-            )
+            raise ServerError(f"failed to delete alias {alias} for place {place.name}")
         return res
 
     async def set_comment(self):
         """Set the comment on a place"""
         place = self.get_place()
         comment = ' '.join(self.args.comment)
-        res = await self.call(
-            'org.labgrid.coordinator.set_place_comment', place.name, comment
-        )
+        res = await self.call('org.labgrid.coordinator.set_place_comment', place.name, comment)
         if not res:
-            raise ServerError(
-                f"failed to set comment {comment} for place {place.name}"
-            )
+            raise ServerError(f"failed to set comment {comment} for place {place.name}")
         return res
 
     async def set_tags(self):
@@ -477,17 +451,11 @@ class ClientSession(ApplicationSession):
             except ValueError:
                 raise UserError(f"tag '{pair}' needs to match '<key>=<value>'")
             if not TAG_KEY.match(k):
-                raise UserError(
-                    f"tag key '{k}' needs to match the rexex '{TAG_KEY.pattern}'"
-                )
+                raise UserError(f"tag key '{k}' needs to match the rexex '{TAG_KEY.pattern}'")
             if not TAG_VAL.match(v):
-                raise UserError(
-                    f"tag value '{v}' needs to match the rexex '{TAG_VAL.pattern}'"
-                )
+                raise UserError(f"tag value '{v}' needs to match the rexex '{TAG_VAL.pattern}'")
             tags[k] = v
-        res = await self.call(
-            'org.labgrid.coordinator.set_place_tags', place.name, tags
-        )
+        res = await self.call('org.labgrid.coordinator.set_place_tags', place.name, tags)
         if not res:
             raise ServerError(
                 f"failed to set tags {' '.join(self.args.tags)} for place {place.name}"
@@ -508,13 +476,9 @@ class ClientSession(ApplicationSession):
             if place.hasmatch(pattern.split("/")):
                 print(f"pattern '{pattern}' exists, skipping")
                 continue
-            res = await self.call(
-                'org.labgrid.coordinator.add_place_match', place.name, pattern
-            )
+            res = await self.call('org.labgrid.coordinator.add_place_match', place.name, pattern)
             if not res:
-                raise ServerError(
-                    f"failed to add match {pattern} for place {place.name}"
-                )
+                raise ServerError(f"failed to add match {pattern} for place {place.name}")
 
     async def del_match(self):
         """Delete a match for a place"""
@@ -528,13 +492,9 @@ class ClientSession(ApplicationSession):
                 )
             if not place.hasmatch(pattern.split("/")):
                 print(f"pattern '{pattern}' not found, skipping")
-            res = await self.call(
-                'org.labgrid.coordinator.del_place_match', place.name, pattern
-            )
+            res = await self.call('org.labgrid.coordinator.del_place_match', place.name, pattern)
             if not res:
-                raise ServerError(
-                    f"failed to delete match {pattern} for place {place.name}"
-                )
+                raise ServerError(f"failed to delete match {pattern} for place {place.name}")
 
     async def add_named_match(self):
         """Add a named match for a place.
@@ -546,26 +506,16 @@ class ClientSession(ApplicationSession):
         pattern = self.args.pattern
         name = self.args.name
         if not 2 <= pattern.count("/") <= 3:
-            raise UserError(
-                f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
-            )
+            raise UserError(f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')")
         if place.hasmatch(pattern.split("/")):
             raise UserError(f"pattern '{pattern}' exists")
         if '*' in pattern:
-            raise UserError(
-                f"invalid pattern '{pattern}' ('*' not allowed for named matches)"
-            )
+            raise UserError(f"invalid pattern '{pattern}' ('*' not allowed for named matches)")
         if not name:
-            raise UserError(
-                f"invalid name '{name}'"
-            )
-        res = await self.call(
-            'org.labgrid.coordinator.add_place_match', place.name, pattern, name
-        )
+            raise UserError(f"invalid name '{name}'")
+        res = await self.call('org.labgrid.coordinator.add_place_match', place.name, pattern, name)
         if not res:
-            raise ServerError(
-                f"failed to add match {pattern} for place {place.name}"
-            )
+            raise ServerError(f"failed to add match {pattern} for place {place.name}")
 
     def check_matches(self, place):
         resources = []
@@ -583,16 +533,12 @@ class ClientSession(ApplicationSession):
         """Acquire a place, marking it unavailable for other clients"""
         place = self.get_place()
         if place.acquired:
-            raise UserError(
-                f"place {place.name} is already acquired by {place.acquired}"
-            )
+            raise UserError(f"place {place.name} is already acquired by {place.acquired}")
 
         if not self.args.allow_unmatched:
             self.check_matches(place)
 
-        res = await self.call(
-            'org.labgrid.coordinator.acquire_place', place.name
-        )
+        res = await self.call('org.labgrid.coordinator.acquire_place', place.name)
 
         if res:
             print(f"acquired place {place.name}")
@@ -625,9 +571,7 @@ class ClientSession(ApplicationSession):
             if not self.args.kick:
                 raise UserError(f"place {place.name} is acquired by a different user ({place.acquired}), use --kick if you are sure")  # pylint: disable=line-too-long
             print(f"warning: kicking user ({place.acquired})")
-        res = await self.call(
-            'org.labgrid.coordinator.release_place', place.name
-        )
+        res = await self.call('org.labgrid.coordinator.release_place', place.name)
         if not res:
             raise ServerError(f"failed to release place {place.name}")
 
@@ -655,9 +599,7 @@ class ClientSession(ApplicationSession):
                 f"place {place.name} is acquired by a different user ({place.acquired})"
             )
         if not '/' in self.args.user:
-            raise UserError(
-                f"user {self.args.user} must be in <host>/<username> format"
-            )
+            raise UserError(f"user {self.args.user} must be in <host>/<username> format")
         res = await self.call('org.labgrid.coordinator.allow_place', place.name, self.args.user)
         if not res:
             raise ServerError(f"failed to allow {self.args.user} for place {place.name}")
@@ -774,9 +716,7 @@ class ClientSession(ApplicationSession):
         target.activate(drv)
         res = getattr(drv, action)()
         if action == 'get':
-            print(
-                f"power for place {place.name} is {'on' if res else 'off'}"
-            )
+            print(f"power for place {place.name} is {'on' if res else 'off'}")
 
     def digital_io(self):
         place = self.get_acquired_place()
@@ -864,10 +804,7 @@ class ClientSession(ApplicationSession):
         # check for valid resources
         assert port is not None, "Port is not set"
 
-        call = [
-            'microcom', '-s', str(resource.speed), '-t',
-            f"{host}:{port}"
-        ]
+        call = ['microcom', '-s', str(resource.speed), '-t', f"{host}:{port}"]
         if logfile:
             call.append(f"--logfile={logfile}")
         print(f"connecting to {resource} calling {' '.join(call)}")
@@ -1903,8 +1840,7 @@ def main():
         if args.place:
             role = find_role_by_place(env.config.get_targets(), args.place)
             if not role:
-                print(f"RemotePlace {args.place} not found in configuration file",
-                      file=sys.stderr)
+                print(f"RemotePlace {args.place} not found in configuration file", file=sys.stderr)
                 exit(1)
             print(f"Selected role {role} from configuration file")
         else:

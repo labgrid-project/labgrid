@@ -839,9 +839,7 @@ class ClientSession(ApplicationSession):
         while True:
             res = await self._console(place, target, 10.0, logfile=self.args.logfile,
                                       loop=self.args.loop)
-            if res:
-                break
-            if not self.args.loop:
+            if res or not self.args.loop:
                 break
             await asyncio.sleep(1.0)
     console.needs_target = True

@@ -267,7 +267,7 @@ class ClientSession(ApplicationSession):
 
         widths = [max(map(len, c)) for c in zip(*result)]
         layout = []
-        for i, w  in enumerate(widths):
+        for i, w in enumerate(widths):
             layout.append("{%i:<%is}" % (i, w))
         layout = "  ".join(layout)
 
@@ -306,7 +306,7 @@ class ClientSession(ApplicationSession):
                     namespace, alias = alias.split(':', 1)
                     if namespace != self.getuser():
                         continue
-                    elif alias == pattern:  # prefer user namespace
+                    if alias == pattern:  # prefer user namespace
                         return [name]
                 if pattern in alias:
                     result.add(name)
@@ -315,7 +315,7 @@ class ClientSession(ApplicationSession):
     def _check_allowed(self, place):
         if not place.acquired:
             raise UserError(f"place {place.name} is not acquired")
-        if self.gethostname()+'/'+self.getuser() not in place.allowed:
+        if f'{self.gethostname()}/{self.getuser()}' not in place.allowed:
             host, user = place.acquired.split('/')
             if user != self.getuser():
                 raise UserError(
@@ -598,7 +598,7 @@ class ClientSession(ApplicationSession):
             raise UserError(
                 f"place {place.name} is acquired by a different user ({place.acquired})"
             )
-        if not '/' in self.args.user:
+        if '/' not in self.args.user:
             raise UserError(f"user {self.args.user} must be in <host>/<username> format")
         res = await self.call('org.labgrid.coordinator.allow_place', place.name, self.args.user)
         if not res:
@@ -1269,7 +1269,7 @@ class ClientSession(ApplicationSession):
         res = await self.call('org.labgrid.coordinator.create_reservation', filters, prio=prio)
         if res is None:
             raise ServerError("failed to create reservation")
-        ((token, config),) = res.items() # we get a one-item dict
+        ((token, config),) = res.items()  # we get a one-item dict
         config = filter_dict(config, Reservation, warn=True)
         res = Reservation(token=token, **config)
         if self.args.shell:
@@ -1326,7 +1326,7 @@ class ClientSession(ApplicationSession):
             lines = []
             for k, v in sorted(exported.items()):
                 lines.append(f"export {k}={shlex.quote(v)}")
-            data = "\n".join(lines)+"\n"
+            data = "\n".join(lines) + "\n"
         elif self.args.format is ExportFormat.JSON:
             data = json.dumps(exported)
         if self.args.filename == "-":
@@ -1610,7 +1610,7 @@ def main():
     subparser.set_defaults(func=ClientSession.release)
 
     subparser = subparsers.add_parser('release-from',
-                                     help="atomically release a place, but only if locked by a specific user")
+                                      help="atomically release a place, but only if locked by a specific user")
     subparser.add_argument("acquired",
                            metavar="HOST/USER",
                            help="User and host to match against when releasing")
@@ -1664,7 +1664,7 @@ def main():
     subparser.set_defaults(func=ClientSession.fastboot)
 
     subparser = subparsers.add_parser('flashscript',
-                                     help="run flash script")
+                                      help="run flash script")
     subparser.add_argument('script', help="Flashing script")
     subparser.add_argument('script_args', metavar='ARG', nargs=argparse.REMAINDER,
                            help='script arguments')
@@ -1817,7 +1817,6 @@ def main():
         args = parser.parse_args()
     else:
         args.leftover = leftover
-
 
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)

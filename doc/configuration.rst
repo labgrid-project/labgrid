@@ -625,6 +625,23 @@ Arguments:
 Used by:
   - `AndroidFastbootDriver`_
 
+DFUDevice
+~~~~~~~~~
+A DFUDevice resource describes a USB device in DFU (Device Firmware Upgrade)
+mode.
+
+.. code-block:: yaml
+
+   DFUDevice:
+     match:
+       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `DFUDriver`_
+
 USBNetworkInterface
 ~~~~~~~~~~~~~~~~~~~~
 A USBNetworkInterface resource describes a USB network adapter (such as
@@ -1555,6 +1572,25 @@ Arguments:
     fastboot manpage -S option for allowed size suffixes). The default is the
     same as the fastboot default, which is computed after querying the target's
     ``max-download-size`` variable.
+
+DFUDriver
+~~~~~~~~~
+A DFUDriver allows the download of images to a device in DFU (Device Firmware
+Upgrade) mode.
+
+Binds to:
+  dfu:
+    - `DFUDevice`_
+
+Implements:
+  - None (yet)
+
+.. code-block:: yaml
+
+   DFUDriver: {}
+
+Arguments:
+  - None
 
 OpenOCDDriver
 ~~~~~~~~~~~~~

@@ -324,6 +324,15 @@ class AndroidFastboot(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class DFUDevice(USBResource):
+    def filter_match(self, device):
+        if ':fe0102:' not in device.properties.get('ID_USB_INTERFACES', ''):
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class USBNetworkInterface(USBResource, NetworkInterface):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'net'

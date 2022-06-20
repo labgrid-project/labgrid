@@ -492,6 +492,7 @@ class USBFlashableExport(USBGenericExport):
         return p
 
 exports["AndroidFastboot"] = USBGenericExport
+exports["DFUDevice"] = USBGenericExport
 exports["IMXUSBLoader"] = USBGenericExport
 exports["MXSUSBLoader"] = USBGenericExport
 exports["RKUSBLoader"] = USBGenericExport

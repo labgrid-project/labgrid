@@ -11,6 +11,7 @@ from .udev import (
     USBVideo,
     IMXUSBLoader,
     AndroidFastboot,
+    DFUDevice,
     USBSDMuxDevice,
     USBSDWireDevice,
     AlteraUSBBlaster,
@@ -41,6 +42,7 @@ class Suggester:
         self.resources.append(USBVideo(**args))
         self.resources.append(IMXUSBLoader(**args))
         self.resources.append(AndroidFastboot(**args))
+        self.resources.append(DFUDevice(**args))
         self.resources.append(USBMassStorage(**args))
         self.resources.append(USBSDMuxDevice(**args))
         self.resources.append(USBSDWireDevice(**args))

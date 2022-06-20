@@ -165,6 +165,8 @@ LABGRID-CLIENT COMMANDS
 
 ``console (con)``               Connect to the console
 
+``dfu`` arg                     Run dfu commands
+
 ``fastboot`` arg                Run fastboot with argument
 
 ``flashscript`` script arg      Run arbitrary script with arguments to flash device

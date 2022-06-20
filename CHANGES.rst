@@ -23,6 +23,9 @@ New Features in 0.5.0
   which expects ``boot_secret`` without new line with new ``boot_secret_nolf``
   boolean config option.
 - labgrid-client add-match/add-named-match check for duplicate matches
+- `DFUDriver` has been added to communicate with a `DFUDevice`, a device in DFU
+  (Device Firmware Upgrade) mode.
+- ``labgrid-client dfu`` added to allow communcation with devices in DFU mode.
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

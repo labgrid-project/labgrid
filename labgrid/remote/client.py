@@ -847,32 +847,27 @@ class ClientSession(ApplicationSession):
     def fastboot(self):
         place = self.get_acquired_place()
         args = self.args.fastboot_args
-        if not args:
-            raise UserError("not enough arguments for fastboot")
-        if args[0] == 'flash':
-            if len(args) < 3:
-                raise UserError("not enough arguments for fastboot flash")
-            args[2] = os.path.abspath(args[2])
-        elif args[0] == 'boot':
-            if len(args) < 2:
-                raise UserError("not enough arguments for fastboot boot")
-            args[1:] = map(os.path.abspath, args[1:])
         target = self._get_target(place)
 
         drv = self._get_driver_or_new(target, "AndroidFastbootDriver", activate=False)
         drv.fastboot.timeout = self.args.wait
         target.activate(drv)
 
-        if args[0] == 'flash':
-            drv.flash(args[1], args[2])
-            return
-        if args[0] == 'boot':
-            drv.boot(args[1])
-            return
-        if args[0:2] == ['oem', 'exec']:
-            drv.run(" ".join(args[2:]))
-            return
-        drv(*args)
+        try:
+            action = args[0]
+            if action == 'flash':
+                drv.flash(args[1], os.path.abspath(args[2]))
+            elif action == 'boot':
+                args[1:] = map(os.path.abspath, args[1:])
+                drv.boot(args[1])
+            elif action == 'oem' and args[1] == 'exec':
+                drv.run(' '.join(args[2:]))
+            else:
+                drv(*args)
+        except IndexError:
+            raise UserError('not enough arguments for fastboot action')
+        except subprocess.CalledProcessError as e:
+            raise UserError(str(e))
 
     def flashscript(self):
         place = self.get_acquired_place()

@@ -79,9 +79,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
             self._put_ssh_key(keyfile_path)
 
-        # Turn off Kernel Messages to the console
-        self._run("dmesg -n 1")
-
     def on_deactivate(self):
         self._status = 0
 
@@ -133,6 +130,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # occours, we can't lose any data this way.
         last_before = b''
         did_login = False
+        did_silence_kernel = False
 
         while True:
             index, before, _, _ = self.console.expect(
@@ -141,10 +139,15 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             )
 
             if index == 0:
-                # we got a promt. no need for any further action to activate
-                # this driver.
-                self.status = 1
-                break
+                if did_login and not did_silence_kernel:
+                    # Silence the kernel and wait for another prompt
+                    self.console.sendline("dmesg -n 1")
+                    did_silence_kernel = True
+                else:
+                    # we got a prompt. no need for any further action to
+                    # activate this driver.
+                    self.status = 1
+                    break
 
             elif index == 1:
                 # we need to login

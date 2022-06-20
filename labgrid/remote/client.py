@@ -1873,31 +1873,24 @@ def main():
                     args.func(session)
             finally:
                 session.loop.close()
-        except NoResourceFoundError as e:
+        except (NoResourceFoundError, NoDriverFoundError, InvalidConfigError) as e:
             if args.debug:
                 traceback.print_exc()
             else:
                 print(f"{parser.prog}: error: {e}", file=sys.stderr)
-            if e.found:
-                print("Found multiple resources but no name was given, available names:")
-                for res in e.found:
-                    print(f"{res.name}")
-            else:
-                print("This may be caused by disconnected exporter or wrong match entries.\nYou can use the 'show' command to review all matching resources.", file=sys.stderr)  # pylint: disable=line-too-long
-            exitcode = 1
-        except NoDriverFoundError as e:
-            if args.debug:
-                traceback.print_exc()
-            else:
-                print(f"{parser.prog}: error: {e}", file=sys.stderr)
-            print("This is likely caused by an error or missing driver in the environment configuration.", file=sys.stderr)  # pylint: disable=line-too-long
-            exitcode = 1
-        except InvalidConfigError as e:
-            if args.debug:
-                traceback.print_exc()
-            else:
-                print(f"{parser.prog}: error: {e}", file=sys.stderr)
-            print("This is likely caused by an error in the environment configuration or invalid\nresource information provided by the coordinator.", file=sys.stderr)  # pylint: disable=line-too-long
+
+            if isinstance(e, NoResourceFoundError):
+                if e.found:
+                    print("Found multiple resources but no name was given, available names:")
+                    for res in e.found:
+                        print(f"{res.name}")
+                else:
+                    print("This may be caused by disconnected exporter or wrong match entries.\nYou can use the 'show' command to review all matching resources.", file=sys.stderr)  # pylint: disable=line-too-long
+            elif isinstance(e, NoDriverFoundError):
+                print("This is likely caused by an error or missing driver in the environment configuration.", file=sys.stderr)  # pylint: disable=line-too-long
+            elif isinstance(e, InvalidConfigError):
+                print("This is likely caused by an error in the environment configuration or invalid\nresource information provided by the coordinator.", file=sys.stderr)  # pylint: disable=line-too-long
+
             exitcode = 1
         except ConnectionError as e:
             print(f"Could not connect to coordinator: {e}")

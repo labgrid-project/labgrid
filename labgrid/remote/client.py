@@ -22,7 +22,8 @@ import txaio
 txaio.use_asyncio()
 from autobahn.asyncio.wamp import ApplicationSession
 
-from .common import *  # pylint: disable=wildcard-import
+from .common import (ResourceEntry, ResourceMatch, Place, Reservation, ReservationState, TAG_KEY,
+                     TAG_VAL, enable_tcp_nodelay)
 from ..environment import Environment
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace

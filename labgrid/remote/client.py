@@ -30,7 +30,7 @@ from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util import diff_dict, flat_dict, filter_dict, dump, atomic_replace, Timeout
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
-from ..driver import Mode
+from ..driver import Mode, ExecutionError
 
 txaio.config.loop = asyncio.get_event_loop()  # pylint: disable=no-member
 
@@ -693,9 +693,6 @@ class ClientSession(ApplicationSession):
         action = self.args.action
         delay = self.args.delay
         target = self._get_target(place)
-        from ..driver.powerdriver import (NetworkPowerDriver, PDUDaemonDriver,
-                                          USBPowerDriver, SiSPMPowerDriver)
-        from ..driver import TasmotaPowerDriver
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
         from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort
         from ..resource import TasmotaPowerPort
@@ -706,30 +703,15 @@ class ClientSession(ApplicationSession):
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, NetworkPowerPort):
-                    try:
-                        drv = target.get_driver(NetworkPowerDriver)
-                    except NoDriverFoundError:
-                        drv = NetworkPowerDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "NetworkPowerDriver")
                 elif isinstance(resource, NetworkUSBPowerPort):
-                    try:
-                        drv = target.get_driver(USBPowerDriver)
-                    except NoDriverFoundError:
-                        drv = USBPowerDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "USBPowerDriver")
                 elif isinstance(resource, NetworkSiSPMPowerPort):
-                    try:
-                        drv = target.get_driver(SiSPMPowerDriver)
-                    except NoDriverFoundError:
-                        drv = SiSPMPowerDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "SiSPMPowerDriver")
                 elif isinstance(resource, PDUDaemonPort):
-                    try:
-                        drv = target.get_driver(PDUDaemonDriver)
-                    except NoDriverFoundError:
-                        drv = PDUDaemonDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "PDUDaemonDriver")
                 elif isinstance(resource, TasmotaPowerPort):
-                    try:
-                        drv = target.get_driver(TasmotaPowerDriver)
-                    except NoDriverFoundError:
-                        drv = TasmotaPowerDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "TasmotaPowerDriver")
                 if drv:
                     break
 
@@ -737,7 +719,6 @@ class ClientSession(ApplicationSession):
             raise UserError("target has no compatible resource available")
         if delay is not None:
             drv.delay = delay
-        target.activate(drv)
         res = getattr(drv, action)()
         if action == 'get':
             print(f"power for place {place.name} is {'on' if res else 'off'}")
@@ -750,8 +731,6 @@ class ClientSession(ApplicationSession):
         from ..resource import ModbusTCPCoil, OneWirePIO
         from ..resource.remote import (NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO,
                                        NetworkHIDRelay)
-        from ..driver import (ModbusCoilDriver, OneWirePIODriver, DeditecRelaisDriver,
-                              GpioDigitalOutputDriver, LXAIOBusPIODriver, HIDRelayDriver)
 
         drv = None
         try:
@@ -759,47 +738,28 @@ class ClientSession(ApplicationSession):
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, ModbusTCPCoil):
-                    try:
-                        drv = target.get_driver(ModbusCoilDriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"coil": name})
-                        drv = ModbusCoilDriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name,
+                                                  binding_map={"coil": name})
                 elif isinstance(resource, OneWirePIO):
-                    try:
-                        drv = target.get_driver(OneWirePIODriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"port": name})
-                        drv = OneWirePIODriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name,
+                                                  binding_map={"port": name})
                 elif isinstance(resource, NetworkDeditecRelais8):
-                    try:
-                        drv = target.get_driver(DeditecRelaisDriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"relais": name})
-                        drv = DeditecRelaisDriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name,
+                                                  binding_map={"relais": name})
                 elif isinstance(resource, NetworkSysfsGPIO):
-                    try:
-                        drv = target.get_driver(GpioDigitalOutputDriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"gpio": name})
-                        drv = GpioDigitalOutputDriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name,
+                                                  binding_map={"gpio": name})
                 elif isinstance(resource, NetworkLXAIOBusPIO):
-                    try:
-                        drv = target.get_driver(LXAIOBusPIODriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"pio": name})
-                        drv = LXAIOBusPIODriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name,
+                                                  binding_map={"pio": name})
                 elif isinstance(resource, NetworkHIDRelay):
-                    try:
-                        drv = target.get_driver(HIDRelayDriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"relay": name})
-                        drv = HIDRelayDriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "HIDRelayDriver", name=name,
+                                                  binding_map={"relay": name})
                 if drv:
                     break
 
         if not drv:
             raise UserError("target has no compatible resource available")
-        target.activate(drv)
         if action == 'get':
             print(f"digital IO {name} for place {place.name} is {'high' if drv.get() else 'low'}")
         elif action == 'high':
@@ -873,13 +833,10 @@ class ClientSession(ApplicationSession):
         target = self._get_target(place)
         if self.args.action == 'download' and not self.args.filename:
             raise UserError('not enough arguments for dfu download')
-        from ..driver import DFUDriver
-        try:
-            drv = target.get_driver(DFUDriver)
-        except NoDriverFoundError:
-            drv = DFUDriver(target, name=None)
+        drv = self._get_driver_or_new(target, "DFUDriver", activate=False)
         drv.dfu.timeout = self.args.wait
         target.activate(drv)
+
         if self.args.action == 'download':
             drv.download(self.args.altsetting, os.path.abspath(self.args.filename))
         if self.args.action == 'detach':
@@ -901,13 +858,11 @@ class ClientSession(ApplicationSession):
                 raise UserError("not enough arguments for fastboot boot")
             args[1:] = map(os.path.abspath, args[1:])
         target = self._get_target(place)
-        from ..driver import AndroidFastbootDriver
-        try:
-            drv = target.get_driver(AndroidFastbootDriver)
-        except NoDriverFoundError:
-            drv = AndroidFastbootDriver(target, name=None)
+
+        drv = self._get_driver_or_new(target, "AndroidFastbootDriver", activate=False)
         drv.fastboot.timeout = self.args.wait
         target.activate(drv)
+
         if args[0] == 'flash':
             drv.flash(args[1], args[2])
             return
@@ -922,58 +877,36 @@ class ClientSession(ApplicationSession):
     def flashscript(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        from ..driver import FlashScriptDriver
-        from ..resource.remote import NetworkUSBFlashableDevice
 
-        drv = None
-        try:
-            drv = target.get_driver(FlashScriptDriver)
-        except NoDriverFoundError:
-            for resource in target.resources:
-                if isinstance(resource, NetworkUSBFlashableDevice):
-                    drv = FlashScriptDriver(target, name=None)
-                    break
-        if not drv:
-            raise UserError("target has no compatible resource available")
-        target.activate(drv)
+        drv = self._get_driver_or_new(target, "FlashScriptDriver")
         drv.flash(script=self.args.script, args=self.args.script_args)
 
     def bootstrap(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        from ..protocol import BootstrapProtocol
-        from ..driver import IMXUSBDriver, MXSUSBDriver, RKUSBDriver, OpenOCDDriver
         from ..resource.remote import (NetworkMXSUSBLoader, NetworkIMXUSBLoader, NetworkRKUSBLoader,
                                        NetworkAlteraUSBBlaster)
+        from ..driver import OpenOCDDriver
         drv = None
         try:
-            drv = target.get_driver(BootstrapProtocol)
+            drv = target.get_driver("BootstrapProtocol")
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, NetworkIMXUSBLoader):
-                    try:
-                        drv = target.get_driver(IMXUSBDriver)
-                    except NoDriverFoundError:
-                        drv = IMXUSBDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "IMXUSBDriver", activate=False)
                     drv.loader.timeout = self.args.wait
                 elif isinstance(resource, NetworkMXSUSBLoader):
-                    try:
-                        drv = target.get_driver(MXSUSBDriver)
-                    except NoDriverFoundError:
-                        drv = MXSUSBDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "MXSUSBDriver", activate=False)
                     drv.loader.timeout = self.args.wait
                 elif isinstance(resource, NetworkAlteraUSBBlaster):
                     args = dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
                     try:
-                        drv = target.get_driver(OpenOCDDriver)
+                        drv = target.get_driver("OpenOCDDriver", activate=False)
                     except NoDriverFoundError:
                         drv = OpenOCDDriver(target, name=None, **args)
                     drv.interface.timeout = self.args.wait
                 elif isinstance(resource, NetworkRKUSBLoader):
-                    try:
-                        drv = target.get_driver(RKUSBDriver)
-                    except NoDriverFoundError:
-                        drv = RKUSBDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False)
                     drv.loader.timeout = self.args.wait
                 if drv:
                     break
@@ -987,34 +920,26 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         action = self.args.action
         target = self._get_target(place)
-        from ..driver import USBSDMuxDriver, USBSDWireDriver
         from ..resource.remote import NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice
 
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkUSBSDMuxDevice):
-                try:
-                    drv = target.get_driver(USBSDMuxDriver)
-                except NoDriverFoundError:
-                    drv = USBSDMuxDriver(target, name=None)
+                drv = self._get_driver_or_new(target, "USBSDMuxDriver")
             elif isinstance(resource, NetworkUSBSDWireDevice):
-                try:
-                    drv = target.get_driver(USBSDWireDriver)
-                except NoDriverFoundError:
-                    drv = USBSDWireDriver(target, name=None)
+                drv = self._get_driver_or_new(target, "USBSDWireDriver")
             if drv:
                 break
 
         if not drv:
             raise UserError("target has no compatible resource available")
-        target.activate(drv)
-        if isinstance(drv, USBSDWireDriver) and action in ['off', 'client', 'get']:
-            raise UserError("sd-wire does only supports setting 'dut' and 'host' modes")
-
         if action == 'get':
             print(drv.get_mode())
         else:
-            drv.set_mode(action)
+            try:
+                drv.set_mode(action)
+            except ExecutionError as e:
+                raise UserError(str(e))
 
     def usb_mux(self):
         place = self.get_acquired_place()
@@ -1026,30 +951,24 @@ class ClientSession(ApplicationSession):
         else:
             links = [links]
         target = self._get_target(place)
-        from ..driver import LXAUSBMuxDriver
         from ..resource.remote import NetworkLXAUSBMux
 
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkLXAUSBMux):
-                try:
-                    drv = target.get_driver(LXAUSBMuxDriver)
-                except NoDriverFoundError:
-                    drv = LXAUSBMuxDriver(target, name=None)
+                drv = self._get_driver_or_new(target, "LXAUSBMuxDriver")
                 break
 
         if not drv:
             raise UserError("target has no compatible resource available")
-        target.activate(drv)
         drv.set_links(links)
 
     def _get_ip(self, place):
         target = self._get_target(place)
-        from ..resource import EthernetPort, NetworkService
         try:
-            resource = target.get_resource(EthernetPort)
+            resource = target.get_resource("EthernetPort")
         except NoResourceFoundError:
-            resource = target.get_resource(NetworkService)
+            resource = target.get_resource("NetworkService")
             return resource.address
 
         matches = []
@@ -1078,13 +997,8 @@ class ClientSession(ApplicationSession):
                 return
             resource = NetworkService(target, address=str(ip), username='root')
 
-        from ..driver import SSHDriver
-        try:
-            drv = target.get_driver(SSHDriver)
-        except NoDriverFoundError:
-            target.set_binding_map({"networkservice": resource.name})
-            drv = SSHDriver(target, name=resource.name)
-        target.activate(drv)
+        drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name,
+                                      binding_map={"networkservice": resource.name})
         return drv
 
     def ssh(self):
@@ -1149,7 +1063,6 @@ class ClientSession(ApplicationSession):
         quality = self.args.quality
         controls = self.args.controls
         target = self._get_target(place)
-        from ..driver import USBVideoDriver, HTTPVideoDriver
         from ..resource.httpvideostream import HTTPVideoStream
         from ..resource.udev import USBVideo
         from ..resource.remote import NetworkUSBVideo
@@ -1159,21 +1072,14 @@ class ClientSession(ApplicationSession):
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, (USBVideo, NetworkUSBVideo)):
-                    try:
-                        drv = target.get_driver(USBVideoDriver)
-                    except NoDriverFoundError:
-                        drv = USBVideoDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "USBVideoDriver")
                 elif isinstance(resource, HTTPVideoStream):
-                    try:
-                        drv = target.get_driver(HTTPVideoDriver)
-                    except NoDriverFoundError:
-                        drv = HTTPVideoDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "HTTPVideoDriver")
                 if drv:
                     break
         if not drv:
             raise UserError("target has no compatible resource available")
 
-        target.activate(drv)
         if quality == 'list':
             default, variants = drv.get_qualities()
             for name, caps in variants:
@@ -1185,32 +1091,14 @@ class ClientSession(ApplicationSession):
     def audio(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        from ..driver.usbaudiodriver import USBAudioInputDriver
-        drv = None
-        try:
-            drv = target.get_driver(USBAudioInputDriver)
-        except NoDriverFoundError:
-            drv = USBAudioInputDriver(target, name=None)
-        target.activate(drv)
+        drv = self._get_driver_or_new(target, "USBAudioInputDriver")
         drv.play()
 
     def _get_tmc(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        from ..driver import USBTMCDriver
-        from ..resource.remote import NetworkUSBTMC
-        drv = None
-        for resource in target.resources:
-            if isinstance(resource, NetworkUSBTMC):
-                try:
-                    drv = target.get_driver(USBTMCDriver)
-                except NoDriverFoundError:
-                    drv = USBTMCDriver(target, name=None)
-                break
-        if not drv:
-            raise UserError("target has no compatible resource available")
-        target.activate(drv)
-        return drv
+
+        return self._get_driver_or_new(target, "USBTMCDriver")
 
     def tmc_command(self):
         drv = self._get_tmc()
@@ -1257,25 +1145,10 @@ class ClientSession(ApplicationSession):
     def write_image(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        drv = None
-        from ..resource.remote import (NetworkUSBMassStorage, NetworkUSBSDMuxDevice,
-                                       NetworkUSBSDWireDevice)
-        from ..driver import USBStorageDriver
-        try:
-            drv = target.get_driver(USBStorageDriver)
-        except NoDriverFoundError:
-            for resource in target.resources:
-                if isinstance(resource, (NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice,
-                                         NetworkUSBMassStorage)):
-                    try:
-                        drv = target.get_driver(USBStorageDriver)
-                    except NoDriverFoundError:
-                        drv = USBStorageDriver(target, name=None)
-                    drv.storage.timeout = self.args.wait
-                    break
-        if not drv:
-            raise UserError("target has no compatible resource available")
+        drv = self._get_driver_or_new(target, "USBStorageDriver", activate=False)
+        drv.storage.timeout = self.args.wait
         target.activate(drv)
+
         try:
             drv.write_image(self.args.filename, partition=self.args.partition, skip=self.args.skip,
                             seek=self.args.seek, mode=self.args.write_mode)

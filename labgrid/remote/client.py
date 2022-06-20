@@ -916,7 +916,6 @@ class ClientSession(ApplicationSession):
 
     def bootstrap(self):
         place = self.get_acquired_place()
-        args = self.args.filename
         target = self._get_target(place)
         from ..protocol import BootstrapProtocol
         from ..driver import IMXUSBDriver, MXSUSBDriver, RKUSBDriver, OpenOCDDriver

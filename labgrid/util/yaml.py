@@ -7,10 +7,14 @@ from string import Template
 
 import yaml
 
+
 class Loader(yaml.SafeLoader):
     pass
+
+
 class Dumper(yaml.SafeDumper):
     pass
+
 
 def _dict_constructor(loader, node):
     return OrderedDict(loader.construct_pairs(node))
@@ -18,6 +22,10 @@ def _dict_constructor(loader, node):
 
 Loader.add_constructor(
     yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _dict_constructor
+)
+Loader.add_constructor(
+    "tag:yaml.org,2002:python/tuple",
+    yaml.constructor.FullConstructor.construct_python_tuple,
 )
 
 
@@ -59,11 +67,12 @@ def load(stream):
     return yaml.load(stream, Loader=Loader)
 
 
-def dump(data, stream=None):
+def dump(data, stream=None, **kwargs):
     """
     Wrapper for yaml dump function with custom dumper.
     """
-    return yaml.dump(data, stream, Dumper=Dumper, default_flow_style=False)
+    kwargs.pop("Dumper", None)
+    return yaml.dump(data, stream, Dumper=Dumper, **kwargs)
 
 
 def resolve_templates(data, mapping):

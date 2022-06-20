@@ -24,15 +24,12 @@ from autobahn.asyncio.wamp import ApplicationSession
 
 from .common import (ResourceEntry, ResourceMatch, Place, Reservation, ReservationState, TAG_KEY,
                      TAG_VAL, enable_tcp_nodelay)
-from ..environment import Environment
+from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util.dict import diff_dict, flat_dict, filter_dict
-from ..util.yaml import dump
-from .. import Target, target_factory
+from ..util import diff_dict, flat_dict, filter_dict, dump, atomic_replace, Timeout
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
-from ..util import atomic_replace, Timeout
 from ..driver import Mode
 
 txaio.config.loop = asyncio.get_event_loop()  # pylint: disable=no-member
@@ -708,9 +705,9 @@ class ClientSession(ApplicationSession):
         if target:
             if self.args.state:
                 if self.args.verbose >= 2:
-                    from labgrid.stepreporter import StepReporter
+                    from .. import StepReporter
                     StepReporter()
-                from labgrid.strategy import Strategy
+                from ..strategy import Strategy
                 strategy = target.get_driver(Strategy)
                 print(f"Transitioning into state {self.args.state}")
                 strategy.transition(self.args.state)
@@ -732,10 +729,10 @@ class ClientSession(ApplicationSession):
         target = self._get_target(place)
         from ..driver.powerdriver import (NetworkPowerDriver, PDUDaemonDriver,
                                           USBPowerDriver, SiSPMPowerDriver)
-        from ..driver.mqtt import TasmotaPowerDriver
+        from ..driver import TasmotaPowerDriver
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
-        from ..resource.remote import (NetworkUSBPowerPort, NetworkSiSPMPowerPort)
-        from ..resource.mqtt import TasmotaPowerPort
+        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort
+        from ..resource import TasmotaPowerPort
 
         drv = None
         try:
@@ -786,18 +783,11 @@ class ClientSession(ApplicationSession):
         action = self.args.action
         name = self.args.name
         target = self._get_target(place)
-        from ..resource.modbus import ModbusTCPCoil
-        from ..resource.onewireport import OneWirePIO
-        from ..resource.remote import NetworkDeditecRelais8
-        from ..resource.remote import NetworkSysfsGPIO
-        from ..resource.remote import NetworkLXAIOBusPIO
-        from ..resource.remote import NetworkHIDRelay
-        from ..driver.modbusdriver import ModbusCoilDriver
-        from ..driver.onewiredriver import OneWirePIODriver
-        from ..driver.deditecrelaisdriver import DeditecRelaisDriver
-        from ..driver.gpiodriver import GpioDigitalOutputDriver
-        from ..driver.lxaiobusdriver import LXAIOBusPIODriver
-        from ..driver.usbhidrelay import HIDRelayDriver
+        from ..resource import ModbusTCPCoil, OneWirePIO
+        from ..resource.remote import (NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO,
+                                       NetworkHIDRelay)
+        from ..driver import (ModbusCoilDriver, OneWirePIODriver, DeditecRelaisDriver,
+                              GpioDigitalOutputDriver, LXAIOBusPIODriver, HIDRelayDriver)
 
         drv = None
         try:
@@ -924,7 +914,7 @@ class ClientSession(ApplicationSession):
         target = self._get_target(place)
         if self.args.action == 'download' and not self.args.filename:
             raise UserError('not enough arguments for dfu download')
-        from ..driver.dfudriver import DFUDriver
+        from ..driver import DFUDriver
         try:
             drv = target.get_driver(DFUDriver)
         except NoDriverFoundError:
@@ -952,7 +942,7 @@ class ClientSession(ApplicationSession):
                 raise UserError("not enough arguments for fastboot boot")
             args[1:] = map(os.path.abspath, args[1:])
         target = self._get_target(place)
-        from ..driver.fastbootdriver import AndroidFastbootDriver
+        from ..driver import AndroidFastbootDriver
         try:
             drv = target.get_driver(AndroidFastbootDriver)
         except NoDriverFoundError:
@@ -973,7 +963,7 @@ class ClientSession(ApplicationSession):
     def flashscript(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        from ..driver.flashscriptdriver import FlashScriptDriver
+        from ..driver import FlashScriptDriver
         from ..resource.remote import NetworkUSBFlashableDevice
 
         drv = None
@@ -993,9 +983,8 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         args = self.args.filename
         target = self._get_target(place)
-        from ..protocol.bootstrapprotocol import BootstrapProtocol
-        from ..driver.usbloader import IMXUSBDriver, MXSUSBDriver, RKUSBDriver
-        from ..driver.openocddriver import OpenOCDDriver
+        from ..protocol import BootstrapProtocol
+        from ..driver import IMXUSBDriver, MXSUSBDriver, RKUSBDriver, OpenOCDDriver
         from ..resource.remote import (NetworkMXSUSBLoader, NetworkIMXUSBLoader, NetworkRKUSBLoader,
                                        NetworkAlteraUSBBlaster)
         drv = None
@@ -1040,8 +1029,7 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         action = self.args.action
         target = self._get_target(place)
-        from ..driver.usbsdmuxdriver import USBSDMuxDriver
-        from ..driver.usbsdwiredriver import USBSDWireDriver
+        from ..driver import USBSDMuxDriver, USBSDWireDriver
         from ..resource.remote import NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice
 
         drv = None
@@ -1080,7 +1068,7 @@ class ClientSession(ApplicationSession):
         else:
             links = [links]
         target = self._get_target(place)
-        from ..driver.lxausbmuxdriver import LXAUSBMuxDriver
+        from ..driver import LXAUSBMuxDriver
         from ..resource.remote import NetworkLXAUSBMux
 
         drv = None
@@ -1132,7 +1120,7 @@ class ClientSession(ApplicationSession):
                 return
             resource = NetworkService(target, address=str(ip), username='root')
 
-        from ..driver.sshdriver import SSHDriver
+        from ..driver import SSHDriver
         try:
             drv = target.get_driver(SSHDriver)
         except NoDriverFoundError:
@@ -1203,8 +1191,7 @@ class ClientSession(ApplicationSession):
         quality = self.args.quality
         controls = self.args.controls
         target = self._get_target(place)
-        from ..driver.usbvideodriver import USBVideoDriver
-        from ..driver.httpvideodriver import HTTPVideoDriver
+        from ..driver import USBVideoDriver, HTTPVideoDriver
         from ..resource.httpvideostream import HTTPVideoStream
         from ..resource.udev import USBVideo
         from ..resource.remote import NetworkUSBVideo
@@ -1252,7 +1239,7 @@ class ClientSession(ApplicationSession):
     def _get_tmc(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        from ..driver.usbtmcdriver import USBTMCDriver
+        from ..driver import USBTMCDriver
         from ..resource.remote import NetworkUSBTMC
         drv = None
         for resource in target.resources:
@@ -1313,8 +1300,8 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         target = self._get_target(place)
         drv = None
-        from ..resource.remote import NetworkUSBMassStorage, NetworkUSBSDMuxDevice, \
-            NetworkUSBSDWireDevice
+        from ..resource.remote import (NetworkUSBMassStorage, NetworkUSBSDMuxDevice,
+                                       NetworkUSBSDWireDevice)
         from ..driver import USBStorageDriver
         try:
             drv = target.get_driver(USBStorageDriver)

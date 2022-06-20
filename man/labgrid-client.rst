@@ -38,7 +38,7 @@ OPTIONS
     display command line help
 -p PLACE, --place PLACE
     specify the place to operate on
--x, --crossbar-url
+-x URL, --crossbar URL
     the crossbar url of the coordinator, defaults to ``ws://127.0.0.1:20408/ws``
 -c CONFIG, --config CONFIG
     set the configuration file
@@ -167,9 +167,13 @@ LABGRID-CLIENT COMMANDS
 
 ``fastboot`` arg                Run fastboot with argument
 
+``flashscript`` script arg      Run arbitrary script with arguments to flash device
+
 ``bootstrap`` filename          Start a bootloader
 
 ``sd-mux`` action               Switch USB SD Muxer, where action is one of dut (device-under-test), host, off
+
+``usb-mux`` action              Switch USB Muxer, where action is one of off, dut-device, host-dut, host-device, host-dut+host-device
 
 ``ssh``                         Connect via SSH
 
@@ -179,9 +183,13 @@ LABGRID-CLIENT COMMANDS
 
 ``sshfs``                       Mount a remote path via sshfs
 
+``forward``                     Forward local port to remote target
+
 ``telnet``                      Connect via telnet
 
 ``video``                       Start a video stream
+
+``audio``                       Start an audio stream
 
 ``tmc`` command                 Control a USB TMC device
 
@@ -194,6 +202,8 @@ LABGRID-CLIENT COMMANDS
 ``wait`` token                  Wait for a reservation to be allocated
 
 ``reservations``                List current reservations
+
+``export`` filename             Export driver information to file (needs environment with drivers)
 
 ADDING NAMED RESOURCES
 ----------------------

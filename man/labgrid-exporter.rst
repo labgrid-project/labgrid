@@ -38,7 +38,7 @@ OPTIONS
 -------
 -h, --help
     display command line help
--x, --crossbar-url
+-x, --crossbar
     the crossbar url of the coordinator
 -i, --isolated
     enable isolated mode (always request SSH forwards)

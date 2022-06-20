@@ -31,7 +31,7 @@ from ..util.yaml import dump
 from .. import Target, target_factory
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
-from ..util import atomic_replace
+from ..util import atomic_replace, Timeout
 from ..driver import Mode
 
 txaio.config.loop = asyncio.get_event_loop()
@@ -838,10 +838,20 @@ class ClientSession(ApplicationSession):
         elif action == 'low':
             drv.set(False)
 
-    async def _console(self, place, target, *, logfile=None):
+    async def _console(self, place, target, timeout, *, logfile=None, loop=False):
         name = self.args.name
         from ..resource import NetworkSerialPort
-        resource = target.get_resource(NetworkSerialPort, name=name)
+        resource = target.get_resource(NetworkSerialPort, name=name, wait_avail=False)
+
+        # async await resources
+        timeout = Timeout(timeout)
+        while not resource.avail and (loop or not timeout.expired):
+            target.update_resources()
+            await asyncio.sleep(0.1)
+
+        # use zero timeout to prevent blocking sleeps
+        target.await_resources([resource], timeout=0.0)
+
         host, port = proxymanager.get_host_and_port(resource)
 
         # check for valid resources
@@ -883,7 +893,8 @@ class ClientSession(ApplicationSession):
 
     async def console(self, place, target):
         while True:
-            res = await self._console(place, target, logfile=self.args.logfile)
+            res = await self._console(place, target, 10.0, logfile=self.args.logfile,
+                                      loop=self.args.loop)
             if res:
                 break
             if not self.args.loop:

@@ -82,7 +82,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def on_deactivate(self):
         self._status = 0
 
-    def _run(self, cmd, *, timeout=30.0, codec="utf-8", decodeerrors="strict"):
+    def _run(self, cmd, *, timeout=30.0, codec="utf-8", decodeerrors="strict", cmd_input=None):
         """
         Runs the specified cmd on the shell and returns the output.
 

@@ -70,7 +70,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self._status = 0
 
-    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
+    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict", cmd_input: str = None):  # pylint: disable=unused-argument,line-too-long
         # TODO: use codec, decodeerrors
         # TODO: Shell Escaping for the U-Boot Shell
         marker = gen_marker()

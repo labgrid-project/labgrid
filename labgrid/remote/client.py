@@ -649,8 +649,7 @@ class ClientSession(ApplicationSession):
                 if self.args.verbose >= 2:
                     from .. import StepReporter
                     StepReporter()
-                from ..strategy import Strategy
-                strategy = target.get_driver(Strategy)
+                strategy = target.get_driver("Strategy")
                 print(f"Transitioning into state {self.args.state}")
                 strategy.transition(self.args.state)
                 # deactivate console drivers so we are able to connect with microcom later

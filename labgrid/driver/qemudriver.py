@@ -231,13 +231,15 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 "Can't use monitor command on non-running target")
         return self.qmp.execute(command)
 
-    def _read(self, size=1, timeout=10):
+    def _read(self, size=1, timeout=10, max_size=None):
         ready, _, _ = select.select([self._clientsocket], [], [], timeout)
         if ready:
             # Collect some more data
             time.sleep(0.01)
             # Always read a page, regardless of size
-            res = self._clientsocket.recv(4096)
+            size = 4096
+            size = min(max_size, size) if max_size else size
+            res = self._clientsocket.recv(size)
         else:
             raise TIMEOUT(f"Timeout of {timeout:.2f} seconds exceeded")
         return res

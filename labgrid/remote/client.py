@@ -856,8 +856,10 @@ class ClientSession(ApplicationSession):
 
         # async await resources
         timeout = Timeout(timeout)
-        while not resource.avail and (loop or not timeout.expired):
+        while True:
             target.update_resources()
+            if resource.avail or (not loop and timeout.expired):
+                break
             await asyncio.sleep(0.1)
 
         # use zero timeout to prevent blocking sleeps

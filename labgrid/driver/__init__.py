@@ -36,6 +36,8 @@ from .pyvisadriver import PyVISADriver
 from .usbhidrelay import HIDRelayDriver
 from .flashscriptdriver import FlashScriptDriver
 from .usbaudiodriver import USBAudioInputDriver
+from .usbvideodriver import USBVideoDriver
+from .httpvideodriver import HTTPVideoDriver
 from .networkinterfacedriver import NetworkInterfaceDriver
 from .provider import TFTPProviderDriver
 from .mqtt import TasmotaPowerDriver

@@ -166,8 +166,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     @step(args=['cmd'], result=True)
-    def run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
-        return self._run(cmd, codec=codec, decodeerrors=decodeerrors)
+    def run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None):
+        return self._run(cmd, codec=codec, decodeerrors=decodeerrors, timeout=timeout)
 
     def _run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
         """Execute `cmd` on the target.

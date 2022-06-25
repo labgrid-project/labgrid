@@ -136,7 +136,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             )
 
             if index == 0:
-                if did_login and not did_silence_kernel:
+                if not did_silence_kernel:
                     # Silence the kernel and wait for another prompt
                     self.console.sendline("dmesg -n 1")
                     did_silence_kernel = True

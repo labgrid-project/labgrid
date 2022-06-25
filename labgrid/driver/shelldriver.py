@@ -177,9 +177,10 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             if timeout.expired:
                 raise TIMEOUT(f"Timeout of {self.login_timeout} seconds exceeded during waiting for login")  # pylint: disable=line-too-long
 
+        if self.post_login_settle_time > 0:
+            self.console.settle(self.post_login_settle_time, timeout=timeout.remaining)
+
         if did_login:
-            if self.post_login_settle_time > 0:
-                self.console.settle(self.post_login_settle_time, timeout=timeout.remaining)
             self._check_prompt()
 
     @step()

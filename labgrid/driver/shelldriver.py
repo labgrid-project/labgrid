@@ -236,11 +236,24 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self._status = 0
             raise
 
-    def _inject_run(self):
-        self.console.sendline(
-            '''run() { echo -n "$MARKER"; sh -c "$@"; echo "$MARKER $?"; }'''
-        )
-        self.console.expect(self.prompt)
+    def _inject_run(self, inject_timeout=10.0):
+        """Tries to inject run() command wrapper into shell on the console."""
+        timeout = Timeout(inject_timeout)
+
+        while True:
+            self.console.sendline(
+                '''run() { echo -n "$MARKER"; sh -c "$@"; echo "$MARKER $?"; }'''
+            )
+            self.console.expect(self.prompt)
+            try:
+                data = self._raw_run("type run")
+                if data[2] and "function" in data[2]:
+                    return
+            except TIMEOUT:
+                pass
+
+            if timeout.expired:
+                raise TIMEOUT(f"Timeout of {inject_timeout} seconds exceeded during waiting for run injection")  # pylint: disable=line-too-long
 
     @step(args=['keyfile_path'])
     def _put_ssh_key(self, keyfile_path):

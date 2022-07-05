@@ -22,6 +22,7 @@ from .udev import (
     LXAUSBMux,
     HIDRelay,
     USBDebugger,
+    USBPowerPort,
 )
 from ..util import dump
 
@@ -54,6 +55,7 @@ class Suggester:
         self.resources.append(LXAUSBMux(**args))
         self.resources.append(HIDRelay(**args))
         self.resources.append(USBDebugger(**args))
+        self.resources.append(USBPowerPort(**args, index=0))
 
     def suggest_callback(self, resource, meta, suggestions):
         cls = type(resource).__name__
@@ -80,6 +82,8 @@ class Suggester:
                 dump({cls: {"match": suggestion}}).strip(),
                 '  ',
             ))
+            if cls == 'USBPowerPort':
+                print('    index: ?')
         print("  ---")
         print()
 

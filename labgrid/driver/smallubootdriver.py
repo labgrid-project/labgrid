@@ -68,7 +68,7 @@ class SmallUBootDriver(UBootDriver):
         # wait until UBoot has reached it's prompt
         self.console.expect(self.prompt)
         for command in self.init_commands:  #pylint: disable=not-an-iterable
-            self._run(command)
+            self._run(command, decodeerrors=self.console_decodeerrors)
 
     def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
         """
@@ -78,7 +78,6 @@ class SmallUBootDriver(UBootDriver):
         Arguments:
         cmd - Command to run
         """
-        # TODO: use codec, decodeerrors
 
         # Check if Uboot is in command line mode
         if self._status != 1:
@@ -97,7 +96,7 @@ class SmallUBootDriver(UBootDriver):
         _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
 
         data = self.re_vt100.sub(
-            '', before.decode('utf-8'), count=1000000
+            '', before.decode(codec, decodeerrors), count=1000000
         ).replace("\r", "").split("\n")
         data = data[1:]
         data = data[data.index(f"Unknown command 'echo{marker}' - try 'help'") +1 :]

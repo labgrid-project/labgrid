@@ -27,6 +27,8 @@ strategies, custom implementations for these can be registered at runtime.
 It is expected that for complex use-cases, the user would implement and
 register a custom `Strategy` and possibly some higher-level `Drivers`.
 
+.. _overview-resources:
+
 Resources
 ~~~~~~~~~
 
@@ -44,7 +46,7 @@ They can appear/disappear at runtime and have different properties each time
 they are discovered.
 The most common examples of `ManagedResources` are the various USB resources
 discovered using udev, such as :any:`USBSerialPort`, :any:`IMXUSBLoader` or
-:any:`AndroidUSBFastboot`.
+:any:`AndroidUSBFastboot` (see the :ref:`udev matching section <udev-matching>`).
 
 Drivers and Protocols
 ~~~~~~~~~~~~~~~~~~~~~

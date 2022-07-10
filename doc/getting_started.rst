@@ -218,8 +218,10 @@ For example, to export a ``USBSerialPort`` with ``ID_SERIAL_SHORT`` of
        match:
          ID_SERIAL_SHORT: ID23421JLK
 
-.. note:: Use ``labgrid-suggest`` to generate the YAML snippets for most
-	  exportable resources.
+.. note:: See the :ref:`udev matching section <udev-matching>` on how to
+          match ManagedResources and the
+          :ref:`resources sections <overview-resources>` for a description of
+          different resource types.
 
 The exporter can now be started by running:
 
@@ -390,61 +392,6 @@ Follow these instructions to install the systemd files on your machine(s):
    .. code-block:: console
 
       # usermod -a -G labgrid <user>
-
-.. _udev-matching:
-
-udev Matching
--------------
-
-labgrid allows the exporter (or the client-side environment) to match resources
-via udev rules.
-The udev resources become available to the test/exporter as soon as they are
-plugged into the computer, e.g. allowing an exporter to export all USB ports on
-a specific hub and making a ``NetworkSerialPort`` available as soon as it is
-plugged into one of the hub's ports.
-labgrid also provides a small utility called ``labgrid-suggest`` which will
-output the proper YAML formatted snippets for you.
-The information udev has on a device can be viewed by executing:
-
-.. code-block:: bash
-   :emphasize-lines: 9
-
-    $ udevadm info /dev/ttyUSB0
-    ...
-    E: ID_MODEL_FROM_DATABASE=CP210x UART Bridge / myAVR mySmartUSB light
-    E: ID_MODEL_ID=ea60
-    E: ID_PATH=pci-0000:00:14.0-usb-0:5:1.0
-    E: ID_PATH_TAG=pci-0000_00_14_0-usb-0_5_1_0
-    E: ID_REVISION=0100
-    E: ID_SERIAL=Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_P-00-00682
-    E: ID_SERIAL_SHORT=P-00-00682
-    E: ID_TYPE=generic
-    ...
-
-In this case the device has an ``ID_SERIAL_SHORT`` key with a unique ID embedded
-in the USB-serial converter.
-The resource match configuration for this USB serial converter is:
-
-.. code-block:: yaml
-   :emphasize-lines: 3
-
-   USBSerialPort:
-     match:
-       'ID_SERIAL_SHORT': 'P-00-00682'
-
-This section can now be added under the resource key in an environment
-configuration or under its own entry in an exporter configuration file.
-
-As the USB bus number can change depending on the kernel driver initialization
-order, it is better to use the ``@ID_PATH`` instead of ``@sys_name`` for USB
-devices.
-In the default udev configuration, the path is not available for all USB
-devices, but that can be changed by creating a udev rules file:
-
-.. code-block:: none
-
-  SUBSYSTEMS=="usb", IMPORT{builtin}="path_id"
-
 
 Using a Strategy
 ----------------

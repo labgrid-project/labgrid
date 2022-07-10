@@ -1168,13 +1168,17 @@ Arguments:
 Used by:
   - `DockerDriver`_
 
+.. _udev-matching:
+
 udev Matching
 ~~~~~~~~~~~~~
-udev matching allows labgrid to identify resources via their udev properties.
+
+labgrid allows the exporter (or the client-side environment) to match resources
+via udev rules.
 Any udev property key and value can be used, path matching USB devices is
 allowed as well.
-This allows exporting a specific USB hub port or the correct identification of
-a USB serial converter across computers.
+The udev resources become available as soon as they are plugged into the
+computer running the exporter.
 
 The initial matching and monitoring for udev events is handled by the
 :any:`UdevManager` class.
@@ -1202,6 +1206,22 @@ info <device> -a``) are useable as match keys.
 Finally ``sys_name`` allows matching against the name of the directory in
 sysfs.
 All match entries must succeed for the device to be accepted.
+
+labgrid provides a small utility called ``labgrid-suggest`` which will
+output the proper YAML formatted snippets for you.
+These snippets can be added under the resource key in an environment
+configuration or under their own entries in an exporter configuration file.
+
+As the USB bus number can change depending on the kernel driver initialization
+order, it is better to use the ``ID_PATH`` instead of ``sys_name`` for USB
+devices.
+
+In the default udev configuration, ``ID_PATH`` is not available for all USB
+devices, but that can be changed by creating a udev rules file:
+
+.. code-block:: none
+
+  SUBSYSTEMS=="usb", IMPORT{builtin}="path_id"
 
 The following examples show how to use the udev matches for some common
 use-cases.

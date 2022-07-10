@@ -231,7 +231,7 @@ class USBSerialPort(USBResource, SerialPort):
         if self.port:
             warnings.warn(
                 "USBSerialPort: The port attribute will be overwritten by udev.\n"
-                "Please use udev matching as described in http://labgrid.readthedocs.io/en/latest/getting_started.html#udev-matching"  # pylint: disable=line-too-long
+                "Please use udev matching as described in http://labgrid.readthedocs.io/en/latest/configuration.html#udev-matching"  # pylint: disable=line-too-long
             )
         super().__attrs_post_init__()
 

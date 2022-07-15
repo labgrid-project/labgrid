@@ -271,27 +271,37 @@ class DigitalOutputPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 @attr.s(eq=False)
 class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """YKUSHPowerDriver - Driver using a YEPKIT YKUSH switchable USB hub
-        to control a target's power - https://www.yepkit.com/products/ykush"""
-    bindings = {"port": "YKUSHPowerPort", }
+        to control a target's power - https://www.yepkit.com/products/ykush.
+        Uses ykushcmd tool to control the hub."""
+    bindings = {"port": {"YKUSHPowerPort", "NetworkYKUSHPowerPort"} }
     delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
-
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        # uses the YKUSH pykush interface from here:
-        # https://github.com/Yepkit/pykush
-        self.pykush_mod = import_module('pykush.pykush')
-        self.pykush = self.pykush_mod.YKUSH(serial=self.port.serial)
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('ykushcmd') or 'ykushcmd'
+        else:
+            self.tool = 'ykushcmd'
 
     @Driver.check_active
     @step()
     def on(self):
-        self.pykush.set_port_state(self.port.index, self.pykush_mod.YKUSH_PORT_STATE_UP)
+        cmd = [
+            self.tool,
+            "-s", f"{self.port.serial}",
+            "-u", f"{self.port.index}"
+        ]
+        processwrapper.check_output(self.port.command_prefix + cmd)
 
     @Driver.check_active
     @step()
     def off(self):
-        self.pykush.set_port_state(self.port.index, self.pykush_mod.YKUSH_PORT_STATE_DOWN)
+        cmd = [
+            self.tool,
+            "-s", f"{self.port.serial}",
+            "-d", f"{self.port.index}"
+        ]
+        processwrapper.check_output(self.port.command_prefix + cmd)
 
     @Driver.check_active
     @step()
@@ -302,7 +312,25 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 
     @Driver.check_active
     def get(self):
-        return self.pykush.get_port_state(self.port.index)
+        cmd = [
+            self.tool,
+            "-s", f"{self.port.serial}",
+            "-g", f"{self.port.index}"
+        ]
+        res = processwrapper.check_output(self.port.command_prefix + cmd)
+        res = res.decode("utf-8")
+
+        # the example of ykushcmd -g like below:
+        # cmd: ykushcmd -g 1
+        # output: Downstream port 1 is ON/OFF
+        check_str = "Downstream port {port} is {status}"
+        if check_str.format(port=self.port.index, status="ON") in res:
+            return True
+        if check_str.format(port=self.port.index, status="OFF") in res:
+            return False
+
+        raise ExecutionError(f"Could not find port string in ykushcmd output: {res}")
+
 
 @target_factory.reg_driver
 @attr.s(eq=False)

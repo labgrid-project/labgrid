@@ -270,7 +270,7 @@ A YKUSHPowerPort describes a YEPKIT YKUSH USB (HID) switchable USB hub.
 
 The example describes port 1 on the YKUSH USB hub with the
 serial "YK12345".
-(use "pykush -l" to get your serial...)
+(use "ykushcmd -l" to get your serial...)
 
 Arguments:
   - serial (str): serial number of the YKUSH hub
@@ -278,6 +278,10 @@ Arguments:
 
 Used by:
   - `YKUSHPowerDriver`_
+
+NetworkYKUSHPowerPort
++++++++++++++++++++++
+A NetworkYKUSHPowerPort describes a `YKUSHPowerPort`_ available on a remote computer.
 
 USBPowerPort
 ++++++++++++

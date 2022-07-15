@@ -13,7 +13,7 @@ from .udev import USBSDWireDevice
 from .udev import USBPowerPort
 from .udev import SiSPMPowerPort
 from .common import Resource, ResourceManager, ManagedResource
-from .ykushpowerport import YKUSHPowerPort
+from .ykushpowerport import YKUSHPowerPort, NetworkYKUSHPowerPort
 from .xenamanager import XenaManager
 from .flashrom import Flashrom, NetworkFlashrom
 from .docker import DockerManager, DockerDaemon, DockerConstants

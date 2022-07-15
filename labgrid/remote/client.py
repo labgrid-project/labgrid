@@ -732,6 +732,7 @@ class ClientSession(ApplicationSession):
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
         from ..resource.remote import (NetworkUSBPowerPort, NetworkSiSPMPowerPort)
         from ..resource.mqtt import TasmotaPowerPort
+        from ..resource import YKUSHPowerPort
 
         drv = None
         try:
@@ -763,6 +764,11 @@ class ClientSession(ApplicationSession):
                         drv = target.get_driver(TasmotaPowerDriver)
                     except NoDriverFoundError:
                         drv = TasmotaPowerDriver(target, name=None)
+                elif isinstance(resource, YKUSHPowerPort):
+                    try:
+                        drv = target.get_driver(YKUSHPowerDriver)
+                    except NoDriverFoundError:
+                        drv = YKUSHPowerDriver(target, name=None)
                 if drv:
                     break
 

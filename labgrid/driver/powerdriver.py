@@ -239,22 +239,31 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
 
 
+    # use ykushcmd as control driver, because this is more convenient
+    # than a python module and supports remote control via ssh.
+    # ref: https://www.yepkit.com/learn/setup-guide-ykush
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        # uses the YKUSH pykush interface from here:
-        # https://github.com/Yepkit/pykush
-        self.pykush_mod = import_module('pykush.pykush')
-        self.pykush = self.pykush_mod.YKUSH(serial=self.port.serial)
 
     @Driver.check_active
     @step()
     def on(self):
-        self.pykush.set_port_state(self.port.index, self.pykush_mod.YKUSH_PORT_STATE_UP)
+        cmd = [
+            "ykushcmd",
+            "-s", f"{self.port.serial}",
+            "-u", f"{self.port.index}"
+        ]
+        processwrapper.check_output(self.port.command_prefix + cmd)
 
     @Driver.check_active
     @step()
     def off(self):
-        self.pykush.set_port_state(self.port.index, self.pykush_mod.YKUSH_PORT_STATE_DOWN)
+        cmd = [
+            "ykushcmd",
+            "-s", f"{self.port.serial}",
+            "-d", f"{self.port.index}"
+        ]
+        processwrapper.check_output(self.port.command_prefix + cmd)
 
     @Driver.check_active
     @step()
@@ -265,7 +274,24 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 
     @Driver.check_active
     def get(self):
-        return self.pykush.get_port_state(self.port.index)
+        cmd = [
+            "ykushcmd",
+            "-s", f"{self.port.serial}",
+            "-g", f"{self.port.index}"
+        ]
+        res = processwrapper.check_output(self.port.command_prefix + cmd)
+        res = res.decode("utf-8")
+
+        # the example of ykushcmd -g like below:
+        # cmd: ykushcmd -g 1
+        # output: Downstream port 1 is ON/OFF
+        check_str = f"port {self.port.index}"
+        if check_str in res:
+            status = res.strip().split()[-1]
+            if status == "ON":
+                return True
+            else:
+                return False
 
 @target_factory.reg_driver
 @attr.s(eq=False)

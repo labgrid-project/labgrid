@@ -669,6 +669,26 @@ class LXAIOBusNodeExport(ResourceExport):
 
 exports["LXAIOBusPIO"] = LXAIOBusNodeExport
 
+@attr.s(eq=False)
+class YKUSHPowerPortExport(ResourceExport):
+    """ResourceExport for YKUSHPowerPort devices"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = f"{local_cls_name}"
+        from ..resource import ykushpowerport
+        local_cls = getattr(ykushpowerport, local_cls_name)
+        self.local = local_cls(target=None, name=None, host=self.host, **self.local_params)
+
+    def _get_params(self):
+        return {
+            "host": self.host,
+            "serial": self.local.serial,
+            "index": self.local.index
+        }
+
+exports["YKUSHPowerPort"] = YKUSHPowerPortExport
 
 class ExporterSession(ApplicationSession):
     def onConnect(self):

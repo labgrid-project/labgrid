@@ -1,12 +1,12 @@
 import attr
 
 from ..factory import target_factory
-from .common import Resource
+from .common import NetworkResource
 
 
 @target_factory.reg_resource
 @attr.s(eq=False)
-class YKUSHPowerPort(Resource):
+class YKUSHPowerPort(NetworkResource):
     """This resource describes a YEPKIT YKUSH switchable USB hub.
 
     Args:

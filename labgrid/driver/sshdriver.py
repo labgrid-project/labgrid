@@ -81,7 +81,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _start_own_master_once(self, timeout):
 
-        self.tmpdir = tempfile.mkdtemp(prefix='labgrid-ssh-tmp-')
+        self.tmpdir = tempfile.mkdtemp(prefix='lg-ssh-')
         control = os.path.join(
             self.tmpdir, f'control-{self.networkservice.address}'
         )

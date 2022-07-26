@@ -605,13 +605,13 @@ NetworkRKUSBLoader
 ~~~~~~~~~~~~~~~~~~~
 A NetworkRKUSBLoader describes an `RKUSBLoader`_ available on a remote computer.
 
-AndroidFastboot
-~~~~~~~~~~~~~~~
-An AndroidFastboot resource describes a USB device in the fastboot state.
+AndroidUSBFastboot
+~~~~~~~~~~~~~~~~~~
+An AndroidUSBFastboot resource describes a USB device in the fastboot state.
 
 .. code-block:: yaml
 
-   AndroidFastboot:
+   AndroidUSBFastboot:
      match:
        ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
@@ -621,6 +621,25 @@ Arguments:
   - usb_product_id (str, default="0104"): USB product ID, to be compared with
     the ``ID_MODEL_ID`` udev property
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `AndroidFastbootDriver`_
+
+AndroidNetFastboot
+~~~~~~~~~~~~~~~~~~
+An AndroidNetFastboot resource describes a network device in fastboot state.
+
+.. code-block:: yaml
+
+   AndroidNetFastboot:
+     address: "192.168.23.42"
+
+Arguments:
+  - address (str): ip address of the fastboot device
+  - port (int, default=5554): udp/tcp fastboot port that is used in the
+    device. (e.g. Barebox uses port 5554)
+  - protocol (str, default="udp"): which protocol should be used when issuing
+    fastboot commands. (Barebox supports currently only the udp protocol)
 
 Used by:
   - `AndroidFastbootDriver`_
@@ -1159,7 +1178,7 @@ The initial matching and monitoring for udev events is handled by the
 :any:`UdevManager` class.
 This manager is automatically created when a resource derived from
 :any:`USBResource` (such as :any:`USBSerialPort`, :any:`IMXUSBLoader` or
-:any:`AndroidFastboot`) is instantiated.
+:any:`AndroidUSBFastboot`) is instantiated.
 
 To identify the kernel device which corresponds to a configured `USBResource`,
 each existing (and subsequently added) kernel device is matched against the
@@ -1205,15 +1224,15 @@ device's parents instead of directly to itself.
 This is necessary for the `USBSerialPort` because we actually want to find the
 ``ttyUSB?`` device below the USB serial converter device.
 
-Matching an Android Fastboot Device
-+++++++++++++++++++++++++++++++++++
+Matching an Android USB Fastboot Device
++++++++++++++++++++++++++++++++++++++++
 
 In this case, we want to match the USB device on that port directly, so we
 don't use a parent match.
 
 .. code-block:: yaml
 
-  AndroidFastboot:
+  AndroidUSBFastboot:
     match:
       sys_name: '1-1.2.3'
 
@@ -1548,12 +1567,13 @@ Arguments:
 
 AndroidFastbootDriver
 ~~~~~~~~~~~~~~~~~~~~~
-An AndroidFastbootDriver allows the upload of images to a device in the USB
-fastboot state.
+An AndroidFastbootDriver allows the upload of images to a device in the USB or
+network fastboot state.
 
 Binds to:
   fastboot:
-    - `AndroidFastboot`_
+    - `AndroidUSBFastboot`_
+    - `AndroidNetFastboot`_
 
 Implements:
   - None (yet)

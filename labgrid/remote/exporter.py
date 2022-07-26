@@ -491,7 +491,14 @@ class USBFlashableExport(USBGenericExport):
         p['devnode'] = self.local.devnode
         return p
 
+@attr.s(eq=False)
+class USBGenericRemoteExport(USBGenericExport):
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self.data['cls'] = f"Remote{self.cls}".replace("Network", "")
+
 exports["AndroidFastboot"] = USBGenericExport
+exports["AndroidUSBFastboot"] = USBGenericRemoteExport
 exports["DFUDevice"] = USBGenericExport
 exports["IMXUSBLoader"] = USBGenericExport
 exports["MXSUSBLoader"] = USBGenericExport
@@ -669,6 +676,21 @@ class LXAIOBusNodeExport(ResourceExport):
 
 exports["LXAIOBusPIO"] = LXAIOBusNodeExport
 
+@attr.s(eq=False)
+class AndroidNetFastbootExport(ResourceExport):
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = f"Remote{self.cls}"
+        from ..resource import fastboot
+        local_cls = getattr(fastboot, local_cls_name)
+        self.local = local_cls(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {'host' : self.host, **self.local_params}
+
+exports["AndroidNetFastboot"] = AndroidNetFastbootExport
 
 class ExporterSession(ApplicationSession):
     def onConnect(self):

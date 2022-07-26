@@ -88,7 +88,7 @@ imports:
         targets:
           test1:
             resources:
-            - AndroidFastboot:
+            - AndroidUSBFastboot:
                 name: "fastboot"
                 match: {}
             - RawSerialPort:
@@ -106,7 +106,7 @@ imports:
         targets:
           test1:
             resources:
-            - AndroidFastboot:
+            - AndroidUSBFastboot:
                 name: "fastboot"
                 match: {}
             - RawSerialPort:

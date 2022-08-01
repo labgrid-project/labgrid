@@ -178,6 +178,26 @@ class ResourceExport(ResourceEntry):
 
 
 @attr.s(eq=False)
+class UUUExport(ResourceExport):
+    """ResourceExport for UUU"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.uuu import UUU
+        self.local = UUU(target=None, name=None, **self.local_params)
+        self.data['cls'] = "NetworkUUU"
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': self.host,
+            'usb_otg_path': self.local.usb_otg_path,
+        }
+
+
+exports["UUU"] = UUUExport
+
+@attr.s(eq=False)
 class SerialPortExport(ResourceExport):
     """ResourceExport for a USB or Raw SerialPort"""
 

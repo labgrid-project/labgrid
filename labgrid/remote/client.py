@@ -966,6 +966,20 @@ class ClientSession(ApplicationSession):
             return
         drv(*args)
 
+    def uuu(self):
+        place = self.get_acquired_place()
+        args = self.args.leftover
+        if not args:
+            raise UserError("not enough arguments for uuu")
+        target = self._get_target(place)
+        from ..driver.uuudriver import UniversalUpdateUtilityDriver
+        try:
+            drv = target.get_driver(UniversalUpdateUtilityDriver)
+        except NoDriverFoundError:
+            drv = UniversalUpdateUtilityDriver(target, name=None)
+        target.activate(drv)
+        drv.run(*args)
+
     def flashscript(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
@@ -1734,6 +1748,10 @@ def main():
     subparser.add_argument('--wait', type=float, default=10.0)
     subparser.set_defaults(func=ClientSession.fastboot)
 
+    subparser = subparsers.add_parser('uuu',
+                                      help="run uuu")
+    subparser.set_defaults(func=ClientSession.uuu)
+
     subparser = subparsers.add_parser('flashscript',
                                      help="run flash script")
     subparser.add_argument('script', help="Flashing script")
@@ -1884,7 +1902,7 @@ def main():
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()
-    if args.command not in ['ssh', 'rsync', 'forward']:
+    if args.command not in ['ssh', 'rsync', 'forward', 'uuu']:
         args = parser.parse_args()
     else:
         args.leftover = leftover

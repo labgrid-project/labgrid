@@ -625,6 +625,45 @@ Arguments:
 Used by:
   - `AndroidFastbootDriver`_
 
+UUU
+~~~
+An UUU resource describes a i.mx uuu device in the serialdownload mode which attached to exporter.
+
+.. code-block:: yaml
+
+   UUU:
+     usb_otg_path: "3:8"
+
+   UUU:
+     usb_otg_path: ["3:8", "2:8"]
+
+Arguments:
+  - usb_otg_path (str or list): UUU otg paths, could obtain it with ``uuu -lsusb``
+
+Used by:
+  - `UniversalUpdateUtilityDriver`_
+
+NetworkUUU
+~~~~~~~~~~
+An UUU resource describes a i.mx uuu device in the serialdownload mode which not directly attached to exporter.
+
+.. code-block:: yaml
+
+   UUU:
+     host: "10.192.244.109"
+     usb_otg_path: "3:8"
+
+   UUU:
+     host: "10.192.244.109"
+     usb_otg_path: ["3:8", "2:8"]
+
+Arguments:
+  - host (str): the host which with uuu device attached.
+  - usb_otg_path (str or list): UUU otg paths, could obtain it with ``uuu -lsusb``
+
+Used by:
+  - `UniversalUpdateUtilityDriver`_
+
 DFUDevice
 ~~~~~~~~~
 A DFUDevice resource describes a USB device in DFU (Device Firmware Upgrade)
@@ -1572,6 +1611,22 @@ Arguments:
     fastboot manpage -S option for allowed size suffixes). The default is the
     same as the fastboot default, which is computed after querying the target's
     ``max-download-size`` variable.
+
+UniversalUpdateUtilityDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+An UniversalUpdateUtilityDriver allows the upload of images to a i.mx device
+in the serialdownload mode.
+
+Binds to:
+  uuu:
+    - `NetworkUUU`_
+
+Implements:
+  - None (yet)
+
+.. code-block:: yaml
+
+   UniversalUpdateUtilityDriver: {}
 
 DFUDriver
 ~~~~~~~~~

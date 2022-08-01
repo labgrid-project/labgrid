@@ -70,12 +70,15 @@ class NetworkResource(Resource):
     def command_prefix(self):
         host = self.host
 
+        ssh_extra_args = []
         if hasattr(self, 'extra'):
             if self.extra.get('proxy_required'):
                 host = self.extra.get('proxy')
+            if self.extra.get("ssh_extra_args"):
+                ssh_extra_args = self.extra.get("ssh_extra_args")
 
         conn = sshmanager.get(host)
-        prefix = conn.get_prefix()
+        prefix = conn.get_prefix(ssh_extra_args)
 
         return prefix + ['--']
 

@@ -195,8 +195,8 @@ class SSHConnection:
         )
 
     @_check_connected
-    def get_prefix(self):
-        return ["ssh"] + self._get_ssh_args() + [self.host]
+    def get_prefix(self, ssh_extra_args=[]):
+        return ["ssh"] + ssh_extra_args + self._get_ssh_args() + [self.host]
 
     @_check_connected
     def run(self, command, *, codec="utf-8", decodeerrors="strict",

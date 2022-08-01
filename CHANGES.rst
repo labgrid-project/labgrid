@@ -33,6 +33,8 @@ New Features in 0.5.0
   a string to be passed to stdin of the process
 - The ``NetworkInterfaceDriver`` now supports local and remote SSH port
   forwarding to/from the exporter.
+- The SSH connection timeout can now be globally controlled using the
+  ``LG_SSH_CONNECT_TIMEOUT`` environment variable.
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

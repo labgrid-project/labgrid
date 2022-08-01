@@ -20,6 +20,7 @@ from .exception import ExecutionError
 from ..util.helper import get_free_port
 from ..util.proxy import proxymanager
 from ..util.timeout import Timeout
+from ..util.ssh import get_ssh_connect_timeout
 
 
 @target_factory.reg_driver
@@ -30,7 +31,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     priorities = {CommandProtocol: 10, FileTransferProtocol: 10}
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     stderr_merge = attr.ib(default=False, validator=attr.validators.instance_of(bool))
-    connection_timeout = attr.ib(default=30.0, validator=attr.validators.instance_of(float))
+    connection_timeout = attr.ib(default=float(get_ssh_connect_timeout()), validator=attr.validators.instance_of(float))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

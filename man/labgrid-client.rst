@@ -106,6 +106,11 @@ LG_USERNAME
 Override the username used when accessing a resource. Typically only useful for
 CI pipelines where the username may not be consistent between pipeline stages.
 
+LG_SSH_CONNECT_TIMEOUT
+~~~~~~~~~~~~~~~~~~~~~~
+Set the connection timeout when using SSH (The ``ConnectTimeout`` option). If
+unspecified, defaults to 30 seconds.
+
 MATCHES
 -------
 Match patterns are used to assign a resource to a specific place. The format is:

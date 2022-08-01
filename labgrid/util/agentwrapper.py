@@ -6,6 +6,8 @@ import subprocess
 import traceback
 import logging
 
+from .ssh import get_ssh_connect_timeout
+
 def b2s(b):
     return base64.b85encode(b).decode('ascii')
 
@@ -50,7 +52,8 @@ class AgentWrapper:
                 agent_data = agent_fd.read()
             agent_hash = hashlib.sha256(agent_data).hexdigest()
             agent_remote = f'.labgrid_agent_{agent_hash}.py'
-            ssh_opts = 'ssh -x -o ConnectTimeout=5 -o PasswordAuthentication=no'.split()
+            connect_timeout = get_ssh_connect_timeout()
+            ssh_opts = f'ssh -x -o ConnectTimeout={connect_timeout} -o PasswordAuthentication=no'.split()
             subprocess.check_call(
                 ['rsync', '-e', ' '.join(ssh_opts), '-tq', agent,
                  f'{host}:{agent_remote}'],

@@ -3,7 +3,8 @@
 import vxi11
 
 
-def power_set(host, index, value):
+def power_set(host, port, index, value):
+    assert port is None
     index = int(index)
     assert 1 <= index <= 2
     value = "ON" if value else "OFF"
@@ -11,7 +12,8 @@ def power_set(host, index, value):
     psu.write(f"OUTPUT CH{index},{value}")
 
 
-def power_get(host, index):
+def power_get(host, port, index):
+    assert port is None
     index = int(index)
     assert 1 <= index <= 2
     psu = vxi11.Instrument(host)

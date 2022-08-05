@@ -608,6 +608,8 @@ A NetworkRKUSBLoader describes an `RKUSBLoader`_ available on a remote computer.
 AndroidUSBFastboot
 ~~~~~~~~~~~~~~~~~~
 An AndroidUSBFastboot resource describes a USB device in the fastboot state.
+Previously, this resource was named AndroidFastboot and this name still
+supported for backwards compatibility.
 
 .. code-block:: yaml
 

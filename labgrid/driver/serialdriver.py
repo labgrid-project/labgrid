@@ -27,7 +27,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         bindings = {"port": "SerialPort", }
     else:
         bindings = {"port": {"SerialPort", "NetworkSerialPort"}, }
-    if version.parse(serial.__version__) != version.Version('3.4.0.1'):
+    if version.parse(serial.__version__) < version.Version('3.4.0.1'):
         message = ("The installed pyserial version does not contain important RFC2217 fixes.\n"
                    "You can install the labgrid fork via:\n"
                    "pip uninstall pyserial\n"

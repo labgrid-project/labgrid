@@ -124,7 +124,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             if self.machine == "q35":
                 self._cmd.append("-drive")
                 self._cmd.append(
-                    f"format={disk_format},file={disk_path}")
+                    f"if=virtio,format={disk_format},file={disk_path}")
+                boot_args.append("root=/dev/vda rootwait")
             elif self.machine == "pc":
                 self._cmd.append("-drive")
                 self._cmd.append(

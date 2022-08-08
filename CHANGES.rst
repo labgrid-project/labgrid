@@ -27,6 +27,8 @@ New Features in 0.5.0
   (Device Firmware Upgrade) mode.
 - ``labgrid-client dfu`` added to allow communcation with devices in DFU mode.
 - Support for QEMU Q35 machine added.
+- `UBootDriver` now handles idle console, allowing driver activation on
+  an interupted U-Boot.
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

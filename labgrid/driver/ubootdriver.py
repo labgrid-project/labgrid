@@ -8,7 +8,7 @@ from pexpect import TIMEOUT
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
-from ..util import gen_marker
+from ..util import gen_marker, Timeout
 from ..step import step
 from .common import Driver
 from .commandmixin import CommandMixin
@@ -150,9 +150,20 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """Await autoboot line and stop it to get to the prompt, optionally
         enter the password.
         """
+        timeout = Timeout(float(self.login_timeout))
+
+        # We call console.expect with a short timeout here to detect if the
+        # console is idle, which would result in a timeout without any changes
+        # to the before property. So we store the last before value we've seen.
+        # Because pexpect keeps any read data in it's buffer when a timeout
+        # occours, we can't lose any data this way.
+        last_before = None
+
+        expectations = [self.prompt, self.autoboot, self.password_prompt, TIMEOUT]
         while True:
-            index, _, _, _ = self.console.expect(
-                [self.prompt, self.autoboot, self.password_prompt]
+            index, before, _, _ = self.console.expect(
+                expectations,
+                timeout=2
             )
             if index == 0:
                 self._status = 1
@@ -162,10 +173,24 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 self.console.write(self.interrupt.encode('ASCII'))
 
             elif index == 2:
-                if self.password:
-                    self.console.sendline(self.password)
-                else:
+                if not self.password:
                     raise Exception("Password entry needed but no password set")
+                self.console.sendline(self.password)
+
+            elif index == 3:
+                # expect hit a timeout while waiting for a match
+                if before == last_before:
+                    # we did not receive anything during the previous expect cycle
+                    # let's assume the target is idle and we can safely issue a
+                    # newline to check the state
+                    self.console.sendline("")
+
+                if timeout.expired:
+                    raise TIMEOUT(
+                        f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"  # pylint: disable=line-too-long
+                    )
+
+            last_before = before
 
         if self.prompt:
             self._check_prompt()

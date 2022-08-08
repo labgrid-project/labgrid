@@ -1447,7 +1447,6 @@ Arguments:
   - init_commands (tuple): optional, tuple of commands to execute after matching the
     prompt
   - password_prompt (str, default="enter Password: "): regex to match the U-Boot password prompt
-  - boot_expression (str, default="U-Boot 20\\d+"): regex to match the U-Boot start string
   - bootstring (str): optional, regex to match on Linux Kernel boot
   - boot_command (str, default="run bootcmd"): boot command for booting target
   - login_timeout (int, default=30): timeout for login prompt detection in seconds
@@ -1498,6 +1497,7 @@ Implements:
      boot_secret: "tpl"
 
 Arguments:
+  - boot_expression (str, default="U-Boot 20\\d+"): regex to match the U-Boot start string
   - boot_secret (str, default="a"): secret used to unlock prompt
   - login_timeout (int, default=60): timeout for password/login prompt detection
   - for other arguments, see `UBootDriver`_

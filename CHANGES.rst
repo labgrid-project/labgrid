@@ -45,6 +45,9 @@ Breaking changes in 0.5.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 - ``Config``'s ``get_option()``/``get_target_option()`` convert non-string
   options no longer to strings.
+- `UBootDriver`'s ``boot_expression`` attribute is deprecated, it will no
+  longer check for the string during U-Boot boot. This allows activating the
+  driver on an already running U-Boot.
 
 Known issues in 0.5.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~

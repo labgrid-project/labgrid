@@ -27,7 +27,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         autoboot (str): optional, string to search for to interrupt autoboot
         interrupt (str): optional, character to interrupt autoboot and go to prompt
         password_prompt (str): optional, string to detect the password prompt
-        boot_expression (str): optional, string to search for on U-Boot start
+        boot_expression (str): optional, deprecated
         bootstring (str): optional, string that indicates that the Kernel is booting
         boot_command (str): optional boot command to boot target
         login_timeout (int): optional, timeout for login prompt detection
@@ -41,7 +41,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
     init_commands = attr.ib(default=attr.Factory(tuple), converter=tuple)
     password_prompt = attr.ib(default="enter Password:", validator=attr.validators.instance_of(str))
-    boot_expression = attr.ib(default=r"U-Boot 20\d+", validator=attr.validators.instance_of(str))
+    boot_expression = attr.ib(default="", validator=attr.validators.instance_of(str))
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
     boot_command = attr.ib(default="run bootcmd", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
@@ -54,6 +54,10 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         )
         self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
+
+        if self.boot_expression:
+            import warnings
+            warnings.warn("boot_expression is deprecated and will be ignored", DeprecationWarning)
 
     def on_activate(self):
         """Activate the UBootDriver
@@ -146,7 +150,6 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """Await autoboot line and stop it to get to the prompt, optionally
         enter the password.
         """
-        self.console.expect(self.boot_expression, timeout=self.login_timeout)
         while True:
             index, _, _, _ = self.console.expect(
                 [self.prompt, self.autoboot, self.password_prompt]

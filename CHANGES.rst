@@ -26,6 +26,7 @@ New Features in 0.5.0
 - `DFUDriver` has been added to communicate with a `DFUDevice`, a device in DFU
   (Device Firmware Upgrade) mode.
 - ``labgrid-client dfu`` added to allow communcation with devices in DFU mode.
+- Support for QEMU Q35 machine added.
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

@@ -54,7 +54,8 @@ workers:
   type: guest
   executable: python3
   arguments:
-  - -mlabgrid.remote.coordinator
+  - -m
+  - labgrid.remote.coordinator
   options:
     workdir: .
     env:

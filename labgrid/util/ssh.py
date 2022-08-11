@@ -357,7 +357,7 @@ class SSHConnection:
 
         self._run_socket_command(
             "cancel", [
-                f"-L{local_port}:localhost:{remote_port}"
+                f"-L{local_port}:{destination}"
             ]
         )
 

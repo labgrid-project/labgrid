@@ -331,9 +331,10 @@ class SSHConnection:
         )
 
     @_check_connected
-    def add_port_forward(self, remote_host, remote_port):
+    def add_port_forward(self, remote_host, remote_port, local_port=None):
         """forward command"""
-        local_port = get_free_port()
+        if local_port is None:
+            local_port = get_free_port()
         destination = f"{remote_host}:{remote_port}"
 
         if destination in self._forwards:

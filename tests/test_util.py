@@ -206,7 +206,7 @@ def test_sshmanager_remove_forward(sshmanager_fix):
     port = sshmanager_fix.request_forward("localhost", 'localhost', 3000)
     sshmanager_fix.remove_forward('localhost', 'localhost', 3000)
 
-    assert 3000 not in sshmanager_fix.get('localhost')._forwards
+    assert 3000 not in sshmanager_fix.get('localhost')._l_forwards
 
 @pytest.mark.localsshmanager
 def test_sshmanager_close(sshmanager_fix):

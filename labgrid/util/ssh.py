@@ -135,7 +135,7 @@ class SSHConnection:
         init=False,
         validator=attr.validators.instance_of(str)
     )
-    _forwards = attr.ib(init=False, default=attr.Factory(dict))
+    _l_forwards = attr.ib(init=False, default=attr.Factory(dict))
 
     def __attrs_post_init__(self):
         self._logger = logging.getLogger(f"{self}")
@@ -337,21 +337,21 @@ class SSHConnection:
             local_port = get_free_port()
         destination = f"{remote_host}:{remote_port}"
 
-        if destination in self._forwards:
-            return self._forwards[destination]
+        if destination in self._l_forwards:
+            return self._l_forwards[destination]
         self._run_socket_command(
             "forward", [
                 f"-L{local_port}:{destination}"
             ]
         )
-        self._forwards[destination] = local_port
+        self._l_forwards[destination] = local_port
         return local_port
 
     @_check_connected
     def remove_port_forward(self, remote_host, remote_port):
         """cancel command"""
         destination = f"{remote_host}:{remote_port}"
-        local_port = self._forwards.pop(destination, None)
+        local_port = self._l_forwards.pop(destination, None)
 
         if local_port is None:
             raise ForwardError("Forward does not exist")

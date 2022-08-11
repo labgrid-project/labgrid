@@ -58,13 +58,17 @@ class AgentWrapper:
             self.agent = subprocess.Popen(
                 ssh_opts + [host, '--', 'python3', agent_remote],
                 stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE)
+                stdout=subprocess.PIPE,
+                start_new_session=True,
+            )
         else:
             # run locally
             self.agent = subprocess.Popen(
                 ['python3', agent],
                 stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE)
+                stdout=subprocess.PIPE,
+                start_new_session=True,
+            )
 
     def __del__(self):
         self.close()

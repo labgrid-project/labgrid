@@ -501,6 +501,8 @@ class Target:
             print("An exception occured during cleanup, call the cleanup() "
                   "method on targets yourself to handle exceptions explictly.")
             print(f"Error: {e}")
+            import traceback
+            traceback.print_exc()
 
     def export(self):
         """

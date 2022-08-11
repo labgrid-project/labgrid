@@ -523,6 +523,14 @@ class SSHConnection:
 
     def cleanup(self):
         if self.isconnected():
+            # cancel local forwards
+            for destination, local_port in self._l_forwards.items():
+                self._run_socket_command("cancel", [f"-L{local_port}:{destination}"])
+            self._l_forwards.clear()
+            # cancel remote forwards
+            for forward in self._r_forwards:
+                self._run_socket_command("cancel", [forward])
+            self._r_forwards.clear()
             self.disconnect()
         shutil.rmtree(self._tmpdir)
 

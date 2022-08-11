@@ -136,6 +136,7 @@ class SSHConnection:
         validator=attr.validators.instance_of(str)
     )
     _l_forwards = attr.ib(init=False, default=attr.Factory(dict))
+    _r_forwards = attr.ib(init=False, default=attr.Factory(set))
 
     def __attrs_post_init__(self):
         self._logger = logging.getLogger(f"{self}")
@@ -361,6 +362,34 @@ class SSHConnection:
                 f"-L{local_port}:{destination}"
             ]
         )
+
+    @_check_connected
+    def add_remote_port_forward(self, remote_port, local_port, remote_bind=None):
+        """remote forward command
+
+        Note that the remote socket is not *bound* to any specific IP by
+        default, making it reachable by the target. Also, 'GatewayPorts
+        clientspecified' needs to be configured in the remote host's
+        sshd_config.
+        """
+        if remote_bind is None:
+            remote_bind = "*"
+
+        forward = f"-R{remote_bind}:{remote_port:d}:localhost:{local_port:d}"
+
+        self._run_socket_command("forward", [forward])
+        self._r_forwards.add(forward)
+
+    @_check_connected
+    def remove_remote_port_forward(self, remote_port, local_port, remote_bind=None):
+        """remote cancel command"""
+        if remote_bind is None:
+            remote_bind = "*"
+
+        forward = f"-R{remote_bind}:{remote_port:d}:localhost:{local_port:d}"
+
+        self._r_forwards.remove(forward)
+        self._run_socket_command("cancel", [forward])
 
     def connect(self):
         if not self._connected:

@@ -1,10 +1,12 @@
 import logging
+from signal import SIGTERM
 import sys
 import threading
 from importlib.util import find_spec
 
 import pytest
 import pexpect
+import yaml
 
 from labgrid import Target
 from labgrid.driver import SerialDriver
@@ -98,10 +100,33 @@ def serial_driver_no_name(target, serial_port, mocker):
     return s
 
 @pytest.fixture(scope='function')
-def crossbar(tmpdir, pytestconfig):
+def crossbar_config(tmpdir, pytestconfig):
+    crossbar_config = '.crossbar/config.yaml'
+
+    pytestconfig.rootdir.join(crossbar_config).copy(tmpdir.mkdir('.crossbar'))
+
+    # crossbar runs labgrid's coordinator component as a guest, record its coverage
+    if pytestconfig.pluginmanager.get_plugin('pytest_cov'):
+        with open(tmpdir.join(crossbar_config), 'r+') as stream:
+            conf = yaml.safe_load(stream)
+
+            for worker in conf['workers']:
+                if worker['type'] == 'guest':
+                    worker['executable'] = 'coverage'
+                    worker['arguments'].insert(0, 'run')
+                    worker['arguments'].insert(1, '--parallel-mode')
+                    # pytest-cov combines coverage files in root dir automatically, so copy it there
+                    coverage_data = pytestconfig.rootdir.join('.coverage')
+                    worker['arguments'].insert(2, f'--data-file={coverage_data}')
+
+            stream.seek(0)
+            yaml.safe_dump(conf, stream)
+
+@pytest.fixture(scope='function')
+def crossbar(tmpdir, crossbar_config):
     if not find_spec('crossbar'):
         pytest.skip("crossbar not found")
-    pytestconfig.rootdir.join('.crossbar/config.yaml').copy(tmpdir.mkdir('.crossbar'))
+
     spawn = pexpect.spawn(
             'crossbar start --color false --logformat none',
             logfile=Prefixer(sys.stdout.buffer, 'crossbar'),
@@ -116,9 +141,14 @@ def crossbar(tmpdir, pytestconfig):
     reader = threading.Thread(target=keep_reading, name='crossbar-reader', args=(spawn,), daemon=True)
     reader.start()
     yield spawn
+
+    # let coverage write its data:
+    # https://coverage.readthedocs.io/en/latest/subprocess.html#process-termination
     print("stopping crossbar")
-    spawn.close(force=True)
-    assert not spawn.isalive()
+    spawn.kill(SIGTERM)
+    spawn.expect(pexpect.EOF)
+    spawn.wait()
+
     reader.join()
 
 @pytest.fixture(scope='function')

@@ -163,6 +163,27 @@ def test_sshconnection_port_forward_add_duplicate(connection_localhost):
     second_port = connection_localhost.add_port_forward('localhost', port)
     assert first_port == second_port
 
+
+@pytest.mark.localsshmanager
+def test_sshconnection_port_remote_forward_add_remove(connection_localhost):
+    rport = get_free_port()
+    lport = get_free_port()
+    test_string = "Hello World"
+
+    connection_localhost.add_remote_port_forward(rport, lport)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(("127.0.0.1", lport))
+    server_socket.listen(1)
+    send_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    send_socket.connect(("127.0.0.1", rport))
+    client_socket, address = server_socket.accept()
+    send_socket.send(test_string.encode('utf-8'))
+
+    assert client_socket.recv(16).decode("utf-8") == test_string
+    connection_localhost.remove_remote_port_forward(rport, lport)
+    assert connection_localhost._r_forwards == set()
+
+
 @pytest.mark.localsshmanager
 def test_sshconnection_put_file(connection_localhost, tmpdir):
     p = tmpdir.join("config.yaml")

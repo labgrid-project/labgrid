@@ -41,7 +41,11 @@ class NetworkInterfaceDriver(Driver):
             self.wrapper = None
             self.proxy = None
 
-    @Driver.check_bound
+    @property
+    def skip_deactivate_on_export(self):
+        # We need to keep the agent and SSH exports active.
+        return True
+
     def get_export_vars(self):
         return {
             "host": self.iface.host,

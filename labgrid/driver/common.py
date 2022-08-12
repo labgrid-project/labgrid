@@ -58,6 +58,14 @@ class Driver(BindingMixin):
         """Get a dictionary of variables to be exported."""
         return {}
 
+    @property
+    def skip_deactivate_on_export(self):
+        """Drivers are deactivated on export by default.
+
+        If the driver can handle external accesses even while active, it can
+        return True here.
+        """
+        return False
 
 def check_file(filename, *, command_prefix=[]):
     if subprocess.call(command_prefix + ['test', '-r', filename]) != 0:

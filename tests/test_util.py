@@ -164,8 +164,6 @@ def test_sshconnection_port_forward_add_duplicate(connection_localhost):
 
 @pytest.mark.localsshmanager
 def test_sshconnection_put_file(connection_localhost, tmpdir):
-    port = 1337
-
     p = tmpdir.join("config.yaml")
     p.write(
         """Teststring"""

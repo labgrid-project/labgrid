@@ -11,6 +11,7 @@ import pytest
 import logging
 
 from labgrid.util import diff_dict, flat_dict, filter_dict
+from labgrid.util.helper import get_free_port
 from labgrid.util.ssh import ForwardError, SSHConnection, sshmanager
 from labgrid.util.proxy import proxymanager
 from labgrid.util.managedfile import ManagedFile
@@ -132,7 +133,7 @@ def test_sshconnection_run_fail(connection_localhost):
 
 @pytest.mark.localsshmanager
 def test_sshconnection_port_forward_add_remove(connection_localhost):
-    port = 1337
+    port = get_free_port()
     test_string = "Hello World"
 
     local_port = connection_localhost.add_port_forward('localhost', port)
@@ -149,14 +150,14 @@ def test_sshconnection_port_forward_add_remove(connection_localhost):
 
 @pytest.mark.localsshmanager
 def test_sshconnection_port_forward_remove_raise(connection_localhost):
-    port = 1337
+    port = get_free_port()
 
     with pytest.raises(ForwardError):
         connection_localhost.remove_port_forward('localhost', port)
 
 @pytest.mark.localsshmanager
 def test_sshconnection_port_forward_add_duplicate(connection_localhost):
-    port = 1337
+    port = get_free_port()
 
     first_port = connection_localhost.add_port_forward('localhost', port)
     second_port = connection_localhost.add_port_forward('localhost', port)

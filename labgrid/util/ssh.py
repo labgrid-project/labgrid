@@ -490,6 +490,7 @@ class SSHConnection:
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            start_new_session=True,
         )
 
         self._logger.debug('Started keepalive for %s', self.host)

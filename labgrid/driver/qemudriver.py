@@ -43,6 +43,10 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         rootfs (str): optional, reference to the paths key for use as the virtio-9p filesystem
         dtb (str): optional, reference to the image key for the device tree
         bios (str): optional, reference to the image key for the bios image
+        display (str, default="none"): optional, display output to enable; must be one of:
+            none: Do not create a display device
+            fb-headless: Create a headless framebuffer device
+            egl-headless: Create a headless GPU-backed graphics card. Requires host support
     """
     qemu_bin = attr.ib(validator=attr.validators.instance_of(str))
     machine = attr.ib(validator=attr.validators.instance_of(str))
@@ -70,6 +74,13 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
     bios = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
+    display = attr.ib(
+        default="none",
+        validator=attr.validators.optional(attr.validators.and_(
+            attr.validators.instance_of(str),
+            attr.validators.in_(["none", "fb-headless", "egl-headless"]),
+        ))
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -168,7 +179,19 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._cmd.append(self.cpu)
         self._cmd.append("-m")
         self._cmd.append(self.memory)
-        self._cmd.append("-nographic")
+        if self.display == "none":
+            self._cmd.append("-nographic")
+        elif self.display == "fb-headless":
+            self._cmd.append("-display")
+            self._cmd.append("none")
+        elif self.display == "egl-headless":
+            self._cmd.append("-vga")
+            self._cmd.append("virtio")
+            self._cmd.append("-display")
+            self._cmd.append("egl-headless")
+        else:
+            raise ExecutionError(f"Unknown display '{self.display}'")
+
         self._cmd.append("-chardev")
         self._cmd.append(f"socket,id=serialsocket,path={sockpath}")
         self._cmd.append("-serial")

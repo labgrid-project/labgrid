@@ -2266,6 +2266,10 @@ Arguments:
   - rootfs (str): optional, reference to the paths key for use as the virtio-9p filesystem
   - dtb (str): optional, reference to the image key for the device tree
   - bios (str): optional, reference to the image key for the bios image
+  - display (str, default="none"): optional, display output to enable; must be one of:
+    - none: Do not create a display device
+    - fb-headless: Create a headless framebuffer device
+    - egl-headless: Create a headless GPU-backed graphics card. Requires host support
 
 The QEMUDriver also requires the specification of:
 

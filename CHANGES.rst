@@ -27,6 +27,11 @@ New Features in 0.5.0
   (Device Firmware Upgrade) mode.
 - ``labgrid-client dfu`` added to allow communcation with devices in DFU mode.
 - Support for QEMU Q35 machine added.
+- The `QEMUDriver` now supports a ``display`` option which can specify if an
+  display device should be created. ``none`` (the default) will not create a
+  display device, ``fb-headeless`` will create a headless framebuffer device
+  for software rendering, and ``egl-headless`` will create a headless GPU
+  device for accelerated rendering (but requires host support)
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

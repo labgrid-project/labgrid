@@ -121,7 +121,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 self._cmd.append(
                     f"if=sd,format={disk_format},file={disk_path},id=mmc0")
                 boot_args.append("root=/dev/mmcblk0p1 rootfstype=ext4 rootwait")
-            if self.machine == "q35":
+            elif self.machine == "q35":
                 self._cmd.append("-drive")
                 self._cmd.append(
                     f"if=virtio,format={disk_format},file={disk_path}")

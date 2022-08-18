@@ -677,7 +677,8 @@ class USBDebugger(USBResource):
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
-        if match not in [("0403", "6010"),
+        if match not in [("0403", "6010"),  # FT2232C/D/H Dual UART/FIFO IC
+                         ("0483", "374f"),  # STLINK-V3
                          ]:
             return False
 

@@ -6,10 +6,11 @@ import shlex
 import attr
 from pexpect import TIMEOUT
 
+from ..exceptions import CommandProcessBusy
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..step import step
-from ..util import gen_marker, Timeout
+from ..util import gen_marker, Timeout, ConsoleMarkerProcess
 from .common import Driver
 from .commandmixin import CommandMixin
 
@@ -47,6 +48,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         )
         self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
+        self._process = None
 
     def on_activate(self):
         """Activate the BareboxDriver
@@ -62,6 +64,31 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Simply sets the internal status to 0
         """
         self._status = 0
+
+    def _popen(self, cmd: str):
+        if self._process is not None:
+            raise CommandProcessBusy()
+
+        # FIXME: use codec, decodeerrors
+        marker = gen_marker()
+        # hide marker from expect
+        hidden_marker = f'"{marker[:4]}""{marker[4:]}"'
+        cmp_command = f'''echo -o /cmd {shlex.quote(cmd)}; echo {hidden_marker}; sh /cmd; echo {hidden_marker} $?;'''  # pylint: disable=line-too-long
+
+        self.console.sendline(cmp_command)
+        self.console.expect(marker)
+
+        self._process = ConsoleMarkerProcess(
+            self.console,
+            marker,
+            self.prompt,
+            on_exit=self._handle_process_exit
+        )
+        return self._process
+
+    def _handle_process_exit(self, process):
+        if self._process is process:
+            self._process = None
 
     @Driver.check_active
     @step(args=['cmd'])
@@ -79,24 +106,20 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Returns:
             Tuple[List[str],List[str], int]: if successful, None otherwise
         """
-        # FIXME: use codec, decodeerrors
-        marker = gen_marker()
-        # hide marker from expect
-        hidden_marker = f'"{marker[:4]}""{marker[4:]}"'
-        cmp_command = f'''echo -o /cmd {shlex.quote(cmd)}; echo {hidden_marker}; sh /cmd; echo {hidden_marker} $?;'''  # pylint: disable=line-too-long
         if self._status == 1:
-            self.console.sendline(cmp_command)
-            _, _, match, _ = self.console.expect(
-                rf'{marker}(.*){marker}\s+(\d+)\s+.*{self.prompt}',
-                timeout=timeout)
-            # Remove VT100 Codes and split by newline
-            data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
-            self.logger.debug("Received Data: %s", data)
-            # Get exit code
-            exitcode = int(match.group(2))
-            return (data, [], exitcode)
+            with self._popen(cmd) as p:
+                output = p.read_to_end(timeout=timeout)
+                # Remove VT100 Codes and split by newline
+                data = self.re_vt100.sub('', output.decode('utf-8')).split('\r\n')[1:-1]
+                self.logger.debug("Received Data: %s", data)
+                return (data, [], p.exitcode)
 
         return None
+
+    @Driver.check_active
+    @step(args=['cmd'], result=True)
+    def popen(self, cmd: str):
+        return self._popen(cmd)
 
     @Driver.check_active
     @step()

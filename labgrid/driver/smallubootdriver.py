@@ -46,6 +46,7 @@ class SmallUBootDriver(UBootDriver):
         login_timeout (int): optional, timeout for login prompt detection,
     """
 
+    boot_expression = attr.ib(default=r"U-Boot 20\d+", validator=attr.validators.instance_of(str))
     boot_secret = attr.ib(default="a", validator=attr.validators.instance_of(str))
     boot_secret_nolf = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))

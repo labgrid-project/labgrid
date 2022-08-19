@@ -63,15 +63,8 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
                 self.search = [self.search]
 
     def _get_usb_path_cmd(self):
-        # OpenOCD supports "adapter usb location" since a1b308ab, if the command is not known
-        # notice user and continue
-        message = ("Your OpenOCD version does not support specifying USB paths.\n"
-                   "Consider updating to OpenOCD v0.11 when using multiple USB Blasters.")
-        return [
-            "--command",
-            "'if {{ [catch {{adapter usb location \"{usbpath}\"}}] }} {{ puts stderr \"{msg}\" }}'"
-            .format(usbpath=self.interface.path, msg=message)
-        ]
+        # OpenOCD supports "adapter usb location" since a1b308ab, released with 0.11.0-rc1
+        return ["--command", f"'adapter usb location \"{self.interface.path}\"'"]
 
     def _run_commands(self, commands: list):
         cmd = self.interface.command_prefix+[self.tool]

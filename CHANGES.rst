@@ -29,6 +29,8 @@ New Features in 0.5.0
 - Support for QEMU Q35 machine added.
 - `UBootDriver` now handles idle console, allowing driver activation on
   an interupted U-Boot.
+- `ShellDriver` now handles bracketed-paste mode (default in bash >= 5.1,
+  readline >= 8.1)
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

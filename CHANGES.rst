@@ -40,6 +40,11 @@ New Features in 23.0
   display device, ``fb-headless`` will create a headless framebuffer device
   for software rendering, and ``egl-headless`` will create a headless GPU
   device for accelerated rendering (but requires host support)
+- The `QEMUDriver` now support a ``nic`` property that can be used to create a
+  network interface when booting. In addition, `QEMUNetworkService` drivers can
+  defined to provide `NetworkService` resources dynamically; if SLiRP (e.g.
+  "user") is used, these will automatically be setup to use port forwarding on
+  the local host
 
 Bug fixes in 23.0
 ~~~~~~~~~~~~~~~~~

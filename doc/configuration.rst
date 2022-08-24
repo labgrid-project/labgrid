@@ -2307,6 +2307,7 @@ Binds to:
      kernel: kernel
      rootfs: rootfs
      dtb: dtb
+     nic: user
 
 .. code-block:: yaml
 
@@ -2340,6 +2341,7 @@ Arguments:
     - none: Do not create a display device
     - fb-headless: Create a headless framebuffer device
     - egl-headless: Create a headless GPU-backed graphics card. Requires host support
+  - nic (str): optional, configuration string to pass to QEMU to create a network interface
 
 The QEMUDriver also requires the specification of:
 
@@ -2347,6 +2349,22 @@ The QEMUDriver also requires the specification of:
 - an image key, the path to the kernel image and optionally the dtb key to
   specify the build device tree
 - a path key, this is the path to the rootfs
+
+QEMUNetworkService
+~~~~~~~~~~~~~~~~~~
+The QEMUNetworkService implements an interface that describe a network
+service on a QEMU instance. If QEMU is configured to do SLiRP ("user")
+networking, the service will be proxied to an ephemeral port on localhost
+and the NetworkService created by this driver will reflect that
+
+Implements:
+  - :any:`DynamicNetworkServiceProtocol`
+
+Arguments:
+  - address (str): the IP address of the service
+  - username (str): the username used to login to the service
+  - password (str): optional, the password used to login to the service
+  - port (int, default=22): optional, the port number of the service
 
 SigrokDriver
 ~~~~~~~~~~~~

@@ -54,17 +54,18 @@ class ProxyManager:
             port = getattr(res, 'port', None) or default_port
 
         extra = getattr(res, 'extra', {})
-        if extra:
-            proxy_required = extra.get('proxy_required')
-            proxy = extra.get('proxy')
-            if proxy_required:
-                port = sshmanager.request_forward(proxy, host, port)
-                host = 'localhost'
-                return host, port
+        if not extra.get('never_proxy'):
+            if extra:
+                proxy_required = extra.get('proxy_required')
+                proxy = extra.get('proxy')
+                if proxy_required:
+                    port = sshmanager.request_forward(proxy, host, port)
+                    host = 'localhost'
+                    return host, port
 
-        if cls._force_proxy:
-            port = sshmanager.request_forward(cls._force_proxy, host, port)
-            host = 'localhost'
+            if cls._force_proxy:
+                port = sshmanager.request_forward(cls._force_proxy, host, port)
+                host = 'localhost'
 
         return host, port
 
@@ -100,9 +101,12 @@ class ProxyManager:
         """get argument list to start a proxy process connected to the target"""
         assert isinstance(res, Resource)
 
+        extra = getattr(res, 'extra', {})
+        if extra.get('never_proxy'):
+            return None
+
         proxy = cls._force_proxy
 
-        extra = getattr(res, 'extra', {})
         if extra.get('proxy_required') or proxy:  # use specific proxy when needed
             proxy = extra.get('proxy') or proxy
 

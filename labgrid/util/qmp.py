@@ -32,8 +32,8 @@ class QMPMonitor:
             raise QMPError("Received empty response")
         return json.loads(line)
 
-    def execute(self, command):
-        json_command = {"execute": command}
+    def execute(self, command, arguments={}):
+        json_command = {"execute": command, "arguments": arguments}
 
         self.monitor_in.write(json.dumps(json_command).encode("utf-8"))
         self.monitor_in.write("\n".encode("utf-8"))

@@ -2,7 +2,7 @@ import pytest
 import socket
 
 from labgrid.driver import SSHDriver, ExecutionError
-from labgrid.exceptions import NoResourceFoundError
+from labgrid.exceptions import NoSupplierFoundError
 from labgrid.resource import NetworkService
 from labgrid.util.helper import get_free_port
 
@@ -22,7 +22,7 @@ def ssh_driver_mocked_and_activated(target, mocker):
     return s
 
 def test_create_fail_missing_resource(target):
-    with pytest.raises(NoResourceFoundError):
+    with pytest.raises(NoSupplierFoundError):
         SSHDriver(target, "ssh")
 
 def test_create(target, mocker):

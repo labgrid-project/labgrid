@@ -7,13 +7,17 @@ from .common import Driver
 from ..exceptions import InvalidConfigError
 from ..util.managedfile import ManagedFile
 from ..util.helper import processwrapper
+from ..resource.udev import AndroidUSBFastboot
+from ..resource.fastboot import AndroidNetFastboot
+from ..resource.remote import RemoteAndroidUSBFastboot, RemoteAndroidNetFastboot
 
 
 @target_factory.reg_driver
 @attr.s(eq=False)
 class AndroidFastbootDriver(Driver):
     bindings = {
-        "fastboot": {"AndroidFastboot", "NetworkAndroidFastboot"},
+        "fastboot": {AndroidUSBFastboot, RemoteAndroidUSBFastboot,
+                     AndroidNetFastboot, RemoteAndroidNetFastboot},
     }
 
     boot_image = attr.ib(
@@ -38,10 +42,12 @@ class AndroidFastbootDriver(Driver):
             self.tool = 'fastboot'
 
     def _get_fastboot_prefix(self):
-        prefix = self.fastboot.command_prefix+[
-            self.tool,
-            "-s", f"usb:{self.fastboot.path}",
-        ]
+        if isinstance(self.fastboot, (AndroidUSBFastboot, RemoteAndroidUSBFastboot)):
+            option = f"usb:{self.fastboot.path}"
+        else:
+            option = f"{self.fastboot.protocol}:{self.fastboot.address}:{self.fastboot.port}"
+
+        prefix = self.fastboot.command_prefix + [ self.tool, "-s", option ]
 
         if self.sparse_size is not None:
             prefix += ["-S", self.sparse_size]

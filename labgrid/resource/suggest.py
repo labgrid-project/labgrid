@@ -10,7 +10,7 @@ from .udev import (
     USBTMC,
     USBVideo,
     IMXUSBLoader,
-    AndroidFastboot,
+    AndroidUSBFastboot,
     DFUDevice,
     USBSDMuxDevice,
     USBSDWireDevice,
@@ -42,7 +42,7 @@ class Suggester:
         self.resources.append(USBTMC(**args))
         self.resources.append(USBVideo(**args))
         self.resources.append(IMXUSBLoader(**args))
-        self.resources.append(AndroidFastboot(**args))
+        self.resources.append(AndroidUSBFastboot(**args))
         self.resources.append(DFUDevice(**args))
         self.resources.append(USBMassStorage(**args))
         self.resources.append(USBSDMuxDevice(**args))

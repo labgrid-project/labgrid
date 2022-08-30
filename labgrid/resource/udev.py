@@ -312,7 +312,7 @@ class MXSUSBLoader(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
-class AndroidFastboot(USBResource):
+class AndroidUSBFastboot(USBResource):
     usb_vendor_id = attr.ib(default='1d6b', validator=attr.validators.instance_of(str))
     usb_product_id = attr.ib(default='0104', validator=attr.validators.instance_of(str))
     def filter_match(self, device):
@@ -321,6 +321,14 @@ class AndroidFastboot(USBResource):
         if device.properties.get('ID_MODEL_ID') != self.usb_product_id:
             return False
         return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class AndroidFastboot(AndroidUSBFastboot):
+    def __attrs_post_init__(self):
+        warnings.warn("AndroidFastboot is deprecated, use AndroidUSBFastboot instead",
+                      DeprecationWarning)
+        super().__attrs_post_init__()
 
 @target_factory.reg_resource
 @attr.s(eq=False)

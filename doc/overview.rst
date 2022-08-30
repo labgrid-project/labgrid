@@ -33,7 +33,7 @@ Resources
 `Resources` are passive and only store the information to access the
 corresponding part of the `Target`.
 Typical examples of resources are :any:`RawSerialPort`, :any:`NetworkPowerPort`
-and :any:`AndroidFastboot`.
+and :any:`AndroidUSBFastboot`.
 
 An important type of `Resources` are :any:`ManagedResources <ManagedResource>`.
 While normal `Resources` are always considered available for use and have fixed
@@ -44,7 +44,7 @@ They can appear/disappear at runtime and have different properties each time
 they are discovered.
 The most common examples of `ManagedResources` are the various USB resources
 discovered using udev, such as :any:`USBSerialPort`, :any:`IMXUSBLoader` or
-:any:`AndroidFastboot`.
+:any:`AndroidUSBFastboot`.
 
 Drivers and Protocols
 ~~~~~~~~~~~~~~~~~~~~~
@@ -112,7 +112,7 @@ A realistic sequence of activation might look like this:
   :any:`IMXUSBLoader` resource to be available)
 - load the bootloader (:any:`BootstrapProtocol.load`)
 - activate the :any:`AndroidFastbootDriver` driver on the target (this will
-  wait for the :any:`AndroidFastboot` resource to be available)
+  wait for the :any:`AndroidUSBFastboot` resource to be available)
 - boot the kernel (:any:`AndroidFastbootDriver.boot`)
 - activate the :any:`ShellDriver` driver on the target (this will wait for the
   :any:`USBSerialPort` resource to be available and log in)
@@ -347,7 +347,7 @@ For resource types which do not have an existing, network-transparent protocol
 the mapping done by the exporter.
 
 For generic USB resources, the exporter for example maps a
-:any:`AndroidFastboot` resource to a :any:`NetworkAndroidFastboot` resource and
+:any:`AndroidUSBFastboot` resource to a :any:`RemoteAndroidUSBFastboot` resource and
 adds a hostname property which needs to be used by the client to connect to the
 exporter.
 To avoid the need for additional remote access protocols and authentication,

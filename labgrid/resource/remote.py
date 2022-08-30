@@ -113,10 +113,28 @@ class RemoteUSBResource(NetworkResource, ManagedResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
-class NetworkAndroidFastboot(RemoteUSBResource):
+class RemoteAndroidUSBFastboot(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkAndroidFastboot(RemoteAndroidUSBFastboot):
+    def __attrs_post_init__(self):
+        import warnings
+        warnings.warn("NetworkAndroidFastboot is deprecated, use RemoteAndroidUSBFastboot instead",
+                      DeprecationWarning)
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class RemoteAndroidNetFastboot(NetworkResource):
+    address = attr.ib(validator=attr.validators.instance_of(str))
+    port = attr.ib(default=5554, validator=attr.validators.instance_of(int))
+    protocol = attr.ib(default="udp", validator=attr.validators.instance_of(str))
 
 
 @target_factory.reg_resource

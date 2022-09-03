@@ -654,6 +654,7 @@ class CoordinatorComponent(ApplicationSession):
         self._publish_place(place)
         self.save_later()
         self.schedule_reservations()
+        print(f"{place.name}: place acquired by {place.acquired}")
         return True
 
     @locked
@@ -674,6 +675,7 @@ class CoordinatorComponent(ApplicationSession):
         self._publish_place(place)
         self.save_later()
         self.schedule_reservations()
+        print(f"{place.name}: place released")
         return True
 
     @locked

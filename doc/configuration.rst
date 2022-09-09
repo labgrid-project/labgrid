@@ -663,6 +663,19 @@ Arguments:
 Used by:
   - `DFUDriver`_
 
+NetworkInterface
+~~~~~~~~~~~~~~~~
+A NetworkInterface resource describes a network adapter (such as Ethernet or
+WiFi)
+
+.. code-block:: yaml
+
+   NetworkInterface:
+     ifname: eth0
+
+Arguments:
+  - ifname (str): name of the interface
+
 USBNetworkInterface
 ~~~~~~~~~~~~~~~~~~~~
 A USBNetworkInterface resource describes a USB network adapter (such as
@@ -679,8 +692,8 @@ Arguments:
 
 RemoteNetworkInterface
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`RemoteNetworkInterface` resource describes a :any:`USBNetworkInterface`
-resource available on a remote computer.
+A :any:`RemoteNetworkInterface` resource describes a :any:`NetworkInterface` or
+:any:`USBNetworkInterface` resource available on a remote computer.
 
 AlteraUSBBlaster
 ~~~~~~~~~~~~~~~~

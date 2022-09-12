@@ -25,5 +25,6 @@ def power_get(host, port, index):
     index = int(index)
     # remove trailing /
     r = requests.get(host.format(value='', index=index).rstrip('/'))
+    data = r.json()
     r.raise_for_status()
-    return r.text == '1'
+    return data['state'] == '1'

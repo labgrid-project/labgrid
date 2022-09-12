@@ -198,7 +198,7 @@ Currently available are:
 
 ``simplerest``
   This is a generic backend for PDU implementations which can be controlled via
-  HTTP GET requests (both set and get).
+  HTTP GET and PUT requests.
   See the `docstring in the module
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/simplerest.py>`__
   for details.

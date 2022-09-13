@@ -1,4 +1,4 @@
-from typing import Dict, Type
+from typing import Dict, Type, List
 import attr
 
 from ..binding import BindingMixin

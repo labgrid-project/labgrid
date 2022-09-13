@@ -238,8 +238,8 @@ class SerialPortExport(ResourceExport):
                 '-n',
                 '-Y', f'connection: &con01#  accepter: telnet(rfc2217,mode=server),{self.port}',
                 '-Y', f'  connector: serialdev(nouucplock=true),{start_params["path"]},{self.local.speed}n81,local',  # pylint: disable=line-too-long
-                '-Y', f'  options:',
-                '-Y', f'    max-connections: 10',
+                '-Y', '  options:',
+                '-Y', '    max-connections: 10',
             ]
         else:
             cmd = [

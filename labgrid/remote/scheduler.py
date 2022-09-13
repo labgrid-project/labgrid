@@ -22,9 +22,9 @@ def schedule_step(places, filters):
 
     limit = min(map(len, interest.values()))
     allocation = {}
-    for place, filters in interest.items():
-        if len(filters) == limit:
-            allocation[filters.pop(0)] = place
+    for interest_place, interest_filters in interest.items():
+        if len(interest_filters) == limit:
+            allocation[interest_filters.pop(0)] = interest_place
 
     return allocation
 

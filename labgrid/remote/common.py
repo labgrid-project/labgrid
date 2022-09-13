@@ -296,8 +296,8 @@ class Reservation:
         if self.prio:
             print(indent + f"prio: {self.prio}")
         print(indent + "filters:")
-        for name, filter in self.filters.items():
-            print(indent + f"  {name}: {' '.join([(k + '=' + v) for k, v in filter.items()])}")
+        for name, fltr in self.filters.items():
+            print(indent + f"  {name}: {' '.join([(k + '=' + v) for k, v in fltr.items()])}")
         if self.allocations:
             print(indent + "allocations:")
             for name, allocation in self.allocations.items():

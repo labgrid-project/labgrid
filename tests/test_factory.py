@@ -123,6 +123,32 @@ def test_convert_explicit_list():
     assert data == original_data
 
 
+def test_normalize_config():
+    original_config = {
+        'resources': OrderedDict([
+            ('RawSerialPort', {
+                'port': 'foo',
+                'speed': 115200
+            }),
+        ]),
+        'drivers': OrderedDict([
+            ('FakeConsoleDriver', {
+                'name': 'console',
+            }),
+        ]),
+    }
+    config = deepcopy(original_config)
+    resources, drivers = target_factory.normalize_config(config)
+
+    assert 'RawSerialPort' in resources
+    assert resources['RawSerialPort'] == {None: ({'port': 'foo', 'speed': 115200},)}
+
+    assert 'FakeConsoleDriver' in drivers
+    assert drivers['FakeConsoleDriver'] == {'console': ({}, {})}
+
+    assert config == original_config
+
+
 def test_convert_error():
     with pytest.raises(InvalidConfigError) as excinfo:
         data = load("""

@@ -1,3 +1,55 @@
 [build-system]
 # Minimum requirements for the build system to execute.
 requires = ["setuptools", "wheel", "setuptools_scm"]
+
+[tool.pylint.imports]
+ignored-modules = ["gi"]
+
+[tool.pylint."messages control"]
+# disable all, then enable explicitly
+disable = ["all"]
+enable = [
+    "F", # all checks from fatal category
+    "E", # all checks from error category
+
+    # warning checks (sorted alphabetically)
+    'deprecated-argument',
+    'deprecated-class',
+    'deprecated-decorator',
+    'deprecated-method',
+    'deprecated-module',
+    'duplicate-key',
+    'expression-not-assigned',
+    'f-string-without-interpolation',
+    'import-self',
+    'keyword-arg-before-vararg',
+    'logging-format-interpolation',
+    'logging-fstring-interpolation',
+    'logging-not-lazy',
+    'pointless-statement',
+    'pointless-string-statement',
+    'redefined-builtin',
+    'redefined-outer-name',
+    'reimported',
+    'unknown-option-value',
+    'unnecessary-semicolon',
+    'unreachable',
+    'unused-import',
+    'unused-variable',
+    'useless-else-on-loop',
+    'using-constant-test',
+    'wildcard-import',
+
+    # convention checks (sorted alphabetically)
+    "wrong-import-order",
+
+    # refactor checks (sorted alphabetically)
+    "redefined-argument-from-local",
+]
+
+[tool.pylint.typecheck]
+generated-members = [
+    "labgrid.driver.*",
+    "labgrid.strategy.*",
+]
+signature-mutators = ["labgrid.step.step"]

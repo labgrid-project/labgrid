@@ -1152,17 +1152,17 @@ class ClientSession(ApplicationSession):
     def scp(self):
         drv = self._get_ssh()
 
-        res = drv.scp(src=self.args.src, dst=self.args.dst)
+        drv.scp(src=self.args.src, dst=self.args.dst)
 
     def rsync(self):
         drv = self._get_ssh()
 
-        res = drv.rsync(src=self.args.src, dst=self.args.dst, extra=self.args.leftover)
+        drv.rsync(src=self.args.src, dst=self.args.dst, extra=self.args.leftover)
 
     def sshfs(self):
         drv = self._get_ssh()
 
-        res = drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint)
+        drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint)
 
     def forward(self):
         if not self.args.local and not self.args.remote:
@@ -1443,7 +1443,7 @@ def start_session(url, realm, extra):
     runner = ApplicationRunner(url, realm=realm, extra=extra)
     coro = runner.run(make, start_loop=False)
 
-    transport, protocol = loop.run_until_complete(coro)
+    _, protocol = loop.run_until_complete(coro)
 
     # there is no other notification when the WAMP connection setup times out,
     # so we need to wait for one of these protocol futures to resolve

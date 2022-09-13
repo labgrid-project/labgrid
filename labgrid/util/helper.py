@@ -58,7 +58,7 @@ class ProcessWrapper:
         while True:
             try:
                 raw = os.read(mfd, 4096)
-            except BlockingIOError as ex:
+            except BlockingIOError:
                 # wait for new data and retry
                 select.select([mfd], [], [mfd], 0.1)
                 continue

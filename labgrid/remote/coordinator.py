@@ -889,7 +889,7 @@ class CoordinatorComponent(ApplicationSession):
 
 if __name__ == '__main__':
     runner = ApplicationRunner(
-        url=environ.get("WS", u"ws://127.0.0.1:20408/ws"),
+        url=environ.get("WS", "ws://127.0.0.1:20408/ws"),
         realm="realm1",
     )
     runner.run(CoordinatorComponent)

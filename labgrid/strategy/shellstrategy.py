@@ -29,7 +29,7 @@ class ShellStrategy(Strategy):
         super().__attrs_post_init__()
 
     @step(args=['status'])
-    def transition(self, status, *, step):
+    def transition(self, status, *, step):  # pylint: disable=redefined-outer-name
         if not isinstance(status, Status):
             status = Status[status]
         if status == Status.unknown:
@@ -54,7 +54,7 @@ class ShellStrategy(Strategy):
         self.status = status
 
     @step(args=['status'])
-    def force(self, status, *, step):
+    def force(self, status, *, step):  # pylint: disable=redefined-outer-name
         if not isinstance(status, Status):
             status = Status[status]
         if status == Status.unknown:

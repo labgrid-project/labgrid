@@ -13,7 +13,7 @@ from autobahn import wamp
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 from autobahn.wamp.types import RegisterOptions
 
-from .common import *
+from .common import *  # pylint: disable=wildcard-import
 from .scheduler import TagSet, schedule
 from ..util import atomic_replace, yaml
 

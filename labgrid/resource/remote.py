@@ -48,8 +48,8 @@ class RemotePlaceManager(ResourceManager):
                 'crossbar_realm',
                 os.environ.get("LG_CROSSBAR_REALM", "realm1"))
             self._start()
-        place = self.session.get_place(remote_place.name)
-        resource_entries = self.session.get_target_resources(place)
+        place = self.session.get_place(remote_place.name)  # pylint: disable=no-member
+        resource_entries = self.session.get_target_resources(place)  # pylint: disable=no-member
         expanded = []
         for resource_name, resource_entry in resource_entries.items():
             new = target_factory.make_resource(

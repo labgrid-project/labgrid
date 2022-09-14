@@ -22,7 +22,7 @@ import txaio
 txaio.use_asyncio()
 from autobahn.asyncio.wamp import ApplicationSession
 
-from .common import *
+from .common import *  # pylint: disable=wildcard-import
 from ..environment import Environment
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace
@@ -34,7 +34,7 @@ from ..util.helper import processwrapper
 from ..util import atomic_replace, Timeout
 from ..driver import Mode
 
-txaio.config.loop = asyncio.get_event_loop()
+txaio.config.loop = asyncio.get_event_loop()  # pylint: disable=no-member
 
 
 class Error(Exception):

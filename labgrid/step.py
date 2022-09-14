@@ -15,16 +15,16 @@ class Steps:
         return self._stack[-1] if self._stack else None
 
     def get_new(self, title, tag, source):
-        step = Step(title, level=len(self._stack) + 1, tag=tag, source=source)
+        step = Step(title, level=len(self._stack) + 1, tag=tag, source=source)  # pylint: disable=redefined-outer-name
         return step
 
-    def push(self, step):
+    def push(self, step):  # pylint: disable=redefined-outer-name
         assert step not in self._stack
         self._stack.append(step)
         step.parent = self.get_current()
         step.level = len(self._stack)
 
-    def pop(self, step):
+    def pop(self, step):  # pylint: disable=redefined-outer-name
         assert self._stack[-1] is step
         self._stack.pop()
 
@@ -47,7 +47,7 @@ steps = Steps()
 
 
 class StepEvent:
-    def __init__(self, step, data, *, resource=None, stream=False):
+    def __init__(self, step, data, *, resource=None, stream=False):  # pylint: disable=redefined-outer-name
         self.ts = monotonic()  # used to keep track of the events age
         self.step = step
         self.data = data
@@ -204,7 +204,7 @@ def step(*, title=None, args=[], result=False, tag=None):  # pylint: disable=unu
             bound = signature.bind_partial(*_args, **_kwargs)
             bound.apply_defaults()
             source = func.__self__ if inspect.ismethod(func) else bound.arguments.get('self')
-            step = steps.get_new(title, tag, source)
+            step = steps.get_new(title, tag, source)  # pylint: disable=redefined-outer-name
             # optionally pass the step object
             if 'step' in signature.parameters:
                 _kwargs['step'] = step

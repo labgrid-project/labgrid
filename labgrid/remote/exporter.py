@@ -1,6 +1,5 @@
 """The remote.exporter module exports resources to the coordinator and makes
 them available to other clients on the same coordinator"""
-# pylint: disable=unsupported-assignment-operation
 import argparse
 import asyncio
 import logging
@@ -112,7 +111,7 @@ class ResourceExport(ResourceEntry):
         start_params = self._get_start_params()
         try:
             self._start(start_params)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             self.broken = "start failed"
             self.logger.exception("failed to start with %s", start_params)
             raise
@@ -122,7 +121,7 @@ class ResourceExport(ResourceEntry):
         assert not self.broken
         try:
             self._stop(self.start_params)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             self.broken = "stop failed"
             self.logger.exception("failed to stop with %s", self.start_params)
             raise
@@ -159,18 +158,18 @@ class ResourceExport(ResourceEntry):
         if self.broken:
             params['extra']['broken'] = self.broken
         if self.params != params:
-            self.data['params'].update(params)  # pylint: disable=unsubscriptable-object
+            self.data['params'].update(params)
             dirty = True
 
         return dirty
 
-    def acquire(self, *args, **kwargs):  # pylint: disable=arguments-differ
+    def acquire(self, *args, **kwargs):
         if self.broken:
             raise BrokenResourceError(f"cannot acquire broken resource (original reason): {self.broken}")
         super().acquire(*args, **kwargs)
         self.poll()
 
-    def release(self, *args, **kwargs):  # pylint: disable=arguments-differ
+    def release(self, *args, **kwargs):
         if self.broken:
             raise BrokenResourceError(f"cannot release broken resource (original reason): {self.broken}")
         super().release(*args, **kwargs)

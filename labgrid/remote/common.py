@@ -1,4 +1,3 @@
-# pylint: disable=unsubscriptable-object
 import socket
 import time
 import enum
@@ -153,7 +152,7 @@ class Place:
     def asdict(self):
         # in the coordinator, we have resource objects, otherwise just a path
         acquired_resources = []
-        for resource in self.acquired_resources:  # pylint: disable=not-an-iterable
+        for resource in self.acquired_resources:
             if isinstance(resource, (tuple, list)):
                 acquired_resources.append(resource)
             else:
@@ -191,12 +190,12 @@ class Place:
         if self.tags:
             print(indent + f"tags: {', '.join(k + '=' + v for k, v in sorted(self.tags.items()))}")
         print(indent + "matches:")
-        for match in sorted(self.matches):  # pylint: disable=not-an-iterable
+        for match in sorted(self.matches):
             print(indent + f"  {match}")
         print(indent + f"acquired: {self.acquired}")
         print(indent + "acquired resources:")
         # in the coordinator, we have resource objects, otherwise just a path
-        for resource in sorted(self.acquired_resources):  # pylint: disable=not-an-iterable
+        for resource in sorted(self.acquired_resources):
             if isinstance(resource, (tuple, list)):
                 resource_path = resource
             else:
@@ -218,7 +217,7 @@ class Place:
 
         A resource_path has the structure (exporter, group, cls, name).
         """
-        for match in self.matches:  # pylint: disable=not-an-iterable
+        for match in self.matches:
             if match.ismatch(resource_path):
                 return match
 

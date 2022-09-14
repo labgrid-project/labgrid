@@ -1,4 +1,3 @@
-# pylint: disable=no-member
 import logging
 import re
 import shlex
@@ -65,7 +64,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     @Driver.check_active
     @step(args=['cmd'])
-    def run(self, cmd: str, *, timeout: int = 30):  # pylint: disable=unused-argument
+    def run(self, cmd: str, *, timeout: int = 30):
         return self._run(cmd, timeout=timeout)
 
     def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
@@ -184,7 +183,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
                 if timeout.expired:
                     raise TIMEOUT(
-                        f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"  # pylint: disable=line-too-long
+                        f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"
                     )
 
             last_before = before

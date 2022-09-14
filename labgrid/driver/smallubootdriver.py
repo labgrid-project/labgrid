@@ -68,10 +68,10 @@ class SmallUBootDriver(UBootDriver):
 
         # wait until UBoot has reached it's prompt
         self.console.expect(self.prompt)
-        for command in self.init_commands:  #pylint: disable=not-an-iterable
+        for command in self.init_commands:
             self._run(command)
 
-    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
+    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=line-too-long
         """
         If Uboot is in Command-Line mode: Run command cmd and return it's
         output.

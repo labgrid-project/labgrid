@@ -103,7 +103,7 @@ class BindingMixin:
         def wrapper(self, *_args, **_kwargs):
             if self.state is BindingState.active:
                 raise StateError(
-                    f'{self} is active, but must be deactivated to call {func.__qualname__}'  # pylint: disable=line-too-long
+                    f'{self} is active, but must be deactivated to call {func.__qualname__}'
                 )
             elif self.state is not BindingState.bound:
                 raise StateError(

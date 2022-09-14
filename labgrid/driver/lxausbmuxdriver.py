@@ -1,4 +1,3 @@
-# pylint: disable=no-member
 import attr
 
 from .common import Driver

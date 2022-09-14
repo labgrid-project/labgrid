@@ -44,7 +44,7 @@ class BareboxStrategy(Strategy):
             self.target.activate(self.power)
             self.power.off()
         elif status == Status.barebox:
-            self.transition(Status.off)  # pylint: disable=missing-kwoa
+            self.transition(Status.off)
             self.target.activate(self.console)
             # cycle power
             self.power.cycle()
@@ -52,7 +52,7 @@ class BareboxStrategy(Strategy):
             self.target.activate(self.barebox)
         elif status == Status.shell:
             # transition to barebox
-            self.transition(Status.barebox)  # pylint: disable=missing-kwoa
+            self.transition(Status.barebox)
             self.barebox.boot("")
             self.barebox.await_boot()
             self.target.activate(self.shell)

@@ -42,7 +42,7 @@ class ShellStrategy(Strategy):
             self.target.activate(self.power)
             self.power.off()
         elif status == Status.shell:
-            self.transition(Status.off)  # pylint: disable=missing-kwoa
+            self.transition(Status.off)
             self.target.activate(self.console)
             self.power.cycle()
             self.target.activate(self.shell)

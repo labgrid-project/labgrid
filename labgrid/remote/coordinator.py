@@ -403,7 +403,7 @@ class CoordinatorComponent(ApplicationSession):
             for groupname, group in session.groups.items():
                 for resourcename in group.copy():
                     action, resource = session.set_resource(groupname, resourcename, {})
-                    await self._update_acquired_places(action, resource, callback=False)  # pylint: disable=not-an-iterable
+                    await self._update_acquired_places(action, resource, callback=False)
         self.save_later()
 
     @locked
@@ -434,7 +434,7 @@ class CoordinatorComponent(ApplicationSession):
                 self._add_default_place(groupname)
         if action in (Action.ADD, Action.DEL):
             async with self.lock:
-                await self._update_acquired_places(action, resource)  # pylint: disable=not-an-iterable
+                await self._update_acquired_places(action, resource)
         self.save_later()
 
     def _get_resources(self):

@@ -57,7 +57,7 @@ jobs:
         make -C doc clean
         make -C doc doctest
         make -C doc html
-        rm man/*.[1-8]
+        make -C man clean
         make -C man all
         git --no-pager diff --exit-code
     - uses: codecov/codecov-action@v1

@@ -33,6 +33,7 @@ with the included script
 
 .. code-block:: bash
 
+   $ pip install --upgrade setuptools_scm
    $ ./dockerfiles/build.sh
 
 The script supports ``podman`` as well
@@ -128,6 +129,7 @@ To use the staging environment to conduct a smoke test first build the images as
 
 .. code-block:: bash
 
+   $ pip install --upgrade setuptools_scm
    $ ./dockerfiles/build.sh
 
 Then use docker compose to start all services except the client:

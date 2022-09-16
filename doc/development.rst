@@ -17,7 +17,7 @@ Create and activate a virtualenv for labgrid:
 
    virtualenv -p python3 venv
    source venv/bin/activate
-   pip install --upgrade pip setuptools wheel
+   pip install --upgrade pip
 
 Install required dependencies:
 
@@ -25,17 +25,12 @@ Install required dependencies:
 
    sudo apt install python3-dev libow-dev libsnappy-dev
 
-Install the development requirements:
+Install labgrid with development dependencies into the virtualenv in editable
+mode:
 
 .. code-block:: bash
 
-   pip install -r dev-requirements.txt
-
-Install labgrid into the virtualenv in editable mode:
-
-.. code-block:: bash
-
-   pip install -e .
+   pip install -e ".[dev]"
 
 Tests can now be run via:
 
@@ -678,15 +673,13 @@ When contributing to documentation it's practical to be able to build it also lo
 
 .. code-block:: bash
 
-    # Optional - install requirements in a virtualenv
     virtualenv -p python3 labgrid-venv
     source labgrid-venv/bin/activate
-    pip install --upgrade pip setuptools wheel
+    pip install --upgrade pip
 
     git clone https://github.com/labgrid-project/labgrid.git
     cd labgrid
-    pip install -e .
-    pip install -r doc-requirements.txt
+    pip install -e ".[doc]"
     cd doc
     make html
 

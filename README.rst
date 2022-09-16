@@ -83,15 +83,14 @@ Create and activate a virtualenv for labgrid:
 
    $ virtualenv -p python3 venv
    $ source venv/bin/activate
-   venv $ pip install --upgrade pip setuptools wheel
+   venv $ pip install --upgrade pip
 
 
 Install labgrid into the virtualenv:
 
 .. code-block:: bash
 
-   venv $ pip install -r requirements.txt
-   venv $ python setup.py install
+   venv $ pip install .
 
 Tests can now run via:
 

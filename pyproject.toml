@@ -4,6 +4,7 @@ requires = [
     "setuptools>=47.2.0",
     "wheel",
     "setuptools_scm[toml]",
+    "fastentrypoints; python_version=='3.7'",
 ]
 
 [project]

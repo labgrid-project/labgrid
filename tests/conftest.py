@@ -166,11 +166,11 @@ def exporter(tmpdir, crossbar):
     """
     )
     spawn = pexpect.spawn(
-            f'{sys.executable} -m labgrid.remote.exporter exports.yaml',
+            f'{sys.executable} -m labgrid.remote.exporter --name testhost exports.yaml',
             logfile=Prefixer(sys.stdout.buffer, 'exporter'),
             cwd=str(tmpdir))
     try:
-        spawn.expect('SessionDetails')
+        spawn.expect('exporter/testhost')
     except:
         print(f"exporter startup failed with {spawn.before}")
         raise

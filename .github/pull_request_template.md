@@ -29,10 +29,6 @@ A library feature which other developers can use:
 --->
 - [ ] Add a section on how to use the feature to doc/development.rst
 <!---
-Provide a short summary for the CHANGES.rst file
---->
-- [ ] CHANGES.rst has been updated
-<!---
 Did you test the change locally? If yes, best to mention how you did it in the description section.
 --->
 - [ ] PR has been tested

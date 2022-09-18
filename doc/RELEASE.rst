@@ -33,8 +33,7 @@ A frozen environment is already created in the previous step.
 3. Update CHANGES.rst
 =====================
 
-Update the `CHANGES.rst` file. This should ideally be done in every pull request,
-but its better to check that the `CHANGES.rst` is up to date.
+Update the `CHANGES.rst` file.
 Ensure that no incompatiblities are unlisted and that all major features are
 described in a separate section.
 It's best to compare against the git log.

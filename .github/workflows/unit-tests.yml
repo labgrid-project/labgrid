@@ -54,11 +54,12 @@ jobs:
         TERM=xterm pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"
     - name: Build documentation
       run: |
+        make -C doc clean
+        make -C doc doctest
         python setup.py build_sphinx
         rm man/*.[1-8]
         make -C man all
         git --no-pager diff --exit-code
-        make -C doc doctest
     - uses: codecov/codecov-action@v1
   docker:
     runs-on: ubuntu-latest

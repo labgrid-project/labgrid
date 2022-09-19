@@ -56,7 +56,7 @@ jobs:
       run: |
         make -C doc clean
         make -C doc doctest
-        python setup.py build_sphinx
+        make -C doc html
         rm man/*.[1-8]
         make -C man all
         git --no-pager diff --exit-code

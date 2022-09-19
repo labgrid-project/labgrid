@@ -710,12 +710,15 @@ class ClientSession(ApplicationSession):
                     from labgrid.stepreporter import StepReporter
                     StepReporter()
                 from labgrid.strategy import Strategy
-                from labgrid.driver import SerialDriver
                 strategy = target.get_driver(Strategy)
                 print(f"Transitioning into state {self.args.state}")
                 strategy.transition(self.args.state)
-                serial = target.get_active_driver(SerialDriver)
-                target.deactivate(serial)
+                # deactivate console drivers so we are able to connect with microcom later
+                try:
+                    con = target.get_active_driver("ConsoleProtocol")
+                    target.deactivate(con)
+                except NoDriverFoundError:
+                    pass
         else:
             target = Target(place.name, env=self.env)
             RemotePlace(target, name=place.name)

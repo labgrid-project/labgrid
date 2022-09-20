@@ -2861,6 +2861,7 @@ the ``accessible`` state:
 
    from labgrid.strategy import DockerStrategy
 
+   patch("docker.DockerClient").start()
    DockerStrategy.transition = Mock(return_value=None)
 
 .. doctest:: docker-strategy

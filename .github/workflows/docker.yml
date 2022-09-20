@@ -12,7 +12,7 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt install -yq python3-pip
-        python3 -m pip install --upgrade pip setuptools wheel
+        python3 -m pip install setuptools_scm
     - name: Login to DockerHub
       uses: docker/login-action@v2
       with:

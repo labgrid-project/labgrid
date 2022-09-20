@@ -11,6 +11,6 @@ override_dh_virtualenv:
 		--python /usr/bin/python3 \
 		--builtin-venv \
 		--preinstall 'setuptools>=38.0.0' \
-		--requirements deb-requirements.txt \
+		--extras deb \
 		--extra-pip-arg='--no-binary' \
 		--extra-pip-arg='cffi,numpy'

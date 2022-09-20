@@ -1,5 +1,0 @@
--r requirements.txt
-setuptools>=38.0.0
-crossbar==21.3.1
-idna==2.5
-werkzeug>=0.14.1,<2.1

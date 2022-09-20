@@ -6,6 +6,7 @@ requires = [
     "setuptools_scm[toml]",
     "fastentrypoints; python_version=='3.7'",
 ]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "labgrid"
@@ -228,3 +229,22 @@ generated-members = [
     "labgrid.strategy.*",
 ]
 signature-mutators = ["labgrid.step.step"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py37, py38, py39, py310, py311
+isolated_build = true
+
+[testenv]
+extras = dev
+passenv = TERM
+commands =
+  pytest tests {posargs} \
+    --cov={envsitepackagesdir}/labgrid \
+    --cov-report=html:htmlcov
+
+[testenv:lint]
+extras = dev
+commands = pylint -f colorized labgrid
+"""

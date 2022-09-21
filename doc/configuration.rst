@@ -1491,6 +1491,8 @@ Arguments:
     stdout, and an empty list as second element.
   - connection_timeout (float, default=30.0): timeout when trying to establish connection to
     target.
+  - explicit_sftp_mode (bool, default=False): if set to True, `put()` and `get()` will
+    explicitly use the SFTP protocol for file transfers instead of scp's default protocol
 
 UBootDriver
 ~~~~~~~~~~~

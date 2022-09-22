@@ -138,7 +138,7 @@ class Target:
             )
         elif len(found) > 1:
             raise NoResourceFoundError(
-                f"multiple resources matching {cls} found in {self}"
+                f"multiple resources matching {cls} found in {self}", found=found
             )
         if wait_avail:
             self.await_resources(found)

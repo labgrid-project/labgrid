@@ -348,12 +348,23 @@ def test_reservation(place_acquire, tmpdir):
         assert b'allocated' in spawn.before, spawn.before.strip()
         assert token in spawn.before, spawn.before.strip()
 
-    with pexpect.spawn('python -m labgrid.remote.client -p + acquire', env=env) as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -p + acquire --shell', env=env) as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
+        m = re.search(rb"^export LG_PLACE=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
+        assert m is not None, spawn.before.strip()
+        token = m.group(1)
+
+    env['LG_PLACE'] = token.decode('ASCII')
 
     with pexpect.spawn('python -m labgrid.remote.client -p + show', env=env) as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert token in spawn.before, spawn.before.strip()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client show', env=env) as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert token in spawn.before, spawn.before.strip()

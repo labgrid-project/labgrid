@@ -159,6 +159,27 @@ used by ``wait`` and expanded via ``-p +``.
     changed: 2019-08-06 13:06:09.667682
     reservation: ZDMZJZNLBF
 
+Similarly, the ``labgrid-client lock`` command supports a ``--shell` command to
+print code for evaluation in the shell. This sets the ``LG_PLACE`` environment
+variable, which is then automatically picked up by any subcommand that expects
+the ``-p``/``--place`` command line option.
+
+.. code-block:: bash
+
+  $ eval `labgrid-client -p + lock --shell`
+  $ echo $LG_PLACE
+  board-1
+  $ labgrid-client show
+  Place 'board-1':
+    tags: bar=baz, board=imx6-foo, jlu=2, rcz=1
+    matches:
+      rettich/Testport1/NetworkSerialPort
+    acquired: rettich/jlu
+    acquired resources:
+    created: 2019-07-29 16:11:52.006269
+    changed: 2019-08-06 13:06:09.667682
+    reservation: ZDMZJZNLBF
+
 Finally, to avoid calling the ``wait`` command explicitly, you can add
 ``--wait`` to the ``reserve`` command, so it waits until the reservation is
 allocated before returning.

@@ -597,7 +597,10 @@ class ClientSession(ApplicationSession):
         )
 
         if res:
-            print(f"acquired place {place.name}")
+            if self.args.shell:
+                print(f"export LG_PLACE={place.name}")
+            else:
+                print(f"acquired place {place.name}")
             return
 
         # check potential failure causes
@@ -1674,6 +1677,8 @@ def main():
                                       help="acquire a place")
     subparser.add_argument('--allow-unmatched', action='store_true',
                            help="allow missing resources for matches when locking the place")
+    subparser.add_argument('--shell', action='store_true',
+                           help="format output as shell variables")
     subparser.set_defaults(func=ClientSession.acquire)
 
     subparser = subparsers.add_parser('release',

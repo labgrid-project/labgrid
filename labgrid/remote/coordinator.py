@@ -13,7 +13,7 @@ from autobahn import wamp
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 from autobahn.wamp.types import RegisterOptions
 
-from .common import *
+from .common import *  # pylint: disable=wildcard-import
 from .scheduler import TagSet, schedule
 from ..util import atomic_replace, yaml
 
@@ -403,7 +403,7 @@ class CoordinatorComponent(ApplicationSession):
             for groupname, group in session.groups.items():
                 for resourcename in group.copy():
                     action, resource = session.set_resource(groupname, resourcename, {})
-                    await self._update_acquired_places(action, resource, callback=False)  # pylint: disable=not-an-iterable
+                    await self._update_acquired_places(action, resource, callback=False)
         self.save_later()
 
     @locked
@@ -434,7 +434,7 @@ class CoordinatorComponent(ApplicationSession):
                 self._add_default_place(groupname)
         if action in (Action.ADD, Action.DEL):
             async with self.lock:
-                await self._update_acquired_places(action, resource)  # pylint: disable=not-an-iterable
+                await self._update_acquired_places(action, resource)
         self.save_later()
 
     def _get_resources(self):
@@ -889,7 +889,7 @@ class CoordinatorComponent(ApplicationSession):
 
 if __name__ == '__main__':
     runner = ApplicationRunner(
-        url=environ.get("WS", u"ws://127.0.0.1:20408/ws"),
+        url=environ.get("WS", "ws://127.0.0.1:20408/ws"),
         realm="realm1",
     )
     runner.run(CoordinatorComponent)

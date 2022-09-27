@@ -43,12 +43,10 @@ jobs:
     - name: Install labgrid
       run: |
         pip install -e .
-    #- name: Lint with flake8
-    #  run: |
-    #    # stop the build if there are Python syntax errors or undefined names
-    #    flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-    #    # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-    #    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Lint with pylint
+      run: |
+        pylint --list-msgs-enabled
+        pylint labgrid
     - name: Test with pytest
       run: |
         TERM=xterm pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"

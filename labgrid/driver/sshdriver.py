@@ -1,4 +1,3 @@
-# pylint: disable=no-member
 """The SSHDriver uses SSH as a transport to implement CommandProtocol and FileTransferProtocol"""
 import contextlib
 import logging
@@ -170,7 +169,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None):
         return self._run(cmd, codec=codec, decodeerrors=decodeerrors, timeout=timeout)
 
-    def _run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None): # pylint: disable=unused-argument
+    def _run(self, cmd, codec="utf-8", decodeerrors="strict", timeout=None):
         """Execute `cmd` on the target.
 
         This method runs the specified `cmd` as a command on its target.

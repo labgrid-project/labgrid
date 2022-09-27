@@ -1,4 +1,3 @@
-# pylint: disable=no-member
 from importlib import import_module
 from decimal import Decimal
 import attr

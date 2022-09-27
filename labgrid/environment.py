@@ -15,7 +15,7 @@ class Environment:
     interact = attr.ib(default=input, repr=False)
 
     def __attrs_post_init__(self):
-        self.targets = {}  #pylint: disable=attribute-defined-outside-init
+        self.targets = {}
 
         self.config = Config(self.config_file)
 

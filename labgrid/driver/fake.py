@@ -44,7 +44,7 @@ class FakeConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 @attr.s(eq=False)
 class FakeCommandDriver(CommandMixin, Driver, CommandProtocol):
     @Driver.check_active
-    def run(self, *args, timeout=None): # pylint: disable=unused-argument
+    def run(self, *args, timeout=None):
         pass
 
     @Driver.check_active

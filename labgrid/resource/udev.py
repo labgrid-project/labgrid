@@ -1,4 +1,3 @@
-# pylint: disable=unsupported-assignment-operation
 import logging
 import os
 import queue

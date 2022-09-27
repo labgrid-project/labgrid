@@ -8,9 +8,9 @@ gi.require_version('NM', '1.0')
 from gi.repository import GLib, NM
 
 # ensure all wrapper objects for Settings types are created
-for name in dir(NM):
-    if name.startswith('Setting'):
-        getattr(NM, name)
+for _name in dir(NM):
+    if _name.startswith('Setting'):
+        getattr(NM, _name)
 
 class Future:
     def __init__(self):
@@ -153,7 +153,7 @@ class NMDev:
             None,
         )
 
-        active_con = future.wait()  # we must wait, but don't need to return it here
+        future.wait()  # we must wait, but don't need to return it here
 
     def wait_state(self, expected, timeout):
         res, out_value, _ = NM.utils_enum_from_str(NM.DeviceState, expected)
@@ -248,7 +248,7 @@ class NMDev:
             None,
         )
 
-        res = future.wait()  # we must wait, but don't need to return it here
+        future.wait()  # we must wait, but don't need to return it here
 
     def get_access_points(self, scan):
         if scan is None: # automatically scan if needed

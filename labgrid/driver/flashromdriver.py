@@ -1,4 +1,3 @@
-# pylint: disable=no-member
 import os.path
 import logging
 import attr

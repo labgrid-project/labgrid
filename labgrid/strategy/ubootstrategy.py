@@ -41,7 +41,7 @@ class UBootStrategy(Strategy):
             self.target.activate(self.power)
             self.power.off()
         elif status == Status.uboot:
-            self.transition(Status.off)  # pylint: disable=missing-kwoa
+            self.transition(Status.off)
             self.target.activate(self.console)
             # cycle power
             self.power.cycle()

@@ -37,7 +37,7 @@ class Agent:
     def load(self, name, source):
         module = types.ModuleType(name)
         exec(compile(source, f'<loaded {name}>', 'exec'), module.__dict__)
-        for k, v in module.methods.items():
+        for k, v in module.methods.items():  # pylint: disable=no-member
             self.register(f'{name}.{k}', v)
 
     def list(self):

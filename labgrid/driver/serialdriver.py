@@ -31,7 +31,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         message = ("The installed pyserial version does not contain important RFC2217 fixes.\n"
                    "You can install the labgrid fork via:\n"
                    "pip uninstall pyserial\n"
-                   "pip install https://github.com/labgrid-project/pyserial/archive/v3.4.0.1.zip#egg=pyserial\n")  # pylint: disable=line-too-long
+                   "pip install https://github.com/labgrid-project/pyserial/archive/v3.4.0.1.zip#egg=pyserial\n")
         warnings.warn(message)
 
     txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
@@ -71,17 +71,17 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 
     @Driver.check_bound
     def get_export_vars(self):
-        vars = {
+        export_vars = {
             "speed": str(self.port.speed)
         }
         if isinstance(self.port, SerialPort):
-            vars["port"] = self.port.port
+            export_vars["port"] = self.port.port
         else:
             host, port = proxymanager.get_host_and_port(self.port)
-            vars["host"] = host
-            vars["port"] = str(port)
-            vars["protocol"] = self.port.protocol
-        return vars
+            export_vars["host"] = host
+            export_vars["port"] = str(port)
+            export_vars["protocol"] = self.port.protocol
+        return export_vars
 
     def _read(self, size: int = 1, timeout: float = 0.0, max_size: int = None):
         """

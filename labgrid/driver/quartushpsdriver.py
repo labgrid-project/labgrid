@@ -1,4 +1,3 @@
-# pylint: disable=no-member
 import subprocess
 import re
 import time

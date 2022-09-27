@@ -29,7 +29,7 @@ class USBHIDRelay:
     def set_output(self, number, status):
         assert 1 <= number <= 8
         req = [0xFF if status else 0xFD, number]
-        resp = self._dev.ctrl_transfer(
+        self._dev.ctrl_transfer(
             usb.util.CTRL_TYPE_CLASS | usb.util.CTRL_RECIPIENT_DEVICE | usb.util.ENDPOINT_OUT,
             SET_REPORT,
             (REPORT_TYPE_FEATURE << 8) | 0, # no report ID

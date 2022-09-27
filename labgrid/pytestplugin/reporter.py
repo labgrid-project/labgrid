@@ -16,7 +16,7 @@ logging.basicConfig(
 
 def safe_dupfile(f):
     if pytest.__version__ < "6.0.0":
-        from _pytest.capture import safe_text_dupfile
+        from _pytest.capture import safe_text_dupfile  # pylint: disable=no-name-in-module
         return safe_text_dupfile(f, mode=f.mode)
     else:
         from _pytest.capture import EncodedFile

@@ -1,4 +1,3 @@
-# pylint: disable=no-member
 import atexit
 import tempfile
 import logging
@@ -43,7 +42,6 @@ class SSHConnectionManager:
             :obj:`SSHConnection`: the SSHConnection for the host"""
         instance = self._connections.get(host)
         if instance is None:
-            # pylint: disable=unsupported-assignment-operation
             self.logger.debug("Creating SSHConnection for %s", host)
             instance = SSHConnection(host)
             instance.connect()
@@ -58,20 +56,17 @@ class SSHConnectionManager:
         Arguments:
             connection (:obj:`SSHConnection`): SSHconnection to add to the manager
         """
-        # pylint: disable=unsupported-assignment-operation
         assert isinstance(connection, SSHConnection)
         if connection.host not in self._connections:
             self._connections[connection.host] = connection
 
     def remove_connection(self, connection):
-        # pylint: disable=unsupported-assignment-operation
         assert isinstance(connection, SSHConnection)
         if connection.isconnected():
             raise ExecutionError("Can't remove connected connection")
         del self._connections[connection.host]
 
     def remove_by_name(self, name):
-        # pylint: disable=unsupported-assignment-operation
         del self._connections[name]
 
     def open(self, host):
@@ -117,7 +112,7 @@ def _check_connected(func):
             raise ExecutionError(
                 f"{func.__qualname__} can not be called ({self} is not connected)"
             )
-        return func(self, *_args, **_kwargs)  # pylint: disable=not-callable
+        return func(self, *_args, **_kwargs)
 
     return wrapper
 
@@ -340,7 +335,6 @@ class SSHConnection:
         local_port = get_free_port()
         destination = f"{remote_host}:{remote_port}"
 
-        # pylint: disable=not-an-iterable
         if destination in self._forwards:
             return self._forwards[destination]
         self._run_socket_command(
@@ -357,7 +351,6 @@ class SSHConnection:
         destination = f"{remote_host}:{remote_port}"
         local_port = self._forwards.pop(destination, None)
 
-        # pylint: disable=not-an-iterable
         if local_port is None:
             raise ForwardError("Forward does not exist")
 

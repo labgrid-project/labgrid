@@ -1,4 +1,4 @@
-# pylint: disable=no-member,missing-kwoa,unused-argument
+# pylint: disable=unused-argument
 """The ShellDriver provides the CommandProtocol, ConsoleProtocol and
  InfoProtocol on top of a SerialPort."""
 import io
@@ -60,9 +60,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         super().__attrs_post_init__()
         self.re_vt100 = re.compile(
             r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
-        )  # pylint: disable=attribute-defined-outside-init,anomalous-backslash-in-string
+        )
         self.logger = logging.getLogger(f"{self}:{self.target}")
-        self._status = 0  # pylint: disable=attribute-defined-outside-init
+        self._status = 0
 
         self._xmodem_cached_rx_cmd = ""
         self._xmodem_cached_sx_cmd = ""

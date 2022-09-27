@@ -1,4 +1,3 @@
-# pylint: disable=no-member
 """The U-Boot Module contains the UBootDriver"""
 import logging
 import re
@@ -187,7 +186,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
                 if timeout.expired:
                     raise TIMEOUT(
-                        f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"  # pylint: disable=line-too-long
+                        f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"
                     )
 
             last_before = before
@@ -195,7 +194,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         if self.prompt:
             self._check_prompt()
 
-        for command in self.init_commands:  #pylint: disable=not-an-iterable
+        for command in self.init_commands:
             self._run_check(command)
 
     @Driver.check_active

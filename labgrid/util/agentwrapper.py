@@ -103,13 +103,14 @@ class AgentWrapper:
 
         raise AgentError(f"unknown response from agent: {response}")
 
-    def load(self, name):
+    def load(self, name, path=None):
         if name in self.loaded:
             return self.loaded[name]
 
-        filename = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)),
-            'agents', f'{name}.py')
+        if path is None:
+            path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'agents')
+
+        filename = os.path.join(path, f'{name}.py')
         source = open(filename, 'r').read()
 
         self.call('load', name, source)

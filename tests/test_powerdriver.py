@@ -54,13 +54,16 @@ class TestExternalPowerDriver:
         fdopen = mocker.patch('os.fdopen')
         close = mocker.patch('os.close')
         popen = mocker.patch('subprocess.Popen')
+        select = mocker.patch('select.select')
         fd_mock = mocker.MagicMock()
         instance_mock = mocker.MagicMock()
+        select_mock = mocker.MagicMock()
         popen.return_value = instance_mock
         fdopen.return_value = fd_mock
         pty.return_value = (instance_mock, 2)
         fd_mock.read.return_value = b'Done\nDone'
         instance_mock.returncode = 0
+        select.return_value = ([], [], [])
 
         d = ExternalPowerDriver(
             target, 'power', cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
@@ -77,13 +80,16 @@ class TestExternalPowerDriver:
         fdopen = mocker.patch('os.fdopen')
         close = mocker.patch('os.close')
         popen = mocker.patch('subprocess.Popen')
+        select = mocker.patch('select.select')
         fd_mock = mocker.MagicMock()
         instance_mock = mocker.MagicMock()
+        select_mock = mocker.MagicMock()
         popen.return_value = instance_mock
         fdopen.return_value = fd_mock
         pty.return_value = (instance_mock, 2)
         fd_mock.read.return_value = b'Done\nDone'
         instance_mock.returncode = 0
+        select.return_value = ([], [], [])
 
         d = ExternalPowerDriver(
             target, 'power', cmd_on='set -1 foo-board', cmd_off='set -0 foo-board'
@@ -100,13 +106,16 @@ class TestExternalPowerDriver:
         fdopen = mocker.patch('os.fdopen')
         close = mocker.patch('os.close')
         popen = mocker.patch('subprocess.Popen')
+        select = mocker.patch('select.select')
         fd_mock = mocker.MagicMock()
         instance_mock = mocker.MagicMock()
+        select_mock = mocker.MagicMock()
         popen.return_value = instance_mock
         fdopen.return_value = fd_mock
         pty.return_value = (instance_mock, 2)
         fd_mock.read.return_value = b'Done\nDone'
         instance_mock.returncode = 0
+        select.return_value = ([], [], [])
 
         m_sleep = mocker.patch('time.sleep')
 
@@ -130,13 +139,16 @@ class TestExternalPowerDriver:
         fdopen = mocker.patch('os.fdopen')
         close = mocker.patch('os.close')
         popen = mocker.patch('subprocess.Popen')
+        select = mocker.patch('select.select')
         fd_mock = mocker.MagicMock()
         instance_mock = mocker.MagicMock()
+        select_mock = mocker.MagicMock()
         popen.return_value = instance_mock
         fdopen.return_value = fd_mock
         pty.return_value = (instance_mock, 2)
         fd_mock.read.return_value = b'Done\nDone'
         instance_mock.returncode = 0
+        select.return_value = ([], [], [])
 
         m_sleep = mocker.patch('time.sleep')
 

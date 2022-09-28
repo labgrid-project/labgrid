@@ -29,6 +29,8 @@ New Features in 0.5.0
 - Support for QEMU Q35 machine added.
 - `UBootDriver` now handles idle console, allowing driver activation on
   an interupted U-Boot.
+- ProcessWrapper now supports an "input" argument to check_output() that allows
+  a string to be passed to stdin of the process
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

@@ -1412,6 +1412,17 @@ Arguments:
     before check for a prompt. Useful when the console is interleaved with boot
     output which may interrupt prompt detection.
 
+.. note::
+   `bash >= 5.1 <https://www.gnu.org/software/bash/manual/bash.html#index-enable_002dbracketed_002dpaste>`_
+   enables bracketed-paste mode by default,
+   allowing the terminal emulator to tell a program whether input was typed or
+   pasted.
+   To achieve this, ``\e[?2004h`` is inserted when user input is expected,
+   enabling paste detection.
+
+   Add ``\x1b\[\?2004h`` at the beginning of the prompt argument to allow the
+   ShellDriver to still match the prompt in this case.
+
 .. _conf-sshdriver:
 
 SSHDriver

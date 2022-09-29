@@ -52,54 +52,6 @@ EXPOSE 20408
 CMD ["crossbar", "start", "--config", "/opt/labgrid/.crossbar/config.yaml"]
 
 #
-# ser2net
-#
-# These have to be built from source to bring in a newer version that has a
-# needed bugfix. This can be removed once the images are switched to
-# debian:bullseye, as it has a new enough version
-#
-FROM debian:buster-slim AS ser2net
-
-RUN apt update && \
-    apt install --yes --no-install-recommends \
-        build-essential \
-        cmake \
-        python3-dev \
-        wget \
-        ca-certificates \
-        libsctp-dev \
-        libssl-dev \
-        pkg-config \
-        file \
-        libyaml-dev \
-    && \
-    apt clean && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN mkdir -p /src
-
-RUN cd /src && \
-    wget https://downloads.sourceforge.net/project/ser2net/ser2net/gensio-2.2.4.tar.gz && \
-    tar -xvzf gensio-2.2.4.tar.gz && \
-    cd gensio-2.2.4 && \
-    mkdir build && \
-    cd build && \
-    ../configure --prefix=/usr && \
-    make && \
-    make install && \
-    make install DESTDIR=/opt/ser2net
-
-RUN cd /src && \
-    wget https://downloads.sourceforge.net/project/ser2net/ser2net/ser2net-4.3.3.tar.gz && \
-    tar -xvzf ser2net-4.3.3.tar.gz -C /src && \
-    cd /src/ser2net-4.3.3 && \
-    mkdir build && \
-    cd build && \
-    ../configure --prefix=/usr && \
-    make && \
-    make install DESTDIR=/opt/ser2net
-
-#
 # Exporter
 #
 FROM labgrid-base AS labgrid-exporter
@@ -112,14 +64,9 @@ RUN set -e ;\
     pip3 install --no-cache-dir -r requirements.txt ;\
     SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" python3 setup.py install ;\
     apt update -q=2 ;\
-    apt install -q=2 --yes --no-install-recommends \
-        libyaml-0-2 \
-        libsctp1 \
-    ; \
+    apt install -q=2 --yes --no-install-recommends ser2net ;\
     apt clean ;\
     rm -rf /var/lib/apt/lists/*
-
-COPY --from=ser2net /opt/ser2net /
 
 VOLUME /opt/conf
 

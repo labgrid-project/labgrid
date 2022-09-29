@@ -1,3 +1,4 @@
+import shlex
 from typing import Dict, Type, List
 import attr
 
@@ -28,6 +29,14 @@ class Resource(BindingMixin):
     @property
     def command_prefix(self):
         return []
+
+    def wrap_command(self, command):
+        """
+        Returns the command as-is, no need for command wrapping for local resources.
+
+        Must stay compatible with NetworkResource.wrap_command().
+        """
+        return command
 
     @property
     def parent(self):
@@ -78,6 +87,15 @@ class NetworkResource(Resource):
         prefix = conn.get_prefix()
 
         return prefix + ['--']
+
+    def wrap_command(self, command):
+        """
+        Returns shell-escaped command with prepended command_prefix.
+
+        Must stay compatible with Resource.wrap_command().
+        """
+        shargs = [shlex.quote(a) for a in command]
+        return self.command_prefix + shargs
 
 
 @attr.s(eq=False)

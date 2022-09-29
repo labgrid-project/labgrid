@@ -66,7 +66,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         return ["--command", f"adapter usb location \"{self.interface.path}\""]
 
     def _run_commands(self, commands: list):
-        cmd = self.interface.command_prefix+[self.tool]
+        cmd = [self.tool]
         cmd += chain.from_iterable(("--search", path) for path in self.search)
         cmd += self._get_usb_path_cmd()
 
@@ -90,7 +90,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
 
         cmd += chain.from_iterable(("--command", f"{command}") for command in commands)
         processwrapper.check_output(
-            cmd,
+            self.interface.wrap_command(cmd),
             print_on_silent_log=True
         )
 

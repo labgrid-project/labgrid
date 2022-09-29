@@ -585,7 +585,7 @@ An RKUSBLoader resource describes a USB device in the rockchip loader state.
 
    RKUSBLoader:
      match:
-       sys_name: '1-3'
+       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -899,7 +899,7 @@ by an ALSA kernel driver.
 
    USBAudioInput:
      match:
-       '@sys_name': '1-4'
+       ID_PATH: pci-0000:00:14.0-usb-0:3:1.0
 
 Arguments:
   - index (int, default=0): ALSA PCM device number (as in
@@ -1168,13 +1168,17 @@ Arguments:
 Used by:
   - `DockerDriver`_
 
+.. _udev-matching:
+
 udev Matching
 ~~~~~~~~~~~~~
-udev matching allows labgrid to identify resources via their udev properties.
+
+labgrid allows the exporter (or the client-side environment) to match resources
+via udev rules.
 Any udev property key and value can be used, path matching USB devices is
 allowed as well.
-This allows exporting a specific USB hub port or the correct identification of
-a USB serial converter across computers.
+The udev resources become available as soon as they are plugged into the
+computer running the exporter.
 
 The initial matching and monitoring for udev events is handled by the
 :any:`UdevManager` class.
@@ -1203,6 +1207,22 @@ Finally ``sys_name`` allows matching against the name of the directory in
 sysfs.
 All match entries must succeed for the device to be accepted.
 
+labgrid provides a small utility called ``labgrid-suggest`` which will
+output the proper YAML formatted snippets for you.
+These snippets can be added under the resource key in an environment
+configuration or under their own entries in an exporter configuration file.
+
+As the USB bus number can change depending on the kernel driver initialization
+order, it is better to use the ``ID_PATH`` instead of ``sys_name`` for USB
+devices.
+
+In the default udev configuration, ``ID_PATH`` is not available for all USB
+devices, but that can be changed by creating a udev rules file:
+
+.. code-block:: none
+
+  SUBSYSTEMS=="usb", IMPORT{builtin}="path_id"
+
 The following examples show how to use the udev matches for some common
 use-cases.
 
@@ -1211,17 +1231,16 @@ Matching a USB Serial Converter on a Hub Port
 
 This will match any USB serial converter connected below the hub port 1.2.5.5
 on bus 1.
-The `sys_name` value corresponds to the hierarchy of buses and ports as shown
-with ``lsusb -t`` and is also usually displayed in the kernel log messages when
-new devices are detected.
+The `ID_PATH` value corresponds to the hierarchy of buses and ports as shown
+with ``udevadm info /dev/ttyUSB0``.
 
 .. code-block:: yaml
 
   USBSerialPort:
     match:
-      '@sys_name': '1-1.2.5.5'
+      '@ID_PATH': pci-0000:05:00.0-usb-0:1.2.5.5
 
-Note the ``@`` in the ``@sys_name`` match, which applies this match to the
+Note the ``@`` in the ``@ID_PATH`` match, which applies this match to the
 device's parents instead of directly to itself.
 This is necessary for the `USBSerialPort` because we actually want to find the
 ``ttyUSB?`` device below the USB serial converter device.
@@ -1236,7 +1255,7 @@ don't use a parent match.
 
   AndroidUSBFastboot:
     match:
-      sys_name: '1-1.2.3'
+      ID_PATH: pci-0000:05:00.0-usb-0:1.2.3
 
 Matching a Specific UART in a Dual-Port Adapter
 +++++++++++++++++++++++++++++++++++++++++++++++
@@ -1287,7 +1306,7 @@ We use the ``ID_USB_INTERFACE_NUM`` to distinguish between the two ports:
 
   USBSerialPort:
     match:
-      '@sys_name': '3-10.2.2.2'
+      '@ID_PATH': pci-0000:05:00.0-usb-2:10.2.2.2'
       ID_USB_INTERFACE_NUM: '01'
 
 Matching a USB UART by Serial Number
@@ -3109,7 +3128,7 @@ exported as `exportername/usb-hub-in-rack12/NetworkSerialPort/USBSerialPort`:
    usb-hub-in-rack12:
      USBSerialPort:
        match:
-         '@sys_name': '3-1.3'
+         '@ID_PATH': pci-0000:05:00.0-usb-3-1.3
 
 To export multiple resources of the same class in the same group,
 you can choose a unique resource name, and then use the ``cls`` parameter to
@@ -3126,11 +3145,11 @@ and another :any:`USBSerialPort` as
      console-main:
        cls: USBSerialPort
        match:
-         '@sys_name': '3-1.3'
+         '@ID_PATH': pci-0000:05:00.0-usb-3-1.3
      console-secondary:
        cls: USBSerialPort
        match:
-         '@sys_name': '3-1.4'
+         '@ID_PATH': pci-0000:05:00.0-usb-3-1.4
 
 Note that you could also split the resources up into distinct groups instead
 to achieve the same effect:
@@ -3140,11 +3159,11 @@ to achieve the same effect:
    usb-hub-in-rack12-port3:
      USBSerialPort:
        match:
-         '@sys_name': '3-1.3'
+         '@ID_PATH': pci-0000:05:00.0-usb-3-1.3
    usb-hub-in-rack12-port4:
      USBSerialPort:
        match:
-         '@sys_name': '3-1.4'
+         '@ID_PATH': pci-0000:05:00.0-usb-3-1.4
 
 Templating
 ~~~~~~~~~~

@@ -1,4 +1,4 @@
-FROM debian:buster-slim
+FROM ubuntu:22.04
 
 MAINTAINER "Kasper Revsbech" <mail@krevsbech.dk>
 

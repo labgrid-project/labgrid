@@ -1,4 +1,4 @@
-FROM debian:buster-slim AS labgrid-base
+FROM ubuntu:22.04 AS labgrid-base
 
 LABEL maintainer="eha@deif.com"
 

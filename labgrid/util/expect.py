@@ -1,3 +1,5 @@
+import string
+
 import pexpect
 
 
@@ -21,6 +23,15 @@ class PtxExpect(pexpect.spawn):
 
         b = s
         return self.driver.write(b)
+
+    def sendcontrol(self, char):
+        """Send control character to underlying transport, e.g. Ctrl-C or Ctrl-Z."""
+        char = char.lower()
+        try:
+            ord_ = string.ascii_lowercase.index(char) + 1
+            self.send(bytes([ord_]))
+        except ValueError:
+            raise NotImplementedError(f"Sending control character {char} is not supported yet")
 
     def read_nonblocking(self, size=1, timeout=-1):
         """Pexpects needs a nonblocking read function, simply use pyserial with

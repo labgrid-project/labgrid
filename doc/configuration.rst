@@ -2710,6 +2710,7 @@ It supports:
 
 Binds to:
   iface:
+    - `NetworkInterface`_
     - `USBNetworkInterface`_
     - `RemoteNetworkInterface`_
 

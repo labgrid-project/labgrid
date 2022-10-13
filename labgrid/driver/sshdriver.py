@@ -30,6 +30,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     priorities = {CommandProtocol: 10, FileTransferProtocol: 10}
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     stderr_merge = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    connection_timeout = attr.ib(default=30.0, validator=attr.validators.instance_of(float))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -63,7 +64,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
 
-        timeout = Timeout(30.0)
+        timeout = Timeout(self.connection_timeout)
 
         # Retry start of controlmaster, to allow handle failures such as
         # connection refused during target startup

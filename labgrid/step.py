@@ -55,7 +55,7 @@ class StepEvent:
         self.stream = stream
 
     def __str__(self):
-        result = [str(self.step)]
+        result = [self.step.title]
         if self.resource:
             result.append(self.resource.__class__.__name__)
         data = self.data.copy()
@@ -125,8 +125,8 @@ class Step:
         result.append(")")
         return "".join(result)
 
-    def __str__(self):
-        return f"{self.title}"
+    def get_title(self):
+        return self.title
 
     @property
     def duration(self):

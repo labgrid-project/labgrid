@@ -1355,11 +1355,15 @@ class ExportFormat(enum.Enum):
 
 def main():
     processwrapper.enable_logging()
-    logging.basicConfig(
+    from labgrid.logging import basicConfig, StepLogger
+    basicConfig(
         level=logging.WARNING,
         format='%(levelname)7s: %(message)s',
         stream=sys.stderr,
     )
+
+    steps = StepLogger()
+    steps.start()
 
     # Support both legacy variables and properly namespaced ones
     place = os.environ.get('PLACE', None)

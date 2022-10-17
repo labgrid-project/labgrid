@@ -31,6 +31,7 @@ from ..util import diff_dict, flat_dict, filter_dict, dump, atomic_replace, Time
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
 from ..driver import Mode, ExecutionError
+from ..logging import basicConfig, StepLogger
 
 txaio.config.loop = asyncio.get_event_loop()  # pylint: disable=no-member
 
@@ -1402,12 +1403,14 @@ class ExportFormat(enum.Enum):
 
 
 def main():
-    processwrapper.enable_logging()
-    logging.basicConfig(
+    basicConfig(
         level=logging.WARNING,
         format='%(levelname)7s: %(message)s',
         stream=sys.stderr,
     )
+
+    StepLogger.start()
+    processwrapper.enable_logging()
 
     # Support both legacy variables and properly namespaced ones
     place = os.environ.get('PLACE', None)

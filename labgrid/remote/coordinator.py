@@ -310,7 +310,7 @@ class CoordinatorComponent(ApplicationSession):
         try:
             self.place = {}
             with open('places.yaml', 'r') as f:
-                self.places = yaml.load(f.read())
+                self.places = yaml.safe_load(f.read())
             for placename, config in self.places.items():
                 config['name'] = placename
                 # FIXME maybe recover previously acquired places here?

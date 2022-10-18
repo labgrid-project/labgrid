@@ -131,7 +131,7 @@ class SSHConnection:
         default=False, init=False, validator=attr.validators.instance_of(bool)
     )
     _tmpdir = attr.ib(
-        default=attr.Factory(lambda: tempfile.mkdtemp(prefix="labgrid-connection-")),
+        default=attr.Factory(lambda: tempfile.mkdtemp(prefix="lg-con-")),
         init=False,
         validator=attr.validators.instance_of(str)
     )

@@ -135,7 +135,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                     self.logger.warning("ssh: %s", line.rstrip().decode(encoding="utf-8", errors="replace"))
 
                 try:
-                    proxy_error = open(self.tmpdir+'/proxy-stderr').read().strip()
+                    with open(f'{self.tmpdir}/proxy-stderr') as proxy_err_fd:
+                        proxy_error = proxy_err_fd.read().strip()
                     if proxy_error:
                         raise ExecutionError(
                             f"Failed to connect to {self.networkservice.address} with {' '.join(args)}: error from SSH ProxyCommand: {proxy_error}",  # pylint: disable=line-too-long

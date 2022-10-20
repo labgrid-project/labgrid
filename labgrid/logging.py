@@ -21,18 +21,79 @@ def basicConfig(**kwargs):
 # Use composition instead of inheritance
 class StepFormatter:
 
-    def __init__(self, *args, color=None):
+    def __init__(self, *args, color=None, indent=True, long_result=False):
         self.formatter = Formatter(*args)
         self.color = color
+        self.long_result = long_result
+        self.indent = indent
+        self.indent_level = 0
 
     def format(self, record):
-        if hasattr(record, "step"):
-            return self.formt_step(record)
+        if hasattr(record, "stepevent"):
+            return self.format_step(record)
         else:
             return self.formatter.format(record)
 
     def format_step(self, record):
-        return f"  {record.getMessage}"
+        step = record.stepevent.step
+        if step.tag == 'console' and step.source:
+            if step.get_title() == 'read':
+                dirind = "<"
+                message = step.result.decode('utf-8')
+            else:
+                dirind = ">"
+                message = step.args["data"].decode('utf-8')
+            indent = "  " * (self.indent_level + 1) if self.indent else ""
+            message = message.replace('\n', f'\n{indent}{step.source} {dirind} ')
+            return f"{indent}{step.source} {dirind} {message}"
+        if not step.tag:
+            return self._line_format(record.stepevent)
+
+    @staticmethod
+    def format_arguments(args):
+        if args is None:
+            return ""
+        if isinstance(args, dict):
+            collected_args = []
+            for k, v in args.items():
+                collected_args.append("{}={}".format(k, v))
+
+            return "".join(collected_args)
+        else:
+            return "{}".format(args)
+
+    @staticmethod
+    def format_duration(duration):
+        if duration < 0.001:
+            return ""
+
+        return "[{:.3f}s]".format(duration)
+
+    def format_result(self, result):
+        if result is None:
+            return ""
+
+        if self.long_result:
+            return "result={} ".format(result)
+
+        if len(str(result)) < 20:
+            return "result={} ".format(result)
+        else:
+            return "result={:.19}… ".format(repr(result))
+
+    def _line_format(self, event):
+        indent = "  "*event.step.level if self.indent else ""
+        self.indent_level = event.step.level
+
+        prefix = "→" if event.data.get("state") == "start" else "←"
+        if event.step.exception:
+            prefix = "⚠"
+        title = '{} {}'.format(prefix, event.step.title)
+        line = "{}({}) {}{}".format(title, self.format_arguments(event.data.get('args', {})),
+                                    self.format_result(event.data.get('result', None)),
+                                    self.format_duration(event.data.get('duration', 0.0)))
+
+        return f"{indent}{line}"
 
 
 class StepLogger:
@@ -56,4 +117,4 @@ class StepLogger:
         cls.instance = None
 
     def notify(self, event):
-        self.logger.log(15, event)
+        self.logger.log(20, event, extra={"stepevent": event})

@@ -183,6 +183,11 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
     def on_deactivate(self):
         if self.status:
             self.off()
+        if self._clientsocket:
+            self._clientsocket.close()
+            self._clientsocket = None
+        self._socket.close()
+        self._socket = None
         shutil.rmtree(self._tempdir)
 
     @step()

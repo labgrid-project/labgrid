@@ -310,6 +310,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             raise TIMEOUT(f"Timeout of {timeout:.2f} seconds exceeded")
         return res
 
-    @step(args=['data'])
     def _write(self, data):
         return self._clientsocket.send(data)
+
+    def __str__(self):
+        return f"QemuDriver({self.target.name})"

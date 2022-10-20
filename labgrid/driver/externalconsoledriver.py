@@ -54,6 +54,7 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         if not self.status:
             return
         if self._child.poll() is not None:
+            self._child.communicate()
             raise ExecutionError("child has vanished")
         self._child.terminate()
         try:

@@ -130,7 +130,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             subprocess_timeout = timeout + 5
             return_value = self.process.wait(timeout=subprocess_timeout)
             if return_value != 0:
-                stdout = self.process.stdout.readlines()
+                stdout, _ = self.process.communicate(timeout=subprocess_timeout)
+                stdout = stdout.split("\n")
                 for line in stdout:
                     self.logger.warning("ssh: %s", line.rstrip().decode(encoding="utf-8", errors="replace"))
 
@@ -453,6 +454,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if res != 0:
             self.logger.info("Socket already closed")
         shutil.rmtree(self.tmpdir)
+
+        self.process.communicate()
 
     def _start_keepalive(self):
         """Starts a keepalive connection via the own or external master."""

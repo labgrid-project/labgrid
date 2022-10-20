@@ -87,10 +87,10 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             return
         self._child.terminate()
         try:
-            self._child.wait(1.0)
+            self._child.communicate(timeout=1)
         except subprocess.TimeoutExpired:
             self._child.kill()
-            self._child.wait(1.0)
+            self._child.communicate(timeout=1)
 
     def on_activate(self):
         self._tempdir = tempfile.mkdtemp(prefix="labgrid-qemu-tmp-")
@@ -204,6 +204,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self.qmp = QMPMonitor(self._child.stdout, self._child.stdin)
         except QMPError as exc:
             if self._child.poll() is not None:
+                self._child.communicate()
                 raise IOError(
                     f"QEMU process terminated with exit code {self._child.returncode}"
                 ) from exc
@@ -219,6 +220,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             return
         self.monitor_command('quit')
         if self._child.wait() != 0:
+            self._child.communicate()
             raise IOError
         self._child = None
         self.status = 0

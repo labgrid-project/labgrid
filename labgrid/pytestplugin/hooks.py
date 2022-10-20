@@ -1,30 +1,40 @@
 import logging
 import os
+import sys
 import warnings
 import pytest
 
 from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
-from .reporter import StepReporter, ColoredStepReporter
 from ..util.helper import processwrapper
+from ..logging import basicConfig, StepFormatter, StepLogger
+
+from _pytest import logging as pytest_logging
+
+class StructlogLoggingPlugin(pytest_logging.LoggingPlugin):
+    """
+    Replacement logging plugin that uses our formatter
+    """
+    def _create_formatter(self, log_format,
+                          log_date_format, auto_indent) -> logging.Formatter:
+        """Patch the logger method to always return out formatter
+        Returns:
+            logging.Formatter: Our structlog enhanced formatter
+        """
+        del log_format, log_date_format, auto_indent
+        return StepFormatter()
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
+    StepLogger.start()
+
+    logging = config.pluginmanager.getplugin('logging-plugin')
+    logging.log_cli_handler.setFormatter(StepFormatter())
+    logging.log_file_handler.setFormatter(StepFormatter())
+
     config.addinivalue_line("markers",
                             "lg_feature: marker for labgrid feature flags")
-    terminalreporter = config.pluginmanager.getplugin('terminalreporter')
-    capturemanager = config.pluginmanager.getplugin('capturemanager')
-    rewrite = True
     lg_log = config.option.lg_log
-    if not capturemanager.is_globally_capturing():
-        rewrite = False  # other output would interfere with our rewrites
-    if terminalreporter.verbosity > 1:  # enable with -vv
-        if config.option.lg_colored_steps:
-            config.pluginmanager.register(ColoredStepReporter(terminalreporter, rewrite=rewrite))
-        else:
-            config.pluginmanager.register(StepReporter(terminalreporter, rewrite=rewrite))
-    if terminalreporter.verbosity > 2:  # enable with -vvv
-        logging.getLogger().setLevel(logging.DEBUG)
     if lg_log:
         ConsoleLoggingReporter(lg_log)
     env_config = config.option.env_config

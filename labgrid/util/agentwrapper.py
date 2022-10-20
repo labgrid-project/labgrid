@@ -99,6 +99,7 @@ class AgentWrapper:
             raise AgentException(e)
         elif 'error' in response:
             self.agent.wait()
+            self.agent.communicate()
             self.agent = None
             raise AgentError(response['error'])
 
@@ -132,4 +133,5 @@ class AgentWrapper:
         self.agent.stdin.write(request+b'\n')
         self.agent.stdin.flush()
         self.agent.wait()
+        self.agent.communicate()
         self.agent = None

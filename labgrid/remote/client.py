@@ -8,6 +8,7 @@ import os
 import subprocess
 import traceback
 import logging
+import re
 import signal
 import sys
 import shlex
@@ -24,7 +25,7 @@ from autobahn.asyncio.wamp import ApplicationSession
 
 from .common import *  # pylint: disable=wildcard-import
 from ..environment import Environment
-from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
+from ..exceptions import NoDriverFoundError, NoResourceFoundError, NoSupplierFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util.dict import diff_dict, flat_dict, filter_dict
 from ..util.yaml import dump
@@ -728,6 +729,7 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         action = self.args.action
         delay = self.args.delay
+        name = self.args.name
         target = self._get_target(place)
         from ..driver.powerdriver import (NetworkPowerDriver, PDUDaemonDriver,
                                           USBPowerDriver, SiSPMPowerDriver)
@@ -736,41 +738,80 @@ class ClientSession(ApplicationSession):
         from ..resource.remote import (NetworkUSBPowerPort, NetworkSiSPMPowerPort)
         from ..resource.mqtt import TasmotaPowerPort
 
-        drv = None
-        try:
-            drv = target.get_driver("PowerProtocol")
-        except NoDriverFoundError:
-            for resource in target.resources:
-                if isinstance(resource, NetworkPowerPort):
-                    try:
-                        drv = target.get_driver(NetworkPowerDriver)
-                    except NoDriverFoundError:
-                        drv = NetworkPowerDriver(target, name=None)
-                elif isinstance(resource, NetworkUSBPowerPort):
-                    try:
-                        drv = target.get_driver(USBPowerDriver)
-                    except NoDriverFoundError:
-                        drv = USBPowerDriver(target, name=None)
-                elif isinstance(resource, NetworkSiSPMPowerPort):
-                    try:
-                        drv = target.get_driver(SiSPMPowerDriver)
-                    except NoDriverFoundError:
-                        drv = SiSPMPowerDriver(target, name=None)
-                elif isinstance(resource, PDUDaemonPort):
-                    try:
-                        drv = target.get_driver(PDUDaemonDriver)
-                    except NoDriverFoundError:
-                        drv = PDUDaemonDriver(target, name=None)
-                elif isinstance(resource, TasmotaPowerPort):
-                    try:
-                        drv = target.get_driver(TasmotaPowerDriver)
-                    except NoDriverFoundError:
-                        drv = TasmotaPowerDriver(target, name=None)
-                if drv:
-                    break
+        drvs = set()
+        if not name:
+            # the normal case, no explicit name set on commandline
+            try:
+                drvs.add(target.get_driver("PowerProtocol"))
+            except NoDriverFoundError:
+                for resource in target.resources:
+                    drv = None
+                    if isinstance(resource, NetworkPowerPort):
+                        try:
+                            drv = target.get_driver(NetworkPowerDriver)
+                        except NoDriverFoundError:
+                            drv = NetworkPowerDriver(target, name=resource.name)
+                    elif isinstance(resource, NetworkUSBPowerPort):
+                        try:
+                            drv = target.get_driver(USBPowerDriver)
+                        except NoDriverFoundError:
+                            drv = USBPowerDriver(target, name=resource.name)
+                    elif isinstance(resource, NetworkSiSPMPowerPort):
+                        try:
+                            drv = target.get_driver(SiSPMPowerDriver)
+                        except NoDriverFoundError:
+                            drv = SiSPMPowerDriver(target, name=resource.name)
+                    elif isinstance(resource, PDUDaemonPort):
+                        try:
+                            drv = target.get_driver(PDUDaemonDriver)
+                        except NoDriverFoundError:
+                            drv = PDUDaemonDriver(target, name=resource.name)
+                    elif isinstance(resource, TasmotaPowerPort):
+                        try:
+                            drv = target.get_driver(TasmotaPowerDriver)
+                        except NoDriverFoundError:
+                            drv = TasmotaPowerDriver(target, name=resource.name)
 
-        if not drv:
+                    if drv:
+                        drvs.add(drv)
+        else:
+            # name is explicitly set on commandline
+            for resource in target.resources:
+                drv = None
+                try:
+                    if isinstance(resource, NetworkPowerPort):
+                        target.set_binding_map({"port": name})
+                        drv = NetworkPowerDriver(target, name=resource.name)
+                    elif isinstance(resource, NetworkUSBPowerPort):
+                        target.set_binding_map({"hub": name})
+                        drv = USBPowerDriver(target, name=resource.name)
+                    elif isinstance(resource, NetworkSiSPMPowerPort):
+                        target.set_binding_map({"port": name})
+                        drv = SiSPMPowerDriver(target, name=resource.name)
+                    elif isinstance(resource, PDUDaemonPort):
+                        target.set_binding_map({"port": name})
+                        drv = PDUDaemonDriver(target, name=resource.name)
+                    elif isinstance(resource, TasmotaPowerPort):
+                        target.set_binding_map({"power": name})
+                        drv = TasmotaPowerDriver(target, name=resource.name)
+                except (NoResourceFoundError, NoSupplierFoundError):
+                    pass
+
+                if drv:
+                    drvs.add(drv)
+
+        drv = None
+        re_main = re.compile(r'^main#?')
+        if not drvs:
             raise UserError("target has no compatible resource available")
+        elif len(drvs) == 1:
+            drv = drvs.pop()
+        else:
+            drvs_main = tuple(filter(lambda drv: re_main.search(drv.name), drvs))
+            if len(drvs_main) != 1:
+               raise UserError("target has multiple compatible resources available")
+            drv = drvs_main[0]
+
         if delay is not None:
             drv.delay = delay
         target.activate(drv)
@@ -1705,6 +1746,7 @@ def main():
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
     subparser.add_argument('-t', '--delay', type=float, default=None,
                            help='wait time in seconds between off and on during cycle')
+    subparser.add_argument('-n', '--name', help='name of the powerport')
     subparser.set_defaults(func=ClientSession.power)
 
     subparser = subparsers.add_parser('io',

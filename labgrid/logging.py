@@ -1,3 +1,5 @@
+import re
+
 from logging import Formatter, StreamHandler, getLogger, BASIC_FORMAT
 
 from .step import steps
@@ -27,6 +29,10 @@ class StepFormatter:
         self.long_result = long_result
         self.indent = indent
         self.indent_level = 0
+        self.bufs = dict()
+        self.re_vt100 = re.compile(
+            r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
+        )
 
     def format(self, record):
         if hasattr(record, "stepevent"):
@@ -34,18 +40,36 @@ class StepFormatter:
         else:
             return self.formatter.format(record)
 
+    def format_serial_buffer(self, step):
+        if step.source not in self.bufs.keys():
+            self.bufs[step.source] = b''
+        self.bufs[step.source] += step.result
+        *parts, self.bufs[step.source] = self.bufs[step.source].split(b'\r\n')
+        result = []
+        for part in parts:
+            result.append(self.re_vt100.sub('', part.decode("utf-8", errors="replace")))
+        return "␍␤\n".join(result)
+
+    def format_console_step(self, record):
+        step = record.stepevent.step
+        event = record.stepevent
+        indent = "  " * (self.indent_level + 1) if self.indent else ""
+        if step.get_title() == 'read':
+            dirind = "<"
+            message = self.format_serial_buffer(step)
+            message = message.replace('\n', f'\n{indent}{step.source} {dirind} ')
+        else:
+            if event.data.get("state", "stop") == "start":
+                return
+            dirind = ">"
+            message = step.args["data"].decode('utf-8')
+            message = f"␍␤\n{indent}{step.source} {dirind} ".join(message.split('\n'))
+        return f"{indent}{step.source} {dirind} {message}"
+
     def format_step(self, record):
         step = record.stepevent.step
         if step.tag == 'console' and step.source:
-            if step.get_title() == 'read':
-                dirind = "<"
-                message = step.result.decode('utf-8')
-            else:
-                dirind = ">"
-                message = step.args["data"].decode('utf-8')
-            indent = "  " * (self.indent_level + 1) if self.indent else ""
-            message = message.replace('\n', f'\n{indent}{step.source} {dirind} ')
-            return f"{indent}{step.source} {dirind} {message}"
+            return self.format_console_step(record)
         if not step.tag:
             return self._line_format(record.stepevent)
 

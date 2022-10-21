@@ -12,12 +12,12 @@ jobs:
         python-version: ['3.7', '3.8', '3.9', '3.10']
         experimental: [false]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    - uses: actions/cache@v2
+    - uses: actions/cache@v3
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('*requirements.txt') }}
@@ -58,11 +58,11 @@ jobs:
         make -C man clean
         make -C man all
         git --no-pager diff --exit-code
-    - uses: codecov/codecov-action@v1
+    - uses: codecov/codecov-action@v3
   docker:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install system dependencies
       run: |
         sudo apt install -yq python3-pip

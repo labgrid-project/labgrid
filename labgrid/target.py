@@ -1,6 +1,7 @@
 import abc
 import atexit
 import logging
+import re
 from time import monotonic, sleep
 
 import attr
@@ -116,13 +117,14 @@ class Target:
         """
         found = []
         other_names = []
+        re_main = re.compile(r'^main#?')
         if isinstance(cls, str):
             cls = target_factory.class_from_string(cls)
 
         for res in self.resources:
             if not isinstance(res, cls):
                 continue
-            if name and res.name != name:
+            if name and re_main.sub('', res.name) != re_main.sub('', name):
                 other_names.append(res.name)
                 continue
             found.append(res)
@@ -137,9 +139,12 @@ class Target:
                 f"no {cls} resource{name_msg} found in {self}"
             )
         elif len(found) > 1:
-            raise NoResourceFoundError(
-                f"multiple resources matching {cls} found in {self}", found=found
-            )
+            found_main = tuple(filter(lambda res: re_main.search(res.name), found))
+            if len(found_main) != 1:
+                raise NoResourceFoundError(
+                    f"multiple resources matching {cls} found in {self}", found=found
+                )
+            found = found_main
         if wait_avail:
             self.await_resources(found)
         return found[0]

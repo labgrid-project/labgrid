@@ -1,28 +1,12 @@
-import logging
 import os
-import sys
 import warnings
 import pytest
 
 from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
-from ..logging import basicConfig, StepFormatter, StepLogger
+from ..logging import StepFormatter, StepLogger
 
-from _pytest import logging as pytest_logging
-
-class StructlogLoggingPlugin(pytest_logging.LoggingPlugin):
-    """
-    Replacement logging plugin that uses our formatter
-    """
-    def _create_formatter(self, log_format,
-                          log_date_format, auto_indent) -> logging.Formatter:
-        """Patch the logger method to always return out formatter
-        Returns:
-            logging.Formatter: Our structlog enhanced formatter
-        """
-        del log_format, log_date_format, auto_indent
-        return StepFormatter()
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):

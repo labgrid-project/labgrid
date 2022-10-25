@@ -15,6 +15,7 @@ class SerialPort(Resource):
     speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))
 
 
+@target_factory.reg_resource
 @attr.s(eq=False)
 class NetworkInterface(Resource):
     """The basic NetworkInterface contains an interface name

@@ -11,7 +11,7 @@ from ..resource.remote import RemoteNetworkInterface
 @attr.s(eq=False)
 class NetworkInterfaceDriver(Driver):
     bindings = {
-        "iface": {"RemoteNetworkInterface", "USBNetworkInterface"},
+        "iface": {"RemoteNetworkInterface", "NetworkInterface", "USBNetworkInterface"},
     }
 
     def __attrs_post_init__(self):

@@ -281,26 +281,35 @@ exports["USBSerialPort"] = SerialPortExport
 exports["RawSerialPort"] = SerialPortExport
 
 @attr.s(eq=False)
-class USBNetworkExport(ResourceExport):
-    """ResourceExport for a USB network interface"""
+class NetworkInterfaceExport(ResourceExport):
+    """ResourceExport for a network interface"""
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        from ..resource.udev import USBNetworkInterface
+        if self.cls == "NetworkInterface":
+            from ..resource.base import NetworkInterface
+            self.local = NetworkInterface(target=None, name=None, **self.local_params)
+        elif self.cls == "USBNetworkInterface":
+            from ..resource.udev import USBNetworkInterface
+            self.local = USBNetworkInterface(target=None, name=None, **self.local_params)
         self.data['cls'] = "RemoteNetworkInterface"
-        self.local = USBNetworkInterface(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
-        return {
+        params = {
             'host': self.host,
             'ifname': self.local.ifname,
-            'extra': {
+        }
+        if self.cls == "USBNetworkInterface":
+            params['extra'] = {
                 'state': self.local.if_state,
             }
-        }
 
-exports["USBNetworkInterface"] = USBNetworkExport
+        return params
+
+
+exports["USBNetworkInterface"] = NetworkInterfaceExport
+exports["NetworkInterface"] = NetworkInterfaceExport
 
 @attr.s(eq=False)
 class USBGenericExport(ResourceExport):

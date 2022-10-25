@@ -1,7 +1,8 @@
 """ tested with NETIO 4C, should be compatible with all NETIO 4-models """
 
 import re
-import telnetlib
+
+import pexpect
 
 PORT = 1234
 
@@ -9,29 +10,37 @@ def power_set(host, port, index, value):
     index = int(index)
     assert 1 <= index <= 4
     value = "1" if value else "0"
-    tn = telnetlib.Telnet(host, port, 1)
-    tn.read_until(b"\r\n", 0.5)
-    tn.write(b"login admin admin\n")
-    tn.read_until(b"250 OK\r\n", 0.5)
-    tn.write(f"port {index} {value}\n".encode())
-    tn.read_until(b"250 OK\r\n", 0.5)
-    tn.write(b"quit\n")
-    tn.close()
+
+    with pexpect.spawn(f"telnet {host} {port}", timeout=1) as tn:
+        tn.expect(b"100 HELLO .*\r\n")
+        tn.send(b"login admin admin\r\n")
+
+        tn.expect(b"250 OK\r\n")
+        tn.send(f"port {index} {value}\r\n".encode())
+
+        tn.expect(b"250 OK\r\n")
+        tn.send(b"quit\r\n")
+        tn.expect(pexpect.EOF)
 
 
 def power_get(host, port, index):
     index = int(index)
     assert 1 <= index <= 4
-    tn = telnetlib.Telnet(host, port, 1)
-    tn.read_until(b"\r\n", 0.5)
-    tn.write(b"login admin admin\n")
-    tn.read_until(b"250 OK\r\n", 0.5)
-    tn.write(f"port {index}\n".encode())
-    read = tn.read_until(b"\r\n", 0.5)
-    m = re.match(r".*250 (\d).*", read.decode())
-    if m is None:
-        raise Exception("NetIO: could not match response")
-    value = m.group(1)
-    tn.write(b"quit\n")
-    tn.close()
+
+    with pexpect.spawn(f"telnet {host} {port}", timeout=1) as tn:
+        tn.expect(b"100 HELLO .*\r\n")
+        tn.send(b"login admin admin\r\n")
+
+        tn.expect(b"250 OK\r\n")
+        tn.send(f"port {index}\r\n".encode())
+
+        tn.expect(rb"250 .*\r\n")
+        m = re.match(r".*250 (\d).*", tn.after.decode())
+        if m is None:
+            raise Exception("NetIO: could not match response")
+        value = m.group(1)
+
+        tn.send(b"quit\r\n")
+        tn.expect(pexpect.EOF)
+
     return value == "1"

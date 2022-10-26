@@ -127,3 +127,6 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         if self.status:
             self.serial.close()
             self.status = 0
+
+    def __str__(self):
+        return f"SerialDriver({self.target.name})"

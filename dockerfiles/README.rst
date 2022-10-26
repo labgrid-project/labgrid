@@ -35,6 +35,12 @@ with the included script
 
    $ ./dockerfiles/build.sh
 
+The script supports ``podman`` as well
+
+.. code-block:: bash
+  
+   $ export DOCKER=podman
+   $ ./dockerfiles/build.sh
 
 Usage
 -----

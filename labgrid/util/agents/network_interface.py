@@ -272,19 +272,20 @@ class NMDev:
 
     def get_dhcpd_leases(self):
         leases = []
-        for line in open(f"/var/lib/NetworkManager/dnsmasq-{self._interface}.leases"):
-            line = line.strip().split()
-            if line[3] == '*':
-                line[3] = None
-            if line[4] == '*':
-                line[4] = None
-            leases.append({
-                'expire': int(line[0]),
-                'mac': line[1],
-                'ip': line[2],
-                'hostname': line[3],
-                'id': line[4],
-            })
+        with open(f"/var/lib/NetworkManager/dnsmasq-{self._interface}.leases") as f:
+            for line in f:
+                line = line.strip().split()
+                if line[3] == '*':
+                    line[3] = None
+                if line[4] == '*':
+                    line[4] = None
+                leases.append({
+                    'expire': int(line[0]),
+                    'mac': line[1],
+                    'ip': line[2],
+                    'hostname': line[3],
+                    'id': line[4],
+                })
         return leases
 
 if getattr(NM.Client, '__gtype__', None):

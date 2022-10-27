@@ -1291,7 +1291,8 @@ class ClientSession(ApplicationSession):
         if action in ['show', 'save']:
             extension, data = drv.get_screenshot()
             filename = 'tmc-screen_{0:%Y-%m-%d}_{0:%H:%M:%S}.{1}'.format(datetime.now(), extension)
-            open(filename, 'wb').write(data)
+            with open(filename, 'wb') as f:
+                f.write(data)
             print(f"Saved as {filename}")
             if action == 'show':
                 subprocess.call(['xdg-open', filename])

@@ -46,7 +46,8 @@ class AgentWrapper:
             'agent.py')
         if host:
             # copy agent.py and run via ssh
-            agent_data = open(agent, 'rb').read()
+            with open(agent, 'rb') as agent_fd:
+                agent_data = agent_fd.read()
             agent_hash = hashlib.sha256(agent_data).hexdigest()
             agent_remote = f'.labgrid_agent_{agent_hash}.py'
             ssh_opts = 'ssh -x -o ConnectTimeout=5 -o PasswordAuthentication=no'.split()
@@ -98,6 +99,7 @@ class AgentWrapper:
             raise AgentException(e)
         elif 'error' in response:
             self.agent.wait()
+            self.agent.communicate()
             self.agent = None
             raise AgentError(response['error'])
 
@@ -111,7 +113,8 @@ class AgentWrapper:
             path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'agents')
 
         filename = os.path.join(path, f'{name}.py')
-        source = open(filename, 'r').read()
+        with open(filename, 'r') as source_fd:
+            source = source_fd.read()
 
         self.call('load', name, source)
 
@@ -130,4 +133,5 @@ class AgentWrapper:
         self.agent.stdin.write(request+b'\n')
         self.agent.stdin.flush()
         self.agent.wait()
+        self.agent.communicate()
         self.agent = None

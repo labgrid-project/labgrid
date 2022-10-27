@@ -161,3 +161,6 @@ class USBVideoDriver(Driver, VideoProtocol):
 
         rx.terminate()
         tx.terminate()
+
+        rx.communicate()
+        tx.communicate()

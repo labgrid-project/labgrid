@@ -130,12 +130,14 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             subprocess_timeout = timeout + 5
             return_value = self.process.wait(timeout=subprocess_timeout)
             if return_value != 0:
-                stdout = self.process.stdout.readlines()
+                stdout, _ = self.process.communicate(timeout=subprocess_timeout)
+                stdout = stdout.split("\n")
                 for line in stdout:
                     self.logger.warning("ssh: %s", line.rstrip().decode(encoding="utf-8", errors="replace"))
 
                 try:
-                    proxy_error = open(self.tmpdir+'/proxy-stderr').read().strip()
+                    with open(f'{self.tmpdir}/proxy-stderr') as proxy_err_fd:
+                        proxy_error = proxy_err_fd.read().strip()
                     if proxy_error:
                         raise ExecutionError(
                             f"Failed to connect to {self.networkservice.address} with {' '.join(args)}: error from SSH ProxyCommand: {proxy_error}",  # pylint: disable=line-too-long
@@ -452,6 +454,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if res != 0:
             self.logger.info("Socket already closed")
         shutil.rmtree(self.tmpdir)
+
+        self.process.communicate()
 
     def _start_keepalive(self):
         """Starts a keepalive connection via the own or external master."""

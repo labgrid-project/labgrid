@@ -201,3 +201,6 @@ class USBAudioInputDriver(Driver):
 
         rx.terminate()
         tx.terminate()
+
+        rx.communicate()
+        tx.communicate()

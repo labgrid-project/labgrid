@@ -259,7 +259,8 @@ class SSHConnection:
                     if loglevel is not None:
                         self._logger.log(loglevel, line)
 
-        return stdout, stderr, sub.wait()
+        sub.communicate()
+        return stdout, stderr, sub.returncode
 
     def run_check(self, command, *, codec="utf-8", decodeerrors="strict",
                   force_tty=False, stderr_merge=False, stderr_loglevel=None,
@@ -417,12 +418,15 @@ class SSHConnection:
 
         try:
             if self._master.wait(timeout=30) != 0:
+                stdout, stderr = self._master.communicate()
                 raise ExecutionError(
-                    f"failed to connect to {self.host} with args {args}, returncode={self._master.wait()} {self._master.stdout.readlines()},{self._master.stderr.readlines()} "  # pylint: disable=line-too-long
+                    f"failed to connect to {self.host} with args {args}, returncode={self._master.returncode} {stdout},{stderr}"  # pylint: disable=line-too-long
                 )
         except subprocess.TimeoutExpired:
+            self._master.kill()
+            stdout, stderr = self._master.communicate()
             raise ExecutionError(
-                f"failed to connect (timeout) to {self.host} with args {args} {self._master.stdout.readlines()},{self._master.stderr.readlines()}"  # pylint: disable=line-too-long
+                f"failed to connect (timeout) to {self.host} with args {args}, process killed, got {stdout},{stderr}"  # pylint: disable=line-too-long
             )
 
         if not os.path.exists(control):
@@ -441,7 +445,7 @@ class SSHConnection:
             self._run_socket_command("exit")
             # if the master doesn't terminate in less than 60 seconds,
             # something is very wrong
-            self._master.wait(timeout=60)
+            self._master.communicate(timeout=60)
         finally:
             self._socket = None
             self._master = None
@@ -472,9 +476,7 @@ class SSHConnection:
             self._keepalive.communicate(timeout=60)
         except subprocess.TimeoutExpired:
             self._keepalive.kill()
-
-        try:
-            self._keepalive.wait(timeout=60)
+            self._keepalive.communicate(timeout=60)
         finally:
             self._keepalive = None
 

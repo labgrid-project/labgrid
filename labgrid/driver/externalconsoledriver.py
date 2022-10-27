@@ -28,7 +28,6 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         self.logger = logging.getLogger(f"{self}({self.target})")
         self.status = 0
         self._child = None
-        self.open()
 
     def open(self):
         """Starts the subprocess, does nothing if it is already closed"""
@@ -54,6 +53,7 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         if not self.status:
             return
         if self._child.poll() is not None:
+            self._child.communicate()
             raise ExecutionError("child has vanished")
         self._child.terminate()
         try:
@@ -102,6 +102,9 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         result = self._child.stdin.write(data)
         self._child.stdin.flush()
         return result
+
+    def on_activate(self):
+        self.open()
 
     def on_deactivate(self):
         self.close()

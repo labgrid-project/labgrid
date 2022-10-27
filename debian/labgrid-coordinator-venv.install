@@ -1,0 +1,4 @@
+#!/usr/bin/dh-exec
+
+debian/labgrid-coordinator.bin => /usr/bin/labgrid-coordinator
+.crossbar/config.yaml => /etc/labgrid/coordinator.yaml

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cmd="crossbar"
+
+exec /opt/venvs/labgrid-coordinator/bin/$cmd "$@"

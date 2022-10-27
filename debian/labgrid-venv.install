@@ -1,0 +1,10 @@
+#!/usr/bin/dh-exec
+
+debian/client.yaml /etc/labgrid
+debian/labgrid-client.bin => /usr/bin/labgrid-client
+debian/labgrid-exporter.bin => /usr/bin/labgrid-exporter
+debian/labgrid-exporter.tmpfile => /usr/lib/tmpfiles.d/labgrid-exporter.conf
+debian/labgrid-exporter.sysuser => /usr/lib/sysusers.d/labgrid-exporter.conf
+debian/labgrid-pytest.bin => /usr/bin/labgrid-pytest
+debian/labgrid-suggest.bin => /usr/bin/labgrid-suggest
+helpers/labgrid-bound-connect /usr/sbin

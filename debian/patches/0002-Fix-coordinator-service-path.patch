@@ -1,0 +1,11 @@
+--- a/contrib/systemd/labgrid-coordinator.service	2021-04-07 08:38:03.887446778 +0200
++++ b/contrib/systemd/labgrid-coordinator.service	2021-04-07 14:36:44.547614091 +0200
+@@ -3,7 +3,7 @@
+ After=network.target
+ 
+ [Service]
+-ExecStart=/path/to/labgrid-coordinator/venv/bin/crossbar start --logformat=syslogd --cbdir /var/lib/labgrid-coordinator --config /etc/labgrid/coordinator.yaml
++ExecStart=/usr/bin/labgrid-coordinator start --logformat=syslogd --cbdir /var/lib/labgrid-coordinator --config /etc/labgrid/coordinator.yaml
+ ExecStop=/usr/bin/labgrid-coordinator stop --cbdir /var/lib/labgrid-coordinator
+ Restart=on-abort
+ DynamicUser=yes

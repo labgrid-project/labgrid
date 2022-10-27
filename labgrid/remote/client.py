@@ -801,12 +801,13 @@ class ClientSession(ApplicationSession):
                     drvs.add(drv)
 
         drv = None
-        re_main = re.compile(r'^main#?')
+        
         if not drvs:
             raise UserError("target has no compatible resource available")
         elif len(drvs) == 1:
             drv = drvs.pop()
         else:
+            re_main = re.compile(r'^main(|#.+)$')
             drvs_main = tuple(filter(lambda drv: re_main.search(drv.name), drvs))
             if len(drvs_main) != 1:
                raise UserError("target has multiple compatible resources available")

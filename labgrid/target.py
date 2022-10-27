@@ -139,6 +139,7 @@ class Target:
                 f"no {cls} resource{name_msg} found in {self}"
             )
         elif len(found) > 1:
+            re_main = re.compile(r'^main(|#.+)$')
             found_main = tuple(filter(lambda res: re_main.search(res.name), found))
             if len(found_main) != 1:
                 raise NoResourceFoundError(

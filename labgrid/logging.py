@@ -1,30 +1,21 @@
 import re
 
-from logging import Formatter, StreamHandler, getLogger, BASIC_FORMAT
+import logging
 
 from .step import steps
 
 
 def basicConfig(**kwargs):
-    stream = kwargs.pop("stream", None)
-    handler = StreamHandler(stream)
-    root = getLogger()
+    logging.basicConfig(**kwargs)
+    root = logging.getLogger()
 
-    dfs = kwargs.pop("datefmt", None)
-    fs = kwargs.pop("format", BASIC_FORMAT)
-    style = kwargs.pop("style", '%')
-    if len(root.handlers) == 0:
-        formatter = StepFormatter(fs, dfs, style)
-        handler.setFormatter(formatter)
-        root.addHandler(handler)
-
-
+    root.handlers[0].setFormatter(StepFormatter())
 
 # Use composition instead of inheritance
 class StepFormatter:
 
-    def __init__(self, *args, color=None, indent=True, long_result=False):
-        self.formatter = Formatter(*args)
+    def __init__(self, *args, color=None, indent=True, long_result=False, **kwargs):
+        self.formatter = logging.Formatter(**kwargs)
         self.color = color
         self.long_result = long_result
         self.indent = indent
@@ -35,14 +26,18 @@ class StepFormatter:
         )
 
     def format(self, record):
+        if getattr(record, "console", False):
+            return self.format_console_step(record)
+        # TODO: Add flushing of previously received console bytes
         if hasattr(record, "stepevent"):
-            return self.format_step(record)
+            return self._line_format(record.stepevent)
         else:
             return self.formatter.format(record)
 
     def format_serial_buffer(self, step):
         if step.source not in self.bufs.keys():
             self.bufs[step.source] = b''
+        assert step.result is not None
         self.bufs[step.source] += step.result
         *parts, self.bufs[step.source] = self.bufs[step.source].split(b'\r\n')
         result = []
@@ -52,26 +47,16 @@ class StepFormatter:
 
     def format_console_step(self, record):
         step = record.stepevent.step
-        event = record.stepevent
         indent = "  " * (self.indent_level + 1) if self.indent else ""
         if step.get_title() == 'read':
             dirind = "<"
             message = self.format_serial_buffer(step)
             message = message.replace('\n', f'\n{indent}{step.source} {dirind} ')
         else:
-            if event.data.get("state", "stop") == "start":
-                return
             dirind = ">"
             message = step.args["data"].decode('utf-8')
             message = f"␍␤\n{indent}{step.source} {dirind} ".join(message.split('\n'))
         return f"{indent}{step.source} {dirind} {message}"
-
-    def format_step(self, record):
-        step = record.stepevent.step
-        if step.tag == 'console' and step.source:
-            return self.format_console_step(record)
-        if not step.tag:
-            return self._line_format(record.stepevent)
 
     @staticmethod
     def format_arguments(args):
@@ -82,7 +67,7 @@ class StepFormatter:
             for k, v in args.items():
                 collected_args.append("{}={}".format(k, v))
 
-            return "".join(collected_args)
+            return " ".join(collected_args)
         else:
             return "{}".format(args)
 
@@ -100,20 +85,22 @@ class StepFormatter:
         if self.long_result:
             return "result={} ".format(result)
 
-        if len(str(result)) < 20:
+        if len(str(result)) < 60:
             return "result={} ".format(result)
         else:
-            return "result={:.19}… ".format(repr(result))
+            return "result={:.59}… ".format(repr(result))
 
     def get_prefix(self, event):
         if event.step.exception:
-            return "⚠"
-        if event.data.get("state") == "start":
+            return "!"
+        elif event.data.get("state") == "start":
             return "→"
-        if event.data.get("state") == "stop":
+        elif event.data.get("state") == "stop":
             return "←"
-        if event.data.get("skip", None):
-            return "⏭️"
+        elif event.data.get("skip", None):
+            return "S"
+        else:
+            return ""
 
     def _line_format(self, event):
         indent = "  " * event.step.level if self.indent else ""
@@ -122,7 +109,7 @@ class StepFormatter:
         prefix = self.get_prefix(event)
 
         title = '{} {}.{}'.format(prefix, event.step.source.__class__.__name__, event.step.title)
-        line = "{}({}) {}{}".format(title, self.format_arguments(event.data.get('args', {})),
+        line = "{} {} {}{}".format(title, self.format_arguments(event.data.get('args', {})),
                                     self.format_result(event.data.get('result', None)),
                                     self.format_duration(event.data.get('duration', 0.0)))
 
@@ -135,12 +122,11 @@ class StepFormatter:
 
         return f"{indent}{line}"
 
-
 class StepLogger:
     instance = None
 
     def __init__(self):
-        self.logger = getLogger("StepLogger")
+        self.logger = logging.getLogger("StepLogger")
         steps.subscribe(self.notify)
 
     @classmethod
@@ -157,4 +143,15 @@ class StepLogger:
         cls.instance = None
 
     def notify(self, event):
-        self.logger.log(20, event, extra={"stepevent": event})
+        level = logging.INFO
+        step = event.step
+        extra = {"stepevent": event}
+        if step.tag == "console":
+            if event.data.get("state", None) == "start" and step.get_title() == "write":
+                level = logging.DEBUG
+            elif step.get_title() == "read" and not step.result:
+                level = logging.DEBUG
+            else:
+                extra["console"] = True
+
+        self.logger.log(level, event, extra=extra)

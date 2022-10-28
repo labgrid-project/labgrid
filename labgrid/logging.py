@@ -111,7 +111,7 @@ class StepFormatter:
         if event.data.get("state") == "start":
             return "→"
         if event.data.get("state") == "stop":
-            return "→"
+            return "←"
         if event.data.get("skip", None):
             return "⏭️"
 

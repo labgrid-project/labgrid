@@ -105,14 +105,23 @@ class StepFormatter:
         else:
             return "result={:.19}… ".format(repr(result))
 
+    def get_prefix(self, event):
+        if event.step.exception:
+            return "⚠"
+        if event.data.get("state") == "start":
+            return "→"
+        if event.data.get("state") == "stop":
+            return "→"
+        if event.data.get("skip", None):
+            return "⏭️"
+
     def _line_format(self, event):
         indent = "  "*event.step.level if self.indent else ""
         self.indent_level = event.step.level
 
-        prefix = "→" if event.data.get("state") == "start" else "←"
-        if event.step.exception:
-            prefix = "⚠"
-        title = '{} {}'.format(prefix, event.step.title)
+        prefix = self.get_prefix(event)
+
+        title = '{} {}.{}'.format(prefix, event.step.source.__class__.__name__, event.step.title)
         line = "{}({}) {}{}".format(title, self.format_arguments(event.data.get('args', {})),
                                     self.format_result(event.data.get('result', None)),
                                     self.format_duration(event.data.get('duration', 0.0)))

@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 import pytest
 
 from labgrid.resource import NetworkPowerPort
@@ -170,6 +172,40 @@ class TestNetworkPowerDriver:
         r = NetworkPowerPort(target, 'power', model='netio', host='dummy', index='1')
         d = NetworkPowerDriver(target, 'power')
         assert isinstance(d, NetworkPowerDriver)
+
+    @pytest.mark.parametrize('backend', ('rest', 'simplerest'))
+    @pytest.mark.parametrize(
+        'host',
+        (
+            'http://example.com/{index}',
+            'https://example.com/{index}',
+            'http://example.com:1234/{index}',
+            'https://example.com:1234/{index}',
+        )
+    )
+    def test_create_backend_with_url_in_host(self, target, mocker, backend, host):
+        get = mocker.patch('requests.get')
+        get.return_value.text = '1'
+        mocker.patch('requests.put')
+
+        index = '1'
+        NetworkPowerPort(target, 'power', model=backend, host=host, index=index)
+        d = NetworkPowerDriver(target, 'power')
+        assert isinstance(d, NetworkPowerDriver)
+        target.activate(d)
+
+        d.cycle()
+        assert d.get() is True
+
+        # the called URL should be similar to the one configured in the resource, but with
+        # index and explicit port
+        expected_host = host.format(index=index)
+        url = urlparse(expected_host)
+        if ':' not in url.netloc:
+            implicit_port = 443 if url.scheme == 'https' else 80
+            expected_host = expected_host.replace(url.netloc, f'{url.netloc}:{implicit_port}')
+
+        get.assert_called_with(expected_host)
 
     def test_import_backends(self):
         import labgrid.driver.power

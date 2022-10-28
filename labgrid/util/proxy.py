@@ -1,6 +1,6 @@
 import os
 
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit, urlparse
 
 from .ssh import sshmanager
 
@@ -43,7 +43,8 @@ class ProxyManager:
         """
         assert isinstance(res, Resource)
 
-        s = urlsplit('//'+res.host)
+        prefix = '' if '//' in res.host else '//'
+        s = urlparse(prefix + res.host)
         host = s.hostname
         if force_port:
             port = force_port

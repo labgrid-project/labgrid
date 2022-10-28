@@ -1,6 +1,7 @@
 import shlex
 import time
 import math
+from urllib.parse import urlparse
 from importlib import import_module
 
 import attr
@@ -171,8 +172,41 @@ class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
                 self.port, force_port=backend_port
             )
         else:
-            self._host = self.port.host
-            self._port = None
+            # try handling the host parameter as a URL and extract required data from it
+            if not self.set_proxy_from_url():
+                # fallback
+                self._host = self.port.host
+                self._port = None
+
+    def set_proxy_from_url(self):
+        """
+        Some power backends (e.g. rest, simplerest) expect a URL in the host parameter. Try to
+        handle the host parameter as a URL, extract the power backend port from it and set new
+        proxied host parameter.
+        """
+        url = urlparse(self.port.host)
+        if not url.hostname:
+            return False
+
+        if url.port:
+            backend_port = url.port
+        elif url.scheme == 'http':
+            backend_port = 80
+        elif url.scheme == 'https':
+            backend_port = 443
+        else:
+            # unknown scheme specifier
+            return False
+
+        self._host, self._port = proxymanager.get_host_and_port(
+            self.port, force_port=backend_port
+        )
+
+        # construct proxied host parameter
+        self._host = f'{url.scheme}://{self._host}:{self._port}{url.path}'
+        self._port = None
+
+        return True
 
     @Driver.check_active
     @step()

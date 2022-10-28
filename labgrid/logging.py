@@ -129,6 +129,10 @@ class StepFormatter:
         if event.step.exception:
             line = f"{line} exception={event.step.exception}"
 
+        reason = event.data.get("skip", None)
+        if reason:
+            line = f"{line}skipped={reason}"
+
         return f"{indent}{line}"
 
 

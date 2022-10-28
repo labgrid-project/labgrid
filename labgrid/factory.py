@@ -87,6 +87,7 @@ class TargetFactory:
                 result.append(item)
         elif isinstance(data, dict):
             for cls, args in data.items():
+                args = args.copy()
                 args.setdefault('cls', cls)
                 result.append(args)
         else:

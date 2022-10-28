@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from copy import deepcopy
 
 import attr
 import pytest
@@ -16,49 +17,56 @@ def test_empty():
 
 
 def test_resources():
-    t = target_factory.make_target(
-        'dummy', {
-            'resources': OrderedDict([
-                ('RawSerialPort', {
-                    'port': 'foo',
-                    'speed': 115200
-                }),
-            ]),
-        }
-    )
+    original_config = {
+        'resources': OrderedDict([
+            ('RawSerialPort', {
+                'port': 'foo',
+                'speed': 115200,
+                'name': 'console',
+            }),
+        ]),
+    }
+    config = deepcopy(original_config)
+    t = target_factory.make_target('dummy', config)
     assert isinstance(t, Target)
     assert t.get_resource(SerialPort) is not None
+    assert config == original_config
 
 
 def test_drivers():
-    t = target_factory.make_target(
-        'dummy', {
-            'resources': OrderedDict([
-                ('RawSerialPort', {
-                    'port': 'foo',
-                    'speed': 115200
-                }),
-            ]),
-            'drivers': OrderedDict([
-                ('FakeConsoleDriver', {}),
-                ('ShellDriver', {
-                    'prompt': '',
-                    'login_prompt': '',
-                    'username': ''
-                }),
-            ]),
-        }
-    )
+    original_config = {
+        'resources': OrderedDict([
+            ('RawSerialPort', {
+                'port': 'foo',
+                'speed': 115200
+            }),
+        ]),
+        'drivers': OrderedDict([
+            ('FakeConsoleDriver', {
+                'name': 'console',
+            }),
+            ('ShellDriver', {
+                'name': 'shell',
+                'prompt': '',
+                'login_prompt': '',
+                'username': ''
+            }),
+        ]),
+    }
+    config = deepcopy(original_config)
+    t = target_factory.make_target('dummy', config)
     assert isinstance(t, Target)
     assert t.get_resource(SerialPort) is not None
+    assert config == original_config
 
 
 def test_convert_dict():
-    data = load("""
+    original_data = load("""
     FooPort: {}
     BarPort:
       name: bar
     """)
+    data = deepcopy(original_data)
     l = target_factory._convert_to_named_list(data)
     assert l == [
         {
@@ -70,14 +78,16 @@ def test_convert_dict():
             'name': 'bar'
         },
     ]
+    assert data == original_data
 
 
 def test_convert_simple_list():
-    data = load("""
+    original_data = load("""
     - FooPort: {}
     - BarPort:
         name: bar
     """)
+    data = deepcopy(original_data)
     l = target_factory._convert_to_named_list(data)
     assert l == [
         {
@@ -89,14 +99,16 @@ def test_convert_simple_list():
             'name': 'bar'
         },
     ]
+    assert data == original_data
 
 
 def test_convert_explicit_list():
-    data = load("""
+    original_data = load("""
     - cls: FooPort
     - cls: BarPort
       name: bar
     """)
+    data = deepcopy(original_data)
     l = target_factory._convert_to_named_list(data)
     assert l == [
         {
@@ -108,6 +120,33 @@ def test_convert_explicit_list():
             'name': 'bar'
         },
     ]
+    assert data == original_data
+
+
+def test_normalize_config():
+    original_config = {
+        'resources': OrderedDict([
+            ('RawSerialPort', {
+                'port': 'foo',
+                'speed': 115200
+            }),
+        ]),
+        'drivers': OrderedDict([
+            ('FakeConsoleDriver', {
+                'name': 'console',
+            }),
+        ]),
+    }
+    config = deepcopy(original_config)
+    resources, drivers = target_factory.normalize_config(config)
+
+    assert 'RawSerialPort' in resources
+    assert resources['RawSerialPort'] == {None: ({'port': 'foo', 'speed': 115200},)}
+
+    assert 'FakeConsoleDriver' in drivers
+    assert drivers['FakeConsoleDriver'] == {'console': ({}, {})}
+
+    assert config == original_config
 
 
 def test_convert_error():

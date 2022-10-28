@@ -131,7 +131,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             return_value = self.process.wait(timeout=subprocess_timeout)
             if return_value != 0:
                 stdout, _ = self.process.communicate(timeout=subprocess_timeout)
-                stdout = stdout.split("\n")
+                stdout = stdout.split(b"\n")
                 for line in stdout:
                     self.logger.warning("ssh: %s", line.rstrip().decode(encoding="utf-8", errors="replace"))
 

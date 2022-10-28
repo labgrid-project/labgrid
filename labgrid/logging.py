@@ -116,7 +116,7 @@ class StepFormatter:
             return "⏭️"
 
     def _line_format(self, event):
-        indent = "  "*event.step.level if self.indent else ""
+        indent = "  " * event.step.level if self.indent else ""
         self.indent_level = event.step.level
 
         prefix = self.get_prefix(event)

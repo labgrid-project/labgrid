@@ -117,6 +117,9 @@ class StepFormatter:
                                     self.format_result(event.data.get('result', None)),
                                     self.format_duration(event.data.get('duration', 0.0)))
 
+        if event.step.exception:
+            line = f"{line} exception={event.step.exception}"
+
         return f"{indent}{line}"
 
 

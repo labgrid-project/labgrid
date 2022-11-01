@@ -20,7 +20,7 @@ services:
     # Use wait-for-it to ensure exporter service is up, as exporter is assuming exporter to
     # Use labgrid-client r to ensure the exporter has populated the resource list in the coordinator
     # Use sleep to fix the problem that sometimes the coordinator is not ready even though the service is up
-    command: bash -c "set -e &&
+    command: timeout 60 bash -c "set -e &&
       cd /simple-test &&
       /opt/wait-for-it/wait-for-it.sh 127.0.0.1:20408 &&
       sleep 5 &&

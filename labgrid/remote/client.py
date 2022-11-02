@@ -663,6 +663,31 @@ class ClientSession(ApplicationSession):
             RemotePlace(target, name=place.name)
         return target
 
+    def _get_driver_or_new(self, target, cls, *, name=None, activate=True, binding_map=None):
+        """
+        Helper function trying to get an active driver. If no such driver
+        exists, instanciates a new driver.
+        Driver instanciation works only for drivers without special kwargs.
+
+        Arguments:
+        target -- target to operate on
+        cls -- driver-class to retrieve active or instanciate new driver from
+        name -- optional name to use as a filter
+        activate -- activate the driver (default True)
+        """
+        try:
+            return target.get_driver(cls, name=name, activate=activate)
+        except NoDriverFoundError:
+            if isinstance(cls, str):
+                cls = target_factory.class_from_string(cls)
+            if binding_map:
+                target.set_binding_map(binding_map)
+
+            drv = cls(target, name=name)
+            if activate:
+                target.activate(drv)
+            return drv
+
     def power(self):
         place = self.get_acquired_place()
         action = self.args.action

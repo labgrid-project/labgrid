@@ -1815,9 +1815,9 @@ def main():
     subparser = subparsers.add_parser('audio', help="start a audio stream")
     subparser.set_defaults(func=ClientSession.audio)
 
-    subparser = subparsers.add_parser('tmc', help="control a USB TMC device")
-    subparser.set_defaults(func=lambda _: subparser.print_help())
-    tmc_subparsers = subparser.add_subparsers(
+    tmc_parser = subparsers.add_parser('tmc', help="control a USB TMC device")
+    tmc_parser.set_defaults(func=lambda _: tmc_parser.print_help())
+    tmc_subparsers = tmc_parser.add_subparsers(
         dest='subcommand',
         title='available subcommands',
         metavar="SUBCOMMAND",

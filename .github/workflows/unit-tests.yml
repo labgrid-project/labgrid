@@ -20,7 +20,7 @@ jobs:
     - uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('*requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-pip-
     - name: Install system dependencies
@@ -37,12 +37,10 @@ jobs:
         ssh -o StrictHostKeyChecking=no localhost echo OK
     - name: Install python dependencies
       run: |
-        python -m pip install --upgrade pip setuptools wheel
-        python -m pip install flake8 pytest
-        pip install -r ci-requirements.txt
+        python -m pip install --upgrade pip codecov coveralls
     - name: Install labgrid
       run: |
-        pip install -e .
+        pip install -e ".[dev]"
     - name: Lint with pylint
       run: |
         pylint --list-msgs-enabled
@@ -66,7 +64,7 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt install -yq python3-pip
-        python3 -m pip install --upgrade pip setuptools wheel
+        python3 -m pip install setuptools_scm
     - name: Build docker images
       run: |
         ./dockerfiles/build.sh

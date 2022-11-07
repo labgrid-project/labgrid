@@ -8,7 +8,7 @@ COPY ./ /opt/labgrid/
 
 RUN set -e ;\
     apt update -q=2 ;\
-    apt install -q=2 --yes --no-install-recommends python3 python3-dev python3-pip python3-setuptools python3-wheel git build-essential libsnappy-dev ;\
+    apt install -q=2 --yes --no-install-recommends python3 python3-dev python3-pip python3-setuptools git build-essential libsnappy-dev ;\
     pip3 install -U pip;\
     apt clean ;\
     rm -rf /var/lib/apt/lists/* ;\
@@ -23,8 +23,7 @@ ARG VERSION
 RUN set -e ;\
     cd /opt/labgrid ;\
     pip3 install yq ;\
-    pip3 install --no-cache-dir -r requirements.txt ;\
-    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" python3 setup.py install ;\
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir . ;\
     apt update -q=2 ;\
     apt install -q=2 --yes --no-install-recommends microcom openssh-client rsync jq qemu-system qemu-utils ;\
     apt clean ;\
@@ -42,8 +41,7 @@ ENV CROSSBAR_DIR=/opt/crossbar
 
 RUN set -e ;\
     cd /opt/labgrid ;\
-    pip3 install --no-cache-dir -r crossbar-requirements.txt ;\
-    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" python3 setup.py install
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir ".[crossbar]"
 
 VOLUME /opt/crossbar
 
@@ -109,8 +107,7 @@ COPY dockerfiles/exporter/entrypoint.sh /entrypoint.sh
 
 RUN set -e ;\
     cd /opt/labgrid ;\
-    pip3 install --no-cache-dir -r requirements.txt ;\
-    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" python3 setup.py install ;\
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir . ;\
     apt update -q=2 ;\
     apt install -q=2 --yes --no-install-recommends \
         libyaml-0-2 \

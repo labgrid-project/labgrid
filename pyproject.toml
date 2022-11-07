@@ -1,6 +1,182 @@
 [build-system]
 # Minimum requirements for the build system to execute.
-requires = ["setuptools", "wheel", "setuptools_scm"]
+requires = [
+    "setuptools>=47.2.0",
+    "wheel",
+    "setuptools_scm[toml]",
+    "fastentrypoints; python_version=='3.7'",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "labgrid"
+authors = [
+  { name="Rouven Czerwinski", email="entwicklung@pengutronix.de" },
+  { name="Jan Luebbe", email="entwicklung@pengutronix.de" },
+]
+description = "embedded systems control library for development, testing and installation"
+readme = "README.rst"
+license = { file="LICENSE" }
+requires-python = ">=3.7"
+classifiers = [
+    "Topic :: Software Development :: Testing",
+    "Framework :: Pytest",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "ansicolors==1.1.8",
+    "attrs==21.4.0",
+    "autobahn==21.3.1",
+    "jinja2==3.0.2",
+    "packaging==21.0",
+    "pexpect==4.8.0",
+    "pyserial @ git+https://github.com/labgrid-project/pyserial.git@v3.4.0.1",
+    "pytest==6.2.5",
+    "pyudev==0.22.0",
+    "pyusb==1.2.1",
+    "PyYAML==5.4.1",
+    "requests==2.26.0",
+    "six>=1.13.0",
+    "werkzeug>=0.14.1,<2.1",
+    "xmodem==0.4.6",
+]
+dynamic = ["version"]  # via setuptools_scm
+
+[project.urls]
+"Homepage" = "https://github.com/labgrid-project/labgrid"
+"Bug Tracker" = "https://github.com/labgrid-project/labgrid/issues"
+
+[project.optional-dependencies]
+crossbar = ["crossbar==21.3.1"]
+doc = [
+    "docutils==0.17.1",
+    "Sphinx==4.2.0",
+    "sphinx_rtd_theme==1.0.0",
+]
+docker = ["docker==5.0.2"]
+graph = ["graphviz==0.17.0"]
+kasa = ["python-kasa==0.4.0"]
+modbus = ["pyModbusTCP==0.1.10"]
+modbusrtu = ["minimalmodbus==1.0.2"]
+mqtt = ["paho-mqtt==1.5.1"]
+onewire = ["onewire==0.2"]
+pyvisa = [
+    "pyvisa==1.11.3",
+    "PyVISA-py==0.5.2",
+]
+snmp = [
+    "pysnmp==4.4.12",
+    "pysnmp-mibs==0.1.6",
+]
+vxi11 = ["python-vxi11==0.9"]
+xena = ["xenavalkyrie==3.0.1"]
+deb = [
+    # labgrid[crossbar]
+    "crossbar==21.3.1",
+
+    # labgrid[modbus]
+    "pyModbusTCP==0.1.10",
+
+    # labgrid[onewire]
+    "onewire==0.2",
+
+    # labgrid[snmp]
+    "pysnmp==4.4.12",
+    "pysnmp-mibs==0.1.6",
+]
+dev = [
+    # references to other optional dependency groups
+    # labgrid[crossbar]
+    "crossbar==21.3.1",
+
+    # labgrid[doc]
+    "docutils==0.17.1",
+    "Sphinx==4.2.0",
+    "sphinx_rtd_theme==1.0.0",
+
+    # labgrid[docker]
+    "docker==5.0.2",
+
+    # labgrid[graph]
+    "graphviz==0.17.0",
+
+    # labgrid[kasa]
+    "python-kasa==0.4.0",
+
+    # labgrid[modbus]
+    "pyModbusTCP==0.1.10",
+
+    # labgrid[modbusrtu]
+    "minimalmodbus==1.0.2",
+
+    # labgrid[mqtt]
+    "paho-mqtt==1.5.1",
+
+    # labgrid[onewire]
+    "onewire==0.2",
+
+    # labgrid[pyvisa]
+    "pyvisa==1.11.3",
+    "PyVISA-py==0.5.2",
+
+    # labgrid[snmp]
+    "pysnmp==4.4.12",
+    "pysnmp-mibs==0.1.6",
+
+    # labgrid[vxi11]
+    "python-vxi11==0.9",
+
+    # labgrid[xena]
+    "xenavalkyrie==3.0.1",
+
+    # additional dev dependencies
+    "psutil==5.8.0",
+    "pytest-cov==3.0.0",
+    "pytest-dependency==0.5.1",
+    "pytest-isort==2.0.0",
+    "pytest-mock==3.6.1",
+    "pytest-pylint==0.18.0",
+]
+
+[project.scripts]
+labgrid-autoinstall = "labgrid.autoinstall.main:main"
+labgrid-client = "labgrid.remote.client:main"
+labgrid-exporter = "labgrid.remote.exporter:main"
+labgrid-suggest = "labgrid.resource.suggest:main"
+
+# the following makes a plugin available to pytest
+[project.entry-points.pytest11]
+labgrid = "labgrid.pytestplugin"
+
+[tool.setuptools]
+packages = [
+    "labgrid",
+    "labgrid.autoinstall",
+    "labgrid.driver",
+    "labgrid.driver.power",
+    "labgrid.driver.usbtmc",
+    "labgrid.protocol",
+    "labgrid.pytestplugin",
+    "labgrid.remote",
+    "labgrid.resource",
+    "labgrid.strategy",
+    "labgrid.util",
+    "labgrid.util.agents",
+]
+
+[tool.setuptools_scm]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+    "labgrid",
+]
+addopts = "-p no:labgrid"
 
 [tool.pylint.imports]
 ignored-modules = ["gi"]
@@ -53,3 +229,22 @@ generated-members = [
     "labgrid.strategy.*",
 ]
 signature-mutators = ["labgrid.step.step"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py37, py38, py39, py310, py311
+isolated_build = true
+
+[testenv]
+extras = dev
+passenv = TERM
+commands =
+  pytest tests {posargs} \
+    --cov={envsitepackagesdir}/labgrid \
+    --cov-report=html:htmlcov
+
+[testenv:lint]
+extras = dev
+commands = pylint -f colorized labgrid
+"""

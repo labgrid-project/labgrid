@@ -1,2 +1,0 @@
-pyvisa==1.11.3
-PyVISA-py==0.5.2

@@ -9,7 +9,7 @@ if [ -z ${DOCKER} ]; then
 fi
 export DOCKER_BUILDKIT=1
 
-VERSION="$(./setup.py --version | tail -1)"
+VERSION="$(python -m setuptools_scm)"
 
 for t in client exporter coordinator; do
     ${DOCKER} build --build-arg VERSION="$VERSION" \

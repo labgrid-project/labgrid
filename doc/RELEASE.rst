@@ -18,7 +18,7 @@ Check your commit mail and name:
 1. Freeze Dependencies
 ======================
 
-Freeze the dependencies into the `requirements.txt` file and update the separate
+Freeze the dependencies into the `pyproject.toml` file and update the separate
 feature requirements files.
 This ensures that known good dependencies are available for every release.
 
@@ -41,7 +41,7 @@ It's best to compare against the git log.
 4. Bump Version Number
 ======================
 
-Bump the version number in `CHANGES.rst` and `setup.py`
+Bump the version number in `CHANGES.rst`.
 
 5. Create a signed Tag
 ======================
@@ -60,7 +60,8 @@ Run the following command:
 
 ::
 
-   python setup.py sdist
+   pip install build
+   python -m build --sdist
 
 The sdist file will be available in the `dist/` directory.
 
@@ -89,7 +90,7 @@ And optionally run the tests:
 
 ::
 
-   pip install -r dev-requirements
+   pip install ".[dev]"
    pytest tests
 
 9. Upload to pypi

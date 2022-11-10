@@ -22,17 +22,15 @@ import txaio
 txaio.use_asyncio()
 from autobahn.asyncio.wamp import ApplicationSession
 
-from .common import *  # pylint: disable=wildcard-import
-from ..environment import Environment
+from .common import (ResourceEntry, ResourceMatch, Place, Reservation, ReservationState, TAG_KEY,
+                     TAG_VAL, enable_tcp_nodelay)
+from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util.dict import diff_dict, flat_dict, filter_dict
-from ..util.yaml import dump
-from .. import Target, target_factory
+from ..util import diff_dict, flat_dict, filter_dict, dump, atomic_replace, Timeout
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
-from ..util import atomic_replace, Timeout
-from ..driver import Mode
+from ..driver import Mode, ExecutionError
 
 txaio.config.loop = asyncio.get_event_loop()  # pylint: disable=no-member
 
@@ -79,29 +77,20 @@ class ClientSession(ApplicationSession):
 
     async def onJoin(self, details):
         # FIXME race condition?
-        resources = await self.call(
-            'org.labgrid.coordinator.get_resources'
-        )
+        resources = await self.call('org.labgrid.coordinator.get_resources')
         self.resources = {}
         for exporter, groups in resources.items():
             for group_name, group in sorted(groups.items()):
                 for resource_name, resource in sorted(group.items()):
-                    await self.on_resource_changed(
-                        exporter, group_name, resource_name, resource
-                    )
+                    await self.on_resource_changed(exporter, group_name, resource_name, resource)
 
         places = await self.call('org.labgrid.coordinator.get_places')
         self.places = {}
         for placename, config in places.items():
             await self.on_place_changed(placename, config)
 
-        await self.subscribe(
-            self.on_resource_changed,
-            'org.labgrid.coordinator.resource_changed'
-        )
-        await self.subscribe(
-            self.on_place_changed, 'org.labgrid.coordinator.place_changed'
-        )
+        await self.subscribe(self.on_resource_changed, 'org.labgrid.coordinator.resource_changed')
+        await self.subscribe(self.on_place_changed, 'org.labgrid.coordinator.place_changed')
         await self.connected(self)
 
     async def on_resource_changed(self, exporter, group_name, resource_name, resource):
@@ -133,8 +122,7 @@ class ClientSession(ApplicationSession):
             return
         config = config.copy()
         config['name'] = name
-        config['matches'] = [ResourceMatch(**match) \
-            for match in config['matches']]
+        config['matches'] = [ResourceMatch(**match) for match in config['matches']]
         config = filter_dict(config, Place, warn=True)
         if name not in self.places:
             place = Place(**config)
@@ -279,7 +267,7 @@ class ClientSession(ApplicationSession):
 
         widths = [max(map(len, c)) for c in zip(*result)]
         layout = []
-        for i, w  in enumerate(widths):
+        for i, w in enumerate(widths):
             layout.append("{%i:<%is}" % (i, w))
         layout = "  ".join(layout)
 
@@ -318,7 +306,7 @@ class ClientSession(ApplicationSession):
                     namespace, alias = alias.split(':', 1)
                     if namespace != self.getuser():
                         continue
-                    elif alias == pattern:  # prefer user namespace
+                    if alias == pattern:  # prefer user namespace
                         return [name]
                 if pattern in alias:
                     result.add(name)
@@ -327,7 +315,7 @@ class ClientSession(ApplicationSession):
     def _check_allowed(self, place):
         if not place.acquired:
             raise UserError(f"place {place.name} is not acquired")
-        if self.gethostname()+'/'+self.getuser() not in place.allowed:
+        if f'{self.gethostname()}/{self.getuser()}' not in place.allowed:
             host, user = place.acquired.split('/')
             if user != self.getuser():
                 raise UserError(
@@ -348,9 +336,7 @@ class ClientSession(ApplicationSession):
         if pattern in places:
             return self.places[pattern]
         if len(places) > 1:
-            raise UserError(
-                f"pattern {pattern} matches multiple places ({', '.join(places)})"
-            )
+            raise UserError(f"pattern {pattern} matches multiple places ({', '.join(places)})")
         return self.places[places[0]]
 
     def get_idle_place(self, place=None):
@@ -429,16 +415,10 @@ class ClientSession(ApplicationSession):
         place = self.get_idle_place()
         alias = self.args.alias
         if alias in place.aliases:
-            raise UserError(
-                f"place {place.name} already has alias {alias}"
-            )
-        res = await self.call(
-            'org.labgrid.coordinator.add_place_alias', place.name, alias
-        )
+            raise UserError(f"place {place.name} already has alias {alias}")
+        res = await self.call('org.labgrid.coordinator.add_place_alias', place.name, alias)
         if not res:
-            raise ServerError(
-                f"failed to add alias {alias} for place {place.name}"
-            )
+            raise ServerError(f"failed to add alias {alias} for place {place.name}")
         return res
 
     async def del_alias(self):
@@ -447,26 +427,18 @@ class ClientSession(ApplicationSession):
         alias = self.args.alias
         if alias not in place.aliases:
             raise UserError(f"place {place.name} has no alias {alias}")
-        res = await self.call(
-            'org.labgrid.coordinator.del_place_alias', place.name, alias
-        )
+        res = await self.call('org.labgrid.coordinator.del_place_alias', place.name, alias)
         if not res:
-            raise ServerError(
-                f"failed to delete alias {alias} for place {place.name}"
-            )
+            raise ServerError(f"failed to delete alias {alias} for place {place.name}")
         return res
 
     async def set_comment(self):
         """Set the comment on a place"""
         place = self.get_place()
         comment = ' '.join(self.args.comment)
-        res = await self.call(
-            'org.labgrid.coordinator.set_place_comment', place.name, comment
-        )
+        res = await self.call('org.labgrid.coordinator.set_place_comment', place.name, comment)
         if not res:
-            raise ServerError(
-                f"failed to set comment {comment} for place {place.name}"
-            )
+            raise ServerError(f"failed to set comment {comment} for place {place.name}")
         return res
 
     async def set_tags(self):
@@ -479,17 +451,11 @@ class ClientSession(ApplicationSession):
             except ValueError:
                 raise UserError(f"tag '{pair}' needs to match '<key>=<value>'")
             if not TAG_KEY.match(k):
-                raise UserError(
-                    f"tag key '{k}' needs to match the rexex '{TAG_KEY.pattern}'"
-                )
+                raise UserError(f"tag key '{k}' needs to match the rexex '{TAG_KEY.pattern}'")
             if not TAG_VAL.match(v):
-                raise UserError(
-                    f"tag value '{v}' needs to match the rexex '{TAG_VAL.pattern}'"
-                )
+                raise UserError(f"tag value '{v}' needs to match the rexex '{TAG_VAL.pattern}'")
             tags[k] = v
-        res = await self.call(
-            'org.labgrid.coordinator.set_place_tags', place.name, tags
-        )
+        res = await self.call('org.labgrid.coordinator.set_place_tags', place.name, tags)
         if not res:
             raise ServerError(
                 f"failed to set tags {' '.join(self.args.tags)} for place {place.name}"
@@ -510,13 +476,9 @@ class ClientSession(ApplicationSession):
             if place.hasmatch(pattern.split("/")):
                 print(f"pattern '{pattern}' exists, skipping")
                 continue
-            res = await self.call(
-                'org.labgrid.coordinator.add_place_match', place.name, pattern
-            )
+            res = await self.call('org.labgrid.coordinator.add_place_match', place.name, pattern)
             if not res:
-                raise ServerError(
-                    f"failed to add match {pattern} for place {place.name}"
-                )
+                raise ServerError(f"failed to add match {pattern} for place {place.name}")
 
     async def del_match(self):
         """Delete a match for a place"""
@@ -530,13 +492,9 @@ class ClientSession(ApplicationSession):
                 )
             if not place.hasmatch(pattern.split("/")):
                 print(f"pattern '{pattern}' not found, skipping")
-            res = await self.call(
-                'org.labgrid.coordinator.del_place_match', place.name, pattern
-            )
+            res = await self.call('org.labgrid.coordinator.del_place_match', place.name, pattern)
             if not res:
-                raise ServerError(
-                    f"failed to delete match {pattern} for place {place.name}"
-                )
+                raise ServerError(f"failed to delete match {pattern} for place {place.name}")
 
     async def add_named_match(self):
         """Add a named match for a place.
@@ -548,26 +506,16 @@ class ClientSession(ApplicationSession):
         pattern = self.args.pattern
         name = self.args.name
         if not 2 <= pattern.count("/") <= 3:
-            raise UserError(
-                f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
-            )
+            raise UserError(f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')")
         if place.hasmatch(pattern.split("/")):
             raise UserError(f"pattern '{pattern}' exists")
         if '*' in pattern:
-            raise UserError(
-                f"invalid pattern '{pattern}' ('*' not allowed for named matches)"
-            )
+            raise UserError(f"invalid pattern '{pattern}' ('*' not allowed for named matches)")
         if not name:
-            raise UserError(
-                f"invalid name '{name}'"
-            )
-        res = await self.call(
-            'org.labgrid.coordinator.add_place_match', place.name, pattern, name
-        )
+            raise UserError(f"invalid name '{name}'")
+        res = await self.call('org.labgrid.coordinator.add_place_match', place.name, pattern, name)
         if not res:
-            raise ServerError(
-                f"failed to add match {pattern} for place {place.name}"
-            )
+            raise ServerError(f"failed to add match {pattern} for place {place.name}")
 
     def check_matches(self, place):
         resources = []
@@ -585,16 +533,12 @@ class ClientSession(ApplicationSession):
         """Acquire a place, marking it unavailable for other clients"""
         place = self.get_place()
         if place.acquired:
-            raise UserError(
-                f"place {place.name} is already acquired by {place.acquired}"
-            )
+            raise UserError(f"place {place.name} is already acquired by {place.acquired}")
 
         if not self.args.allow_unmatched:
             self.check_matches(place)
 
-        res = await self.call(
-            'org.labgrid.coordinator.acquire_place', place.name
-        )
+        res = await self.call('org.labgrid.coordinator.acquire_place', place.name)
 
         if res:
             print(f"acquired place {place.name}")
@@ -627,9 +571,7 @@ class ClientSession(ApplicationSession):
             if not self.args.kick:
                 raise UserError(f"place {place.name} is acquired by a different user ({place.acquired}), use --kick if you are sure")  # pylint: disable=line-too-long
             print(f"warning: kicking user ({place.acquired})")
-        res = await self.call(
-            'org.labgrid.coordinator.release_place', place.name
-        )
+        res = await self.call('org.labgrid.coordinator.release_place', place.name)
         if not res:
             raise ServerError(f"failed to release place {place.name}")
 
@@ -656,10 +598,8 @@ class ClientSession(ApplicationSession):
             raise UserError(
                 f"place {place.name} is acquired by a different user ({place.acquired})"
             )
-        if not '/' in self.args.user:
-            raise UserError(
-                f"user {self.args.user} must be in <host>/<username> format"
-            )
+        if '/' not in self.args.user:
+            raise UserError(f"user {self.args.user} must be in <host>/<username> format")
         res = await self.call('org.labgrid.coordinator.allow_place', place.name, self.args.user)
         if not res:
             raise ServerError(f"failed to allow {self.args.user} for place {place.name}")
@@ -707,10 +647,9 @@ class ClientSession(ApplicationSession):
         if target:
             if self.args.state:
                 if self.args.verbose >= 2:
-                    from labgrid.stepreporter import StepReporter
+                    from .. import StepReporter
                     StepReporter()
-                from labgrid.strategy import Strategy
-                strategy = target.get_driver(Strategy)
+                strategy = target.get_driver("Strategy")
                 print(f"Transitioning into state {self.args.state}")
                 strategy.transition(self.args.state)
                 # deactivate console drivers so we are able to connect with microcom later
@@ -724,17 +663,39 @@ class ClientSession(ApplicationSession):
             RemotePlace(target, name=place.name)
         return target
 
+    def _get_driver_or_new(self, target, cls, *, name=None, activate=True, binding_map=None):
+        """
+        Helper function trying to get an active driver. If no such driver
+        exists, instanciates a new driver.
+        Driver instanciation works only for drivers without special kwargs.
+
+        Arguments:
+        target -- target to operate on
+        cls -- driver-class to retrieve active or instanciate new driver from
+        name -- optional name to use as a filter
+        activate -- activate the driver (default True)
+        """
+        try:
+            return target.get_driver(cls, name=name, activate=activate)
+        except NoDriverFoundError:
+            if isinstance(cls, str):
+                cls = target_factory.class_from_string(cls)
+            if binding_map:
+                target.set_binding_map(binding_map)
+
+            drv = cls(target, name=name)
+            if activate:
+                target.activate(drv)
+            return drv
+
     def power(self):
         place = self.get_acquired_place()
         action = self.args.action
         delay = self.args.delay
         target = self._get_target(place)
-        from ..driver.powerdriver import (NetworkPowerDriver, PDUDaemonDriver,
-                                          USBPowerDriver, SiSPMPowerDriver)
-        from ..driver.mqtt import TasmotaPowerDriver
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
-        from ..resource.remote import (NetworkUSBPowerPort, NetworkSiSPMPowerPort)
-        from ..resource.mqtt import TasmotaPowerPort
+        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort
+        from ..resource import TasmotaPowerPort
 
         drv = None
         try:
@@ -742,30 +703,15 @@ class ClientSession(ApplicationSession):
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, NetworkPowerPort):
-                    try:
-                        drv = target.get_driver(NetworkPowerDriver)
-                    except NoDriverFoundError:
-                        drv = NetworkPowerDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "NetworkPowerDriver")
                 elif isinstance(resource, NetworkUSBPowerPort):
-                    try:
-                        drv = target.get_driver(USBPowerDriver)
-                    except NoDriverFoundError:
-                        drv = USBPowerDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "USBPowerDriver")
                 elif isinstance(resource, NetworkSiSPMPowerPort):
-                    try:
-                        drv = target.get_driver(SiSPMPowerDriver)
-                    except NoDriverFoundError:
-                        drv = SiSPMPowerDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "SiSPMPowerDriver")
                 elif isinstance(resource, PDUDaemonPort):
-                    try:
-                        drv = target.get_driver(PDUDaemonDriver)
-                    except NoDriverFoundError:
-                        drv = PDUDaemonDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "PDUDaemonDriver")
                 elif isinstance(resource, TasmotaPowerPort):
-                    try:
-                        drv = target.get_driver(TasmotaPowerDriver)
-                    except NoDriverFoundError:
-                        drv = TasmotaPowerDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "TasmotaPowerDriver")
                 if drv:
                     break
 
@@ -773,30 +719,18 @@ class ClientSession(ApplicationSession):
             raise UserError("target has no compatible resource available")
         if delay is not None:
             drv.delay = delay
-        target.activate(drv)
         res = getattr(drv, action)()
         if action == 'get':
-            print(
-                f"power for place {place.name} is {'on' if res else 'off'}"
-            )
+            print(f"power for place {place.name} is {'on' if res else 'off'}")
 
     def digital_io(self):
         place = self.get_acquired_place()
         action = self.args.action
         name = self.args.name
         target = self._get_target(place)
-        from ..resource.modbus import ModbusTCPCoil
-        from ..resource.onewireport import OneWirePIO
-        from ..resource.remote import NetworkDeditecRelais8
-        from ..resource.remote import NetworkSysfsGPIO
-        from ..resource.remote import NetworkLXAIOBusPIO
-        from ..resource.remote import NetworkHIDRelay
-        from ..driver.modbusdriver import ModbusCoilDriver
-        from ..driver.onewiredriver import OneWirePIODriver
-        from ..driver.deditecrelaisdriver import DeditecRelaisDriver
-        from ..driver.gpiodriver import GpioDigitalOutputDriver
-        from ..driver.lxaiobusdriver import LXAIOBusPIODriver
-        from ..driver.usbhidrelay import HIDRelayDriver
+        from ..resource import ModbusTCPCoil, OneWirePIO
+        from ..resource.remote import (NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO,
+                                       NetworkHIDRelay)
 
         drv = None
         try:
@@ -804,47 +738,28 @@ class ClientSession(ApplicationSession):
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, ModbusTCPCoil):
-                    try:
-                        drv = target.get_driver(ModbusCoilDriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"coil": name})
-                        drv = ModbusCoilDriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name,
+                                                  binding_map={"coil": name})
                 elif isinstance(resource, OneWirePIO):
-                    try:
-                        drv = target.get_driver(OneWirePIODriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"port": name})
-                        drv = OneWirePIODriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name,
+                                                  binding_map={"port": name})
                 elif isinstance(resource, NetworkDeditecRelais8):
-                    try:
-                        drv = target.get_driver(DeditecRelaisDriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"relais": name})
-                        drv = DeditecRelaisDriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name,
+                                                  binding_map={"relais": name})
                 elif isinstance(resource, NetworkSysfsGPIO):
-                    try:
-                        drv = target.get_driver(GpioDigitalOutputDriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"gpio": name})
-                        drv = GpioDigitalOutputDriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name,
+                                                  binding_map={"gpio": name})
                 elif isinstance(resource, NetworkLXAIOBusPIO):
-                    try:
-                        drv = target.get_driver(LXAIOBusPIODriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"pio": name})
-                        drv = LXAIOBusPIODriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name,
+                                                  binding_map={"pio": name})
                 elif isinstance(resource, NetworkHIDRelay):
-                    try:
-                        drv = target.get_driver(HIDRelayDriver, name=name)
-                    except NoDriverFoundError:
-                        target.set_binding_map({"relay": name})
-                        drv = HIDRelayDriver(target, name=name)
+                    drv = self._get_driver_or_new(target, "HIDRelayDriver", name=name,
+                                                  binding_map={"relay": name})
                 if drv:
                     break
 
         if not drv:
             raise UserError("target has no compatible resource available")
-        target.activate(drv)
         if action == 'get':
             print(f"digital IO {name} for place {place.name} is {'high' if drv.get() else 'low'}")
         elif action == 'high':
@@ -873,10 +788,7 @@ class ClientSession(ApplicationSession):
         # check for valid resources
         assert port is not None, "Port is not set"
 
-        call = [
-            'microcom', '-s', str(resource.speed), '-t',
-            f"{host}:{port}"
-        ]
+        call = ['microcom', '-s', str(resource.speed), '-t', f"{host}:{port}"]
         if logfile:
             call.append(f"--logfile={logfile}")
         print(f"connecting to {resource} calling {' '.join(call)}")
@@ -911,9 +823,7 @@ class ClientSession(ApplicationSession):
         while True:
             res = await self._console(place, target, 10.0, logfile=self.args.logfile,
                                       loop=self.args.loop)
-            if res:
-                break
-            if not self.args.loop:
+            if res or not self.args.loop:
                 break
             await asyncio.sleep(1.0)
     console.needs_target = True
@@ -923,13 +833,10 @@ class ClientSession(ApplicationSession):
         target = self._get_target(place)
         if self.args.action == 'download' and not self.args.filename:
             raise UserError('not enough arguments for dfu download')
-        from ..driver.dfudriver import DFUDriver
-        try:
-            drv = target.get_driver(DFUDriver)
-        except NoDriverFoundError:
-            drv = DFUDriver(target, name=None)
+        drv = self._get_driver_or_new(target, "DFUDriver", activate=False)
         drv.dfu.timeout = self.args.wait
         target.activate(drv)
+
         if self.args.action == 'download':
             drv.download(self.args.altsetting, os.path.abspath(self.args.filename))
         if self.args.action == 'detach':
@@ -940,92 +847,61 @@ class ClientSession(ApplicationSession):
     def fastboot(self):
         place = self.get_acquired_place()
         args = self.args.fastboot_args
-        if not args:
-            raise UserError("not enough arguments for fastboot")
-        if args[0] == 'flash':
-            if len(args) < 3:
-                raise UserError("not enough arguments for fastboot flash")
-            args[2] = os.path.abspath(args[2])
-        elif args[0] == 'boot':
-            if len(args) < 2:
-                raise UserError("not enough arguments for fastboot boot")
-            args[1:] = map(os.path.abspath, args[1:])
         target = self._get_target(place)
-        from ..driver.fastbootdriver import AndroidFastbootDriver
-        try:
-            drv = target.get_driver(AndroidFastbootDriver)
-        except NoDriverFoundError:
-            drv = AndroidFastbootDriver(target, name=None)
+
+        drv = self._get_driver_or_new(target, "AndroidFastbootDriver", activate=False)
         drv.fastboot.timeout = self.args.wait
         target.activate(drv)
-        if args[0] == 'flash':
-            drv.flash(args[1], args[2])
-            return
-        if args[0] == 'boot':
-            drv.boot(args[1])
-            return
-        if args[0:2] == ['oem', 'exec']:
-            drv.run(" ".join(args[2:]))
-            return
-        drv(*args)
+
+        try:
+            action = args[0]
+            if action == 'flash':
+                drv.flash(args[1], os.path.abspath(args[2]))
+            elif action == 'boot':
+                args[1:] = map(os.path.abspath, args[1:])
+                drv.boot(args[1])
+            elif action == 'oem' and args[1] == 'exec':
+                drv.run(' '.join(args[2:]))
+            else:
+                drv(*args)
+        except IndexError:
+            raise UserError('not enough arguments for fastboot action')
+        except subprocess.CalledProcessError as e:
+            raise UserError(str(e))
 
     def flashscript(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        from ..driver.flashscriptdriver import FlashScriptDriver
-        from ..resource.remote import NetworkUSBFlashableDevice
 
-        drv = None
-        try:
-            drv = target.get_driver(FlashScriptDriver)
-        except NoDriverFoundError:
-            for resource in target.resources:
-                if isinstance(resource, NetworkUSBFlashableDevice):
-                    drv = FlashScriptDriver(target, name=None)
-                    break
-        if not drv:
-            raise UserError("target has no compatible resource available")
-        target.activate(drv)
+        drv = self._get_driver_or_new(target, "FlashScriptDriver")
         drv.flash(script=self.args.script, args=self.args.script_args)
 
     def bootstrap(self):
         place = self.get_acquired_place()
-        args = self.args.filename
         target = self._get_target(place)
-        from ..protocol.bootstrapprotocol import BootstrapProtocol
-        from ..driver.usbloader import IMXUSBDriver, MXSUSBDriver, RKUSBDriver
-        from ..driver.openocddriver import OpenOCDDriver
         from ..resource.remote import (NetworkMXSUSBLoader, NetworkIMXUSBLoader, NetworkRKUSBLoader,
                                        NetworkAlteraUSBBlaster)
+        from ..driver import OpenOCDDriver
         drv = None
         try:
-            drv = target.get_driver(BootstrapProtocol)
+            drv = target.get_driver("BootstrapProtocol")
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, NetworkIMXUSBLoader):
-                    try:
-                        drv = target.get_driver(IMXUSBDriver)
-                    except NoDriverFoundError:
-                        drv = IMXUSBDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "IMXUSBDriver", activate=False)
                     drv.loader.timeout = self.args.wait
                 elif isinstance(resource, NetworkMXSUSBLoader):
-                    try:
-                        drv = target.get_driver(MXSUSBDriver)
-                    except NoDriverFoundError:
-                        drv = MXSUSBDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "MXSUSBDriver", activate=False)
                     drv.loader.timeout = self.args.wait
                 elif isinstance(resource, NetworkAlteraUSBBlaster):
                     args = dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
                     try:
-                        drv = target.get_driver(OpenOCDDriver)
+                        drv = target.get_driver("OpenOCDDriver", activate=False)
                     except NoDriverFoundError:
                         drv = OpenOCDDriver(target, name=None, **args)
                     drv.interface.timeout = self.args.wait
                 elif isinstance(resource, NetworkRKUSBLoader):
-                    try:
-                        drv = target.get_driver(RKUSBDriver)
-                    except NoDriverFoundError:
-                        drv = RKUSBDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False)
                     drv.loader.timeout = self.args.wait
                 if drv:
                     break
@@ -1039,35 +915,26 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         action = self.args.action
         target = self._get_target(place)
-        from ..driver.usbsdmuxdriver import USBSDMuxDriver
-        from ..driver.usbsdwiredriver import USBSDWireDriver
         from ..resource.remote import NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice
 
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkUSBSDMuxDevice):
-                try:
-                    drv = target.get_driver(USBSDMuxDriver)
-                except NoDriverFoundError:
-                    drv = USBSDMuxDriver(target, name=None)
+                drv = self._get_driver_or_new(target, "USBSDMuxDriver")
             elif isinstance(resource, NetworkUSBSDWireDevice):
-                try:
-                    drv = target.get_driver(USBSDWireDriver)
-                except NoDriverFoundError:
-                    drv = USBSDWireDriver(target, name=None)
+                drv = self._get_driver_or_new(target, "USBSDWireDriver")
             if drv:
                 break
 
         if not drv:
             raise UserError("target has no compatible resource available")
-        target.activate(drv)
-        if isinstance(drv, USBSDWireDriver) and action in ['off', 'client', 'get']:
-            raise UserError("sd-wire does only supports setting 'dut' and 'host' modes")
-
         if action == 'get':
             print(drv.get_mode())
         else:
-            drv.set_mode(action)
+            try:
+                drv.set_mode(action)
+            except ExecutionError as e:
+                raise UserError(str(e))
 
     def usb_mux(self):
         place = self.get_acquired_place()
@@ -1079,30 +946,24 @@ class ClientSession(ApplicationSession):
         else:
             links = [links]
         target = self._get_target(place)
-        from ..driver.lxausbmuxdriver import LXAUSBMuxDriver
         from ..resource.remote import NetworkLXAUSBMux
 
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkLXAUSBMux):
-                try:
-                    drv = target.get_driver(LXAUSBMuxDriver)
-                except NoDriverFoundError:
-                    drv = LXAUSBMuxDriver(target, name=None)
+                drv = self._get_driver_or_new(target, "LXAUSBMuxDriver")
                 break
 
         if not drv:
             raise UserError("target has no compatible resource available")
-        target.activate(drv)
         drv.set_links(links)
 
     def _get_ip(self, place):
         target = self._get_target(place)
-        from ..resource import EthernetPort, NetworkService
         try:
-            resource = target.get_resource(EthernetPort)
+            resource = target.get_resource("EthernetPort")
         except NoResourceFoundError:
-            resource = target.get_resource(NetworkService)
+            resource = target.get_resource("NetworkService")
             return resource.address
 
         matches = []
@@ -1131,13 +992,8 @@ class ClientSession(ApplicationSession):
                 return
             resource = NetworkService(target, address=str(ip), username='root')
 
-        from ..driver.sshdriver import SSHDriver
-        try:
-            drv = target.get_driver(SSHDriver)
-        except NoDriverFoundError:
-            target.set_binding_map({"networkservice": resource.name})
-            drv = SSHDriver(target, name=resource.name)
-        target.activate(drv)
+        drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name,
+                                      binding_map={"networkservice": resource.name})
         return drv
 
     def ssh(self):
@@ -1202,8 +1058,6 @@ class ClientSession(ApplicationSession):
         quality = self.args.quality
         controls = self.args.controls
         target = self._get_target(place)
-        from ..driver.usbvideodriver import USBVideoDriver
-        from ..driver.httpvideodriver import HTTPVideoDriver
         from ..resource.httpvideostream import HTTPVideoStream
         from ..resource.udev import USBVideo
         from ..resource.remote import NetworkUSBVideo
@@ -1213,21 +1067,14 @@ class ClientSession(ApplicationSession):
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, (USBVideo, NetworkUSBVideo)):
-                    try:
-                        drv = target.get_driver(USBVideoDriver)
-                    except NoDriverFoundError:
-                        drv = USBVideoDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "USBVideoDriver")
                 elif isinstance(resource, HTTPVideoStream):
-                    try:
-                        drv = target.get_driver(HTTPVideoDriver)
-                    except NoDriverFoundError:
-                        drv = HTTPVideoDriver(target, name=None)
+                    drv = self._get_driver_or_new(target, "HTTPVideoDriver")
                 if drv:
                     break
         if not drv:
             raise UserError("target has no compatible resource available")
 
-        target.activate(drv)
         if quality == 'list':
             default, variants = drv.get_qualities()
             for name, caps in variants:
@@ -1239,32 +1086,14 @@ class ClientSession(ApplicationSession):
     def audio(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        from ..driver.usbaudiodriver import USBAudioInputDriver
-        drv = None
-        try:
-            drv = target.get_driver(USBAudioInputDriver)
-        except NoDriverFoundError:
-            drv = USBAudioInputDriver(target, name=None)
-        target.activate(drv)
+        drv = self._get_driver_or_new(target, "USBAudioInputDriver")
         drv.play()
 
     def _get_tmc(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        from ..driver.usbtmcdriver import USBTMCDriver
-        from ..resource.remote import NetworkUSBTMC
-        drv = None
-        for resource in target.resources:
-            if isinstance(resource, NetworkUSBTMC):
-                try:
-                    drv = target.get_driver(USBTMCDriver)
-                except NoDriverFoundError:
-                    drv = USBTMCDriver(target, name=None)
-                break
-        if not drv:
-            raise UserError("target has no compatible resource available")
-        target.activate(drv)
-        return drv
+
+        return self._get_driver_or_new(target, "USBTMCDriver")
 
     def tmc_command(self):
         drv = self._get_tmc()
@@ -1311,25 +1140,10 @@ class ClientSession(ApplicationSession):
     def write_image(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        drv = None
-        from ..resource.remote import NetworkUSBMassStorage, NetworkUSBSDMuxDevice, \
-            NetworkUSBSDWireDevice
-        from ..driver import USBStorageDriver
-        try:
-            drv = target.get_driver(USBStorageDriver)
-        except NoDriverFoundError:
-            for resource in target.resources:
-                if isinstance(resource, (NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice,
-                                         NetworkUSBMassStorage)):
-                    try:
-                        drv = target.get_driver(USBStorageDriver)
-                    except NoDriverFoundError:
-                        drv = USBStorageDriver(target, name=None)
-                    drv.storage.timeout = self.args.wait
-                    break
-        if not drv:
-            raise UserError("target has no compatible resource available")
+        drv = self._get_driver_or_new(target, "USBStorageDriver", activate=False)
+        drv.storage.timeout = self.args.wait
         target.activate(drv)
+
         try:
             drv.write_image(self.args.filename, partition=self.args.partition, skip=self.args.skip,
                             seek=self.args.seek, mode=self.args.write_mode)
@@ -1344,7 +1158,7 @@ class ClientSession(ApplicationSession):
         res = await self.call('org.labgrid.coordinator.create_reservation', filters, prio=prio)
         if res is None:
             raise ServerError("failed to create reservation")
-        ((token, config),) = res.items() # we get a one-item dict
+        ((token, config),) = res.items()  # we get a one-item dict
         config = filter_dict(config, Reservation, warn=True)
         res = Reservation(token=token, **config)
         if self.args.shell:
@@ -1401,7 +1215,7 @@ class ClientSession(ApplicationSession):
             lines = []
             for k, v in sorted(exported.items()):
                 lines.append(f"export {k}={shlex.quote(v)}")
-            data = "\n".join(lines)+"\n"
+            data = "\n".join(lines) + "\n"
         elif self.args.format is ExportFormat.JSON:
             data = json.dumps(exported)
         if self.args.filename == "-":
@@ -1685,7 +1499,7 @@ def main():
     subparser.set_defaults(func=ClientSession.release)
 
     subparser = subparsers.add_parser('release-from',
-                                     help="atomically release a place, but only if locked by a specific user")
+                                      help="atomically release a place, but only if locked by a specific user")
     subparser.add_argument("acquired",
                            metavar="HOST/USER",
                            help="User and host to match against when releasing")
@@ -1739,7 +1553,7 @@ def main():
     subparser.set_defaults(func=ClientSession.fastboot)
 
     subparser = subparsers.add_parser('flashscript',
-                                     help="run flash script")
+                                      help="run flash script")
     subparser.add_argument('script', help="Flashing script")
     subparser.add_argument('script_args', metavar='ARG', nargs=argparse.REMAINDER,
                            help='script arguments')
@@ -1893,7 +1707,6 @@ def main():
     else:
         args.leftover = leftover
 
-
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)
     if args.debug or args.verbose > 1:
@@ -1915,8 +1728,7 @@ def main():
         if args.place:
             role = find_role_by_place(env.config.get_targets(), args.place)
             if not role:
-                print(f"RemotePlace {args.place} not found in configuration file",
-                      file=sys.stderr)
+                print(f"RemotePlace {args.place} not found in configuration file", file=sys.stderr)
                 exit(1)
             print(f"Selected role {role} from configuration file")
         else:
@@ -1953,31 +1765,24 @@ def main():
                     args.func(session)
             finally:
                 session.loop.close()
-        except NoResourceFoundError as e:
+        except (NoResourceFoundError, NoDriverFoundError, InvalidConfigError) as e:
             if args.debug:
                 traceback.print_exc()
             else:
                 print(f"{parser.prog}: error: {e}", file=sys.stderr)
-            if e.found:
-                print("Found multiple resources but no name was given, available names:")
-                for res in e.found:
-                    print(f"{res.name}")
-            else:
-                print("This may be caused by disconnected exporter or wrong match entries.\nYou can use the 'show' command to review all matching resources.", file=sys.stderr)  # pylint: disable=line-too-long
-            exitcode = 1
-        except NoDriverFoundError as e:
-            if args.debug:
-                traceback.print_exc()
-            else:
-                print(f"{parser.prog}: error: {e}", file=sys.stderr)
-            print("This is likely caused by an error or missing driver in the environment configuration.", file=sys.stderr)  # pylint: disable=line-too-long
-            exitcode = 1
-        except InvalidConfigError as e:
-            if args.debug:
-                traceback.print_exc()
-            else:
-                print(f"{parser.prog}: error: {e}", file=sys.stderr)
-            print("This is likely caused by an error in the environment configuration or invalid\nresource information provided by the coordinator.", file=sys.stderr)  # pylint: disable=line-too-long
+
+            if isinstance(e, NoResourceFoundError):
+                if e.found:
+                    print("Found multiple resources but no name was given, available names:")
+                    for res in e.found:
+                        print(f"{res.name}")
+                else:
+                    print("This may be caused by disconnected exporter or wrong match entries.\nYou can use the 'show' command to review all matching resources.", file=sys.stderr)  # pylint: disable=line-too-long
+            elif isinstance(e, NoDriverFoundError):
+                print("This is likely caused by an error or missing driver in the environment configuration.", file=sys.stderr)  # pylint: disable=line-too-long
+            elif isinstance(e, InvalidConfigError):
+                print("This is likely caused by an error in the environment configuration or invalid\nresource information provided by the coordinator.", file=sys.stderr)  # pylint: disable=line-too-long
+
             exitcode = 1
         except ConnectionError as e:
             print(f"Could not connect to coordinator: {e}")

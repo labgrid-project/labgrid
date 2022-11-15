@@ -1,5 +1,8 @@
 #!/bin/sh
 
-cmd="labgrid-client -c /etc/labgrid.yaml"
+if test -z "$LG_ENV" && test -f "/etc/labgrid.yaml"; then
+	LG_ENV="/etc/labgrid.yaml";
+	export LG_ENV
+fi
 
-exec /opt/venvs/labgrid/bin/$cmd "$@"
+exec /opt/venvs/labgrid/bin/labgrid-client "$@"

@@ -17,7 +17,7 @@ This checklist roughly outlines the steps for new features, remove and add tasks
 - [ ] Documentation for the feature
 - [ ] Tests for the feature 
 <!---
-If you add a driver/resource or modifiy one:
+If you add a driver/resource or modify one:
 --->
 - [ ] The arguments and description in doc/configuration.rst have been updated
 <!---

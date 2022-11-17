@@ -61,6 +61,11 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         finally:
             self._cleanup_own_master()
 
+    @property
+    def skip_deactivate_on_export(self):
+        # We need to keep the connection to the target open.
+        return True
+
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
 

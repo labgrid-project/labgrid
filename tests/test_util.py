@@ -11,6 +11,7 @@ import pytest
 import logging
 
 from labgrid.util import diff_dict, flat_dict, filter_dict
+from labgrid.util.helper import get_free_port
 from labgrid.util.ssh import ForwardError, SSHConnection, sshmanager
 from labgrid.util.proxy import proxymanager
 from labgrid.util.managedfile import ManagedFile
@@ -132,7 +133,7 @@ def test_sshconnection_run_fail(connection_localhost):
 
 @pytest.mark.localsshmanager
 def test_sshconnection_port_forward_add_remove(connection_localhost):
-    port = 1337
+    port = get_free_port()
     test_string = "Hello World"
 
     local_port = connection_localhost.add_port_forward('localhost', port)
@@ -149,23 +150,42 @@ def test_sshconnection_port_forward_add_remove(connection_localhost):
 
 @pytest.mark.localsshmanager
 def test_sshconnection_port_forward_remove_raise(connection_localhost):
-    port = 1337
+    port = get_free_port()
 
     with pytest.raises(ForwardError):
         connection_localhost.remove_port_forward('localhost', port)
 
 @pytest.mark.localsshmanager
 def test_sshconnection_port_forward_add_duplicate(connection_localhost):
-    port = 1337
+    port = get_free_port()
 
     first_port = connection_localhost.add_port_forward('localhost', port)
     second_port = connection_localhost.add_port_forward('localhost', port)
     assert first_port == second_port
 
+
+@pytest.mark.localsshmanager
+def test_sshconnection_port_remote_forward_add_remove(connection_localhost):
+    rport = get_free_port()
+    lport = get_free_port()
+    test_string = "Hello World"
+
+    connection_localhost.add_remote_port_forward(rport, lport)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(("127.0.0.1", lport))
+    server_socket.listen(1)
+    send_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    send_socket.connect(("127.0.0.1", rport))
+    client_socket, address = server_socket.accept()
+    send_socket.send(test_string.encode('utf-8'))
+
+    assert client_socket.recv(16).decode("utf-8") == test_string
+    connection_localhost.remove_remote_port_forward(rport, lport)
+    assert connection_localhost._r_forwards == set()
+
+
 @pytest.mark.localsshmanager
 def test_sshconnection_put_file(connection_localhost, tmpdir):
-    port = 1337
-
     p = tmpdir.join("config.yaml")
     p.write(
         """Teststring"""
@@ -206,7 +226,7 @@ def test_sshmanager_remove_forward(sshmanager_fix):
     port = sshmanager_fix.request_forward("localhost", 'localhost', 3000)
     sshmanager_fix.remove_forward('localhost', 'localhost', 3000)
 
-    assert 3000 not in sshmanager_fix.get('localhost')._forwards
+    assert 3000 not in sshmanager_fix.get('localhost')._l_forwards
 
 @pytest.mark.localsshmanager
 def test_sshmanager_close(sshmanager_fix):

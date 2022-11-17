@@ -501,12 +501,15 @@ class Target:
             print("An exception occured during cleanup, call the cleanup() "
                   "method on targets yourself to handle exceptions explictly.")
             print(f"Error: {e}")
+            import traceback
+            traceback.print_exc()
 
     def export(self):
         """
         Export information from drivers.
 
-        All drivers are deactivated before being exported.
+        All drivers are deactivated before being exported, unless their
+        skip_deactivate_on_export property is true.
 
         The Strategy can decide for which driver the export method is called and
         with which name. Otherwise, all drivers are exported.
@@ -520,8 +523,10 @@ class Target:
 
         assert len(name_map) == len(set(name_map.values())), "duplicate export name"
 
-        # drivers need to be deactivated for export to avoid conflicts
-        self.deactivate_all_drivers()
+        # drivers may need to be deactivated for export to avoid conflicts
+        for drv in reversed(self.drivers):
+            if not drv.skip_deactivate_on_export:
+                self.deactivate(drv)
 
         export_vars = {}
         for driver in selection:

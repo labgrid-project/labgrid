@@ -31,6 +31,8 @@ New Features in 0.5.0
   an interupted U-Boot.
 - ProcessWrapper now supports an "input" argument to check_output() that allows
   a string to be passed to stdin of the process
+- The ``NetworkInterfaceDriver`` now supports local and remote SSH port
+  forwarding to/from the exporter.
 
 Bug fixes in 0.5.0
 ~~~~~~~~~~~~~~~~~~

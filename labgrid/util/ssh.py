@@ -135,7 +135,8 @@ class SSHConnection:
         init=False,
         validator=attr.validators.instance_of(str)
     )
-    _forwards = attr.ib(init=False, default=attr.Factory(dict))
+    _l_forwards = attr.ib(init=False, default=attr.Factory(dict))
+    _r_forwards = attr.ib(init=False, default=attr.Factory(set))
 
     def __attrs_post_init__(self):
         self._logger = logging.getLogger(f"{self}")
@@ -331,35 +332,64 @@ class SSHConnection:
         )
 
     @_check_connected
-    def add_port_forward(self, remote_host, remote_port):
+    def add_port_forward(self, remote_host, remote_port, local_port=None):
         """forward command"""
-        local_port = get_free_port()
+        if local_port is None:
+            local_port = get_free_port()
         destination = f"{remote_host}:{remote_port}"
 
-        if destination in self._forwards:
-            return self._forwards[destination]
+        if destination in self._l_forwards:
+            return self._l_forwards[destination]
         self._run_socket_command(
             "forward", [
                 f"-L{local_port}:{destination}"
             ]
         )
-        self._forwards[destination] = local_port
+        self._l_forwards[destination] = local_port
         return local_port
 
     @_check_connected
     def remove_port_forward(self, remote_host, remote_port):
         """cancel command"""
         destination = f"{remote_host}:{remote_port}"
-        local_port = self._forwards.pop(destination, None)
+        local_port = self._l_forwards.pop(destination, None)
 
         if local_port is None:
             raise ForwardError("Forward does not exist")
 
         self._run_socket_command(
             "cancel", [
-                f"-L{local_port}:localhost:{remote_port}"
+                f"-L{local_port}:{destination}"
             ]
         )
+
+    @_check_connected
+    def add_remote_port_forward(self, remote_port, local_port, remote_bind=None):
+        """remote forward command
+
+        Note that the remote socket is not *bound* to any specific IP by
+        default, making it reachable by the target. Also, 'GatewayPorts
+        clientspecified' needs to be configured in the remote host's
+        sshd_config.
+        """
+        if remote_bind is None:
+            remote_bind = "*"
+
+        forward = f"-R{remote_bind}:{remote_port:d}:localhost:{local_port:d}"
+
+        self._run_socket_command("forward", [forward])
+        self._r_forwards.add(forward)
+
+    @_check_connected
+    def remove_remote_port_forward(self, remote_port, local_port, remote_bind=None):
+        """remote cancel command"""
+        if remote_bind is None:
+            remote_bind = "*"
+
+        forward = f"-R{remote_bind}:{remote_port:d}:localhost:{local_port:d}"
+
+        self._r_forwards.remove(forward)
+        self._run_socket_command("cancel", [forward])
 
     def connect(self):
         if not self._connected:
@@ -460,6 +490,7 @@ class SSHConnection:
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            start_new_session=True,
         )
 
         self._logger.debug('Started keepalive for %s', self.host)
@@ -493,6 +524,14 @@ class SSHConnection:
 
     def cleanup(self):
         if self.isconnected():
+            # cancel local forwards
+            for destination, local_port in self._l_forwards.items():
+                self._run_socket_command("cancel", [f"-L{local_port}:{destination}"])
+            self._l_forwards.clear()
+            # cancel remote forwards
+            for forward in self._r_forwards:
+                self._run_socket_command("cancel", [forward])
+            self._r_forwards.clear()
             self.disconnect()
         shutil.rmtree(self._tmpdir)
 

@@ -172,6 +172,9 @@ Currently available are:
 ``gude8031``
   Controls a Gude Expert Power Control 8031 PDU via a simple HTTP API.
 
+``gude8225``
+  Controls a Gude Expert Power Control 8225 PDU via a simple HTTP API.
+
 ``gude8316``
   Controls a Gude Expert Power Control 8316 PDU via a simple HTTP API.
 

@@ -41,13 +41,17 @@ ENV CROSSBAR_DIR=/opt/crossbar
 
 RUN set -e ;\
     cd /opt/labgrid ;\
-    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir ".[crossbar]"
+    pip3 install virtualenv ;\
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir . ;\
+    virtualenv -p python3 crossbar-venv ;\
+    crossbar-venv/bin/pip3 install -r crossbar-requirements.txt ;\
+    sed -i "s#^  executable: .*\$#  executable: python3#" .crossbar/config-anonymous.yaml
 
 VOLUME /opt/crossbar
 
 EXPOSE 20408
 
-CMD ["crossbar", "start", "--config", "/opt/labgrid/.crossbar/config-anonymous.yaml"]
+CMD ["/opt/labgrid/crossbar-venv/bin/crossbar", "start", "--config", "/opt/labgrid/.crossbar/config-anonymous.yaml"]
 
 #
 # Exporter

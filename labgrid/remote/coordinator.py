@@ -130,7 +130,12 @@ class CoordinatorComponent(ApplicationSession):
         self.save_later()
 
         enable_tcp_nodelay(self)
-        self.join(self.config.realm, ["ticket"], "coordinator")
+        self.join(
+            self.config.realm,
+            authmethods=["anonymous", "ticket"],
+            authid="coordinator",
+            authextra={"authid": "coordinator"},
+        )
 
     def onChallenge(self, challenge):
         return "dummy-ticket"
@@ -383,7 +388,7 @@ class CoordinatorComponent(ApplicationSession):
         print('join')
         pprint(session_details)
         session = session_details['session']
-        authid = session_details['authid']
+        authid = session_details['authextra'].get('authid') or session_details['authid']
         if authid.startswith('client/'):
             session = ClientSession(self, session, authid)
         elif authid.startswith('exporter/'):

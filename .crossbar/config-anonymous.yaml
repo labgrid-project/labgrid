@@ -1,24 +1,9 @@
-# Legacy crossbar configuration with dynamic ticket authentication.
-# Please use .crossbar/config-anonymous.yaml instead.
 version: 2
 workers:
 - type: router
   realms:
   - name: realm1
     roles:
-    - name: authenticator
-      permissions:
-      - uri: org.labgrid.authenticate
-        match: exact
-        allow:
-          call: false
-          register: true
-          publish: false
-          subscribe: false
-        disclose:
-          caller: false
-          publisher: false
-        cache: true
     - name: public
       permissions:
       - uri: ''
@@ -44,14 +29,9 @@ workers:
       ws:
         type: websocket
         auth:
-          ticket:
-            type: dynamic
-            authenticator: org.labgrid.authenticate
-  components:
-  - type: class
-    classname: labgrid.remote.authenticator.AuthenticatorSession
-    realm: realm1
-    role: authenticator
+          anonymous:
+            type: static
+            role: public
 - id: coordinator
   type: guest
   executable: python3

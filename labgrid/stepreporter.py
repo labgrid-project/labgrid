@@ -6,6 +6,15 @@ from .step import steps
 class StepReporter:
     _started = False
 
+    def __init__(self):
+        from warnings import warn
+
+        warn(
+            "StepReporter should not be instantiated, use StepReporter.start()/.stop() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
     @classmethod
     def start(cls):
         """starts the StepReporter"""

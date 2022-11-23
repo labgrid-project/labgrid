@@ -1362,8 +1362,7 @@ def main():
         stream=sys.stderr,
     )
 
-    steps = StepLogger()
-    steps.start()
+    StepLogger.start()
 
     # Support both legacy variables and properly namespaced ones
     place = os.environ.get('PLACE', None)

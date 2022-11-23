@@ -123,26 +123,27 @@ class StepFormatter:
         return f"{indent}{line}"
 
 class StepLogger:
-    instance = None
-
-    def __init__(self):
-        self.logger = logging.getLogger("StepLogger")
-        steps.subscribe(self.notify)
+    _started = False
+    _logger = None
 
     @classmethod
     def start(cls):
         """starts the StepLogger"""
-        assert cls.instance is None
-        cls.instance = cls()
+        assert not cls._started
+        if cls._logger is None:
+            cls._logger = logging.getLogger("StepLogger")
+        steps.subscribe(cls.notify)
+        cls._started = True
 
     @classmethod
     def stop(cls):
         """stops the StepLogger"""
-        assert cls.instance is not None
+        assert cls._started
         steps.unsubscribe(cls.notify)
-        cls.instance = None
+        cls._started = False
 
-    def notify(self, event):
+    @classmethod
+    def notify(cls, event):
         level = logging.INFO
         step = event.step
         extra = {"stepevent": event}
@@ -154,4 +155,4 @@ class StepLogger:
             else:
                 extra["console"] = True
 
-        self.logger.log(level, event, extra=extra)
+        cls._logger.log(level, event, extra=extra)

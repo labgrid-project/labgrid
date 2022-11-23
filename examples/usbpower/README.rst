@@ -40,8 +40,8 @@ on port 3.
 Software Setup
 --------------
 
-The following expects that labgrid with crossbar support is installed in the
-active virtualenv.
+The following expects that labgrid is installed in the
+active virtualenv and crossbar is installed into a separate virtualenv.
 The ``uhubctl`` and ``usbsdmux`` tools need to be installed on the system.
 
 Library Example
@@ -116,7 +116,7 @@ Remote Setup
 ------------
 
 To access resources remotely, you first need to start the coordinator::
-  $ crossbar start --logformat none --config config-anonymous.yaml
+  $ crossbar-venv/bin/crossbar start --logformat none --config config-anonymous.yaml
   [...]
   Coordinator ready.
 
@@ -232,4 +232,5 @@ Remote pytest Example
 ---------------------
 
 Run ``pytest --lg-env remote.yaml -v``.
+
 You should get output very similar to the local pytest example above.

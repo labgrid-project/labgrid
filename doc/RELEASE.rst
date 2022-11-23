@@ -81,6 +81,10 @@ Test the upload by using pypi dev as a download source
 
 ::
 
+   virtualenv -p python3 labgrid-crossbar-release-<your-version-number>
+   labgrid-crossbar-release-<your-version-number>/bin/pip install --upgrade pip
+   labgrid-crossbar-release-<your-version-number>/bin/pip install -r crossbar-requirements.txt
+
    virtualenv -p python3 labgrid-release-<your-version-number>
    source labgrid-release-<your-version-number>/bin/activate
    pip install --upgrade pip setuptools wheel
@@ -91,7 +95,7 @@ And optionally run the tests:
 ::
 
    pip install ".[dev]"
-   pytest tests
+   pytest tests --crossbar-venv labgrid-crossbar-release-<your-version-number>
 
 9. Upload to pypi
 =================

@@ -126,6 +126,15 @@ class StepLogger:
     _started = False
     _logger = None
 
+    def __init__(self):
+        from warnings import warn
+
+        warn(
+            "StepLogger should not be instantiated, use StepReporter.start()/.stop() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
     @classmethod
     def start(cls):
         """starts the StepLogger"""

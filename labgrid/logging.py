@@ -92,13 +92,13 @@ class StepFormatter:
 
     def get_prefix(self, event):
         if event.step.exception:
-            return "!"
+            return "⚠"
         elif event.data.get("state") == "start":
             return "→"
         elif event.data.get("state") == "stop":
             return "←"
         elif event.data.get("skip", None):
-            return "S"
+            return "↓"
         else:
             return ""
 

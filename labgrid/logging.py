@@ -43,7 +43,7 @@ class StepFormatter:
         result = []
         for part in parts:
             result.append(self.re_vt100.sub('', part.decode("utf-8", errors="replace")))
-        return "␍␤\n".join(result)
+        return "␍␊\n".join(result)
 
     def format_console_step(self, record):
         step = record.stepevent.step
@@ -55,7 +55,7 @@ class StepFormatter:
         else:
             dirind = ">"
             message = step.args["data"].decode('utf-8')
-            message = f"␍␤\n{indent}{step.source} {dirind} ".join(message.split('\n'))
+            message = f"␍␊\n{indent}{step.source} {dirind} ".join(message.split('\n'))
         return f"{indent}{step.source} {dirind} {message}"
 
     @staticmethod

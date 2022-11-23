@@ -48,10 +48,6 @@ dynamic = ["version"]  # via setuptools_scm
 "Bug Tracker" = "https://github.com/labgrid-project/labgrid/issues"
 
 [project.optional-dependencies]
-crossbar = [
-    "crossbar==21.3.1",
-    "werkzeug>=0.14.1,<2.1",
-]
 doc = [
     "docutils==0.17.1",
     "Sphinx==4.2.0",
@@ -75,10 +71,6 @@ snmp = [
 vxi11 = ["python-vxi11==0.9"]
 xena = ["xenavalkyrie==3.0.1"]
 deb = [
-    # labgrid[crossbar]
-    "crossbar==21.3.1",
-    "werkzeug>=0.14.1,<2.1",
-
     # labgrid[modbus]
     "pyModbusTCP==0.1.10",
 
@@ -91,10 +83,6 @@ deb = [
 ]
 dev = [
     # references to other optional dependency groups
-    # labgrid[crossbar]
-    "crossbar==21.3.1",
-    "werkzeug>=0.14.1,<2.1",
-
     # labgrid[doc]
     "docutils==0.17.1",
     "Sphinx==4.2.0",

@@ -14,7 +14,7 @@ logging.basicConfig(
 )
 
 # show labgrid steps on the console
-StepReporter()
+StepReporter.start()
 
 e = labgrid.Environment('import-gpio.yaml')
 t = e.get_target()

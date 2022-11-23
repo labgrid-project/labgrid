@@ -210,7 +210,7 @@ def main():
 
     env = Environment(config_file=args.config)
 
-    StepReporter()
+    StepReporter.start()
 
     manager = Manager(env, args)
     if not manager.configure():

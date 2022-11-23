@@ -662,7 +662,7 @@ class ClientSession(ApplicationSession):
             if self.args.state:
                 if self.args.verbose >= 2:
                     from .. import StepReporter
-                    StepReporter()
+                    StepReporter.start()
                 strategy = target.get_driver("Strategy")
                 print(f"Transitioning into state {self.args.state}")
                 strategy.transition(self.args.state)

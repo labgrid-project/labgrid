@@ -15,7 +15,7 @@ logging.basicConfig(
 )
 
 # show labgrid steps on the console
-StepReporter()
+StepReporter.start()
 
 t = labgrid.Target('main')
 r = labgrid.resource.udev.DeditecRelais8(t, name=None, index=1)

@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 
 # show labgrid steps on the console
-StepReporter()
+StepReporter.start()
 
 def run_once(target):
     s = target.get_driver('BareboxStrategy')

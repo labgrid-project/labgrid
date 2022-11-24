@@ -164,7 +164,7 @@ extra virtualenv and install the dependencies via the crossbar `extra`.
     crossbar-venv $ cd labgrid && pip install ".[crossbar]"
 
 All necessary dependencies should be installed now, we can start the coordinator
-by running ``crossbar start`` inside of the repository.
+by running ``crossbar start --config config-anonymous.yaml`` inside the repository.
 
 .. note:: This is possible because the labgrid repository contains the crossbar
           configuration the coordinator in the ``.crossbar`` folder.
@@ -172,7 +172,7 @@ by running ``crossbar start`` inside of the repository.
           applications, which labgrid plugs into.
 
 .. note:: For long running deployments, you should copy and customize the
-	  ``.crossbar/config.yaml`` file for your use case. This includes
+	  ``.crossbar/config-anonymous.yaml`` file for your use case. This includes
 	  setting a different ``workdir`` and may include changing the running
 	  port.
 
@@ -322,8 +322,8 @@ Follow these instructions to install the systemd files on your machine(s):
    virtual environments of the coordinator and exporter.
 #. Create the coordinator configuration file referenced in the ``ExecStart``
    option of the :file:`labgrid-coordinator.service` file by using
-   :file:`.crossbar/config.yaml` as a starting point. You most likely want to
-   make sure that the ``workdir`` option matches the path given via the
+   :file:`.crossbar/config-anonymous.yaml` as a starting point. You most likely
+   want to make sure that the ``workdir`` option matches the path given via the
    ``--cbdir`` option in the service file; see
    :ref:`remote-getting-started-coordinator` for further information.
 #. Adjust the ``SupplementaryGroups`` option in the

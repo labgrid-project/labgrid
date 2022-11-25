@@ -27,18 +27,18 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
-    "ansicolors==1.1.8",
-    "attrs==21.4.0",
-    "autobahn==21.3.1",
-    "jinja2==3.0.2",
-    "pexpect==4.8.0",
+    "ansicolors>=1.1.8",
+    "attrs>=21.4.0",
+    "autobahn>=21.3.1",
+    "jinja2>=3.0.2",
+    "pexpect>=4.8.0",
     "pyserial-labgrid>=3.4.0.1",
-    "pytest==7.2.2",
-    "pyudev==0.22.0",
-    "pyusb==1.2.1",
-    "PyYAML==5.4.1",
-    "requests==2.26.0",
-    "xmodem==0.4.6",
+    "pytest>=7.0.0",
+    "pyudev>=0.22.0",
+    "pyusb>=1.2.1",
+    "PyYAML>=5.4.1",
+    "requests>=2.26.0",
+    "xmodem>=0.4.6",
 ]
 dynamic = ["version"]  # via setuptools_scm
 
@@ -47,85 +47,79 @@ dynamic = ["version"]  # via setuptools_scm
 "Bug Tracker" = "https://github.com/labgrid-project/labgrid/issues"
 
 [project.optional-dependencies]
-doc = [
-    "docutils==0.17.1",
-    "Sphinx==4.2.0",
-    "sphinx_rtd_theme==1.0.0",
-]
-docker = ["docker==5.0.2"]
-graph = ["graphviz==0.17.0"]
-kasa = ["python-kasa==0.4.0"]
-modbus = ["pyModbusTCP==0.1.10"]
-modbusrtu = ["minimalmodbus==1.0.2"]
-mqtt = ["paho-mqtt==1.5.1"]
-onewire = ["onewire==0.2"]
+doc = ["sphinx_rtd_theme>=1.0.0"]
+docker = ["docker>=5.0.2"]
+graph = ["graphviz>=0.17.0"]
+kasa = ["python-kasa>=0.4.0"]
+modbus = ["pyModbusTCP>=0.1.10"]
+modbusrtu = ["minimalmodbus>=1.0.2"]
+mqtt = ["paho-mqtt>=1.5.1"]
+onewire = ["onewire>=0.2"]
 pyvisa = [
-    "pyvisa==1.11.3",
-    "PyVISA-py==0.5.2",
+    "pyvisa>=1.11.3",
+    "PyVISA-py>=0.5.2",
 ]
 snmp = [
-    "pysnmp==4.4.12",
-    "pysnmp-mibs==0.1.6",
+    "pysnmp>=4.4.12",
+    "pysnmp-mibs>=0.1.6",
 ]
-vxi11 = ["python-vxi11==0.9"]
-xena = ["xenavalkyrie==3.0.1"]
+vxi11 = ["python-vxi11>=0.9"]
+xena = ["xenavalkyrie>=3.0.1"]
 deb = [
     # labgrid[modbus]
-    "pyModbusTCP==0.1.10",
+    "pyModbusTCP>=0.1.10",
 
     # labgrid[onewire]
-    "onewire==0.2",
+    "onewire>=0.2",
 
     # labgrid[snmp]
-    "pysnmp==4.4.12",
-    "pysnmp-mibs==0.1.6",
+    "pysnmp>=4.4.12",
+    "pysnmp-mibs>=0.1.6",
 ]
 dev = [
     # references to other optional dependency groups
     # labgrid[doc]
-    "docutils==0.17.1",
-    "Sphinx==4.2.0",
-    "sphinx_rtd_theme==1.0.0",
+    "sphinx_rtd_theme>=1.0.0",
 
     # labgrid[docker]
-    "docker==5.0.2",
+    "docker>=5.0.2",
 
     # labgrid[graph]
-    "graphviz==0.17.0",
+    "graphviz>=0.17.0",
 
     # labgrid[kasa]
-    "python-kasa==0.4.0",
+    "python-kasa>=0.4.0",
 
     # labgrid[modbus]
-    "pyModbusTCP==0.1.10",
+    "pyModbusTCP>=0.1.10",
 
     # labgrid[modbusrtu]
-    "minimalmodbus==1.0.2",
+    "minimalmodbus>=1.0.2",
 
     # labgrid[mqtt]
-    "paho-mqtt==1.5.1",
+    "paho-mqtt>=1.5.1",
 
     # labgrid[onewire]
-    "onewire==0.2",
+    "onewire>=0.2",
 
     # labgrid[pyvisa]
-    "pyvisa==1.11.3",
-    "PyVISA-py==0.5.2",
+    "pyvisa>=1.11.3",
+    "PyVISA-py>=0.5.2",
 
     # labgrid[snmp]
-    "pysnmp==4.4.12",
-    "pysnmp-mibs==0.1.6",
+    "pysnmp>=4.4.12",
+    "pysnmp-mibs>=0.1.6",
 
     # labgrid[vxi11]
-    "python-vxi11==0.9",
+    "python-vxi11>=0.9",
 
     # additional dev dependencies
-    "psutil==5.8.0",
-    "pytest-cov==3.0.0",
-    "pytest-dependency==0.5.1",
-    "pytest-isort==2.0.0",
-    "pytest-mock==3.6.1",
-    "pytest-pylint==0.18.0",
+    "psutil>=5.8.0",
+    "pytest-cov>=3.0.0",
+    "pytest-dependency>=0.5.1",
+    "pytest-isort>=2.0.0",
+    "pytest-mock>=3.6.1",
+    "pytest-pylint>=0.18.0",
 ]
 
 [project.scripts]

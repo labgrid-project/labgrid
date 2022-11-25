@@ -177,6 +177,9 @@ testpaths = [
 ]
 addopts = "-p no:labgrid"
 
+[tool.pylint.MASTER]
+ignore-paths = ["labgrid/remote/authenticator.py"]
+
 [tool.pylint.imports]
 ignored-modules = ["gi"]
 

@@ -1,0 +1,10 @@
+targets:
+  main:
+    resources:
+      NetworkService:
+        address: "dut.address"
+    drivers:
+      SSHDriver:
+        username: "root"
+        password: "pass"
+        #keyfile: "/path/to/keyfile"

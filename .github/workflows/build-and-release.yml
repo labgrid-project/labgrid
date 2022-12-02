@@ -1,0 +1,22 @@
+name: build and publish
+
+on: workflow_call
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    continue-on-error: false
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+    - name: Install python dependencies
+      run: |
+        python -m pip install --upgrade pip build
+    - name: Build sdist
+      run: |
+        python -m build -s
+    - name: Publish package
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}

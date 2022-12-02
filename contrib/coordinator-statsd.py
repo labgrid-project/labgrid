@@ -14,27 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# All metrics are optionally prefixed by a set of tag values which can be
+# specified with the --tag command line option.
 #
 # This program will connect to a labgrid coordinator and report the following
 # stats about places to a statsd server on a periodic basis:
 #
-#   labgrid.places_acquired (set): The number of places that are currently
-#                                  acquired
-#   labgrid.places_total (set): The number of places attached to the
-#                               coordinator
+#   labgrid.places.[TAG[.TAG]].acquired (gauge): The number of places that are
+#                                                currently acquired with this
+#                                                set of tags
+#   labgrid.places.[TAG[.TAG]].total (gauge): The number of places attached to
+#                                             the coordinator with this set of
+#                                             tags
 #
 # It also can report metrics about reservations with the following format:
 #
-#   labgrid.reservations.GROUP.[TAG[.TAG]].STATE (set): The number of
-#                                                      reservations in the
-#                                                      given STATE
+#   labgrid.reservations.GROUP.[TAG[.TAG]].STATE (gauge): The number of
+#                                                         reservations in the
+#                                                         given STATE
 #
 # where:
 #   GROUP is the name of the filter group used for the reservation. Currently,
 #   just "main"
-#
-#   TAG is values of the tags of interest. You can specify which tag values are
-#   shown with the --tag command-line option
 #
 #   STATE is the state of the reservation, e.g. "acquired", "waiting", etc.
 
@@ -45,9 +46,15 @@ import statsd
 import os
 import labgrid.remote.client
 import time
+import asyncio
 
 
-async def report_reservations(session, statsd_client, tags):
+def inc_gauge(gauges, key):
+    gauges.setdefault(key, 0)
+    gauges[key] += 1
+
+
+async def report_reservations(session, tags, gauges):
     reservations = await session.call("org.labgrid.coordinator.get_reservations")
 
     for token, config in reservations.items():
@@ -59,27 +66,25 @@ async def report_reservations(session, statsd_client, tags):
             groups = {"": {}}
 
         for group_name, group in groups.items():
-            path = (
-                ["reservations", group_name]
-                + [group.get(t, "") for t in tags]
-                + [state]
+            inc_gauge(
+                gauges,
+                ".".join(
+                    ["reservations", group_name]
+                    + [group.get(t, "") for t in tags]
+                    + [state]
+                ),
             )
-            statsd_client.set(".".join(path), token)
 
 
-async def report_places(session, statsd_client):
+async def report_places(session, tags, gauges):
     acquired_count = 0
     total_count = 0
 
     for name, place in session.places.items():
-        statsd_client.set("places_total", name)
+        prefix = ".".join(["places"] + [place.tags.get(t, "") for t in tags])
+        inc_gauge(gauges, f"{prefix}.total")
         if place.acquired:
-            statsd_client.set("places_acquired", name)
-
-
-async def report(session, statsd_client, tags):
-    await report_reservations(session, statsd_client, tags)
-    await report_places(session, statsd_client)
+            inc_gauge(gauges, f"{prefix}.acquired")
 
 
 def main():
@@ -136,34 +141,61 @@ def main():
 
     args = parser.parse_args()
 
-    if args.statsd_protocol == "udp":
-        statsd_client = statsd.StatsClient(
-            host=args.statsd_server,
-            port=args.statsd_port,
-            prefix=args.statsd_prefix,
-        )
-    elif args.statsd_protocol == "tcp":
-        statsd_client = statsd.TCPStatsClient(
-            host=args.statsd_server,
-            port=args.statsd_port,
-            prefix=args.statsd_prefix,
-        )
+    statsd_client = None
+    gauges = {}
+
+    next_time = time.monotonic()
 
     while True:
-        next_time = time.monotonic() + args.period
-        extra = {}
-        session = labgrid.remote.client.start_session(
-            args.crossbar,
-            os.environ.get("LG_CROSSBAR_REALM", "realm1"),
-            extra,
-        )
+        if statsd_client is None:
+            if args.statsd_protocol == "udp":
+                statsd_client = statsd.StatsClient(
+                    host=args.statsd_server,
+                    port=args.statsd_port,
+                    prefix=args.statsd_prefix,
+                )
+            elif args.statsd_protocol == "tcp":
+                statsd_client = statsd.TCPStatsClient(
+                    host=args.statsd_server,
+                    port=args.statsd_port,
+                    prefix=args.statsd_prefix,
+                )
 
-        with statsd_client.pipeline() as pipe:
-            session.loop.run_until_complete(report(session, pipe, args.tags))
+        # Reset all known gauges to 0
+        for key in gauges:
+            gauges[key] = 0
 
         sleep_time = next_time - time.monotonic()
         if sleep_time > 0:
             time.sleep(sleep_time)
+
+        next_time = time.monotonic() + args.period
+        try:
+            extra = {}
+            session = labgrid.remote.client.start_session(
+                args.crossbar,
+                os.environ.get("LG_CROSSBAR_REALM", "realm1"),
+                extra,
+            )
+
+            session.loop.run_until_complete(
+                asyncio.gather(
+                    report_places(session, args.tags, gauges),
+                    report_reservations(session, args.tags, gauges),
+                )
+            )
+        except labgrid.remote.client.Error as e:
+            print(f"Error communicating with labgrid: {e}")
+            continue
+
+        try:
+            with statsd_client.pipeline() as pipe:
+                for k, v in gauges.items():
+                    pipe.gauge(k, v)
+        except OSError as e:
+            print(f"Error communication with statsd server: {e}")
+            statsd_client = None
+            continue
 
 
 if __name__ == "__main__":

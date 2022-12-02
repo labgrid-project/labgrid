@@ -1,0 +1,17 @@
+name: unit tests
+
+on: [push, pull_request]
+
+jobs:
+  push-pr-unit-tests:
+    name: unit tests
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+    uses: ./.github/workflows/reusable-unit-tests.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+  push-pr-unit-tests-docker:
+    name: Docker Unit Tests
+    uses: ./.github/workflows/reusable-unit-tests-docker.yml

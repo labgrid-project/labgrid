@@ -56,7 +56,8 @@ class StepFormatter:
             dirind = ">"
             message = step.args["data"].decode('utf-8')
             message = f"␍␊\n{indent}{step.source} {dirind} ".join(message.split('\n'))
-        return f"{indent}{step.source} {dirind} {message}"
+        if message:
+            return f"{indent}{step.source} {dirind} {message}"
 
     @staticmethod
     def format_arguments(args):

@@ -448,7 +448,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _cleanup_own_master(self):
         """Exit the controlmaster and delete the tmpdir"""
-        complete_cmd = f"ssh -x -o ControlPath={self.control} -O exit -p {self.networkservice.port} -l {self.networkservice.username} {self.networkservice.address}".split(' ')  # pylint: disable=line-too-long
+        complete_cmd = f"ssh -x -o ControlPath={self.control.replace('%', '%%')} -O exit -p {self.networkservice.port} -l {self.networkservice.username} {self.networkservice.address}".split(' ')  # pylint: disable=line-too-long
         res = subprocess.call(
             complete_cmd,
             stdin=subprocess.DEVNULL,

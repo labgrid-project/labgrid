@@ -27,6 +27,9 @@ class Config:
         except YAMLError as err:
             raise InvalidConfigError(f"Error in configuration file: {err}")
 
+        if self.data is None:
+            raise InvalidConfigError("Configuration file is empty")
+
         substitutions = {
             'BASE': self.base,
         }

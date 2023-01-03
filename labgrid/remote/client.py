@@ -488,7 +488,7 @@ class ClientSession(ApplicationSession):
                     f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
                 )
             if place.hasmatch(pattern.split("/")):
-                print(f"pattern '{pattern}' exists, skipping")
+                print(f"pattern '{pattern}' exists, skipping", file=sys.stderr)
                 continue
             res = await self.call('org.labgrid.coordinator.add_place_match', place.name, pattern)
             if not res:
@@ -505,7 +505,7 @@ class ClientSession(ApplicationSession):
                     f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
                 )
             if not place.hasmatch(pattern.split("/")):
-                print(f"pattern '{pattern}' not found, skipping")
+                print(f"pattern '{pattern}' not found, skipping", file=sys.stderr)
             res = await self.call('org.labgrid.coordinator.del_place_match', place.name, pattern)
             if not res:
                 raise ServerError(f"failed to delete match {pattern} for place {place.name}")
@@ -834,7 +834,7 @@ class ClientSession(ApplicationSession):
                     await asyncio.wait_for(p.wait(), 1.0)
                 raise
         if p.returncode:
-            print("connection lost")
+            print("connection lost", file=sys.stderr)
             return False
         return True
 
@@ -1002,7 +1002,7 @@ class ClientSession(ApplicationSession):
         matches.sort()
         newest = matches[-1][1]
         if len(ips) > 1:
-            print(f"multiple IPs found: {ips}")
+            print(f"multiple IPs found: {ips}", file=sys.stderr)
             return None
         return newest[0]
 
@@ -1027,9 +1027,9 @@ class ClientSession(ApplicationSession):
 
         res = drv.interact(self.args.leftover)
         if res == 255:
-            print("connection lost (SSH error)")
+            print("connection lost (SSH error)", file=sys.stderr)
         elif res:
-            print(f"connection lost (remote exit code {res})")
+            print(f"connection lost (remote exit code {res})", file=sys.stderr)
 
     def scp(self):
         drv = self._get_ssh()
@@ -1048,7 +1048,7 @@ class ClientSession(ApplicationSession):
 
     def forward(self):
         if not self.args.local and not self.args.remote:
-            print("Nothing to forward")
+            print("Nothing to forward", file=sys.stderr)
             return
 
         drv = self._get_ssh()
@@ -1077,7 +1077,7 @@ class ClientSession(ApplicationSession):
         args = ['telnet', str(ip)]
         res = subprocess.call(args)
         if res:
-            print("connection lost")
+            print("connection lost", file=sys.stderr)
 
     def video(self):
         place = self.get_acquired_place()
@@ -1674,7 +1674,7 @@ def main():
 
     tmc_parser = subparsers.add_parser('tmc', help="control a USB TMC device")
     tmc_parser.add_argument('--name', '-n', help="optional resource name")
-    tmc_parser.set_defaults(func=lambda _: tmc_parser.print_help())
+    tmc_parser.set_defaults(func=lambda _: tmc_parser.print_help(file=sys.stderr))
     tmc_subparsers = tmc_parser.add_subparsers(
         dest='subcommand',
         title='available subcommands',
@@ -1758,7 +1758,7 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
 
     if not args.config and args.state:
-        print("Setting the state requires a configuration file")
+        print("Setting the state requires a configuration file", file=sys.stderr)
         exit(1)
 
     if args.proxy:
@@ -1812,15 +1812,15 @@ def main():
                 session.loop.close()
         except (NoResourceFoundError, NoDriverFoundError, InvalidConfigError) as e:
             if args.debug:
-                traceback.print_exc()
+                traceback.print_exc(file=sys.stderr)
             else:
                 print(f"{parser.prog}: error: {e}", file=sys.stderr)
 
             if isinstance(e, NoResourceFoundError):
                 if e.found:
-                    print("Found multiple resources but no name was given, available names:")
+                    print("Found multiple resources but no name was given, available names:", file=sys.stderr)
                     for res in e.found:
-                        print(f"{res.name}")
+                        print(f"{res.name}", file=sys.stderr)
                 else:
                     print("This may be caused by disconnected exporter or wrong match entries.\nYou can use the 'show' command to review all matching resources.", file=sys.stderr)  # pylint: disable=line-too-long
             elif isinstance(e, NoDriverFoundError):
@@ -1830,22 +1830,22 @@ def main():
 
             exitcode = 1
         except ConnectionError as e:
-            print(f"Could not connect to coordinator: {e}")
+            print(f"Could not connect to coordinator: {e}", file=sys.stderr)
             exitcode = 1
         except Error as e:
             if args.debug:
-                traceback.print_exc()
+                traceback.print_exc(file=sys.stderr)
             else:
                 print(f"{parser.prog}: error: {e}", file=sys.stderr)
             exitcode = 1
         except KeyboardInterrupt:
             exitcode = 1
         except Exception:  # pylint: disable=broad-except
-            traceback.print_exc()
+            traceback.print_exc(file=sys.stderr)
             exitcode = 2
         exit(exitcode)
     else:
-        parser.print_help()
+        parser.print_help(file=sys.stderr)
 
 
 if __name__ == "__main__":

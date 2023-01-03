@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from urllib.parse import urlsplit
 
 import attr
@@ -27,7 +28,7 @@ class HTTPVideoDriver(Driver, VideoProtocol):
         elif s.scheme == "https":
             default_port = 443
         else:
-            print(f"Unknown scheme: {s.scheme}")
+            print(f"Unknown scheme: {s.scheme}", file=sys.stderr)
             return
 
         url = proxymanager.get_url(self.video.url, default_port=default_port)

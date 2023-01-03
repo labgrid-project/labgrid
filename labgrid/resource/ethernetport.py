@@ -1,5 +1,6 @@
 import logging
 import subprocess
+import sys
 from time import time
 import attr
 
@@ -246,7 +247,7 @@ class EthernetPortManager(ResourceManager):
                     break
                 except Exception:  # pylint: disable=broad-except
                     import traceback
-                    traceback.print_exc()
+                    traceback.print_exc(file=sys.stderr)
 
         self.loop = asyncio.get_event_loop()
         self.poll_tasks.append(self.loop.create_task(poll(self, poll_neighbour)))

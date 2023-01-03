@@ -1,6 +1,7 @@
 import abc
 import atexit
 import logging
+import sys
 from time import monotonic, sleep
 
 import attr
@@ -508,10 +509,10 @@ class Target:
             self.cleanup()
         except Exception as e:
             print("An exception occured during cleanup, call the cleanup() "
-                  "method on targets yourself to handle exceptions explictly.")
-            print(f"Error: {e}")
+                  "method on targets yourself to handle exceptions explictly.", file=sys.stderr)
+            print(f"Error: {e}", file=sys.stderr)
             import traceback
-            traceback.print_exc()
+            traceback.print_exc(file=sys.stderr)
 
     def export(self):
         """

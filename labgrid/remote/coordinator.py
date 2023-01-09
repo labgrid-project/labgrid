@@ -888,6 +888,7 @@ class CoordinatorComponent(ApplicationSession):
         return {k: v.asdict() for k, v in self.reservations.items()}
 
 if __name__ == '__main__':
+    asyncio.set_event_loop(asyncio.new_event_loop())
     runner = ApplicationRunner(
         url=environ.get("WS", "ws://127.0.0.1:20408/ws"),
         realm="realm1",

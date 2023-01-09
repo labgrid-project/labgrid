@@ -936,7 +936,8 @@ def main():
     print(f"exporter hostname: {extra['hostname']}")
     print(f"resource config file: {extra['resources']}")
 
-    extra['loop'] = loop = asyncio.get_event_loop()
+    extra['loop'] = loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     if args.debug:
         loop.set_debug(True)
     runner = ApplicationRunner(url=crossbar_url, realm=crossbar_realm, extra=extra)

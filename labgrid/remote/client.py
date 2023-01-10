@@ -153,6 +153,14 @@ class ClientSession(ApplicationSession):
         elif self.args.type == 'places':
             for name in sorted(self.places.keys()):
                 print(name)
+        elif self.args.type == 'matches':
+            place = self.get_place()
+            for match in place.matches:
+                print(repr(match))
+        elif self.args.type == 'match-names':
+            place = self.get_place()
+            match_names = {match.rename for match in place.matches if match.rename is not None}
+            print("\n".join(match_names))
 
     def _get_places_by_resource(self, resource_path):
         """Yield Place objects that match the given resource path"""
@@ -1408,7 +1416,7 @@ def main():
     subparser = subparsers.add_parser('help')
 
     subparser = subparsers.add_parser('complete')
-    subparser.add_argument('type', choices=['resources', 'places'])
+    subparser.add_argument('type', choices=['resources', 'places', 'matches', 'match-names'])
     subparser.set_defaults(func=ClientSession.complete)
 
     subparser = subparsers.add_parser('monitor',

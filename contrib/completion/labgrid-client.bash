@@ -137,8 +137,8 @@ _labgrid_client_resources()
     -*)
         local options="--acquired \
                        --exporter \
-		       --sort-by-matched-place-change \
-		       $_labgrid_shared_options"
+                       --sort-by-matched-place-change \
+                       $_labgrid_shared_options"
         COMPREPLY=( $(compgen -W "$options" -- "$cur") )
         ;;
     *)
@@ -472,11 +472,11 @@ _labgrid_client_usb_mux()
         # only complete second argument
         [ "$args" -ne 2 ] && return
 
-	actions="off \
-		dut-device \
-		host-dut \
-		host-device \
-		host-dut+host-device"
+        actions="off \
+                 dut-device \
+                 host-dut \
+                 host-device \
+                 host-dut+host-device"
         COMPREPLY=( $(compgen -W "$actions") )
         ;;
     esac
@@ -724,8 +724,8 @@ _labgrid_client()
         case "$cur" in
         --*)
             # top level args completion
-	    local options="--crossbar \
-		           --config \
+            local options="--crossbar \
+                           --config \
                            --place \
                            --state \
                            --debug \

@@ -13,7 +13,7 @@ _labgrid_main_opts_with_value="@(-x|--crossbar|-c|--config|-p|--place|-s|--state
 # Before calling this function, make sure arg, base_cmd and last_arg_opt_with_value are local
 _labgrid_parse_args()
 {
-    local i
+    local i cmd_type
     arg=
     base_cmd=("${COMP_WORDS[0]}")
     last_arg_opt_with_value=false
@@ -48,6 +48,13 @@ _labgrid_parse_args()
     # drop incomplete option expecting a value
     if $last_arg_opt_with_value; then
         unset 'base_cmd[-1]'
+    fi
+
+    # resolve base command aliases
+    if cmd_type=$(type -t -f "${base_cmd[0]}" 2>/dev/null); then
+        if [[ "$cmd_type" == "alias" ]]; then
+            base_cmd[0]="${BASH_ALIASES["${base_cmd[0]}"]}"
+        fi
     fi
 }
 

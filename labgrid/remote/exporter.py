@@ -731,11 +731,11 @@ class ExporterSession(ApplicationSession):
         print(details)
 
         prefix = f'org.labgrid.exporter.{self.name}'
-        await self.register(self.acquire, f'{prefix}.acquire')
-        await self.register(self.release, f'{prefix}.release')
-        await self.register(self.version, f'{prefix}.version')
-
         try:
+            await self.register(self.acquire, f'{prefix}.acquire')
+            await self.register(self.release, f'{prefix}.release')
+            await self.register(self.version, f'{prefix}.version')
+
             config_template_env = {
                 'env': os.environ,
                 'isolated': self.isolated,

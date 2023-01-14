@@ -45,4 +45,5 @@ class HTTPVideoDriver(Driver, VideoProtocol):
             "sync=false",
         ]
 
-        subprocess.run(pipeline)
+        sub = subprocess.run(pipeline)
+        return sub.returncode

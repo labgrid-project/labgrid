@@ -204,3 +204,5 @@ class USBAudioInputDriver(Driver):
 
         rx.communicate()
         tx.communicate()
+
+        return tx.returncode or rx.returncode

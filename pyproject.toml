@@ -41,7 +41,6 @@ dependencies = [
     "pyusb==1.2.1",
     "PyYAML==5.4.1",
     "requests==2.26.0",
-    "six>=1.13.0",
     "xmodem==0.4.6",
 ]
 dynamic = ["version"]  # via setuptools_scm

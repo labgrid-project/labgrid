@@ -41,8 +41,6 @@ dependencies = [
     "pyusb==1.2.1",
     "PyYAML==5.4.1",
     "requests==2.26.0",
-    "six>=1.13.0",
-    "werkzeug>=0.14.1,<2.1",
     "xmodem==0.4.6",
 ]
 dynamic = ["version"]  # via setuptools_scm
@@ -52,7 +50,10 @@ dynamic = ["version"]  # via setuptools_scm
 "Bug Tracker" = "https://github.com/labgrid-project/labgrid/issues"
 
 [project.optional-dependencies]
-crossbar = ["crossbar==21.3.1"]
+crossbar = [
+    "crossbar==21.3.1",
+    "werkzeug>=0.14.1,<2.1",
+]
 doc = [
     "docutils==0.17.1",
     "Sphinx==4.2.0",
@@ -78,6 +79,7 @@ xena = ["xenavalkyrie==3.0.1"]
 deb = [
     # labgrid[crossbar]
     "crossbar==21.3.1",
+    "werkzeug>=0.14.1,<2.1",
 
     # labgrid[modbus]
     "pyModbusTCP==0.1.10",
@@ -93,6 +95,7 @@ dev = [
     # references to other optional dependency groups
     # labgrid[crossbar]
     "crossbar==21.3.1",
+    "werkzeug>=0.14.1,<2.1",
 
     # labgrid[doc]
     "docutils==0.17.1",

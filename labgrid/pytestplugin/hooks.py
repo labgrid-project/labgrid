@@ -13,7 +13,7 @@ def pytest_configure(config):
     StepLogger.start()
 
     logging = config.pluginmanager.getplugin('logging-plugin')
-    logging.log_cli_handler.setFormatter(StepFormatter())
+    logging.log_cli_handler.setFormatter(StepFormatter(color=config.option.lg_colored_steps))
     logging.log_file_handler.setFormatter(StepFormatter())
 
     config.addinivalue_line("markers",

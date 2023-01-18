@@ -302,7 +302,7 @@ changed until it is `released` again.
 
 Exporter
 ~~~~~~~~
-An exporters registers all its configured resources when it connects to the
+An exporter registers all its configured resources when it connects to the
 router and updates the resource parameters when they change (such as
 (dis-)connection of USB devices).
 Internally, the exporter uses the normal :any:`Resource` (and

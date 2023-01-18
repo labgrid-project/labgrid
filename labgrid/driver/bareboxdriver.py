@@ -27,6 +27,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         interrupt (str): optional, string to interrupt autoboot (use "\x03" for CTRL-C)
         bootstring (regex): optional, regex indicating that the Linux Kernel is booting
         password (str): optional, password to use for access to the shell
+        boot_command (str): optional, boot command to boot target
         login_timeout (int): optional, timeout for access to the shell
     """
     bindings = {"console": ConsoleProtocol, }
@@ -35,6 +36,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     interrupt = attr.ib(default="\x04", validator=attr.validators.instance_of(str))
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
+    boot_command = attr.ib(default="boot -v", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
 
     def __attrs_post_init__(self):
@@ -224,4 +226,4 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         if name:
             self.console.sendline(f"boot -v {name}")
         else:
-            self.console.sendline("boot -v")
+            self.console.sendline(self.boot_command)

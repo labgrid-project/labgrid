@@ -31,6 +31,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     bindings = {"networkservice": "NetworkService", }
     priorities = {CommandProtocol: 10, FileTransferProtocol: 10}
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
+    extra_options = attr.ib(default="", validator=attr.validators.instance_of((str, list)))
     stderr_merge = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     connection_timeout = attr.ib(default=float(get_ssh_connect_timeout()), validator=attr.validators.instance_of(float))
     explicit_sftp_mode = attr.ib(default=False, validator=attr.validators.instance_of(bool))
@@ -68,6 +69,12 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self.ssh_prefix += ["-i", keyfile_path ]
         if not self._get_password():
             self.ssh_prefix += ["-o", "PasswordAuthentication=no"]
+
+        if self.extra_options:
+            if isinstance(self.extra_options, str):
+                self.ssh_prefix += shlex.split(self.extra_options)
+            elif isinstance(self.extra_options, list):
+                self.ssh_prefix.extend(self.extra_options)
 
         self.control = self._start_own_master()
         self.ssh_prefix += ["-F", "none"]

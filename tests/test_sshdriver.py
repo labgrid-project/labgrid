@@ -28,6 +28,25 @@ def test_create_fail_missing_resource(target):
 def test_create(ssh_driver_mocked):
     assert isinstance(ssh_driver_mocked, SSHDriver)
 
+def test_extra_options_str(target, ssh_driver_mocked):
+    s = ssh_driver_mocked
+    s.extra_options = "-o HostKeyAlgorithms=+ssh-rsa"
+    target.activate(s)
+    assert "HostKeyAlgorithms=+ssh-rsa" in s.ssh_prefix
+
+def test_extra_options_list(target, ssh_driver_mocked):
+    ssh_driver_mocked.extra_options = [
+        "-o", "HostKeyAlgorithms=+ssh-rsa",
+        "-o", "HostKeyAlgorithms=+ssh-dsa",
+    ]
+    target.activate(ssh_driver_mocked)
+    assert "HostKeyAlgorithms=+ssh-rsa" in ssh_driver_mocked.ssh_prefix
+    assert "HostKeyAlgorithms=+ssh-dsa" in ssh_driver_mocked.ssh_prefix
+
+def test_extra_options_empty(target, ssh_driver_mocked):
+    target.activate(ssh_driver_mocked)
+    assert "" not in ssh_driver_mocked.ssh_prefix
+
 def test_run_check(target, ssh_driver_mocked, mocker):
     s = ssh_driver_mocked
     target.activate(s)

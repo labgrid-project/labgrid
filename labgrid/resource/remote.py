@@ -40,13 +40,12 @@ class RemotePlaceManager(ResourceManager):
         # be the same).
         if not self.session:
             self.env = remote_place.target.env
-            config = self.env.config
-            self.url = config.get_option(
-                'crossbar_url',
-                os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"))
-            self.realm = config.get_option(
-                'crossbar_realm',
-                os.environ.get("LG_CROSSBAR_REALM", "realm1"))
+            self.url = os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws")
+            self.realm = os.environ.get("LG_CROSSBAR_REALM", "realm1")
+            if self.env:
+                config = self.env.config
+                self.url = config.get_option('crossbar_url', self.url)
+                self.realm = config.get_option('crossbar_realm', self.realm)
             self._start()
         place = self.session.get_place(remote_place.name)  # pylint: disable=no-member
         resource_entries = self.session.get_target_resources(place)  # pylint: disable=no-member

@@ -347,7 +347,7 @@ _labgrid_client_console()
 
     case "$cur" in
     -*)
-        COMPREPLY=( $(compgen -W "--loop --logfile $_labgrid_shared_options" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--listenonly --loop --logfile $_labgrid_shared_options" -- "$cur") )
         ;;
     *)
         local args

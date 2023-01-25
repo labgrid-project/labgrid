@@ -15,3 +15,8 @@ jobs:
   push-pr-unit-tests-docker:
     name: Docker Unit Tests
     uses: ./.github/workflows/reusable-unit-tests-docker.yml
+  build-and-release:
+    name: Release to Pypi
+    needs: push-pr-unit-tests
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    uses: ./.github/workflows/build-and-release.yml

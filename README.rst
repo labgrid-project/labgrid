@@ -5,7 +5,7 @@
 Welcome to labgrid
 ==================
 
-|license| |unit-tests| |docker-build| |coverage-status| |docs-status| |chat|
+|license| |unit-tests| |docker-build| |coverage-status| |docs-status| |chat| |calver|
 
 Purpose
 -------
@@ -122,3 +122,7 @@ Tests can now run via:
 .. |chat| image:: https://matrix.to/img/matrix-badge.svg
     :alt: chat
     :target: https://app.element.io/#/room/#labgrid:matrix.org
+
+.. |calver| image:: https://img.shields.io/badge/calver-YY.MINOR.MICRO-22bfda.svg 
+    :alt: chat
+    :target: https://calver.org/

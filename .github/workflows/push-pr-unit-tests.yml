@@ -20,3 +20,4 @@ jobs:
     needs: push-pr-unit-tests
     if: github.event_name == 'push'
     uses: ./.github/workflows/build-and-release.yml
+    secrets: inherit

@@ -18,5 +18,5 @@ jobs:
   build-and-release:
     name: Release to Pypi
     needs: push-pr-unit-tests
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    if: github.event_name == 'push'
     uses: ./.github/workflows/build-and-release.yml

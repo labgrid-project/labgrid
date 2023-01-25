@@ -173,6 +173,7 @@ packages = [
 ]
 
 [tool.setuptools_scm]
+local_scheme = "no-local-version"
 
 [tool.pytest.ini_options]
 testpaths = [

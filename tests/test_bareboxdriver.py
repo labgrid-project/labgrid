@@ -41,3 +41,16 @@ class TestBareboxDriver:
             res = d.run_check("test")
         res = d.run("test")
         assert res == (['error'], [], 1)
+
+    def test_barebox_boot(self, target_with_fakeconsole, mocker):
+        t = target_with_fakeconsole
+        d = BareboxDriver(t, "barebox", boot_command='boot -v foo')
+        d = t.get_driver(BareboxDriver, activate=False)
+        # mock for d._run('echo $global.loglevel')
+        d._run = mocker.MagicMock(return_value=(['7'], [], 0))
+        t.activate(d)
+        d._run = mocker.MagicMock(return_value=(['success'], [], 0))
+        d.boot()
+        assert d.console.txq.pop() == b"boot -v foo\n"
+        d.boot(name='bar')
+        assert d.console.txq.pop() == b"boot -v bar\n"

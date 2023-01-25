@@ -68,11 +68,17 @@ class ClientSession(ApplicationSession):
         self.monitor = self.config.extra.get('monitor', False)
         enable_tcp_nodelay(self)
         self.join(
-            self.config.realm, authmethods=["ticket"],
-            authid=f"client/{self.gethostname()}/{self.getuser()}"
+            self.config.realm,
+            authmethods=["anonymous", "ticket"],
+            authid=f"client/{self.gethostname()}/{self.getuser()}",
+            authextra={"authid": f"client/{self.gethostname()}/{self.getuser()}"},
         )
 
     def onChallenge(self, challenge):
+        import warnings
+        warnings.warn("Ticket authentication is deprecated. Please update your coordinator.",
+                      DeprecationWarning)
+        logging.warning("Ticket authentication is deprecated. Please update your coordinator.")
         return "dummy-ticket"
 
     async def onJoin(self, details):

@@ -101,7 +101,7 @@ def serial_driver_no_name(target, serial_port, mocker):
 
 @pytest.fixture(scope='function')
 def crossbar_config(tmpdir, pytestconfig):
-    crossbar_config = '.crossbar/config.yaml'
+    crossbar_config = '.crossbar/config-anonymous.yaml'
 
     pytestconfig.rootdir.join(crossbar_config).copy(tmpdir.mkdir('.crossbar'))
 
@@ -128,7 +128,7 @@ def crossbar(tmpdir, crossbar_config):
         pytest.skip("crossbar not found")
 
     spawn = pexpect.spawn(
-            'crossbar start --color false --logformat none',
+            'crossbar start --color false --logformat none --config config-anonymous.yaml',
             logfile=Prefixer(sys.stdout.buffer, 'crossbar'),
             cwd=str(tmpdir))
     try:

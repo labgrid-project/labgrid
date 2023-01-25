@@ -47,7 +47,7 @@ VOLUME /opt/crossbar
 
 EXPOSE 20408
 
-CMD ["crossbar", "start", "--config", "/opt/labgrid/.crossbar/config.yaml"]
+CMD ["crossbar", "start", "--config", "/opt/labgrid/.crossbar/config-anonymous.yaml"]
 
 #
 # ser2net

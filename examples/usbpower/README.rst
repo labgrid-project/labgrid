@@ -116,7 +116,7 @@ Remote Setup
 ------------
 
 To access resources remotely, you first need to start the coordinator::
-  $ crossbar start --logformat none
+  $ crossbar start --logformat none --config config-anonymous.yaml
   [...]
   Coordinator ready.
 

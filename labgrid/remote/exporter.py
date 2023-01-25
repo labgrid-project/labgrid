@@ -716,11 +716,17 @@ class ExporterSession(ApplicationSession):
         self.groups = {}
 
         enable_tcp_nodelay(self)
-        self.join(self.config.realm, authmethods=["ticket"], authid=f"exporter/{self.name}")
+        self.join(
+            self.config.realm,
+            authmethods=["anonymous", "ticket"],
+            authid=f"exporter/{self.name}",
+            authextra={"authid": f"exporter/{self.name}"},
+        )
 
     def onChallenge(self, challenge):
         """Function invoked on received challege, returns just a dummy ticket
         at the moment, authentication is not supported yet"""
+        logging.warning("Ticket authentication is deprecated. Please update your coordinator.")
         return "dummy-ticket"
 
     async def onJoin(self, details):

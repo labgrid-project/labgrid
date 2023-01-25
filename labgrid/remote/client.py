@@ -781,7 +781,7 @@ class ClientSession(ApplicationSession):
         elif action == 'low':
             drv.set(False)
 
-    async def _console(self, place, target, timeout, *, logfile=None, loop=False):
+    async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
         name = self.args.name
         from ..resource import NetworkSerialPort
         resource = target.get_resource(NetworkSerialPort, name=name, wait_avail=False)
@@ -803,6 +803,10 @@ class ClientSession(ApplicationSession):
         assert port is not None, "Port is not set"
 
         call = ['microcom', '-s', str(resource.speed), '-t', f"{host}:{port}"]
+
+        if listen_only:
+            call.append("--listenonly")
+
         if logfile:
             call.append(f"--logfile={logfile}")
         print(f"connecting to {resource} calling {' '.join(call)}")
@@ -836,7 +840,7 @@ class ClientSession(ApplicationSession):
     async def console(self, place, target):
         while True:
             res = await self._console(place, target, 10.0, logfile=self.args.logfile,
-                                      loop=self.args.loop)
+                                      loop=self.args.loop, listen_only=self.args.listenonly)
             if res or not self.args.loop:
                 break
             await asyncio.sleep(1.0)
@@ -1546,6 +1550,8 @@ def main():
                                       help="connect to the console")
     subparser.add_argument('-l', '--loop', action='store_true',
                            help="keep trying to connect if the console is unavailable")
+    subparser.add_argument('-o', '--listenonly', action='store_true',
+                           help="do not modify local terminal, do not send input from stdin")
     subparser.add_argument('name', help="optional resource name", nargs='?')
     subparser.add_argument('--logfile', metavar="FILE", help="Log output to FILE", default=None)
     subparser.set_defaults(func=ClientSession.console)

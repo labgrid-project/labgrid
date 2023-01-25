@@ -1,0 +1,28 @@
+name: reusable docker tests
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        type: string
+        required: false
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{ inputs.branch }}
+    - name: Install system dependencies
+      run: |
+        sudo apt install -yq python3-pip
+        python3 -m pip install setuptools_scm
+    - name: Build docker images
+      run: |
+        ./dockerfiles/build.sh
+        docker-compose -f dockerfiles/staging/docker-compose.yml up --exit-code-from client client || (docker-compose -f dockerfiles/staging/docker-compose.yml logs --timestamps && false)
+        docker-compose -f dockerfiles/staging/docker-compose.yml down
+    - name: Show docker images
+      run: |
+        docker images

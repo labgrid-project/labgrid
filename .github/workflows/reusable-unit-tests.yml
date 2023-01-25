@@ -1,22 +1,27 @@
-name: unit tests
+name: reusable unit tests
 
-on: [push, pull_request]
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        type: string
+        required: true
+      branch:
+        type: string
+        required: false
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-    continue-on-error: ${{ matrix.experimental }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
-        experimental: [false]
+    continue-on-error: false
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
+      with:
+        ref: ${{ inputs.branch }}
+    - name: Set up Python ${{ inputs.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ inputs.python-version }}
     - uses: actions/cache@v3
       with:
         path: ~/.cache/pip
@@ -57,19 +62,3 @@ jobs:
         make -C man all
         git --no-pager diff --exit-code
     - uses: codecov/codecov-action@v3
-  docker:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install system dependencies
-      run: |
-        sudo apt install -yq python3-pip
-        python3 -m pip install setuptools_scm
-    - name: Build docker images
-      run: |
-        ./dockerfiles/build.sh
-        docker-compose -f dockerfiles/staging/docker-compose.yml up --exit-code-from client client || (docker-compose -f dockerfiles/staging/docker-compose.yml logs --timestamps && false)
-        docker-compose -f dockerfiles/staging/docker-compose.yml down
-    - name: Show docker images
-      run: |
-        docker images

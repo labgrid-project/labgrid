@@ -1,0 +1,27 @@
+name: scheduled unit tests
+
+on:
+  schedule:
+    - cron: '10 8 * * *'
+
+jobs:
+  scheduled-unit-tests:
+    name: scheduled unit tests
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+        branch: ['master']
+    uses: ./.github/workflows/reusable-unit-tests.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      branch: ${{ matrix.branch }}
+  scheduled-unit-tests-docker:
+    name: scheduled docker tests
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ['master']
+    uses: ./.github/workflows/reusable-unit-tests-docker.yml
+    with:
+      branch: ${{ matrix.branch }}

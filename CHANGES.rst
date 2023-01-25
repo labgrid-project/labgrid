@@ -1,8 +1,8 @@
-Release 0.5.0 (unreleased)
--------------------------------------
+Release 23.0 (unreleased)
+-------------------------
 
-New Features in 0.5.0
-~~~~~~~~~~~~~~~~~~~~~
+New Features in 23.0
+~~~~~~~~~~~~~~~~~~~~
 - Exporter config templates now have access to the following new variables:
   isolated (all resource accesses must be tunneled True/False),
   hostname (of the exporter host), name (of the exporter).
@@ -36,8 +36,8 @@ New Features in 0.5.0
 - The SSH connection timeout can now be globally controlled using the
   ``LG_SSH_CONNECT_TIMEOUT`` environment variable.
 
-Bug fixes in 0.5.0
-~~~~~~~~~~~~~~~~~~
+Bug fixes in 23.0
+~~~~~~~~~~~~~~~~~
 
 - The exporter now exports sysfsgpios during place acquire/release, fixing a
   race in the sysfspgio agent interface.
@@ -49,7 +49,7 @@ Bug fixes in 0.5.0
   UnboundLocalError.
 - Fix udev matching by attributes
 
-Breaking changes in 0.5.0
+Breaking changes in 23.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 - ``Config``'s ``get_option()``/``get_target_option()`` convert non-string
   options no longer to strings.
@@ -57,8 +57,8 @@ Breaking changes in 0.5.0
   longer check for the string during U-Boot boot. This allows activating the
   driver on an already running U-Boot.
 
-Known issues in 0.5.0
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Known issues in 23.0
+~~~~~~~~~~~~~~~~~~~~
 
 Release 0.4.0 (Released Sep 22, 2021)
 -------------------------------------

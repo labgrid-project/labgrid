@@ -215,7 +215,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         self.console.expect(self.bootstring)
 
     @Driver.check_active
-    def boot(self, name: str):
+    def boot(self, name: str = ""):
         """Boot the default or a specific boot entry
 
         Args:

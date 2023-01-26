@@ -44,6 +44,9 @@ workers:
       ws:
         type: websocket
         auth:
+          anonymous:
+            type: static
+            role: public
           ticket:
             type: dynamic
             authenticator: org.labgrid.authenticate

@@ -1507,6 +1507,9 @@ Implements:
 
    UBootDriver:
      prompt: 'Uboot> '
+     boot_commands:
+       net: run netboot
+       spi: run spiboot
 
 Arguments:
   - prompt (regex, default=""): U-Boot prompt to match
@@ -1518,6 +1521,7 @@ Arguments:
   - password_prompt (str, default="enter Password: "): regex to match the U-Boot password prompt
   - bootstring (str): optional, regex to match on Linux Kernel boot
   - boot_command (str, default="run bootcmd"): boot command for booting target
+  - boot_commands (dict, default={}): boot commands by name for LinuxBootProtocol boot command
   - login_timeout (int, default=30): timeout for login prompt detection in seconds
   - boot_timeout (int, default=30): timeout for initial Linux Kernel version detection
 

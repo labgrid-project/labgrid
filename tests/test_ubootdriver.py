@@ -18,7 +18,7 @@ class TestUBootDriver:
 
     def test_uboot_run(self, target_with_fakeconsole, mocker):
         t = target_with_fakeconsole
-        d = UBootDriver(t, "barebox")
+        d = UBootDriver(t, "uboot")
         d.console.rxq.append(b"U-Boot 2019\n")
         d = t.get_driver(UBootDriver)
         d._run = mocker.MagicMock(return_value=(['success'], [], 0))
@@ -32,7 +32,7 @@ class TestUBootDriver:
 
     def test_uboot_run_error(self, target_with_fakeconsole, mocker):
         t = target_with_fakeconsole
-        d = UBootDriver(t, "barebox")
+        d = UBootDriver(t, "uboot")
         d.console.rxq.append(b"U-Boot 2019\n")
         d = t.get_driver(UBootDriver)
         d._run = mocker.MagicMock(return_value=(['error'], [], 1))
@@ -43,3 +43,14 @@ class TestUBootDriver:
         res = d.run("test")
         assert res == (['error'], [], 1)
         d._run.assert_called_once_with("test", timeout=30)
+
+    def test_uboot_boot(self, target_with_fakeconsole):
+        t = target_with_fakeconsole
+        d = UBootDriver(t, "uboot", boot_command='run bootcmd', boot_commands = {"foo": "bar"})
+        d = t.get_driver(UBootDriver)
+        d.boot()
+        assert d.console.txq.pop() == b"run bootcmd\n"
+        d.boot('foo')
+        assert d.console.txq.pop() == b"bar\n"
+        with pytest.raises(Exception):
+            d.boot('nop')

@@ -134,9 +134,6 @@ dev = [
     # labgrid[vxi11]
     "python-vxi11==0.9",
 
-    # labgrid[xena]
-    "xenavalkyrie==3.0.1",
-
     # additional dev dependencies
     "psutil==5.8.0",
     "pytest-cov==3.0.0",

@@ -219,7 +219,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def _put_ssh_key(self, keyfile_path):
         """Upload an SSH Key to a target"""
         regex = re.compile(
-            r"""ssh-rsa # Only match RSA Keys
+            r"""ssh-(rsa|ed25519)
             \s+(?P<key>[a-zA-Z0-9/+=]+) # Match Keystring
             \s+(?P<comment>.*) # Match comment""", re.X
         )

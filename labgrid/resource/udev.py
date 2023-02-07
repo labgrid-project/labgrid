@@ -315,6 +315,8 @@ class AndroidUSBFastboot(USBResource):
     usb_vendor_id = attr.ib(default='1d6b', validator=attr.validators.instance_of(str))
     usb_product_id = attr.ib(default='0104', validator=attr.validators.instance_of(str))
     def filter_match(self, device):
+        if device.properties.get("adb_user") == "yes":
+            return True
         if device.properties.get('ID_VENDOR_ID') != self.usb_vendor_id:
             return False
         if device.properties.get('ID_MODEL_ID') != self.usb_product_id:

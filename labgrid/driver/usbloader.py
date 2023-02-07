@@ -153,7 +153,7 @@ class UUUDriver(Driver, BootstrapProtocol):
     }
 
     image = attr.ib(default=None)
-    cmd = attr.ib(default='spl', validator=attr.validators.instance_of(str))
+    script = attr.ib(default='', validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -177,8 +177,10 @@ class UUUDriver(Driver, BootstrapProtocol):
         mf = ManagedFile(filename, self.loader)
         mf.sync_to_resource()
 
+        cmd = ['-b', self.script] if self.script else []
+
         processwrapper.check_output(
-            self.loader.command_prefix + [self.tool, mf.get_remote_path(), self.cmd]
+            self.loader.command_prefix + [self.tool] + cmd + [mf.get_remote_path()]
         )
 
 

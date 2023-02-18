@@ -191,6 +191,12 @@ class SerialLoggingReporter():
     def __attrs_post_init__(self):
         steps.subscribe(self.notify)
 
+    def vt100_replace_cr_nl(self, buf):
+        string = self.re_vt100.sub('', buf.decode("utf-8", errors="replace"))
+        string = string.replace("\r", "␍")
+        string = string.replace("\n", "␤")
+        return string
+
     def notify(self, event):
         step = event.step
         if step.tag == 'console' and step.get_title() == 'read' \
@@ -206,7 +212,7 @@ class SerialLoggingReporter():
             self.lastevent = event
 
             for part in parts:
-                data = self.re_vt100.sub('', part.decode("utf-8", errors="replace"))
+                data = self.vt100_replace_cr_nl(part)
                 logger.info("{}␍␤".format(data), extra=extra)
 
     def flush(self):
@@ -215,7 +221,7 @@ class SerialLoggingReporter():
 
         extra = {"consoleevent": self.lastevent}
         for source, logger in self.loggers.items():
-            data = self.re_vt100.sub('', self.bufs[source].decode("utf-8", errors="replace"))
+            data = self.vt100_replace_cr_nl(self.bufs[source])
             if data:
                 logger.info(data, extra=extra)
             self.bufs[source] = b""

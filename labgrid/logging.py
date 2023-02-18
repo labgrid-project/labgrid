@@ -4,8 +4,9 @@ import logging
 import os
 import colors
 
-from .step import steps
+import attr
 
+from .step import steps, StepEvent
 
 def basicConfig(**kwargs):
     logging.basicConfig(**kwargs)
@@ -90,7 +91,7 @@ class StepFormatter:
         return 'default'
 
     def format(self, record):
-        if getattr(record, "console", False):
+        if hasattr(record, "consoleevent"):
             return self.format_console_step(record)
         # TODO: Add flushing of previously received console bytes
         if hasattr(record, "stepevent"):
@@ -98,38 +99,20 @@ class StepFormatter:
         else:
             return self.formatter.format(record)
 
-    def format_serial_buffer(self, step):
-        if step.source not in self.bufs.keys():
-            self.bufs[step.source] = b''
-        assert step.result is not None
-        self.bufs[step.source] += step.result
-        *parts, self.bufs[step.source] = self.bufs[step.source].split(b'\r\n')
-        result = []
-        for part in parts:
-            result.append(self.re_vt100.sub('', part.decode("utf-8", errors="replace")))
-        return result
-
     def format_console_step(self, record):
-        step = record.stepevent.step
+        step = record.consoleevent.step
         indent = "  " * (self.indent_level + 1) if self.indent else ""
         color = 'default'
         if self.color:
             color = 250
         if step.get_title() == 'read':
             dirind = "<"
-            parts = self.format_serial_buffer(step)
-            parts = [colors.color(p, fg=color) for p in parts]
-            message = f"␍␊\n{indent}{colors.color(step.source, fg=color, style='bold')} {colors.color(dirind, fg=color)} ".join(parts)
         else:
             dirind = ">"
-            parts = step.args["data"].decode('utf-8').split('\n')
-            parts = [colors.color(p, fg=color) for p in parts]
-            message = f"␍␊\n{indent}{colors.color(step.source, fg=color, style='bold')} {colors.color(dirind, fg=color)} ".join(parts)
-        if message:
-            if self.color:
-                return f"{indent}{colors.color(step.source, fg=color, style='bold')} {colors.color(dirind, fg=color)} {message}"
-            else:
-                return f"{indent}{step.source} {dirind} {message}"
+        if self.color:
+            return f"{indent}{colors.color(step.source, fg=color, style='bold')} {colors.color(dirind, fg=color)} {record.msg}"
+        else:
+            return f"{indent}{step.source} {dirind} {record.msg}"
 
     @staticmethod
     def format_arguments(args):
@@ -195,11 +178,55 @@ class StepFormatter:
 
         return f"{indent}{line}"
 
+@attr.s
+class SerialLoggingReporter():
+    bufs = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
+    loggers = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
+    lastevent = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(StepEvent)))
+    re_vt100 = attr.ib(
+        default=re.compile(
+            r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
+        ))
+
+    def __attrs_post_init__(self):
+        steps.subscribe(self.notify)
+
+    def notify(self, event):
+        step = event.step
+        if step.tag == 'console' and step.get_title() == 'read' \
+           and event.data.get('state') == 'stop' and step.result:
+            self.loggers[step.source] = logging.getLogger(f"SerialLogger.{step.source.__class__.__name__}.{step.source.target}")
+            logger = self.loggers[step.source]
+            if step.source not in self.bufs.keys():
+                self.bufs[step.source] = b''
+            self.bufs[step.source] += step.result
+            *parts, self.bufs[step.source] = self.bufs[step.source].split(b'\r\n')
+
+            extra = {"consoleevent": event}
+            self.lastevent = event
+
+            for part in parts:
+                data = self.re_vt100.sub('', part.decode("utf-8", errors="replace"))
+                logger.info("{}␍␤".format(data), extra=extra)
+
+    def flush(self):
+        if self.lastevent is None:
+            return
+
+        extra = {"consoleevent": self.lastevent}
+        for source, logger in self.loggers.items():
+            data = self.re_vt100.sub('', self.bufs[source].decode("utf-8", errors="replace"))
+            if data:
+                logger.info(data, extra=extra)
+            self.bufs[source] = b""
+
+
 class StepLogger:
     _started = False
     _logger = None
+    _serial_logger = None
 
-    def __init__(self):
+    def __attrs_post_init__(self):
         from warnings import warn
 
         warn(
@@ -215,6 +242,7 @@ class StepLogger:
         if cls._logger is None:
             cls._logger = logging.getLogger("StepLogger")
         steps.subscribe(cls.notify)
+        cls._serial_logger = SerialLoggingReporter()
         cls._started = True
 
     @classmethod
@@ -226,15 +254,12 @@ class StepLogger:
 
     @classmethod
     def notify(cls, event):
+        if event.step.tag == "console":
+            return
+        if cls._serial_logger:
+            cls._serial_logger.flush()
+
         level = logging.INFO
         step = event.step
         extra = {"stepevent": event}
-        if step.tag == "console":
-            if event.data.get("state", None) == "start" and step.get_title() == "write":
-                level = logging.DEBUG
-            elif step.get_title() == "read" and not step.result:
-                level = logging.DEBUG
-            else:
-                extra["console"] = True
-
         cls._logger.log(level, event, extra=extra)

@@ -195,6 +195,10 @@ class SerialLoggingReporter():
         string = self.re_vt100.sub('', buf.decode("utf-8", errors="replace"))
         string = string.replace("\r", "␍")
         string = string.replace("\n", "␤")
+        string = string.replace("\b", "␈")
+        string = string.replace("\a", "␇")
+        string = string.replace("\v", "␋")
+        string = string.replace("\f", "␌")
         return string
 
     def notify(self, event):

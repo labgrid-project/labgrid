@@ -147,6 +147,12 @@ same machine. The client is used to access functionality provided by an
 exporter. Over the course of this tutorial we will set up a coordinator and
 exporter, and learn how to access the exporter via the client.
 
+.. Attention::
+   Labgrid requires your user to be able to connect from the client machine via
+   ssh to the exporter machine _without_ a password prompt. This means that
+   public key authentication should be configured on all involved machines for
+   your user beforehand.
+
 .. _remote-getting-started-coordinator:
 
 Coordinator

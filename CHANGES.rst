@@ -35,6 +35,11 @@ New Features in 23.0
   forwarding to/from the exporter.
 - The SSH connection timeout can now be globally controlled using the
   ``LG_SSH_CONNECT_TIMEOUT`` environment variable.
+- The `QEMUDriver` now supports a ``display`` option which can specify if an
+  display device should be created. ``none`` (the default) will not create a
+  display device, ``fb-headless`` will create a headless framebuffer device
+  for software rendering, and ``egl-headless`` will create a headless GPU
+  device for accelerated rendering (but requires host support)
 
 Bug fixes in 23.0
 ~~~~~~~~~~~~~~~~~

@@ -43,6 +43,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     boot_expression = attr.ib(default="", validator=attr.validators.instance_of(str))
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
     boot_command = attr.ib(default="run bootcmd", validator=attr.validators.instance_of(str))
+    boot_commands = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
     login_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
     boot_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
 
@@ -207,12 +208,15 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     @Driver.check_active
     @step(args=['name'])
-    def boot(self, name):
+    def boot(self, name: str = ""):
         """Boot the default or a specific boot entry
 
         Args:
             name (str): name of the entry to boot"""
         if name:
-            self.console.sendline(f"boot -v {name}")
+            try:
+                self.console.sendline(self.boot_commands[name])
+            except KeyError as e:
+                raise Exception(f"{name} not found in boot_commands") from e
         else:
             self.console.sendline(self.boot_command)

@@ -1598,7 +1598,8 @@ def main():
     subparser.set_defaults(func=ClientSession.usb_mux)
 
     subparser = subparsers.add_parser('ssh',
-                                      help="connect via ssh (with optional arguments)")
+                                      help="connect via ssh (with optional arguments)",
+                                      epilog="Additional arguments are passed to the ssh subprocess.")
     subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.ssh)
 
@@ -1610,7 +1611,8 @@ def main():
     subparser.set_defaults(func=ClientSession.scp)
 
     subparser = subparsers.add_parser('rsync',
-                                      help="transfer files via rsync")
+                                      help="transfer files via rsync",
+                                      epilog="Additional arguments are passed to the rsync subprocess.")
     subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.add_argument('src', help='source path (use :dir/file for remote side)')
     subparser.add_argument('dst', help='destination path (use :dir/file for remote side)')

@@ -137,9 +137,13 @@ class Target:
                 f"no {cls} resource{name_msg} found in {self}"
             )
         elif len(found) > 1:
-            raise NoResourceFoundError(
-                f"multiple resources matching {cls} found in {self}", found=found
-            )
+            found_default = list(filter(lambda _:_._remote_entry.data['default'], found))
+            if len(found_default) != 1:
+                raise NoResourceFoundError(
+                    f"multiple resources matching {cls} found in {self}", found=found
+                )
+            found = found_default
+            print(f"Default resource '{found[0].name}' used")
         if wait_avail:
             self.await_resources(found)
         return found[0]

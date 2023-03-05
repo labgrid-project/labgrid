@@ -760,10 +760,11 @@ class ExporterSession(ApplicationSession):
                     if params is None:
                         continue
                     cls = params.pop('cls', resource_name)
+                    default = params.pop('default', False)
 
                     # this may call back to acquire the resource immediately
                     await self.add_resource(
-                        group_name, resource_name, cls, params
+                        group_name, resource_name, cls, default, params
                     )
                     self.checkpoint = time.monotonic()
 
@@ -840,7 +841,7 @@ class ExporterSession(ApplicationSession):
                 print(f"missed checkpoint, exiting (last was {age} seconds ago)")
                 self.disconnect()
 
-    async def add_resource(self, group_name, resource_name, cls, params):
+    async def add_resource(self, group_name, resource_name, cls, default, params):
         """Add a resource to the exporter and update status on the coordinator"""
         print(
             f"add resource {group_name}/{resource_name}: {cls}/{params}"
@@ -851,6 +852,7 @@ class ExporterSession(ApplicationSession):
         config = {
             'avail': export_cls is ResourceEntry,
             'cls': cls,
+            'default': default,
             'params': params,
         }
         proxy_req = self.isolated

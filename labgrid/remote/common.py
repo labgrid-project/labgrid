@@ -45,6 +45,10 @@ class ResourceEntry:
         return self.data['cls']
 
     @property
+    def default(self):
+        return self.data['default']
+
+    @property
     def params(self):
         return self.data['params']
 
@@ -63,6 +67,7 @@ class ResourceEntry:
     def asdict(self):
         return {
             'cls': self.cls,
+            'default': self.default,
             'params': self.params,
             'acquired': self.acquired,
             'avail': self.avail,

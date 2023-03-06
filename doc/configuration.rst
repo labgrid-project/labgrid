@@ -3189,6 +3189,23 @@ and another :any:`USBSerialPort` as
        match:
          '@ID_PATH': pci-0000:05:00.0-usb-3-1.4
 
+Additional, you can set ``default`` parameter to specify the default resource
+which ``labgrid-client`` will use once it matches multiple resources. Otherwise,
+you need to specify resource name explicitly in client command:
+
+.. code-block:: yaml
+
+   usb-hub-in-rack12:
+     console-main:
+       cls: USBSerialPort
+       match:
+         '@ID_PATH': pci-0000:05:00.0-usb-3-1.3
+       default: true
+     console-secondary:
+       cls: USBSerialPort
+       match:
+         '@ID_PATH': pci-0000:05:00.0-usb-3-1.4
+
 Note that you could also split the resources up into distinct groups instead
 to achieve the same effect:
 

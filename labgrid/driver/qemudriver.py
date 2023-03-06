@@ -95,6 +95,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._tempdir = None
         self._socket = None
         self._clientsocket = None
+        self._forwarded_ports = {}
         atexit.register(self._atexit)
 
     def _atexit(self):
@@ -247,6 +248,11 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             raise
 
         self.status = 1
+
+        # Restore port forwards
+        for v in self._forwarded_ports.values():
+            self._add_port_forward(*v)
+
         self.monitor_command("cont")
 
     @step()
@@ -266,13 +272,30 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self.off()
         self.on()
 
-    @step(args=['command'])
-    def monitor_command(self, command):
+    @step(result=True, args=['command', 'arguments'])
+    def monitor_command(self, command, arguments={}):
         """Execute a monitor_command via the QMP"""
         if not self.status:
             raise ExecutionError(
                 "Can't use monitor command on non-running target")
-        return self.qmp.execute(command)
+        return self.qmp.execute(command, arguments)
+
+    def _add_port_forward(self, proto, local_address, local_port, remote_address, remote_port):
+        self.monitor_command(
+            "human-monitor-command",
+            {"command-line": f"hostfwd_add {proto}:{local_address}:{local_port}-{remote_address}:{remote_port}"},
+        )
+
+    def add_port_forward(self, proto, local_address, local_port, remote_address, remote_port):
+        self._add_port_forward(proto, local_address, local_port, remote_address, remote_port)
+        self._forwarded_ports[(proto, local_address, local_port)] = (proto, local_address, local_port, remote_address, remote_port)
+
+    def remove_port_forward(self, proto, local_address, local_port):
+        del self._forwarded_ports[(proto, local_address, local_port)]
+        self.monitor_command(
+            "human-monitor-command",
+            {"command-line": f"hostfwd_remove {proto}:{local_address}:{local_port}"},
+        )
 
     def _read(self, size=1, timeout=10, max_size=None):
         ready, _, _ = select.select([self._clientsocket], [], [], timeout)

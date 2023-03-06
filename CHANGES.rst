@@ -42,6 +42,7 @@ New Features in 23.0
   device for accelerated rendering (but requires host support)
 - The `QEMUDriver` now support a ``nic`` property that can be used to create a
   network interface when booting.
+- The `QEMUDriver` now supports API to add port-forwarding from localhost
 
 Bug fixes in 23.0
 ~~~~~~~~~~~~~~~~~

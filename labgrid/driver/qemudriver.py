@@ -47,6 +47,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             none: Do not create a display device
             fb-headless: Create a headless framebuffer device
             egl-headless: Create a headless GPU-backed graphics card. Requires host support
+        nic (str): optional, configuration string to pass to QEMU to create a network interface
     """
     qemu_bin = attr.ib(validator=attr.validators.instance_of(str))
     machine = attr.ib(validator=attr.validators.instance_of(str))
@@ -81,6 +82,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             attr.validators.in_(["none", "fb-headless", "egl-headless"]),
         ))
     )
+    nic = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -196,6 +200,10 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._cmd.append(f"socket,id=serialsocket,path={sockpath}")
         self._cmd.append("-serial")
         self._cmd.append("chardev:serialsocket")
+
+        if self.nic:
+            self._cmd.append("-nic")
+            self._cmd.append(self.nic)
 
         if self.boot_args is not None:
             boot_args.append(self.boot_args)

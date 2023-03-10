@@ -20,6 +20,14 @@ def pytest_configure(config):
         parent=logging.log_file_handler.formatter,
     ))
 
+    # Might be the same formatter instance, so get a reference for both before
+    # changing either
+    report_formatter = logging.report_handler.formatter
+    caplog_formatter = logging.caplog_handler.formatter
+
+    logging.report_handler.setFormatter(StepFormatter(parent=report_formatter))
+    logging.report_handler.setFormatter(StepFormatter(parent=caplog_formatter))
+
     config.addinivalue_line("markers",
                             "lg_feature: marker for labgrid feature flags")
     lg_log = config.option.lg_log

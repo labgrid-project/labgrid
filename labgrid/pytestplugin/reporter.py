@@ -1,18 +1,10 @@
 import logging
-import sys
 import os
 import re
 import colors
 import pytest
 
 from ..step import steps
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(levelname)7s: %(message)s',
-    stream=sys.stderr,
-)
-
 
 def safe_dupfile(f):
     if pytest.__version__ < "6.0.0":

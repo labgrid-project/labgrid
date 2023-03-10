@@ -7,14 +7,18 @@ from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
 from ..logging import StepFormatter, StepLogger
 
-
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
     StepLogger.start()
 
     logging = config.pluginmanager.getplugin('logging-plugin')
-    logging.log_cli_handler.setFormatter(StepFormatter())
-    logging.log_file_handler.setFormatter(StepFormatter())
+    logging.log_cli_handler.setFormatter(StepFormatter(
+        color=config.option.lg_colored_steps,
+        parent=logging.log_cli_handler.formatter,
+    ))
+    logging.log_file_handler.setFormatter(StepFormatter(
+        parent=logging.log_file_handler.formatter,
+    ))
 
     config.addinivalue_line("markers",
                             "lg_feature: marker for labgrid feature flags")

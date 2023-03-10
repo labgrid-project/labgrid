@@ -11,7 +11,7 @@ from typing import Dict
 import attr
 from ..driver.exception import ExecutionError
 
-from .helper import get_free_port
+from .helper import get_free_port, processwrapper
 
 __all__ = ['sshmanager', 'SSHConnection', 'ForwardError']
 
@@ -329,9 +329,10 @@ class SSHConnection:
             f"{self.host}:{remote_path}"
         ]
         self._logger.debug("Running command: %s", complete_cmd)
-        subprocess.check_call(
+        processwrapper.check_output(
             complete_cmd,
             stdin=subprocess.DEVNULL,
+            print_on_silent_log=True
         )
 
     @_check_connected

@@ -866,3 +866,25 @@ labgrid contains some command line tools which are used for remote access to
 resources.
 See :doc:`man/client`, :doc:`man/device-config` and :doc:`man/exporter` for
 more information.
+
+Advanced CLI features
+~~~~~~~~~~~~~~~~~~~~~
+
+This section of the manual describes advanced features that are supported by the
+labgrid client CLI.
+
+Sharing a place with a co-worker
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Labgrid client allows multiple people to access the same shared place,
+even though locks can only be acquired by one person. To allow a coworker to use
+a place use the ``allow`` command of labgrid client in conjunction with the
+coworkers ``user`` and ``hostname``. As an example, with a places named
+``example``, a user name ``john`` and a host named ``sirius``, the command looks
+like this:
+
+.. code-block:: bash
+
+  $ labgrid-client -p example allow sirius/john
+
+To remove the allow it is currently necessary to unlock and lock the place.

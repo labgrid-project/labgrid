@@ -2214,7 +2214,7 @@ Implements:
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of an image to bootstrap onto the target
-  - cmd (str, default="spl"): single command used for mfgtool
+  - script (str): run built-in script with "uuu -b", called with image as arg0
 
 USBStorageDriver
 ~~~~~~~~~~~~~~~~

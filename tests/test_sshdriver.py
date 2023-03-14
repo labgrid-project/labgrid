@@ -38,6 +38,46 @@ def test_create(target, mocker):
     s = SSHDriver(target, "ssh")
     assert isinstance(s, SSHDriver)
 
+def test_can_define_ssh_options(target, mocker):
+    NetworkService(target, "service", "1.2.3.4", "root")
+    call = mocker.patch('subprocess.call')
+    call.return_value = 0
+    popen = mocker.patch('subprocess.Popen', autospec=True)
+    path = mocker.patch('os.path.exists')
+    path.return_value = True
+    instance_mock = mocker.MagicMock()
+    popen.return_value = instance_mock
+    instance_mock.wait = mocker.MagicMock(return_value=0)
+
+    tp = SSHDriver(target, "ssh")
+    tp.extra_options = "-o HostKeyAlgorithms=+ssh-rsa"
+    s = target.get_driver("SSHDriver")
+    assert "HostKeyAlgorithms=+ssh-rsa" in s.ssh_prefix
+
+def test_extra_options_can_be_a_list(target, mocker):
+    NetworkService(target, "service", "1.2.3.4", "root")
+    call = mocker.patch('subprocess.call')
+    call.return_value = 0
+    popen = mocker.patch('subprocess.Popen', autospec=True)
+    path = mocker.patch('os.path.exists')
+    path.return_value = True
+    instance_mock = mocker.MagicMock()
+    popen.return_value = instance_mock
+    instance_mock.wait = mocker.MagicMock(return_value=0)
+
+    tp = SSHDriver(target, "ssh")
+    tp.extra_options = [
+        "-o HostKeyAlgorithms=+ssh-rsa",
+        "-o HostKeyAlgorithms=+ssh-dsa",
+    ]
+    s = target.get_driver("SSHDriver")
+    assert "HostKeyAlgorithms=+ssh-rsa" in s.ssh_prefix
+    assert "HostKeyAlgorithms=+ssh-dsa" in s.ssh_prefix
+
+def test_no_options_will_not_result_in_none_prefix(ssh_driver_mocked_and_activated, mocker):
+    s = ssh_driver_mocked_and_activated
+    assert not '' in s.ssh_prefix
+
 def test_run_check(ssh_driver_mocked_and_activated, mocker):
     s = ssh_driver_mocked_and_activated
     s._run = mocker.MagicMock(return_value=(['success'], [], 0))

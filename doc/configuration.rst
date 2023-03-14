@@ -1483,6 +1483,10 @@ Implements:
 
    SSHDriver:
      keyfile: example.key
+     extra_options:
+       - "-o option1"
+       - "-o options2"
+       - "-4"
 
 Arguments:
   - keyfile (str): optional, filename of private key to login into the remote system
@@ -1491,6 +1495,8 @@ Arguments:
       stdout, and an empty list as second element.
   - connection_timeout (float, default=30.0): timeout when trying to establish connection to
       target.
+  - extra_options (list or str): optional, a list of extra options required for
+    the ssh connection, e.g. defining host key algorithms.
 
 UBootDriver
 ~~~~~~~~~~~

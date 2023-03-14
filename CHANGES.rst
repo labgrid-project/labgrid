@@ -40,6 +40,7 @@ New Features in 23.0
   display device, ``fb-headless`` will create a headless framebuffer device
   for software rendering, and ``egl-headless`` will create a headless GPU
   device for accelerated rendering (but requires host support)
+- Possible to define extra option for ssh connection
 
 Bug fixes in 23.0
 ~~~~~~~~~~~~~~~~~

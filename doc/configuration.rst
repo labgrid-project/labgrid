@@ -1025,6 +1025,35 @@ resource available on a remote computer
 Used by:
   - `FlashScriptDriver`_
 
+DediprogFlasher
+~~~~~~~~~~~~~~~
+A DediprogFlasher resource is used to configure the parameters to a locally installed
+dpmcd instance. It is assumed that dpcmd is installed on the host and the
+executable can be configured via:
+
+.. code-block:: yaml
+
+  tools:
+    dpcmd: '/usr/sbin/dpcmd'
+
+Arguments:
+  - vcc (str): '3.5V', '2.5V' or '1.8V'.
+
+For instance, to flash using 3.5V vcc:
+
+.. code-block:: yaml
+
+  DediprogFlasher:
+    vcc: '3.5V'
+
+
+Used by:
+  - `DediprogFlashDriver`_
+
+NetworkDediprogFlasher
+~~~~~~~~~~~~~~~~~~~~~~
+A NetworkDediprogFlasher describes a `DediprogFlasher`_ available on a remote computer.
+
 XenaManager
 ~~~~~~~~~~~
 A XenaManager resource describes a Xena Manager instance which is the instance the
@@ -2623,6 +2652,30 @@ Key        Description
 Properties of these keys can be selected using the Python format string syntax,
 e.g. ``{device.devnode}`` to select the device node path of
 :any:`USBFlashableDevice`
+
+DediprogFlashDriver
+~~~~~~~~~~~~~~~~~~~
+The :any:`DediprogFlashDriver` is used to flash an SPI device using DediprogFlasher dpcmd.
+
+.. code-block:: yaml
+
+   DediprogFlashDriver:
+     image: 'foo'
+   images:
+     foo: ../images/image_to_load.raw
+
+Binds to:
+  DediprogFlasher_resource:
+    - `DediprogFlasher`_
+    - `NetworkDediprogFlasher`_
+
+Arguments:
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of an image to flash onto the target
+
+The DediprogFlashDriver allows using DediprogFlasher dpcmd to flash or erase SPI
+devices. It is assumed that the device flashing is an exporter wired, via
+DediprogFlasher SF100 for instance, to the device being flashed.
 
 XenaDriver
 ~~~~~~~~~~

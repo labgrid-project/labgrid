@@ -95,6 +95,10 @@ TOOLS KEYS
     Path to the dfu-util binary, used by the DFUDriver.
     See: https://dfu-util.sourceforge.net/
 
+``dpcmd``
+    Path to the dpcmd binary, used by the DediprogFlashDriver.
+    See: https://github.com/DediProgSW/SF100Linux
+
 ``fastboot``
     Path to the fastboot binary, used by the AndroidFastbootDriver.
     See: https://developer.android.com/studio/releases/platform-tools

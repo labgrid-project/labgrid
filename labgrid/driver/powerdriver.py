@@ -203,7 +203,9 @@ class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
         )
 
         # construct proxied host parameter
-        self._host = f'{url.scheme}://{self._host}:{self._port}{url.path}'
+        query = f'?{url.query}' if url.query else ''
+        user_pass = f'{url.netloc.split("@")[0]}@' if '@' in url.netloc else ''
+        self._host = f'{url.scheme}://{user_pass}{self._host}:{self._port}{url.path}{query}'
         self._port = None
 
         return True

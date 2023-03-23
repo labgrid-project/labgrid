@@ -10,6 +10,7 @@ from ..logging import StepFormatter, StepLogger
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
     StepLogger.start()
+    config.add_cleanup(StepLogger.stop)
 
     logging = config.pluginmanager.getplugin('logging-plugin')
     logging.log_cli_handler.setFormatter(StepFormatter(

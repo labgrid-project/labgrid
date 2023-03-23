@@ -85,25 +85,27 @@ class SerialLoggingReporter:
 
     def notify(self, event):
         step = event.step
-        if (
-            step.tag == "console"
-            and step.get_title() == "read"
-            and event.data.get("state") == "stop"
-            and step.result
-        ):
+        state = event.data.get("state")
+        if step.tag == "console":
             self.loggers[step.source] = logging.getLogger(
                 f"SerialLogger.{step.source.__class__.__name__}.{step.source.target}"
             )
             logger = self.loggers[step.source]
-            if step.source not in self.bufs.keys():
-                self.bufs[step.source] = b""
-            self.bufs[step.source] += step.result
-            *parts, self.bufs[step.source] = self.bufs[step.source].split(b"\r\n")
 
-            self.lastevent = event
+            if state == "stop" and step.get_title() == "read" and step.result:
+                if step.source not in self.bufs.keys():
+                    self.bufs[step.source] = b""
+                self.bufs[step.source] += step.result
+                *parts, self.bufs[step.source] = self.bufs[step.source].split(b"\r\n")
 
-            for part in parts:
-                data = self.vt100_replace_cr_nl(part)
+                self.lastevent = event
+
+                for part in parts:
+                    data = self.vt100_replace_cr_nl(part)
+                    logger.info(self.__create_message(event, data))
+
+            elif state == "start" and step.args and "data" in step.args:
+                data = self.vt100_replace_cr_nl(step.args["data"])
                 logger.info(self.__create_message(event, data))
 
     def flush(self):

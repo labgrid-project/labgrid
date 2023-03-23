@@ -3,6 +3,7 @@ import os
 import pexpect
 import pytest
 import time
+import re
 
 @pytest.fixture
 def power_env(tmpdir):
@@ -51,27 +52,25 @@ def test_step_reporter(power_env, pw_cycle_test, color_scheme, pytest_extra_para
 
     # step reporter is called when -vv is given
     # -s is necessary for manual power driver confirmation
-    with pexpect.spawn('pytest -vvs {param} --lg-env {env} {test}'
+    with pexpect.spawn('pytest -vvs --log-cli-level=INFO {param} --lg-env {env} {test}'
         .format(param=pytest_extra_param, env=power_env, test=pw_cycle_test), env=env) as spawn:
 
         # rough match
-        spawn.expect("cycle.*?state.*?=.*?start.*?\r\n")
+        spawn.expect("→.*?Step.*?cycle.*?\r\n".encode("utf-8"))
         step_line = strip_color(spawn.after.decode("utf-8")).rstrip()
         # exact match
-        assert step_line.endswith("cycle state='start'")
+        assert step_line.endswith("→ Step cycle")
 
         spawn.expect("main: CYCLE the target main and press enter")
         time.sleep(0.01) # ensure that the step measures a duration
         spawn.sendline()
 
         # rough match
-        spawn.expect("cycle.*?state.*?=.*?stop.*?\r\n")
+        spawn.expect("←.*?Step.*?cycle.*?\r\n".encode("utf-8"))
         step_line = strip_color(spawn.after.decode("utf-8")).rstrip()
         # exact match
-        assert "state='stop'" in step_line.split()
 
-        # duration
-        assert "duration=" in step_line
+        assert re.match(r"← Step cycle  \[[\d.]+s\]$", step_line), f"'{step_line}' did not match"
 
         spawn.expect(pexpect.EOF)
         spawn.close()

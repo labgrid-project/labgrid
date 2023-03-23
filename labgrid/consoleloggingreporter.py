@@ -83,7 +83,7 @@ class ConsoleLoggingReporter:
         """This is the callback function for steps"""
         step = event.step
         if step.tag == 'console':
-            if str(step) == 'read':
+            if step.get_title() == 'read':
                 if event.data.get('state') == 'stop':
                     if step.result and step.source:
                         log = self.get_logfile(event)

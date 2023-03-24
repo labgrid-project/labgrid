@@ -712,6 +712,7 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         action = self.args.action
         delay = self.args.delay
+        name = self.args.name
         target = self._get_target(place)
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
         from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort
@@ -719,19 +720,19 @@ class ClientSession(ApplicationSession):
 
         drv = None
         try:
-            drv = target.get_driver("PowerProtocol")
+            drv = target.get_driver("PowerProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, NetworkPowerPort):
-                    drv = self._get_driver_or_new(target, "NetworkPowerDriver")
+                    drv = self._get_driver_or_new(target, "NetworkPowerDriver", name=name)
                 elif isinstance(resource, NetworkUSBPowerPort):
-                    drv = self._get_driver_or_new(target, "USBPowerDriver")
+                    drv = self._get_driver_or_new(target, "USBPowerDriver", name=name)
                 elif isinstance(resource, NetworkSiSPMPowerPort):
-                    drv = self._get_driver_or_new(target, "SiSPMPowerDriver")
+                    drv = self._get_driver_or_new(target, "SiSPMPowerDriver", name=name)
                 elif isinstance(resource, PDUDaemonPort):
-                    drv = self._get_driver_or_new(target, "PDUDaemonDriver")
+                    drv = self._get_driver_or_new(target, "PDUDaemonDriver", name=name)
                 elif isinstance(resource, TasmotaPowerPort):
-                    drv = self._get_driver_or_new(target, "TasmotaPowerDriver")
+                    drv = self._get_driver_or_new(target, "TasmotaPowerDriver", name=name)
                 if drv:
                     break
 
@@ -741,7 +742,7 @@ class ClientSession(ApplicationSession):
             drv.delay = delay
         res = getattr(drv, action)()
         if action == 'get':
-            print(f"power for place {place.name} is {'on' if res else 'off'}")
+            print(f"power{' ' + name if name else ''} for place {place.name} is {'on' if res else 'off'}")
 
     def digital_io(self):
         place = self.get_acquired_place()
@@ -1536,6 +1537,7 @@ def main():
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
     subparser.add_argument('-t', '--delay', type=float, default=None,
                            help='wait time in seconds between off and on during cycle')
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.power)
 
     subparser = subparsers.add_parser('io',

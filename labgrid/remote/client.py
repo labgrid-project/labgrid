@@ -1120,8 +1120,9 @@ class ClientSession(ApplicationSession):
     def _get_tmc(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
+        name = self.args.name
 
-        return self._get_driver_or_new(target, "USBTMCDriver")
+        return self._get_driver_or_new(target, "USBTMCDriver", name=name)
 
     def tmc_command(self):
         drv = self._get_tmc()
@@ -1671,6 +1672,7 @@ def main():
     subparser.set_defaults(func=ClientSession.audio)
 
     tmc_parser = subparsers.add_parser('tmc', help="control a USB TMC device")
+    tmc_parser.add_argument('--name', '-n', help="optional resource name")
     tmc_parser.set_defaults(func=lambda _: tmc_parser.print_help())
     tmc_subparsers = tmc_parser.add_subparsers(
         dest='subcommand',

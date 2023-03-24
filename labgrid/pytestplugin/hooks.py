@@ -1,11 +1,37 @@
 import os
 import warnings
+import logging
 import pytest
 
 from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
 from ..logging import StepFormatter, StepLogger
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_cmdline_main(config):
+    def set_cli_log_level(l):
+        nonlocal config
+        current_level = getattr(config.option, "log_cli_level", None)
+
+        if isinstance(current_level, str):
+            current_level = current_level.upper()
+            try:
+                current_level = int(getattr(logging, current_level, None))
+            except ValueError:
+                current_level = logging.WARNING
+
+        if current_level is None or \
+                current_level == logging.NOTSET or \
+                current_level > l:
+            config.option.log_cli_level = str(l)
+
+    verbosity = config.getoption("verbose")
+    if verbosity > 2: # enable with -vvv
+        set_cli_log_level(logging.DEBUG)
+    elif verbosity > 1: # enable with -vv
+        set_cli_log_level(logging.INFO)
+
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):

@@ -868,8 +868,9 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         args = self.args.fastboot_args
         target = self._get_target(place)
+        name = self.args.name
 
-        drv = self._get_driver_or_new(target, "AndroidFastbootDriver", activate=False)
+        drv = self._get_driver_or_new(target, "AndroidFastbootDriver", activate=False, name=name)
         drv.fastboot.timeout = self.args.wait
         target.activate(drv)
 
@@ -1573,6 +1574,7 @@ def main():
     subparser.add_argument('fastboot_args', metavar='ARG', nargs=argparse.REMAINDER,
                            help='fastboot arguments')
     subparser.add_argument('--wait', type=float, default=10.0)
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.fastboot)
 
     subparser = subparsers.add_parser('flashscript',

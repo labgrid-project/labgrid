@@ -964,6 +964,7 @@ class ClientSession(ApplicationSession):
 
     def usb_mux(self):
         place = self.get_acquired_place()
+        name = self.args.name
         links = self.args.links
         if links == 'off':
             links = []
@@ -977,7 +978,7 @@ class ClientSession(ApplicationSession):
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkLXAUSBMux):
-                drv = self._get_driver_or_new(target, "LXAUSBMuxDriver")
+                drv = self._get_driver_or_new(target, "LXAUSBMuxDriver", name=name)
                 break
 
         if not drv:
@@ -1608,6 +1609,7 @@ def main():
     subparser = subparsers.add_parser('usb-mux',
                                       help="switch USB Muxer")
     subparser.add_argument('links', choices=['off', 'dut-device', 'host-dut', 'host-device', 'host-dut+host-device'])
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.usb_mux)
 
     subparser = subparsers.add_parser('ssh',

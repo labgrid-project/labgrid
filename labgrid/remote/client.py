@@ -775,7 +775,7 @@ class ClientSession(ApplicationSession):
         if not drv:
             raise UserError("target has no compatible resource available")
         if action == 'get':
-            print(f"digital IO {name} for place {place.name} is {'high' if drv.get() else 'low'}")
+            print(f"digital IO{' ' + name if name else ''} for place {place.name} is {'high' if drv.get() else 'low'}")
         elif action == 'high':
             drv.set(True)
         elif action == 'low':

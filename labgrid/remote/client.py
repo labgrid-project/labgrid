@@ -940,14 +940,15 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         action = self.args.action
         target = self._get_target(place)
+        name = self.args.name
         from ..resource.remote import NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice
 
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkUSBSDMuxDevice):
-                drv = self._get_driver_or_new(target, "USBSDMuxDriver")
+                drv = self._get_driver_or_new(target, "USBSDMuxDriver", name=name)
             elif isinstance(resource, NetworkUSBSDWireDevice):
-                drv = self._get_driver_or_new(target, "USBSDWireDriver")
+                drv = self._get_driver_or_new(target, "USBSDWireDriver", name=name)
             if drv:
                 break
 
@@ -1601,6 +1602,7 @@ def main():
     subparser = subparsers.add_parser('sd-mux',
                                       help="switch USB SD Muxer or get current mode")
     subparser.add_argument('action', choices=['dut', 'host', 'off', 'client', 'get'])
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.sd_mux)
 
     subparser = subparsers.add_parser('usb-mux',

@@ -850,9 +850,10 @@ class ClientSession(ApplicationSession):
     def dfu(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
+        name = self.args.name
         if self.args.action == 'download' and not self.args.filename:
             raise UserError('not enough arguments for dfu download')
-        drv = self._get_driver_or_new(target, "DFUDriver", activate=False)
+        drv = self._get_driver_or_new(target, "DFUDriver", activate=False, name=name)
         drv.dfu.timeout = self.args.wait
         target.activate(drv)
 
@@ -1564,6 +1565,7 @@ def main():
                            nargs='?')
     subparser.add_argument('filename', help='file to write into device (download only)', nargs='?')
     subparser.add_argument('--wait', type=float, default=10.0)
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.dfu)
 
     subparser = subparsers.add_parser('fastboot',

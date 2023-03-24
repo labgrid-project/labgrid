@@ -1113,7 +1113,8 @@ class ClientSession(ApplicationSession):
     def audio(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        drv = self._get_driver_or_new(target, "USBAudioInputDriver")
+        name = self.args.name
+        drv = self._get_driver_or_new(target, "USBAudioInputDriver", name=name)
         drv.play()
 
     def _get_tmc(self):
@@ -1666,6 +1667,7 @@ def main():
     subparser.set_defaults(func=ClientSession.video)
 
     subparser = subparsers.add_parser('audio', help="start a audio stream")
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.audio)
 
     tmc_parser = subparsers.add_parser('tmc', help="control a USB TMC device")

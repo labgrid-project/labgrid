@@ -91,17 +91,72 @@ The ``tools:`` top key provides paths to binaries such as fastboot.
 TOOLS KEYS
 ~~~~~~~~~~
 
+``dfu-util``
+    Path to the dfu-util binary, used by the DFUDriver.
+    See: https://dfu-util.sourceforge.net/
+
 ``fastboot``
     Path to the fastboot binary, used by the AndroidFastbootDriver.
     See: https://developer.android.com/studio/releases/platform-tools
+
+``flashrom``
+    Path to the flashrom binary, used by the FlashromDriver.
+    See: https://www.flashrom.org/
+
+``imx_usb``
+    Path to the imx_usb binary, used by the BDIMXUSBDriver.
+    See: https://github.com/boundarydevices/imx_usb_loader
 
 ``imx-usb-loader``
     Path to the imx-usb-loader binary, used by the IMXUSBDriver.
     See: https://git.pengutronix.de/cgit/barebox/tree/scripts/imx/imx-usb-loader.c
 
+``jtagconfig``
+    Path to the jtagconfig binary, used by the QuartusHPSDriver.
+    See: https://www.intel.com/content/www/us/en/docs/programmable/683689/current/jtagconfig.html
+
 ``mxs-usb-loader``
     Path to the mxs-usb-loader binary, used by the MXSUSBDriver.
     See: https://git.pengutronix.de/cgit/barebox/tree/scripts/mxs-usb-loader.c?h=v2017.03.0
+
+``openocd``
+    Path to the openocd binary, used by the OpenOCDDriver.
+    See: https://openocd.org/
+
+``quartus_hps``
+    Path to the quartus_hps binary, used by the QuartusHPSDriver.
+    See: https://www.intel.com/content/www/us/en/docs/programmable/683039/22-3/hps-flash-programmer.html
+
+``rk-usb-loader``
+    Path to the rk-usb-loader binary, used by the RKUSBDriver.
+    See: https://git.pengutronix.de/cgit/barebox/tree/scripts/rk-usb-loader.c
+
+``sd-mux-ctrl``
+    Path to the sd-mux-ctrl binary, used by the USBSDWireDriver.
+    See: https://git.tizen.org/cgit/tools/testlab/sd-mux/
+
+``sispmctl``
+    Path to the sispmctl binary, used by the SiSPMPowerDriver.
+    See: https://sispmctl.sourceforge.net/
+
+``uhubctl``
+    Path to the uhubctl binary, used by the USBPowerDriver.
+    See: https://github.com/mvp/uhubctl
+
+``usbmuxctl``
+    Path to the usbmuxctl tool, used by the LXAUSBMuxDriver.
+    https://github.com/linux-automation/usbmuxctl
+
+``usbsdmux``
+    Path to the usbsdmux tool, used by the USBSDMuxDriver.
+    See: https://github.com/linux-automation/usbsdmux
+
+``uuu-loader``
+    Path to the uuu-loader binary, used by the UUUDriver.
+    See: https://github.com/nxp-imx/mfgtools
+
+The QEMUDriver expects a custom key set via its ``qemu_bin`` argument.
+See https://www.qemu.org/
 
 TOOLS EXAMPLE
 ~~~~~~~~~~~~~~

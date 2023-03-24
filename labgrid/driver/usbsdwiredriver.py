@@ -37,3 +37,15 @@ class USBSDWireDriver(Driver):
             self.mux.control_serial,
         ]
         processwrapper.check_output(cmd)
+
+    @Driver.check_active
+    @step(title='sdmux_get')
+    def get_mode(self):
+        cmd = self.mux.command_prefix + [
+            self.tool,
+            "-e",
+            self.mux.control_serial,
+            "-u",
+        ]
+        result = processwrapper.check_output(cmd)
+        return result.split(b": ", maxsplit=1)[1].strip().decode()

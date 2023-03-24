@@ -291,11 +291,15 @@ _labgrid_client_power()
     -t|--delay)
         return
         ;;
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
     esac
 
     case "$cur" in
     -*)
-        COMPREPLY=( $(compgen -W "--delay $_labgrid_shared_options" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--delay --name $_labgrid_shared_options" -- "$cur") )
         ;;
     *)
         local args
@@ -326,9 +330,14 @@ _labgrid_client_io()
         local args
         _labgrid_count_args || return
         # only complete second argument
-        [ "$args" -ne 2 ] && return
-
-        COMPREPLY=( $(compgen -W "high low get" -- "$cur") )
+        case "$args" in
+        2)
+            COMPREPLY=( $(compgen -W "high low get" -- "$cur") )
+            ;;
+        3)
+            _labgrid_complete match-names "$cur"
+            ;;
+        esac
         ;;
     esac
 }
@@ -376,15 +385,19 @@ _labgrid_client_dfu()
     download|detach|list)
         _filedir
         ;;
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
     esac
 
     case "$cur" in
     -*)
-        COMPREPLY=( $(compgen -W "--wait $_labgrid_shared_options" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--wait --name $_labgrid_shared_options" -- "$cur") )
         ;;
     *)
         local args
-        _labgrid_count_args "@(--wait)" || return
+        _labgrid_count_args "@(--wait|-n|--name)" || return
         # only complete second argument
         [ "$args" -ne 2 ] && return
 
@@ -395,7 +408,27 @@ _labgrid_client_dfu()
 
 _labgrid_client_fastboot()
 {
-    _labgrid_client_generic_subcommand "--wait"
+    local cur prev words cword
+    _init_completion || return
+
+    case "$prev" in
+    --wait)
+        return
+        ;;
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
+    esac
+
+    case "$cur" in
+    -*)
+        COMPREPLY=( $(compgen -W "--wait --name $_labgrid_shared_options" -- "$cur") )
+        ;;
+    *)
+        _filedir
+        ;;
+    esac
 }
 
 _labgrid_client_flashscript()
@@ -403,13 +436,20 @@ _labgrid_client_flashscript()
     local cur prev words cword
     _init_completion || return
 
+    case "$prev" in
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
+    esac
+
     case "$cur" in
     -*)
-        COMPREPLY=( $(compgen -W "$_labgrid_shared_options" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--name $_labgrid_shared_options" -- "$cur") )
         ;;
     *)
         local args
-        _labgrid_count_args || return
+        _labgrid_count_args "@(-n|--name)" || return
         # only complete second argument
         [ "$args" -ne 2 ] && return
 
@@ -427,15 +467,19 @@ _labgrid_client_bootstrap()
     -w|--wait)
         return
         ;;
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
     esac
 
     case "$cur" in
     -*)
-        COMPREPLY=( $(compgen -W "--wait $_labgrid_shared_options" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--wait --name $_labgrid_shared_options" -- "$cur") )
         ;;
     *)
         local args
-        _labgrid_count_args "@(-w|--wait)" || return
+        _labgrid_count_args "@(-w|--wait|-n|--name)" || return
         # only complete second argument
         [ "$args" -ne 2 ] && return
 
@@ -449,13 +493,20 @@ _labgrid_client_sd_mux()
     local cur prev words cword
     _init_completion || return
 
+    case "$prev" in
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
+    esac
+
     case "$cur" in
     -*)
-        COMPREPLY=( $(compgen -W "$_labgrid_shared_options" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--name $_labgrid_shared_options" -- "$cur") )
         ;;
     *)
         local args
-        _labgrid_count_args || return
+        _labgrid_count_args "@(-n|--name)" || return
         # only complete second argument
         [ "$args" -ne 2 ] && return
 
@@ -469,13 +520,20 @@ _labgrid_client_usb_mux()
     local cur prev words cword
     _init_completion || return
 
+    case "$prev" in
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
+    esac
+
     case "$cur" in
     -*)
-        COMPREPLY=( $(compgen -W "$_labgrid_shared_options" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--name $_labgrid_shared_options" -- "$cur") )
         ;;
     *)
         local args actions
-        _labgrid_count_args || return
+        _labgrid_count_args "@(-n|--name)" || return
         # only complete second argument
         [ "$args" -ne 2 ] && return
 
@@ -590,7 +648,40 @@ _labgrid_client_forward()
 
 _labgrid_client_video()
 {
-    _labgrid_client_generic_subcommand "--quality --controls"
+    local cur prev words cword
+    _init_completion || return
+
+    case "$prev" in
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
+    esac
+
+    case "$cur" in
+    -*)
+        COMPREPLY=( $(compgen -W "--quality --controls --name $_labgrid_shared_options" -- "$cur") )
+        ;;
+    esac
+}
+
+_labgrid_client_audio()
+{
+    local cur prev words cword
+    _init_completion || return
+
+    case "$prev" in
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
+    esac
+
+    case "$cur" in
+    -*)
+        COMPREPLY=( $(compgen -W "--name $_labgrid_shared_options" -- "$cur") )
+        ;;
+    esac
 }
 
 _labgrid_client_tmc()
@@ -598,14 +689,21 @@ _labgrid_client_tmc()
     local args cur prev words cword
     _init_completion || return
 
+    case "$prev" in
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
+    esac
+
     case "$cur" in
     -*)
-        COMPREPLY=( $(compgen -W "$_labgrid_shared_options" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--name $_labgrid_shared_options" -- "$cur") )
         return
         ;;
     *)
         local args
-        _labgrid_count_args || return
+        _labgrid_count_args "@(-n|--name)" || return
         # only complete second argument
         if [ "$args" -eq 2 ]; then
             COMPREPLY=( $(compgen -W "cmd query screen channel" -- "$cur") )
@@ -649,16 +747,20 @@ _labgrid_client_write_image()
         COMPREPLY=( $( compgen -W "dd bmaptool" -- "$cur") )
         return
         ;;
+    -n|--name)
+        _labgrid_complete match-names "$cur"
+        return
+        ;;
     esac
 
     case "$cur" in
     -*)
-        local options="--wait --partition --skip --seek --mode $_labgrid_shared_options"
+        local options="--wait --partition --skip --seek --mode --name $_labgrid_shared_options"
         COMPREPLY=( $(compgen -W "$options" -- "$cur") )
         ;;
     *)
         local args
-        _labgrid_count_args "@(-w|--wait|-p|--partition|--skip|--seek|--mode)" || return
+        _labgrid_count_args "@(-w|--wait|-p|--partition|--skip|--seek|--mode|-n|--name)" || return
         # only complete second argument
         [ "$args" -ne 2 ] && return
 

@@ -1169,7 +1169,8 @@ class ClientSession(ApplicationSession):
     def write_image(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        drv = self._get_driver_or_new(target, "USBStorageDriver", activate=False)
+        name = self.args.name
+        drv = self._get_driver_or_new(target, "USBStorageDriver", activate=False, name=name)
         drv.storage.timeout = self.args.wait
         target.activate(drv)
 
@@ -1711,6 +1712,7 @@ def main():
     subparser.add_argument('--mode', dest='write_mode',
                            type=Mode, choices=Mode, default=Mode.DD,
                            help="Choose tool for writing images (default: %(default)s)")
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.add_argument('filename', help='filename to boot on the target')
     subparser.set_defaults(func=ClientSession.write_image)
 

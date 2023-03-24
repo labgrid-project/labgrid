@@ -901,29 +901,32 @@ class ClientSession(ApplicationSession):
     def bootstrap(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
+        name = self.args.name
         from ..resource.remote import (NetworkMXSUSBLoader, NetworkIMXUSBLoader, NetworkRKUSBLoader,
                                        NetworkAlteraUSBBlaster)
         from ..driver import OpenOCDDriver
         drv = None
         try:
-            drv = target.get_driver("BootstrapProtocol")
+            drv = target.get_driver("BootstrapProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, NetworkIMXUSBLoader):
-                    drv = self._get_driver_or_new(target, "IMXUSBDriver", activate=False)
+                    drv = self._get_driver_or_new(target, "IMXUSBDriver", activate=False,
+                                                  name=name)
                     drv.loader.timeout = self.args.wait
                 elif isinstance(resource, NetworkMXSUSBLoader):
-                    drv = self._get_driver_or_new(target, "MXSUSBDriver", activate=False)
+                    drv = self._get_driver_or_new(target, "MXSUSBDriver", activate=False,
+                                                  name=name)
                     drv.loader.timeout = self.args.wait
                 elif isinstance(resource, NetworkAlteraUSBBlaster):
                     args = dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
                     try:
-                        drv = target.get_driver("OpenOCDDriver", activate=False)
+                        drv = target.get_driver("OpenOCDDriver", activate=False, name=name)
                     except NoDriverFoundError:
-                        drv = OpenOCDDriver(target, name=None, **args)
+                        drv = OpenOCDDriver(target, name=name, **args)
                     drv.interface.timeout = self.args.wait
                 elif isinstance(resource, NetworkRKUSBLoader):
-                    drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False)
+                    drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False, name=name)
                     drv.loader.timeout = self.args.wait
                 if drv:
                     break
@@ -1592,6 +1595,7 @@ def main():
     subparser.add_argument('filename', help='filename to boot on the target')
     subparser.add_argument('bootstrap_args', metavar='ARG', nargs=argparse.REMAINDER,
                            help='extra bootstrap arguments')
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.bootstrap)
 
     subparser = subparsers.add_parser('sd-mux',

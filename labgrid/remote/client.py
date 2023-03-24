@@ -893,8 +893,9 @@ class ClientSession(ApplicationSession):
     def flashscript(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
+        name = self.args.name
 
-        drv = self._get_driver_or_new(target, "FlashScriptDriver")
+        drv = self._get_driver_or_new(target, "FlashScriptDriver", name=name)
         drv.flash(script=self.args.script, args=self.args.script_args)
 
     def bootstrap(self):
@@ -1582,6 +1583,7 @@ def main():
     subparser.add_argument('script', help="Flashing script")
     subparser.add_argument('script_args', metavar='ARG', nargs=argparse.REMAINDER,
                            help='script arguments')
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.flashscript)
 
     subparser = subparsers.add_parser('bootstrap',

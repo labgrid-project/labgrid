@@ -27,8 +27,10 @@ def pytest_cmdline_main(config):
             config.option.log_cli_level = str(l)
 
     verbosity = config.getoption("verbose")
-    if verbosity > 2: # enable with -vvv
+    if verbosity > 3: # enable with -vvvv
         set_cli_log_level(logging.DEBUG)
+    if verbosity > 2: # enable with -vvv
+        set_cli_log_level(logging.CONSOLE)
     elif verbosity > 1: # enable with -vv
         set_cli_log_level(logging.INFO)
 
@@ -38,22 +40,23 @@ def pytest_configure(config):
     StepLogger.start()
     config.add_cleanup(StepLogger.stop)
 
-    logging = config.pluginmanager.getplugin('logging-plugin')
-    logging.log_cli_handler.setFormatter(StepFormatter(
+    logging_plugin = config.pluginmanager.getplugin('logging-plugin')
+    logging_plugin.log_cli_handler.formatter.add_color_level(logging.CONSOLE, "blue")
+    logging_plugin.log_cli_handler.setFormatter(StepFormatter(
         color=config.option.lg_colored_steps,
-        parent=logging.log_cli_handler.formatter,
+        parent=logging_plugin.log_cli_handler.formatter,
     ))
-    logging.log_file_handler.setFormatter(StepFormatter(
-        parent=logging.log_file_handler.formatter,
+    logging_plugin.log_file_handler.setFormatter(StepFormatter(
+        parent=logging_plugin.log_file_handler.formatter,
     ))
 
     # Might be the same formatter instance, so get a reference for both before
     # changing either
-    report_formatter = logging.report_handler.formatter
-    caplog_formatter = logging.caplog_handler.formatter
+    report_formatter = logging_plugin.report_handler.formatter
+    caplog_formatter = logging_plugin.caplog_handler.formatter
 
-    logging.report_handler.setFormatter(StepFormatter(parent=report_formatter))
-    logging.report_handler.setFormatter(StepFormatter(parent=caplog_formatter))
+    logging_plugin.report_handler.setFormatter(StepFormatter(parent=report_formatter))
+    logging_plugin.report_handler.setFormatter(StepFormatter(parent=caplog_formatter))
 
     config.addinivalue_line("markers",
                             "lg_feature: marker for labgrid feature flags")

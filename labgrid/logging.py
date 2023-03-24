@@ -13,6 +13,9 @@ def basicConfig(**kwargs):
     root.handlers[0].setFormatter(StepFormatter())
 
 
+logging.CONSOLE = logging.INFO - 1
+logging.addLevelName(logging.CONSOLE, "CONSOLE")
+
 # Use composition instead of inheritance
 class StepFormatter:
     def __init__(
@@ -102,11 +105,11 @@ class SerialLoggingReporter:
 
                 for part in parts:
                     data = self.vt100_replace_cr_nl(part)
-                    logger.info(self.__create_message(event, data))
+                    logger.log(logging.CONSOLE, self.__create_message(event, data))
 
             elif state == "start" and step.args and "data" in step.args:
                 data = self.vt100_replace_cr_nl(step.args["data"])
-                logger.info(self.__create_message(event, data))
+                logger.log(logging.CONSOLE, self.__create_message(event, data))
 
     def flush(self):
         if self.lastevent is None:
@@ -115,7 +118,7 @@ class SerialLoggingReporter:
         for source, logger in self.loggers.items():
             data = self.vt100_replace_cr_nl(self.bufs[source])
             if data:
-                logger.info(self.__create_message(self.lastevent, data))
+                logger.log(logging.CONSOLE, self.__create_message(self.lastevent, data))
             self.bufs[source] = b""
 
 

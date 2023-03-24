@@ -754,7 +754,7 @@ class ClientSession(ApplicationSession):
 
         drv = None
         try:
-            drv = target.get_driver("DigitalOutputProtocol")
+            drv = target.get_driver("DigitalOutputProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, ModbusTCPCoil):

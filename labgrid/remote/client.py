@@ -1084,18 +1084,19 @@ class ClientSession(ApplicationSession):
         quality = self.args.quality
         controls = self.args.controls
         target = self._get_target(place)
+        name = self.args.name
         from ..resource.httpvideostream import HTTPVideoStream
         from ..resource.udev import USBVideo
         from ..resource.remote import NetworkUSBVideo
         drv = None
         try:
-            drv = target.get_driver("VideoProtocol")
+            drv = target.get_driver("VideoProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, (USBVideo, NetworkUSBVideo)):
-                    drv = self._get_driver_or_new(target, "USBVideoDriver")
+                    drv = self._get_driver_or_new(target, "USBVideoDriver", name=name)
                 elif isinstance(resource, HTTPVideoStream):
-                    drv = self._get_driver_or_new(target, "HTTPVideoDriver")
+                    drv = self._get_driver_or_new(target, "HTTPVideoDriver", name=name)
                 if drv:
                     break
         if not drv:
@@ -1661,6 +1662,7 @@ def main():
                            help="select a video quality (use 'list' to show options)")
     subparser.add_argument('-c', '--controls', type=str,
                            help="configure v4l controls (such as 'focus_auto=0,focus_absolute=40')")
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.video)
 
     subparser = subparsers.add_parser('audio', help="start a audio stream")

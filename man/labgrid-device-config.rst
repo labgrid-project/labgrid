@@ -92,13 +92,16 @@ TOOLS KEYS
 ~~~~~~~~~~
 
 ``fastboot``
-    Path to the fastboot binary
+    Path to the fastboot binary, used by the AndroidFastbootDriver.
+    See: https://developer.android.com/studio/releases/platform-tools
 
 ``imx-usb-loader``
-    Path to the imx-usb-loader binary
+    Path to the imx-usb-loader binary, used by the IMXUSBDriver.
+    See: https://git.pengutronix.de/cgit/barebox/tree/scripts/imx/imx-usb-loader.c
 
 ``mxs-usb-loader``
-    Path to the mxs-usb-loader binary
+    Path to the mxs-usb-loader binary, used by the MXSUSBDriver.
+    See: https://git.pengutronix.de/cgit/barebox/tree/scripts/mxs-usb-loader.c?h=v2017.03.0
 
 TOOLS EXAMPLE
 ~~~~~~~~~~~~~~

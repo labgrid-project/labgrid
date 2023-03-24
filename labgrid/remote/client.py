@@ -677,7 +677,7 @@ class ClientSession(ApplicationSession):
             RemotePlace(target, name=place.name)
         return target
 
-    def _get_driver_or_new(self, target, cls, *, name=None, activate=True, binding_map=None):
+    def _get_driver_or_new(self, target, cls, *, name=None, activate=True):
         """
         Helper function trying to get an active driver. If no such driver
         exists, instanciates a new driver.
@@ -694,8 +694,14 @@ class ClientSession(ApplicationSession):
         except NoDriverFoundError:
             if isinstance(cls, str):
                 cls = target_factory.class_from_string(cls)
-            if binding_map:
-                target.set_binding_map(binding_map)
+
+            if name is not None:
+                # set name in binding map for unique bindings
+                try:
+                    [unique_binding_key] = cls.bindings
+                    target.set_binding_map({unique_binding_key: name})
+                except ValueError:
+                    raise NotImplementedError("Multiple bindings not implemented for named resources")
 
             drv = cls(target, name=name)
             if activate:
@@ -752,23 +758,17 @@ class ClientSession(ApplicationSession):
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, ModbusTCPCoil):
-                    drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name,
-                                                  binding_map={"coil": name})
+                    drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name)
                 elif isinstance(resource, OneWirePIO):
-                    drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name,
-                                                  binding_map={"port": name})
+                    drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name)
                 elif isinstance(resource, NetworkDeditecRelais8):
-                    drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name,
-                                                  binding_map={"relais": name})
+                    drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name)
                 elif isinstance(resource, NetworkSysfsGPIO):
-                    drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name,
-                                                  binding_map={"gpio": name})
+                    drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
                 elif isinstance(resource, NetworkLXAIOBusPIO):
-                    drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name,
-                                                  binding_map={"pio": name})
+                    drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name)
                 elif isinstance(resource, NetworkHIDRelay):
-                    drv = self._get_driver_or_new(target, "HIDRelayDriver", name=name,
-                                                  binding_map={"relay": name})
+                    drv = self._get_driver_or_new(target, "HIDRelayDriver", name=name)
                 if drv:
                     break
 
@@ -1010,8 +1010,7 @@ class ClientSession(ApplicationSession):
                 return
             resource = NetworkService(target, address=str(ip), username='root')
 
-        drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name,
-                                      binding_map={"networkservice": resource.name})
+        drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name)
         return drv
 
     def ssh(self):

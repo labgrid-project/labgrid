@@ -94,11 +94,11 @@ TOOLS KEYS
 ``fastboot``
     Path to the fastboot binary
 
-``mxs-usb-loader``
-    Path to the mxs-usb-loader binary
-
 ``imx-usb-loader``
     Path to the imx-usb-loader binary
+
+``mxs-usb-loader``
+    Path to the mxs-usb-loader binary
 
 TOOLS EXAMPLE
 ~~~~~~~~~~~~~~

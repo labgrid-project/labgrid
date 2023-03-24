@@ -1,3 +1,48 @@
+Release 24.0 (unreleased)
+
+New Features in 24.0
+~~~~~~~~~~~~~~~~~~~~
+- When invoking tests with pytest, the ``--log-(cli|file)-(level|format)``
+  command line arguments and their corresponding pytest.ini configure options
+  are now respected (making it possible to have different format and logging
+  levels in the log file than then console).
+- A new log level called ``CONSOLE`` has been added between the default
+  ``INFO`` and ``DEBUG`` levels. This level will show all reads and writes made
+  to the serial console during testing.
+
+Bug fixes in 24.0
+~~~~~~~~~~~~~~~~~
+
+Breaking changes in 24.0
+~~~~~~~~~~~~~~~~~~~~~~~~~
+- The `StepReporter` API has been changed. To start step reporting, you must
+  now call ``StepReporter.start()`` instead of ``StepReporter()``
+- Logging output when running pytest is no longer sent to stderr by default,
+  since this is both chatty and also unnecessary with the improved logging
+  flexibility. It it recommended to use the ``--log-cli-level=INFO`` command
+  line option, or ``log_cli_level = INFO`` option in pytest.ini, but if you
+  want to restore the old behavior add the following to your ``conftest.py``
+  file (note that doing so may affect the ability to use some more advanced
+  logging features)::
+
+     def pytest_configure(config):
+         import logging
+         import sys
+
+         logging.basicConfig(
+             level=logging.INFO,
+             format='%(levelname)8s: %(message)s',
+             stream=sys.stderr,
+         )
+
+- The interpretation of the ``-v`` command line argument to pytest has changed
+  slightly. ``-vv`` is now an alias for ``--log-cli-level=INFO`` (effectively
+  unchanged), ``-vvv`` is an alias for ``--log-cli-level=CONSOLE``, and
+  ``-vvvv`` is an alias for ``--log-cli-level=DEBUG``.
+
+Known issues in 24.0
+~~~~~~~~~~~~~~~~~~~~
+
 Release 23.0 (Released Apr 24, 2023)
 ------------------------------------
 

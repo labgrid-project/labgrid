@@ -186,7 +186,7 @@ New Features in 0.4.0
 - With ``--lg-colored-steps``, two new ``dark`` and ``light`` color schemes
   which only use the standard 8 ANSI colors can be set in ``LG_COLOR_SCHEME``.
   The existing color schemes have been renamed to ``dark-256color`` and ``light-256color``.
-  Also, the `ColoredStepReporter` now tries to autodetect whether the terminal
+  Also, the ``ColoredStepReporter`` now tries to autodetect whether the terminal
   supports 8 or 256 colors, and defaults to the respective dark variant.
   The 256-color schemes now use purple instead of green for the ``run`` lines to
   make them easier distinguishable from pytest's "PASSED" output.

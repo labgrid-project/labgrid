@@ -3023,10 +3023,6 @@ The Reporter can be stopped with a call to the stop function:
 Stopping the StepReporter if it has not been started will raise an
 AssertionError, as will starting an already started StepReporter.
 
-ColoredStepReporter
-~~~~~~~~~~~~~~~~~~~
-The ColoredStepReporter inherits from the StepReporter.
-The output is colored using ANSI color code sequences.
 
 ConsoleLoggingReporter
 ~~~~~~~~~~~~~~~~~~~~~~

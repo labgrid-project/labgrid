@@ -18,6 +18,6 @@ jobs:
   build-and-release:
     name: Release to Pypi
     needs: push-pr-unit-tests
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.repository == 'labgrid-project/labgrid'
     uses: ./.github/workflows/build-and-release.yml
     secrets: inherit

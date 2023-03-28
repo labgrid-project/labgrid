@@ -2311,6 +2311,7 @@ Binds to:
      kernel: kernel
      rootfs: rootfs
      dtb: dtb
+     nic: user
 
 .. code-block:: yaml
 
@@ -2344,6 +2345,7 @@ Arguments:
     - none: Do not create a display device
     - fb-headless: Create a headless framebuffer device
     - egl-headless: Create a headless GPU-backed graphics card. Requires host support
+  - nic (str): optional, configuration string to pass to QEMU to create a network interface
 
 The QEMUDriver also requires the specification of:
 

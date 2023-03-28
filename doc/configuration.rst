@@ -1488,9 +1488,9 @@ Arguments:
   - keyfile (str): optional, filename of private key to login into the remote system
     (has precedence over `NetworkService`'s password)
   - stderr_merge (bool, default=False): set to True to make `run()` return stderr merged with
-      stdout, and an empty list as second element.
+    stdout, and an empty list as second element.
   - connection_timeout (float, default=30.0): timeout when trying to establish connection to
-      target.
+    target.
 
 UBootDriver
 ~~~~~~~~~~~

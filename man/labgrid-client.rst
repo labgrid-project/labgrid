@@ -221,9 +221,8 @@ client commands support the name as an optional parameter and will inform the
 user that a name is required if multiple resources are found, but no name is
 given.
 
-If a target contains multiple resources and one of them should be used, even
-when not explicitly specified, it can be named ``default``. If either none or
-too many resources pass the resource name check, the default resource is used.
+If one of the resources should be used by default when no resource name is
+explicitly specified, it can be named ``default``.
 
 EXAMPLES
 --------

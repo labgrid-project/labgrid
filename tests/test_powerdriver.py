@@ -181,6 +181,8 @@ class TestNetworkPowerDriver:
             'https://example.com/{index}',
             'http://example.com:1234/{index}',
             'https://example.com:1234/{index}',
+            'http://user:pass@example.com:1234/{index}',
+            'https://user:pass@example.com:1234/{index}',
         )
     )
     def test_create_backend_with_url_in_host(self, target, mocker, backend, host):
@@ -201,7 +203,7 @@ class TestNetworkPowerDriver:
         # index and explicit port
         expected_host = host.format(index=index)
         url = urlparse(expected_host)
-        if ':' not in url.netloc:
+        if url.port is None:
             implicit_port = 443 if url.scheme == 'https' else 80
             expected_host = expected_host.replace(url.netloc, f'{url.netloc}:{implicit_port}')
 

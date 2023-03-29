@@ -123,16 +123,16 @@ class Target:
         for res in self.resources:
             if not isinstance(res, cls):
                 continue
-            if not name and res.name == "default":
+            if res.name == "default":
                 default = res
             if name and res.name != name:
                 other_names.append(res.name)
                 continue
             found.append(res)
 
-        # if a resouce named "default" was found and either none or too many resource's names
-        # matched, use the default resource
-        if default and len(found) != 1:
+        # if no explicit resource name is requested and a "default" resource was saved and
+        # multiple resources were found, use the default resource
+        if not name and default and len(found) != 1:
             found = [default]
 
         if not found:

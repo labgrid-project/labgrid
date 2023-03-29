@@ -27,6 +27,11 @@ def test_get_resource(target):
     assert target.get_resource(A) is a
     assert target.get_resource(A, name="aresource") is a
 
+    # make sure resources named "default" are prioritized
+    b = A(target, "default")
+    assert target.get_resource(A) is b
+    assert target.get_resource(A, name="aresource") is a
+
 
 def test_get_driver(target):
     class A(Driver):

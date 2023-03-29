@@ -116,16 +116,25 @@ class Target:
         """
         found = []
         other_names = []
+        default = None
         if isinstance(cls, str):
             cls = target_factory.class_from_string(cls)
 
         for res in self.resources:
             if not isinstance(res, cls):
                 continue
+            if not name and res.name == "default":
+                default = res
             if name and res.name != name:
                 other_names.append(res.name)
                 continue
             found.append(res)
+
+        # if a resouce named "default" was found and either none or too many resource's names
+        # matched, use the default resource
+        if default and len(found) != 1:
+            found = [default]
+
         if not found:
             name_msg = f" named '{name}'" if name else ""
             if other_names:

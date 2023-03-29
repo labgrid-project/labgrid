@@ -227,6 +227,10 @@ be used to address the individual resources. In addition to the \fImatch\fP take
 client commands support the name as an optional parameter and will inform the
 user that a name is required if multiple resources are found, but no name is
 given.
+.sp
+If a target contains multiple resources and one of them should be used, even
+when not explicitly specified, it can be named \fBdefault\fP\&. If either none or
+too many resources pass the resource name check, the default resource is used.
 .SH EXAMPLES
 .sp
 To retrieve a list of places run:

@@ -2,6 +2,7 @@
 import contextlib
 import logging
 import os
+import re
 import stat
 import shlex
 import shutil
@@ -32,6 +33,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     stderr_merge = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     connection_timeout = attr.ib(default=float(get_ssh_connect_timeout()), validator=attr.validators.instance_of(float))
+    explicit_sftp_mode = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -397,12 +399,28 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """The SSHDriver is always connected, return 1"""
         return 1
 
+    def _scp_supports_explicit_sftp_mode(self):
+        version = subprocess.run(["ssh", "-V"], capture_output=True, text=True)
+        version = re.match(r"^OpenSSH_(\d+)\.(\d+)", version.stderr)
+        major, minor = map(int, version.groups())
+
+        # OpenSSH >= 8.6 supports explicitly using the SFTP protocol via -s
+        if major == 8 and minor >= 6:
+            return True
+        # OpenSSH >= 9.0 default to the SFTP protocol
+        if major >= 9:
+            return False
+        raise Exception(f"OpenSSH version {major}.{minor} does not support explicit SFTP mode")
+
     @Driver.check_active
     @step(args=['filename', 'remotepath'])
     def put(self, filename, remotepath=''):
+        ssh_prefix = self.ssh_prefix
+        if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
+            ssh_prefix.append("-s")
         transfer_cmd = [
             "scp",
-            *self.ssh_prefix,
+            *ssh_prefix,
             "-P", str(self.networkservice.port),
             "-r",
             filename,
@@ -425,9 +443,12 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['filename', 'destination'])
     def get(self, filename, destination="."):
+        ssh_prefix = self.ssh_prefix
+        if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
+            ssh_prefix.append("-s")
         transfer_cmd = [
             "scp",
-            *self.ssh_prefix,
+            *ssh_prefix,
             "-P", str(self.networkservice.port),
             "-r",
             f"{self.networkservice.username}@{self.networkservice.address}:{filename}",

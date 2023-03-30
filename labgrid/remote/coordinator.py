@@ -1,6 +1,7 @@
 """The coordinator module coordinates exported resources and clients accessing them."""
 # pylint: disable=no-member,unused-argument
 import asyncio
+import sys
 import traceback
 from collections import defaultdict
 from os import environ
@@ -592,7 +593,7 @@ class CoordinatorComponent(ApplicationSession):
                                 resource.path[1], resource.path[3], place.name)
                 acquired.append(resource)
         except:
-            print(f"failed to acquire {resource}")
+            print(f"failed to acquire {resource}", file=sys.stderr)
             # cleanup
             await self._release_resources(place, acquired)
             return False
@@ -619,7 +620,7 @@ class CoordinatorComponent(ApplicationSession):
                     await self.call(f'org.labgrid.exporter.{resource.path[0]}.release',
                                     resource.path[1], resource.path[3])
             except:
-                print(f"failed to release {resource}")
+                print(f"failed to release {resource}", file=sys.stderr)
                 # at leaset try to notify the clients
                 try:
                     self._publish_resource(resource)

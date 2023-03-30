@@ -38,7 +38,7 @@ class BackgroundLoop(threading.Thread):
             GLib.MainLoop(None).run()
         except Exception:
             import traceback
-            traceback.print_exc()
+            traceback.print_exc(file=sys.stderr)
             sys.exit(1)
 
     def block_on(self, func, *args, **kwargs):

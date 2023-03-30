@@ -768,7 +768,7 @@ class ExporterSession(ApplicationSession):
                     self.checkpoint = time.monotonic()
 
         except Exception:  # pylint: disable=broad-except
-            traceback.print_exc()
+            traceback.print_exc(file=sys.stderr)
             self.loop.stop()
             return
 
@@ -782,7 +782,7 @@ class ExporterSession(ApplicationSession):
         super().onLeave(details)
 
     async def onDisconnect(self):
-        print("connection lost")
+        print("connection lost", file=sys.stderr)
         global reexec
         reexec = True
         if self.poll_task:
@@ -818,7 +818,7 @@ class ExporterSession(ApplicationSession):
                     changed = resource.poll()
                 except Exception:  # pylint: disable=broad-except
                     print(f"Exception while polling {resource}", file=sys.stderr)
-                    traceback.print_exc()
+                    traceback.print_exc(file=sys.stderr)
                     continue
                 if changed:
                     await self.update_resource(group_name, resource_name)
@@ -834,10 +834,10 @@ class ExporterSession(ApplicationSession):
             except asyncio.CancelledError:
                 break
             except Exception:  # pylint: disable=broad-except
-                traceback.print_exc()
+                traceback.print_exc(file=sys.stderr)
             age = time.monotonic() - self.checkpoint
             if age > 300:
-                print(f"missed checkpoint, exiting (last was {age} seconds ago)")
+                print(f"missed checkpoint, exiting (last was {age} seconds ago)", file=sys.stderr)
                 self.disconnect()
 
     async def add_resource(self, group_name, resource_name, cls, params):

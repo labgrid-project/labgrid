@@ -1,7 +1,6 @@
 import shlex
 import time
 import math
-from urllib.parse import urlparse
 from importlib import import_module
 
 import attr
@@ -184,6 +183,8 @@ class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
         handle the host parameter as a URL, extract the power backend port from it and set new
         proxied host parameter.
         """
+        from urllib.parse import urlparse
+
         url = urlparse(self.port.host)
         if not url.hostname:
             return False

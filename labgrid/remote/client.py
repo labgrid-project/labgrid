@@ -677,7 +677,7 @@ class ClientSession(ApplicationSession):
             RemotePlace(target, name=place.name)
         return target
 
-    def _get_driver_or_new(self, target, cls, *, name=None, activate=True, binding_map=None):
+    def _get_driver_or_new(self, target, cls, *, name=None, activate=True):
         """
         Helper function trying to get an active driver. If no such driver
         exists, instanciates a new driver.
@@ -694,8 +694,14 @@ class ClientSession(ApplicationSession):
         except NoDriverFoundError:
             if isinstance(cls, str):
                 cls = target_factory.class_from_string(cls)
-            if binding_map:
-                target.set_binding_map(binding_map)
+
+            if name is not None:
+                # set name in binding map for unique bindings
+                try:
+                    [unique_binding_key] = cls.bindings
+                    target.set_binding_map({unique_binding_key: name})
+                except ValueError:
+                    raise NotImplementedError("Multiple bindings not implemented for named resources")
 
             drv = cls(target, name=name)
             if activate:
@@ -706,6 +712,7 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         action = self.args.action
         delay = self.args.delay
+        name = self.args.name
         target = self._get_target(place)
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
         from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort
@@ -713,19 +720,19 @@ class ClientSession(ApplicationSession):
 
         drv = None
         try:
-            drv = target.get_driver("PowerProtocol")
+            drv = target.get_driver("PowerProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, NetworkPowerPort):
-                    drv = self._get_driver_or_new(target, "NetworkPowerDriver")
+                    drv = self._get_driver_or_new(target, "NetworkPowerDriver", name=name)
                 elif isinstance(resource, NetworkUSBPowerPort):
-                    drv = self._get_driver_or_new(target, "USBPowerDriver")
+                    drv = self._get_driver_or_new(target, "USBPowerDriver", name=name)
                 elif isinstance(resource, NetworkSiSPMPowerPort):
-                    drv = self._get_driver_or_new(target, "SiSPMPowerDriver")
+                    drv = self._get_driver_or_new(target, "SiSPMPowerDriver", name=name)
                 elif isinstance(resource, PDUDaemonPort):
-                    drv = self._get_driver_or_new(target, "PDUDaemonDriver")
+                    drv = self._get_driver_or_new(target, "PDUDaemonDriver", name=name)
                 elif isinstance(resource, TasmotaPowerPort):
-                    drv = self._get_driver_or_new(target, "TasmotaPowerDriver")
+                    drv = self._get_driver_or_new(target, "TasmotaPowerDriver", name=name)
                 if drv:
                     break
 
@@ -735,7 +742,7 @@ class ClientSession(ApplicationSession):
             drv.delay = delay
         res = getattr(drv, action)()
         if action == 'get':
-            print(f"power for place {place.name} is {'on' if res else 'off'}")
+            print(f"power{' ' + name if name else ''} for place {place.name} is {'on' if res else 'off'}")
 
     def digital_io(self):
         place = self.get_acquired_place()
@@ -748,34 +755,28 @@ class ClientSession(ApplicationSession):
 
         drv = None
         try:
-            drv = target.get_driver("DigitalOutputProtocol")
+            drv = target.get_driver("DigitalOutputProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, ModbusTCPCoil):
-                    drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name,
-                                                  binding_map={"coil": name})
+                    drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name)
                 elif isinstance(resource, OneWirePIO):
-                    drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name,
-                                                  binding_map={"port": name})
+                    drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name)
                 elif isinstance(resource, NetworkDeditecRelais8):
-                    drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name,
-                                                  binding_map={"relais": name})
+                    drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name)
                 elif isinstance(resource, NetworkSysfsGPIO):
-                    drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name,
-                                                  binding_map={"gpio": name})
+                    drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
                 elif isinstance(resource, NetworkLXAIOBusPIO):
-                    drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name,
-                                                  binding_map={"pio": name})
+                    drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name)
                 elif isinstance(resource, NetworkHIDRelay):
-                    drv = self._get_driver_or_new(target, "HIDRelayDriver", name=name,
-                                                  binding_map={"relay": name})
+                    drv = self._get_driver_or_new(target, "HIDRelayDriver", name=name)
                 if drv:
                     break
 
         if not drv:
             raise UserError("target has no compatible resource available")
         if action == 'get':
-            print(f"digital IO {name} for place {place.name} is {'high' if drv.get() else 'low'}")
+            print(f"digital IO{' ' + name if name else ''} for place {place.name} is {'high' if drv.get() else 'low'}")
         elif action == 'high':
             drv.set(True)
         elif action == 'low':
@@ -849,9 +850,10 @@ class ClientSession(ApplicationSession):
     def dfu(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
+        name = self.args.name
         if self.args.action == 'download' and not self.args.filename:
             raise UserError('not enough arguments for dfu download')
-        drv = self._get_driver_or_new(target, "DFUDriver", activate=False)
+        drv = self._get_driver_or_new(target, "DFUDriver", activate=False, name=name)
         drv.dfu.timeout = self.args.wait
         target.activate(drv)
 
@@ -866,8 +868,9 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         args = self.args.fastboot_args
         target = self._get_target(place)
+        name = self.args.name
 
-        drv = self._get_driver_or_new(target, "AndroidFastbootDriver", activate=False)
+        drv = self._get_driver_or_new(target, "AndroidFastbootDriver", activate=False, name=name)
         drv.fastboot.timeout = self.args.wait
         target.activate(drv)
 
@@ -890,36 +893,40 @@ class ClientSession(ApplicationSession):
     def flashscript(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
+        name = self.args.name
 
-        drv = self._get_driver_or_new(target, "FlashScriptDriver")
+        drv = self._get_driver_or_new(target, "FlashScriptDriver", name=name)
         drv.flash(script=self.args.script, args=self.args.script_args)
 
     def bootstrap(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
+        name = self.args.name
         from ..resource.remote import (NetworkMXSUSBLoader, NetworkIMXUSBLoader, NetworkRKUSBLoader,
                                        NetworkAlteraUSBBlaster)
         from ..driver import OpenOCDDriver
         drv = None
         try:
-            drv = target.get_driver("BootstrapProtocol")
+            drv = target.get_driver("BootstrapProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, NetworkIMXUSBLoader):
-                    drv = self._get_driver_or_new(target, "IMXUSBDriver", activate=False)
+                    drv = self._get_driver_or_new(target, "IMXUSBDriver", activate=False,
+                                                  name=name)
                     drv.loader.timeout = self.args.wait
                 elif isinstance(resource, NetworkMXSUSBLoader):
-                    drv = self._get_driver_or_new(target, "MXSUSBDriver", activate=False)
+                    drv = self._get_driver_or_new(target, "MXSUSBDriver", activate=False,
+                                                  name=name)
                     drv.loader.timeout = self.args.wait
                 elif isinstance(resource, NetworkAlteraUSBBlaster):
                     args = dict(arg.split('=', 1) for arg in self.args.bootstrap_args)
                     try:
-                        drv = target.get_driver("OpenOCDDriver", activate=False)
+                        drv = target.get_driver("OpenOCDDriver", activate=False, name=name)
                     except NoDriverFoundError:
-                        drv = OpenOCDDriver(target, name=None, **args)
+                        drv = OpenOCDDriver(target, name=name, **args)
                     drv.interface.timeout = self.args.wait
                 elif isinstance(resource, NetworkRKUSBLoader):
-                    drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False)
+                    drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False, name=name)
                     drv.loader.timeout = self.args.wait
                 if drv:
                     break
@@ -933,14 +940,15 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         action = self.args.action
         target = self._get_target(place)
+        name = self.args.name
         from ..resource.remote import NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice
 
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkUSBSDMuxDevice):
-                drv = self._get_driver_or_new(target, "USBSDMuxDriver")
+                drv = self._get_driver_or_new(target, "USBSDMuxDriver", name=name)
             elif isinstance(resource, NetworkUSBSDWireDevice):
-                drv = self._get_driver_or_new(target, "USBSDWireDriver")
+                drv = self._get_driver_or_new(target, "USBSDWireDriver", name=name)
             if drv:
                 break
 
@@ -956,6 +964,7 @@ class ClientSession(ApplicationSession):
 
     def usb_mux(self):
         place = self.get_acquired_place()
+        name = self.args.name
         links = self.args.links
         if links == 'off':
             links = []
@@ -969,7 +978,7 @@ class ClientSession(ApplicationSession):
         drv = None
         for resource in target.resources:
             if isinstance(resource, NetworkLXAUSBMux):
-                drv = self._get_driver_or_new(target, "LXAUSBMuxDriver")
+                drv = self._get_driver_or_new(target, "LXAUSBMuxDriver", name=name)
                 break
 
         if not drv:
@@ -1010,8 +1019,7 @@ class ClientSession(ApplicationSession):
                 return
             resource = NetworkService(target, address=str(ip), username='root')
 
-        drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name,
-                                      binding_map={"networkservice": resource.name})
+        drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name)
         return drv
 
     def ssh(self):
@@ -1076,18 +1084,19 @@ class ClientSession(ApplicationSession):
         quality = self.args.quality
         controls = self.args.controls
         target = self._get_target(place)
+        name = self.args.name
         from ..resource.httpvideostream import HTTPVideoStream
         from ..resource.udev import USBVideo
         from ..resource.remote import NetworkUSBVideo
         drv = None
         try:
-            drv = target.get_driver("VideoProtocol")
+            drv = target.get_driver("VideoProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
                 if isinstance(resource, (USBVideo, NetworkUSBVideo)):
-                    drv = self._get_driver_or_new(target, "USBVideoDriver")
+                    drv = self._get_driver_or_new(target, "USBVideoDriver", name=name)
                 elif isinstance(resource, HTTPVideoStream):
-                    drv = self._get_driver_or_new(target, "HTTPVideoDriver")
+                    drv = self._get_driver_or_new(target, "HTTPVideoDriver", name=name)
                 if drv:
                     break
         if not drv:
@@ -1104,14 +1113,16 @@ class ClientSession(ApplicationSession):
     def audio(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        drv = self._get_driver_or_new(target, "USBAudioInputDriver")
+        name = self.args.name
+        drv = self._get_driver_or_new(target, "USBAudioInputDriver", name=name)
         drv.play()
 
     def _get_tmc(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
+        name = self.args.name
 
-        return self._get_driver_or_new(target, "USBTMCDriver")
+        return self._get_driver_or_new(target, "USBTMCDriver", name=name)
 
     def tmc_command(self):
         drv = self._get_tmc()
@@ -1158,7 +1169,8 @@ class ClientSession(ApplicationSession):
     def write_image(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
-        drv = self._get_driver_or_new(target, "USBStorageDriver", activate=False)
+        name = self.args.name
+        drv = self._get_driver_or_new(target, "USBStorageDriver", activate=False, name=name)
         drv.storage.timeout = self.args.wait
         target.activate(drv)
 
@@ -1537,6 +1549,7 @@ def main():
     subparser.add_argument('action', choices=['on', 'off', 'cycle', 'get'])
     subparser.add_argument('-t', '--delay', type=float, default=None,
                            help='wait time in seconds between off and on during cycle')
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.power)
 
     subparser = subparsers.add_parser('io',
@@ -1563,6 +1576,7 @@ def main():
                            nargs='?')
     subparser.add_argument('filename', help='file to write into device (download only)', nargs='?')
     subparser.add_argument('--wait', type=float, default=10.0)
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.dfu)
 
     subparser = subparsers.add_parser('fastboot',
@@ -1570,6 +1584,7 @@ def main():
     subparser.add_argument('fastboot_args', metavar='ARG', nargs=argparse.REMAINDER,
                            help='fastboot arguments')
     subparser.add_argument('--wait', type=float, default=10.0)
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.fastboot)
 
     subparser = subparsers.add_parser('flashscript',
@@ -1577,6 +1592,7 @@ def main():
     subparser.add_argument('script', help="Flashing script")
     subparser.add_argument('script_args', metavar='ARG', nargs=argparse.REMAINDER,
                            help='script arguments')
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.flashscript)
 
     subparser = subparsers.add_parser('bootstrap',
@@ -1585,16 +1601,19 @@ def main():
     subparser.add_argument('filename', help='filename to boot on the target')
     subparser.add_argument('bootstrap_args', metavar='ARG', nargs=argparse.REMAINDER,
                            help='extra bootstrap arguments')
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.bootstrap)
 
     subparser = subparsers.add_parser('sd-mux',
                                       help="switch USB SD Muxer or get current mode")
     subparser.add_argument('action', choices=['dut', 'host', 'off', 'client', 'get'])
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.sd_mux)
 
     subparser = subparsers.add_parser('usb-mux',
                                       help="switch USB Muxer")
     subparser.add_argument('links', choices=['off', 'dut-device', 'host-dut', 'host-device', 'host-dut+host-device'])
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.usb_mux)
 
     subparser = subparsers.add_parser('ssh',
@@ -1646,12 +1665,15 @@ def main():
                            help="select a video quality (use 'list' to show options)")
     subparser.add_argument('-c', '--controls', type=str,
                            help="configure v4l controls (such as 'focus_auto=0,focus_absolute=40')")
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.video)
 
     subparser = subparsers.add_parser('audio', help="start a audio stream")
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.set_defaults(func=ClientSession.audio)
 
     tmc_parser = subparsers.add_parser('tmc', help="control a USB TMC device")
+    tmc_parser.add_argument('--name', '-n', help="optional resource name")
     tmc_parser.set_defaults(func=lambda _: tmc_parser.print_help())
     tmc_subparsers = tmc_parser.add_subparsers(
         dest='subcommand',
@@ -1690,6 +1712,7 @@ def main():
     subparser.add_argument('--mode', dest='write_mode',
                            type=Mode, choices=Mode, default=Mode.DD,
                            help="Choose tool for writing images (default: %(default)s)")
+    subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.add_argument('filename', help='filename to boot on the target')
     subparser.set_defaults(func=ClientSession.write_image)
 

@@ -7,7 +7,7 @@ services:
     tty: true
     network_mode: "host"
     command: bash -c "cp /home/root/crossbar/places_example.yaml /opt/crossbar/places.yaml &&
-      crossbar start --config /opt/labgrid/.crossbar/config.yaml"
+      crossbar start --config /opt/labgrid/.crossbar/config-anonymous.yaml"
   client:
     image: "labgrid-client"
     volumes:

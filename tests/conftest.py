@@ -104,10 +104,11 @@ def crossbar_config(tmpdir, pytestconfig):
     crossbar_config = '.crossbar/config-anonymous.yaml'
 
     pytestconfig.rootdir.join(crossbar_config).copy(tmpdir.mkdir('.crossbar'))
+    crossbar_config = tmpdir.join(crossbar_config)
 
     # crossbar runs labgrid's coordinator component as a guest, record its coverage
     if pytestconfig.pluginmanager.get_plugin('pytest_cov'):
-        with open(tmpdir.join(crossbar_config), 'r+') as stream:
+        with open(crossbar_config, 'r+') as stream:
             conf = yaml.safe_load(stream)
 
             for worker in conf['workers']:
@@ -122,6 +123,8 @@ def crossbar_config(tmpdir, pytestconfig):
             stream.seek(0)
             yaml.safe_dump(conf, stream)
 
+    return crossbar_config
+
 @pytest.fixture(scope='function')
 def crossbar(tmpdir, pytestconfig, crossbar_config):
     crossbar_venv = Path(pytestconfig.getoption("--crossbar-venv"))
@@ -130,7 +133,7 @@ def crossbar(tmpdir, pytestconfig, crossbar_config):
     crossbar_bin = crossbar_venv / "bin/crossbar"
 
     spawn = pexpect.spawn(
-        f'{crossbar_bin} start --color false --logformat none --config config-anonymous.yaml',
+        f'{crossbar_bin} start --color false --logformat none --config {crossbar_config}',
         logfile=Prefixer(sys.stdout.buffer, 'crossbar'),
         cwd=str(tmpdir))
     try:

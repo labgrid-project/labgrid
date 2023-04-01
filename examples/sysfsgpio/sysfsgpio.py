@@ -14,7 +14,7 @@ logging.basicConfig(
 )
 
 # show labgrid steps on the console
-StepReporter()
+StepReporter.start()
 
 t = labgrid.Target('main')
 r = labgrid.resource.base.SysfsGPIO(t, name=None, index=60)

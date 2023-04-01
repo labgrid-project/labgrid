@@ -15,7 +15,7 @@ logging.basicConfig(
 )
 
 # show labgrid steps on the console
-StepReporter()
+StepReporter.start()
 
 e = labgrid.Environment('import-dedicontrol.yaml')
 t = e.get_target()

@@ -588,6 +588,16 @@ To use it in conjunction with a `Resource` and a file:
    >>> mf.sync_to_resource()
    >>> path = mf.get_remote_path()
 
+`ManagedFile` also provides a context manager via the `remote_path()` API, so
+the above code could also be written as:
+
+.. doctest:: managed-file
+
+   from labgrid.util.managedfile import ManagedFile
+   mf = ManagedFile(your_file, your_resource)
+   with mf.remote_path() as path:
+       pass
+
 Unless constructed with `ManagedFile(..., detect_nfs=False)`, ManagedFile
 employs the following heuristic to check if a file is stored on a NFS share
 available both locally and remotely via the same path:
@@ -599,6 +609,9 @@ available both locally and remotely via the same path:
 
 If this is the case the actual file transfer in ``sync_to_resource`` is
 skipped.
+
+It is also possible to remove the remote file by calling `cleanup_resource()`,
+or passing ``cleanup=True`` to `remote_path()`.
 
 ProxyManager
 ------------

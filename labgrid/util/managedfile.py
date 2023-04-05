@@ -2,6 +2,7 @@ import hashlib
 import logging
 import os
 import subprocess
+from contextlib import contextmanager
 
 import attr
 
@@ -76,6 +77,31 @@ class ManagedFile:
                 conn.run_check(
                     f"ln --symbolic --force --no-dereference {self.rpath}{os.path.basename(self.local_path)} {symlink}"  # pylint: disable=line-too-long
                 )
+
+    def cleanup_resource(self):
+        """
+        Removes the file if it is remote
+        """
+        if isinstance(self.resource, NetworkResource):
+            host = self.resource.host
+            conn = sshmanager.open(host)
+
+            if self._on_nfs(conn):
+                self.logger.info("File %s is accessible on %s, skipping copy", self.local_path, host)
+                return
+
+            self.logger.info("Removing %s from %s", self.local_path, host)
+            conn.run_check(f"rm -rf {self.rpath}")
+
+
+    @contextmanager
+    def remote_path(self, *, symlink=None, cleanup=False):
+        self.sync_to_resource(symlink=symlink)
+        try:
+            yield self.get_remote_path()
+        finally:
+            if cleanup:
+                self.cleanup_resource()
 
 
     def _on_nfs(self, conn):

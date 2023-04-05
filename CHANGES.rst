@@ -1,6 +1,9 @@
 Release 23.0 (unreleased)
 -------------------------
 
+- `ManagedFile` now has the ability to remove the file from the remote exporter
+  when longer needed
+
 New Features in 23.0
 ~~~~~~~~~~~~~~~~~~~~
 - Exporter config templates now have access to the following new variables:

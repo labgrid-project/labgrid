@@ -2598,6 +2598,17 @@ These arguments will be expanded as `Python format strings
 <https://docs.python.org/3/library/string.html#format-string-syntax>`_ with the
 following keys:
 
+========== =========================================================
+Key        Description
+========== =========================================================
+``device`` The :any:`Resource` bound to the driver
+``file``   The :any:`ManagedFile` used to track the flashable script
+========== =========================================================
+
+Properties of these keys can be selected using the Python format string syntax,
+e.g. ``{device.devnode}`` to select the device node path of
+:any:`USBFlashableDevice`
+
 HTTPVideoDriver
 ~~~~~~~~~~~~~~~
 The :any:`HTTPVideoDriver` is used to show a video stream over HTTP or HTTPS
@@ -2613,18 +2624,6 @@ Implements:
 Although the driver can be used from Python code by calling the `stream()`
 method, it is currently mainly useful for the ``video`` subcommand of
 ``labgrid-client``.
-
-
-========== =========================================================
-Key        Description
-========== =========================================================
-``device`` The :any:`Resource` bound to the driver
-``file``   The :any:`ManagedFile` used to track the flashable script
-========== =========================================================
-
-Properties of these keys can be selected using the Python format string syntax,
-e.g. ``{device.devnode}`` to select the device node path of
-:any:`USBFlashableDevice`
 
 XenaDriver
 ~~~~~~~~~~

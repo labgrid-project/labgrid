@@ -2583,6 +2583,8 @@ Arguments:
   - script (str): optional, key in :ref:`images <labgrid-device-config-images>`
     containing the script to execute for writing of the flashable device
   - args (list of str): optional, list of arguments for flash script execution
+  - cleanup (bool): optional, remove flash script from remote exporter after
+    flashing.
 
 The FlashScriptDriver allows running arbitrary programs to flash a device.
 Some SoC or devices may require custom, one-off, or proprietary programs to

@@ -1,4 +1,4 @@
-FROM debian:buster-slim AS labgrid-base
+FROM debian:bullseye-slim AS labgrid-base
 
 LABEL maintainer="eha@deif.com"
 
@@ -56,7 +56,7 @@ CMD ["crossbar", "start", "--config", "/opt/labgrid/.crossbar/config.yaml"]
 # needed bugfix. This can be removed once the images are switched to
 # debian:bullseye, as it has a new enough version
 #
-FROM debian:buster-slim AS ser2net
+FROM debian:bullseye-slim AS ser2net
 
 RUN apt update && \
     apt install --yes --no-install-recommends \

@@ -163,6 +163,12 @@ Currently available are:
 ``eaton``
   Controls Eaton ePDUs via SNMP.
 
+``eg_pms2_network``
+  Controls the EG_PMS2_LAN & EG_PMS2_WLAN devices, through simple HTTP POST and
+  GET requests.  The device requires a password for logging into the control
+  interface, this module deliberately uses the standard password '1' and is
+  not compatible with a different password.
+
 ``gude``
   Controls a Gude PDU via a simple HTTP API.
 
@@ -195,6 +201,12 @@ Currently available are:
   Controls a Sentry PDU via SNMP using Sentry3-MIB.
   It was tested on CW-24VDD and 4805-XLS-16.
 
+``shelly_gen1``
+  Controls relays of Shelly devices using the Gen 1 Device API.
+  See the `docstring in the module
+  <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/shelly_gen1.py>`__
+  for details.
+
 ``siglent``
   Controls Siglent SPD3000X series modules via the `vxi11 Python module
   <https://pypi.org/project/python-vxi11/>`_.
@@ -209,12 +221,6 @@ Currently available are:
 ``tplink``
   Controls TP-Link power strips via `python-kasa
   <https://github.com/python-kasa/python-kasa>`_.
-
-``eg_pms2_network``
-  Controls the EG_PMS2_LAN & EG_PMS2_WLAN devices, through simple HTTP POST and
-  GET requests.  The device requires a password for logging into the control
-  interface, this module deliberately uses the standard password '1' and is
-  not compatible with a different password.
 
 Used by:
   - `NetworkPowerDriver`_

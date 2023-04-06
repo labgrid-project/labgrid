@@ -15,7 +15,7 @@ export DOCKER_BUILDKIT=1
 
 VERSION="$(python -m setuptools_scm)"
 
-for t in client exporter coordinator; do
+for t in client exporter coordinator sftp-server; do
     ${DOCKER} build --build-arg VERSION="$VERSION" \
         --target labgrid-${t} -t labgrid-${t} -f "${SCRIPT_DIR}/Dockerfile" .
 done

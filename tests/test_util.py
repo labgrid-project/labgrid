@@ -15,6 +15,7 @@ from labgrid.util.helper import get_free_port
 from labgrid.util.ssh import ForwardError, SSHConnection, sshmanager
 from labgrid.util.proxy import proxymanager
 from labgrid.util.managedfile import ManagedFile
+from labgrid.util.sshfs import SSHFsExport
 from labgrid.driver.exception import ExecutionError
 from labgrid.resource.serialport import NetworkSerialPort
 from labgrid.resource.common import Resource, NetworkResource
@@ -352,6 +353,49 @@ Test
     assert hash == mf.get_hash()
     assert str(t) == mf.get_remote_path()
 
+@pytest.mark.localsshmanager
+def test_sshfs(target, tmpdir):
+    t = tmpdir.join("test")
+    t_data = """
+Test
+"""
+    t.write(t_data)
+
+    res = NetworkResource(target, "test", "localhost")
+    sshfs = SSHFsExport(tmpdir, res)
+
+    with sshfs.export() as remote_path:
+        remote_test = f"{remote_path}/test"
+        #assert os.path.exists(remote_test)
+        with open(remote_test, "r") as f:
+            remote_data = f.read()
+
+        assert remote_data == t_data
+
+        # Read-only by default
+        with pytest.raises(PermissionError):
+            with open(remote_test, "w") as f:
+                pass
+
+@pytest.mark.localsshmanager
+def test_sshfs_write(target, tmpdir):
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+
+    res = NetworkResource(target, "test", "localhost")
+    sshfs = SSHFsExport(tmpdir, res, readonly=False)
+
+    with sshfs.export() as remote_path:
+        remote_test = f"{remote_path}test"
+        #assert os.path.exists(remote_test)
+        with open(remote_test, "w") as f:
+            f.write("Hello")
+
+    assert t.read() == "Hello"
 
 def test_find_dict():
     dict_a = {"a": {"a.a": {"a.a.a": "a.a.a_val"}}, "b": "b_val"}

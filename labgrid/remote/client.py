@@ -1768,7 +1768,7 @@ def main():
         env = Environment(config_file=args.config)
 
     role = None
-    if env and env.config.get_targets():
+    if args.command != 'reserve' and env and env.config.get_targets():
         if args.place:
             role = find_role_by_place(env.config.get_targets(), args.place)
             if not role:

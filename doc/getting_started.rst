@@ -14,7 +14,7 @@ and buster these usually are:
 
 .. code-block:: bash
 
-   $ apt-get install python3 python3-virtualenv python3-pip python3-setuptools virtualenv
+   $ sudo apt install python3 python3-virtualenv python3-pip python3-setuptools virtualenv
 
 
 In many cases, the easiest way is to install labgrid into a virtualenv:

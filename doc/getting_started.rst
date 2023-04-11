@@ -9,8 +9,8 @@ For an overview about the basic design and components of `labgrid`, read the
 Installation
 ------------
 
-Depending on your distribution you need some dependencies. On Debian stretch
-and buster these usually are:
+Depending on your distribution you need some dependencies. On Debian these
+usually are:
 
 .. code-block:: bash
 

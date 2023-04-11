@@ -330,7 +330,7 @@ out to be quite helpful.
 On Debian it comes with the ``devscripts`` package and you can install it
 with::
 
-  $ apt-get install devscripts
+  $ sudo apt install devscripts
 
 To use it, run::
 

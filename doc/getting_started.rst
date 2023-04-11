@@ -9,12 +9,12 @@ For an overview about the basic design and components of `labgrid`, read the
 Installation
 ------------
 
-Depending on your distribution you need some dependencies. On Debian stretch
-and buster these usually are:
+Depending on your distribution you need some dependencies. On Debian these
+usually are:
 
 .. code-block:: bash
 
-   $ apt-get install python3 python3-virtualenv python3-pip python3-setuptools virtualenv
+   $ sudo apt install python3 python3-virtualenv python3-pip python3-setuptools virtualenv microcom
 
 
 In many cases, the easiest way is to install labgrid into a virtualenv:
@@ -208,7 +208,13 @@ For example, to export a ``USBSerialPort`` with ``ID_SERIAL_SHORT`` of
           :ref:`resources sections <overview-resources>` for a description of
           different resource types.
 
-The exporter can now be started by running:
+The exporter requires additional dependencies:
+
+.. code-block:: bash
+
+    $ sudo apt install ser2net
+
+It can now be started by running:
 
 .. code-block:: bash
 

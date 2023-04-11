@@ -783,6 +783,26 @@ Arguments:
 Used by:
   - `OpenOCDDriver`_
 
+JLinkDevice
+~~~~~~~~~~~
+A JLinkDevice resource describes a Segger J-Link Debug Probe.
+
+.. code-block:: yaml
+
+  JLinkDevice:
+    match:
+      ID_SERIAL_SHORT: '000000123456'
+
+- match (dict): key and value for a udev match, see `udev Matching`_
+
+Used by:
+  - `JLinkDriver`_
+
+NetworkJLinkDevice
+~~~~~~~~~~~~~~~~~~~~~
+
+A :any:`NetworkJLinkDevice` resource describes a `JLinkDevice`_ available on a remote computer.
+
 SNMPEthernetPort
 ~~~~~~~~~~~~~~~~
 A SNMPEthernetPort resource describes a port on an Ethernet switch, which is
@@ -1788,6 +1808,21 @@ Arguments:
   - interface_config (str): optional, interface config in the ``openocd/scripts/interface/`` directory
   - board_config (str): optional, board config in the ``openocd/scripts/board/`` directory
   - load_commands (list of str): optional, load commands to use instead of ``init``, ``bootstrap {filename}``, ``shutdown``
+
+JLinkDriver
+~~~~~~~~~~~~~
+A JLinkDriver provides access to a Segger J-Link Debug Probe via `pylink <https://github.com/square/pylink>`_.
+
+Binds to:
+  interface:
+   - `JLinkDevice`_
+   - `NetworkJLinkDevice`_
+
+Implements:
+  - None
+
+Arguments:
+  - None
 
 QuartusHPSDriver
 ~~~~~~~~~~~~~~~~

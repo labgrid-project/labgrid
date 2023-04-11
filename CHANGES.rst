@@ -10,6 +10,7 @@ New Features in 23.1
 - A new log level called ``CONSOLE`` has been added between the default
   ``INFO`` and ``DEBUG`` levels. This level will show all reads and writes made
   to the serial console during testing.
+- Add JLinkDriver and JLinkDevice resource.
 
 Bug fixes in 23.1
 ~~~~~~~~~~~~~~~~~
@@ -447,7 +448,7 @@ New and Updated Drivers
 - The `SerialDriver` now supports using plain TCP instead of RFC 2217, which is
   needed from some console servers.
 - The `ShellDriver` has been improved:
-  
+
   - It supports configuring the various timeouts used during the login process.
   - It can use xmodem to transfer file from and to the target.
 

@@ -14,12 +14,14 @@ import warnings
 from pathlib import Path
 from typing import Dict, Type
 from socket import gethostname, getfqdn
+from pexpect import TIMEOUT
 import attr
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .config import ResourceConfig
 from .common import ResourceEntry, enable_tcp_nodelay
 from ..util import get_free_port, labgrid_version
+from ..util import Timeout
 
 
 __version__ = labgrid_version()
@@ -500,6 +502,80 @@ class USBGenericRemoteExport(USBGenericExport):
         super().__attrs_post_init__()
         self.data['cls'] = f"Remote{self.cls}".replace("Network", "")
 
+class USBJLinkExport(USBGenericExport):
+    """Export J-Link device using the J-Link Remote Server"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self.child = None
+        self.port = None
+        self.tool = '/opt/SEGGER/JLink/JLinkRemoteServer'
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': self.host,
+            'port': self.port,
+            'busnum': self.local.busnum,
+            'devnum': self.local.devnum,
+            'path': self.local.path,
+            'vendor_id': self.local.vendor_id,
+            'model_id': self.local.model_id,
+        }
+
+    def __del__(self):
+        if self.child is not None:
+            self.stop()
+
+    def _start(self, start_params):
+        """Start ``JLinkRemoteServer`` subprocess"""
+        assert self.local.avail
+        assert self.child is None
+        self.port = get_free_port()
+
+        cmd = [
+            self.tool,
+            "-Port",
+            f"{self.port}",
+            "-select",
+            f"USB={self.local.serial}",
+        ]
+        self.logger.info("Starting JLinkRemoteServer with: %s", " ".join(cmd))
+        self.child = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
+
+        # Wait for the server to be ready for incoming connections
+        # Waiting to open the socket with Python does not work
+        timeout = Timeout(10.0)
+        while not timeout.expired:
+            line = self.child.stdout.readline().rstrip()
+            self.logger.debug(line)
+            if "Waiting for client connections..." in line:
+                break
+
+        if timeout.expired:
+            raise TIMEOUT(
+                f"Timeout of {timeout.timeout} seconds exceeded during waiting for J-Link Remote Server startup"
+            )
+        self.logger.info("started JLinkRemoteServer for %s on port %d", self.local.serial, self.port)
+
+    def _stop(self, start_params):
+        """Stop ``JLinkRemoteServer`` subprocess"""
+        assert self.child
+        child = self.child
+        self.child = None
+        port = self.port
+        self.port = None
+        child.terminate()
+        try:
+            child.communicate(2.0)  # JLinkRemoteServer takes about a second to react
+        except subprocess.TimeoutExpired:
+            self.logger.warning("JLinkRemoteServer for %s still running after SIGTERM", self.local.serial)
+            log_subprocess_kernel_stack(self.logger, child)
+            child.kill()
+            child.communicate(1.0)
+        self.logger.info("stopped JLinkRemoteServer for %s on port %d", self.local.serial, port)
+
+
 exports["AndroidFastboot"] = USBGenericExport
 exports["AndroidUSBFastboot"] = USBGenericRemoteExport
 exports["DFUDevice"] = USBGenericExport
@@ -512,6 +588,7 @@ exports["SigrokUSBSerialDevice"] = USBSigrokExport
 exports["USBSDMuxDevice"] = USBSDMuxExport
 exports["USBSDWireDevice"] = USBSDWireExport
 exports["USBDebugger"] = USBGenericExport
+exports["JLinkDevice"] = USBJLinkExport
 
 exports["USBMassStorage"] = USBGenericExport
 exports["USBVideo"] = USBGenericExport

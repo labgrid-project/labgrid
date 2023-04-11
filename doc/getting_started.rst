@@ -14,7 +14,7 @@ usually are:
 
 .. code-block:: bash
 
-   $ sudo apt install python3 python3-virtualenv python3-pip python3-setuptools virtualenv
+   $ sudo apt install python3 python3-virtualenv python3-pip python3-setuptools virtualenv microcom
 
 
 In many cases, the easiest way is to install labgrid into a virtualenv:

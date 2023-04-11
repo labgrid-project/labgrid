@@ -657,6 +657,10 @@ class ClientSession(ApplicationSession):
         self._prepare_manager()
         target = None
         if self.env:
+            if self.role is None:
+                self.role = find_role_by_place(self.env.config.get_targets(), place.name)
+                if self.role is not None:
+                    print(f"Selected role {self.role} from configuration file")
             target = self.env.get_target(self.role)
         if target:
             if self.args.state:
@@ -1770,11 +1774,12 @@ def main():
     role = None
     if args.command != 'reserve' and env and env.config.get_targets():
         if args.place:
-            role = find_role_by_place(env.config.get_targets(), args.place)
-            if not role:
-                print(f"RemotePlace {args.place} not found in configuration file", file=sys.stderr)
-                exit(1)
-            print(f"Selected role {role} from configuration file")
+            if not args.place.startswith('+'):
+                role = find_role_by_place(env.config.get_targets(), args.place)
+                if not role:
+                    print(f"RemotePlace {args.place} not found in configuration file", file=sys.stderr)
+                    exit(1)
+                print(f"Selected role {role} from configuration file")
         else:
             role, args.place = find_any_role_with_place(env.config.get_targets())
             if not role:

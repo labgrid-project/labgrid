@@ -61,6 +61,10 @@ set the configuration file
 set an initial state before executing a command, requires a configuration
 file and strategy
 .TP
+.BI \-i \ INITIAL_STATE\fR,\fB \ \-\-initial\-state \ INITIAL_STATE
+strategy state to force into before switching to desired state, requires a
+desired state (\fB\-s\fP/\fB\-\-state\fP/\fBLG_STATE\fP)
+.TP
 .B  \-d\fP,\fB  \-\-debug
 enable debugging
 .TP
@@ -88,6 +92,13 @@ for the \fB+\fP place expansion.
 This variable can be used to specify a state which the device transitions into
 before executing a command. Requires a configuration file and a Strategy
 specified for the device.
+.SS LG_INITIAL_STATE
+.sp
+This variable can be used to specify an initial state the device is known to
+be in.
+This is useful during development. The Strategy used must implement the
+\fBforce()\fP method.
+A desired state must be set using \fBLG_STATE\fP or \fB\-s\fP/\fB\-\-state\fP\&.
 .SS LG_ENV
 .sp
 This variable can be used to specify the configuration file to use without

@@ -1386,8 +1386,7 @@ def main():
         '--crossbar',
         metavar='URL',
         type=str,
-        default=os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"),
-        help="crossbar websocket URL (default: %(default)s)"
+        help="crossbar websocket URL (default: value from env variable LG_CROSSBAR, otherwise ws://127.0.0.1:20408/ws)"
     )
     parser.add_argument(
         '-c',
@@ -1795,8 +1794,22 @@ def main():
         try:
             signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
 
-            session = start_session(args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"),
-                                    extra)
+            try:
+                crossbar_url = args.crossbar or env.config.get_option('crossbar_url')
+            except (AttributeError, KeyError):
+                # in case of no env or not set, use LG_CROSSBAR env variable or default
+                crossbar_url = os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws")
+
+            try:
+                crossbar_realm = env.config.get_option('crossbar_realm')
+            except (AttributeError, KeyError):
+                # in case of no env, use LG_CROSSBAR_REALM env variable or default
+                crossbar_realm = os.environ.get("LG_CROSSBAR_REALM", "realm1")
+
+            logging.debug('Starting session with "%s", realm: "%s"', crossbar_url,
+                    crossbar_realm)
+
+            session = start_session(crossbar_url, crossbar_realm, extra)
             try:
                 if asyncio.iscoroutinefunction(args.func):
                     if getattr(args.func, 'needs_target', False):

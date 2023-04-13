@@ -2,7 +2,7 @@
 
 # options top level and subcommands support
 _labgrid_shared_options="--help"
-_labgrid_main_opts_with_value="@(-x|--crossbar|-c|--config|-p|--place|-s|--state|-P|--proxy)"
+_labgrid_main_opts_with_value="@(-x|--crossbar|-c|--config|-p|--place|-s|--state|-i|--initial-state|-P|--proxy)"
 
 # Parses labgrid-client arguments
 # Sets arg to subcommand, excluding options and their values.
@@ -837,6 +837,7 @@ _labgrid_client()
                            --config \
                            --place \
                            --state \
+                           --initial-state \
                            --debug \
                            --verbose \
                            --proxy \

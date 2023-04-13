@@ -664,6 +664,9 @@ class ClientSession(ApplicationSession):
                     from .. import StepReporter
                     StepReporter.start()
                 strategy = target.get_driver("Strategy")
+                if self.args.initial_state:
+                    print(f"Setting initial state to {self.args.initial_state}")
+                    strategy.force(self.args.initial_state)
                 print(f"Transitioning into state {self.args.state}")
                 strategy.transition(self.args.state)
                 # deactivate console drivers so we are able to connect with microcom later
@@ -1378,6 +1381,7 @@ def main():
     place = os.environ.get('LG_PLACE', place)
     state = os.environ.get('STATE', None)
     state = os.environ.get('LG_STATE', state)
+    initial_state = os.environ.get('LG_INITIAL_STATE', None)
     token = os.environ.get('LG_TOKEN', None)
 
     parser = argparse.ArgumentParser()
@@ -1408,6 +1412,13 @@ def main():
         type=str,
         default=state,
         help="strategy state to switch into before command"
+    )
+    parser.add_argument(
+        '-i',
+        '--initial-state',
+        type=str,
+        default=initial_state,
+        help="strategy state to force into before switching to desired state"
     )
     parser.add_argument(
         '-d',
@@ -1756,8 +1767,11 @@ def main():
     if args.debug or args.verbose > 1:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    if not args.config and args.state:
+    if not args.config and (args.state or args.initial_state):
         print("Setting the state requires a configuration file", file=sys.stderr)
+        exit(1)
+    if args.initial_state and not args.state:
+        print("Setting the initial state requires a desired state", file=sys.stderr)
         exit(1)
 
     if args.proxy:

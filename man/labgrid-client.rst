@@ -45,6 +45,9 @@ OPTIONS
 -s STATE, --state STATE
     set an initial state before executing a command, requires a configuration
     file and strategy
+-i INITIAL_STATE, --initial-state INITIAL_STATE
+    strategy state to force into before switching to desired state, requires a
+    desired state (``-s``/``--state``/``LG_STATE``)
 -d, --debug
     enable debugging
 -v, --verbose
@@ -74,6 +77,14 @@ LG_STATE
 This variable can be used to specify a state which the device transitions into
 before executing a command. Requires a configuration file and a Strategy
 specified for the device.
+
+LG_INITIAL_STATE
+~~~~~~~~~~~~~~~~
+This variable can be used to specify an initial state the device is known to
+be in.
+This is useful during development. The Strategy used must implement the
+``force()`` method.
+A desired state must be set using ``LG_STATE`` or ``-s``/``--state``.
 
 LG_ENV
 ~~~~~~

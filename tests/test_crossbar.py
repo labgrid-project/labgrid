@@ -430,3 +430,40 @@ def test_exporter_timeout(place, exporter):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
+
+def test_reservation_custom_config(place, exporter, tmpdir):
+    p = tmpdir.join("config.yaml")
+    p.write(
+    """
+    targets:
+      test1:
+        role: foo
+        resources:
+          RemotePlace:
+            name: test
+    """
+    )
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} reserve --wait --shell board=bar name=test') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        m = re.search(rb"^export LG_TOKEN=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
+        s = re.search(rb"^Selected role$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
+        assert m is not None, spawn.before.strip()
+        assert s is None, spawn.before.strip()
+        token = m.group(1)
+
+    env = os.environ.copy()
+    env['LG_TOKEN'] = token.decode('ASCII')
+
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} -p + lock', env=env) as spawn:
+        spawn.expect("acquired place test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} -p + release', env=env) as spawn:
+        spawn.expect("released place test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()

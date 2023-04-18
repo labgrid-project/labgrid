@@ -322,6 +322,29 @@ Test
     assert f"/var/cache/labgrid/{getpass.getuser()}/{hash}/test" == mf.get_remote_path()
 
 @pytest.mark.localsshmanager
+def test_remote_managedfile_cleanup(target, tmpdir):
+    import hashlib
+    import getpass
+
+    res = NetworkResource(target, "test", "localhost")
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+    hash = hashlib.sha256(t.read().encode("utf-8")).hexdigest()
+    file_path = f"/var/cache/labgrid/{getpass.getuser()}/{hash}/test"
+    mf = ManagedFile(t, res, detect_nfs=False)
+    with mf.remote_path(cleanup=True) as remote_path:
+        assert os.path.isfile(file_path)
+        assert hash == mf.get_hash()
+        assert remote_path == file_path
+        assert remote_path == mf.get_remote_path()
+
+    assert not os.path.isfile(file_path)
+
+@pytest.mark.localsshmanager
 def test_remote_managedfile_on_nfs(target, tmpdir):
     res = NetworkResource(target, "test", "localhost")
     t = tmpdir.join("test")
@@ -352,6 +375,26 @@ Test
     assert hash == mf.get_hash()
     assert str(t) == mf.get_remote_path()
 
+def test_local_managedfile_cleanup(target, tmpdir):
+    import hashlib
+
+    res = Resource(target, "test")
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+    hash = hashlib.sha256(t.read().encode("utf-8")).hexdigest()
+    mf = ManagedFile(t, res, detect_nfs=False)
+
+    with mf.remote_path() as remote_path:
+        assert hash == mf.get_hash()
+        assert str(t) == mf.get_remote_path()
+        assert remote_path == mf.get_remote_path()
+        assert os.path.isfile(t)
+
+    assert os.path.isfile(t)
 
 def test_find_dict():
     dict_a = {"a": {"a.a": {"a.a.a": "a.a.a_val"}}, "b": "b_val"}

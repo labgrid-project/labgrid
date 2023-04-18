@@ -1,6 +1,11 @@
 Release 23.0 (unreleased)
 -------------------------
 
+- `ManagedFile` now has the ability to remove the file from the remote exporter
+  when longer needed
+- `FlashScriptDriver` now has the ability to remote the flash script from the
+  remote exporter when flashing is complete
+
 New Features in 23.0
 ~~~~~~~~~~~~~~~~~~~~
 - Exporter config templates now have access to the following new variables:

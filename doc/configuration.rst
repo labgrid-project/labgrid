@@ -2583,6 +2583,8 @@ Arguments:
   - script (str): optional, key in :ref:`images <labgrid-device-config-images>`
     containing the script to execute for writing of the flashable device
   - args (list of str): optional, list of arguments for flash script execution
+  - cleanup (bool): optional, remove flash script from remote exporter after
+    flashing.
 
 The FlashScriptDriver allows running arbitrary programs to flash a device.
 Some SoC or devices may require custom, one-off, or proprietary programs to
@@ -2595,6 +2597,17 @@ Additional arguments may be passed with the ``args`` parameter.
 These arguments will be expanded as `Python format strings
 <https://docs.python.org/3/library/string.html#format-string-syntax>`_ with the
 following keys:
+
+========== =========================================================
+Key        Description
+========== =========================================================
+``device`` The :any:`Resource` bound to the driver
+``file``   The :any:`ManagedFile` used to track the flashable script
+========== =========================================================
+
+Properties of these keys can be selected using the Python format string syntax,
+e.g. ``{device.devnode}`` to select the device node path of
+:any:`USBFlashableDevice`
 
 HTTPVideoDriver
 ~~~~~~~~~~~~~~~
@@ -2611,18 +2624,6 @@ Implements:
 Although the driver can be used from Python code by calling the `stream()`
 method, it is currently mainly useful for the ``video`` subcommand of
 ``labgrid-client``.
-
-
-========== =========================================================
-Key        Description
-========== =========================================================
-``device`` The :any:`Resource` bound to the driver
-``file``   The :any:`ManagedFile` used to track the flashable script
-========== =========================================================
-
-Properties of these keys can be selected using the Python format string syntax,
-e.g. ``{device.devnode}`` to select the device node path of
-:any:`USBFlashableDevice`
 
 XenaDriver
 ~~~~~~~~~~

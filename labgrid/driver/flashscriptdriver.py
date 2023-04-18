@@ -26,6 +26,10 @@ class FlashScriptDriver(Driver):
         default=attr.Factory(list),
         validator=attr.validators.optional(attr.validators.instance_of(list)),
     )
+    cleanup = attr.ib(
+        default=False,
+        validator=attr.validators.optional(attr.validators.instance_of(bool)),
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -39,7 +43,7 @@ class FlashScriptDriver(Driver):
 
     @Driver.check_active
     @step(args=["script"])
-    def flash(self, script=None, args=None):
+    def flash(self, script=None, args=None, cleanup=None):
         """
         Transfers and remotely executes the script
 
@@ -50,15 +54,17 @@ class FlashScriptDriver(Driver):
             script = self.target.env.config.get_image_path(self.script)
         assert script, "flash requires a script"
 
+        if cleanup is None:
+            cleanup = self.cleanup
+
         if args is None:
             args = self.args
 
         mf = ManagedFile(script, self.device)
-        mf.sync_to_resource()
+        with mf.remote_path(cleanup=cleanup) as path:
+            cmd = [path] + [a.format(device=self.device, file=mf) for a in args]
 
-        cmd = [mf.get_remote_path()] + [a.format(device=self.device, file=mf) for a in args]
-
-        self.logger.debug("Running command '%s'", " ".join(cmd))
-        processwrapper.check_output(
-            self.device.command_prefix + cmd, print_on_silent_log=True
-        )
+            self.logger.debug("Running command '%s'", " ".join(cmd))
+            processwrapper.check_output(
+                self.device.command_prefix + cmd, print_on_silent_log=True
+            )

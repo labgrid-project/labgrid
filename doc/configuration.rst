@@ -160,6 +160,11 @@ Currently available are:
 ``digipower``
   Controls a DigiPower PDU via a simple HTTP API.
 
+``digitalloggers_http``
+  Control a Digital Loggers PDU that use the legacy HTTP API. Note that
+  host argument must include the protocol, such as
+  ``http://192.168.0.3`` or ``http://admin:pass@192.168.0.4``.
+
 ``eaton``
   Controls Eaton ePDUs via SNMP.
 

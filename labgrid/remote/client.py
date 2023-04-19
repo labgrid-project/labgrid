@@ -47,6 +47,10 @@ class ServerError(Error):
     pass
 
 
+class InteractiveCommandError(Error):
+    pass
+
+
 class ClientSession(ApplicationSession):
     """The ClientSession encapsulates all the actions a Client can Invoke on
     the coordinator."""
@@ -842,14 +846,17 @@ class ClientSession(ApplicationSession):
                 raise
         if p.returncode:
             print("connection lost", file=sys.stderr)
-            return False
-        return True
+        return p.returncode
 
     async def console(self, place, target):
         while True:
             res = await self._console(place, target, 10.0, logfile=self.args.logfile,
                                       loop=self.args.loop, listen_only=self.args.listenonly)
-            if res or not self.args.loop:
+            if res:
+                exc = InteractiveCommandError("microcom error")
+                exc.exitcode = res
+                raise exc
+            if not self.args.loop:
                 break
             await asyncio.sleep(1.0)
     console.needs_target = True
@@ -1033,20 +1040,28 @@ class ClientSession(ApplicationSession):
         drv = self._get_ssh()
 
         res = drv.interact(self.args.leftover)
-        if res == 255:
-            print("connection lost (SSH error)", file=sys.stderr)
-        elif res:
-            print(f"connection lost (remote exit code {res})", file=sys.stderr)
+        if res:
+            exc = InteractiveCommandError("ssh error")
+            exc.exitcode = res
+            raise exc
 
     def scp(self):
         drv = self._get_ssh()
 
-        drv.scp(src=self.args.src, dst=self.args.dst)
+        res = drv.scp(src=self.args.src, dst=self.args.dst)
+        if res:
+            exc = InteractiveCommandError("scp error")
+            exc.exitcode = res
+            raise exc
 
     def rsync(self):
         drv = self._get_ssh()
 
-        drv.rsync(src=self.args.src, dst=self.args.dst, extra=self.args.leftover)
+        res = drv.rsync(src=self.args.src, dst=self.args.dst, extra=self.args.leftover)
+        if res:
+            exc = InteractiveCommandError("rsync error")
+            exc.exitcode = res
+            raise exc
 
     def sshfs(self):
         drv = self._get_ssh()
@@ -1084,7 +1099,9 @@ class ClientSession(ApplicationSession):
         args = ['telnet', str(ip)]
         res = subprocess.call(args)
         if res:
-            print("connection lost", file=sys.stderr)
+            exc = InteractiveCommandError("telnet error")
+            exc.exitcode = res
+            raise exc
 
     def video(self):
         place = self.get_acquired_place()
@@ -1115,14 +1132,22 @@ class ClientSession(ApplicationSession):
                 mark = '*' if default == name else ' '
                 print(f"{mark} {name:<10s} {caps:s}")
         else:
-            drv.stream(quality, controls=controls)
+            res = drv.stream(quality, controls=controls)
+            if res:
+                exc = InteractiveCommandError("gst-launch-1.0 error")
+                exc.exitcode = res
+                raise exc
 
     def audio(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
         name = self.args.name
         drv = self._get_driver_or_new(target, "USBAudioInputDriver", name=name)
-        drv.play()
+        res = drv.play()
+        if res:
+            exc = InteractiveCommandError("gst-launch-1.0 error")
+            exc.exitcode = res
+            raise exc
 
     def _get_tmc(self):
         place = self.get_acquired_place()
@@ -1864,6 +1889,10 @@ def main():
         except ConnectionError as e:
             print(f"Could not connect to coordinator: {e}", file=sys.stderr)
             exitcode = 1
+        except InteractiveCommandError as e:
+            if args.debug:
+                traceback.print_exc(file=sys.stderr)
+            exitcode = e.exitcode
         except Error as e:
             if args.debug:
                 traceback.print_exc(file=sys.stderr)

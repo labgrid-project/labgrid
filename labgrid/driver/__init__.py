@@ -14,15 +14,16 @@ from .flashromdriver import FlashromDriver
 from .onewiredriver import OneWirePIODriver
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver, \
                          DigitalOutputPowerDriver, YKUSHPowerDriver, \
-                         USBPowerDriver, SiSPMPowerDriver
-from .usbloader import MXSUSBDriver, IMXUSBDriver, RKUSBDriver, UUUDriver
+                         USBPowerDriver, SiSPMPowerDriver, NetworkPowerDriver, \
+                         PDUDaemonDriver
+from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, RKUSBDriver, UUUDriver
 from .usbsdmuxdriver import USBSDMuxDriver
 from .usbsdwiredriver import USBSDWireDriver
 from .common import Driver
 from .qemudriver import QEMUDriver
 from .modbusdriver import ModbusCoilDriver
 from .modbusrtudriver import ModbusRTUDriver
-from .sigrokdriver import SigrokDriver
+from .sigrokdriver import SigrokDriver, SigrokPowerDriver
 from .usbstoragedriver import USBStorageDriver, NetworkUSBStorageDriver, Mode
 from .resetdriver import DigitalOutputResetDriver
 from .gpiodriver import GpioDigitalOutputDriver
@@ -39,7 +40,7 @@ from .usbaudiodriver import USBAudioInputDriver
 from .usbvideodriver import USBVideoDriver
 from .httpvideodriver import HTTPVideoDriver
 from .networkinterfacedriver import NetworkInterfaceDriver
-from .provider import TFTPProviderDriver
+from .provider import HTTPProviderDriver, NFSPProviderDriver, TFTPProviderDriver
 from .mqtt import TasmotaPowerDriver
 from .manualswitchdriver import ManualSwitchDriver
 from .usbtmcdriver import USBTMCDriver

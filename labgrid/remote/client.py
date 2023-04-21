@@ -732,6 +732,8 @@ class ClientSession(ApplicationSession):
             drv = target.get_driver("PowerProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
+                if name and resource.name != name:
+                    continue
                 if isinstance(resource, NetworkPowerPort):
                     drv = self._get_driver_or_new(target, "NetworkPowerDriver", name=name)
                 elif isinstance(resource, NetworkUSBPowerPort):

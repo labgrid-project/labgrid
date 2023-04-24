@@ -1,48 +1,91 @@
-Release 23.0 (unreleased)
--------------------------
+Release 23.0 (Released Apr 24, 2023)
+------------------------------------
 
 New Features in 23.0
 ~~~~~~~~~~~~~~~~~~~~
+- Python 3.6 support has been dropped.
 - Exporter config templates now have access to the following new variables:
   isolated (all resource accesses must be tunneled True/False),
   hostname (of the exporter host), name (of the exporter).
 - ModbusRTU driver for instruments
-- Support for Eaton ePDU and TP-Link power strips added, either can be used as a NetworkPowerPort.
+- Support for Eaton ePDU and TP-Link power strips added, either can be used as
+  a NetworkPowerPort.
+- The example strategies now wait for complete system startup using systemctl.
 - Consider a combination of multiple "lg_feature" markers instead of
   considering only the closest marker.
+- There is a new ``get_strategy`` helper function which returns the strategy of
+  the target.
+- labgrid-client now supports an ``export`` command which exposes the resource
+  information as environment variables.
+- Newer C920 webcams are now supported.
+- The pytestplugin now correctly combines feature markers instead of replacing
+  them.
+- The ConsoleLoggingReporter is now exported for library usage.
+- The HD 2MP Webcam is now supported by the video-driver.
+- TP-Link power strips are supported by the NetworkPowerDriver.
+- A ModbusRTUResource and Driver has been added to control RS485 equipment.
+- The strategies within labgrid learned the force() function.
 - The labgrid client SSH command is now able to instantiate the SSHDriver when
   there are multiple NetworkService resources available.
 - eg_pms2_network power port driver supports controlling the Energenie power
-  management series with devices like the EG_PMS2_LAN & EG_PMS2_WLAN
-- The client and coordinator learned of a new "release-from" operation that only releases a place
-  if it acquired by a specific user. This can be used to prevent race conditions when attempting to
-  automate the cleanup of unused places (e.g. in CI jobs)
+  management series with devices like the EG_PMS2_LAN & EG_PMS2_WLAN.
+- The client and coordinator learned of a new "release-from" operation that
+  only releases a place if it acquired by a specific user. This can be used to
+  prevent race conditions when attempting to automate the cleanup of unused
+  places (e.g. in CI jobs).
 - ModbusTCPCoil driver supports writing using multiple coils write method
-  in order to make driver usable with Papouch Quido I/O modules
+  in order to make driver usable with Papouch Quido I/O modules.
+- If supported, ser2net started by the exporter now allows multiple connections.
 - SmallUBootDriver driver now supports wide range of Ralink/mt7621 devices
   which expects ``boot_secret`` without new line with new ``boot_secret_nolf``
   boolean config option.
+- More USBVideo devices have been added.
+- labgrid now uses a custom yaml loader/dumper.
 - labgrid-client add-match/add-named-match check for duplicate matches
 - `DFUDriver` has been added to communicate with a `DFUDevice`, a device in DFU
   (Device Firmware Upgrade) mode.
-- ``labgrid-client dfu`` added to allow communcation with devices in DFU mode.
+- ``labgrid-client dfu`` added to allow communication with devices in DFU mode.
 - Support for QEMU Q35 machine added.
 - `UBootDriver` now handles idle console, allowing driver activation on
-  an interupted U-Boot.
+  an interrupted U-Boot.
+- Support for the STLINK-V3 has been added to the USBDebugger resource.
+- labgrid-suggest can now suggest matches for a USBPowerPort used by power
+  switchable USB hubs.
+- AndroidFastboot is now deprecated and was replaced by AndroidUSBFastboot. This
+  is more consistent with the AndroidNetFastboot support.
+- In case multiple matches are found for a driver, labgrid-client now outputs
+  the available names.
 - ProcessWrapper now supports an "input" argument to check_output() that allows
-  a string to be passed to stdin of the process
+  a string to be passed to stdin of the process.
 - The ``NetworkInterfaceDriver`` now supports local and remote SSH port
   forwarding to/from the exporter.
+- labgrid was switched over to use pyproject.toml.
+- A contrib script was added to export coordinator metrics to stasd.
 - The SSH connection timeout can now be globally controlled using the
   ``LG_SSH_CONNECT_TIMEOUT`` environment variable.
 - The `QEMUDriver` now supports a ``display`` option which can specify if an
   display device should be created. ``none`` (the default) will not create a
   display device, ``fb-headless`` will create a headless framebuffer device
   for software rendering, and ``egl-headless`` will create a headless GPU
-  device for accelerated rendering (but requires host support)
+  device for accelerated rendering (but requires host support).
+- The `AndroidFastbootDriver` now supports interaction with network devices in
+  fastboot state.
+- Add bash completion for labgrid-client.
 - The `QEMUDriver` now support a ``nic`` property that can be used to create a
   network interface when booting.
-- The `QEMUDriver` now supports API to add port-forwarding from localhost
+- The SSHDriver now correctly uses the processwrapper for rsync.
+- The `QEMUDriver` now supports API to add port-forwarding from localhost.
+- The get() method for sdwire has been added.
+- If there are multiple named resources for a target, one of them can be named
+  "default" to select it automatically if no explicit other name is given.
+- labgrid-client has been extended with --name/-n for most commands. This allows
+  attaching multiple power sources/usb-muxes and switching them individually
+  from the command line.
+- Add DediprogFlashDriver and DediprogFlasher resource.
+- Add support for Digital Loggers PDU.
+- Add support for Shelly power switches.
+- Make labgrid-client use crossbar_url and crossbar_realm from ennvironment
+  config.
 
 Bug fixes in 23.0
 ~~~~~~~~~~~~~~~~~
@@ -55,7 +98,11 @@ Bug fixes in 23.0
 - Fixed ``labgrid-client forward --remote``/``-R``, which used either the LOCAL
   part of ``--local``/``-L`` accidentally (if specified) or raised an
   UnboundLocalError.
-- Fix udev matching by attributes
+- Fix udev matching by attributes.
+- Stop Exporter's event loop when register calls fail.
+- Fix exit codes for various subcommands.
+- Omit role and place output for ``labgrid-client reserve`` to fix shell
+  evaluation.
 
 Breaking changes in 23.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -64,6 +111,16 @@ Breaking changes in 23.0
 - `UBootDriver`'s ``boot_expression`` attribute is deprecated, it will no
   longer check for the string during U-Boot boot. This allows activating the
   driver on an already running U-Boot.
+- The uuu command handling was fixed for the UUUDriver.
+- `UBootDriver` boot() method was fixed.
+- Fix proxying of dynamic port power backends with URL in host parameter and
+  authentication credentials.
+- The coordinator was switched over to anonymous static authentication. You'll
+  have to use the legacy crossbar configuration to support older
+  clients/exporters. The 23.1 release will remove support for the legacy ticket
+  authentication.
+- AndroidFastboot has been deprecated. Please replace it with the more specific
+  AndroidUSBFastboot with the same semantics.
 
 Known issues in 23.0
 ~~~~~~~~~~~~~~~~~~~~

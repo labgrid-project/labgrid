@@ -246,7 +246,6 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.digitalloggers_http
         import labgrid.driver.power.gude
         import labgrid.driver.power.gude24
-        import labgrid.driver.power.tplink
         import labgrid.driver.power.netio
         import labgrid.driver.power.netio_kshell
         import labgrid.driver.power.rest
@@ -257,6 +256,10 @@ class TestNetworkPowerDriver:
     def test_import_backend_eaton(self):
         pytest.importorskip("pysnmp")
         import labgrid.driver.power.eaton
+
+    def test_import_backend_tplink(self):
+        pytest.importorskip("kasa")
+        import labgrid.driver.power.tplink
 
     def test_import_backend_siglent(self):
         pytest.importorskip("vxi11")

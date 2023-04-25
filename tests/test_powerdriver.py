@@ -242,7 +242,6 @@ class TestNetworkPowerDriver:
     def test_import_backends(self):
         import labgrid.driver.power
         import labgrid.driver.power.apc
-        import labgrid.driver.power.eaton
         import labgrid.driver.power.digipower
         import labgrid.driver.power.digitalloggers_http
         import labgrid.driver.power.gude
@@ -254,6 +253,10 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.sentry
         import labgrid.driver.power.eg_pms2_network
         import labgrid.driver.power.shelly_gen1
+
+    def test_import_backend_eaton(self):
+        pytest.importorskip("pysnmp")
+        import labgrid.driver.power.eaton
 
     def test_import_backend_siglent(self):
         pytest.importorskip("vxi11")

@@ -1,5 +1,4 @@
 import logging
-import warnings
 
 import attr
 from packaging import version
@@ -27,12 +26,6 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         bindings = {"port": "SerialPort", }
     else:
         bindings = {"port": {"SerialPort", "NetworkSerialPort"}, }
-    if version.parse(serial.__version__) != version.Version('3.4.0.1'):
-        message = ("The installed pyserial version does not contain important RFC2217 fixes.\n"
-                   "You can install the labgrid fork via:\n"
-                   "pip uninstall pyserial\n"
-                   "pip install https://github.com/labgrid-project/pyserial/archive/v3.4.0.1.zip#egg=pyserial\n")
-        warnings.warn(message)
 
     txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
     timeout = attr.ib(default=3.0, validator=attr.validators.instance_of(float))

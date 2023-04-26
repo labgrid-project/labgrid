@@ -11,6 +11,9 @@ Bug fixes in 23.0.1
 - The build-and-release workflow supports building wheels.
 - The markers now are restricted to patterns which won't match WARN,
   ERROR, INFO and similar log notifiers.
+- Fix named SSH lookups in conjunction with an environment file in
+  labgrid-client.
+  
 
 Release 23.0 (Released Apr 24, 2023)
 ------------------------------------

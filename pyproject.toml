@@ -35,7 +35,7 @@ dependencies = [
     "jinja2==3.0.2",
     "packaging==21.0",
     "pexpect==4.8.0",
-    "pyserial @ git+https://github.com/labgrid-project/pyserial.git@v3.4.0.1",
+    "pyserial-labgrid>=3.4.0.1",
     "pytest==7.2.2",
     "pyudev==0.22.0",
     "pyusb==1.2.1",

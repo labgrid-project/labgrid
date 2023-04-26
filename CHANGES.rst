@@ -1,3 +1,17 @@
+Release 23.0.1 (Released Apr 26, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.1
+~~~~~~~~~~~~~~~~~~~
+- The pypi release now uses the labgrid pyserial fork in the form of the 
+  pyserial-labgrid package. This fixes installation with newer versions
+  of pip.
+- Several tests have gained an importorskip() call to skip them if the
+  module is not available.
+- The build-and-release workflow supports building wheels.
+- The markers now are restricted to patterns which won't match WARN,
+  ERROR, INFO and similar log notifiers.
+
 Release 23.0 (Released Apr 24, 2023)
 ------------------------------------
 

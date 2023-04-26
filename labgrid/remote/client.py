@@ -1024,17 +1024,21 @@ class ClientSession(ApplicationSession):
         place = self.get_acquired_place()
         target = self._get_target(place)
 
-        from ..resource import NetworkService
         try:
-            resource = target.get_resource(NetworkService, name=self.args.name)
-        except NoResourceFoundError:
-            ip = self._get_ip(place)
-            if not ip:
-                return
-            resource = NetworkService(target, address=str(ip), username='root')
+            drv = target.get_driver("SSHDriver", name=self.args.name)
+            return drv
+        except NoDriverFoundError:
+            from ..resource import NetworkService
+            try:
+                resource = target.get_resource(NetworkService, name=self.args.name)
+            except NoResourceFoundError:
+                ip = self._get_ip(place)
+                if not ip:
+                    return
+                resource = NetworkService(target, address=str(ip), username='root')
 
-        drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name)
-        return drv
+            drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name)
+            return drv
 
     def ssh(self):
         drv = self._get_ssh()

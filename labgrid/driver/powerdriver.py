@@ -396,21 +396,18 @@ class PDUDaemonDriver(Driver, PowerResetMixin, PowerProtocol):
     def on(self):
         r = self._requests.get(self._build_url('on'))
         r.raise_for_status()
-        time.sleep(1)  # give pdudaemon some time to execute the request
 
     @Driver.check_active
     @step()
     def off(self):
         r = self._requests.get(self._build_url('off'))
         r.raise_for_status()
-        time.sleep(1)  # give pdudaemon some time to execute the request
 
     @Driver.check_active
     @step()
     def cycle(self):
         r = self._requests.get(self._build_url('reboot'))
         r.raise_for_status()
-        time.sleep(self.delay + 1)  # give pdudaemon some time to execute the request
 
     @Driver.check_active
     def get(self):

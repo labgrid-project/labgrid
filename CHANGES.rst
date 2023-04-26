@@ -1,3 +1,25 @@
+Release 23.1 (unreleased)
+------------------------------------
+
+New Features in 23.1
+~~~~~~~~~~~~~~~~~~~~
+
+
+Bug fixes in 23.1
+~~~~~~~~~~~~~~~~~
+
+
+Breaking changes in 23.1
+~~~~~~~~~~~~~~~~~~~~~~~~~
+- The Debian package (``debian/``) no longer contains crossbar. Use the
+  `coordinator container <https://hub.docker.com/r/labgrid/coordinator>`_ or
+  install it into a separate local venv as desribed in the
+  `documentation <https://labgrid.readthedocs.io/en/latest/getting_started.html#coordinator>`_.
+
+Known issues in 23.1
+~~~~~~~~~~~~~~~~~~~~
+
+
 Release 23.0 (Released Apr 24, 2023)
 ------------------------------------
 

@@ -34,7 +34,7 @@ workers:
             role: public
 - id: coordinator
   type: guest
-  executable: python3
+  executable: /path/to/labgrid-venv/bin/python3
   arguments:
   - -m
   - labgrid.remote.coordinator

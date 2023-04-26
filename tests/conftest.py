@@ -1,8 +1,8 @@
 import logging
+from pathlib import Path
 from signal import SIGTERM
 import sys
 import threading
-from importlib.util import find_spec
 
 import pytest
 import pexpect
@@ -104,10 +104,11 @@ def crossbar_config(tmpdir, pytestconfig):
     crossbar_config = '.crossbar/config-anonymous.yaml'
 
     pytestconfig.rootdir.join(crossbar_config).copy(tmpdir.mkdir('.crossbar'))
+    crossbar_config = tmpdir.join(crossbar_config)
 
     # crossbar runs labgrid's coordinator component as a guest, record its coverage
     if pytestconfig.pluginmanager.get_plugin('pytest_cov'):
-        with open(tmpdir.join(crossbar_config), 'r+') as stream:
+        with open(crossbar_config, 'r+') as stream:
             conf = yaml.safe_load(stream)
 
             for worker in conf['workers']:
@@ -122,15 +123,19 @@ def crossbar_config(tmpdir, pytestconfig):
             stream.seek(0)
             yaml.safe_dump(conf, stream)
 
+    return crossbar_config
+
 @pytest.fixture(scope='function')
-def crossbar(tmpdir, crossbar_config):
-    if not find_spec('crossbar'):
-        pytest.skip("crossbar not found")
+def crossbar(tmpdir, pytestconfig, crossbar_config):
+    crossbar_venv = Path(pytestconfig.getoption("--crossbar-venv"))
+    if not crossbar_venv.is_absolute():
+        crossbar_venv = pytestconfig.rootdir / crossbar_venv
+    crossbar_bin = crossbar_venv / "bin/crossbar"
 
     spawn = pexpect.spawn(
-            'crossbar start --color false --logformat none --config config-anonymous.yaml',
-            logfile=Prefixer(sys.stdout.buffer, 'crossbar'),
-            cwd=str(tmpdir))
+        f'{crossbar_bin} start --color false --logformat none --config {crossbar_config}',
+        logfile=Prefixer(sys.stdout.buffer, 'crossbar'),
+        cwd=str(tmpdir))
     try:
         spawn.expect('Realm .* started')
         spawn.expect('Guest .* started')
@@ -189,6 +194,8 @@ def pytest_addoption(parser):
                      help="Run SSHManager tests against localhost")
     parser.addoption("--ssh-username", default=None,
                      help="SSH username to use for SSHDriver testing")
+    parser.addoption("--crossbar-venv", default=None,
+                     help="Path to separate virtualenv with crossbar installed")
 
 def pytest_configure(config):
     # register an additional marker
@@ -198,6 +205,8 @@ def pytest_configure(config):
                             "localsshmanager: test SSHManager against Localhost")
     config.addinivalue_line("markers",
                             "sshusername: test SSHDriver against Localhost")
+    config.addinivalue_line("markers",
+                            "crossbar: test against local crossbar")
 
 def pytest_runtest_setup(item):
     envmarker = item.get_closest_marker("sigrokusb")
@@ -212,3 +221,7 @@ def pytest_runtest_setup(item):
     if envmarker is not None:
         if item.config.getoption("--ssh-username") is None:
             pytest.skip("SSHDriver tests against localhost not enabled (enable with --ssh-username <username>)")
+    envmarker = item.get_closest_marker("crossbar")
+    if envmarker is not None:
+        if item.config.getoption("--crossbar-venv") is None:
+            pytest.skip("No path to crossbar virtualenv given (set with --crossbar-venv <path>)")

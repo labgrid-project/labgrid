@@ -1,7 +1,6 @@
 import logging
 
 import attr
-from packaging import version
 from pexpect import TIMEOUT
 import serial
 import serial.rfc2217
@@ -20,12 +19,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     """
     Driver implementing the ConsoleProtocol interface over a SerialPort connection
     """
-    # pyserial 3.2.1 does not support RFC2217 under Python 3
-    # https://github.com/pyserial/pyserial/pull/183
-    if version.parse(serial.__version__) <= version.Version('3.2.1'):
-        bindings = {"port": "SerialPort", }
-    else:
-        bindings = {"port": {"SerialPort", "NetworkSerialPort"}, }
+    bindings = {"port": {"SerialPort", "NetworkSerialPort"}, }
 
     txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
     timeout = attr.ib(default=3.0, validator=attr.validators.instance_of(float))

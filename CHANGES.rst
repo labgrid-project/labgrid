@@ -7,7 +7,16 @@ New Features in 23.1
 
 Bug fixes in 23.1
 ~~~~~~~~~~~~~~~~~
-
+- The pypi release now uses the labgrid pyserial fork in the form of the
+  pyserial-labgrid package. This fixes installation with newer versions
+  of pip.
+- Several tests have gained an importorskip() call to skip them if the
+  module is not available.
+- The build-and-release workflow supports building wheels.
+- The markers now are restricted to patterns which won't match WARN,
+  ERROR, INFO and similar log notifiers.
+- Fix named SSH lookups in conjunction with an environment file in
+  labgrid-client.
 
 Breaking changes in 23.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~

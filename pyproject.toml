@@ -36,7 +36,7 @@ dependencies = [
     "pytest==7.2.2",
     "pyudev==0.22.0",
     "pyusb==1.2.1",
-    "PyYAML==5.4.1",
+    "PyYAML>=5.4.1",
     "requests==2.26.0",
     "xmodem==0.4.6",
 ]

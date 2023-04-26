@@ -19,7 +19,7 @@ jobs:
         python -m pip install --upgrade pip build
     - name: Build sdist
       run: |
-        python -m build -s
+        python -m build
     - name: Publish distribution 📦 to Test PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       if: startsWith(github.ref, 'refs/tags') != true

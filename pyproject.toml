@@ -31,7 +31,6 @@ dependencies = [
     "attrs==21.4.0",
     "autobahn==21.3.1",
     "jinja2==3.0.2",
-    "packaging==21.0",
     "pexpect==4.8.0",
     "pyserial-labgrid>=3.4.0.1",
     "pytest==7.2.2",

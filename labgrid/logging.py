@@ -23,14 +23,8 @@ logging.addLevelName(logging.CONSOLE, "CONSOLE")
 
 # Use composition instead of inheritance
 class StepFormatter:
-    def __init__(
-        self, *args, indent=True, color=None, long_result=False, parent=None, **kwargs
-    ):
-        if parent:
-            self.formatter = parent
-        else:
-            self.formatter = logging.Formatter(*args, **kwargs)
-        self.long_result = long_result
+    def __init__(self, *args, indent=True, color=None, parent=None, **kwargs):
+        self.formatter = parent or logging.Formatter(*args, **kwargs)
         self.indent = indent
         self.indent_level = 0
         self.bufs = dict()

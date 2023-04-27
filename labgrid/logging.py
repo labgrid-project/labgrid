@@ -208,9 +208,9 @@ class StepLogger:
 
     @classmethod
     def __get_message(cls, event):
-        m = "{prefix} {source} {title} {args} {result}{duration}".format(
+        m = "{prefix} {source}.{title}({args}) {result}{duration}".format(
             prefix=cls.get_prefix(event),
-            source=event.step.__class__.__name__,
+            source=event.step.source.__class__.__name__,
             title=event.step.title,
             args=cls.format_arguments(event.data.get("args", {})),
             result=cls.format_result(event.data.get("result", None)),

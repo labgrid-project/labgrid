@@ -17,7 +17,8 @@ def basicConfig(**kwargs):
     root.handlers[0].setFormatter(StepFormatter(indent=indent, parent=parent))
 
 
-logging.CONSOLE = logging.INFO - 1
+logging.CONSOLE = logging.INFO - 5
+assert(logging.CONSOLE > logging.DEBUG)
 logging.addLevelName(logging.CONSOLE, "CONSOLE")
 
 # Use composition instead of inheritance

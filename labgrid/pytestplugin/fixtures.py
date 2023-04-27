@@ -6,6 +6,7 @@ from ..exceptions import NoResourceFoundError, NoDriverFoundError
 from ..remote.client import UserError
 from ..resource.remote import RemotePlace
 from ..util.ssh import sshmanager
+from ..logging import DEFAULT_FORMAT
 
 # pylint: disable=redefined-outer-name
 
@@ -47,6 +48,11 @@ def pytest_addoption(parser):
         dest='lg_initial_state',
         metavar='STATE_NAME',
         help='set the strategy\'s initial state (during development)')
+
+    # We would like to use a default value hook for log_format in the logging plugin,
+    # similar to the approach below:
+    # https://docs.pytest.org/en/latest/how-to/writing_hook_functions.html#using-hooks-in-pytest-addoption
+    parser.addini("log_format", default=DEFAULT_FORMAT, help="Default value for log_format (overwritten by labgrid)")
 
 
 @pytest.fixture(scope="session")

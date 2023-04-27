@@ -1,5 +1,6 @@
-import warnings
 import inspect
+import os
+import warnings
 from functools import wraps
 from time import monotonic
 
@@ -14,8 +15,8 @@ class Steps:
     def get_current(self):
         return self._stack[-1] if self._stack else None
 
-    def get_new(self, title, tag, source):
-        step = Step(title, level=len(self._stack) + 1, tag=tag, source=source)  # pylint: disable=redefined-outer-name
+    def get_new(self, title, tag, source, sourceinfo):
+        step = Step(title, level=len(self._stack) + 1, tag=tag, source=source, sourceinfo=sourceinfo)  # pylint: disable=redefined-outer-name
         return step
 
     def push(self, step):  # pylint: disable=redefined-outer-name
@@ -97,11 +98,12 @@ class StepEvent:
 
 # TODO: allow attaching log information, using a Resource as meta-data
 class Step:
-    def __init__(self, title, level, tag, source):
+    def __init__(self, title, level, tag, source, sourceinfo):
         self.title = title
         self.level = level
-        self.source = source
         self.tag = tag
+        self.source = source
+        self.sourceinfo = sourceinfo
         self.args = None
         self.result = None
         self.exception = None
@@ -195,13 +197,14 @@ def step(*, title=None, args=[], result=False, tag=None):
         title = title or func.__name__
 
         signature = inspect.signature(func)
-
         @wraps(func)
         def wrapper(*_args, **_kwargs):
             bound = signature.bind_partial(*_args, **_kwargs)
             bound.apply_defaults()
             source = func.__self__ if inspect.ismethod(func) else bound.arguments.get('self')
-            step = steps.get_new(title, tag, source)  # pylint: disable=redefined-outer-name
+            pathname = func.__code__.co_filename
+            sourceinfo = (pathname,  os.path.basename(pathname), func.__code__.co_firstlineno)
+            step = steps.get_new(title, tag, source, sourceinfo)  # pylint: disable=redefined-outer-name
             # optionally pass the step object
             if 'step' in signature.parameters:
                 _kwargs['step'] = step

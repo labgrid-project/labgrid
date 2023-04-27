@@ -411,4 +411,4 @@ class PDUDaemonDriver(Driver, PowerResetMixin, PowerProtocol):
 
     @Driver.check_active
     def get(self):
-        return None
+        raise NotImplementedError("pdudaemon does not support retrieving the port's state")

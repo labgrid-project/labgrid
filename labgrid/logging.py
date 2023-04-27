@@ -183,7 +183,7 @@ class StepLogger:
         if isinstance(args, dict):
             collected_args = []
             for k, v in args.items():
-                collected_args.append("{}={}".format(k, v))
+                collected_args.append(f"{k}={repr(v)}")
 
             return " ".join(collected_args)
         else:

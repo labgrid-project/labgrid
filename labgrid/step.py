@@ -125,12 +125,6 @@ class Step:
         result.append(")")
         return "".join(result)
 
-    def get_title(self):
-        return self.title
-
-    def __str__(self):
-        return f"{self.title} [{self.level},{self.tag},{self.source}] is self.status"
-
     @property
     def duration(self):
         if self._start_ts is None:

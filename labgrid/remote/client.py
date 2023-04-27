@@ -1796,7 +1796,9 @@ def main():
 
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)
-    if args.debug or args.verbose > 1:
+    if args.verbose > 1:
+        logging.getLogger().setLevel(logging.CONSOLE)
+    if args.debug or args.verbose > 2:
         logging.getLogger().setLevel(logging.DEBUG)
 
     if not args.config and (args.state or args.initial_state):

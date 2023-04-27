@@ -5,12 +5,16 @@ import attr
 
 from .step import steps, StepEvent
 
+DEFAULT_FORMAT = "%(levelname)-7.7s %(name)15.15s: %(message)s"
 
 def basicConfig(**kwargs):
+    kwargs.setdefault("format", DEFAULT_FORMAT)
+    indent = kwargs.get("indent", True)
     logging.basicConfig(**kwargs)
     root = logging.getLogger()
 
-    root.handlers[0].setFormatter(StepFormatter())
+    parent = root.handlers[0].formatter
+    root.handlers[0].setFormatter(StepFormatter(indent=indent, parent=parent))
 
 
 logging.CONSOLE = logging.INFO - 1

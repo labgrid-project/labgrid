@@ -44,6 +44,9 @@ class StepFormatter:
                     record, "next_indent_level", self.indent_level
                 )
 
+            if hasattr(record, "step"):
+                record.pathname, record.filename, record.lineno = record.step.sourceinfo
+
             return self.formatter.format(record)
         finally:
             record.msg = old_msg
@@ -78,7 +81,7 @@ class SerialLoggingReporter:
         string = string.replace("\f", "␌")
         return string
 
-    def __create_message(self, event, data):
+    def _create_message(self, event, data):
         return "{source} {dirind} {data}␍␤".format(
             source=event.step.source,
             dirind="<" if event.step.title == "read" else ">",
@@ -88,6 +91,9 @@ class SerialLoggingReporter:
     def notify(self, event):
         step = event.step
         state = event.data.get("state")
+        extra = {
+            "step": step,
+        }
         if step.tag == "console":
             self.loggers[step.source] = logging.getLogger(
                 f"SerialLogger.{step.source.__class__.__name__}.{step.source.target}"
@@ -104,20 +110,23 @@ class SerialLoggingReporter:
 
                 for part in parts:
                     data = self.vt100_replace_cr_nl(part)
-                    logger.log(logging.CONSOLE, self.__create_message(event, data))
+                    logger.log(logging.CONSOLE, self._create_message(event, data), extra=extra)
 
             elif state == "start" and step.args and "data" in step.args:
                 data = self.vt100_replace_cr_nl(step.args["data"])
-                logger.log(logging.CONSOLE, self.__create_message(event, data))
+                logger.log(logging.CONSOLE, self._create_message(event, data), extra=extra)
 
     def flush(self):
         if self.lastevent is None:
             return
 
+        extra = {
+            "step": self.lastevent.step,
+        }
         for source, logger in self.loggers.items():
             data = self.vt100_replace_cr_nl(self.bufs[source])
             if data:
-                logger.log(logging.CONSOLE, self.__create_message(self.lastevent, data))
+                logger.log(logging.CONSOLE, self._create_message(self.lastevent, data), extra=extra)
             self.bufs[source] = b""
 
 
@@ -242,6 +251,7 @@ class StepLogger:
         level = logging.INFO
         extra = {
             "indent_level": event.step.level,
+            "step": event.step,
             "next_indent_level": cls.get_next_indent(event),
         }
         cls._logger.log(level, message, extra=extra)

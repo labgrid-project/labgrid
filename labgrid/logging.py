@@ -95,7 +95,7 @@ class SerialLoggingReporter:
         }
         if step.tag == "console":
             self.loggers[step.source] = logging.getLogger(
-                f"SerialLogger.{step.source.__class__.__name__}.{step.source.target}"
+                f"SerialLogger.{step.source.target.name}.{step.source.__class__.__name__}"
             )
             logger = self.loggers[step.source]
 

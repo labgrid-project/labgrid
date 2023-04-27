@@ -1402,7 +1402,6 @@ class ExportFormat(enum.Enum):
 def main():
     basicConfig(
         level=logging.WARNING,
-        format='%(levelname)7s: %(message)s',
         stream=sys.stderr,
     )
 

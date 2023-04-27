@@ -669,9 +669,6 @@ class ClientSession(ApplicationSession):
             target = self.env.get_target(self.role)
         if target:
             if self.args.state:
-                if self.args.verbose >= 2:
-                    from .. import StepReporter
-                    StepReporter.start()
                 strategy = target.get_driver("Strategy")
                 if self.args.initial_state:
                     print(f"Setting initial state to {self.args.initial_state}")

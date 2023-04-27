@@ -82,8 +82,8 @@ Two configured images, one for the root filesystem, one for the bootloader:
 .nf
 .ft C
 images:
-  root: "platform\-v7a/images/root.img"
-  boot: "platform\-v7a/images/barebox.img"
+  root: \(dqplatform\-v7a/images/root.img\(dq
+  boot: \(dqplatform\-v7a/images/barebox.img\(dq
 .ft P
 .fi
 .UNINDENT
@@ -174,7 +174,7 @@ Configure the tool path for \fBimx\-usb\-loader\fP:
 .nf
 .ft C
 tools:
-  imx\-usb\-loader: "/opt/labgrid\-helper/imx\-usb\-loader"
+  imx\-usb\-loader: \(dq/opt/labgrid\-helper/imx\-usb\-loader\(dq
 .ft P
 .fi
 .UNINDENT
@@ -213,7 +213,7 @@ targets:
   main:
     resources:
       RawSerialPort:
-        port: "/dev/ttyUSB0"
+        port: \(dq/dev/ttyUSB0\(dq
     drivers:
       SerialDriver: {}
       ShellDriver:
@@ -247,7 +247,7 @@ targets:
       IMXUSBDriver: {}
       MyStrategy: {}
 tools:
-  imx\-usb\-loader: "/opt/lg\-tools/imx\-usb\-loader"
+  imx\-usb\-loader: \(dq/opt/lg\-tools/imx\-usb\-loader\(dq
 imports:
   \- mystrategy.py
 .ft P

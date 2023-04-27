@@ -133,7 +133,7 @@ class StepLogger:
     _started = False
     _logger = None
     _serial_logger = None
-    _long_result = False
+    _length_limit = 100
 
     def __attrs_post_init__(self):
         from warnings import warn
@@ -145,7 +145,7 @@ class StepLogger:
         )
 
     @classmethod
-    def start(cls, long_result=False):
+    def start(cls, length_limit=None):
         """starts the StepLogger"""
         assert not cls._started
         if cls._logger is None:
@@ -153,7 +153,8 @@ class StepLogger:
         steps.subscribe(cls.notify)
         cls._serial_logger = SerialLoggingReporter()
         cls._started = True
-        cls._long_result = long_result
+        if length_limit is not None:
+            cls._length_limit = length_limit
 
     @classmethod
     def stop(cls):
@@ -200,13 +201,10 @@ class StepLogger:
         if result is None:
             return ""
 
-        if cls._long_result:
+        if len(str(result)) < cls._length_limit or cls._length_limit is None:
             return "result={} ".format(result)
 
-        if len(str(result)) < 60:
-            return "result={} ".format(result)
-        else:
-            return "result={:.59}… ".format(repr(result))
+        return f"result={repr(result):.{cls._length_limit}}… "
 
     @classmethod
     def __get_message(cls, event):

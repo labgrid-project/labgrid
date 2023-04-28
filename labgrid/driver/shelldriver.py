@@ -14,7 +14,7 @@ import xmodem
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, FileTransferProtocol
 from ..step import step
-from ..util import gen_marker, Timeout
+from ..util import gen_marker, Timeout, re_vt100
 from .commandmixin import CommandMixin
 from .common import Driver
 from .exception import ExecutionError
@@ -58,9 +58,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.re_vt100 = re.compile(
-            r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
-        )
         self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
 
@@ -100,7 +97,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             timeout=timeout
         )
         # Remove VT100 Codes, split by newline and remove surrounding newline
-        data = self.re_vt100.sub('', match.group(1).decode(codec, decodeerrors)).split('\r\n')
+        data = re_vt100.sub('', match.group(1).decode(codec, decodeerrors)).split('\r\n')
         if data and not data[-1]:
             del data[-1]
         self.logger.debug("Received Data: %s", data)

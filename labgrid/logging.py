@@ -1,9 +1,9 @@
-import re
 import logging
 
 import attr
 
 from .step import steps, StepEvent
+from .util import re_vt100
 
 DEFAULT_FORMAT = "%(levelname)-7.7s %(name)15.15s: %(message)s"
 
@@ -63,15 +63,12 @@ class SerialLoggingReporter:
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(StepEvent)),
     )
-    re_vt100 = attr.ib(
-        default=re.compile(r"(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]")
-    )
 
     def __attrs_post_init__(self):
         steps.subscribe(self.notify)
 
     def vt100_replace_cr_nl(self, buf):
-        string = self.re_vt100.sub("", buf.decode("utf-8", errors="replace"))
+        string = re_vt100.sub("", buf.decode("utf-8", errors="replace"))
         string = string.replace("\r", "␍")
         string = string.replace("\n", "␤")
         string = string.replace("\b", "␈")

@@ -6,6 +6,7 @@ from ..step import step
 from .common import Driver
 
 from .ubootdriver import UBootDriver
+from ..util import re_vt100
 
 @target_factory.reg_driver
 @attr.s(eq=False)
@@ -97,7 +98,7 @@ class SmallUBootDriver(UBootDriver):
         self.console.sendline(cmp_command)
         _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
 
-        data = self.re_vt100.sub(
+        data = re_vt100.sub(
             '', before.decode('utf-8'), count=1000000
         ).replace("\r", "").split("\n")
         data = data[1:]

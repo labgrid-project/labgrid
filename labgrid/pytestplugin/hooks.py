@@ -1,30 +1,67 @@
-import logging
 import os
 import warnings
+import logging
 import pytest
 
 from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
-from .reporter import StepReporter, ColoredStepReporter
 from ..util.helper import processwrapper
+from ..logging import StepFormatter, StepLogger
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_cmdline_main(config):
+    def set_cli_log_level(level):
+        nonlocal config
+
+        current_level = config.getoption("log_cli_level") or config.getini("log_cli_level")
+        print(f"current_level: {current_level}")
+
+        if isinstance(current_level, str):
+            try:
+                current_level = int(logging.getLevelName(current_level))
+            except ValueError:
+                current_level = None
+
+        # If no level was set previously (via ini or cli) or current_level is
+        # less verbose than level, set to new level.
+        if current_level is None or level < current_level:
+            config.option.log_cli_level = str(level)
+
+    verbosity = config.getoption("verbose")
+    if verbosity > 3: # enable with -vvvv
+        set_cli_log_level(logging.DEBUG)
+    elif verbosity > 2: # enable with -vvv
+        set_cli_log_level(logging.CONSOLE)
+    elif verbosity > 1: # enable with -vv
+        set_cli_log_level(logging.INFO)
+
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
+    StepLogger.start()
+    config.add_cleanup(StepLogger.stop)
+
+    logging_plugin = config.pluginmanager.getplugin('logging-plugin')
+    logging_plugin.log_cli_handler.formatter.add_color_level(logging.CONSOLE, "blue")
+    logging_plugin.log_cli_handler.setFormatter(StepFormatter(
+        color=config.option.lg_colored_steps,
+        parent=logging_plugin.log_cli_handler.formatter,
+    ))
+    logging_plugin.log_file_handler.setFormatter(StepFormatter(
+        parent=logging_plugin.log_file_handler.formatter,
+    ))
+
+    # Might be the same formatter instance, so get a reference for both before
+    # changing either
+    report_formatter = logging_plugin.report_handler.formatter
+    caplog_formatter = logging_plugin.caplog_handler.formatter
+
+    logging_plugin.report_handler.setFormatter(StepFormatter(parent=report_formatter))
+    logging_plugin.report_handler.setFormatter(StepFormatter(parent=caplog_formatter))
+
     config.addinivalue_line("markers",
                             "lg_feature: marker for labgrid feature flags")
-    terminalreporter = config.pluginmanager.getplugin('terminalreporter')
-    capturemanager = config.pluginmanager.getplugin('capturemanager')
-    rewrite = True
     lg_log = config.option.lg_log
-    if not capturemanager.is_globally_capturing():
-        rewrite = False  # other output would interfere with our rewrites
-    if terminalreporter.verbosity > 1:  # enable with -vv
-        if config.option.lg_colored_steps:
-            config.pluginmanager.register(ColoredStepReporter(terminalreporter, rewrite=rewrite))
-        else:
-            config.pluginmanager.register(StepReporter(terminalreporter, rewrite=rewrite))
-    if terminalreporter.verbosity > 2:  # enable with -vvv
-        logging.getLogger().setLevel(logging.DEBUG)
     if lg_log:
         ConsoleLoggingReporter(lg_log)
     env_config = config.option.env_config

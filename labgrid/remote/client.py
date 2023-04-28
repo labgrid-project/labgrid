@@ -31,6 +31,7 @@ from ..util import diff_dict, flat_dict, filter_dict, dump, atomic_replace, Time
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
 from ..driver import Mode, ExecutionError
+from ..logging import basicConfig, StepLogger
 
 txaio.config.loop = asyncio.get_event_loop()  # pylint: disable=no-member
 
@@ -668,9 +669,6 @@ class ClientSession(ApplicationSession):
             target = self.env.get_target(self.role)
         if target:
             if self.args.state:
-                if self.args.verbose >= 2:
-                    from .. import StepReporter
-                    StepReporter.start()
                 strategy = target.get_driver("Strategy")
                 if self.args.initial_state:
                     print(f"Setting initial state to {self.args.initial_state}")
@@ -1402,12 +1400,13 @@ class ExportFormat(enum.Enum):
 
 
 def main():
-    processwrapper.enable_logging()
-    logging.basicConfig(
+    basicConfig(
         level=logging.WARNING,
-        format='%(levelname)7s: %(message)s',
         stream=sys.stderr,
     )
+
+    StepLogger.start()
+    processwrapper.enable_logging()
 
     # Support both legacy variables and properly namespaced ones
     place = os.environ.get('PLACE', None)
@@ -1797,7 +1796,9 @@ def main():
 
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)
-    if args.debug or args.verbose > 1:
+    if args.verbose > 1:
+        logging.getLogger().setLevel(logging.CONSOLE)
+    if args.debug or args.verbose > 2:
         logging.getLogger().setLevel(logging.DEBUG)
 
     if not args.config and (args.state or args.initial_state):

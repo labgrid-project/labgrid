@@ -1,5 +1,4 @@
 import logging
-import re
 import shlex
 
 import attr
@@ -8,7 +7,7 @@ from pexpect import TIMEOUT
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..step import step
-from ..util import gen_marker, Timeout
+from ..util import gen_marker, Timeout, re_vt100
 from .common import Driver
 from .commandmixin import CommandMixin
 
@@ -41,9 +40,6 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.re_vt100 = re.compile(
-            r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
-        )
         self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
 
@@ -89,7 +85,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 rf'{marker}(.*){marker}\s+(\d+)\s+.*{self.prompt}',
                 timeout=timeout)
             # Remove VT100 Codes and split by newline
-            data = self.re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
+            data = re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
             self.logger.debug("Received Data: %s", data)
             # Get exit code
             exitcode = int(match.group(2))

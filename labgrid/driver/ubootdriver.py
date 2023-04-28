@@ -1,13 +1,12 @@
 """The U-Boot Module contains the UBootDriver"""
 import logging
-import re
 
 import attr
 from pexpect import TIMEOUT
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
-from ..util import gen_marker, Timeout
+from ..util import gen_marker, Timeout, re_vt100
 from ..step import step
 from .common import Driver
 from .commandmixin import CommandMixin
@@ -49,9 +48,6 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.re_vt100 = re.compile(
-            r'(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]'
-        )
         self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
 
@@ -83,7 +79,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             self.console.sendline(cmp_command)
             _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
             # Remove VT100 Codes and split by newline
-            data = self.re_vt100.sub(
+            data = re_vt100.sub(
                 '', before.decode('utf-8'), count=1000000
             ).replace("\r", "").split("\n")
             self.logger.debug("Received Data: %s", data)

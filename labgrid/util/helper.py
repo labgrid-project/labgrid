@@ -2,6 +2,7 @@ import fcntl
 import os
 import logging
 import pty
+import re
 import select
 import subprocess
 import errno
@@ -11,6 +12,8 @@ from contextlib import closing
 import attr
 
 from ..step import step
+
+re_vt100 = re.compile(r"(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]")
 
 def get_free_port():
     """Helper function to always return an unused port."""

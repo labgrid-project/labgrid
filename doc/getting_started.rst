@@ -25,6 +25,16 @@ In many cases, the easiest way is to install labgrid into a virtualenv:
     $ source labgrid-venv/bin/activate
     labgrid-venv $ pip install --upgrade pip
 
+Install Latest Release
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    labgrid-venv $ pip install labgrid
+
+Install Development State
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Start by cloning the repository and installing labgrid:
 
 .. code-block:: bash
@@ -44,6 +54,8 @@ Start by cloning the repository and installing labgrid:
    since the port is not reconfigured when labgrid changes the timeout (which is
    done inside the library a lot).
 
+Test Installation
+~~~~~~~~~~~~~~~~~
 
 Test your installation by running:
 

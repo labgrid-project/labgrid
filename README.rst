@@ -132,6 +132,6 @@ Tests can now run via:
     :alt: chat
     :target: https://app.element.io/#/room/#labgrid:matrix.org
 
-.. |calver| image:: https://img.shields.io/badge/calver-YY.MINOR.%5BMICRO%5D-22bfda.svg
+.. |calver| image:: https://img.shields.io/badge/calver-YY.MINOR%5B.MICRO%5D-22bfda.svg
     :alt: chat
     :target: https://calver.org/

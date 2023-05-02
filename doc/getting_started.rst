@@ -47,7 +47,7 @@ Start by cloning the repository and installing labgrid:
    (RFC2217), it is highly recommended to uninstall pyserial after installation
    and replace it with the pyserial version from the labgrid project:
 
-   https://github.com/labgrid-project/pyserial/releases/tag/v3.4.0.1
+   https://github.com/labgrid-project/pyserial/tags
 
    This pyserial version has two fixes for an Issue we found with Serial over IP
    multiplexers. Additionally it reduces the Serial over IP traffic considerably

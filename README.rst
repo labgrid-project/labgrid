@@ -54,7 +54,7 @@ automated testing, several planned features are not yet implemented and the APIs
 may be changed as more use-cases appear.
 We appreciate code contributions and feedback on using labgrid on other
 environments (see `Contributing
-<https://labgrid.readthedocs.io/en/latest/development.html#contributing>`_ for
+<https://labgrid.readthedocs.io/en/latest/development.html#contributing>`__ for
 details).
 Please consider contacting us (via a GitHub issue) before starting larger
 changes, so we can discuss design trade-offs early and avoid redundant work.

@@ -1,4 +1,4 @@
-.. image:: labgrid_logo.png
+.. image:: https://raw.githubusercontent.com/labgrid-project/labgrid/master/labgrid_logo.png
    :alt: labgrid logo
    :align: center
 

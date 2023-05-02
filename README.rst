@@ -20,6 +20,10 @@ It includes a remote control layer to control boards connected to other hosts.
 
 * `Installation <#installation>`_
 
+  * `Install Latest Release <#install-latest-release>`_
+
+  * `Install Development State <#install-development-state>`_
+
 Purpose and Features
 --------------------
 The idea behind labgrid is to create an abstraction of the hardware control
@@ -80,6 +84,19 @@ See the `Installation section
 <http://labgrid.readthedocs.io/en/latest/getting_started.html#installation>`_
 for more details.
 
+Install Latest Release
+^^^^^^^^^^^^^^^^^^^^^^
+Install labgrid via PyPi:
+
+.. code-block:: bash
+
+   $ virtualenv -p python3 venv
+   $ source venv/bin/activate
+   venv $ pip install --upgrade pip
+   venv $ pip install labgrid
+
+Install Development State
+^^^^^^^^^^^^^^^^^^^^^^^^^
 Clone the git repository:
 
 .. code-block:: bash

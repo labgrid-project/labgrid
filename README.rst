@@ -4,15 +4,24 @@
 
 Welcome to labgrid
 ==================
-
 |license| |unit-tests| |docker-build| |coverage-status| |docs-status| |chat| |calver|
 
-Purpose
--------
 Labgrid is an embedded board control python library with a focus on testing, development
 and general automation.
 It includes a remote control layer to control boards connected to other hosts.
 
+* `Purpose and Features <#purpose-and-features>`_
+
+* `Documentation <#documentation>`_
+
+* `Contributing <#contributing>`_
+
+* `Background <#background>`_
+
+* `Installation <#installation>`_
+
+Purpose and Features
+--------------------
 The idea behind labgrid is to create an abstraction of the hardware control
 layer needed for testing of embedded systems, automatic software installation
 and automation during development.
@@ -51,22 +60,22 @@ enhancements which are not yet implemented.
 
 Documentation
 -------------
-`Read the Docs <http://labgrid.readthedocs.io/en/latest/>`_
+labgrid's documentation is hosted on `Read the Docs <http://labgrid.readthedocs.io/en/latest/>`_.
 
 Contributing
 ------------
-`Development Docs <http://labgrid.readthedocs.io/en/latest/development.html>`_
+See our `Development Docs <http://labgrid.readthedocs.io/en/latest/development.html>`_.
 
-IRC channel ``#labgrid`` on libera.chat (bridged to the `Matrix channel
-#labgrid:matrix.org <https://app.element.io/#/room/#labgrid:matrix.org>`_)
+Visit us in our IRC channel ``#labgrid`` on libera.chat (bridged to the
+`Matrix channel #labgrid:matrix.org <https://app.element.io/#/room/#labgrid:matrix.org>`_)
 
 Background
 ----------
 Work on labgrid started at `Pengutronix <http://pengutronix.de/>`_ in late 2016
 and is currently in active use and development.
 
-Quickstart
-----------
+Installation
+------------
 See the `Installation section
 <http://labgrid.readthedocs.io/en/latest/getting_started.html#installation>`_
 for more details.

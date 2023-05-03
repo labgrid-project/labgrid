@@ -50,6 +50,19 @@ def test_get_driver(target):
     assert target.get_driver(A) is a
     assert target.get_driver(A, name="adriver") is a
 
+    # make sure drivers named "default" are prioritized
+    b = A(target, "default")
+    assert target.get_driver(A) is b
+    assert target.get_driver(A, name="adriver") is a
+
+def test_get_driver_multiple_no_default(target):
+    class A(Driver):
+        pass
+
+    a = A(target, "adriver")
+    b = A(target, "default")
+    with pytest.raises(NoDriverFoundError) as excinfo:
+        target.get_driver(A, name="nosuchdriver")
 
 def test_getitem(target):
     class AProtocol(abc.ABC):

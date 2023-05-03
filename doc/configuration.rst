@@ -3162,6 +3162,9 @@ To bind the correct driver to the correct resource, explicit ``name`` and
 The property name for the binding (e.g. `port` in the example above) is
 documented for each individual driver in this chapter.
 
+If name is set to "default", this resource/driver will be used when no
+specific constraint is given.
+
 The YAML configuration file also supports templating for some substitutions,
 these are:
 

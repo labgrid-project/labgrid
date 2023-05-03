@@ -159,18 +159,27 @@ class Target:
 
         found = []
         other_names = []
+        default = None
         if isinstance(cls, str):
             cls = target_factory.class_from_string(cls)
 
         for drv in self.drivers:
             if not isinstance(drv, cls):
                 continue
+            if drv.name == "default":
+                default = drv
             if name and drv.name != name:
                 other_names.append(drv.name)
                 continue
             if active and drv.state != BindingState.active:
                 continue
             found.append(drv)
+
+        # if no explicit driver name is requested and a "default" driver was saved and
+        # multiple drivers were found, use the default driver
+        if not name and default and len(found) != 1:
+            found = [default]
+
         if not found:
             name_msg = f" named '{name}'" if name else ""
             if other_names:

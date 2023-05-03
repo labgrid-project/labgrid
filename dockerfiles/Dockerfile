@@ -72,3 +72,10 @@ RUN set -e ;\
 VOLUME /opt/conf
 
 CMD ["/entrypoint.sh"]
+
+#
+# SFTP server
+#
+FROM alpine:3.17 as labgrid-sftp-server
+
+RUN apk add openssh-sftp-server

@@ -27,7 +27,9 @@ jobs:
         docker tag labgrid-client ${{ secrets.DOCKERHUB_PREFIX }}client
         docker tag labgrid-exporter ${{ secrets.DOCKERHUB_PREFIX }}exporter
         docker tag labgrid-coordinator ${{ secrets.DOCKERHUB_PREFIX }}coordinator
+        docker tag labgrid-sftp-server ${{ secrets.DOCKERHUB_PREFIX }}sftp-server
         docker push ${{ secrets.DOCKERHUB_PREFIX }}client
         docker push ${{ secrets.DOCKERHUB_PREFIX }}exporter
         docker push ${{ secrets.DOCKERHUB_PREFIX }}coordinator
+        docker push ${{ secrets.DOCKERHUB_PREFIX }}sftp-server
         docker images

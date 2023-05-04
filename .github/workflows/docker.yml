@@ -3,6 +3,8 @@ name: docker build
 on:
   push:
     branches: [ master ]
+    tags:
+      - '*'
 
 jobs:
   docker:
@@ -24,10 +26,21 @@ jobs:
         docker-compose -f dockerfiles/staging/docker-compose.yml up --exit-code-from client client
         docker-compose -f dockerfiles/staging/docker-compose.yml down
         docker images
+    - name: Tag latest images
+      run: |
         docker tag labgrid-client ${{ secrets.DOCKERHUB_PREFIX }}client
         docker tag labgrid-exporter ${{ secrets.DOCKERHUB_PREFIX }}exporter
         docker tag labgrid-coordinator ${{ secrets.DOCKERHUB_PREFIX }}coordinator
-        docker push ${{ secrets.DOCKERHUB_PREFIX }}client
-        docker push ${{ secrets.DOCKERHUB_PREFIX }}exporter
-        docker push ${{ secrets.DOCKERHUB_PREFIX }}coordinator
-        docker images
+    - name: Tag release image
+      if: startsWith(github.ref, 'refs/tags')
+      run: |
+        docker tag labgrid-client ${{ secrets.DOCKERHUB_PREFIX }}client:${GITHUB_REF_NAME}
+        docker tag labgrid-exporter ${{ secrets.DOCKERHUB_PREFIX }}exporter:${GITHUB_REF_NAME}
+        docker tag labgrid-coordinator ${{ secrets.DOCKERHUB_PREFIX }}coordinator:${GITHUB_REF_NAME}
+    - name: Push to dockerhub
+      run: |
+        docker push --all-tags ${{ secrets.DOCKERHUB_PREFIX }}client
+        docker push --all-tags ${{ secrets.DOCKERHUB_PREFIX }}exporter
+        docker push --all-tags ${{ secrets.DOCKERHUB_PREFIX }}coordinator
+    - name: Show images again
+      run: docker images

@@ -18,6 +18,9 @@ readme = "README.rst"
 license = { file="LICENSE" }
 requires-python = ">=3.8"
 classifiers = [
+    "Intended Audience :: Developers",
+    "Development Status :: 5 - Production/Stable",
+    "Operating System :: POSIX :: Linux",
     "Topic :: Software Development :: Testing",
     "Framework :: Pytest",
     "Programming Language :: Python :: 3 :: Only",
@@ -25,6 +28,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
 ]
 dependencies = [
     "ansicolors>=1.1.8",

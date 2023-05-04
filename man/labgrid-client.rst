@@ -223,6 +223,8 @@ LABGRID-CLIENT COMMANDS
 
 ``export`` filename             Export driver information to file (needs environment with drivers)
 
+``version``                     Print the labgrid version
+
 ADDING NAMED RESOURCES
 ----------------------
 If a target contains multiple Resources of the same type, named matches need to

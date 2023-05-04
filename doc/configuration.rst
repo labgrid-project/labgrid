@@ -195,6 +195,9 @@ Currently available are:
 ``netio_kshell``
   Controls a NETIO 4C PDU via a Telnet interface.
 
+``raritan``
+  Controls Raritan PDUs via SNMP.
+
 ``rest``
   This is a generic backend for PDU implementations which can be controlled via
   HTTP PUT and GET requests.

@@ -892,6 +892,7 @@ _labgrid_client()
                                cancel-reservation \
                                wait \
                                reservations \
+                               version \
                                export"
             COMPREPLY=( $(compgen -W "$subcommands" -- "$cur") )
             return

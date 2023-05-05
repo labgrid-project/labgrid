@@ -27,7 +27,7 @@ from .common import (ResourceEntry, ResourceMatch, Place, Reservation, Reservati
 from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util import diff_dict, flat_dict, filter_dict, dump, atomic_replace, Timeout
+from ..util import diff_dict, flat_dict, filter_dict, dump, atomic_replace, labgrid_version, Timeout
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
 from ..driver import Mode, ExecutionError
@@ -1295,6 +1295,9 @@ class ClientSession(ApplicationSession):
             print("Exiting...\n", file=sys.stderr)
     export.needs_target = True
 
+    def print_version(self):
+        print(labgrid_version())
+
 
 def start_session(url, realm, extra):
     from autobahn.asyncio.wamp import ApplicationRunner
@@ -1786,6 +1789,9 @@ def main():
                            help="output format (default: %(default)s)")
     subparser.add_argument('filename', help='output filename')
     subparser.set_defaults(func=ClientSession.export)
+
+    subparser = subparsers.add_parser('version', help="show version")
+    subparser.set_defaults(func=ClientSession.print_version)
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()

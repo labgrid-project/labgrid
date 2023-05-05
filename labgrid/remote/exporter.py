@@ -19,15 +19,10 @@ from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .config import ResourceConfig
 from .common import ResourceEntry, enable_tcp_nodelay
-from ..util import get_free_port
-
-try:
-    import pkg_resources
-    __version__ = pkg_resources.get_distribution('labgrid').version
-except pkg_resources.DistributionNotFound:
-    __version__ = "unknown"
+from ..util import get_free_port, labgrid_version
 
 
+__version__ = labgrid_version()
 exports: Dict[str, Type[ResourceEntry]] = {}
 reexec = False
 

@@ -480,9 +480,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         if res != 0:
             self.logger.info("Socket already closed")
-        shutil.rmtree(self.tmpdir)
 
         self.process.communicate()
+
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def _start_keepalive(self):
         """Starts a keepalive connection via the own or external master."""

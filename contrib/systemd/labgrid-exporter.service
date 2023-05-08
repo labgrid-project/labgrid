@@ -13,7 +13,7 @@ RestartForceExitStatus=100
 RestartSec=30
 DynamicUser=yes
 # Adjust to your distribution (most often "dialout" or "tty")
-SupplementaryGroups=dialout
+SupplementaryGroups=dialout plugdev
 
 [Install]
 WantedBy=multi-user.target

@@ -630,17 +630,17 @@ class ClientSession(ApplicationSession):
         resources = {}
         for resource_path in place.acquired_resources:
             match = place.getmatch(resource_path)
-            (exporter, group_name, _, resource_name) = resource_path
+            (exporter, group_name, cls, resource_name) = resource_path
             name = resource_name
             if match.rename:
                 name = match.rename
-            resources[name] = self.resources[exporter][group_name][resource_name]
+            resources[(name, cls)] = self.resources[exporter][group_name][resource_name]
         return resources
 
     def get_target_config(self, place):
         config = {}
         resources = config['resources'] = []
-        for name, resource in self.get_target_resources(place).items():
+        for (name, _), resource in self.get_target_resources(place).items():
             args = OrderedDict()
             if name != resource.cls:
                 args['name'] = name

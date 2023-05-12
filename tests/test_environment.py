@@ -165,6 +165,44 @@ imports:
         assert d_a.port is r_a
         assert d_b.port is r_b
 
+    def test_create_multi_drivers_with_default(self, tmpdir):
+        p = tmpdir.join("config.yaml")
+        p.write(
+            """
+        targets:
+          test1:
+            resources:
+            - RawSerialPort:
+                name: "serial_a"
+                port: "/dev/ttyUSB0"
+                speed: 115200
+            - RawSerialPort:
+                name: "default"
+                port: "/dev/ttyUSB0"
+                speed: 115200
+            drivers:
+            - SerialDriver:
+                name: "serial_a"
+                bindings:
+                  port: "serial_a"
+            - SerialDriver:
+                name: "default"
+                bindings:
+                  port: "default"
+        """
+        )
+        e = Environment(str(p))
+        t = e.get_target("test1")
+        r_a = t.get_resource(RawSerialPort, name="serial_a")
+        r_b = t.get_resource(RawSerialPort)
+        assert r_a is not r_b
+        d_a = t.get_driver(ConsoleProtocol, name="serial_a", activate=False)
+        d_b = t.get_driver(ConsoleProtocol, activate=False)
+        assert d_a is not d_b
+
+        assert d_a.port is r_a
+        assert d_b.port is r_b
+
     def test_usbserialport_warning(self, tmpdir):
         p = tmpdir.join("config.yaml")
         p.write(

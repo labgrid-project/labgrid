@@ -117,13 +117,13 @@ class ClientSession(ApplicationSession):
             group[resource_name].data = resource
         if self.monitor:
             if resource and not old:
-                print(f"Resource {exporter}/{group_name}/{resource_name} created: {resource}")
+                print(f"Resource {exporter}/{group_name}/{resource['cls']}/{resource_name} created: {resource}")
             elif resource and old:
-                print(f"Resource {exporter}/{group_name}/{resource_name} changed:")
+                print(f"Resource {exporter}/{group_name}/{resource['cls']}/{resource_name} changed:")
                 for k, v_old, v_new in diff_dict(flat_dict(old), flat_dict(resource)):
                     print(f"  {k}: {v_old} -> {v_new}")
             else:
-                print(f"Resource {exporter}/{group_name}/{resource_name} deleted")
+                print(f"Resource {exporter}/{group_name}/{resource['cls']}/{resource_name} deleted")
 
     async def on_place_changed(self, name, config):
         if not config:

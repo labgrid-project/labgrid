@@ -28,20 +28,31 @@ Using `BuildKit <https://docs.docker.com/develop/develop-images/build_enhancemen
 is recommended to reduce build times.
 
 You can also choose to build all 3 images,
-with the included script
-(which also must be run from the root of this repository):
+with the included script.
 
 .. code-block:: bash
 
    $ pip install --upgrade setuptools_scm
    $ ./dockerfiles/build.sh
 
-The script supports ``podman`` as well
+The script supports ``podman`` as well.
 
 .. code-block:: bash
   
    $ export DOCKER=podman
    $ ./dockerfiles/build.sh
+
+It builds for the native platform by default. However, building
+for foreign platforms is also supported using `docker buildx
+<https://docs.docker.com/build/building/multi-platform/>` or `podman
+buildx <https://docs.podman.io/en/latest/markdown/podman-build.1.html>`
+by passing the platform of choice, e.g. `linux/arm64`.
+
+.. code-block:: bash
+
+   $ pip install --upgrade setuptools_scm
+   $ ./dockerfiles/build.sh linux/arm64
+
 
 Usage
 -----

@@ -25,7 +25,7 @@ class USBSDMuxDriver(Driver):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('usbsdmux') or 'usbsdmux'
+            self.tool = self.target.env.config.get_tool('usbsdmux')
         else:
             self.tool = 'usbsdmux'
 

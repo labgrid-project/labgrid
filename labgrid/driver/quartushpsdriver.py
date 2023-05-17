@@ -32,8 +32,8 @@ class QuartusHPSDriver(Driver):
 
         # FIXME make sure we always have an environment or config
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('quartus_hps') or 'quartus_hps'
-            self.jtag_tool = self.target.env.config.get_tool('jtagconfig') or 'jtagconfig'
+            self.tool = self.target.env.config.get_tool('quartus_hps')
+            self.jtag_tool = self.target.env.config.get_tool('jtagconfig')
         else:
             self.tool = 'quartus_hps'
             self.jtag_tool = 'jtagconfig'

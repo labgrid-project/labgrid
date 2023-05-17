@@ -100,3 +100,30 @@ def test_template_bad_key(tmpdir):
     with pytest.raises(InvalidConfigError) as excinfo:
         Config(str(p))
     assert "unknown variable" in excinfo.value.msg
+
+def test_tool(tmpdir):
+    t = tmpdir.join("testtool")
+    t.write("content")
+    p = tmpdir.join("config.yaml")
+    p.write(
+        """
+        tools:
+          testtool: {}
+        """.format(t)
+    )
+    c = Config(str(p))
+
+    assert c.get_tool("testtool") == t
+
+def test_tool_no_explicit_tool(tmpdir):
+    t = tmpdir.join("testtool")
+    t.write("content")
+    p = tmpdir.join("config.yaml")
+    p.write(
+        """
+        dict: {}
+        """
+    )
+    c = Config(str(p))
+
+    assert c.get_tool("testtool") == "testtool"

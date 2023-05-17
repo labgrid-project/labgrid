@@ -36,7 +36,7 @@ class AndroidFastbootDriver(Driver):
         super().__attrs_post_init__()
         # FIXME make sure we always have an environment or config
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('fastboot') or 'fastboot'
+            self.tool = self.target.env.config.get_tool('fastboot')
         else:
             self.tool = 'fastboot'
 

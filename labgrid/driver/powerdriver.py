@@ -69,7 +69,7 @@ class SiSPMPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('sispmctl') or 'sispmctl'
+            self.tool = self.target.env.config.get_tool('sispmctl')
         else:
             self.tool = 'sispmctl'
 
@@ -316,7 +316,7 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('uhubctl') or 'uhubctl'
+            self.tool = self.target.env.config.get_tool('uhubctl')
         else:
             self.tool = 'uhubctl'
 

@@ -2,6 +2,7 @@ import os
 import tempfile
 
 def atomic_replace(filename, data):
+    f = None
     try:
         with tempfile.NamedTemporaryFile(
                 mode='wb',
@@ -12,7 +13,8 @@ def atomic_replace(filename, data):
             os.fsync(f.fileno())
         os.replace(f.name, filename)
     finally:
-        try:
-            os.unlink(f.name)
-        except FileNotFoundError:
-            pass
+        if f is not None:
+            try:
+                os.unlink(f.name)
+            except FileNotFoundError:
+                pass

@@ -18,7 +18,7 @@ class DFUDriver(Driver):
         super().__attrs_post_init__()
         # FIXME make sure we always have an environment or config
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('dfu-util') or 'dfu-util'
+            self.tool = self.target.env.config.get_tool('dfu-util')
         else:
             self.tool = 'dfu-util'
 

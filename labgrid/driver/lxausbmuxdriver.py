@@ -19,7 +19,7 @@ class LXAUSBMuxDriver(Driver):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('usbmuxctl') or 'usbmuxctl'
+            self.tool = self.target.env.config.get_tool('usbmuxctl')
         else:
             self.tool = 'usbmuxctl'
 

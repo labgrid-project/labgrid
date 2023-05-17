@@ -51,7 +51,7 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
 
         # FIXME make sure we always have an environment or config
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('openocd') or 'openocd'
+            self.tool = self.target.env.config.get_tool('openocd')
             self.config = self.target.env.config.resolve_path_str_or_list(self.config)
             self.search = self.target.env.config.resolve_path_str_or_list(self.search)
         else:

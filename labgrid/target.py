@@ -154,7 +154,7 @@ class Target:
             self.await_resources(found)
         return found[0]
 
-    def _get_driver(self, cls, *, name=None, activate=True, active=False):
+    def _get_driver(self, cls, *, name=None, resource=None, activate=True, active=False):
         assert not (activate is True and active is True)
 
         found = []
@@ -164,6 +164,8 @@ class Target:
 
         for drv in self.drivers:
             if not isinstance(drv, cls):
+                continue
+            if resource and resource not in drv.get_bound_resources():
                 continue
             if name and drv.name != name:
                 other_names.append(drv.name)
@@ -206,7 +208,7 @@ class Target:
             self.activate(found[0])
         return found[0]
 
-    def get_active_driver(self, cls, *, name=None):
+    def get_active_driver(self, cls, *, name=None, resource=None):
         """
         Helper function to get the active driver of the target.
         Returns the active driver found, otherwise None.
@@ -214,10 +216,11 @@ class Target:
         Arguments:
         cls -- driver-class to return as a resource
         name -- optional name to use as a filter
+        resource -- optional resource to use as a filter
         """
-        return self._get_driver(cls, name=name, activate=False, active=True)
+        return self._get_driver(cls, name=name, resource=resource, activate=False, active=True)
 
-    def get_driver(self, cls, *, name=None, activate=True):
+    def get_driver(self, cls, *, name=None, resource=None, activate=True):
         """
         Helper function to get a driver of the target.
         Returns the first valid driver found, otherwise None.
@@ -225,9 +228,10 @@ class Target:
         Arguments:
         cls -- driver-class to return as a resource
         name -- optional name to use as a filter
+        resource -- optional resource to use as a filter
         activate -- activate the driver (default True)
         """
-        return self._get_driver(cls, name=name, activate=activate)
+        return self._get_driver(cls, name=name, resource=resource, activate=activate)
 
     def get_strategy(self):
         """

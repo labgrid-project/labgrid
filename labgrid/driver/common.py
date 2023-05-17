@@ -67,6 +67,16 @@ class Driver(BindingMixin):
         """
         return False
 
+    def get_bound_resources(self):
+        """Return the bound resources for a driver
+
+        This recursively calls all suppliers and combines the sets of returned resources.
+        """
+        res = set()
+        for supplier in self.suppliers:
+            res |= supplier.get_bound_resources()
+        return res
+
 def check_file(filename, *, command_prefix=[]):
     if subprocess.call(command_prefix + ['test', '-r', filename]) != 0:
         raise ExecutionError(f"File {filename} is not readable")

@@ -85,6 +85,12 @@ class BindingMixin:
         """
         pass
 
+    def get_bound_resources(self):
+        """
+        Called by the Target to find the correct driver corresponding to a resource
+        """
+        raise NotImplementedError("get_bound_resources not implemented!")
+
     @classmethod
     def check_active(cls, func):
         @wraps(func)

@@ -168,6 +168,13 @@ def exporter(tmpdir, crossbar):
     Broken:
         RawSerialPort:
           port: 'none'
+    Many:
+        NetworkSerialPort:
+          host: 'localhost'
+          port: 4000
+        NetworkService:
+          address: "192.168.0.1"
+          username: "root"
     """
     )
     spawn = pexpect.spawn(

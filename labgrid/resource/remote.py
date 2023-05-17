@@ -50,7 +50,7 @@ class RemotePlaceManager(ResourceManager):
         place = self.session.get_place(remote_place.name)  # pylint: disable=no-member
         resource_entries = self.session.get_target_resources(place)  # pylint: disable=no-member
         expanded = []
-        for resource_name, resource_entry in resource_entries.items():
+        for (resource_name, _), resource_entry in resource_entries.items():
             new = target_factory.make_resource(
                 remote_place.target, resource_entry.cls, resource_name, resource_entry.args)
             new.parent = remote_place

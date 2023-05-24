@@ -61,6 +61,12 @@ class Resource(BindingMixin):
         if managed_parent:
             managed_parent.poll()
 
+    def get_bound_resources(self):
+        """
+        Resources only return themselves in a set, drivers will combine those sets.
+        """
+        return {self}
+
 
 @attr.s(eq=False)
 class NetworkResource(Resource):

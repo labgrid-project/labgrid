@@ -527,3 +527,67 @@ def test_allow_optional_no_double_same_protocol_by_different_protocols(target):
     assert s.b is None
     assert s.c == d1
     assert s.d == d2
+
+def test_get_bound_resources(target):
+    class AResource(Resource):
+        pass
+
+    class ADriver(Driver):
+        bindings = {
+            "a": AResource,
+        }
+
+    class BDriver(Driver):
+        bindings = {
+            "a": ADriver,
+        }
+
+    aresource = AResource(target, "aresource")
+    adriver = ADriver(target, "adriver")
+    bdriver = BDriver(target, "bdriver")
+
+    assert bdriver.get_bound_resources() == {aresource}
+    assert adriver.get_bound_resources() == {aresource}
+
+    assert target.get_driver(ADriver, resource=aresource) 
+
+def test_get_bound_multiple_resources(target):
+    class AResource(Resource):
+        pass
+
+    class BResource(Resource):
+        pass
+
+    class ADriver(Driver):
+        bindings = {
+            "a": AResource,
+        }
+
+    class BDriver(Driver):
+        bindings = {
+            "b": BResource,
+        }
+
+    class CDriver(Driver):
+        bindings = {
+            "a": ADriver,
+            "b": BDriver,
+        }
+
+    aresource = AResource(target, "aresource")
+    bresource = BResource(target, "bresource")
+    adriver = ADriver(target, "adriver")
+    bdriver = BDriver(target, "bdriver")
+    cdriver = CDriver(target, "bdriver")
+
+    assert adriver.get_bound_resources() == {aresource}
+    assert bdriver.get_bound_resources() == {bresource}
+    assert cdriver.get_bound_resources() == {aresource, bresource}
+
+    assert target.get_driver(ADriver, resource=aresource) 
+    assert target.get_driver(BDriver, resource=bresource) 
+    assert target.get_driver(CDriver, resource=aresource) 
+
+    assert target.get_active_driver(ADriver, resource=aresource) 
+    assert target.get_active_driver(BDriver, resource=bresource) 
+    assert target.get_active_driver(CDriver, resource=aresource) 

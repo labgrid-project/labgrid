@@ -47,6 +47,7 @@ import os
 import labgrid.remote.client
 import time
 import asyncio
+import txaio
 
 
 def inc_gauge(gauges, key):
@@ -140,6 +141,9 @@ def main():
     )
 
     args = parser.parse_args()
+
+    txaio.use_asyncio()
+    txaio.config.loop = asyncio.get_event_loop()
 
     statsd_client = None
     gauges = {}

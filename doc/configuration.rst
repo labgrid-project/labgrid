@@ -1789,11 +1789,15 @@ Arguments:
   - init_commands (tuple): optional, tuple of commands to execute after matching the
     prompt
   - password_prompt (str, default="enter Password: "): regex to match the U-Boot password prompt
+  - boot_expression (regex, default="[\n]U-Boot 20\\d+"): regex to match the U-Boot start string
   - bootstring (str): optional, regex to match on Linux Kernel boot
   - boot_command (str, default="run bootcmd"): boot command for booting target
   - boot_commands (dict, default={}): boot commands by name for LinuxBootProtocol boot command
   - login_timeout (int, default=30): timeout for login prompt detection in seconds
   - boot_timeout (int, default=30): timeout for initial Linux Kernel version detection
+
+Attribute:
+  - boot_detected (bool, defaul=False): boot_expression seen after driver activation
 
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~

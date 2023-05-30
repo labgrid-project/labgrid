@@ -1872,8 +1872,13 @@ Arguments:
   - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
   - bootstring (regex, default="Linux version \\d"): regex that indicating that the Linux Kernel is
     booting
+  - boot_expression (regex, default="[\n]barebox 20\d+"): string that indicates that Barebox is
+    starting
   - password (str): optional, password to use for access to the shell
   - login_timeout (int, default=60): timeout for access to the shell
+
+Attribute:
+  - boot_detected (bool, defaul=False): boot_expression seen after driver activation
 
 ExternalConsoleDriver
 ~~~~~~~~~~~~~~~~~~~~~

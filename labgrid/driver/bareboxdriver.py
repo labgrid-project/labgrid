@@ -9,6 +9,7 @@ from ..step import step
 from ..util import gen_marker, Timeout, re_vt100
 from .common import Driver
 from .commandmixin import CommandMixin
+from .exception import ExecutionError
 
 
 @target_factory.reg_driver
@@ -25,6 +26,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         prompt (str): barebox prompt to match
         autoboot (regex): optional, autoboot message to match
         interrupt (str): optional, string to interrupt autoboot (use "\x03" for CTRL-C)
+        boot_expression (regex): optional, string to search for on barebox start
         bootstring (regex): optional, regex indicating that the Linux Kernel is booting
         password (str): optional, password to use for access to the shell
         login_timeout (int): optional, timeout for access to the shell
@@ -33,9 +35,11 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
     autoboot = attr.ib(default="stop autoboot", validator=attr.validators.instance_of(str))
     interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
+    boot_expression = attr.ib(default=r"[\n]barebox 20\d+", validator=attr.validators.instance_of(str))
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
+    boot_detected = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -108,6 +112,8 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         self._status = 0
         self.console.sendline("reset")
         self._await_prompt()
+        if not self.boot_detected:
+            raise ExecutionError(f"No reboot message detected: {self.boot_expression}")
 
     def get_status(self):
         """Retrieve status of the BareboxDriver
@@ -148,8 +154,9 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # occours, we can't lose any data this way.
         last_before = None
         password_entered = False
+        self.boot_detected = False
 
-        expectations = [self.prompt, self.autoboot, "Password: ", TIMEOUT]
+        expectations = [self.prompt, self.autoboot, "Password: ", self.boot_expression, TIMEOUT]
         while True:
             index, before, _, _ = self.console.expect(
                 expectations,
@@ -177,6 +184,10 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 password_entered = True
 
             elif index == 3:
+                # we detect a boot
+                self.boot_detected = True
+
+            elif index == 4:
                 # expect hit a timeout while waiting for a match
                 if before == last_before:
                     # we did not receive anything during the previous expect cycle

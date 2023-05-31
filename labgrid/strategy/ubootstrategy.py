@@ -57,3 +57,16 @@ class UBootStrategy(Strategy):
         else:
             raise StrategyError(f"no transition found from {self.status} to {status}")
         self.status = status
+
+    def force(self, status):
+        if not isinstance(status, Status):
+            status = Status[status]
+        if status == Status.off:
+            self.target.activate(self.power)
+        elif status == Status.uboot:
+            self.target.activate(self.uboot)
+        elif status == Status.shell:
+            self.target.activate(self.shell)
+        else:
+            raise StrategyError("can not force state {}".format(status))
+        self.status = status

@@ -6,6 +6,7 @@ import shlex
 import shutil
 import socket
 import subprocess
+import re
 import tempfile
 import time
 
@@ -108,6 +109,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self._child.kill()
             self._child.communicate(timeout=1)
 
+    def get_qemu_version(self, qemu_bin):
+        p = subprocess.run([qemu_bin, "-version"], stdout=subprocess.PIPE, encoding="utf-8")
+        if p.returncode != 0:
+            raise ExecutionError(f"Unable to get QEMU version. QEMU exited with: {p.returncode}")
+
+        m = re.search(r'(?P<major>\d+)\.(?P<minor>\d+)\.(?P<micro>\d+)', p.stdout.splitlines()[0])
+        if m is None:
+            raise ExecutionError(f"Unable to find QEMU version in: {p.stdout.splitlines()[0]}")
+
+        return (int(m.group('major')), int(m.group('minor')), int(m.group('micro')))
+
     def on_activate(self):
         self._tempdir = tempfile.mkdtemp(prefix="labgrid-qemu-tmp-")
         sockpath = f"{self._tempdir}/serialrw"
@@ -120,6 +132,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             raise KeyError(
                 "QEMU Binary Path not configured in tools configuration key")
         self._cmd = [qemu_bin]
+
+        self._qemu_version = self.get_qemu_version(qemu_bin)
 
         boot_args = []
 
@@ -190,8 +204,12 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self._cmd.append("-display")
             self._cmd.append("none")
         elif self.display == "egl-headless":
-            self._cmd.append("-vga")
-            self._cmd.append("virtio")
+            if self._qemu_version >= (6, 1, 0):
+                self._cmd.append("-device")
+                self._cmd.append("virtio-vga-gl")
+            else:
+                self._cmd.append("-vga")
+                self._cmd.append("virtio")
             self._cmd.append("-display")
             self._cmd.append("egl-headless")
         else:

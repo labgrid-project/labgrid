@@ -467,15 +467,17 @@ class USBSDWireDevice(USBResource):
     # paths are available.
     def poll(self):
         super().poll()
+        if self.device is not None and not self.avail:
+            for child in self.device.parent.children:
+                if child.subsystem == 'block' and child.device_type == 'disk':
+                    self.disk_path = child.device_node
+            self.control_serial = self.device.properties.get('ID_SERIAL_SHORT')
+
+    def update(self):
+        super().update()
         if self.device is None:
             self.disk_path = None
             self.control_serial = None
-        else:
-            if not self.avail:
-                for child in self.device.parent.children:
-                    if child.subsystem == 'block' and child.device_type == 'disk':
-                        self.disk_path = child.device_node
-                self.control_serial = self.device.properties.get('ID_SERIAL_SHORT')
 
     @property
     def path(self):
@@ -510,16 +512,18 @@ class USBSDMuxDevice(USBResource):
     # paths are available.
     def poll(self):
         super().poll()
+        if self.device is not None and not self.avail:
+            for child in self.device.children:
+                if child.subsystem == 'block' and child.device_type == 'disk':
+                    self.disk_path = child.device_node
+                elif child.subsystem == 'scsi_generic':
+                    self.control_path = child.device_node
+
+    def update(self):
+        super().update()
         if self.device is None:
             self.control_path = None
             self.disk_path = None
-        else:
-            if not self.avail:
-                for child in self.device.children:
-                    if child.subsystem == 'block' and child.device_type == 'disk':
-                        self.disk_path = child.device_node
-                    elif child.subsystem == 'scsi_generic':
-                        self.control_path = child.device_node
 
     @property
     def path(self):

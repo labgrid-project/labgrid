@@ -99,7 +99,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         return self.serial.write(data)
 
     def open(self):
-        """Opens the serialport, does nothing if it is already closed"""
+        """Opens the serialport, does nothing if it is already open"""
         if not self.status:
             try:
                 self.serial.open()

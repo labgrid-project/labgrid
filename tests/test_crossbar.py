@@ -286,12 +286,16 @@ def test_remoteplace_target(place_acquire, tmpdir):
     t = e.get_target("test1")
     t.await_resources(t.resources)
 
+    remote_place = t.get_resource("RemotePlace")
+    assert remote_place.tags == {"board": "bar"}
+
 def test_remoteplace_target_without_env(request, place_acquire):
     from labgrid import Target
     from labgrid.resource import RemotePlace
 
     t = Target(request.node.name)
-    RemotePlace(t, name="test")
+    remote_place = RemotePlace(t, name="test")
+    assert remote_place.tags == {"board": "bar"}
 
 def test_resource_conflict(place_acquire, tmpdir):
     with pexpect.spawn('python -m labgrid.remote.client -p test2 create') as spawn:

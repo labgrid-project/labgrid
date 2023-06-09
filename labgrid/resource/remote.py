@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 import attr
@@ -62,6 +63,7 @@ class RemotePlaceManager(ResourceManager):
             expanded.append(new)
         self.logger.debug("expanded remote resources for place %s: %s", remote_place.name, expanded)
         remote_place.avail = True
+        remote_place.tags = copy.deepcopy(place.tags)
 
     def poll(self):
         import asyncio
@@ -97,6 +99,7 @@ class RemotePlace(ManagedResource):
 
     def __attrs_post_init__(self):
         self.timeout = 10.0
+        self.tags = {}
         super().__attrs_post_init__()
 
 @attr.s(eq=False)

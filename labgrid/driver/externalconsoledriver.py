@@ -30,7 +30,7 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         self._child = None
 
     def open(self):
-        """Starts the subprocess, does nothing if it is already closed"""
+        """Starts the subprocess, does nothing if it is already open"""
         if self.status:
             return
         cmd = shlex.split(self.cmd)

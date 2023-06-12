@@ -697,6 +697,8 @@ class USBDebugger(USBResource):
                          ("15ba", "002b"),  # Olimex ARM-USB-OCD-H
                          ("15ba", "0004"),  # Olimex ARM-USB-TINY
                          ("15ba", "002a"),  # Olimex ARM-USB-TINY-H
+                         ("1366", "0101"),  # SEGGER J-Link PLUS
+                         ("1366", "1015"),  # SEGGER J-Link
                          ]:
             return False
 

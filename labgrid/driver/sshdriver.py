@@ -328,6 +328,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 "-o", f"ControlPath={self.control.replace('%', '%%')}",
                 src, dst,
         ]
+        
+        if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
+            complete_cmd.insert(1, "-s")
+
         self.logger.info("Running command: %s", complete_cmd)
         sub = subprocess.Popen(
             complete_cmd,
@@ -415,17 +419,17 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['filename', 'remotepath'])
     def put(self, filename, remotepath=''):
-        ssh_prefix = self.ssh_prefix
-        if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
-            ssh_prefix.append("-s")
         transfer_cmd = [
             "scp",
-            *ssh_prefix,
+            *self.ssh_prefix,
             "-P", str(self.networkservice.port),
             "-r",
             filename,
             f"{self.networkservice.username}@{self.networkservice.address}:{remotepath}"
             ]
+
+        if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
+            transfer_cmd.insert(1, "-s")
 
         try:
             sub = subprocess.call(
@@ -443,17 +447,17 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['filename', 'destination'])
     def get(self, filename, destination="."):
-        ssh_prefix = self.ssh_prefix
-        if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
-            ssh_prefix.append("-s")
         transfer_cmd = [
             "scp",
-            *ssh_prefix,
+            *self.ssh_prefix,
             "-P", str(self.networkservice.port),
             "-r",
             f"{self.networkservice.username}@{self.networkservice.address}:{filename}",
             destination
             ]
+
+        if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
+            transfer_cmd.insert(1, "-s")
 
         try:
             sub = subprocess.call(

@@ -23,6 +23,8 @@ Bug fixes in 23.1
   ERROR, INFO and similar log notifiers.
 - Fix named SSH lookups in conjunction with an environment file in
   labgrid-client.
+- Fix sftp option issue in SSH driver that caused sftp to only work once per
+  test run.
 
 Breaking changes in 23.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -465,6 +465,52 @@ def test_reservation_custom_config(place, exporter, tmpdir):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
+def test_reservation_custom_config_template(place, exporter, tmpdir):
+    p = tmpdir.join("config.yaml")
+    p.write(
+    """
+    targets:
+      test1:
+        role: foo
+        resources:
+          RemotePlace:
+            name: !template $LG_PLACE
+        drivers:
+        - ManualPowerDriver: {}
+    """
+    )
+    env = os.environ.copy()
+    env['LG_PLACE'] = '+'
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} reserve --wait --shell board=bar name=test', env=env) as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        m = re.search(rb"^export LG_TOKEN=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
+        s = re.search(rb"^Selected role$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
+        assert m is not None, spawn.before.strip()
+        assert s is None, spawn.before.strip()
+        token = m.group(1)
+
+    env['LG_TOKEN'] = token.decode('ASCII')
+
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} lock', env=env) as spawn:
+        spawn.expect("acquired place test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} power get', env=env) as spawn:
+        spawn.expect("Selected role test1 from configuration file")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 2, spawn.before.strip()
+
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} release', env=env) as spawn:
+        spawn.expect("released place test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
 def test_same_name_resources(place, exporter, tmpdir):
     with pexpect.spawn('python -m labgrid.remote.client -p test add-named-match "testhost/Many/NetworkService" "samename"') as spawn:
         spawn.expect(pexpect.EOF)

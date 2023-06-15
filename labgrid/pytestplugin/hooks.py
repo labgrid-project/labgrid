@@ -60,7 +60,8 @@ def pytest_configure(config):
     config.add_cleanup(StepLogger.stop)
 
     logging_plugin = config.pluginmanager.getplugin('logging-plugin')
-    configure_pytest_logging(config, logging_plugin)
+    if logging_plugin:
+        configure_pytest_logging(config, logging_plugin)
 
     config.addinivalue_line("markers",
                             "lg_feature: marker for labgrid feature flags")

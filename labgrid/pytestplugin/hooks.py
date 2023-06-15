@@ -13,7 +13,10 @@ def pytest_cmdline_main(config):
     def set_cli_log_level(level):
         nonlocal config
 
-        current_level = config.getoption("log_cli_level") or config.getini("log_cli_level")
+        try:
+            current_level = config.getoption("log_cli_level") or config.getini("log_cli_level")
+        except ValueError:
+            return
         print(f"current_level: {current_level}")
 
         if isinstance(current_level, str):

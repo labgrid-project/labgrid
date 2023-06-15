@@ -36,28 +36,31 @@ def pytest_cmdline_main(config):
         set_cli_log_level(logging.INFO)
 
 
+def configure_pytest_logging(config, plugin):
+    plugin.log_cli_handler.formatter.add_color_level(logging.CONSOLE, "blue")
+    plugin.log_cli_handler.setFormatter(StepFormatter(
+        color=config.option.lg_colored_steps,
+        parent=plugin.log_cli_handler.formatter,
+    ))
+    plugin.log_file_handler.setFormatter(StepFormatter(
+        parent=plugin.log_file_handler.formatter,
+    ))
+
+    # Might be the same formatter instance, so get a reference for both before
+    # changing either
+    report_formatter = plugin.report_handler.formatter
+    caplog_formatter = plugin.caplog_handler.formatter
+
+    plugin.report_handler.setFormatter(StepFormatter(parent=report_formatter))
+    plugin.report_handler.setFormatter(StepFormatter(parent=caplog_formatter))
+
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
     StepLogger.start()
     config.add_cleanup(StepLogger.stop)
 
     logging_plugin = config.pluginmanager.getplugin('logging-plugin')
-    logging_plugin.log_cli_handler.formatter.add_color_level(logging.CONSOLE, "blue")
-    logging_plugin.log_cli_handler.setFormatter(StepFormatter(
-        color=config.option.lg_colored_steps,
-        parent=logging_plugin.log_cli_handler.formatter,
-    ))
-    logging_plugin.log_file_handler.setFormatter(StepFormatter(
-        parent=logging_plugin.log_file_handler.formatter,
-    ))
-
-    # Might be the same formatter instance, so get a reference for both before
-    # changing either
-    report_formatter = logging_plugin.report_handler.formatter
-    caplog_formatter = logging_plugin.caplog_handler.formatter
-
-    logging_plugin.report_handler.setFormatter(StepFormatter(parent=report_formatter))
-    logging_plugin.report_handler.setFormatter(StepFormatter(parent=caplog_formatter))
+    configure_pytest_logging(config, logging_plugin)
 
     config.addinivalue_line("markers",
                             "lg_feature: marker for labgrid feature flags")

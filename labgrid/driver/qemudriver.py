@@ -189,9 +189,6 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             raise ExecutionError("-append in extra_args not allowed, use boot_args instead")
 
         cmd.extend(shlex.split(self.extra_args))
-        cmd.append("-S")
-        cmd.append("-qmp")
-        cmd.append("stdio")
         cmd.append("-machine")
         cmd.append(self.machine)
         cmd.append("-cpu")
@@ -215,11 +212,6 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         else:
             raise ExecutionError(f"Unknown display '{self.display}'")
 
-        cmd.append("-chardev")
-        cmd.append(f"socket,id=serialsocket,path={sockpath}")
-        cmd.append("-serial")
-        cmd.append("chardev:serialsocket")
-
         if self.nic:
             cmd.append("-nic")
             cmd.append(self.nic)
@@ -231,6 +223,15 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             cmd.append(" ".join(boot_args))
 
         self._cmd = cmd
+
+        self._cmd.append("-S")
+        self._cmd.append("-qmp")
+        self._cmd.append("stdio")
+
+        self._cmd.append("-chardev")
+        self._cmd.append(f"socket,id=serialsocket,path={sockpath}")
+        self._cmd.append("-serial")
+        self._cmd.append("chardev:serialsocket")
 
     def on_deactivate(self):
         if self.status:

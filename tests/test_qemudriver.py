@@ -60,14 +60,20 @@ def qemu_mock(mocker):
     socket_mock = mocker.patch('socket.socket')
     socket_mock.return_value.accept.return_value = mocker.MagicMock(), ''
 
+@pytest.fixture
+def qemu_version_mock(mocker):
+    run_mock = mocker.patch('subprocess.run')
+    run_mock.return_value.returncode = 0
+    run_mock.return_value.stdout = "QEMU emulator version 4.2.1"
+
 def test_qemu_instance(qemu_target, qemu_driver):
     assert (isinstance(qemu_driver, QEMUDriver))
 
-def test_qemu_activate_deactivate(qemu_target, qemu_driver):
+def test_qemu_activate_deactivate(qemu_target, qemu_driver, qemu_version_mock):
     qemu_target.activate(qemu_driver)
     qemu_target.deactivate(qemu_driver)
 
-def test_qemu_on_off(qemu_target, qemu_driver, qemu_mock):
+def test_qemu_on_off(qemu_target, qemu_driver, qemu_mock, qemu_version_mock):
     qemu_target.activate(qemu_driver)
 
     qemu_driver.on()
@@ -75,7 +81,7 @@ def test_qemu_on_off(qemu_target, qemu_driver, qemu_mock):
 
     qemu_target.deactivate(qemu_driver)
 
-def test_qemu_read_write(qemu_target, qemu_driver, qemu_mock):
+def test_qemu_read_write(qemu_target, qemu_driver, qemu_mock, qemu_version_mock):
     qemu_target.activate(qemu_driver)
 
     qemu_driver.on()

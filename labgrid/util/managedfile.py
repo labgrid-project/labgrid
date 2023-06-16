@@ -2,7 +2,7 @@ import hashlib
 import logging
 import os
 import subprocess
-import platform
+from importlib import import_module
 
 import attr
 
@@ -90,6 +90,7 @@ class ManagedFile:
 
         fmt = "inode=%i,size=%s,modified=%Y"
         # The stat command is very different on MacOs
+        platform = import_module('platform')
         if platform.system() == 'Darwin':
             darwin_fmt = "inode=%i,size=%z,modified=%m"
             local = subprocess.run(["stat", "-f", darwin_fmt, self.local_path],

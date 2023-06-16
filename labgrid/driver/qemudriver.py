@@ -120,12 +120,12 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
         return (int(m.group('major')), int(m.group('minor')), int(m.group('micro')))
 
-    def on_activate(self):
-        self._tempdir = tempfile.mkdtemp(prefix="labgrid-qemu-tmp-")
-        sockpath = f"{self._tempdir}/serialrw"
-        self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self._socket.bind(sockpath)
-        self._socket.listen(0)
+    def get_qemu_base_args(self):
+        """Returns the base command line used for Qemu without the options
+        related to QMP. These options can be used to start an interactive
+        Qemu manually for debugging tests
+        """
+        cmd = []
 
         qemu_bin = self.target.env.config.get_tool(self.qemu_bin)
         if qemu_bin is None:
@@ -222,7 +222,16 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             cmd.append("-append")
             cmd.append(" ".join(boot_args))
 
-        self._cmd = cmd
+        return cmd
+
+    def on_activate(self):
+        self._tempdir = tempfile.mkdtemp(prefix="labgrid-qemu-tmp-")
+        sockpath = f"{self._tempdir}/serialrw"
+        self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self._socket.bind(sockpath)
+        self._socket.listen(0)
+
+        self._cmd = self.get_qemu_base_args()
 
         self._cmd.append("-S")
         self._cmd.append("-qmp")

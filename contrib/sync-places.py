@@ -62,14 +62,20 @@ def main():
                 changed = True
 
         for name in config["places"]:
-            matches = config["places"][name].get("matches", [])
+            matches = []
+            for m in config["places"][name].get("matches", []):
+                if isinstance(m, dict):
+                    match = list(m.keys())[0]
+                    matches.append((match, m[match]))
+                else:
+                    matches.append((m, None))
+
             seen_matches = set()
             remove_matches = set()
             place_tags = {}
             if name in seen_places:
                 place = session.places[name]
-                for m in place.matches:
-                    m = repr(m)
+                for m in [(repr(x), x.rename) for x in place.matches]:
                     if m in matches:
                         seen_matches.add(m)
                     else:
@@ -77,19 +83,28 @@ def main():
                 place_tags = place.tags
 
             for m in remove_matches:
-                print(f"Deleting match '{m}' for place {name}")
+                match, rename = m
+                if rename:
+                    print(f"Deleting named match '{match} -> {rename}' for place {name}")
+                else:
+                    print(f"Deleting match '{match}' for place {name}")
                 if not args.dry_run:
                     await session.call(
-                        "org.labgrid.coordinator.del_place_match", name, m
+                        "org.labgrid.coordinator.del_place_match", name, match, rename
                     )
                 changed = True
 
             for m in matches:
                 if not m in seen_matches:
-                    print(f"Adding match '{m}' for place {name}")
+                    match, rename = m
+                    if rename:
+                        print(f"Adding named match '{match} -> {rename}' for place {name}")
+                    else:
+                        print(f"Adding match '{match}' for place {name}")
+
                     if not args.dry_run:
                         await session.call(
-                            "org.labgrid.coordinator.add_place_match", name, m
+                            "org.labgrid.coordinator.add_place_match", name, match, rename
                         )
                     changed = True
 
@@ -120,7 +135,10 @@ def main():
         config = {"places": {}}
         for name, place in session.places.items():
             config["places"][name] = {
-                "matches": [repr(m) for m in place.matches],
+                "matches": [
+                    {repr(m): m.rename} if m.rename else repr(m)
+                    for m in place.matches
+                    ],
                 "tags": {k: v for k, v in place.tags.items()},
             }
 
@@ -139,6 +157,7 @@ def main():
                 my-place1: # Replace with your place
                   matches: # A list of match patterns. Replace with your match patterns
                     - "*/my-place1/*"
+                    - "exporter/my-place1/resource": name # named matches supported
                   tags: # A dictionary of key/value tags. Replace with your tags
                     board: awesomesauce
                     bar: baz

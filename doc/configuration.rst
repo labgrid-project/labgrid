@@ -2378,7 +2378,7 @@ Implements:
   - :any:`PowerProtocol`
 
 Arguments:
-  - qemu_bin (str): reference to the tools key for the QEMU binary
+  - qemu_bin (str): reference to the tools key for the QEMU binary or executable name
   - machine (str): QEMU machine type
   - cpu (str): QEMU cpu type
   - memory (str): QEMU memory size (ends with M or G)

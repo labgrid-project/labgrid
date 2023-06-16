@@ -129,6 +129,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
         qemu_bin = self.target.env.config.get_tool(self.qemu_bin)
         if qemu_bin is None:
+            qemu_bin = shutil.which(self.qemu_bin)
+        if qemu_bin is None:
             raise KeyError(
                 "QEMU Binary Path not configured in tools configuration key")
         self._cmd = [qemu_bin]

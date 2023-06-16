@@ -159,7 +159,7 @@ TOOLS KEYS
     Path to the uuu-loader binary, used by the UUUDriver.
     See: https://github.com/nxp-imx/mfgtools
 
-The QEMUDriver expects a custom key set via its ``qemu_bin`` argument.
+The QEMUDriver accepts a custom key set via its ``qemu_bin`` argument.
 See https://www.qemu.org/
 
 TOOLS EXAMPLE

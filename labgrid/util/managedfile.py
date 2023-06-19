@@ -2,6 +2,7 @@ import hashlib
 import logging
 import os
 import subprocess
+from importlib import import_module
 
 import attr
 
@@ -88,8 +89,16 @@ class ManagedFile:
         self._on_nfs_cached = False
 
         fmt = "inode=%i,size=%s,modified=%Y"
-        local = subprocess.run(["stat", "--format", fmt, self.local_path],
-                               stdout=subprocess.PIPE)
+        # The stat command is very different on MacOs
+        platform = import_module('platform')
+        if platform.system() == 'Darwin':
+            darwin_fmt = "inode=%i,size=%z,modified=%m"
+            local = subprocess.run(["stat", "-f", darwin_fmt, self.local_path],
+                                   stdout=subprocess.PIPE)
+        else:
+            local = subprocess.run(["stat", "--format", fmt, self.local_path],
+                                   stdout=subprocess.PIPE)
+
         if local.returncode != 0:
             self.logger.debug("local: stat: unsuccessful error code %d", local.returncode)
             return False

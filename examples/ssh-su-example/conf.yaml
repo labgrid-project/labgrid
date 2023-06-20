@@ -1,0 +1,11 @@
+targets:
+  main:
+    resources:
+      NetworkService:
+        address: 127.0.0.1
+        username: <login_username>
+    drivers:
+      SSHDriver:
+        su_password: <the_password>
+        su_username: <the_username>
+        stderr_merge: true

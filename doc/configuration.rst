@@ -1573,6 +1573,13 @@ Arguments:
     target.
   - explicit_sftp_mode (bool, default=False): if set to True, `put()` and `get()` will
     explicitly use the SFTP protocol for file transfers instead of scp's default protocol
+  - su_username(str, default="root"): only used if su_password is set
+  - su_prompt(str, default="Password:"): prompt string for su
+  - su_password(str): optional, su password for the user set via su_username
+
+.. note::
+   Using the su support will automatically enable ``stderr_merge``, since this
+   is required to interact with the password prompt.
 
 UBootDriver
 ~~~~~~~~~~~

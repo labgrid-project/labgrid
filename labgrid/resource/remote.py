@@ -48,6 +48,8 @@ class RemotePlaceManager(ResourceManager):
                 self.url = config.get_option('crossbar_url', self.url)
                 self.realm = config.get_option('crossbar_realm', self.realm)
             self._start()
+        else:
+            self.poll()
         place = self.session.get_place(remote_place.name)  # pylint: disable=no-member
         resource_entries = self.session.get_target_resources(place)  # pylint: disable=no-member
         expanded = []

@@ -120,6 +120,8 @@ class SerialLoggingReporter:
             "step": self.lastevent.step,
         }
         for source, logger in self.loggers.items():
+            if source not in self.bufs.keys():
+                continue
             data = self.vt100_replace_cr_nl(self.bufs[source])
             if data:
                 logger.log(logging.CONSOLE, self._create_message(self.lastevent, data), extra=extra)

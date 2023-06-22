@@ -159,6 +159,10 @@ TOOLS KEYS
     Path to the uuu-loader binary, used by the UUUDriver.
     See: https://github.com/nxp-imx/mfgtools
 
+``ykushcmd``
+    Path to the ykushcmd binary, used by the YKUSHPowerDriver.
+    See: https://github.com/Yepkit/ykush
+
 The QEMUDriver expects a custom key set via its ``qemu_bin`` argument.
 See https://www.qemu.org/
 

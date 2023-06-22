@@ -32,6 +32,9 @@ Breaking changes in 23.1
   `coordinator container <https://hub.docker.com/r/labgrid/coordinator>`_ or
   install it into a separate local venv as desribed in the
   `documentation <https://labgrid.readthedocs.io/en/latest/getting_started.html#coordinator>`_.
+  If you see ``WARNING: Ticket authentication is deprecated. Please update your
+  coordinator.`` on the client when running an updated coordinator, your
+  coordinator configuration may set ``ticket`` instead of ``anonymous`` auth.
 - The `StepReporter` API has been changed. To start step reporting, you must
   now call ``StepReporter.start()`` instead of ``StepReporter()``
 - Logging output when running pytest is no longer sent to stderr by default,

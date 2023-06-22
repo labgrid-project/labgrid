@@ -8,6 +8,9 @@ from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
 from ..logging import StepFormatter, StepLogger
 
+LABGRID_ENV_KEY = pytest.StashKey[Environment]()
+
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_cmdline_main(config):
     def set_cli_log_level(level):
@@ -89,7 +92,7 @@ def pytest_configure(config):
         env = Environment(config_file=lg_env)
         if lg_coordinator is not None:
             env.config.set_option('crossbar_url', lg_coordinator)
-    config._labgrid_env = env
+    config.stash[LABGRID_ENV_KEY] = env
 
     processwrapper.enable_logging()
 
@@ -97,7 +100,7 @@ def pytest_configure(config):
 def pytest_collection_modifyitems(config, items):
     """This function matches function feature flags with those found in the
     environment and disables the item if no match is found"""
-    env = config._labgrid_env
+    env = config.stash[LABGRID_ENV_KEY]
 
     if not env:
         return

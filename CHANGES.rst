@@ -28,6 +28,9 @@ Bug fixes in 23.1
 
 Breaking changes in 23.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+- Support for the legacy ticket authentication was dropped: If the coordinator
+  logs ModuleNotFoundError on startup, switch the crossbar config to anonymous
+  authentication (see ``.crossbar/config-anonymous.yaml`` for an example).
 - The Debian package (``debian/``) no longer contains crossbar. Use the
   `coordinator container <https://hub.docker.com/r/labgrid/coordinator>`_ or
   install it into a separate local venv as desribed in the

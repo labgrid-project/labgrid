@@ -133,13 +133,10 @@ class CoordinatorComponent(ApplicationSession):
         enable_tcp_nodelay(self)
         self.join(
             self.config.realm,
-            authmethods=["anonymous", "ticket"],
+            authmethods=["anonymous"],
             authid="coordinator",
             authextra={"authid": "coordinator"},
         )
-
-    def onChallenge(self, challenge):
-        return "dummy-ticket"
 
     @locked
     async def onJoin(self, details):

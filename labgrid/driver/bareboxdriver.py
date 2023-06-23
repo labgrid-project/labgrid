@@ -42,6 +42,8 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         super().__attrs_post_init__()
         self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
+        # barebox' default log level, used as fallback if no log level can be saved
+        self.saved_log_level = 7
 
     def on_activate(self):
         """Activate the BareboxDriver
@@ -186,6 +188,18 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
         self._check_prompt()
 
+        # remember barebox' log level - we don't expect to be interrupted here
+        # by pollers because no hardware interaction is triggered by echo, so
+        # it should be safe to use the usual shell wrapper via _run()
+        stdout, _, exitcode = self._run("echo $global.loglevel")
+        [saved_log_level] = stdout
+        if exitcode == 0 and saved_log_level.isnumeric():
+            self.saved_log_level = saved_log_level
+
+        # silence barebox, the driver can get confused by asynchronous messages
+        # logged to the console otherwise
+        self._run("global.loglevel=0")
+
     @Driver.check_active
     def await_boot(self):
         """Wait for the initial Linux version string to verify we successfully
@@ -199,6 +213,9 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
         Args:
             name (str): name of the entry to boot"""
+        # recover saved log level
+        self._run(f"global.loglevel={self.saved_log_level}")
+
         if name:
             self.console.sendline(f"boot -v {name}")
         else:

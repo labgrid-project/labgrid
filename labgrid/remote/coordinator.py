@@ -314,7 +314,7 @@ class CoordinatorComponent(ApplicationSession):
 
     def load(self):
         try:
-            self.place = {}
+            self.places = {}
             with open('places.yaml', 'r') as f:
                 self.places = yaml.load(f.read())
             for placename, config in self.places.items():

@@ -40,6 +40,8 @@ class USBStorageDriver(Driver):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
+    WAIT_FOR_MEDIUM_TIMEOUT = 10.0 # s
+    WAIT_FOR_MEDIUM_SLEEP = 0.5 # s
 
     def on_activate(self):
         pass
@@ -68,22 +70,10 @@ class USBStorageDriver(Driver):
         mf = ManagedFile(filename, self.storage)
         mf.sync_to_resource()
 
-        # wait for medium
-        timeout = Timeout(10.0)
-        while not timeout.expired:
-            try:
-                if self.get_size() > 0:
-                    break
-                time.sleep(0.5)
-            except ValueError:
-                # when the medium gets ready the sysfs attribute is empty for a short time span
-                continue
-        else:
-            raise ExecutionError("Timeout while waiting for medium")
+        self._wait_for_medium(partition)
 
-        partition = "" if partition is None else partition
+        target = self._get_devpath(partition)
         remote_path = mf.get_remote_path()
-        target = f"{self.storage.path}{partition}"
 
         if mode == Mode.DD:
             self.logger.info('Writing %s to %s using dd.', remote_path, target)
@@ -139,12 +129,41 @@ class USBStorageDriver(Driver):
             print_on_silent_log=True
         )
 
+    def _get_devpath(self, partition):
+        partition = "" if partition is None else partition
+        # simple concatenation is sufficient for USB mass storage
+        return f"{self.storage.path}{partition}"
+
     @Driver.check_active
-    @step(result=True)
-    def get_size(self):
-        args = ["cat", f"/sys/class/block/{self.storage.path[5:]}/size"]
+    def _wait_for_medium(self, partition):
+        timeout = Timeout(self.WAIT_FOR_MEDIUM_TIMEOUT)
+        while not timeout.expired:
+            if self.get_size(partition) > 0:
+                break
+            time.sleep(self.WAIT_FOR_MEDIUM_SLEEP)
+        else:
+            raise ExecutionError("Timeout while waiting for medium")
+
+    @Driver.check_active
+    @step(args=['partition'], result=True)
+    def get_size(self, partition=None):
+        """
+        Get the size of the bound USB storage root device or partition.
+
+        Args:
+            partition (int or None): optional, get size of the specified partition or None for
+                getting the size of the root device (defaults to None)
+
+        Returns:
+            int: size in bytes
+        """
+        args = ["cat", f"/sys/class/block/{self._get_devpath(partition)[5:]}/size"]
         size = subprocess.check_output(self.storage.command_prefix + args)
-        return int(size)*512
+        try:
+            return int(size) * 512
+        except ValueError:
+            # when the medium gets ready the sysfs attribute is empty for a short time span
+            return 0
 
 
 @target_factory.reg_driver

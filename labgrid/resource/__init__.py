@@ -23,3 +23,4 @@ from .provider import TFTPProvider
 from .mqtt import TasmotaPowerPort
 from .httpvideostream import HTTPVideoStream
 from .dediprogflasher import DediprogFlasher, NetworkDediprogFlasher
+from .httpdigitalout import HttpDigitalOutput

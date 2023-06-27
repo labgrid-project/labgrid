@@ -1031,13 +1031,47 @@ class ClientSession(ApplicationSession):
             return drv
         except NoDriverFoundError:
             from ..resource import NetworkService
-            try:
-                resource = target.get_resource(NetworkService, name=self.args.name)
-            except NoResourceFoundError:
-                ip = self._get_ip(place)
-                if not ip:
+
+            host = getattr(self.args, "host", None)
+            if host is not None:
+
+                from urllib.parse import urlparse
+                url = urlparse(f"ssh://{host}")
+
+                if not url.hostname or not url.username:
+                    print("Host must be specified as USER@HOST[:PORT]")
                     return
-                resource = NetworkService(target, address=str(ip), username='root')
+
+                net_intf = None
+                try:
+                    # If a RemoteNetworkInterface is present, set the address
+                    # to bind to it specifically, and copy the extra properties
+                    # so that a proxy will be used if necessary
+                    net_intf = target.get_resource("RemoteNetworkInterface", name=self.args.name)
+                    address = f"{url.hostname}%{net_intf.ifname}"
+                    extra = getattr(net_intf, "extra", {})
+                except NoResourceFoundError:
+                    address = url.hostname
+                    extra = {}
+
+                resource = NetworkService(
+                        target,
+                        name="ssh-service",
+                        address=address,
+                        username=url.username,
+                        password=self.args.password,
+                        port=url.port or 22
+                )
+                resource.extra = extra
+
+            else:
+                try:
+                    resource = target.get_resource(NetworkService, name=self.args.name)
+                except NoResourceFoundError:
+                    ip = self._get_ip(place)
+                    if not ip:
+                        return
+                    resource = NetworkService(target, name="ssh-service", address=str(ip), username='root')
 
             drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name)
             return drv
@@ -1669,6 +1703,8 @@ def main():
                                       help="connect via ssh (with optional arguments)",
                                       epilog="Additional arguments are passed to the ssh subprocess.")
     subparser.add_argument('--name', '-n', help="optional resource name")
+    subparser.add_argument('--host', metavar="USER@IP[:PORT]", help="remote host")
+    subparser.add_argument('--password', help="remote password", default='')
     subparser.set_defaults(func=ClientSession.ssh)
 
     subparser = subparsers.add_parser('scp',
@@ -1676,6 +1712,8 @@ def main():
     subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.add_argument('src', help='source path (use :dir/file for remote side)')
     subparser.add_argument('dst', help='destination path (use :dir/file for remote side)')
+    subparser.add_argument('--host', metavar="USER@IP[:PORT]", help="remote host")
+    subparser.add_argument('--password', help="remote password", default='')
     subparser.set_defaults(func=ClientSession.scp)
 
     subparser = subparsers.add_parser('rsync',
@@ -1684,6 +1722,8 @@ def main():
     subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.add_argument('src', help='source path (use :dir/file for remote side)')
     subparser.add_argument('dst', help='destination path (use :dir/file for remote side)')
+    subparser.add_argument('--host', metavar="USER@IP[:PORT]", help="remote host")
+    subparser.add_argument('--password', help="remote password", default='')
     subparser.set_defaults(func=ClientSession.rsync)
 
     subparser = subparsers.add_parser('sshfs',
@@ -1691,6 +1731,8 @@ def main():
     subparser.add_argument('--name', '-n', help="optional resource name")
     subparser.add_argument('path', help='remote path on the target')
     subparser.add_argument('mountpoint', help='local path')
+    subparser.add_argument('--host', metavar="USER@IP[:PORT]", help="remote host")
+    subparser.add_argument('--password', help="remote password", default='')
     subparser.set_defaults(func=ClientSession.sshfs)
 
     subparser = subparsers.add_parser('forward',
@@ -1702,6 +1744,8 @@ def main():
     subparser.add_argument("--remote", "-R", metavar="REMOTE:LOCAL",
                            action=RemotePort,
                            help="Forward remote port REMOTE to local port LOCAL")
+    subparser.add_argument('--host', metavar="USER@IP[:PORT]", help="remote host")
+    subparser.add_argument('--password', help="remote password", default='')
     subparser.set_defaults(func=ClientSession.forward)
 
     subparser = subparsers.add_parser('telnet',

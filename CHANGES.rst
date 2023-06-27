@@ -1,5 +1,8 @@
 Release 23.1 (unreleased)
 ------------------------------------
+- ``labgrid-client (ssh|scp|sshfs|rsync|forward)`` now accept a ``--host`` and
+  ``--password`` argument to allow the user to connect if the place has no
+  NetworkService
 
 New Features in 23.1
 ~~~~~~~~~~~~~~~~~~~~

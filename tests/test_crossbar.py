@@ -293,7 +293,7 @@ def test_remoteplace_target_without_env(request, place_acquire):
     from labgrid import Target
     from labgrid.resource import RemotePlace
 
-    t = Target(request.node.name)
+    t = Target("test")
     remote_place = RemotePlace(t, name="test")
     assert remote_place.tags == {"board": "bar"}
 

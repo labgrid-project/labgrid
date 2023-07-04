@@ -1,3 +1,25 @@
+Release 23.0.2 (Released Jul 04, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.2
+~~~~~~~~~~~~~~~~~~~
+- Move `SSHDriver`'s control socket tmpdir clean up after the the SSH process
+  has terminated. Ignore errors on cleanup since it's best effort.
+- Add missing class name in ``labgrid-client monitor`` resource output.
+- Print USB loader process output if log level does not cover logging it.
+- Fix UnboundLocalError in ``atomic_replace()`` used by the coordinator and
+  ``labgrid-client export`` to write config files.
+- Let Config's ``get_tool()`` return the requested tool if it is not found in
+  the config. Return the resolved path if it exists, otherwise return the value
+  as is. Also drop the now obsolete tool fallbacks from the drivers and add
+  tests.
+- Fix `USBSDMuxDevice`/`USBSDWireDevice` udev race condition leading to
+  outdated control/disk paths.
+- Fix `SSHDriver`'s ``explicit_sftp_mode`` option to allow calls to ``put()``
+  and ``get()`` multiple times. Also make ``scp()`` respect this option.
+- Add compatibility with QEMU >= 6.1.0 to `QEMUDriver`'s ``display`` argument
+  for the ``egl-headless`` option.
+
 Release 23.0.1 (Released Apr 26, 2023)
 --------------------------------------
 

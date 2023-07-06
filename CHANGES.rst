@@ -25,6 +25,8 @@ Bug fixes in 23.1
   labgrid-client.
 - Fix sftp option issue in SSH driver that caused sftp to only work once per
   test run.
+- ManagedFile NFS detection heuristic now does symlink resolution on the
+  local host.
 
 Breaking changes in 23.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -19,7 +19,7 @@ class StepReporter:
         from warnings import warn
         warn(
             """
-            StepLogger is deprecated, use the StepLogger and basicConfig from labgrid.logging
+            StepReporter is deprecated, use the StepLogger and basicConfig from labgrid.logging
             instead which integrates with the python logging infrastructure.
             """,
             DeprecationWarning,

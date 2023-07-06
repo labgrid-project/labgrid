@@ -205,6 +205,9 @@ Currently available are:
 ``netio``
   Controls *NETIO 4-Port PDUs* via a simple HTTP API.
 
+``netio_json``
+  Controls a NETIO n-Port PDU via a simple HTTP-JSON API.
+
 ``netio_kshell``
   Controls *NETIO 4C PDUs* via a Telnet interface.
 

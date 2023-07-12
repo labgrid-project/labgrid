@@ -98,7 +98,7 @@ Arguments:
   - port (str): tty the instrument is connected to, e.g. '/dev/ttyUSB0'
   - address (int): slave address on the modbus, e.g. 16
   - speed (int, default=115200): baud rate of the serial port
-  - timeout (float, default=0.25): optional, timeout in seconds
+  - timeout (float, default=0.25): timeout in seconds
 
 Used by:
   - `ModbusRTUDriver`_
@@ -2390,10 +2390,12 @@ Arguments:
   - rootfs (str): optional, reference to the paths key for use as the virtio-9p filesystem
   - dtb (str): optional, reference to the image key for the device tree
   - bios (str): optional, reference to the image key for the bios image
-  - display (str, default="none"): optional, display output to enable; must be one of:
+  - display (str, default="none"): display output to enable; must be one of:
+
     - none: Do not create a display device
     - fb-headless: Create a headless framebuffer device
     - egl-headless: Create a headless GPU-backed graphics card. Requires host support
+
   - nic (str): optional, configuration string to pass to QEMU to create a network interface
 
 The QEMUDriver also requires the specification of:

@@ -56,7 +56,7 @@ docker = ["docker>=5.0.2"]
 graph = ["graphviz>=0.17.0"]
 kasa = ["python-kasa>=0.4.0"]
 modbus = ["pyModbusTCP>=0.1.10"]
-modbusrtu = ["minimalmodbus>=1.0.2"]
+modbusrtu = ["minimalmodbus>=1.0.2, <2.1"]
 mqtt = ["paho-mqtt>=1.5.1"]
 onewire = ["onewire>=0.2"]
 pyvisa = [
@@ -94,7 +94,7 @@ dev = [
     "pyModbusTCP>=0.1.10",
 
     # labgrid[modbusrtu]
-    "minimalmodbus>=1.0.2",
+    "minimalmodbus>=1.0.2, <2.1",
 
     # labgrid[mqtt]
     "paho-mqtt>=1.5.1",

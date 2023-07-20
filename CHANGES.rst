@@ -57,7 +57,8 @@ Breaking changes in 23.1
   unchanged), ``-vvv`` is an alias for ``--log-cli-level=CONSOLE``, and
   ``-vvvv`` is an alias for ``--log-cli-level=DEBUG``.
 - The `BareboxDriver` now remembers the log level, sets it to ``0`` on initial
-  activation/reset and recovers it on ``boot()``.
+  activation/reset and recovers it on ``boot()``. During
+  ``run()``/``run_check()`` the initially detected log level is used.
 
 Known issues in 23.1
 ~~~~~~~~~~~~~~~~~~~~

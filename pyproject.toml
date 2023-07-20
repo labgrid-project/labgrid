@@ -215,7 +215,7 @@ signature-mutators = ["labgrid.step.step"]
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py37, py38, py39, py310, py311
+envlist = py38, py39, py310, py311
 isolated_build = true
 
 [testenv]

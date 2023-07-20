@@ -1,3 +1,13 @@
+
+Release 23.0.3 (Released Jul 20, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.3
+~~~~~~~~~~~~~~~~~~~
+- Update to PyYAML 6.0.1 to prevent install errors with Cython>=3.0, see:
+  https://github.com/yaml/pyyaml/issues/601
+  https://github.com/yaml/pyyaml/pull/726#issuecomment-1640397938
+
 Release 23.0.2 (Released Jul 04, 2023)
 --------------------------------------
 

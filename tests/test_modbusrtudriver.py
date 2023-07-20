@@ -24,11 +24,10 @@ def test_resource_with_non_default_argument(target):
 
 def test_driver(target, mocker):
     pytest.importorskip("minimalmodbus")
+    mocker.patch('serial.Serial')
+
     ModbusRTU(target, name=None, port="/dev/tty0", address=10)
     driver = ModbusRTUDriver(target, name=None)
-
-    # Ensure pyserial will not try to open the port
-    driver.resource.port = None
 
     target.activate(driver)
 

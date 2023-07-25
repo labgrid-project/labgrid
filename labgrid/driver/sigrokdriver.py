@@ -23,6 +23,7 @@ from ..util.helper import processwrapper
 from .common import Driver, check_file
 from .exception import ExecutionError
 from .powerdriver import PowerResetMixin
+from ..util import Timeout
 
 
 @attr.s(eq=False)
@@ -329,3 +330,115 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
         if len(res) != 2:
             raise ExecutionError(f"Cannot parse --show output {out}")
         return res
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class SigrokDmmDriver(SigrokCommon):
+    """
+    This driver wraps around a single channel DMM controlled by sigrok.
+    It has been tested with Unit-T UT61C and UT61B devices but probably also
+    works with other single chnnel DMMs.
+
+    This driver binds to a SigrokUsbDevice.
+    Make sure to select the correct driver for your DMM there.
+
+    Example usage:
+    > resources:
+    >   - SigrokUSBDevice:
+    >       driver: uni-t-ut61c
+    >       match:
+    >         'ID_PATH': pci-0000:07:00.4-usb-0:2:1.0
+    > drivers:
+    >   - SigrokDmmDriver: {}
+
+    Args:
+        bindings (dict): driver to use with sigrok
+    """
+
+    bindings = {
+        "sigrok": {SigrokUSBSerialDevice, NetworkSigrokUSBSerialDevice, SigrokUSBDevice, NetworkSigrokUSBDevice},
+    }
+
+    @Driver.check_active
+    @step(result=True)
+    def capture(self, samples, timeout=None):
+        """
+        Starts to read samples from the DMM.
+        This method returns once sampling has been started. Sampling continues in the background.
+
+        Note: We use subprocess.PIPE to buffer the samples.
+        When this buffer is too small for the number of samples requested sampling may stall.
+
+        Args:
+            samples: Number of samples to obtain
+            timeout: Timeout after which sampling should be stopped.
+                     If None: timeout[s] = samples * 1s + 5s
+                     If int: Timeout in [s]
+
+        Raises:
+            RuntimeError() if a capture is already running.
+        """
+        if self._running:
+            raise RuntimeError("capture is already running")
+
+        if not timeout:
+            timeout = samples + 5.0
+
+        args = f"-O csv --samples {samples}".split(" ")
+        self._call_with_driver(*args)
+        self._timeout = Timeout(timeout)
+        self._running = True
+
+    @Driver.check_active
+    @step(result=True)
+    def stop(self):
+        """
+        Waits for sigrok to complete and returns all samples obtained afterwards.
+        This function blocks until either sigrok has terminated or the timeout has been reached.
+
+        Returns:
+            (unit_spec, [sample, ...])
+
+        Raises:
+            RuntimeError() if capture has not been started
+        """
+        if not self._running:
+            raise RuntimeError("no capture started yet")
+        while not self._timeout.expired:
+            if self._process.poll() is not None:
+                # process has finished. no need to wait for the timeout
+                break
+            time.sleep(0.1)
+        else:
+            # process did not finish in time
+            self.log.info("sigrok-cli did not finish in time, increase timeout?")
+            self._process.kill()
+
+        res = []
+        unit = ""
+        for line in self._process.stdout.readlines():
+            line = line.strip()
+            if b";" in line:
+                # discard header information
+                continue
+            if not unit:
+                # the first line after the header contains the unit information
+                unit = line.decode()
+            else:
+                # all other lines are actual values
+                res.append(float(line))
+        _, stderr = self._process.communicate()
+        self.log.debug("stderr: %s", stderr)
+
+        self._running = False
+        return unit, res
+
+    def on_activate(self):
+        # This driver does not use self._tmpdir from SigrockCommon.
+        # Overriding this function to inhibit the temp-dir creation.
+        pass
+
+    def on_deactivate(self):
+        # This driver does not use self._tmpdir from SigrockCommon.
+        # Overriding this function to inhibit the temp-dir creation.
+        pass

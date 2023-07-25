@@ -2450,6 +2450,40 @@ Arguments:
   - max_current (float): optional, maximum allowed current for protection against
     accidental damage (in ampere)
 
+SigrokDmmDriver
+~~~~~~~~~~~~~~~
+The `SigrokDmmDriver` uses a  `SigrokDevice` resource to record samples from a digital multimeter (DMM) and provides
+them during test runs.
+
+It is known to work with Unit-T `UT61B` and `UT61C` devices but should also work with other DMMs supported by *sigrok*.
+
+Binds to:
+  sigrok:
+    - `SigrokUSBDevice`_
+    - `SigrokUSBSerialDevice`_
+    - `NetworkSigrokUSBDevice`_
+    - NetworkSigrokUSBSerialDevice
+
+Implements:
+  - None yet
+
+Arguments:
+  - None
+
+Sampling can be started calling `capture(samples, timeout=None)`.
+It sets up sampling and returns immediately.
+The default timeout has been chosen to work with Unit-T `UT61B`.
+Other devices may require a different timeout setting.
+
+Samples can be obtained using `stop()`.
+`stop()` will block until either *sigrok* terminates or `timeout` is reached.
+This method returns a `(unit, samples)` tuple:
+`unit` is the physical unit reported by the DMM;
+samples is an iterable of samples.
+
+This driver relies on buffering of the subprocess call.
+Reading a few samples will very likely work - but obtaining a lot of samples may stall.
+
 USBSDMuxDriver
 ~~~~~~~~~~~~~~
 The :any:`USBSDMuxDriver` uses a USBSDMuxDevice resource to control a

@@ -60,7 +60,7 @@ class ManagedFile:
                 self.logger.info("File %s is accessible on %s, skipping copy", self.local_path, host)
                 self.rpath = os.path.dirname(self.local_path) + "/"
             else:
-                self.rpath = f"/var/cache/labgrid/{get_user()}/{self.get_hash()}/"
+                self.rpath = f"{self.get_user_cache_path()}/{self.get_hash()}/"
                 self.logger.info("Synchronizing %s to %s", self.local_path, host)
                 conn.run_check(f"mkdir -p {self.rpath}")
                 conn.put_file(
@@ -150,3 +150,6 @@ class ManagedFile:
         self.hash = hasher.hexdigest()
 
         return self.hash
+
+    def get_user_cache_path(self):
+        return f"/var/cache/labgrid/{get_user()}"

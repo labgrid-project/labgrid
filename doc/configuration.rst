@@ -1221,6 +1221,23 @@ RemoteTFTPProvider / RemoteHTTPProvider
 These describe a `TFTPProvider`_ or `HTTPProvider`_ resource available on a
 remote computer.
 
+.. code-block:: yaml
+
+   RemoteTFTPProvider
+     host: "tftphost"
+     internal: "/srv/tftp/board-23/"
+     external: "board-23/"
+
+   RemoteHTTPProvider:
+     host: "httphost"
+     internal: "/srv/www/board-23/"
+     external: "http://192.168.1.1/board-23/"
+
+Arguments:
+  - host (str): hostname of the remote host
+  - internal (str): path prefix to the HTTP/TFTP root directory on ``host``
+  - external (str): corresponding path prefix for use by the target
+
 Used by:
   - `TFTPProviderDriver`_
   - `HTTPProviderDriver`_
@@ -1228,6 +1245,14 @@ Used by:
 RemoteNFSProvider
 +++++++++++++++++
 An `NFSProvider`_ resource available on a remote computer.
+
+.. code-block:: yaml
+
+   RemoteNFSProvider:
+     host: "nfshost"
+
+Arguments:
+  - host (str): hostname of the remote host
 
 Used by:
   - `NFSProviderDriver`_

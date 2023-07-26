@@ -43,7 +43,7 @@ class TFTPProviderDriver(BaseProviderDriver):
 
 @target_factory.reg_driver
 @attr.s(eq=False)
-class NFSPProviderDriver(BaseProviderDriver):
+class NFSProviderDriver(BaseProviderDriver):
     bindings = {
         "provider": {"NFSProvider", "RemoteNFSProvider"},
     }

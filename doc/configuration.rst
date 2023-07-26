@@ -483,6 +483,39 @@ Arguments:
 Used by:
   - `HIDRelayDriver`_
 
+HttpDigitalOutput
++++++++++++++++++
+A ``HttpDigitalOutput`` resource describes a generic digital output that can be
+controlled via HTTP.
+
+.. code-block:: yaml
+
+   HttpDigitalOutput:
+     url: http://host.example/some/endpoint
+     body_asserted: "On"
+     body_deasserted: "Off"
+
+The example assumes a simple scenario where the same URL is used for PUT
+requests that set the output state and GET requests to get the current state.
+It also assumes that the returned state matches either "On" or "Off" exactly.
+
+The `HttpDigitalOutputDriver`_ also supports more advanced use cases where the
+current state is fetched from another URL and is interpreted using regular
+expressions.
+
+Arguments:
+  - url (str): URL to use for setting a new state
+  - body_asserted (str): Request body to send to assert the output
+  - body_deasserted (str): Request body to send to de-assert the output
+  - method (str, default="PUT"): HTTP method to set a new state
+
+  - url_get (str): URL to use instead of ``url`` for getting the state
+  - body_get_asserted (str): Regular Expression that matches an asserted response body
+  - body_get_deasserted (str): Regular Expression that matches a de-asserted response body
+
+Used by:
+  - `HttpDigitalOutputDriver`_
+
 NetworkHIDRelay
 +++++++++++++++
 A NetworkHIDRelay describes an `HIDRelay`_ exported over the network.
@@ -2798,6 +2831,27 @@ Implements:
 
 Arguments:
   - None
+
+
+HttpDigitalOutputDriver
+~~~~~~~~~~~~~~~~~~~~~~~
+A HttpDigitalOutputDriver binds to a `HttpDigitalOutput` to set and get a
+digital output state via HTTP.
+
+Binds to:
+  http:
+    - `HttpDigitalOutput`_
+
+.. code-block:: yaml
+
+   HttpDigitalOutputDriver: {}
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+Arguments:
+  - None
+
 
 PyVISADriver
 ~~~~~~~~~~~~

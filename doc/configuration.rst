@@ -1177,11 +1177,10 @@ For now, the TFTP/NFS/HTTP server needs to be configured before using it from
 labgrid.
 
 .. _TFTPProvider:
-.. _NFSProvider:
 .. _HTTPProvider:
 
-TFTPProvider / NFSProvider / HTTPProvider
-+++++++++++++++++++++++++++++++++++++++++
+TFTPProvider / HTTPProvider
++++++++++++++++++++++++++++
 
 .. code-block:: yaml
 
@@ -1199,22 +1198,39 @@ Arguments:
 
 Used by:
   - `TFTPProviderDriver`_
-  - `NFSProviderDriver`_
   - `HTTPProviderDriver`_
 
+NFSProvider
++++++++++++
+
+.. code-block:: yaml
+
+   NFSProvider: {}
+
+Arguments:
+  - None
+
+Used by:
+  - `NFSProviderDriver`_
+
 .. _RemoteTFTPProvider:
-.. _RemoteNFSProvider:
 .. _RemoteHTTPProvider:
 
-RemoteTFTPProvider / RemoteNFSProvider / RemoteHTTPProvider
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-These describe a `TFTPProvider`_, `NFSProvider`_ or `HTTPProvider`_ resource
-available on a remote computer
+RemoteTFTPProvider / RemoteHTTPProvider
++++++++++++++++++++++++++++++++++++++++
+These describe a `TFTPProvider`_ or `HTTPProvider`_ resource available on a
+remote computer.
 
 Used by:
   - `TFTPProviderDriver`_
-  - `NFSProviderDriver`_
   - `HTTPProviderDriver`_
+
+RemoteNFSProvider
++++++++++++++++++
+An `NFSProvider`_ resource available on a remote computer.
+
+Used by:
+  - `NFSProviderDriver`_
 
 RemotePlace
 ~~~~~~~~~~~

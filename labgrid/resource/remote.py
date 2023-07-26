@@ -403,7 +403,7 @@ class RemoteTFTPProvider(RemoteBaseProvider):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
-class RemoteNFSProvider(RemoteBaseProvider):
+class RemoteNFSProvider(NetworkResource):
     pass
 
 

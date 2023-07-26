@@ -62,6 +62,9 @@ Breaking changes in 23.1
 - The `NFSProviderDriver` now returns mount and path information on ``stage()``
   instead of the path to be used on the target. The previous return value did
   not fit the NFS mount use case.
+- The `NFSProvider` and `RemoteNFSProvider` resources no longer expect the
+  ``internal`` and ``external`` arguments as they do not fit the NFS mount use
+  case.
 
 Known issues in 23.1
 ~~~~~~~~~~~~~~~~~~~~

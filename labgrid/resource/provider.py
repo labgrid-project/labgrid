@@ -22,8 +22,10 @@ class TFTPProvider(BaseProvider):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
-class NFSProvider(BaseProvider):
-    pass
+class NFSProvider(Resource):
+    def __attrs_post_init__(self):
+        self.host = "localhost"
+        super().__attrs_post_init__()
 
 
 @target_factory.reg_resource

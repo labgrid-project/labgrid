@@ -1,6 +1,6 @@
 import pytest
 
-from labgrid.resource import Resource, NetworkSerialPort
+from labgrid.resource import Resource, NetworkSerialPort, TFTPProvider
 from labgrid.resource.remote import RemoteNetworkInterface, RemoteTFTPProvider
 from labgrid.driver import Driver, SerialDriver, NetworkInterfaceDriver, TFTPProviderDriver
 from labgrid.strategy import Strategy
@@ -85,6 +85,18 @@ def test_export_remote_network_interface(target):
     assert exported == {
         'LG__NETIF_HOST': 'testhost',
         'LG__NETIF_IFNAME': 'wlan0'
+    }
+
+
+def test_export_tftp_provider(target):
+    TFTPProvider(target, None, internal='/srv/tftp/testboard/', external='testboard/')
+    TFTPProviderDriver(target, "tftp")
+
+    exported = target.export()
+    assert exported == {
+        'LG__TFTP_HOST': 'localhost',
+        'LG__TFTP_INTERNAL': '/srv/tftp/testboard/',
+        'LG__TFTP_EXTERNAL': 'testboard/',
     }
 
 

@@ -1,17 +1,37 @@
-from .base import SerialPort, NetworkInterface, EthernetPort
+from .base import SerialPort, NetworkInterface, EthernetPort, SysfsGPIO
 from .ethernetport import SNMPEthernetPort
 from .serialport import RawSerialPort, NetworkSerialPort
 from .modbus import ModbusTCPCoil
 from .modbusrtu import ModbusRTU
 from .networkservice import NetworkService
 from .onewireport import OneWirePIO
-from .power import NetworkPowerPort
+from .power import NetworkPowerPort, PDUDaemonPort
 from .remote import RemotePlace
-from .udev import USBSerialPort
-from .udev import USBSDMuxDevice
-from .udev import USBSDWireDevice
-from .udev import USBPowerPort
-from .udev import SiSPMPowerPort
+from .udev import (
+    AlteraUSBBlaster,
+    AndroidUSBFastboot,
+    DFUDevice,
+    DeditecRelais8,
+    HIDRelay,
+    IMXUSBLoader,
+    LXAUSBMux,
+    MXSUSBLoader,
+    RKUSBLoader,
+    SiSPMPowerPort,
+    SigrokUSBDevice,
+    SigrokUSBSerialDevice,
+    USBAudioInput,
+    USBDebugger,
+    USBFlashableDevice,
+    USBMassStorage,
+    USBNetworkInterface,
+    USBPowerPort,
+    USBSDMuxDevice,
+    USBSDWireDevice,
+    USBSerialPort,
+    USBTMC,
+    USBVideo,
+)
 from .common import Resource, ResourceManager, ManagedResource
 from .ykushpowerport import YKUSHPowerPort, NetworkYKUSHPowerPort
 from .xenamanager import XenaManager
@@ -24,3 +44,5 @@ from .mqtt import TasmotaPowerPort
 from .httpvideostream import HTTPVideoStream
 from .dediprogflasher import DediprogFlasher, NetworkDediprogFlasher
 from .httpdigitalout import HttpDigitalOutput
+from .sigrok import SigrokDevice
+from .fastboot import AndroidNetFastboot

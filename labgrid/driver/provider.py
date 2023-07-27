@@ -10,9 +10,6 @@ from ..util.managedfile import ManagedFile
 
 @attr.s(eq=False)
 class BaseProviderDriver(Driver):
-    def __attrs_post_init__(self):
-        super().__attrs_post_init__()
-
     @Driver.check_bound
     def get_export_vars(self):
         return {

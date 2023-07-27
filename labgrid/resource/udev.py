@@ -346,6 +346,11 @@ class USBNetworkInterface(USBResource, NetworkInterface):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'net'
         self.match['@SUBSYSTEM'] = 'usb'
+        if self.ifname:
+            warnings.warn(
+                "USBNetworkInterface: The ifname attribute will be overwritten by udev.\n"
+                "Please use udev matching as described in http://labgrid.readthedocs.io/en/latest/configuration.html#udev-matching"  # pylint: disable=line-too-long
+            )
         super().__attrs_post_init__()
 
     def update(self):

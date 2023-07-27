@@ -1041,7 +1041,7 @@ Below an example where the local spidev is used.
 Used by:
   - `FlashromDriver`_
 
-NetworkFlashRom
+NetworkFlashrom
 ~~~~~~~~~~~~~~~
 A NetworkFlashrom describes a `Flashrom`_ available on a remote computer.
 

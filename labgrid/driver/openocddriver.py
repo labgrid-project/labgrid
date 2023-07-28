@@ -1,4 +1,3 @@
-import logging
 from itertools import chain
 import attr
 
@@ -47,7 +46,6 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}:{self.target}")
 
         # FIXME make sure we always have an environment or config
         if self.target.env:

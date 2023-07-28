@@ -1,3 +1,4 @@
+import logging
 import shlex
 from typing import Dict, Type, List
 import attr
@@ -25,6 +26,13 @@ class Resource(BindingMixin):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self._parent = None
+
+        logger_name = self.__class__.__name__
+        if self.target:
+            logger_name += f"({self.target.name})"
+        if self.name:
+            logger_name += f":{self.name}"
+        self.logger = logging.getLogger(logger_name)
 
     @property
     def command_prefix(self):
@@ -118,6 +126,7 @@ class ResourceManager:
 
     def __attrs_post_init__(self):
         self.resources: List[ManagedResource] = []
+        self.logger = logging.getLogger(str(self))
 
     def _add_resource(self, resource: 'ManagedResource'):
         self.resources.append(resource)

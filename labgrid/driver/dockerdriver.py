@@ -1,9 +1,6 @@
 """
 Class for connecting to a docker daemon running on the host machine.
 """
-
-import logging
-
 import attr
 
 from labgrid.factory import target_factory
@@ -62,7 +59,6 @@ class DockerDriver(PowerProtocol, Driver):
             attr.validators.instance_of(list)))
 
     def __attrs_post_init__(self):
-        self.logger = logging.getLogger(f"{self}({self.target})")
         super().__attrs_post_init__()
         self._client = None
         self._container = None

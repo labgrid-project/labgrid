@@ -143,7 +143,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 else:
                     # we got a prompt. no need for any further action to
                     # activate this driver.
-                    self.status = 1
+                    self._status = 1
                     break
 
             elif index == 1:

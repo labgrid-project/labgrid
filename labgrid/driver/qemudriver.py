@@ -1,6 +1,5 @@
 """The QEMUDriver implements a driver to use a QEMU target"""
 import atexit
-import logging
 import select
 import shlex
 import shutil
@@ -89,7 +88,6 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}:")
         self.status = 0
         self.txdelay = None
         self._child = None

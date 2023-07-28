@@ -1,5 +1,4 @@
 import copy
-import logging
 import os
 import attr
 
@@ -11,7 +10,6 @@ from .common import NetworkResource, ManagedResource, ResourceManager
 class RemotePlaceManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}")
         self.url = None
         self.realm = None
         self.loop = None

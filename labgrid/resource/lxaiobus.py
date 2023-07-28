@@ -1,4 +1,3 @@
-import logging
 from time import monotonic
 from importlib import import_module
 
@@ -14,8 +13,6 @@ class LXAIOBusNodeManager(ResourceManager):
         super().__attrs_post_init__()
         self._requests = import_module('requests')
 
-        self.log = logging.getLogger('LXAIOBusNodeManager')
-
         self._last = 0.0
 
     def _get_nodes(self, host):
@@ -25,7 +22,7 @@ class LXAIOBusNodeManager(ResourceManager):
             j = r.json()
             return j["result"]
         except self._requests.exceptions.ConnectionError:
-            self.log.exception("failed to connect to host %s", host)
+            self.logger.exception("failed to connect to host %s", host)
             return []
 
     def poll(self):

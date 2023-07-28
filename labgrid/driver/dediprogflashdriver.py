@@ -1,5 +1,4 @@
 import os.path
-import logging
 import attr
 
 from ..resource import NetworkDediprogFlasher
@@ -24,7 +23,6 @@ class DediprogFlashDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f'{self}')
         if self.target.env:
             self.tool = self.target.env.config.get_tool('dpcmd')
         else:

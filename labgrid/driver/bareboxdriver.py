@@ -1,4 +1,3 @@
-import logging
 import shlex
 
 import attr
@@ -40,7 +39,6 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
         # barebox' default log level, used as fallback if no log level can be saved
         self.saved_log_level = 7

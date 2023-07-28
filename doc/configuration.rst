@@ -1041,7 +1041,7 @@ Below an example where the local spidev is used.
 Used by:
   - `FlashromDriver`_
 
-NetworkFlashRom
+NetworkFlashrom
 ~~~~~~~~~~~~~~~
 A NetworkFlashrom describes a `Flashrom`_ available on a remote computer.
 
@@ -1654,6 +1654,7 @@ Implements:
 Arguments:
   - boot_expression (str, default="U-Boot 20\\d+"): regex to match the U-Boot start string
   - boot_secret (str, default="a"): secret used to unlock prompt
+  - boot_secret_nolf (bool, default=False): send boot_secret without new line
   - login_timeout (int, default=60): timeout for password/login prompt detection
   - for other arguments, see `UBootDriver`_
 

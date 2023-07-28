@@ -2,7 +2,6 @@
 """The ShellDriver provides the CommandProtocol, ConsoleProtocol and
  InfoProtocol on top of a SerialPort."""
 import io
-import logging
 import re
 import shlex
 import ipaddress
@@ -58,7 +57,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
 
         self._xmodem_cached_rx_cmd = ""

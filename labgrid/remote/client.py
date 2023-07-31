@@ -5,6 +5,7 @@ import asyncio
 import contextlib
 import enum
 import os
+import pathlib
 import subprocess
 import traceback
 import logging
@@ -1206,6 +1207,43 @@ class ClientSession(ApplicationSession):
         for k, v in sorted(data.items()):
             print(f"{k:<16s} {str(v):<10s}")
 
+    def _check_xlx_env(self):
+        if not "XILINX_VIVADO" in os.environ:
+            print("xsdb must be invoked from within a Vivado environment", file=sys.stderr)
+            exit(1)
+
+    def _get_fpga(self, name):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        from ..driver.xsdbdriver import XSDBDriver
+        from ..resource.remote import NetworkXilinxUSBJTAG
+        drv = None
+        for resource in target.resources:
+            if isinstance(resource, NetworkXilinxUSBJTAG):
+                try:
+                    drv = target.get_driver(XSDBDriver, name=name)
+                except NoDriverFoundError:
+                    target.set_binding_map({"interface": name})
+                    drv = XSDBDriver(target, name=name)
+                break
+        if not drv:
+            raise UserError("target has no compatible resource available")
+        target.activate(drv)
+        return drv
+
+    def fpga_run_xsdb(self):
+        self._check_xlx_env()
+        drv = self._get_fpga(self.args.resource)
+
+        drv.run([self.args.tcl_cmds],
+                interactive=self.args.interactive or not bool(self.args.tcl_cmds))
+
+    def fpga_program_bitstream(self):
+        self._check_xlx_env()
+        drv = self._get_fpga(self.args.resource)
+
+        drv.program_bitstream(self.args.bitstream)
+
     def write_image(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
@@ -1752,6 +1790,25 @@ def main():
     tmc_subparser.add_argument('channel', type=int)
     tmc_subparser.add_argument('action', choices=['info', 'values'])
     tmc_subparser.set_defaults(func=ClientSession.tmc_channel)
+
+    subparser = subparsers.add_parser('fpga', help="interact with FPGA")
+    subparser.set_defaults(func=lambda _: subparser.print_help())
+    fpga_subparsers = subparser.add_subparsers(
+        dest='subcommand',
+        title='available subcommands',
+        metavar="SUBCOMMAND",
+    )
+
+    fpga_subparser = fpga_subparsers.add_parser('xsdb', help="run XSDB and connect to Vivado hardware server")
+    fpga_subparser.add_argument('-r,', '--resource', help="resource name")
+    fpga_subparser.add_argument('tcl_cmds', nargs='?', default='', help="execute Tcl command then exit")
+    fpga_subparser.add_argument('-i', '--interactive', action='store_true', help="enter interactive mode after executing Tcl command")
+    fpga_subparser.set_defaults(func=ClientSession.fpga_run_xsdb)
+
+    fpga_subparser = fpga_subparsers.add_parser('program-bitstream', help="program bitstream")
+    fpga_subparser.add_argument('-r,', '--resource', help="resource name")
+    fpga_subparser.add_argument('bitstream', type=pathlib.PurePath, help="bitstream file")
+    fpga_subparser.set_defaults(func=ClientSession.fpga_program_bitstream)
 
     subparser = subparsers.add_parser('write-image', help="write an image onto mass storage")
     subparser.add_argument('-w', '--wait', type=float, default=10.0)

@@ -766,6 +766,59 @@ Used by:
   - `OpenOCDDriver`_
   - `QuartusHPSDriver`_
 
+XilinxUSBJTAG
+~~~~~~~~~~~~~~~~
+A XilinxUSBJTAG resource describes a Xilinx-compatible USB JTAG adapter:
+
+- Digilent JTAG-HS3
+- Digilent JTAG-SMT2
+- Trenz Electronic TE0790-03
+- Xilinx Platform Cable USB (see `Matching a Xilinx Platform Cable USB (II)`_)
+- Xilinx Platform Cable USB II (see `Matching a Xilinx Platform Cable USB (II)`_)
+
+The exporter launches a Vivado hardware server bound to the respective USB JTAG
+adapter.
+
+.. code-block:: yaml
+
+   XilinxUSBJTAG:
+     match:
+      'ID_SERIAL_SHORT': '210308A11F1A'
+     hw_server_cmd: '/path/to/Xilinx/Vivado/2018.3/bin/hw_server'
+     agent_url: tcp::3121
+     gdb_port: 3000
+     log_level: [events, protocol]
+     extra_args: ['-S']
+
+- match (dict): key and value for a udev match, see `udev Matching`_
+- hw_server_cmd (str): optional, shell command to run the Vivado hardware
+  server (defaults to ``hw_server``). The minimum Vivado hardware server
+  version supported is 2018.3.
+
+  Note that the Vivado Design Suite and Vivado Lab Solutions come with an
+  environment script that must be sourced first, i.e.:
+
+  .. code-block:: yaml
+
+     hw_server_cmd: 'source /path/to/Xilinx/Vivado/2018.3/settings64.sh && hw_server'
+
+  Since for the Vivado Lab Solutions, the environment script only adds the
+  :program:`hw_server` binary to :envvar:`PATH`, you can also directly provide
+  an absolute path as shown in the example; however, this might change in the
+  future.
+- serial: (str): only required for adapters that do not expose the serial
+  number via udev, see `Matching a Xilinx Platform Cable USB (II)`_
+- agent_url (str): optional, agent listening port and protocol. By default, a
+  random free TCP port is chosen.
+- gdb_port (int): optional, base port number for Xilinx GDB server. By default,
+  a random free port is chosen.
+- log_level ([str]): optional, set log level as a list of categories. Run
+  ``hw_server -h`` to get all available categories.
+- extra_args ([str]): optional, extra arguments passed to :program:`hw_server`
+
+Used by:
+  - `XSDBDriver`_
+
 USBDebugger
 ~~~~~~~~~~~
 An USBDebugger resource describes a JTAG USB adapter (for example an FTDI
@@ -1451,6 +1504,36 @@ udev helper::
   Unload module index
   Unloaded link configuration context.
 
+Matching a Xilinx Platform Cable USB (II)
++++++++++++++++++++++++++++++++++++++++++
+
+A Xilinx Platform Cable USB (II) does not expose its unique serial number via
+udev. Therefore, we have to match the USB device via the respective port
+(directly, without parent match).
+
+Accordingly, one must set the ``serial`` attribute to enable the Vivado
+hardware server to filter for the respective port. Run the XSDB command ``jtag
+targets`` to get the serial number of the respective Platform Cable USB (II):
+
+.. code-block:: console
+   :emphasize-lines: 4
+
+   $ xsdb
+   …
+   xsdb% jtag targets
+     1  Platform Cable USB II 00001296718a01
+        2  xczu9 (idcode 24738093 irlen 12 fpga)
+        3  arm_dap (idcode 5ba00477 irlen 4)
+
+.. code-block:: yaml
+   :emphasize-lines: 5
+
+   XilinxUSBJTAG:
+     match:
+       'sys_name': '3-3'
+     hw_server_cmd: '/path/to/Xilinx/Vivado/2018.3/bin/hw_server'
+     serial: 00001296718a01
+
 Drivers
 -------
 
@@ -1805,6 +1888,25 @@ Arguments:
 
 The driver can be used in test cases by calling the `flash` function. An
 example strategy is included in labgrid.
+
+XSDBDriver
+~~~~~~~~~~
+A XSDBDriver connects to a Vivado hardware server to control a Xilinx device
+via JTAG.
+
+Binds to:
+  interface:
+    - `XilinxUSBJTAG`_
+
+Implements:
+  - None
+
+Arguments:
+  - bitstream (str): filename of bitstream for programmable logic (PL)
+
+The driver can be used in test cases to program a bitstream via the
+`program_bitstream` function or run arbitrary XSDB Tcl commands by calling the
+`run` function.
 
 ManualPowerDriver
 ~~~~~~~~~~~~~~~~~

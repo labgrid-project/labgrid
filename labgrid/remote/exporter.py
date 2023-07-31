@@ -6,6 +6,7 @@ import logging
 import sys
 import os
 import os.path
+import signal
 import time
 import traceback
 import shutil
@@ -274,6 +275,79 @@ class SerialPortExport(ResourceExport):
 
 exports["USBSerialPort"] = SerialPortExport
 exports["RawSerialPort"] = SerialPortExport
+
+
+@attr.s(eq=False)
+class VivadoHWServerExport(ResourceExport):
+    """ResourceExport for a XilinxUSBJTAG via Vivado Hardware Server"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self.data['cls'] = "NetworkXilinxUSBJTAG"
+        from ..resource.udev import XilinxUSBJTAG
+        self.local = XilinxUSBJTAG(target=None, name=None, **self.local_params)
+        self.child = None
+
+    def __del__(self):
+        if self.child is not None:
+            self.stop()
+
+    def _get_serial(self):
+        if self.local.serial:
+            return self.local.serial
+        else:
+            return self.local.serial_short
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': self.host,
+            'serial': self._get_serial(),
+            'hw_server_cmd': self.local.hw_server_cmd,
+            'agent_url': self.local.agent_url,
+            'gdb_port': self.local.gdb_port,
+            'log_level': self.local.log_level,
+            'extra_args': self.local.extra_args
+        }
+
+    def _start(self, start_params):
+        """Start ``hw_server`` subprocess"""
+        assert self.local.avail
+
+        if not self.local.agent_url:
+            self.local.agent_url = "tcp::" + str(get_free_port())
+
+        if not self.local.gdb_port:
+            # TODO: Get a range of 4 consecutive free ports
+            self.local.gdb_port = get_free_port()
+
+        args = [
+            self.local.hw_server_cmd,
+            '-e', "'set jtag-port-filter {}'".format(self._get_serial()),
+            '-s{}'.format(self.local.agent_url),
+            '-p{}'.format(self.local.gdb_port),
+        ]
+        if self.local.log_level:
+            args.append('-l{}'.format(','.join(self.local.log_level)))
+        args.extend(self.local.extra_args)
+        # TODO: Add timeout
+        self.child = subprocess.Popen(' '.join(args), start_new_session=True,
+                shell=True)
+        self.logger.info("started hw_server on %s", self.local.agent_url)
+
+
+    def _stop(self, start_params):
+        """Stop ``hw_server`` subprocess"""
+        assert self.child
+
+        # TODO: Add timeout
+        os.killpg(os.getpgid(self.child.pid), signal.SIGTERM)
+        self.child = None
+        self.logger.info("stopped hw_server on %s", self.local.agent_url)
+
+
+exports["XilinxUSBJTAG"] = VivadoHWServerExport
+
 
 @attr.s(eq=False)
 class NetworkInterfaceExport(ResourceExport):

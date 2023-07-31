@@ -211,6 +211,8 @@ LABGRID-CLIENT COMMANDS
 
 ``tmc`` command                 Control a USB TMC device
 
+``xlx`` command                 Connect to a Xilinx Vivado hardware server
+
 ``write-image``                 Write images onto block devices (USBSDMux, USB Sticks, …)
 
 ``reserve`` filter              Create a reservation

@@ -206,6 +206,14 @@ class USBResource(ManagedResource):
 
         return None
 
+    @property
+    def serial_short(self):
+        device = self._get_usb_device()
+        if device:
+            return device.properties.get('ID_SERIAL_SHORT')
+
+        return None
+
     def read_attr(self, attribute):
         """read uncached attribute value from sysfs
 
@@ -375,6 +383,31 @@ class AlteraUSBBlaster(USBResource):
             return False
         if device.properties.get('ID_MODEL_ID') not in ["6010", "6810"]:
             return False
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class XilinxUSBJTAG(USBResource):
+    hw_server_cmd = attr.ib(default='hw_server')
+    serial = attr.ib(factory=str)
+    agent_url = attr.ib(factory=str)
+    gdb_port = attr.ib(factory=int)
+    log_level = attr.ib(factory=list)
+    extra_args = attr.ib(factory=list)
+
+    def __attrs_post_init__(self):
+        self.match['DEVTYPE'] = 'usb_device'
+        super().__attrs_post_init__()
+
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("0403", "6010"),  # Trenz Electronic TE0790-03
+                         ("0403", "6014"),  # Digilent JTAG-SMT2/JTAG-HS3
+                         ("03fd", "0013"),  # Xilinx Platform Cable USB
+                         ("03fd", "0008")]: # Xilinx Platform Cable USB II
+            return False
+
         return super().filter_match(device)
 
 @target_factory.reg_resource

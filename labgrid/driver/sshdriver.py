@@ -233,7 +233,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if not self._check_keepalive():
             raise ExecutionError("Keepalive no longer running")
 
-        complete_cmd = ["ssh", "-x", *self.ssh_prefix,
+        complete_cmd = ["ssh", "-x", "-o", "LogLevel=QUIET", *self.ssh_prefix,
                         "-p", str(self.networkservice.port), "-l", self.networkservice.username,
                         self.networkservice.address
                         ]

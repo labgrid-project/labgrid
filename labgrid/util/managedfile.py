@@ -31,7 +31,7 @@ class ManagedFile:
     """
     local_path = attr.ib(
         validator=attr.validators.instance_of(str),
-        converter=lambda x: os.path.abspath(str(x))
+        converter=lambda x: os.path.realpath(str(x))
     )
     resource = attr.ib(
         validator=attr.validators.instance_of(Resource),

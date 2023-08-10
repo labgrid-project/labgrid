@@ -51,7 +51,10 @@ dynamic = ["version"]  # via setuptools_scm
 "Bug Tracker" = "https://github.com/labgrid-project/labgrid/issues"
 
 [project.optional-dependencies]
-doc = ["sphinx_rtd_theme>=1.0.0"]
+doc = [
+    "sphinx_rtd_theme>=1.0.0",
+    "Sphinx>=2.0.0",
+]
 docker = ["docker>=5.0.2"]
 graph = ["graphviz>=0.17.0"]
 kasa = ["python-kasa>=0.4.0"]
@@ -80,6 +83,7 @@ dev = [
     # references to other optional dependency groups
     # labgrid[doc]
     "sphinx_rtd_theme>=1.0.0",
+    "Sphinx>=2.0.0",
 
     # labgrid[docker]
     "docker>=5.0.2",

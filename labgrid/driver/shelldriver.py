@@ -314,7 +314,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """
 
         marker = gen_marker()
-        marked_cmd = f"echo '{marker[:4]}''{marker[4:]}'; {cmd}"
+        marked_cmd = f"echo -n '{marker[:4]}''{marker[4:]}'; {cmd}"
         self.console.sendline(marked_cmd)
         self.console.expect(marker, timeout=30)
 

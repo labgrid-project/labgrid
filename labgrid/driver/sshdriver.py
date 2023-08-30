@@ -311,6 +311,34 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             yield
 
     @Driver.check_active
+    @contextlib.contextmanager
+    def forward_unix_socket(self, unixsocket, localport=None):
+        """Forward a unix socket on the target to a local port
+
+        A context manager that keeps a unix socket forwarded to a local port as
+        long as the context remains valid. A connection can be made to the
+        remote socket on the target device will be forwarded to the returned
+        local port on localhost
+
+        usage:
+            with ssh.forward_unix_socket("/run/docker.sock") as localport:
+                # Use localhost:localport here to connect to the socket on the
+                # target
+
+        returns:
+        localport
+        """
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        if localport is None:
+            localport = get_free_port()
+
+        forward = f"-L{localport:d}:{unixsocket:s}"
+        with self._forward(forward):
+            yield localport
+
+    @Driver.check_active
     @step(args=['src', 'dst'])
     def scp(self, *, src, dst):
         if not self._check_keepalive():

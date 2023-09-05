@@ -28,6 +28,7 @@ from .udev import (
     TegraUSBLoader,
     USBAudioInput,
     USBDebugger,
+    USBLauterbachDebugger,
     USBFlashableDevice,
     USBMassStorage,
     USBNetworkInterface,
@@ -58,3 +59,4 @@ from .laa import LAASerialPort, LAAPowerPort, LAAUSBGadgetMassStorage, \
                  LAAUSBPort, LAAButtonPort, \
                  LAALed, LAATempSensor, LAAWattMeter, LAAProvider
 from .adb import NetworkADBDevice, RemoteUSBADBDevice, USBADBDevice
+from .lauterbach import NetworkLauterbachDebugger

@@ -1,0 +1,13 @@
+targets:
+  main:
+    resources:
+      NetworkLauterbachDebugger:
+        node: E22120045734
+        protocol: TCP
+    drivers:
+      LauterbachDriver:
+        enable_rcl: true
+        script: ./blackpill.cmm
+        script_args_debug: "TERM=ON"
+paths:
+  t32-dir: ~/t32

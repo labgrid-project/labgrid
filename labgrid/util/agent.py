@@ -7,6 +7,9 @@ import sys
 import base64
 import types
 
+from socket import socket, AF_INET, SOCK_STREAM
+from contextlib import closing
+
 def b2s(b):
     return base64.b85encode(b).decode('ascii')
 
@@ -93,6 +96,12 @@ def handle_usbtmc(index, cmd, read=False):
     os.close(fd)
     return b2s(b''.join(data))
 
+def get_free_port():
+    """Helper function to always return an unused port."""
+    with closing(socket(AF_INET, SOCK_STREAM)) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
+
 def main():
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
@@ -100,6 +109,7 @@ def main():
     a.register('test', handle_test)
     a.register('error', handle_error)
     a.register('usbtmc', handle_usbtmc)
+    a.register('get_free_port', get_free_port)
     a.run()
 
 if __name__ == "__main__":

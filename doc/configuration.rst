@@ -959,6 +959,49 @@ NetworkUSBDebugger
 A :any:`NetworkUSBDebugger` describes a `USBDebugger`_ resource available on a
 remote computer.
 
+USBLauterbachDebugger
+~~~~~~~~~~~~~~~~~~~~~
+An USBLauterbachDebugger resource describes a Lauterbach
+PowerDebug/PowerTrace/MicroTrace device connected via USB.
+
+.. code-block:: yaml
+
+   USBLauterbachDebugger:
+     match:
+       ID_PATH: pci-0000:00:10.0-usb-0:1.4
+
+.. code-block:: yaml
+
+   USBLauterbachDebugger:
+     match:
+       ID_SERIAL_SHORT: C230901234567
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `LauterbachDriver`_
+
+NetworkLauterbachDebugger
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A NetworkLauterbachDebugger resource describes a Lauterbach
+PowerDebug device connected via Ethernet.
+
+.. code-block:: yaml
+
+   NetworkLauterbachDebugger:
+     node: E230901234567
+
+Arguments:
+  - node (str): Lauterbach NODENAME e.g. IP/NODENAME (factory default: serial number)
+  - protocol (str, default="UDP"): Protocol to use, must be one of:
+
+    - TCP: select TCP-based protocol - enables LG_PROXY support, requires recent device
+    - UDP: select UDP-based protocol - works with legacy devices
+
+Used by:
+  - `LauterbachDriver`_
+
 SNMPEthernetPort
 ~~~~~~~~~~~~~~~~
 A :any:`SNMPEthernetPort` resource describes a port on an Ethernet switch,
@@ -2088,6 +2131,82 @@ Arguments:
   - interface_config (str): optional, interface config in the ``openocd/scripts/interface/`` directory
   - board_config (str): optional, board config in the ``openocd/scripts/board/`` directory
   - load_commands (list of str): optional, load commands to use instead of ``init``, ``bootstrap {filename}``, ``shutdown``
+
+LauterbachDriver
+~~~~~~~~~~~~~~~~
+Allows to use a Lauterbach TRACE32 USB or Ethernet debugger.
+Both creation of interactive debug sessions and
+automation via Remote API are supported.
+
+If connected via USB these Lauterbach debug devices are supported:
+
+  - PowerDebug X51
+  - PowerDebug X50
+  - PowerDebug E40
+  - PowerDebug PRO
+  - MicroTrace
+  - PowerDebug USB1.0/USB2.0/Ethernet/II
+  - PowerTrace
+
+When the USB debug device is connected to a remote exporter,
+the driver makes use of the *t32tcpusb* utility
+to forward the communication traffic via TCP.
+*t32tcpusb* is part of the TRACE32 installation.
+
+If connected via Ethernet these Lauterbach debug devices are supported:
+
+  - PowerDebug X51
+  - PowerDebug X50
+  - PowerDebug E40
+  - PowerDebug PRO
+  - PowerDebug Ethernet/II
+  - PowerTrace
+
+With the exception of PowerDebug X50 and X51, Ethernet debug modules do not support
+TCP-connections and thus not *LG_PROXY* mode.
+
+If *t32_sys* is not provided, the driver will use
+
+  - the environment variable ``T32SYS``,
+  - the directory ``~/t32``, and
+  - the directory ``/opt/t32``
+
+as fallback locations to detect the TRACE32 installation.
+Paths are evaluated in this order.
+*t32_sys* can also be used to select a path from the environment configuration.
+
+If the :py:meth:`~.LauterbachDriver.load` method of the BootstrapProtocol is called,
+arguments of the start-up script are prefixed by ``LABGRID_COMMAND=BOOTSTRAP``.
+If any of the :py:meth:`~.LauterbachDriver.start`, :py:meth:`~.LauterbachDriver.control` or :py:meth:`~.LauterbachDriver.execute` methods is called,
+arguments of the start-up script are prefixed by ``LABGRID_COMMAND=DEBUGGER``.
+
+Binds to:
+  interface:
+    - `NetworkLauterbachDebugger`_
+    - `USBLauterbachDebugger`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+  :name: lauterbach-env.yaml
+
+  targets:
+    main:
+      resources:
+        USBLauterbachDebugger
+      drivers:
+        LauterbachDriver:
+          enable_rcl: true
+
+Arguments:
+  - t32_sys (str): optional, base folder of the TRACE32 installation
+  - t32_bin (str, default="t32marm"): name of the TRACE32 architecture executable `t32m*`
+  - script (str): optional, path to the `.cmm` script to run on startup of TRACE32
+  - script_args_bootstrap (str, list): parameters passed to `.cmm` script with labgrid command `bootstrap`
+  - script_args_debug (str, list): parameters passed to `.cmm` script with command `debugger` and method `control()`
+  - enable_rcl (bool): optional, enables the Remote API interface for automation
+    tasks
 
 QuartusHPSDriver
 ~~~~~~~~~~~~~~~~

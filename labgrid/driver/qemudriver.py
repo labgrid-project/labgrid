@@ -120,26 +120,26 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
         return (int(m.group('major')), int(m.group('minor')), int(m.group('micro')))
 
-    def on_activate(self):
-        self._tempdir = tempfile.mkdtemp(prefix="labgrid-qemu-tmp-")
-        sockpath = f"{self._tempdir}/serialrw"
-        self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self._socket.bind(sockpath)
-        self._socket.listen(0)
+    def get_qemu_base_args(self):
+        """Returns the base command line used for Qemu without the options
+        related to QMP. These options can be used to start an interactive
+        Qemu manually for debugging tests
+        """
+        cmd = []
 
         qemu_bin = self.target.env.config.get_tool(self.qemu_bin)
         if qemu_bin is None:
             raise KeyError(
                 "QEMU Binary Path not configured in tools configuration key")
-        self._cmd = [qemu_bin]
+        cmd = [qemu_bin]
 
-        self._qemu_version = self.get_qemu_version(qemu_bin)
+        qemu_version = self.get_qemu_version(qemu_bin)
 
         boot_args = []
 
         if self.kernel is not None:
-            self._cmd.append("-kernel")
-            self._cmd.append(
+            cmd.append("-kernel")
+            cmd.append(
                 self.target.env.config.get_image_path(self.kernel))
         if self.disk is not None:
             disk_path = self.target.env.config.get_image_path(self.disk)
@@ -147,18 +147,18 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             if disk_path.endswith(".qcow2"):
                 disk_format = "qcow2"
             if self.machine == "vexpress-a9":
-                self._cmd.append("-drive")
-                self._cmd.append(
+                cmd.append("-drive")
+                cmd.append(
                     f"if=sd,format={disk_format},file={disk_path},id=mmc0")
                 boot_args.append("root=/dev/mmcblk0p1 rootfstype=ext4 rootwait")
             elif self.machine == "q35":
-                self._cmd.append("-drive")
-                self._cmd.append(
+                cmd.append("-drive")
+                cmd.append(
                     f"if=virtio,format={disk_format},file={disk_path}")
                 boot_args.append("root=/dev/vda rootwait")
             elif self.machine == "pc":
-                self._cmd.append("-drive")
-                self._cmd.append(
+                cmd.append("-drive")
+                cmd.append(
                     f"if=virtio,format={disk_format},file={disk_path}")
                 boot_args.append("root=/dev/vda rootwait")
             else:
@@ -166,69 +166,81 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                     f"QEMU disk image support not implemented for machine '{self.machine}'"
                 )
         if self.rootfs is not None:
-            self._cmd.append("-fsdev")
-            self._cmd.append(
+            cmd.append("-fsdev")
+            cmd.append(
                 f"local,id=rootfs,security_model=none,path={self.target.env.config.get_path(self.rootfs)}")  # pylint: disable=line-too-long
-            self._cmd.append("-device")
-            self._cmd.append(
+            cmd.append("-device")
+            cmd.append(
                 "virtio-9p-device,fsdev=rootfs,mount_tag=/dev/root")
             boot_args.append("root=/dev/root rootfstype=9p rootflags=trans=virtio")
         if self.dtb is not None:
-            self._cmd.append("-dtb")
-            self._cmd.append(self.target.env.config.get_image_path(self.dtb))
+            cmd.append("-dtb")
+            cmd.append(self.target.env.config.get_image_path(self.dtb))
         if self.flash is not None:
-            self._cmd.append("-drive")
-            self._cmd.append(
+            cmd.append("-drive")
+            cmd.append(
                 f"if=pflash,format=raw,file={self.target.env.config.get_image_path(self.flash)},id=nor0")  # pylint: disable=line-too-long
         if self.bios is not None:
-            self._cmd.append("-bios")
-            self._cmd.append(
+            cmd.append("-bios")
+            cmd.append(
                 self.target.env.config.get_image_path(self.bios))
 
         if "-append" in shlex.split(self.extra_args):
             raise ExecutionError("-append in extra_args not allowed, use boot_args instead")
 
-        self._cmd.extend(shlex.split(self.extra_args))
+        cmd.extend(shlex.split(self.extra_args))
+        cmd.append("-machine")
+        cmd.append(self.machine)
+        cmd.append("-cpu")
+        cmd.append(self.cpu)
+        cmd.append("-m")
+        cmd.append(self.memory)
+        if self.display == "none":
+            cmd.append("-nographic")
+        elif self.display == "fb-headless":
+            cmd.append("-display")
+            cmd.append("none")
+        elif self.display == "egl-headless":
+            if qemu_version >= (6, 1, 0):
+                cmd.append("-device")
+                cmd.append("virtio-vga-gl")
+            else:
+                cmd.append("-vga")
+                cmd.append("virtio")
+            cmd.append("-display")
+            cmd.append("egl-headless")
+        else:
+            raise ExecutionError(f"Unknown display '{self.display}'")
+
+        if self.nic:
+            cmd.append("-nic")
+            cmd.append(self.nic)
+
+        if self.boot_args is not None:
+            boot_args.append(self.boot_args)
+        if self.kernel is not None and boot_args:
+            cmd.append("-append")
+            cmd.append(" ".join(boot_args))
+
+        return cmd
+
+    def on_activate(self):
+        self._tempdir = tempfile.mkdtemp(prefix="labgrid-qemu-tmp-")
+        sockpath = f"{self._tempdir}/serialrw"
+        self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self._socket.bind(sockpath)
+        self._socket.listen(0)
+
+        self._cmd = self.get_qemu_base_args()
+
         self._cmd.append("-S")
         self._cmd.append("-qmp")
         self._cmd.append("stdio")
-        self._cmd.append("-machine")
-        self._cmd.append(self.machine)
-        self._cmd.append("-cpu")
-        self._cmd.append(self.cpu)
-        self._cmd.append("-m")
-        self._cmd.append(self.memory)
-        if self.display == "none":
-            self._cmd.append("-nographic")
-        elif self.display == "fb-headless":
-            self._cmd.append("-display")
-            self._cmd.append("none")
-        elif self.display == "egl-headless":
-            if self._qemu_version >= (6, 1, 0):
-                self._cmd.append("-device")
-                self._cmd.append("virtio-vga-gl")
-            else:
-                self._cmd.append("-vga")
-                self._cmd.append("virtio")
-            self._cmd.append("-display")
-            self._cmd.append("egl-headless")
-        else:
-            raise ExecutionError(f"Unknown display '{self.display}'")
 
         self._cmd.append("-chardev")
         self._cmd.append(f"socket,id=serialsocket,path={sockpath}")
         self._cmd.append("-serial")
         self._cmd.append("chardev:serialsocket")
-
-        if self.nic:
-            self._cmd.append("-nic")
-            self._cmd.append(self.nic)
-
-        if self.boot_args is not None:
-            boot_args.append(self.boot_args)
-        if self.kernel is not None and boot_args:
-            self._cmd.append("-append")
-            self._cmd.append(" ".join(boot_args))
 
     def on_deactivate(self):
         if self.status:

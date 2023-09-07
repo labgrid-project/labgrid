@@ -453,8 +453,8 @@ class SSHConnection:
         )
 
         try:
-            if self._master.wait(timeout=connect_timeout) != 0:
-                stdout, stderr = self._master.communicate()
+            stdout, stderr = self._master.communicate(timeout=connect_timeout)
+            if self._master.returncode != 0:
                 raise ExecutionError(
                     f"failed to connect to {self.host} with args {args}, returncode={self._master.returncode} {stdout},{stderr}"  # pylint: disable=line-too-long
                 )

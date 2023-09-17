@@ -370,13 +370,16 @@ class Target:
                 except NoSupplierFoundError as e:
                     errors.append(e)
             if not suppliers:
+                client_name = client.name or client.__class__.__name__
                 if optional:
                     supplier = None
                 elif len(errors) == 1:
-                    raise errors[0]
+                    err = errors[0]
+                    err_cls = type(err)
+                    raise err_cls(f"binding {client_name} failed: {err}") from err
                 else:
                     raise NoSupplierFoundError(
-                        f"no supplier matching {requirements} found in {self} (errors: {errors})"
+                        f"binding {client_name} failed: no supplier matching {requirements} found in {self} (errors: {errors})"
                     )
             elif len(suppliers) > 1:
                 raise NoSupplierFoundError(f"conflicting suppliers matching {requirements} found in target {self}")  # pylint: disable=line-too-long

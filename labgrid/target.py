@@ -140,15 +140,15 @@ class Target:
             name_msg = f" named '{name}'" if name else ""
             if other_names:
                 raise NoResourceFoundError(
-                    f"no {cls} resource{name_msg} found in {self}, matching resources with other names: {other_names}"  # pylint: disable=line-too-long
+                    f"no {cls.__name__} resource{name_msg} found in {self}, matching resources with other names: {other_names}"  # pylint: disable=line-too-long
                 )
 
             raise NoResourceFoundError(
-                f"no {cls} resource{name_msg} found in {self}"
+                f"no {cls.__name__} resource{name_msg} found in {self}"
             )
         elif len(found) > 1:
             raise NoResourceFoundError(
-                f"multiple resources matching {cls} found in {self}", found=found
+                f"multiple resources matching {cls.__name__} found in {self}", found=found
             )
         if wait_avail:
             self.await_resources(found)
@@ -178,12 +178,12 @@ class Target:
             if other_names:
                 raise NoDriverFoundError(
                     "no {active}{cls} driver{name} found in {target}, matching resources with other names: {other_names}".format(  # pylint: disable=line-too-long
-                        active="active " if active else "", cls=cls, name=name_msg, target=self,
-                        other_names=other_names)
+                        active="active " if active else "", cls=cls.__name__, name=name_msg,
+                        target=self, other_names=other_names)
                 )
 
             raise NoDriverFoundError(
-                f"no {'active ' if active else ''}{cls} driver{name_msg} found in {self}"
+                f"no {'active ' if active else ''}{cls.__name__} driver{name_msg} found in {self}"
             )
         elif len(found) > 1:
             prio_last = -255
@@ -202,7 +202,7 @@ class Target:
             else:
                 raise NoDriverFoundError(
                     "multiple {active}drivers matching {cls} found in {target} with the same priorities".format(  # pylint: disable=line-too-long
-                        active="active " if active else "", cls=cls, target=self)
+                        active="active " if active else "", cls=cls.__name__, target=self)
                 )
         if activate:
             self.activate(found[0])
@@ -276,7 +276,7 @@ class Target:
             cls = target_factory.class_from_string(cls)
         if not issubclass(cls, (Driver, abc.ABC)): # all Protocols derive from ABC
             raise NoDriverFoundError(
-                f"invalid driver class {cls}"
+                f"invalid driver class {cls.__name__}"
             )
 
         return self.get_active_driver(cls, name=name)

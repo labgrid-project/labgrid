@@ -172,3 +172,23 @@ def test_local_remote_forward(ssh_localhost, tmpdir):
                 send_socket.send(test_string.encode('utf-8'))
 
                 assert client_socket.recv(16).decode("utf-8") == test_string
+
+
+@pytest.mark.sshusername
+def test_unix_socket_forward(ssh_localhost, tmpdir):
+    p = tmpdir.join("console.sock")
+    test_string = "Hello World"
+
+    with ssh_localhost.forward_unix_socket(str(p)) as localport:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server_socket:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as send_socket:
+                server_socket.bind(str(p))
+                server_socket.listen(1)
+
+                send_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                send_socket.connect(("127.0.0.1", localport))
+
+                client_socket, address = server_socket.accept()
+                send_socket.send(test_string.encode("utf-8"))
+
+                assert client_socket.recv(16).decode("utf-8") == test_string

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
     continue-on-error: false
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         ref: ${{ inputs.branch }}
     - name: Set up Python ${{ inputs.python-version }}

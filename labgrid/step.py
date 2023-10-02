@@ -26,8 +26,8 @@ class Steps:
         step.level = len(self._stack)
 
     def pop(self, step):  # pylint: disable=redefined-outer-name
-        assert self._stack[-1] is step
-        self._stack.pop()
+        assert step in self._stack
+        self._stack.remove(step)
 
     def subscribe(self, callback):
         self._subscribers.append(callback)

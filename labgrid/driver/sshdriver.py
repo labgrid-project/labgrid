@@ -527,7 +527,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            encoding="utf-8",
         )
 
         self.logger.debug('Started keepalive for %s', self.networkservice.address)
@@ -540,12 +541,19 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         self.logger.debug('Stopping keepalive for %s', self.networkservice.address)
 
+        stdout = None
         try:
-            self._keepalive.communicate(timeout=60)
+            stdout, _ = self._keepalive.communicate(timeout=60)
         except subprocess.TimeoutExpired:
             self._keepalive.kill()
-
-        try:
-            self._keepalive.wait(timeout=60)
+            try:
+                # Try again to get output
+                stdout, _ = self._keepalive.communicate(timeout=60)
+            except subprocess.TimeoutExpired:
+                self.logger.warning("ssh keepalive for %s timed out during termination", self.networkservice.address)
         finally:
             self._keepalive = None
+
+        if stdout:
+            for line in stdout.splitlines():
+                self.logger.warning("Keepalive %s: %s", self.networkservice.address, line)

@@ -8,20 +8,26 @@ from labgrid.util.helper import get_free_port
 
 @pytest.fixture(scope='function')
 def ssh_driver_mocked_and_activated(target, mocker):
-    NetworkService(target, "service", "1.2.3.4", "root")
-    call = mocker.patch('subprocess.call')
-    call.return_value = 0
-    popen = mocker.patch('subprocess.Popen', autospec=True)
-    path = mocker.patch('os.path.exists')
-    path.return_value = True
-    instance_mock = mocker.MagicMock()
-    popen.return_value = instance_mock
-    instance_mock.wait = mocker.MagicMock(return_value=0)
-    instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
-    instance_mock.returncode = 0
-    SSHDriver(target, "ssh")
-    s = target.get_driver("SSHDriver")
-    return s
+    def _ssh_driver_mocked_and_activated(ssh_info="OpenSSH_8.9p1"):
+        NetworkService(target, "service", "1.2.3.4", "root")
+        call = mocker.patch('subprocess.call')
+        call.return_value = 0
+        popen = mocker.patch('subprocess.Popen', autospec=True)
+        path = mocker.patch('os.path.exists')
+        path.return_value = True
+        instance_mock = mocker.MagicMock()
+        popen.return_value = instance_mock
+        instance_mock.wait = mocker.MagicMock(return_value=0)
+        instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
+        instance_mock.returncode = 0
+        run = mocker.patch('subprocess.run')
+        run_mock = mocker.MagicMock()
+        run.return_value = run_mock
+        run_mock.stderr = ssh_info
+        SSHDriver(target, "ssh")
+        s = target.get_driver("SSHDriver")
+        return s
+    return _ssh_driver_mocked_and_activated
 
 def test_create_fail_missing_resource(target):
     with pytest.raises(NoResourceFoundError):
@@ -39,11 +45,20 @@ def test_create(target, mocker):
     instance_mock.wait = mocker.MagicMock(return_value=0)
     instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
     instance_mock.returncode = 0
+    version_check = mocker.patch('labgrid.driver.sshdriver.SSHDriver._ssh_version_check')
+    version_check.return_value = True
     s = SSHDriver(target, "ssh")
     assert isinstance(s, SSHDriver)
 
-def test_run_check(ssh_driver_mocked_and_activated, mocker):
-    s = ssh_driver_mocked_and_activated
+@pytest.mark.parametrize(
+    "ssh_info",
+    [
+        "OpenSSH_8.2p1 Ubuntu-4ubuntu0.9, OpenSSL 1.1.1f  31 Mar 2020",
+        "OpenSSH_8.9p1 Ubuntu-3ubuntu0.4, OpenSSL 3.0.2f  15 Mar 2022"
+    ],
+)
+def test_run_check(ssh_driver_mocked_and_activated, mocker, ssh_info):
+    s = ssh_driver_mocked_and_activated(ssh_info)
     s._run = mocker.MagicMock(return_value=(['success'], [], 0))
     res = s.run_check("test")
     assert res == ['success']
@@ -51,7 +66,7 @@ def test_run_check(ssh_driver_mocked_and_activated, mocker):
     assert res == (['success'], [], 0)
 
 def test_run_check_raise(ssh_driver_mocked_and_activated, mocker):
-    s = ssh_driver_mocked_and_activated
+    s = ssh_driver_mocked_and_activated()
     s._run = mocker.MagicMock(return_value=(['error'], [], 1))
     with pytest.raises(ExecutionError):
         res = s.run_check("test")

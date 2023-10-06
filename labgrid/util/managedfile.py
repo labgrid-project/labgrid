@@ -39,12 +39,22 @@ class ManagedFile:
     detect_nfs = attr.ib(default=True, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
-        if not os.path.isfile(self.local_path):
-            raise FileNotFoundError(f"Local file {self.local_path} not found")
         self.logger = logging.getLogger(f"{self}")
         self.hash = None
-        self.rpath = None
         self._on_nfs_cached = None
+
+    @property
+    def rpath(self):
+        if isinstance(self.resource, NetworkResource):
+            host = self.resource.host
+            conn = sshmanager.open(host)
+            if self._on_nfs(conn):
+                return os.path.dirname(self.local_path) + "/"
+            else:
+                return f"{self.get_user_cache_path()}/{self.get_hash()}/"
+        else:
+            return None
+
 
     def sync_to_resource(self, symlink=None):
         """sync the file to the host specified in a resource
@@ -52,15 +62,15 @@ class ManagedFile:
         Raises:
             ExecutionError: if the SSH connection/copy fails
         """
+        if not os.path.isfile(self.local_path):
+            raise FileNotFoundError(f"Local file {self.local_path} not found")
         if isinstance(self.resource, NetworkResource):
             host = self.resource.host
             conn = sshmanager.open(host)
 
             if self._on_nfs(conn):
                 self.logger.info("File %s is accessible on %s, skipping copy", self.local_path, host)
-                self.rpath = os.path.dirname(self.local_path) + "/"
             else:
-                self.rpath = f"{self.get_user_cache_path()}/{self.get_hash()}/"
                 self.logger.info("Synchronizing %s to %s", self.local_path, host)
                 conn.run_check(f"mkdir -p {self.rpath}")
                 conn.put_file(
@@ -78,6 +88,27 @@ class ManagedFile:
                     f"ln --symbolic --force --no-dereference {self.rpath}{os.path.basename(self.local_path)} {symlink}"  # pylint: disable=line-too-long
                 )
 
+    def make_dist_folder(self):
+        if isinstance(self.resource, NetworkResource):
+            host = self.resource.host
+            conn = sshmanager.open(host)
+
+            if not self._on_nfs(conn):
+                conn.run_check(f"mkdir -p {self.rpath}")
+
+    def sync_from_resource(self):
+        """Sync the file from the host specified in a resource"""
+        if isinstance(self.resource, NetworkResource):
+            host = self.resource.host
+            conn = sshmanager.open(host)
+
+            if self._on_nfs(conn):
+                self.logger.info("File %s is accessible on %s, skipping copy", self.local_path, host)
+            else:
+                remote_file = f"{self.rpath}{os.path.basename(self.local_path)}"
+                conn.run_check(f"test -r {remote_file}")
+                self.logger.info("Synchronizing %s from %s", self.local_path, host)
+                conn.get_file(remote_file, self.local_path)
 
     def _on_nfs(self, conn):
         if self._on_nfs_cached is not None:
@@ -117,7 +148,6 @@ class ManagedFile:
                               remote[0], localout)
             return False
 
-        self.rpath = os.path.dirname(self.local_path) + "/"
         self._on_nfs_cached = True
 
         return True
@@ -137,16 +167,19 @@ class ManagedFile:
         """Retrieve the hash of the file
 
         Returns:
-            str: SHA256 hexdigest of the file
+            str: SHA256 hexdigest of the file content or the filename if it does not exist
         """
 
         if self.hash is not None:
             return self.hash
 
         hasher = hashlib.sha256()
-        with open(self.local_path, 'rb') as f:
-            for block in iter(lambda: f.read(1048576), b''):
-                hasher.update(block)
+        if os.path.lexists(self.local_path):
+            with open(self.local_path, 'rb') as f:
+                for block in iter(lambda: f.read(1048576), b''):
+                    hasher.update(block)
+        else:
+            hasher.update(bytes(self.local_path.encode("utf-8")))
         self.hash = hasher.hexdigest()
 
         return self.hash

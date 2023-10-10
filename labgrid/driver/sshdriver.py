@@ -39,6 +39,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         super().__attrs_post_init__()
         self.logger = logging.getLogger(f"{self}({self.target})")
         self._keepalive = None
+        self._ssh_version = self._ssh_version_check()
 
     def on_activate(self):
         self.ssh_prefix = ["-o", "LogLevel=ERROR"]
@@ -432,10 +433,13 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """The SSHDriver is always connected, return 1"""
         return 1
 
-    def _scp_supports_explicit_sftp_mode(self):
+    def _ssh_version_check(self):
         version = subprocess.run(["ssh", "-V"], capture_output=True, text=True)
         version = re.match(r"^OpenSSH_(\d+)\.(\d+)", version.stderr)
-        major, minor = map(int, version.groups())
+        return map(int, version.groups())
+
+    def _scp_supports_explicit_sftp_mode(self):
+        major, minor = self._ssh_version
 
         # OpenSSH >= 8.6 supports explicitly using the SFTP protocol via -s
         if major == 8 and minor >= 6:

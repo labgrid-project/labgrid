@@ -137,8 +137,14 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         try:
             subprocess_timeout = timeout + 5
-            stdout, _ = self.process.communicate(timeout=subprocess_timeout)
+            if self._ssh_supports_fork_with_stderr():
+                stdout, _ = self.process.communicate(timeout=subprocess_timeout)
+            else:
+                self.process.wait(timeout=subprocess_timeout)
+
             if self.process.returncode != 0:
+                if not self._ssh_supports_fork_with_stderr():
+                    stdout, _ = self.process.communicate(timeout=subprocess_timeout)
                 stdout = stdout.split(b"\n")
                 for line in stdout:
                     self.logger.warning("ssh: %s", line.rstrip().decode(encoding="utf-8", errors="replace"))
@@ -437,6 +443,12 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         version = subprocess.run(["ssh", "-V"], capture_output=True, text=True)
         version = re.match(r"^OpenSSH_(\d+)\.(\d+)", version.stderr)
         return map(int, version.groups())
+
+    def _ssh_supports_fork_with_stderr(self):
+        major, minor = self._ssh_version
+
+        # OpenSSH < 8.5 has bug about stderr close via -f
+        return major > 8 or (major == 8 and minor > 4)
 
     def _scp_supports_explicit_sftp_mode(self):
         major, minor = self._ssh_version

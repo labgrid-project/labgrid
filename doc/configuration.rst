@@ -1573,6 +1573,8 @@ Arguments:
     target.
   - explicit_sftp_mode (bool, default=False): if set to True, `put()`, `get()`, and `scp()` will
     explicitly use the SFTP protocol for file transfers instead of scp's default protocol
+  - explicit_scp_mode (bool, default=False): if set to True, `put()`, `get()`, and `scp()` will
+    explicitly use the SCP protocol for file transfers instead of scp's default protocol
 
 UBootDriver
 ~~~~~~~~~~~

@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+from functools import cached_property
 
 import attr
 
@@ -432,10 +433,14 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """The SSHDriver is always connected, return 1"""
         return 1
 
-    def _scp_supports_explicit_sftp_mode(self):
+    @cached_property
+    def _ssh_version(self):
         version = subprocess.run(["ssh", "-V"], capture_output=True, text=True)
         version = re.match(r"^OpenSSH_(\d+)\.(\d+)", version.stderr)
-        major, minor = map(int, version.groups())
+        return map(int, version.groups())
+
+    def _scp_supports_explicit_sftp_mode(self):
+        major, minor = self._ssh_version
 
         # OpenSSH >= 8.6 supports explicitly using the SFTP protocol via -s
         if major == 8 and minor >= 6:

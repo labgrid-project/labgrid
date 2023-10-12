@@ -39,7 +39,7 @@ from .flashrom import Flashrom, NetworkFlashrom
 from .docker import DockerManager, DockerDaemon, DockerConstants
 from .lxaiobus import LXAIOBusPIO
 from .pyvisa import PyVISADevice
-from .provider import TFTPProvider
+from .provider import TFTPProvider, NFSProvider, HTTPProvider
 from .mqtt import TasmotaPowerPort
 from .httpvideostream import HTTPVideoStream
 from .dediprogflasher import DediprogFlasher, NetworkDediprogFlasher

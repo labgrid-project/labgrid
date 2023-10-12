@@ -10,9 +10,6 @@ from ..util.managedfile import ManagedFile
 
 @attr.s(eq=False)
 class BaseProviderDriver(Driver):
-    def __attrs_post_init__(self):
-        super().__attrs_post_init__()
-
     @Driver.check_bound
     def get_export_vars(self):
         return {
@@ -41,12 +38,39 @@ class TFTPProviderDriver(BaseProviderDriver):
     }
 
 
+@attr.s
+class NFSFile:
+    host = attr.ib(validator=attr.validators.instance_of(str))
+    export = attr.ib(validator=attr.validators.instance_of(str))
+    relative_file_path = attr.ib(validator=attr.validators.instance_of(str))
+
+
 @target_factory.reg_driver
 @attr.s(eq=False)
-class NFSPProviderDriver(BaseProviderDriver):
+class NFSProviderDriver(Driver):
     bindings = {
         "provider": {"NFSProvider", "RemoteNFSProvider"},
     }
+
+    @Driver.check_bound
+    def get_export_vars(self):
+        return {
+            "host": self.provider.host,
+        }
+
+    @Driver.check_active
+    @step(args=['filename'], result=True)
+    def stage(self, filename):
+        # always copy the file to he user cache path:
+        # locally available files might not be NFS-exported
+        mf = ManagedFile(filename, self.provider, detect_nfs=False)
+        mf.sync_to_resource()
+        mf.get_remote_path()
+
+        # assuming /var/cache/labgrid is NFS-exported, return required information for mounting and
+        # file access
+        relate_file_path = os.path.join(mf.get_hash(), os.path.basename(mf.local_path))
+        return NFSFile(self.provider.host, mf.get_user_cache_path(), relate_file_path)
 
 
 @target_factory.reg_driver

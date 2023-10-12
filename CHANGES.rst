@@ -64,6 +64,12 @@ Breaking changes in 23.1
 - The `BareboxDriver` now remembers the log level, sets it to ``0`` on initial
   activation/reset and recovers it on ``boot()``. During
   ``run()``/``run_check()`` the initially detected log level is used.
+- The `NFSProviderDriver` now returns mount and path information on ``stage()``
+  instead of the path to be used on the target. The previous return value did
+  not fit the NFS mount use case.
+- The `NFSProvider` and `RemoteNFSProvider` resources no longer expect the
+  ``internal`` and ``external`` arguments as they do not fit the NFS mount use
+  case.
 
 Known issues in 23.1
 ~~~~~~~~~~~~~~~~~~~~

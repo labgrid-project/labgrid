@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+from functools import cached_property
 
 import attr
 
@@ -34,6 +35,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     stderr_merge = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     connection_timeout = attr.ib(default=float(get_ssh_connect_timeout()), validator=attr.validators.instance_of(float))
     explicit_sftp_mode = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    explicit_scp_mode = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -360,6 +362,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         
         if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
             complete_cmd.insert(1, "-s")
+        if self.explicit_scp_mode and self._scp_supports_explicit_scp_mode():
+            complete_cmd.insert(1, "-O")
 
         self.logger.info("Running command: %s", complete_cmd)
         sub = subprocess.Popen(
@@ -432,10 +436,14 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """The SSHDriver is always connected, return 1"""
         return 1
 
-    def _scp_supports_explicit_sftp_mode(self):
+    @cached_property
+    def _ssh_version(self):
         version = subprocess.run(["ssh", "-V"], capture_output=True, text=True)
         version = re.match(r"^OpenSSH_(\d+)\.(\d+)", version.stderr)
-        major, minor = map(int, version.groups())
+        return map(int, version.groups())
+
+    def _scp_supports_explicit_sftp_mode(self):
+        major, minor = self._ssh_version
 
         # OpenSSH >= 8.6 supports explicitly using the SFTP protocol via -s
         if major == 8 and minor >= 6:
@@ -444,6 +452,14 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if major >= 9:
             return False
         raise Exception(f"OpenSSH version {major}.{minor} does not support explicit SFTP mode")
+
+    def _scp_supports_explicit_scp_mode(self):
+        major, minor = self._ssh_version
+
+        # OpenSSH >= 9.0 default to the SFTP protocol
+        if major >= 9:
+            return True
+        raise Exception(f"OpenSSH version {major}.{minor} does not support explicit SCP mode")
 
     @Driver.check_active
     @step(args=['filename', 'remotepath'])
@@ -459,6 +475,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
             transfer_cmd.insert(1, "-s")
+        if self.explicit_scp_mode and self._scp_supports_explicit_scp_mode():
+            transfer_cmd.insert(1, "-O")
 
         try:
             sub = subprocess.call(
@@ -487,6 +505,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
             transfer_cmd.insert(1, "-s")
+        if self.explicit_scp_mode and self._scp_supports_explicit_scp_mode():
+            transfer_cmd.insert(1, "-O")
 
         try:
             sub = subprocess.call(

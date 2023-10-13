@@ -813,6 +813,10 @@ class ClientSession(ApplicationSession):
         # use zero timeout to prevent blocking sleeps
         target.await_resources([resource], timeout=0.0)
 
+        if not place.acquired:
+            print("place released")
+            return 255
+
         host, port = proxymanager.get_host_and_port(resource)
 
         # check for valid resources
@@ -856,11 +860,14 @@ class ClientSession(ApplicationSession):
         while True:
             res = await self._console(place, target, 10.0, logfile=self.args.logfile,
                                       loop=self.args.loop, listen_only=self.args.listenonly)
-            if res:
-                exc = InteractiveCommandError("microcom error")
-                exc.exitcode = res
-                raise exc
+            # place released
+            if res == 255:
+                break
             if not self.args.loop:
+                if res:
+                    exc = InteractiveCommandError("microcom error")
+                    exc.exitcode = res
+                    raise exc
                 break
             await asyncio.sleep(1.0)
     console.needs_target = True

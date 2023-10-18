@@ -357,6 +357,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         complete_cmd = ["scp",
                 "-F", "none",
                 "-o", f"ControlPath={self.control.replace('%', '%%')}",
+                "-v",
                 src, dst,
         ]
         
@@ -366,10 +367,11 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             complete_cmd.insert(1, "-O")
 
         self.logger.info("Running command: %s", complete_cmd)
-        sub = subprocess.Popen(
-            complete_cmd,
-        )
-        return sub.wait()
+        result = subprocess.run(complete_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        stdout = result.stdout.split(b"\n")
+        for line in stdout:
+            self.logger.info("scp: %s", line.rstrip().decode(encoding="utf-8", errors="replace"))
+        return result.returncode
 
     @Driver.check_active
     @step(args=['src', 'dst', 'extra'])
@@ -469,6 +471,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             *self.ssh_prefix,
             "-P", str(self.networkservice.port),
             "-r",
+            "-v",
             filename,
             f"{self.networkservice.username}@{self.networkservice.address}:{remotepath}"
             ]
@@ -479,14 +482,16 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             transfer_cmd.insert(1, "-O")
 
         try:
-            sub = subprocess.call(
-                transfer_cmd
-            )  #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except:
-            raise ExecutionError(
-                f"error executing command: {transfer_cmd}"
+            subprocess.run(
+                transfer_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=True
             )
-        if sub != 0:
+        except subprocess.CalledProcessError as e:
+            stdout = e.stdout.split(b"\n")
+            for line in stdout:
+                self.logger.warning("scp: %s", line.rstrip().decode(encoding="utf-8", errors="replace"))
             raise ExecutionError(
                 f"error executing command: {transfer_cmd}"
             )
@@ -499,6 +504,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             *self.ssh_prefix,
             "-P", str(self.networkservice.port),
             "-r",
+            "-v",
             f"{self.networkservice.username}@{self.networkservice.address}:{filename}",
             destination
             ]
@@ -509,14 +515,16 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             transfer_cmd.insert(1, "-O")
 
         try:
-            sub = subprocess.call(
-                transfer_cmd
-            )  #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except:
-            raise ExecutionError(
-                f"error executing command: {transfer_cmd}"
+            subprocess.run(
+                transfer_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=True
             )
-        if sub != 0:
+        except subprocess.CalledProcessError as e:
+            stdout = e.stdout.split(b"\n")
+            for line in stdout:
+                self.logger.warning("scp: %s", line.rstrip().decode(encoding="utf-8", errors="replace"))
             raise ExecutionError(
                 f"error executing command: {transfer_cmd}"
             )

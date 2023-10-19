@@ -5,6 +5,7 @@ import textwrap
 import time
 
 from .udev import (
+    USBCANPort,
     USBSerialPort,
     USBMassStorage,
     USBTMC,
@@ -39,6 +40,7 @@ class Suggester:
             'suggest': self.suggest_callback,
         }
 
+        self.resources.append(USBCANPort(**args))
         self.resources.append(USBSerialPort(**args))
         self.resources.append(USBTMC(**args))
         self.resources.append(USBVideo(**args))

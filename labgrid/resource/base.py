@@ -15,6 +15,18 @@ class SerialPort(Resource):
     speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))
 
 
+@attr.s(eq=False)
+class CANPort(Resource):
+    """The basic CANPort describes interface name and speed
+
+    Args:
+        ifname (str): name of the interface
+        speed (int): speed of the port in bps, defaults to 250000
+    """
+    ifname = attr.ib(default=None)
+    speed = attr.ib(default=250000, validator=attr.validators.instance_of(int))
+
+
 @target_factory.reg_resource
 @attr.s(eq=False)
 class NetworkInterface(Resource):

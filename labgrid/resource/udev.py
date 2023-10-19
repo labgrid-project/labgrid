@@ -8,7 +8,7 @@ import attr
 
 from ..factory import target_factory
 from .common import ManagedResource, ResourceManager
-from .base import SerialPort, NetworkInterface
+from .base import CANPort, SerialPort, NetworkInterface
 from ..util import Timeout
 
 
@@ -247,6 +247,27 @@ class USBSerialPort(USBResource, SerialPort):
             self.port = self.device.device_node
         else:
             self.port = None
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class USBCANPort(USBResource, CANPort):
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'net'
+        self.match['@SUBSYSTEM'] = 'usb'
+        self.match['type'] = '280' # == ARPHRD_CAN
+        if self.ifname:
+            warnings.warn(
+                "USBCANPort: The ifname attribute will be overwritten by udev.\n"
+                "Please use udev matching as described in http://labgrid.readthedocs.io/en/latest/configuration.html#udev-matching"  # pylint: disable=line-too-long
+            )
+        super().__attrs_post_init__()
+
+    def update(self):
+        super().update()
+        if self.device is not None:
+            self.ifname = self.device.properties.get('INTERFACE')
+        else:
+            self.ifname = None
 
 @target_factory.reg_resource
 @attr.s(eq=False)

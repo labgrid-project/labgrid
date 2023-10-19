@@ -361,6 +361,12 @@ class USBNetworkInterface(USBResource, NetworkInterface):
             )
         super().__attrs_post_init__()
 
+    def filter_match(self, device):
+        # Filter CAN devices (280 == ARPHRD_CAN)
+        if device.attributes.get('type') and device.attributes.asint('type') == 280:
+            return False
+        return super().filter_match(device)
+
     def update(self):
         super().update()
         if self.device is not None:

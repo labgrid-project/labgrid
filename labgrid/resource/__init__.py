@@ -1,4 +1,5 @@
-from .base import SerialPort, NetworkInterface, EthernetPort, SysfsGPIO
+from .base import CANPort, SerialPort, NetworkInterface, EthernetPort, SysfsGPIO
+from .canport import RawCANPort
 from .ethernetport import SNMPEthernetPort
 from .serialport import RawSerialPort, NetworkSerialPort
 from .modbus import ModbusTCPCoil
@@ -22,6 +23,7 @@ from .udev import (
     SigrokUSBDevice,
     SigrokUSBSerialDevice,
     USBAudioInput,
+    USBCANPort,
     USBDebugger,
     USBFlashableDevice,
     USBMassStorage,

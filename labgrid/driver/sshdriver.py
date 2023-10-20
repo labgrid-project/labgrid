@@ -138,8 +138,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         try:
             subprocess_timeout = timeout + 5
-            stdout, _ = self.process.communicate(timeout=subprocess_timeout)
-            if self.process.returncode != 0:
+            return_value = self.process.wait(timeout=subprocess_timeout)
+            if return_value != 0:
+                stdout, _ = self.process.communicate(timeout=subprocess_timeout)
                 stdout = stdout.split(b"\n")
                 for line in stdout:
                     self.logger.warning("ssh: %s", line.rstrip().decode(encoding="utf-8", errors="replace"))
@@ -156,14 +157,12 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                     pass
 
                 raise ExecutionError(
-                    f"Failed to connect to {self.networkservice.address} with {' '.join(args)}: return code {self.process.returncode}",  # pylint: disable=line-too-long
+                    f"Failed to connect to {self.networkservice.address} with {' '.join(args)}: return code {return_value}",  # pylint: disable=line-too-long
                     stdout=stdout,
                 )
         except subprocess.TimeoutExpired:
-            self.process.kill()
-            stdout, _ = self.process.communicate()
             raise ExecutionError(
-                f"Subprocess timed out [{subprocess_timeout}s] while executing {args}: {stdout}",
+                f"Subprocess timed out [{subprocess_timeout}s] while executing {args}",
             )
         finally:
             if self.networkservice.password and os.path.exists(pass_file):

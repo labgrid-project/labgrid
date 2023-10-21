@@ -22,7 +22,7 @@ has_docker() {
 }
 
 has_podman() {
-    command -v podman /dev/null 2>&1
+    command -v podman >/dev/null 2>&1
 }
 
 has_buildx() {

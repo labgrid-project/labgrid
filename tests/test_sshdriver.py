@@ -17,8 +17,6 @@ def ssh_driver_mocked_and_activated(target, mocker):
     instance_mock = mocker.MagicMock()
     popen.return_value = instance_mock
     instance_mock.wait = mocker.MagicMock(return_value=0)
-    instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
-    instance_mock.returncode = 0
     SSHDriver(target, "ssh")
     s = target.get_driver("SSHDriver")
     return s
@@ -37,8 +35,6 @@ def test_create(target, mocker):
     instance_mock = mocker.MagicMock()
     popen.return_value = instance_mock
     instance_mock.wait = mocker.MagicMock(return_value=0)
-    instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
-    instance_mock.returncode = 0
     s = SSHDriver(target, "ssh")
     assert isinstance(s, SSHDriver)
 

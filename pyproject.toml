@@ -140,6 +140,7 @@ dev = [
     "pytest-dependency==0.5.1",
     "pytest-isort==2.0.0",
     "pytest-mock==3.6.1",
+    "pylint==2.17.7",
     "pytest-pylint==0.18.0",
 ]
 

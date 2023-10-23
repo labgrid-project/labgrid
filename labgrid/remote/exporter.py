@@ -917,6 +917,12 @@ def main():
         help='hostname (or IP) published for accessing resources (defaults to the system hostname)'
     )
     parser.add_argument(
+        '--fqdn',
+        action='store_true',
+        default=False,
+        help='Use fully qualified domain name as default for hostname'
+    )
+    parser.add_argument(
         '-d',
         '--debug',
         action='store_true',
@@ -943,7 +949,7 @@ def main():
 
     extra = {
         'name': args.name or gethostname(),
-        'hostname': args.hostname or gethostname(),
+        'hostname': args.hostname or getfqdn() if args.fqdn else gethostname(),
         'resources': args.resources,
         'isolated': args.isolated
     }

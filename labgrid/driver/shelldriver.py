@@ -32,8 +32,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     Args:
         prompt (regex): the shell prompt to detect
         login_prompt (regex): the login prompt to detect
-        username (str): username to login with
-        password (str): password to login with
+        username (str,list): username(s) to login with
+        password (str,list): password(s) to login with
         keyfile (str): keyfile to bind mount over users authorized keys
         login_timeout (int): optional, timeout for login prompt detection
         console_ready (regex): optional, pattern used by the kernel to inform the user that a
@@ -47,8 +47,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(validator=attr.validators.instance_of(str))
     login_prompt = attr.ib(validator=attr.validators.instance_of(str))
-    username = attr.ib(validator=attr.validators.instance_of(str))
-    password = attr.ib(default="", validator=attr.validators.instance_of(str))
+    username = attr.ib(validator=attr.validators.instance_of((str,list)))
+    password = attr.ib(default="", validator=attr.validators.instance_of((str,list)))
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
     console_ready = attr.ib(default="", validator=attr.validators.instance_of(str))
@@ -128,6 +128,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         last_before = b''
         did_login = False
         did_silence_kernel = False
+        attempt = 0
 
         while True:
             index, before, _, _ = self.console.expect(
@@ -148,12 +149,20 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
             elif index == 1:
                 # we need to login
-                self.console.sendline(self.username)
+                if isinstance(self.username, list):
+                    username = self.username[attempt % len(self.username)]
+                else:
+                    username = self.username
+                self.console.sendline(username)
                 did_login = True
 
             elif index == 2:
                 if self.password:
-                    self.console.sendline(self.password)
+                    if isinstance(self.password, list):
+                        password = self.password[attempt % len(self.password)]
+                    else:
+                        password = self.password
+                    self.console.sendline(password)
                 else:
                     raise Exception("Password entry needed but no password set")
 
@@ -165,6 +174,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                     # let's assume the target is idle and we can safely issue a
                     # newline to check the state
                     self.console.sendline("")
+                attempt += 1
 
             elif index == 4:
                 # we have just activated a console here

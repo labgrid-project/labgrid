@@ -24,6 +24,17 @@ class TestShellDriver:
         res = d.run("test")
         assert res == (['success'], [], 0)
 
+    def test_run_list(self, target_with_fakeconsole, mocker):
+        t = target_with_fakeconsole
+        d = ShellDriver(t, "shell", prompt='dummy', login_prompt='dummy', username=['error','dummy'])
+        d.on_activate = mocker.MagicMock()
+        d = t.get_driver('ShellDriver')
+        d._run = mocker.MagicMock(return_value=(['success'], [], 0))
+        res = d.run_check("test")
+        assert res == ['success']
+        res = d.run("test")
+        assert res == (['success'], [], 0)
+
     def test_run_error(self, target_with_fakeconsole, mocker):
         t = target_with_fakeconsole
         d = ShellDriver(t, "shell", prompt='dummy', login_prompt='dummy', username='dummy')

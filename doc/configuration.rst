@@ -544,8 +544,8 @@ These and the sudo configuration needs to be prepared by the administrator.
 
 Arguments:
   - address (str): hostname of the remote system
-  - username (str): username used by SSH
-  - password (str, default=""): password used by SSH
+  - username (str or list): username(s) used by SSH
+  - password (str or list, default=""): password(s) used by SSH
   - port (int, default=22): port used by SSH
 
 Used by:

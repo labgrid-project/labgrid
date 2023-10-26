@@ -36,6 +36,8 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     connection_timeout = attr.ib(default=float(get_ssh_connect_timeout()), validator=attr.validators.instance_of(float))
     explicit_sftp_mode = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     explicit_scp_mode = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    username = attr.ib(default="", validator=attr.validators.instance_of(str))
+    password = attr.ib(default="", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -75,6 +77,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """Starts a controlmaster connection in a temporary directory."""
 
         timeout = Timeout(self.connection_timeout)
+        attempt = 0
 
         # Retry start of controlmaster, to allow handle failures such as
         # connection refused during target startup
@@ -83,15 +86,25 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             if connect_timeout == 0:
                 raise Exception("Timeout while waiting for ssh connection")
             try:
-                return self._start_own_master_once(connect_timeout)
+                return self._start_own_master_once(connect_timeout, attempt)
             except ExecutionError as e:
                 if timeout.expired:
                     raise e
                 time.sleep(0.5)
                 connect_timeout = round(timeout.remaining)
+                attempt += 1
 
-    def _start_own_master_once(self, timeout):
+    def _start_own_master_once(self, timeout, attempt):
 
+        if isinstance(self.networkservice.username, list):
+            self.username = self.networkservice.username[attempt % len(self.networkservice.username)]
+        else:
+            self.username = self.networkservice.username
+        if self.networkservice.password:
+            if isinstance(self.networkservice.password, list):
+                self.password = self.networkservice.password[attempt % len(self.networkservice.password)]
+            else:
+                self.password = self.networkservice.password
         self.tmpdir = tempfile.mkdtemp(prefix='lg-ssh-')
         control = os.path.join(
             self.tmpdir, f'control-{self.networkservice.address}'
@@ -101,7 +114,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                  "-o", "ControlPersist=300", "-o",
                  "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
                  "-o", "ServerAliveInterval=15", "-MN", "-S", control.replace('%', '%%'), "-p",
-                 str(self.networkservice.port), "-l", self.networkservice.username,
+                 str(self.networkservice.port), "-l", self.username,
                  self.networkservice.address]
 
         # proxy via the exporter if we have an ifname suffix
@@ -128,7 +141,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             #openssh<8.4 requires the DISPLAY var and a detached process with start_new_session=True
             env = {'SSH_ASKPASS': pass_file, 'DISPLAY':'', 'SSH_ASKPASS_REQUIRE':'force'}
             with open(fd, 'w') as f:
-                f.write("#!/bin/sh\necho " + shlex.quote(self.networkservice.password))
+                f.write("#!/bin/sh\necho " + shlex.quote(self.password))
 
         self.process = subprocess.Popen(args, env=env,
                                         stdout=subprocess.PIPE,
@@ -196,7 +209,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             raise ExecutionError("Keepalive no longer running")
 
         complete_cmd = ["ssh", "-x", *self.ssh_prefix,
-                        "-p", str(self.networkservice.port), "-l", self.networkservice.username,
+                        "-p", str(self.networkservice.port), "-l", self.username,
                         self.networkservice.address
                         ] + cmd.split(" ")
         self.logger.debug("Sending command: %s", complete_cmd)
@@ -469,7 +482,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             "-P", str(self.networkservice.port),
             "-r",
             filename,
-            f"{self.networkservice.username}@{self.networkservice.address}:{remotepath}"
+            f"{self.username}@{self.networkservice.address}:{remotepath}"
             ]
 
         if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
@@ -498,7 +511,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             *self.ssh_prefix,
             "-P", str(self.networkservice.port),
             "-r",
-            f"{self.networkservice.username}@{self.networkservice.address}:{filename}",
+            f"{self.username}@{self.networkservice.address}:{filename}",
             destination
             ]
 
@@ -522,7 +535,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _cleanup_own_master(self):
         """Exit the controlmaster and delete the tmpdir"""
-        complete_cmd = f"ssh -x -o ControlPath={self.control.replace('%', '%%')} -O exit -p {self.networkservice.port} -l {self.networkservice.username} {self.networkservice.address}".split(' ')  # pylint: disable=line-too-long
+        complete_cmd = f"ssh -x -o ControlPath={self.control.replace('%', '%%')} -O exit -p {self.networkservice.port} -l {self.username} {self.networkservice.address}".split(' ')  # pylint: disable=line-too-long
         res = subprocess.call(
             complete_cmd,
             stdin=subprocess.DEVNULL,

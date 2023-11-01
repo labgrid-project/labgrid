@@ -18,7 +18,7 @@ class PyVISADriver(Driver):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         _py_pyvisa_module = import_module('pyvisa')
-        self._pyvisa_resource_manager = _py_pyvisa_module.ResourceManager()
+        self._pyvisa_resource_manager = _py_pyvisa_module.ResourceManager(self.pyvisa_resource.backend)
         self.pyvisa_device = None
 
     def on_activate(self):

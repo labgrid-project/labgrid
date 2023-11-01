@@ -1160,6 +1160,7 @@ Arguments:
     ASRL, TCPIP...
   - url (str): device identifier on selected resource, e.g. <ip> for TCPIP
     resource
+  - backend (str): Visa library backend, e.g. '@sim' for pyvisa-sim backend
 
 Used by:
   - `PyVISADriver`_

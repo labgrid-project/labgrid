@@ -1,3 +1,13 @@
+Release 23.0.4 (Released Nov 10, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.4
+~~~~~~~~~~~~~~~~~~~
+- Fix dockerfiles syntax error that became fatal in a recent docker release.
+- Fix ShellDriver's xmodem functionality.
+- Pin pylint to prevent incompatibility with pinned pytest-pylint.
+- Fix ``labgrid-client console --loop`` on disappearing serial ports (such as
+  on-board FTDIs).
 
 Release 23.0.3 (Released Jul 20, 2023)
 --------------------------------------

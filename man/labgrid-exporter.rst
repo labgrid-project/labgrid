@@ -46,6 +46,8 @@ OPTIONS
     the public name of the exporter
 --hostname
     hostname (or IP) published for accessing resources
+--fqdn
+    use fully qualified domain name as default for hostname
 -d, --debug
     enable debug mode
 
@@ -72,6 +74,12 @@ exporter needs to provide a host name to set the exported value of the "host"
 key.
 If the system hostname is not resolvable via DNS, this option can be used to
 override this default with another name (or an IP address).
+
+--fqdn
+~~~~~~
+In some networks the fully qualified domain name may be needed to reach resources
+on an exporter. This option changes the default to fqdn when no --hostname is
+explicitly set.
 
 CONFIGURATION
 -------------

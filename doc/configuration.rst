@@ -2483,6 +2483,7 @@ Arguments:
   - boot_args (str): optional, additional kernel boot argument
   - kernel (str): optional, reference to the images key for the kernel
   - disk (str): optional, reference to the images key for the disk image
+  - disk_opts (str): optional, additional QEMU disk options
   - flash (str): optional, reference to the images key for the flash image
   - rootfs (str): optional, reference to the paths key for use as the virtio-9p filesystem
   - dtb (str): optional, reference to the image key for the device tree

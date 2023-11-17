@@ -10,6 +10,8 @@ New Features in 23.1
 - A new log level called ``CONSOLE`` has been added between the default
   ``INFO`` and ``DEBUG`` levels. This level will show all reads and writes made
   to the serial console during testing.
+- The `QEMUDriver` now has an additional ``disk_opts`` property which can be
+  used to pass additional options for the disk directly to QEMU
 
 Bug fixes in 23.1
 ~~~~~~~~~~~~~~~~~

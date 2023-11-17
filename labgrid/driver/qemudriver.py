@@ -40,6 +40,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         boot_args (str): optional, additional kernel boot argument
         kernel (str): optional, reference to the images key for the kernel
         disk (str): optional, reference to the images key for the disk image
+        disk_opts (str): optional, additional QEMU disk options
         flash (str): optional, reference to the images key for the flash image
         rootfs (str): optional, reference to the paths key for use as the virtio-9p filesystem
         dtb (str): optional, reference to the image key for the device tree
@@ -62,6 +63,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
     disk = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
+    disk_opts = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
     rootfs = attr.ib(
@@ -146,20 +150,23 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             disk_format = "raw"
             if disk_path.endswith(".qcow2"):
                 disk_format = "qcow2"
+            disk_opts = ""
+            if self.disk_opts:
+                disk_opts = f",{self.disk_opts}"
             if self.machine == "vexpress-a9":
                 cmd.append("-drive")
                 cmd.append(
-                    f"if=sd,format={disk_format},file={disk_path},id=mmc0")
+                    f"if=sd,format={disk_format},file={disk_path},id=mmc0{disk_opts}")
                 boot_args.append("root=/dev/mmcblk0p1 rootfstype=ext4 rootwait")
             elif self.machine == "q35":
                 cmd.append("-drive")
                 cmd.append(
-                    f"if=virtio,format={disk_format},file={disk_path}")
+                    f"if=virtio,format={disk_format},file={disk_path}{disk_opts}")
                 boot_args.append("root=/dev/vda rootwait")
             elif self.machine == "pc":
                 cmd.append("-drive")
                 cmd.append(
-                    f"if=virtio,format={disk_format},file={disk_path}")
+                    f"if=virtio,format={disk_format},file={disk_path}{disk_opts}")
                 boot_args.append("root=/dev/vda rootwait")
             else:
                 raise NotImplementedError(

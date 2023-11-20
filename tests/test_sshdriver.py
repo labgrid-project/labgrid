@@ -40,21 +40,23 @@ def test_create(target, mocker):
     s = SSHDriver(target, "ssh")
     assert isinstance(s, SSHDriver)
 
-def test_run_check(ssh_driver_mocked_and_activated, mocker):
+def test_run_check(target, ssh_driver_mocked_and_activated, mocker):
     s = ssh_driver_mocked_and_activated
     s._run = mocker.MagicMock(return_value=(['success'], [], 0))
     res = s.run_check("test")
     assert res == ['success']
     res = s.run("test")
     assert res == (['success'], [], 0)
+    target.deactivate(s)
 
-def test_run_check_raise(ssh_driver_mocked_and_activated, mocker):
+def test_run_check_raise(target, ssh_driver_mocked_and_activated, mocker):
     s = ssh_driver_mocked_and_activated
     s._run = mocker.MagicMock(return_value=(['error'], [], 1))
     with pytest.raises(ExecutionError):
         res = s.run_check("test")
     res = s.run("test")
     assert res == (['error'], [], 1)
+    target.deactivate(s)
 
 @pytest.fixture(scope='function')
 def ssh_localhost(target, pytestconfig):

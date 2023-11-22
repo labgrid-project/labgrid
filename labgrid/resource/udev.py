@@ -710,3 +710,19 @@ class USBDebugger(USBResource):
             return False
 
         return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class JLinkDevice(USBResource):
+    """The JLinkDevice describes an attached Segger J-Link device,
+    it is identified via USB using udev
+    """
+
+    def __attrs_post_init__(self):
+        self.match["ID_VENDOR_ID"] = "1366"
+        self.match["ID_MODEL_ID"] = "0101"
+        super().__attrs_post_init__()
+
+    def update(self):
+        super().update()
+        self.serial = self.device.properties.get('ID_SERIAL_SHORT')

@@ -23,6 +23,7 @@ from .udev import (
     HIDRelay,
     USBDebugger,
     USBPowerPort,
+    JLinkDevice,
 )
 from ..util import dump
 
@@ -56,6 +57,7 @@ class Suggester:
         self.resources.append(HIDRelay(**args))
         self.resources.append(USBDebugger(**args))
         self.resources.append(USBPowerPort(**args, index=0))
+        self.resources.append(JLinkDevice(**args))
 
     def suggest_callback(self, resource, meta, suggestions):
         cls = type(resource).__name__

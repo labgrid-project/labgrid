@@ -17,6 +17,7 @@ def ssh_driver_mocked_and_activated(target, mocker):
     instance_mock = mocker.MagicMock()
     popen.return_value = instance_mock
     instance_mock.wait = mocker.MagicMock(return_value=0)
+    instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
     SSHDriver(target, "ssh")
     s = target.get_driver("SSHDriver")
     return s
@@ -35,24 +36,27 @@ def test_create(target, mocker):
     instance_mock = mocker.MagicMock()
     popen.return_value = instance_mock
     instance_mock.wait = mocker.MagicMock(return_value=0)
+    instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
     s = SSHDriver(target, "ssh")
     assert isinstance(s, SSHDriver)
 
-def test_run_check(ssh_driver_mocked_and_activated, mocker):
+def test_run_check(target, ssh_driver_mocked_and_activated, mocker):
     s = ssh_driver_mocked_and_activated
     s._run = mocker.MagicMock(return_value=(['success'], [], 0))
     res = s.run_check("test")
     assert res == ['success']
     res = s.run("test")
     assert res == (['success'], [], 0)
+    target.deactivate(s)
 
-def test_run_check_raise(ssh_driver_mocked_and_activated, mocker):
+def test_run_check_raise(target, ssh_driver_mocked_and_activated, mocker):
     s = ssh_driver_mocked_and_activated
     s._run = mocker.MagicMock(return_value=(['error'], [], 1))
     with pytest.raises(ExecutionError):
         res = s.run_check("test")
     res = s.run("test")
     assert res == (['error'], [], 1)
+    target.deactivate(s)
 
 @pytest.fixture(scope='function')
 def ssh_localhost(target, pytestconfig):

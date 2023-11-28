@@ -17,7 +17,8 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt install -yq python3-pip
-        python3 -m pip install setuptools_scm
+        pip install --upgrade setuptools
+        pip install setuptools_scm
     - name: Build docker images
       run: |
         ./dockerfiles/build.sh

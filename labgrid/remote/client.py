@@ -1355,13 +1355,16 @@ def start_session(url, realm, extra):
     return session[0]
 
 def find_role_by_place(config, place):
+    token_role = None
     for role, role_config in config.items():
         resources, _ = target_factory.normalize_config(role_config)
         remote_places = resources.get('RemotePlace', {})
         remote_place = remote_places.get(place)
         if remote_place:
             return role
-    return None
+        if any(remote_place.startswith('+') for remote_place in remote_places.keys()):
+            token_role = role
+    return token_role
 
 def find_any_role_with_place(config):
     for role, role_config in config.items():

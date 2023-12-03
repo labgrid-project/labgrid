@@ -33,8 +33,6 @@ from ..util.helper import processwrapper
 from ..driver import Mode, ExecutionError
 from ..logging import basicConfig, StepLogger
 
-txaio.config.loop = asyncio.get_event_loop()  # pylint: disable=no-member
-
 
 class Error(Exception):
     pass
@@ -1315,7 +1313,10 @@ class ClientSession(ApplicationSession):
 def start_session(url, realm, extra):
     from autobahn.asyncio.wamp import ApplicationRunner
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    txaio.config.loop = loop  # pylint: disable=no-member
+
     ready = asyncio.Event()
 
     async def connected(session):  # pylint: disable=unused-argument

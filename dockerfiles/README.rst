@@ -22,7 +22,7 @@ Example showing how to build labgrid-client image:
 
 .. code-block:: bash
 
-   $ docker build --target labgrid-client -t labgrid-client -f dockerfiles/Dockerfile .
+   $ docker build --target labgrid-client -t docker.io/labgrid/client -f dockerfiles/Dockerfile .
 
 Using `BuildKit <https://docs.docker.com/develop/develop-images/build_enhancements/>`_
 is recommended to reduce build times.
@@ -76,7 +76,7 @@ so you can restart the service without loosing state.
 .. code-block:: bash
 
    $ docker run -t -p 20408:20408 -v $HOME/crossbar:/opt/crossbar \
-	 labgrid-coordinator
+	 docker.io/labgrid/coordinator
 
 
 labgrid-client usage
@@ -89,14 +89,14 @@ ws://192.168.1.42:20408/ws
 
 .. code-block:: bash
 
-   $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws labgrid-client \
+   $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws docker.io/labgrid/client \
 	 labgrid-client places
 
 Or running all pytest/labgrid tests at current directory:
 
 .. code-block:: bash
 
-   $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws labgrid-client \
+   $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws docker.io/labgrid/client \
 	 pytest
 
 
@@ -115,7 +115,7 @@ Start it with something like:
 
    $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws \
        -v $HOME/exporter-conf:/opt/conf \
-	 labgrid-exporter
+	 docker.io/labgrid/exporter
 
 If using ser2net or if "exporting" e.g. a serial device, the devices needed must be added to Docker container
 (``docker run --device`` option).
@@ -135,14 +135,8 @@ create a setup with the following instances
 The environment serves both to allow checking if the environment still function after changes, and can act as an example
 how to configure the docker images needed to run a minimal setup.
 
-To use the staging environment to conduct a smoke test first build the images as instructed below:
-
-.. code-block:: bash
-
-   $ pip install --upgrade setuptools_scm
-   $ ./dockerfiles/build.sh
-
-Then use docker compose to start all services except the client:
+To use the staging environment to conduct a smoke test, first run docker compose to start all services except the
+client:
 
 .. code-block:: bash
 

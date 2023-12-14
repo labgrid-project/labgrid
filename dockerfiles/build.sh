@@ -1,6 +1,8 @@
 #!/bin/bash
 
 export DOCKER_BUILDKIT=1
+: "${IMAGE_PREFIX:=docker.io/labgrid/}"
+: "${IMAGE_TAG:=latest}"
 
 die () {
     local msg
@@ -59,7 +61,7 @@ perform_regular_build() {
 
     for t in client exporter coordinator; do
         "${docker_cmd}" build --build-arg VERSION="${version}" \
-            --target labgrid-${t} -t labgrid-${t}:latest -f "${script_dir}/Dockerfile" \
+            --target labgrid-${t} -t "${IMAGE_PREFIX}${t}:${IMAGE_TAG}" -f "${script_dir}/Dockerfile" \
             "${extra_args[@]}" .
     done
 }
@@ -73,7 +75,7 @@ perform_docker_buildx_build() {
 
     for t in client exporter coordinator; do
         "${docker_cmd}" buildx build --build-arg VERSION="${version}" \
-            --target labgrid-${t} -t labgrid-${t}:latest -f "${script_dir}/Dockerfile" \
+            --target labgrid-${t} -t "${IMAGE_PREFIX}${t}:${IMAGE_TAG}" -f "${script_dir}/Dockerfile" \
             "${extra_args[@]}" .
     done
 }

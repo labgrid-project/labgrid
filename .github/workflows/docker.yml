@@ -6,6 +6,11 @@ on:
     tags:
       - '*'
 
+env:
+    QEMU_PLATFORMS: arm64
+    IMAGE_PLATFORMS: linux/amd64,linux/arm64
+    IMAGE_PREFIX: ${{ secrets.DOCKERHUB_PREFIX }}
+
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -16,32 +21,27 @@ jobs:
         sudo apt install -yq python3-pip
         pip install --upgrade setuptools
         pip install setuptools_scm
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: ${QEMU_PLATFORMS}
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
     - name: Login to DockerHub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-    - name: Build docker image
+    - name: Build amd64 docker image and validate
       run: |
-        ./dockerfiles/build.sh
+        ./dockerfiles/build.sh --load
         docker-compose -f dockerfiles/staging/docker-compose.yml up --exit-code-from client client
         docker-compose -f dockerfiles/staging/docker-compose.yml down
         docker images
-    - name: Tag latest images
-      run: |
-        docker tag labgrid-client ${{ secrets.DOCKERHUB_PREFIX }}client
-        docker tag labgrid-exporter ${{ secrets.DOCKERHUB_PREFIX }}exporter
-        docker tag labgrid-coordinator ${{ secrets.DOCKERHUB_PREFIX }}coordinator
-    - name: Tag release image
+    - name: Build, tag and push latest image for all platforms
+      run: ./dockerfiles/build.sh --platform ${IMAGE_PLATFORMS} --push
+    - name: Tag and push release image for all platforms
       if: startsWith(github.ref, 'refs/tags')
-      run: |
-        docker tag labgrid-client ${{ secrets.DOCKERHUB_PREFIX }}client:${GITHUB_REF_NAME}
-        docker tag labgrid-exporter ${{ secrets.DOCKERHUB_PREFIX }}exporter:${GITHUB_REF_NAME}
-        docker tag labgrid-coordinator ${{ secrets.DOCKERHUB_PREFIX }}coordinator:${GITHUB_REF_NAME}
-    - name: Push to dockerhub
-      run: |
-        docker push --all-tags ${{ secrets.DOCKERHUB_PREFIX }}client
-        docker push --all-tags ${{ secrets.DOCKERHUB_PREFIX }}exporter
-        docker push --all-tags ${{ secrets.DOCKERHUB_PREFIX }}coordinator
-    - name: Show images again
-      run: docker images
+      env:
+        IMAGE_TAG: ${{ github.ref_name }}
+      run: ./dockerfiles/build.sh --platform ${IMAGE_PLATFORMS} --push

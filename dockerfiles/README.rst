@@ -27,8 +27,9 @@ Example showing how to build labgrid-client image:
 Using `BuildKit <https://docs.docker.com/develop/develop-images/build_enhancements/>`_
 is recommended to reduce build times.
 
-You can also choose to build all 3 images,
-with the included script.
+You can also choose to build all 3 images with the included script. The script
+will automatically use `docker buildx
+<https://docs.docker.com/engine/reference/commandline/buildx/>`` if available.
 
 .. code-block:: bash
 
@@ -43,15 +44,13 @@ The script supports ``podman`` as well.
    $ ./dockerfiles/build.sh
 
 It builds for the native platform by default. However, building
-for foreign platforms is also supported using `docker buildx
-<https://docs.docker.com/build/building/multi-platform/>` or `podman
-buildx <https://docs.podman.io/en/latest/markdown/podman-build.1.html>`
-by passing the platform of choice, e.g. `linux/arm64`.
+for foreign platforms is also supported by passing the platform(s) of choice,
+e.g. `linux/arm64` as an additional argument.
 
 .. code-block:: bash
 
    $ pip install --upgrade setuptools_scm
-   $ ./dockerfiles/build.sh linux/arm64
+   $ ./dockerfiles/build.sh --platform linux/arm64
 
 
 Usage

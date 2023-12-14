@@ -5,6 +5,9 @@ on:
     branches: [ master ]
     tags:
       - '*'
+  release:
+    types: [ released ]
+  workflow_dispatch:
 
 env:
     QEMU_PLATFORMS: arm64

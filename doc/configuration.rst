@@ -3555,6 +3555,8 @@ The skeleton for an environment consists of:
    imports:
      - <import.py>
      - <python module>
+   pythonpath:
+     - <absolute or relative path>
 
 If you have a single target in your environment, name it "main", as the
 ``get_target`` function defaults to "main".

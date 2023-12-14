@@ -1,3 +1,4 @@
+from pathlib import Path
 import pytest
 import warnings
 
@@ -80,6 +81,91 @@ imports:
         import myimport
         t = myimport.Test()
         assert (isinstance(t, myimport.Test))
+
+    def test_env_pythonpath_yaml_module(self, tmp_path: Path):
+        config = tmp_path / "configs" / "config.yaml"
+        config.parent.mkdir(parents=True, exist_ok=True)
+        config.write_text(f"""---
+pythonpath:
+  - ../modules
+imports:
+  - ../sample.py
+""")
+        sample_py = tmp_path / "sample.py"
+        sample_py.write_text("""
+from some_module import Foo
+from other_module import Bar
+
+Foo()
+Bar()
+""")
+        modules_dir = tmp_path / "modules"
+        modules_dir.mkdir(parents=True, exist_ok=True)
+
+        some_module = tmp_path / "modules" / "some_module.py"
+        some_module.write_text("""
+class Foo:
+    pass
+""")
+        other_module = tmp_path / "modules" / "other_module.py"
+        other_module.write_text("""
+class Bar:
+    pass
+""")
+        e = Environment(str(config))
+        assert isinstance(e, Environment)
+        import sys
+        assert 'some_module' in sys.modules
+        import some_module
+        f = some_module.Foo()
+        assert isinstance(f, some_module.Foo)
+
+    def test_env_pythonpath_yaml_package(self, tmp_path: Path):
+        config = tmp_path / "configs" / "config.yaml"
+        config.parent.mkdir(parents=True, exist_ok=True)
+        config.write_text(f"""---
+pythonpath:
+  - ../modules
+imports:
+  - ../sample.py
+""")
+        sample_py = tmp_path / "sample.py"
+        sample_py.write_text("""
+from mine import Foo
+from mine import Bar
+
+Foo()
+Bar()
+""")
+        modules_dir = tmp_path / "modules"
+        modules_dir.mkdir(parents=True, exist_ok=True)
+
+        mine_dir = modules_dir / "mine"
+        mine_dir.mkdir(parents=True, exist_ok=True)
+
+        mine_init = mine_dir / "__init__.py"
+        mine_init.write_text("""
+from .some_module import Foo
+from .other_module import Bar
+""")
+
+        some_module = tmp_path / "modules" / "mine" / "some_module.py"
+        some_module.write_text("""
+class Foo:
+    pass
+""")
+        other_module = tmp_path / "modules" / "mine" / "other_module.py"
+        other_module.write_text("""
+class Bar:
+    pass
+""")
+        e = Environment(str(config))
+        assert isinstance(e, Environment)
+        import sys
+        assert 'mine' in sys.modules
+        from mine import Foo
+        f = Foo()
+        assert isinstance(f, Foo)
 
     def test_create_named_resources(self, tmpdir):
         p = tmpdir.join("config.yaml")

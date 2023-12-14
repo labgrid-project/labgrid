@@ -1,5 +1,8 @@
-import os
 from typing import Optional
+from importlib.machinery import SourceFileLoader
+import importlib.util
+import os
+import sys
 import attr
 
 from .target import Target
@@ -19,11 +22,12 @@ class Environment:
 
         self.config = Config(self.config_file)
 
-        for user_import in self.config.get_imports():
-            import importlib.util
-            from importlib.machinery import SourceFileLoader
-            import sys
+        # we want configured paths to appear at the beginning of the
+        # PYTHONPATH, so they need to be inserted in reverse order
+        for user_pythonpath in reversed(self.config.get_pythonpath()):
+            sys.path.insert(0, user_pythonpath)
 
+        for user_import in self.config.get_imports():
             if user_import.endswith('.py'):
                 module_name = os.path.basename(user_import)[:-3]
                 loader = SourceFileLoader(module_name, user_import)

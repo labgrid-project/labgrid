@@ -168,6 +168,11 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 cmd.append(
                     f"if=virtio,format={disk_format},file={disk_path}{disk_opts}")
                 boot_args.append("root=/dev/vda rootwait")
+            elif self.machine == "virt":
+                cmd.append("-drive")
+                cmd.append(
+                    f"if=virtio,format={disk_format},file={disk_path}{disk_opts}")
+                boot_args.append("root=/dev/vda rootwait")
             else:
                 raise NotImplementedError(
                     f"QEMU disk image support not implemented for machine '{self.machine}'"

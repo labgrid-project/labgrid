@@ -47,7 +47,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     prompt = attr.ib(validator=attr.validators.instance_of(str))
     login_prompt = attr.ib(validator=attr.validators.instance_of(str))
     username = attr.ib(validator=attr.validators.instance_of(str))
-    password = attr.ib(default="", validator=attr.validators.instance_of(str))
+    password = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
     console_ready = attr.ib(default="", validator=attr.validators.instance_of(str))
@@ -150,7 +150,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 did_login = True
 
             elif index == 2:
-                if self.password:
+                if self.password is not None:
                     self.console.sendline(self.password)
                 else:
                     raise Exception("Password entry needed but no password set")

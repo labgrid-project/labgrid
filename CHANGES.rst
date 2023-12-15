@@ -29,6 +29,7 @@ Bug fixes in 23.1
   test run.
 - ManagedFile NFS detection heuristic now does symlink resolution on the
   local host.
+- The password for the ShellDriver can now be an empty string.
 
 Breaking changes in 23.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~

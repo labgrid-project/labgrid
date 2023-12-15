@@ -1,6 +1,4 @@
 """The U-Boot Module contains the UBootDriver"""
-import logging
-
 import attr
 from pexpect import TIMEOUT
 
@@ -48,7 +46,6 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
 
         if self.boot_expression:

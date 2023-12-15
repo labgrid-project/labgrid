@@ -1,4 +1,3 @@
-import logging
 import attr
 
 from ..factory import target_factory
@@ -26,10 +25,6 @@ class FlashScriptDriver(Driver):
         default=attr.Factory(list),
         validator=attr.validators.optional(attr.validators.instance_of(list)),
     )
-
-    def __attrs_post_init__(self):
-        super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}:{self.target}")
 
     def on_activate(self):
         pass

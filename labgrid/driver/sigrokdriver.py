@@ -1,4 +1,3 @@
-import logging
 import os.path
 import re
 import subprocess
@@ -37,7 +36,6 @@ class SigrokCommon(Driver):
             ) or 'sigrok-cli'
         else:
             self.tool = 'sigrok-cli'
-        self.log = logging.getLogger("SigrokDriver")
         self._running = False
 
     def _create_tmpdir(self):
@@ -46,26 +44,26 @@ class SigrokCommon(Driver):
             command = self.sigrok.command_prefix + [
                 'mkdir', '-p', self._tmpdir
             ]
-            self.log.debug("Tmpdir command: %s", command)
+            self.logger.debug("Tmpdir command: %s", command)
             subprocess.call(
                 command,
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-            self.log.debug("Created tmpdir: %s", self._tmpdir)
+            self.logger.debug("Created tmpdir: %s", self._tmpdir)
             self._local_tmpdir = tempfile.mkdtemp(prefix="labgrid-sigrok-")
-            self.log.debug("Created local tmpdir: %s", self._local_tmpdir)
+            self.logger.debug("Created local tmpdir: %s", self._local_tmpdir)
         else:
             self._tmpdir = tempfile.mkdtemp(prefix="labgrid-sigrok-")
-            self.log.debug("created tmpdir: %s", self._tmpdir)
+            self.logger.debug("created tmpdir: %s", self._tmpdir)
 
     def _delete_tmpdir(self):
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
             command = self.sigrok.command_prefix + [
                 'rm', '-r', self._tmpdir
             ]
-            self.log.debug("Tmpdir command: %s", command)
+            self.logger.debug("Tmpdir command: %s", command)
             subprocess.call(
                 command,
                 stdin=subprocess.DEVNULL,
@@ -98,7 +96,7 @@ class SigrokCommon(Driver):
     @step(title='call', args=['args'])
     def _call_with_driver(self, *args):
         combined = self._get_sigrok_prefix() + list(args)
-        self.log.debug("Combined command: %s", " ".join(combined))
+        self.logger.debug("Combined command: %s", " ".join(combined))
         self._process = subprocess.Popen(
             combined,
             stdout=subprocess.PIPE,
@@ -113,7 +111,7 @@ class SigrokCommon(Driver):
         if self.sigrok.channels:
             combined += ["-C", self.sigrok.channels]
         combined += list(args)
-        self.log.debug("Combined command: %s", combined)
+        self.logger.debug("Combined command: %s", combined)
         self._process = subprocess.Popen(
             combined,
             stdout=subprocess.PIPE,
@@ -138,7 +136,7 @@ class SigrokDriver(SigrokCommon):
     def capture(self, filename, samplerate="200k"):
         self._filename = filename
         self._basename = os.path.basename(self._filename)
-        self.log.debug(
+        self.logger.debug(
             "Saving to: %s with basename: %s", self._filename, self._basename
         )
         cmd = [
@@ -166,7 +164,7 @@ class SigrokDriver(SigrokCommon):
         self._process.send_signal(signal.SIGINT)
         stdout, stderr = self._process.communicate()
         self._process.wait()
-        self.log.debug("stdout:\n %s\n ----- \n stderr:\n %s", stdout, stderr)
+        self.logger.debug("stdout:\n %s\n ----- \n stderr:\n %s", stdout, stderr)
 
         # Convert from .sr to .csv
         cmd = [
@@ -177,7 +175,7 @@ class SigrokDriver(SigrokCommon):
         self._call(*cmd)
         self._process.wait()
         stdout, stderr = self._process.communicate()
-        self.log.debug("stdout:\n %s\n ----- \n stderr:\n %s", stdout, stderr)
+        self.logger.debug("stdout:\n %s\n ----- \n stderr:\n %s", stdout, stderr)
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
             subprocess.call([
                 'scp', f'{self.sigrok.host}:{os.path.join(self._tmpdir, self._basename)}',
@@ -411,7 +409,7 @@ class SigrokDmmDriver(SigrokCommon):
             time.sleep(0.1)
         else:
             # process did not finish in time
-            self.log.info("sigrok-cli did not finish in time, increase timeout?")
+            self.logger.info("sigrok-cli did not finish in time, increase timeout?")
             self._process.kill()
 
         res = []
@@ -428,7 +426,7 @@ class SigrokDmmDriver(SigrokCommon):
                 # all other lines are actual values
                 res.append(float(line))
         _, stderr = self._process.communicate()
-        self.log.debug("stderr: %s", stderr)
+        self.logger.debug("stderr: %s", stderr)
 
         self._running = False
         return unit, res

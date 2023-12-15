@@ -1,7 +1,6 @@
 import subprocess
 import re
 import time
-import logging
 
 import attr
 
@@ -28,7 +27,6 @@ class QuartusHPSDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}({self.target})")
 
         # FIXME make sure we always have an environment or config
         if self.target.env:

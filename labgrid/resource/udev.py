@@ -1,4 +1,3 @@
-import logging
 import os
 import queue
 import warnings
@@ -19,7 +18,6 @@ class UdevManager(ResourceManager):
         super().__attrs_post_init__()
         self.queue = queue.Queue()
 
-        self.log = logging.getLogger('UdevManager')
         self._pyudev = import_module('pyudev')
         self._context = self._pyudev.Context()
         self._monitor = self._pyudev.Monitor.from_netlink(self._context)
@@ -32,7 +30,7 @@ class UdevManager(ResourceManager):
         devices.match_subsystem(resource.match['SUBSYSTEM'])
         for device in devices:
             if resource.try_match(device):
-                self.log.debug(" matched successfully against %s", resource.device)
+                self.logger.debug(" matched successfully against %s", resource.device)
 
     def _insert_into_queue(self, device):
         self.queue.put(device)
@@ -44,10 +42,10 @@ class UdevManager(ResourceManager):
                 device = self.queue.get(False)
             except queue.Empty:
                 break
-            self.log.debug("%s: %s", device.action, device)
+            self.logger.debug("%s: %s", device.action, device)
             for resource in self.resources:
                 if resource.try_match(device):
-                    self.log.debug(" matched successfully")
+                    self.logger.debug(" matched successfully")
 
 @attr.s(eq=False)
 class USBResource(ManagedResource):
@@ -59,7 +57,6 @@ class USBResource(ManagedResource):
 
     def __attrs_post_init__(self):
         self.timeout = 5.0
-        self.log = logging.getLogger('USBResource')
         self.match.setdefault('SUBSYSTEM', 'usb')
         super().__attrs_post_init__()
 
@@ -134,7 +131,7 @@ class USBResource(ManagedResource):
             if self.device.sys_path != device.sys_path:
                 return False
 
-        self.log.debug(" found match: %s", self)
+        self.logger.debug(" found match: %s", self)
 
         if self.suggest and device.action in [None, 'add']:
             self.device = device

@@ -1,5 +1,4 @@
 import enum
-import logging
 import os
 import time
 import subprocess
@@ -41,10 +40,6 @@ class USBStorageDriver(Driver):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
-
-    def __attrs_post_init__(self):
-        super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}:{self.target}")
 
     def on_activate(self):
         pass

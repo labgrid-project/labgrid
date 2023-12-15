@@ -1,6 +1,5 @@
 """The SSHDriver uses SSH as a transport to implement CommandProtocol and FileTransferProtocol"""
 import contextlib
-import logging
 import os
 import re
 import stat
@@ -39,7 +38,6 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}({self.target})")
         self._keepalive = None
 
     def on_activate(self):

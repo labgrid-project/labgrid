@@ -1,4 +1,3 @@
-import logging
 from importlib import import_module
 import attr
 
@@ -17,11 +16,10 @@ class XenaDriver(Driver):
         super().__attrs_post_init__()
         self._xena_app = import_module('xenavalkyrie.xena_app')
         self._tgn_utils = import_module('trafficgenerator.tgn_utils')
-        self._logger = logging.getLogger(f"{self}")
         self._xm = None
 
     def on_activate(self):
-        self._xm = self._xena_app.init_xena(self._tgn_utils.ApiType.socket, self._logger, 'labgrid')
+        self._xm = self._xena_app.init_xena(self._tgn_utils.ApiType.socket, self.logger, 'labgrid')
         self._xm.session.add_chassis(self.xena_manager.hostname)
 
     def on_deactivate(self):

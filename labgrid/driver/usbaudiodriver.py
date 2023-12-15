@@ -1,4 +1,3 @@
-import logging
 import subprocess
 import attr
 
@@ -28,7 +27,6 @@ class USBAudioInputDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}")
         self._prepared = False
 
     def _get_pipeline(self):

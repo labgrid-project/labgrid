@@ -1,5 +1,4 @@
 # pylint: disable=arguments-differ
-import logging
 import re
 
 import attr
@@ -18,7 +17,6 @@ class FakeConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}({self.target})")
         self.rxq = []
         self.txq = []
 

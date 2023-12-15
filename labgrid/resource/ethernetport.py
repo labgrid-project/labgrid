@@ -183,7 +183,6 @@ class EthernetPortManager(ResourceManager):
     """The EthernetPortManager periodically polls the switch for new updates."""
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}")
         self.loop = None
         self.poll_tasks = []
         self.switches = {}

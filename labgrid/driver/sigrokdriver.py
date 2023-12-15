@@ -163,8 +163,8 @@ class SigrokDriver(SigrokCommon):
 
         self._process.send_signal(signal.SIGINT)
         stdout, stderr = self._process.communicate()
-        self._process.wait()
-        self.logger.debug("stdout:\n %s\n ----- \n stderr:\n %s", stdout, stderr)
+        self.logger.debug("stdout: %s", stdout)
+        self.logger.debug("stderr: %s", stderr)
 
         # Convert from .sr to .csv
         cmd = [
@@ -173,9 +173,9 @@ class SigrokDriver(SigrokCommon):
             os.path.join(self._tmpdir, csv_filename)
         ]
         self._call(*cmd)
-        self._process.wait()
         stdout, stderr = self._process.communicate()
-        self.logger.debug("stdout:\n %s\n ----- \n stderr:\n %s", stdout, stderr)
+        self.logger.debug("stdout: %s", stdout)
+        self.logger.debug("stderr: %s", stderr)
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
             subprocess.call([
                 'scp', f'{self.sigrok.host}:{os.path.join(self._tmpdir, self._basename)}',

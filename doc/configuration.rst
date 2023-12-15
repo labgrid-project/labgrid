@@ -174,6 +174,9 @@ Currently available are:
   interface, this module deliberately uses the standard password '1' and is
   not compatible with a different password.
 
+``eth008``
+  Controls a Robot-Electronics eth008 via a simple HTTP API.
+
 ``gude``
   Controls a Gude PDU via a simple HTTP API.
 

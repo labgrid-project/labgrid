@@ -244,6 +244,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.apc
         import labgrid.driver.power.digipower
         import labgrid.driver.power.digitalloggers_http
+        import labgrid.driver.power.eth008
         import labgrid.driver.power.gude
         import labgrid.driver.power.gude24
         import labgrid.driver.power.netio

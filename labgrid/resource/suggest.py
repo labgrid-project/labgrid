@@ -22,6 +22,7 @@ from .udev import (
     LXAUSBMux,
     HIDRelay,
     USBDebugger,
+    USBLauterbachDebugger,
     USBPowerPort,
 )
 from ..util import dump
@@ -55,6 +56,7 @@ class Suggester:
         self.resources.append(LXAUSBMux(**args))
         self.resources.append(HIDRelay(**args))
         self.resources.append(USBDebugger(**args))
+        self.resources.append(USBLauterbachDebugger(**args))
         self.resources.append(USBPowerPort(**args, index=0))
 
     def suggest_callback(self, resource, meta, suggestions):

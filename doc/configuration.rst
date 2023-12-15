@@ -786,6 +786,46 @@ Arguments:
 Used by:
   - `OpenOCDDriver`_
 
+USBLauterbachDebugger
+~~~~~~~~~~~~~~~~~~~~~
+An USBLauterbachDebugger resource describes a Lauterbach 
+PowerDebug/PowerTrace/uTrace debugger device connected via USB.
+
+.. code-block:: yaml
+
+   USBLauterbachDebugger:
+     match:
+       ID_PATH: pci-0000:00:10.0-usb-0:1.4
+
+.. code-block:: yaml
+
+   USBLauterbachDebugger:
+     match:
+       ID_SERIAL_SHORT: C230901234567
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `LauterbachDriver`_
+
+NetworkLauterbachDebugger
+~~~~~~~~~~~~~~~~~~~~~~~~~
+An NetworkLauterbachDebugger resource describes a Lauterbach 
+PowerDebug debugger device connected via Ethernet.
+
+.. code-block:: yaml
+
+   NetworkLauterbachDebugger:
+     node: E230901234567
+
+Arguments:
+  - node : Lauterbach NODENAME e.g. IP/NODENAME (factory default: serial number)
+  - protocol : optional, allows to select TCP instead of UDP, required for LG_PROXY support
+
+Used by:
+  - `LauterbachDriver`_
+
 SNMPEthernetPort
 ~~~~~~~~~~~~~~~~
 A SNMPEthernetPort resource describes a port on an Ethernet switch, which is
@@ -1840,6 +1880,38 @@ Arguments:
   - interface_config (str): optional, interface config in the ``openocd/scripts/interface/`` directory
   - board_config (str): optional, board config in the ``openocd/scripts/board/`` directory
   - load_commands (list of str): optional, load commands to use instead of ``init``, ``bootstrap {filename}``, ``shutdown``
+
+LauterbachDriver
+~~~~~~~~~~~~~~~~
+A LauterbachDriver controls the “Lauterbach TRACE32 PowerView” to debug a target.
+
+The ``t32_sys`` argument refers to paths declared in the environment configuration.
+
+Binds to:
+  interface:
+    - `USBLauterbachDebugger`_
+    - `NetworkLauterbachDebugger`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   LauterbachDriver:
+     t32_bin: t32marm
+     t32_sys: t32_dvd202309
+
+.. code-block:: yaml
+
+   paths:
+     t32_dvd202309: /opt/t32/t32/t32dvd202309
+
+Arguments:
+  - t32_bin (str): optional, name of the TRACE32 architecture executable ``t32m*`` (default ``t32marm``)
+  - t32_sys (str): optional, base folder of the TRACE32 installation (default ENV['T32SYS'] or ``~/t32`` or ``/opt/t32``)
+  - script (str): optional, PRACTICE script (``.cmm``) executed on TRACE32 startup
+  - script_args_debug (list of str): optional, arguments passed to ``script`` to establish a debug session (Command ``debugger``)
+  - script_args_bootstrap (list of str): optional, arguments passed to ``script`` to bootstrap (Command ``bootstrap``)
 
 QuartusHPSDriver
 ~~~~~~~~~~~~~~~~

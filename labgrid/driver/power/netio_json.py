@@ -73,7 +73,7 @@ class __NetioControl:
 
             for outputState in responseDict['Outputs']:
                 if outputState['ID'] == socketID:
-                    state = outputState
+                    state = outputState['State']
                     break
         else:
             raise Exception(f"Cannot get the power state for socket {socketID}. Error code: {response.text}")

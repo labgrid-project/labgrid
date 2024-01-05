@@ -1,5 +1,5 @@
 Release 24.0 (unreleased)
-------------------------------------
+-------------------------
 
 New Features in 24.0
 ~~~~~~~~~~~~~~~~~~~~
@@ -32,7 +32,7 @@ Bug fixes in 24.0
 - The password for the ShellDriver can now be an empty string.
 
 Breaking changes in 24.0
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 - Support for the legacy ticket authentication was dropped: If the coordinator
   logs ModuleNotFoundError on startup, switch the crossbar config to anonymous
   authentication (see ``.crossbar/config-anonymous.yaml`` for an example).
@@ -188,7 +188,7 @@ Bug fixes in 23.0
   evaluation.
 
 Breaking changes in 23.0
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 - ``Config``'s ``get_option()``/``get_target_option()`` convert non-string
   options no longer to strings.
 - `UBootDriver`'s ``boot_expression`` attribute is deprecated, it will no
@@ -268,7 +268,7 @@ Breaking changes in 0.4.0
 - ``EthernetInterface`` has been renamed to ``NetworkInterface``.
 
 Known issues in 0.4.0
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 - Some client commands return 0 even if the command failed.
 - Currently empty passwords are not well supported by the ShellDriver
 
@@ -365,7 +365,7 @@ Breaking changes in 0.3.0
   reasons.
 
 Known issues in 0.3.0
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 - There are several reports of ``sshpass`` used within the SSHDriver not working
   in call cases or only on the first connection.
 - Some client commands return 0 even if the command failed.

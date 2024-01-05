@@ -1,7 +1,7 @@
-Release 23.1 (unreleased)
+Release 24.0 (unreleased)
 ------------------------------------
 
-New Features in 23.1
+New Features in 24.0
 ~~~~~~~~~~~~~~~~~~~~
 - When invoking tests with pytest, the ``--log-(cli|file)-(level|format)``
   command line arguments and their corresponding pytest.ini configure options
@@ -13,7 +13,7 @@ New Features in 23.1
 - The `QEMUDriver` now has an additional ``disk_opts`` property which can be
   used to pass additional options for the disk directly to QEMU
 
-Bug fixes in 23.1
+Bug fixes in 24.0
 ~~~~~~~~~~~~~~~~~
 - The pypi release now uses the labgrid pyserial fork in the form of the
   pyserial-labgrid package. This fixes installation with newer versions
@@ -31,7 +31,7 @@ Bug fixes in 23.1
   local host.
 - The password for the ShellDriver can now be an empty string.
 
-Breaking changes in 23.1
+Breaking changes in 24.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 - Support for the legacy ticket authentication was dropped: If the coordinator
   logs ModuleNotFoundError on startup, switch the crossbar config to anonymous
@@ -77,7 +77,7 @@ Breaking changes in 23.1
   ``internal`` and ``external`` arguments as they do not fit the NFS mount use
   case.
 
-Known issues in 23.1
+Known issues in 24.0
 ~~~~~~~~~~~~~~~~~~~~
 
 

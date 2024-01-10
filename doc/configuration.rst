@@ -233,6 +233,9 @@ Currently available are:
   Controls TP-Link power strips via `python-kasa
   <https://github.com/python-kasa/python-kasa>`_.
 
+``poe_mib``
+  Controls PoE switches using the PoE SNMP administration MiBs.
+
 Used by:
   - `NetworkPowerDriver`_
 

@@ -265,3 +265,7 @@ class TestNetworkPowerDriver:
     def test_import_backend_siglent(self):
         pytest.importorskip("vxi11")
         import labgrid.driver.power.siglent
+
+    def test_import_backend_poe_mib(self):
+        pytest.importorskip("pysnmp")
+        import labgrid.driver.power.poe_mib

@@ -41,6 +41,7 @@ from .usbvideodriver import USBVideoDriver
 from .httpvideodriver import HTTPVideoDriver
 from .networkinterfacedriver import NetworkInterfaceDriver
 from .provider import HTTPProviderDriver, NFSProviderDriver, TFTPProviderDriver
+from .rawnetworkinterfacedriver import RawNetworkInterfaceDriver
 from .mqtt import TasmotaPowerDriver
 from .manualswitchdriver import ManualSwitchDriver
 from .usbtmcdriver import USBTMCDriver

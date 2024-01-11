@@ -2972,6 +2972,48 @@ Implements:
 Arguments:
   - None
 
+RawNetworkInterfaceDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~
+This driver allows "raw" control of a network interface (such as Ethernet or
+WiFi).
+
+The labgrid-raw-interface helper (``helpers/labgrid-raw-interface``) needs to
+be installed in the PATH and usable via sudo without password.
+A configuration file ``/etc/labgrid/helpers.yaml`` must be installed on hosts
+exporting network interfaces for the RawNetworkInterfaceDriver, e.g.:
+
+.. code-block:: yaml
+
+   raw-interface:
+     denied-interfaces:
+       - eth1
+
+It supports:
+- recording traffic
+- replaying traffic
+- basic statistic collection
+
+For now, the RawNetworkInterfaceDriver leaves pre-configuration of the exported
+network interface to the user, including:
+- disabling DHCP
+- disabling IPv6 Duplicate Address Detection (DAD) by SLAAC (Stateless
+Address Autoconfiguration) and Neighbor Discovery
+- disabling Generic Receive Offload (GRO)
+
+This might change in the future.
+
+Binds to:
+  iface:
+    - `NetworkInterface`_
+    - `USBNetworkInterface`_
+    - `RemoteNetworkInterface`_
+
+Implements:
+  - None yet
+
+Arguments:
+  - None
+
 .. _conf-strategies:
 
 Strategies

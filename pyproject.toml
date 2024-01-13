@@ -62,6 +62,7 @@ doc = [
     "sphinxcontrib-htmlhelp<2.0.4",
     "sphinxcontrib-qthelp<1.0.6",
     "sphinxcontrib-jsmath<1.0.2",
+    "sphinxcontrib-serializinghtml<1.1.10",
     "sphinx_rtd_theme==1.0.0",
 ]
 docker = ["docker==5.0.2"]
@@ -110,6 +111,7 @@ dev = [
     "sphinxcontrib-htmlhelp<2.0.4",
     "sphinxcontrib-qthelp<1.0.6",
     "sphinxcontrib-jsmath<1.0.2",
+    "sphinxcontrib-serializinghtml<1.1.10",
     "sphinx_rtd_theme==1.0.0",
 
     # labgrid[docker]

@@ -1,3 +1,13 @@
+Release 23.0.5 (Released Jan 13, 2024)
+--------------------------------------
+
+Bug fixes in 23.0.5
+~~~~~~~~~~~~~~~~~~~
+- Fix readthedocs build by specifying Python version and OS.
+- Fix several incompatibilities with doc sphinxcontrib-* dependencies having
+  dropped their explicit Sphinx dependencies, which prevented generation of
+  labgrid's docs.
+
 Release 23.0.4 (Released Nov 10, 2023)
 --------------------------------------
 

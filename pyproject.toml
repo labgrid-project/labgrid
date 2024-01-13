@@ -59,6 +59,7 @@ doc = [
     "Sphinx==4.2.0",
     "sphinxcontrib-applehelp<1.0.8",
     "sphinxcontrib-devhelp<1.0.5",
+    "sphinxcontrib-htmlhelp<2.0.4",
     "sphinx_rtd_theme==1.0.0",
 ]
 docker = ["docker==5.0.2"]
@@ -104,6 +105,7 @@ dev = [
     "Sphinx==4.2.0",
     "sphinxcontrib-applehelp<1.0.8",
     "sphinxcontrib-devhelp<1.0.5",
+    "sphinxcontrib-htmlhelp<2.0.4",
     "sphinx_rtd_theme==1.0.0",
 
     # labgrid[docker]

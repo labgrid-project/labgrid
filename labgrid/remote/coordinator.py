@@ -19,6 +19,9 @@ from .scheduler import TagSet, schedule
 from ..util import atomic_replace, yaml
 
 
+monkey_patch_max_msg_payload_size_ws_option()
+
+
 class Action(Enum):
     ADD = 0
     DEL = 1

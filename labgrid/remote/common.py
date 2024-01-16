@@ -18,6 +18,7 @@ __all__ = [
     'ReservationState',
     'Reservation',
     'enable_tcp_nodelay',
+    'monkey_patch_max_msg_payload_size_ws_option',
 ]
 
 TAG_KEY = re.compile(r"[a-z][a-z0-9_]+")
@@ -312,3 +313,36 @@ def enable_tcp_nodelay(session):
     """
     s = session._transport.transport.get_extra_info('socket')
     s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
+
+
+def monkey_patch_max_msg_payload_size_ws_option():
+    """
+    The default maxMessagePayloadSize in autobahn is 1M. For larger setups with a big number of
+    exported resources, this becomes the limiting factor.
+    Increase maxMessagePayloadSize in WampWebSocketClientFactory.setProtocolOptions() by monkey
+    patching it, so autobahn.asyncio.wamp.ApplicationRunner effectively sets the increased value.
+
+    This function must be called before ApplicationRunner is instanciated.
+    """
+    from autobahn.asyncio.websocket import WampWebSocketClientFactory
+
+    original_method = WampWebSocketClientFactory.setProtocolOptions
+
+    def set_protocol_options(*args, **kwargs):
+        new_max_message_payload_size = 10485760
+
+        # maxMessagePayloadSize given as positional arg
+        args = list(args)
+        try:
+            args[9] = max((args[9], new_max_message_payload_size))
+        except IndexError:
+            pass
+
+        # maxMessagePayloadSize given as kwarg
+        kwarg_name = "maxMessagePayloadSize"
+        if kwarg_name in kwargs and kwargs[kwarg_name] is not None:
+            kwargs[kwarg_name] = max((kwargs[kwarg_name], new_max_message_payload_size))
+
+        return original_method(*args, **kwargs)
+
+    WampWebSocketClientFactory.setProtocolOptions = set_protocol_options

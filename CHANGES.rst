@@ -44,7 +44,8 @@ Breaking changes in 24.0
   coordinator.`` on the client when running an updated coordinator, your
   coordinator configuration may set ``ticket`` instead of ``anonymous`` auth.
 - The `StepReporter` API has been changed. To start step reporting, you must
-  now call ``StepReporter.start()`` instead of ``StepReporter()``
+  now call ``StepReporter.start()`` instead of ``StepReporter()``, and set up
+  logging via ``labgrid.logging.basicConfig()``.
 - Logging output when running pytest is no longer sent to stderr by default,
   since this is both chatty and also unnecessary with the improved logging
   flexibility. It it recommended to use the ``--log-cli-level=INFO`` command

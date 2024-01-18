@@ -181,13 +181,15 @@ def main():
                 os.environ.get("LG_CROSSBAR_REALM", "realm1"),
                 extra,
             )
-
-            session.loop.run_until_complete(
-                asyncio.gather(
-                    report_places(session, args.tags, gauges),
-                    report_reservations(session, args.tags, gauges),
+            try:
+                session.loop.run_until_complete(
+                    asyncio.gather(
+                        report_places(session, args.tags, gauges),
+                        report_reservations(session, args.tags, gauges),
+                    )
                 )
-            )
+            finally:
+                session.leave()
         except labgrid.remote.client.Error as e:
             print(f"Error communicating with labgrid: {e}")
             continue

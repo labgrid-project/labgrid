@@ -67,6 +67,14 @@ def main(program, options):
             args.append("-c")
             args.append(str(options.count))
 
+        if options.timeout:
+            # The timeout is implemented by specifying the number of seconds before rotating the
+            # dump file, but limiting the number of files to 1
+            args.append("-G")
+            args.append(str(options.timeout))
+            args.append("-W")
+            args.append("1")
+
     try:
         os.execvp(args[0], args)
     except FileNotFoundError as e:
@@ -82,6 +90,9 @@ if __name__ == "__main__":
     tcpdump_parser = subparsers.add_parser("tcpdump")
     tcpdump_parser.add_argument("ifname", type=str, help="interface name")
     tcpdump_parser.add_argument("count", type=int, default=None, help="amount of frames to capture while recording")
+    tcpdump_parser.add_argument(
+        "--timeout", type=int, default=None, help="Amount of time to capture while recording. 0 means capture forever"
+    )
 
     # tcpreplay
     tcpreplay_parser = subparsers.add_parser("tcpreplay")

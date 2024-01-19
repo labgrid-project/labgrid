@@ -60,6 +60,8 @@ def main(program, ifname, count, duration):
     if program == "tcpdump":
         args.append("-n")
         args.append(f"--interface={ifname}")
+        args.append("-U")
+        args.append("-s0")
         args.append("-w")
         args.append('-')
 

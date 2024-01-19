@@ -60,6 +60,10 @@ def main(program, ifname, count, timeout=0):
     if program == "tcpdump":
         args.append("-n")
         args.append(f"--interface={ifname}")
+        # Write out each packet as it is received
+        args.append("--packet-buffered")
+        # Capture complete packets (for compatibility with older tcpdump versions)
+        args.append("--snapshot-length=0")
         args.append("-w")
         args.append('-')
 

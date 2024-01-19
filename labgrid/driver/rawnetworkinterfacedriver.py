@@ -59,7 +59,7 @@ class RawNetworkInterfaceDriver(Driver):
         Starts tcpdump on bound network interface resource.
 
         Args:
-            filename (str): name of a file to record to
+            filename (str): name of a file to record to, or None to record to stdout
             count (int): optional, exit after receiving this many number of packets
             timeout (int): optional, number of seconds to capture packets before tcpdump exits
         Returns:
@@ -74,8 +74,11 @@ class RawNetworkInterfaceDriver(Driver):
             cmd.append("--timeout")
             cmd.append(str(timeout))
         cmd = self._wrap_command(cmd)
-        with open(filename, "wb") as outdata:
-            self._record_handle = subprocess.Popen(cmd, stdout=outdata, stderr=subprocess.PIPE)
+        if filename is None:
+            self._record_handle = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        else:
+            with open(filename, "wb") as outdata:
+                self._record_handle = subprocess.Popen(cmd, stdout=outdata, stderr=subprocess.PIPE)
         return self._record_handle
 
     @Driver.check_active
@@ -101,18 +104,26 @@ class RawNetworkInterfaceDriver(Driver):
         Either count or timeout must be specified.
 
         Args:
-            filename (str): name of a file to record to
+            filename (str): name of a file to record to, or None to live stream packets
             count (int): optional, exit after receiving this many number of packets
             timeout (int): optional, number of seconds to capture packets before tcpdump exits
         Returns:
-            Popen object of tcpdump process.
+            Popen object of tcpdump process. If filename is None, packets can be read from stdout
         """
         assert count or timeout
 
         try:
             yield self.start_record(filename, count=count, timeout=timeout)
         finally:
-            self.stop_record()
+            # If live streaming packets, there is no reason to wait for tcpdump
+            # to finish, so terminate it as soon as the context is left
+            try:
+                self.stop_record(timeout=0 if filename is None else None)
+            except subprocess.TimeoutExpired:
+                # A timeout is expected if the context is exited early while
+                # piping to stdout
+                if filename is not None:
+                    raise
 
     @Driver.check_active
     @step(args=["filename"])

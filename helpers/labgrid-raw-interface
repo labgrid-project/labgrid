@@ -32,7 +32,7 @@ def get_denylist():
     return denylist
 
 
-def main(program, ifname, count):
+def main(program, ifname, count, timeout=0):
     if not ifname:
         raise ValueError("Empty interface name.")
     if any((c == "/" or c.isspace()) for c in ifname):
@@ -67,6 +67,15 @@ def main(program, ifname, count):
             args.append("-c")
             args.append(str(count))
 
+        if timeout:
+            # The duration is implemented by specifying the number of seconds
+            # before rotating the dump file, but limiting the number of files
+            # to 1
+            args.append("-G")
+            args.append(str(timeout))
+            args.append("-W")
+            args.append("1")
+
     try:
         os.execvp(args[0], args)
     except FileNotFoundError as e:
@@ -85,9 +94,10 @@ if __name__ == "__main__":
     parser.add_argument('program', type=str, help='program to run, either tcpreplay or tcpdump')
     parser.add_argument('interface', type=str, help='interface name')
     parser.add_argument('count', nargs="?", type=int, default=None, help='amount of frames to capture while recording')
+    parser.add_argument('--timeout', type=int, default=None, help="Amount of time to capture while recording. 0 means capture forever")
     args = parser.parse_args()
     try:
-        main(args.program, args.interface, args.count)
+        main(args.program, args.interface, args.count, args.timeout)
     except Exception as e:  # pylint: disable=broad-except
         if args.debug:
             import traceback

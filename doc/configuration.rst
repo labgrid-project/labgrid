@@ -2418,6 +2418,8 @@ Binds to:
 
    TFTPProviderDriver: {}
 
+   HTTPProviderDriver: {}
+
 Arguments:
   - None
 

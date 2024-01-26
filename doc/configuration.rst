@@ -619,6 +619,7 @@ Arguments:
 Used by:
   - `IMXUSBDriver`_
   - `UUUDriver`_
+  - `BDIMXUSBDriver`_
 
 MXSUSBLoader
 ~~~~~~~~~~~~
@@ -635,6 +636,7 @@ Arguments:
 
 Used by:
   - `MXSUSBDriver`_
+  - `IMXUSBDriver`_
   - `UUUDriver`_
 
 RKUSBLoader
@@ -736,6 +738,10 @@ WiFi)
 Arguments:
   - ifname (str): name of the interface
 
+Used by:
+  - `NetworkInterfaceDriver`_
+  - `RawNetworkInterfaceDriver`_
+
 USBNetworkInterface
 ~~~~~~~~~~~~~~~~~~~
 A USBNetworkInterface resource describes a USB network adapter (such as
@@ -749,6 +755,10 @@ Ethernet or WiFi)
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `NetworkInterfaceDriver`_
+  - `RawNetworkInterfaceDriver`_
 
 RemoteNetworkInterface
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -804,6 +814,9 @@ Arguments:
   - switch (str): host name of the Ethernet switch
   - interface (str): interface name
 
+Used by:
+  - None
+
 SigrokUSBDevice
 ~~~~~~~~~~~~~~~
 A SigrokUSBDevice resource describes a sigrok USB device.
@@ -851,6 +864,7 @@ Arguments:
 
 Used by:
   - `SigrokPowerDriver`_
+  - `SigrokDmmDriver`_
 
 USBSDMuxDevice
 ~~~~~~~~~~~~~~
@@ -868,7 +882,8 @@ Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
 
 Used by:
-  - `USBSDMUXDriver`_
+  - `USBSDMuxDriver`_
+  - `USBStorageDriver`_
 
 NetworkUSBSDMuxDevice
 ~~~~~~~~~~~~~~~~~~~~~
@@ -913,6 +928,7 @@ Arguments:
 
 Used by:
   - `USBSDWireDriver`_
+  - `USBStorageDriver`_
 
 NetworkUSBSDWireDevice
 ~~~~~~~~~~~~~~~~~~~~~~

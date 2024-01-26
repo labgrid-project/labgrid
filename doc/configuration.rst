@@ -872,7 +872,6 @@ Used by:
 
 NetworkUSBSDMuxDevice
 ~~~~~~~~~~~~~~~~~~~~~
-
 A :any:`NetworkUSBSDMuxDevice` resource describes a `USBSDMuxDevice`_ available
 on a remote computer.
 
@@ -894,7 +893,6 @@ Used by:
 
 NetworkLXAUSBMux
 ~~~~~~~~~~~~~~~~
-
 A :any:`NetworkLXAUSBMux` resource describes a `LXAUSBMux`_ available on a
 remote computer.
 
@@ -918,13 +916,11 @@ Used by:
 
 NetworkUSBSDWireDevice
 ~~~~~~~~~~~~~~~~~~~~~~
-
 A :any:`NetworkUSBSDWireDevice` resource describes a `USBSDWireDevice`_ available
 on a remote computer.
 
 USBVideo
 ~~~~~~~~
-
 A :any:`USBVideo` resource describes a USB video camera which is supported by a
 Video4Linux2 kernel driver.
 
@@ -942,7 +938,6 @@ Used by:
 
 SysfsGPIO
 ~~~~~~~~~
-
 A :any:`SysfsGPIO` resource describes a GPIO line.
 
 .. code-block:: yaml
@@ -958,13 +953,11 @@ Used by:
 
 NetworkUSBVideo
 ~~~~~~~~~~~~~~~
-
 A :any:`NetworkUSBVideo` resource describes a :any:`USBVideo` resource available
 on a remote computer.
 
 USBAudioInput
 ~~~~~~~~~~~~~
-
 A :any:`USBAudioInput` resource describes a USB audio input which is supported
 by an ALSA kernel driver.
 
@@ -984,13 +977,11 @@ Used by:
 
 NetworkUSBAudioInput
 ~~~~~~~~~~~~~~~~~~~~
-
 A :any:`NetworkUSBAudioInput` resource describes a :any:`USBAudioInput` resource
 available on a remote computer.
 
 USBTMC
 ~~~~~~
-
 A :any:`USBTMC` resource describes an oscilloscope connected via the USB TMC
 protocol.
 The low-level communication is handled by the ``usbtmc`` kernel driver.
@@ -1016,7 +1007,6 @@ Used by:
 
 NetworkUSBTMC
 ~~~~~~~~~~~~~
-
 A :any:`NetworkUSBTMC` resource describes a :any:`USBTMC` resource available
 on a remote computer.
 
@@ -1103,7 +1093,6 @@ For instance, to flash using 3.5V vcc:
   DediprogFlasher:
     vcc: '3.5V'
 
-
 Used by:
   - `DediprogFlashDriver`_
 
@@ -1149,7 +1138,6 @@ Used by:
 
 HTTPVideoStream
 ~~~~~~~~~~~~~~~
-
 A :any:`HTTPVideoStream` resource describes a IP video stream over HTTP or HTTPS.
 
 .. code-block:: yaml
@@ -1187,7 +1175,6 @@ labgrid.
 
 TFTPProvider / HTTPProvider
 +++++++++++++++++++++++++++
-
 .. code-block:: yaml
 
    TFTPProvider:
@@ -1208,7 +1195,6 @@ Used by:
 
 NFSProvider
 +++++++++++
-
 .. code-block:: yaml
 
    NFSProvider: {}
@@ -1318,7 +1304,6 @@ Used by:
 
 udev Matching
 ~~~~~~~~~~~~~
-
 labgrid allows the exporter (or the client-side environment) to match resources
 via udev rules.
 Any udev property key and value can be used, path matching USB devices is
@@ -1374,7 +1359,6 @@ use-cases.
 
 Matching a USB Serial Converter on a Hub Port
 +++++++++++++++++++++++++++++++++++++++++++++
-
 This will match any USB serial converter connected below the hub port 1.2.5.5
 on bus 1.
 The `ID_PATH` value corresponds to the hierarchy of buses and ports as shown
@@ -1393,7 +1377,6 @@ This is necessary for the `USBSerialPort` because we actually want to find the
 
 Matching an Android USB Fastboot Device
 +++++++++++++++++++++++++++++++++++++++
-
 In this case, we want to match the USB device on that port directly, so we
 don't use a parent match.
 
@@ -1405,7 +1388,6 @@ don't use a parent match.
 
 Matching a Specific UART in a Dual-Port Adapter
 +++++++++++++++++++++++++++++++++++++++++++++++
-
 On this board, the serial console is connected to the second port of an
 on-board dual-port USB-UART.
 The board itself is connected to the bus 3 and port path 10.2.2.2.
@@ -1457,7 +1439,6 @@ We use the ``ID_USB_INTERFACE_NUM`` to distinguish between the two ports:
 
 Matching a USB UART by Serial Number
 ++++++++++++++++++++++++++++++++++++
-
 Most of the USB serial converters in our lab have been programmed with unique
 serial numbers.
 This makes it easy to always match the same one even if the USB topology
@@ -1715,7 +1696,6 @@ Arguments:
 
 BareboxDriver
 ~~~~~~~~~~~~~
-
 A BareboxDriver interfaces with a barebox bootloader via a `ConsoleProtocol`.
 
 Binds to:
@@ -2804,7 +2784,6 @@ Although the driver can be used from Python code by calling the `stream()`
 method, it is currently mainly useful for the ``video`` subcommand of
 ``labgrid-client``.
 
-
 ========== =========================================================
 Key        Description
 ========== =========================================================
@@ -2908,7 +2887,6 @@ Implements:
 Arguments:
   - None
 
-
 HttpDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
 A HttpDigitalOutputDriver binds to a `HttpDigitalOutput` to set and get a
@@ -2927,7 +2905,6 @@ Implements:
 
 Arguments:
   - None
-
 
 PyVISADriver
 ~~~~~~~~~~~~
@@ -3023,7 +3000,6 @@ Arguments:
 
 Strategies
 ----------
-
 Strategies are used to ensure that the device is in a certain state during a test.
 Such a state could be the bootloader or a booted Linux kernel with shell.
 
@@ -3241,7 +3217,6 @@ The Reporter can be stopped with a call to the stop function:
 Stopping the StepReporter if it has not been started will raise an
 AssertionError, as will starting an already started StepReporter.
 
-
 ConsoleLoggingReporter
 ~~~~~~~~~~~~~~~~~~~~~~
 The ConsoleLoggingReporter outputs read calls from the console transports into
@@ -3259,11 +3234,8 @@ The Reporter can be stopped with a call to the stop function:
     >>> from labgrid import ConsoleLoggingReporter
     >>> ConsoleLoggingReporter.stop()
 
-
 Stopping the ConsoleLoggingReporter if it has not been started will raise an
 AssertionError, as will starting an already started StepReporter.
-
-
 
 Environment Configuration
 -------------------------

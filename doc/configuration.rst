@@ -1531,7 +1531,7 @@ local usage and will not work with an exporter.
     ModbusRTUDriver: {}
 
 Binds to:
-  port:
+  resource:
     - `ModbusRTU`_
 
 Implements:
@@ -1692,7 +1692,8 @@ This driver needs the following features activated in U-Boot to work:
 - The U-Boot must support the "bootm" command to boot from a memory location.
 
 Binds to:
-  - :any:`ConsoleProtocol` (see `SerialDriver`_)
+  console:
+    - :any:`ConsoleProtocol` (see `SerialDriver`_)
 
 Implements:
   - :any:`CommandProtocol`
@@ -1743,6 +1744,9 @@ ExternalConsoleDriver
 An ExternalConsoleDriver implements the `ConsoleProtocol` on top of a command
 executed on the local computer.
 
+Binds to:
+  - None
+
 Implements:
   - :any:`ConsoleProtocol`
 
@@ -1764,7 +1768,9 @@ network fastboot state.
 Binds to:
   fastboot:
     - `AndroidUSBFastboot`_
+    - RemoteAndroidUSBFastboot
     - `AndroidNetFastboot`_
+    - RemoteAndroidNetFastboot
 
 Implements:
   - None (yet)
@@ -1792,6 +1798,7 @@ Upgrade) mode.
 Binds to:
   dfu:
     - `DFUDevice`_
+    - NetworkDFUDevice
 
 Implements:
   - None (yet)
@@ -1818,7 +1825,9 @@ Consider updating your OpenOCD version when using multiple USB Blasters.
 Binds to:
   interface:
     - `AlteraUSBBlaster`_
+    - NetworkAlteraUSBBlaster
     - `USBDebugger`_
+    - NetworkUSBDebugger
 
 Implements:
   - :any:`BootstrapProtocol`
@@ -1849,7 +1858,9 @@ A QuartusHPSDriver controls the "Quartus Prime Programmer and Tools" to flash
 a target's QSPI.
 
 Binds to:
-  - `AlteraUSBBlaster`_
+  interface:
+    - `AlteraUSBBlaster`_
+    - NetworkAlteraUSBBlaster
 
 Implements:
   - None
@@ -1868,6 +1879,9 @@ control is available.
 
 The driver's name will be displayed during interaction.
 
+Binds to:
+  - None
+
 Implements:
   - :any:`PowerProtocol`
   - :any:`ResetProtocol`
@@ -1883,6 +1897,9 @@ Arguments:
 ExternalPowerDriver
 ~~~~~~~~~~~~~~~~~~~
 An ExternalPowerDriver is used to control a target power state via an external command.
+
+Binds to:
+  - None
 
 Implements:
   - :any:`PowerProtocol`
@@ -1955,6 +1972,7 @@ target power state without user interaction.
 Binds to:
   port:
     - `YKUSHPowerPort`_
+    - `NetworkYKUSHPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -1998,7 +2016,9 @@ A USBPowerDriver controls a `USBPowerPort`, allowing control of the target
 power state without user interaction.
 
 Binds to:
-  - `USBPowerPort`_
+  hub:
+    - `USBPowerPort`_
+    - NetworkUSBPowerPort
 
 Implements:
   - :any:`PowerProtocol`
@@ -2018,7 +2038,9 @@ A SiSPMPowerDriver controls a `SiSPMPowerPort`, allowing control of the target
 power state without user interaction.
 
 Binds to:
-  - `SiSPMPowerPort`_
+  port:
+    - `SiSPMPowerPort`_
+    - NetworkSiSPMPowerPort
 
 Implements:
   - :any:`PowerProtocol`
@@ -2038,7 +2060,8 @@ A TasmotaPowerDriver controls a `TasmotaPowerPort`, allowing the outlet to be
 switched on and off.
 
 Binds to:
-  - `TasmotaPowerPort`_
+  power:
+    - `TasmotaPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -2059,7 +2082,9 @@ This driver configures GPIO lines via `the sysfs kernel interface <https://www.k
 While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.
 
 Binds to:
-  - `SysfsGPIO`_
+  gpio:
+    - `SysfsGPIO`_
+    - NetworkSysfsGPIO
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -2078,6 +2103,10 @@ as a 1-Bit general-purpose digital output.
 
 This driver acts on top of a SerialDriver and uses the its pyserial port to
 control the flow control lines.
+
+Binds to:
+  serial:
+    - `SerialDriver`_
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -2108,6 +2137,9 @@ If the file's content does not match any of the representations
 reading defaults to False.
 
 A prime example for using this driver is Linux's sysfs.
+
+Binds to:
+  - None
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -2186,6 +2218,9 @@ A ManualSwitchDriver requires the user to control a switch or jumper on the
 target. This can be used if a driver binds to a :any:`DigitalOutputProtocol`,
 but no automatic control is available.
 
+Binds to:
+  - None
+
 Implements:
   - :any:`DigitalOutputProtocol`
 
@@ -2205,6 +2240,7 @@ It can set and get the current state of the resource.
 Binds to:
   relais:
     - `DeditecRelais8`_
+    - NetworkDeditecRelais8
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -2254,6 +2290,8 @@ Binds to:
   loader:
     - `IMXUSBLoader`_
     - `NetworkIMXUSBLoader`_
+    - `MXSUSBLoader`_
+    - `NetworkMXSUSBLoader`_
 
 Implements:
   - :any:`BootstrapProtocol`
@@ -2370,8 +2408,14 @@ A USBStorageDriver allows access to a USB stick or similar local or
 remote device.
 
 Binds to:
-  - `USBMassStorage`_
-  - `NetworkUSBMassStorage`_
+  storage:
+    - `USBMassStorage`_
+    - `NetworkUSBMassStorage`_
+    - `USBSDMuxDevice`_
+    - `NetworkUSBSDMuxDevice`_
+    - `USBSDWireDevice`_
+    - `NetworkUSBSDWireDevice`_
+
 
 Implements:
   - None (yet)
@@ -2538,8 +2582,8 @@ them during test runs.
 Binds to:
   sigrok:
     - `SigrokUSBDevice`_
-    - `SigrokDevice`_
     - `NetworkSigrokUSBDevice`_
+    - `SigrokDevice`_
 
 Implements:
   - None yet
@@ -2586,8 +2630,8 @@ It is known to work with Unit-T `UT61B` and `UT61C` devices but should also work
 Binds to:
   sigrok:
     - `SigrokUSBDevice`_
-    - `SigrokUSBSerialDevice`_
     - `NetworkSigrokUSBDevice`_
+    - `SigrokUSBSerialDevice`_
     - NetworkSigrokUSBSerialDevice
 
 Implements:
@@ -2616,6 +2660,11 @@ The :any:`USBSDMuxDriver` uses a USBSDMuxDevice resource to control a
 USB-SD-Mux device via `usbsdmux <https://github.com/pengutronix/usbsdmux>`_
 tool.
 
+Binds to:
+  mux:
+    - `USBSDMuxDevice`_
+    - `NetworkUSBSDMuxDevice`_
+
 Implements:
   - None yet
 
@@ -2630,6 +2679,11 @@ LXAUSBMuxDriver
 The :any:`LXAUSBMuxDriver` uses a LXAUSBMux resource to control a USB-Mux
 device via the `usbmuxctl <https://github.com/linux-automation/usbmuxctl>`_
 tool.
+
+Binds to:
+  mux:
+    - `LXAUSBMux`_
+    - `NetworkLXAUSBMux`
 
 Implements:
   - None yet
@@ -2646,6 +2700,11 @@ USBSDWireDriver
 The :any:`USBSDWireDriver` uses a USBSDWireDevice resource to control a
 USB-SD-Wire device via `sd-mux-ctrl <https://wiki.tizen.org/SD_MUX#Software>`_
 tool.
+
+Binds to:
+  mux:
+    - `USBSDWireDevice`_
+    - `NetworkUSBSDWireDevice`
 
 Implements:
   - None yet
@@ -2696,7 +2755,7 @@ On the receiver, it either uses ``gst-launch`` for simple playback or
 complex cases (such as measuring the current volume level).
 
 Binds to:
-  video:
+  res:
     - `USBAudioInput`_
     - `NetworkUSBAudioInput`_
 
@@ -2781,7 +2840,7 @@ a device.
      foo: ../images/flash_device.sh
 
 Binds to:
-  flashabledevice_resource:
+  device:
     - `USBFlashableDevice`_
     - `NetworkUSBFlashableDevice`_
 
@@ -2844,7 +2903,7 @@ The :any:`DediprogFlashDriver` is used to flash an SPI device using DediprogFlas
      foo: ../images/image_to_load.raw
 
 Binds to:
-  DediprogFlasher_resource:
+  flasher:
     - `DediprogFlasher`_
     - `NetworkDediprogFlasher`_
 
@@ -2983,8 +3042,8 @@ It supports:
 Binds to:
   iface:
     - `NetworkInterface`_
-    - `USBNetworkInterface`_
     - `RemoteNetworkInterface`_
+    - `USBNetworkInterface`_
 
 Implements:
   - None yet
@@ -3027,8 +3086,8 @@ This might change in the future.
 Binds to:
   iface:
     - `NetworkInterface`_
-    - `USBNetworkInterface`_
     - `RemoteNetworkInterface`_
+    - `USBNetworkInterface`_
 
 Implements:
   - None yet

@@ -638,7 +638,7 @@ Used by:
   - `UUUDriver`_
 
 RKUSBLoader
-~~~~~~~~~~~~
+~~~~~~~~~~~
 An RKUSBLoader resource describes a USB device in the rockchip loader state.
 
 .. code-block:: yaml
@@ -662,7 +662,7 @@ NetworkIMXUSBLoader
 A NetworkIMXUSBLoader describes an `IMXUSBLoader`_ available on a remote computer.
 
 NetworkRKUSBLoader
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 A NetworkRKUSBLoader describes an `RKUSBLoader`_ available on a remote computer.
 
 AndroidUSBFastboot
@@ -737,7 +737,7 @@ Arguments:
   - ifname (str): name of the interface
 
 USBNetworkInterface
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 A USBNetworkInterface resource describes a USB network adapter (such as
 Ethernet or WiFi)
 
@@ -2291,7 +2291,7 @@ Arguments:
   - None
 
 RKUSBDriver
-~~~~~~~~~~~~
+~~~~~~~~~~~
 A RKUSBDriver is used to upload an image into a device in the rockchip USB loader
 state. This is useful to bootstrap a bootloader onto a device.
 

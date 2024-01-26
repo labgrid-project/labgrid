@@ -578,9 +578,6 @@ NetworkUSBMassStorage
 A NetworkUSBMassStorage resource describes a USB memory stick or similar
 device available on a remote computer.
 
-Used by:
-  - `USBStorageDriver`_
-
 The NetworkUSBMassStorage can be used in test cases by calling the
 `write_image()`, and `get_size()` functions.
 
@@ -1085,8 +1082,6 @@ NetworkUSBFlashableDevice
 A :any:`NetworkUSBFlashableDevice` resource describes a :any:`USBFlashableDevice`
 resource available on a remote computer
 
-Used by:
-  - `FlashScriptDriver`_
 
 DediprogFlasher
 ~~~~~~~~~~~~~~~

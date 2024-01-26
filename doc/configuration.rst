@@ -1537,6 +1537,9 @@ Binds to:
 Implements:
   - None (yet)
 
+Arguments:
+  - None
+
 ShellDriver
 ~~~~~~~~~~~
 A ShellDriver binds on top of a `ConsoleProtocol` and is designed to interact
@@ -2875,6 +2878,9 @@ Binds to:
 
 Implements:
   - :any:`VideoProtocol`
+
+Arguments:
+  - None
 
 Although the driver can be used from Python code by calling the `stream()`
 method, it is currently mainly useful for the ``video`` subcommand of

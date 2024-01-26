@@ -1503,6 +1503,7 @@ Binds to:
 
 Implements:
   - :any:`ConsoleProtocol`
+  - :any:`ResetProtocol`
 
 Arguments:
   - txdelay (float, default=0.0): time in seconds to wait before sending each byte
@@ -1522,6 +1523,9 @@ Binds to:
   port:
     - `ModbusRTU`_
 
+Implements:
+  - None (yet)
+
 ShellDriver
 ~~~~~~~~~~~
 A ShellDriver binds on top of a `ConsoleProtocol` and is designed to interact
@@ -1533,6 +1537,7 @@ Binds to:
 
 Implements:
   - :any:`CommandProtocol`
+  - :any:`FileTransferProtocol`
 
 .. code-block:: yaml
 
@@ -1620,6 +1625,7 @@ Binds to:
 
 Implements:
   - :any:`CommandProtocol`
+  - :any:`LinuxBootProtocol`
 
 .. code-block:: yaml
 
@@ -1679,6 +1685,7 @@ Binds to:
 
 Implements:
   - :any:`CommandProtocol`
+  - :any:`LinuxBootProtocol`
 
 .. code-block:: yaml
 
@@ -1704,6 +1711,7 @@ Binds to:
 
 Implements:
   - :any:`CommandProtocol`
+  - :any:`LinuxBootProtocol`
 
 .. code-block:: yaml
 
@@ -1851,6 +1859,7 @@ The driver's name will be displayed during interaction.
 
 Implements:
   - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 .. code-block:: yaml
 
@@ -1866,6 +1875,7 @@ An ExternalPowerDriver is used to control a target power state via an external c
 
 Implements:
   - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 .. code-block:: yaml
 
@@ -1891,6 +1901,7 @@ Binds to:
 
 Implements:
   - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 .. code-block:: yaml
 
@@ -1915,6 +1926,7 @@ Binds to:
 
 Implements:
   - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 .. code-block:: yaml
 
@@ -1935,6 +1947,7 @@ Binds to:
 
 Implements:
   - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 .. code-block:: yaml
 
@@ -1956,6 +1969,10 @@ Binds to:
   output:
     - :any:`DigitalOutputProtocol`
 
+Implements:
+  - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
+
 .. code-block:: yaml
 
    DigitalOutputPowerDriver:
@@ -1974,6 +1991,7 @@ Binds to:
 
 Implements:
   - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 .. code-block:: yaml
 
@@ -1993,6 +2011,7 @@ Binds to:
 
 Implements:
   - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 .. code-block:: yaml
 
@@ -2394,6 +2413,9 @@ Binds to:
     - `HTTPProvider`_
     - `RemoteHTTPProvider`_
 
+Implements:
+  - None (yet)
+
 .. code-block:: yaml
 
    TFTPProviderDriver: {}
@@ -2414,6 +2436,9 @@ Binds to:
   provider:
     - `NFSProvider`_
     - `RemoteNFSProvider`_
+
+Implements:
+  - None (yet)
 
 .. code-block:: yaml
 
@@ -2526,6 +2551,7 @@ Binds to:
 
 Implements:
   - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 .. code-block:: yaml
 
@@ -2810,6 +2836,9 @@ Binds to:
   DediprogFlasher_resource:
     - `DediprogFlasher`_
     - `NetworkDediprogFlasher`_
+
+Implements:
+  - None (yet)
 
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path

@@ -949,7 +949,7 @@ def main():
 
     extra = {
         'name': args.name or gethostname(),
-        'hostname': args.hostname or getfqdn() if args.fqdn else gethostname(),
+        'hostname': args.hostname or (getfqdn() if args.fqdn else gethostname()),
         'resources': args.resources,
         'isolated': args.isolated
     }

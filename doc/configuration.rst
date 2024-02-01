@@ -208,6 +208,11 @@ Currently available are:
 ``netio_kshell``
   Controls *NETIO 4C PDUs* via a Telnet interface.
 
+``pe6216``
+  Controls an Aten PE6216 PDU via a simple HTTP API.
+  This backend deliberately uses the standard username ``administrator`` and the default password
+  ``password`` and is not compatible with other credentials.
+
 ``poe_mib``
   Controls PoE switches using the PoE SNMP administration MiBs.
 

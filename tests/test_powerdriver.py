@@ -291,6 +291,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.gude24
         import labgrid.driver.power.netio
         import labgrid.driver.power.netio_kshell
+        import labgrid.driver.power.pe6216
         import labgrid.driver.power.rest
         import labgrid.driver.power.sentry
         import labgrid.driver.power.eg_pms2_network

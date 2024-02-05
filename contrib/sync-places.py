@@ -109,6 +109,11 @@ def main():
                     changed = True
 
             tags = config["places"][name].get("tags", {}).copy()
+            for k, v in tags.items():
+                if not isinstance(k, str) or not isinstance(v, str):
+                    del(tags[k])
+                    tags[str(k)] = str(v)
+
             if place_tags != tags:
                 print(
                     "Setting tags for place %s to %s"

@@ -28,6 +28,8 @@ workers:
         directory: ../web
       ws:
         type: websocket
+        options:
+          auto_fragment_size: 65536
         auth:
           anonymous:
             type: static

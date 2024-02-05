@@ -23,7 +23,7 @@ txaio.use_asyncio()
 from autobahn.asyncio.wamp import ApplicationSession
 
 from .common import (ResourceEntry, ResourceMatch, Place, Reservation, ReservationState, TAG_KEY,
-                     TAG_VAL, enable_tcp_nodelay)
+                     TAG_VAL, enable_tcp_nodelay, monkey_patch_max_msg_payload_size_ws_option)
 from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from ..resource.remote import RemotePlaceManager, RemotePlace
@@ -34,6 +34,7 @@ from ..driver import Mode, ExecutionError
 from ..logging import basicConfig, StepLogger
 
 txaio.config.loop = asyncio.get_event_loop()  # pylint: disable=no-member
+monkey_patch_max_msg_payload_size_ws_option()
 
 
 class Error(Exception):

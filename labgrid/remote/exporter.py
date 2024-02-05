@@ -18,9 +18,11 @@ import attr
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 from .config import ResourceConfig
-from .common import ResourceEntry, enable_tcp_nodelay
+from .common import ResourceEntry, enable_tcp_nodelay, monkey_patch_max_msg_payload_size_ws_option
 from ..util import get_free_port, labgrid_version
 
+
+monkey_patch_max_msg_payload_size_ws_option()
 
 __version__ = labgrid_version()
 exports: Dict[str, Type[ResourceEntry]] = {}

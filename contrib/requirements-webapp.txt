@@ -1,0 +1,3 @@
+fastapi
+graphviz
+uvicorn

@@ -8,8 +8,8 @@ have no dependencies.
 .. image:: res/config_graph.svg
    :width: 50%
 
-Here the resource `RawSerialPort` provides the information for the
-`SerialDriver`, which in turn is needed by the `ShellDriver`.
+Here the resource `RawSerialPort`_ provides the information for the
+`SerialDriver`_, which in turn is needed by the `ShellDriver`_.
 Driver dependency resolution is done by searching for the driver which
 implements the dependent protocol, all drivers implement one or more protocols.
 
@@ -21,8 +21,8 @@ Serial Ports
 
 RawSerialPort
 +++++++++++++
-A RawSerialPort is a serial port which is identified via the device path on the
-local computer.
+A :any:`RawSerialPort` is a serial port which is identified via the device path
+on the local computer.
 Take note that re-plugging USB serial converters can result in a different
 enumeration order.
 
@@ -44,8 +44,9 @@ Used by:
 
 NetworkSerialPort
 +++++++++++++++++
-A NetworkSerialPort describes a serial port which is exported over the network,
-usually using RFC2217 or raw tcp.
+A :any:`NetworkSerialPort` describes a serial port which is exported over the
+network, usually using `RFC2217 <https://datatracker.ietf.org/doc/rfc2217/>`_
+or raw tcp.
 
 .. code-block:: yaml
 
@@ -69,7 +70,7 @@ Used by:
 
 ModbusRTU
 +++++++++
-Describes the resource required to use the ModbusRTU driver.
+A :any:`ModbusRTU` resource is required to use the `ModbusRTUDriver`_.
 `Modbus RTU <https://en.wikipedia.org/wiki/Modbus>`_ is a communication
 protocol used to control many different kinds of electronic systems, such as
 thermostats, power plants, etc.
@@ -77,11 +78,11 @@ Modbus is normally implemented on top of RS-485, though this is not strictly
 necessary, as long as the Modbus network only has one master (and up to 256
 slaves).
 
-The labgrid driver is implemented using the minimalmodbus Python library.
+The labgrid driver is implemented using the
+`minimalmodbus <https://minimalmodbus.readthedocs.io/en/stable/>`_ Python
+library.
 The implementation only supports that labgrid will be the master on the Modbus
 network.
-For more information, see `minimalmodbus
-<https://minimalmodbus.readthedocs.io/en/stable/>`_.
 
 This resource and driver only supports local usage and will not work with an
 exporter.
@@ -105,8 +106,8 @@ Used by:
 
 USBSerialPort
 +++++++++++++
-A USBSerialPort describes a serial port which is connected via USB and is
-identified by matching udev properties.
+A :any:`USBSerialPort` describes a serial port which is connected via USB and
+is identified by matching udev properties.
 This allows identification through hot-plugging or rebooting.
 
 .. code-block:: yaml
@@ -133,7 +134,7 @@ Power Ports
 
 NetworkPowerPort
 ++++++++++++++++
-A NetworkPowerPort describes a remotely switchable power port.
+A :any:`NetworkPowerPort` describes a remotely switchable power port.
 
 .. code-block:: yaml
 
@@ -241,7 +242,7 @@ Used by:
 
 PDUDaemonPort
 +++++++++++++
-A PDUDaemonPort describes a PDU port accessible via `PDUDaemon
+A :any:`PDUDaemonPort` describes a PDU port accessible via `PDUDaemon
 <https://github.com/pdudaemon/pdudaemon>`_.
 As one PDUDaemon instance can control many PDUs, the instance name from the
 PDUDaemon configuration file needs to be specified.
@@ -266,7 +267,7 @@ Used by:
 
 YKUSHPowerPort
 ++++++++++++++
-A YKUSHPowerPort describes a YEPKIT YKUSH USB (HID) switchable USB hub.
+A :any:`YKUSHPowerPort` describes a YEPKIT YKUSH USB (HID) switchable USB hub.
 
 .. code-block:: yaml
 
@@ -287,11 +288,12 @@ Used by:
 
 NetworkYKUSHPowerPort
 +++++++++++++++++++++
-A NetworkYKUSHPowerPort describes a `YKUSHPowerPort`_ available on a remote computer.
+A :any:`NetworkYKUSHPowerPort` describes a `YKUSHPowerPort`_ available on a
+remote computer.
 
 USBPowerPort
 ++++++++++++
-A USBPowerPort describes a generic switchable USB hub as supported by
+A :any:`USBPowerPort` describes a generic switchable USB hub as supported by
 `uhubctl <https://github.com/mvp/uhubctl>`_.
 
 .. code-block:: yaml
@@ -321,7 +323,7 @@ Used by:
 
 SiSPMPowerPort
 ++++++++++++++
-A SiSPMPowerPort describes a GEMBIRD SiS-PM as supported by
+A :any:`SiSPMPowerPort` describes a GEMBIRD SiS-PM as supported by
 `sispmctl <https://sourceforge.net/projects/sispmctl/>`_.
 
 .. code-block:: yaml
@@ -343,8 +345,8 @@ Used by:
 
 TasmotaPowerPort
 ++++++++++++++++
-A :any:`TasmotaPowerPort` resource describes a switchable Tasmota power outlet
-accessed over MQTT.
+A :any:`TasmotaPowerPort` resource describes a switchable `Tasmota
+<https://tasmota.github.io/docs/>`_ power outlet accessed over MQTT.
 
 .. code-block:: yaml
 
@@ -373,7 +375,7 @@ Digital Outputs
 
 ModbusTCPCoil
 +++++++++++++
-A ModbusTCPCoil describes a coil accessible via ModbusTCP.
+A :any:`ModbusTCPCoil` describes a coil accessible via ModbusTCP.
 
 .. code-block:: yaml
 
@@ -397,7 +399,7 @@ Used by:
 
 DeditecRelais8
 ++++++++++++++
-A DeditecRelais8 describes a Deditec USB GPO module with 8 relays.
+A :any:`DeditecRelais8` describes a Deditec USB GPO module with 8 relays.
 
 .. code-block:: yaml
 
@@ -418,7 +420,7 @@ Used by:
 
 OneWirePIO
 ++++++++++
-A OneWirePIO describes a onewire programmable I/O pin.
+A :any:`OneWirePIO` describes a onewire programmable I/O pin.
 
 .. code-block:: yaml
 
@@ -465,7 +467,7 @@ Used by:
 
 NetworkLXAIOBusPIO
 ++++++++++++++++++
-A NetworkLXAIOBusPIO describes an `LXAIOBusPIO`_ exported over the network.
+A :any:`NetworkLXAIOBusPIO` describes an `LXAIOBusPIO`_ exported over the network.
 
 HIDRelay
 ++++++++
@@ -491,7 +493,7 @@ Used by:
 
 HttpDigitalOutput
 +++++++++++++++++
-A ``HttpDigitalOutput`` resource describes a generic digital output that can be
+A :any:`HttpDigitalOutput` resource describes a generic digital output that can be
 controlled via HTTP.
 
 .. code-block:: yaml
@@ -524,11 +526,11 @@ Used by:
 
 NetworkHIDRelay
 +++++++++++++++
-A NetworkHIDRelay describes an `HIDRelay`_ exported over the network.
+A :any:`NetworkHIDRelay` describes an `HIDRelay`_ exported over the network.
 
 NetworkService
 ~~~~~~~~~~~~~~
-A NetworkService describes a remote SSH connection.
+A :any:`NetworkService` describes a remote SSH connection.
 
 .. code-block:: yaml
 
@@ -559,7 +561,8 @@ Used by:
 
 USBMassStorage
 ~~~~~~~~~~~~~~
-A USBMassStorage resource describes a USB memory stick or similar device.
+A :any:`USBMassStorage` resource describes a USB memory stick or similar
+device.
 
 .. code-block:: yaml
 
@@ -575,7 +578,7 @@ Used by:
 
 NetworkUSBMassStorage
 ~~~~~~~~~~~~~~~~~~~~~
-A NetworkUSBMassStorage resource describes a USB memory stick or similar
+A :any:`NetworkUSBMassStorage` resource describes a USB memory stick or similar
 device available on a remote computer.
 
 The NetworkUSBMassStorage can be used in test cases by calling the
@@ -583,8 +586,8 @@ The NetworkUSBMassStorage can be used in test cases by calling the
 
 SigrokDevice
 ~~~~~~~~~~~~
-A SigrokDevice resource describes a sigrok device. To select a specific device
-from all connected supported devices use the `SigrokUSBDevice`_.
+A :any:`SigrokDevice` resource describes a sigrok device. To select a specific
+device from all connected supported devices use the `SigrokUSBDevice`_.
 
 .. code-block:: yaml
 
@@ -602,7 +605,7 @@ Used by:
 
 IMXUSBLoader
 ~~~~~~~~~~~~
-An IMXUSBLoader resource describes a USB device in the imx loader state.
+An :any:`IMXUSBLoader` resource describes a USB device in the imx loader state.
 
 .. code-block:: yaml
 
@@ -620,7 +623,7 @@ Used by:
 
 MXSUSBLoader
 ~~~~~~~~~~~~
-An MXSUSBLoader resource describes a USB device in the mxs loader state.
+An :any:`MXSUSBLoader` resource describes a USB device in the mxs loader state.
 
 .. code-block:: yaml
 
@@ -638,7 +641,8 @@ Used by:
 
 RKUSBLoader
 ~~~~~~~~~~~
-An RKUSBLoader resource describes a USB device in the rockchip loader state.
+An :any:`RKUSBLoader` resource describes a USB device in the rockchip loader
+state.
 
 .. code-block:: yaml
 
@@ -654,19 +658,23 @@ Used by:
 
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
-A NetworkMXSUSBLoader describes an `MXSUSBLoader`_ available on a remote computer.
+A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ available on a remote
+computer.
 
 NetworkIMXUSBLoader
 ~~~~~~~~~~~~~~~~~~~
-A NetworkIMXUSBLoader describes an `IMXUSBLoader`_ available on a remote computer.
+A :any:`NetworkIMXUSBLoader` describes an `IMXUSBLoader`_ available on a remote
+computer.
 
 NetworkRKUSBLoader
 ~~~~~~~~~~~~~~~~~~
-A NetworkRKUSBLoader describes an `RKUSBLoader`_ available on a remote computer.
+A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ available on a remote
+computer.
 
 AndroidUSBFastboot
 ~~~~~~~~~~~~~~~~~~
-An AndroidUSBFastboot resource describes a USB device in the fastboot state.
+An :any:`AndroidUSBFastboot` resource describes a USB device in the fastboot
+state.
 Previously, this resource was named AndroidFastboot and this name still
 supported for backwards compatibility.
 
@@ -688,7 +696,8 @@ Used by:
 
 AndroidNetFastboot
 ~~~~~~~~~~~~~~~~~~
-An AndroidNetFastboot resource describes a network device in fastboot state.
+An :any:`AndroidNetFastboot` resource describes a network device in fastboot
+state.
 
 .. code-block:: yaml
 
@@ -707,8 +716,8 @@ Used by:
 
 DFUDevice
 ~~~~~~~~~
-A DFUDevice resource describes a USB device in DFU (Device Firmware Upgrade)
-mode.
+A :any:`DFUDevice` resource describes a USB device in DFU (Device Firmware
+Upgrade) mode.
 
 .. code-block:: yaml
 
@@ -724,8 +733,8 @@ Used by:
 
 NetworkInterface
 ~~~~~~~~~~~~~~~~
-A NetworkInterface resource describes a network adapter (such as Ethernet or
-WiFi)
+A :any:`NetworkInterface` resource describes a network adapter (such as
+Ethernet or WiFi)
 
 .. code-block:: yaml
 
@@ -741,7 +750,7 @@ Used by:
 
 USBNetworkInterface
 ~~~~~~~~~~~~~~~~~~~
-A USBNetworkInterface resource describes a USB network adapter (such as
+A :any:`USBNetworkInterface` resource describes a USB network adapter (such as
 Ethernet or WiFi)
 
 .. code-block:: yaml
@@ -759,12 +768,12 @@ Used by:
 
 RemoteNetworkInterface
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`RemoteNetworkInterface` resource describes a :any:`NetworkInterface` or
-:any:`USBNetworkInterface` resource available on a remote computer.
+A :any:`RemoteNetworkInterface` resource describes a `NetworkInterface`_ or
+`USBNetworkInterface`_ resource available on a remote computer.
 
 AlteraUSBBlaster
 ~~~~~~~~~~~~~~~~
-An AlteraUSBBlaster resource describes an Altera USB blaster.
+An :any:`AlteraUSBBlaster` resource describes an Altera USB blaster.
 
 .. code-block:: yaml
 
@@ -781,8 +790,8 @@ Used by:
 
 USBDebugger
 ~~~~~~~~~~~
-An USBDebugger resource describes a JTAG USB adapter (for example an FTDI
-FT2232H).
+An :any:`USBDebugger` resource describes a JTAG USB adapter (for example an
+FTDI FT2232H).
 
 .. code-block:: yaml
 
@@ -798,8 +807,8 @@ Used by:
 
 SNMPEthernetPort
 ~~~~~~~~~~~~~~~~
-A SNMPEthernetPort resource describes a port on an Ethernet switch, which is
-accessible via SNMP.
+A :any:`SNMPEthernetPort` resource describes a port on an Ethernet switch,
+which is accessible via SNMP.
 
 .. code-block:: yaml
 
@@ -816,7 +825,7 @@ Used by:
 
 SigrokUSBDevice
 ~~~~~~~~~~~~~~~
-A SigrokUSBDevice resource describes a sigrok USB device.
+A :any:`SigrokUSBDevice` resource describes a sigrok USB device.
 
 .. code-block:: yaml
 
@@ -837,14 +846,15 @@ Used by:
 
 NetworkSigrokUSBDevice
 ~~~~~~~~~~~~~~~~~~~~~~
-A NetworkSigrokUSBDevice resource describes a sigrok USB device connected to a
-host which is exported over the network. The SigrokDriver will access it via SSH.
+A :any:`NetworkSigrokUSBDevice` resource describes a sigrok USB device
+connected to a host which is exported over the network.
+The `SigrokDriver`_ will access it via SSH.
 
 SigrokUSBSerialDevice
 ~~~~~~~~~~~~~~~~~~~~~
-A SigrokUSBSerialDevice resource describes a sigrok device which communicates
-of a USB serial port instead of being a USB device itself (see
-`SigrokUSBDevice` for that case).
+A :any:`SigrokUSBSerialDevice` resource describes a sigrok device which
+communicates over a USB serial port instead of being a USB device itself (see
+`SigrokUSBDevice`_ for that case).
 
 .. code-block:: yaml
 
@@ -966,7 +976,7 @@ Used by:
 
 NetworkUSBVideo
 ~~~~~~~~~~~~~~~
-A :any:`NetworkUSBVideo` resource describes a :any:`USBVideo` resource available
+A :any:`NetworkUSBVideo` resource describes a `USBVideo`_ resource available
 on a remote computer.
 
 USBAudioInput
@@ -990,7 +1000,7 @@ Used by:
 
 NetworkUSBAudioInput
 ~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkUSBAudioInput` resource describes a :any:`USBAudioInput` resource
+A :any:`NetworkUSBAudioInput` resource describes a `USBAudioInput`_ resource
 available on a remote computer.
 
 USBTMC
@@ -1020,13 +1030,15 @@ Used by:
 
 NetworkUSBTMC
 ~~~~~~~~~~~~~
-A :any:`NetworkUSBTMC` resource describes a :any:`USBTMC` resource available
+A :any:`NetworkUSBTMC` resource describes a `USBTMC`_ resource available
 on a remote computer.
 
 Flashrom
 ~~~~~~~~
-A Flashrom resource is used to configure the parameters to a local installed flashrom instance.
-It is assumed that flashrom is installed on the host and the executable is configured in:
+A :any:`Flashrom` resource is used to configure the parameters to a local
+installed flashrom instance.
+It is assumed that flashrom is installed on the host and the executable is
+configured in:
 
 .. code-block:: yaml
 
@@ -1052,13 +1064,14 @@ Used by:
 
 NetworkFlashrom
 ~~~~~~~~~~~~~~~
-A NetworkFlashrom describes a `Flashrom`_ available on a remote computer.
+A :any:`NetworkFlashrom` describes a `Flashrom`_ available on a remote computer.
 
 USBFlashableDevice
 ~~~~~~~~~~~~~~~~~~
-Represents an "opaque" USB device used by custom flashing programs. There is
-usually not anything useful that can be done with the interface other than
-running a flashing program with `FlashScriptDriver`_.
+A :any:`USBFlashableDevice` represents an "opaque" USB device used by custom
+flashing programs.
+There is usually not anything useful that can be done with the interface other
+than running a flashing program with `FlashScriptDriver`_.
 
 .. note::
    This resource is only intended to be used as a last resort when it is
@@ -1079,15 +1092,16 @@ Used by:
 
 NetworkUSBFlashableDevice
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkUSBFlashableDevice` resource describes a :any:`USBFlashableDevice`
+A :any:`NetworkUSBFlashableDevice` resource describes a `USBFlashableDevice`_
 resource available on a remote computer
 
 
 DediprogFlasher
 ~~~~~~~~~~~~~~~
-A DediprogFlasher resource is used to configure the parameters to a locally installed
-dpmcd instance. It is assumed that dpcmd is installed on the host and the
-executable can be configured via:
+A :any:`DediprogFlasher` resource is used to configure the parameters to a
+locally installed dpmcd instance.
+It is assumed that dpcmd is installed on the host and the executable can be
+configured via:
 
 .. code-block:: yaml
 
@@ -1109,12 +1123,13 @@ Used by:
 
 NetworkDediprogFlasher
 ~~~~~~~~~~~~~~~~~~~~~~
-A NetworkDediprogFlasher describes a `DediprogFlasher`_ available on a remote computer.
+A :any:`NetworkDediprogFlasher` describes a `DediprogFlasher`_ available on a
+remote computer.
 
 XenaManager
 ~~~~~~~~~~~
-A XenaManager resource describes a Xena Manager instance which is the instance the
-`XenaDriver`_ must connect to in order to configure a Xena chassis.
+A :any:`XenaManager` resource describes a Xena Manager instance which is the
+instance the `XenaDriver`_ must connect to in order to configure a Xena chassis.
 
 .. code-block:: yaml
 
@@ -1129,7 +1144,8 @@ Used by:
 
 PyVISADevice
 ~~~~~~~~~~~~
-A PyVISADevice resource describes a test stimuli device controlled by PyVISA.
+A :any:`PyVISADevice` resource describes a test stimuli device controlled by
+PyVISA.
 Such device could be a signal generator.
 
 .. code-block:: yaml
@@ -1169,8 +1185,8 @@ specific protocol.
 This is useful for software installation in the bootloader (via TFTP) or
 downloading update artifacts under Linux (via HTTP).
 
-They are used with the ManagedFile helper, which ensures that the file is
-available on the server. For HTTP and TFTP, a symlink from the internal
+They are used with the :any:`ManagedFile` helper, which ensures that the file
+is available on the server. For HTTP and TFTP, a symlink from the internal
 directory to the uploaded file is created.
 The path for the target is generated by replacing the internal prefix with the
 external prefix.
@@ -1186,6 +1202,9 @@ labgrid.
 
 TFTPProvider / HTTPProvider
 +++++++++++++++++++++++++++
+A :any:`TFTPProvider` resource describes TFTP server.
+A :any:`HTTPProvider` resource describes an HTTP server.
+
 .. code-block:: yaml
 
    TFTPProvider:
@@ -1206,6 +1225,8 @@ Used by:
 
 NFSProvider
 +++++++++++
+An :any:`NFSProvider` resource describes an NFS server.
+
 .. code-block:: yaml
 
    NFSProvider: {}
@@ -1221,8 +1242,10 @@ Used by:
 
 RemoteTFTPProvider / RemoteHTTPProvider
 +++++++++++++++++++++++++++++++++++++++
-These describe a `TFTPProvider`_ or `HTTPProvider`_ resource available on a
-remote computer.
+A :any:`RemoteTFTPProvider` describes a `TFTPProvider`_ resource available on
+a remote computer.
+A :any:`RemoteHTTPProvider` describes a `HTTPProvider`_ resource available on
+a remote computer.
 
 .. code-block:: yaml
 
@@ -1247,7 +1270,8 @@ Used by:
 
 RemoteNFSProvider
 +++++++++++++++++
-An `NFSProvider`_ resource available on a remote computer.
+A :any:`RemoteNFSProvider` describes an `NFSProvider`_ resource available on a
+remote computer.
 
 .. code-block:: yaml
 
@@ -1262,7 +1286,8 @@ Used by:
 
 RemotePlace
 ~~~~~~~~~~~
-A RemotePlace describes a set of resources attached to a labgrid remote place.
+A :any:`RemotePlace` describes a set of resources attached to a labgrid remote
+place.
 
 .. code-block:: yaml
 
@@ -1281,8 +1306,8 @@ Used by:
 
 DockerDaemon
 ~~~~~~~~~~~~
-A DockerDaemon describes where to contact a docker daemon process.
-DockerDaemon also participates in managing `NetworkService` instances
+A :any:`DockerDaemon` describes where to contact a docker daemon process.
+DockerDaemon also participates in managing `NetworkService`_ instances
 created through interaction with that daemon.
 
 .. code-block:: yaml
@@ -1291,16 +1316,16 @@ created through interaction with that daemon.
      docker_daemon_url: unix://var/run/docker.sock
 
 The example describes a docker daemon accessible via the
-'/var/run/docker.sock' unix socket. When used by a `DockerDriver`, the
-`DockerDriver` will first create a docker container which the
+``/var/run/docker.sock`` unix socket. When used by a `DockerDriver`_, the
+`DockerDriver`_ will first create a docker container which the
 DockerDaemon resource will subsequently use to create one/more
-`NetworkService` instances - as specified by `DockerDriver` configuration.
-Each `NetworkService` instance corresponds to a network service running inside
+`NetworkService`_ instances - as specified by `DockerDriver`_ configuration.
+Each `NetworkService`_ instance corresponds to a network service running inside
 the container.
 
 Moreover, DockerDaemon will remove any hanging containers if
 DockerDaemon is used several times in a row - as is the case when
-executing test suites. Normally `DockerDriver` - when deactivated -
+executing test suites. Normally `DockerDriver`_ - when deactivated -
 cleans up the created docker container; programming errors, keyboard
 interrupts or unix kill signals may lead to hanging containers, however;
 therefore auto-cleanup is important.
@@ -1383,7 +1408,7 @@ with ``udevadm info /dev/ttyUSB0``.
 
 Note the ``@`` in the ``@ID_PATH`` match, which applies this match to the
 device's parents instead of directly to itself.
-This is necessary for the `USBSerialPort` because we actually want to find the
+This is necessary for the `USBSerialPort`_ because we actually want to find the
 ``ttyUSB?`` device below the USB serial converter device.
 
 Matching an Android USB Fastboot Device
@@ -1498,8 +1523,8 @@ Drivers
 
 SerialDriver
 ~~~~~~~~~~~~
-A SerialDriver connects to a serial port. It requires one of the serial port
-resources.
+A :any:`SerialDriver` connects to a serial port. It requires one of the serial
+port resources.
 
 Binds to:
   port:
@@ -1523,8 +1548,8 @@ Arguments:
 
 ModbusRTUDriver
 ~~~~~~~~~~~~~~~
-A ModbusRTUDriver connects to a ModbusRTU resource. This driver only supports
-local usage and will not work with an exporter.
+A :any:`ModbusRTUDriver` connects to a ModbusRTU resource. This driver only
+supports local usage and will not work with an exporter.
 
 .. code-block:: yaml
 
@@ -1542,8 +1567,8 @@ Arguments:
 
 ShellDriver
 ~~~~~~~~~~~
-A ShellDriver binds on top of a `ConsoleProtocol` and is designed to interact
-with a login prompt and a Linux shell.
+A :any:`ShellDriver` binds on top of a :any:`ConsoleProtocol` and is designed
+to interact with a login prompt and a Linux shell.
 
 Binds to:
   console:
@@ -1593,8 +1618,8 @@ Arguments:
 
 SSHDriver
 ~~~~~~~~~
-A SSHDriver requires a `NetworkService` resource and allows the execution of
-commands and file upload via network.
+A :any:`SSHDriver` requires a `NetworkService`_ resource and allows the
+execution of commands and file upload via network.
 It uses SSH's `ServerAliveInterval` option to detect failed connections.
 
 If a shared SSH connection to the target is already open, it will reuse it when
@@ -1617,7 +1642,7 @@ Implements:
 
 Arguments:
   - keyfile (str): optional, filename of private key to login into the remote system
-    (has precedence over `NetworkService`'s password)
+    (has precedence over `NetworkService`_'s password)
   - stderr_merge (bool, default=False): set to True to make `run()` return stderr merged with
     stdout, and an empty list as second element.
   - connection_timeout (float, default=30.0): timeout when trying to establish connection to
@@ -1626,12 +1651,13 @@ Arguments:
     explicitly use the SFTP protocol for file transfers instead of scp's default protocol
   - explicit_scp_mode (bool, default=False): if set to True, `put()`, `get()`, and `scp()` will
     explicitly use the SCP protocol for file transfers instead of scp's default protocol
-  - username (str, default=username from `NetworkService`): username used by SSH
-  - password (str, default=password from `NetworkService`): password used by SSH
+  - username (str, default=username from `NetworkService`_): username used by SSH
+  - password (str, default=password from `NetworkService`_): password used by SSH
 
 UBootDriver
 ~~~~~~~~~~~
-A UBootDriver interfaces with a U-Boot bootloader via a `ConsoleProtocol`.
+A :any:`UBootDriver` interfaces with a U-Boot bootloader via a
+:any:`ConsoleProtocol`.
 
 Binds to:
   console:
@@ -1665,8 +1691,8 @@ Arguments:
 
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~
-A SmallUBootDriver interfaces with stripped-down U-Boot variants that are
-sometimes used in cheap consumer electronics.
+A :any:`SmallUBootDriver` interfaces with stripped-down U-Boot variants that
+are sometimes used in cheap consumer electronics.
 
 SmallUBootDriver is meant as a driver for U-Boot with only little functionality
 compared to a standard U-Boot.
@@ -1718,7 +1744,8 @@ Arguments:
 
 BareboxDriver
 ~~~~~~~~~~~~~
-A BareboxDriver interfaces with a barebox bootloader via a `ConsoleProtocol`.
+A :any:`BareboxDriver` interfaces with a *barebox* bootloader via a
+:any:`ConsoleProtocol`.
 
 Binds to:
   console:
@@ -1744,8 +1771,8 @@ Arguments:
 
 ExternalConsoleDriver
 ~~~~~~~~~~~~~~~~~~~~~
-An ExternalConsoleDriver implements the `ConsoleProtocol` on top of a command
-executed on the local computer.
+An :any:`ExternalConsoleDriver` implements the :any:`ConsoleProtocol` on top of
+a command executed on the local computer.
 
 Binds to:
   - None
@@ -1765,8 +1792,8 @@ Arguments:
 
 AndroidFastbootDriver
 ~~~~~~~~~~~~~~~~~~~~~
-An AndroidFastbootDriver allows the upload of images to a device in the USB or
-network fastboot state.
+An :any:`AndroidFastbootDriver` allows the upload of images to a device in the
+USB or network fastboot state.
 
 Binds to:
   fastboot:
@@ -1795,8 +1822,8 @@ Arguments:
 
 DFUDriver
 ~~~~~~~~~
-A DFUDriver allows the download of images to a device in DFU (Device Firmware
-Upgrade) mode.
+A :any:`DFUDriver` allows the download of images to a device in DFU (Device
+Firmware Upgrade) mode.
 
 Binds to:
   dfu:
@@ -1815,7 +1842,8 @@ Arguments:
 
 OpenOCDDriver
 ~~~~~~~~~~~~~
-An OpenOCDDriver controls OpenOCD to bootstrap a target with a bootloader.
+An :any:`OpenOCDDriver` controls OpenOCD to bootstrap a target with a
+bootloader.
 
 Note that OpenOCD supports specifying USB paths since
 `a1b308ab <https://sourceforge.net/p/openocd/code/ci/a1b308ab/>`_ which was released with v0.11.
@@ -1857,8 +1885,8 @@ Arguments:
 
 QuartusHPSDriver
 ~~~~~~~~~~~~~~~~
-A QuartusHPSDriver controls the "Quartus Prime Programmer and Tools" to flash
-a target's QSPI.
+A :any:`QuartusHPSDriver` controls the "Quartus Prime Programmer and Tools" to
+flash a target's QSPI.
 
 Binds to:
   interface:
@@ -1876,8 +1904,9 @@ example strategy is included in labgrid.
 
 ManualPowerDriver
 ~~~~~~~~~~~~~~~~~
-A ManualPowerDriver requires the user to control the target power states. This
-is required if a strategy is used with the target, but no automatic power
+A :any:`ManualPowerDriver` requires the user to control the target power
+states.
+This is required if a strategy is used with the target, but no automatic power
 control is available.
 
 The driver's name will be displayed during interaction.
@@ -1899,7 +1928,8 @@ Arguments:
 
 ExternalPowerDriver
 ~~~~~~~~~~~~~~~~~~~
-An ExternalPowerDriver is used to control a target power state via an external command.
+An :any:`ExternalPowerDriver` is used to control a target power state via an
+external command.
 
 Binds to:
   - None
@@ -1923,8 +1953,8 @@ Arguments:
 
 NetworkPowerDriver
 ~~~~~~~~~~~~~~~~~~
-A NetworkPowerDriver controls a `NetworkPowerPort`, allowing control of the
-target power state without user interaction.
+A :any:`NetworkPowerDriver` controls a `NetworkPowerPort`_, allowing control of
+the target power state without user interaction.
 
 Binds to:
   port:
@@ -1944,8 +1974,8 @@ Arguments:
 
 PDUDaemonDriver
 ~~~~~~~~~~~~~~~
-A PDUDaemonDriver controls a `PDUDaemonPort`, allowing control of the target
-power state without user interaction.
+A :any:`PDUDaemonDriver` controls a `PDUDaemonPort`_, allowing control of the
+target power state without user interaction.
 
 .. note::
   PDUDaemon processes commands in the background, so the actual state change
@@ -1969,7 +1999,7 @@ Arguments:
 
 YKUSHPowerDriver
 ~~~~~~~~~~~~~~~~
-A YKUSHPowerDriver controls a `YKUSHPowerPort`, allowing control of the
+A :any:`YKUSHPowerDriver` controls a `YKUSHPowerPort`_, allowing control of the
 target power state without user interaction.
 
 Binds to:
@@ -1991,8 +2021,8 @@ Arguments:
 
 DigitalOutputPowerDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~
-A DigitalOutputPowerDriver can be used to control the power of a
-device using a DigitalOutputDriver.
+A :any:`DigitalOutputPowerDriver` can be used to control the power of a device
+using a DigitalOutputDriver.
 
 Using this driver you probably want an external relay to switch the
 power of your DUT.
@@ -2015,8 +2045,8 @@ Arguments:
 
 USBPowerDriver
 ~~~~~~~~~~~~~~
-A USBPowerDriver controls a `USBPowerPort`, allowing control of the target
-power state without user interaction.
+A :any:`USBPowerDriver` controls a `USBPowerPort`_, allowing control of the
+target power state without user interaction.
 
 Binds to:
   hub:
@@ -2037,8 +2067,8 @@ Arguments:
 
 SiSPMPowerDriver
 ~~~~~~~~~~~~~~~~
-A SiSPMPowerDriver controls a `SiSPMPowerPort`, allowing control of the target
-power state without user interaction.
+A :any:`SiSPMPowerDriver` controls a `SiSPMPowerPort`_, allowing control of the
+target power state without user interaction.
 
 Binds to:
   port:
@@ -2059,8 +2089,8 @@ Arguments:
 
 TasmotaPowerDriver
 ~~~~~~~~~~~~~~~~~~
-A TasmotaPowerDriver controls a `TasmotaPowerPort`, allowing the outlet to be
-switched on and off.
+A :any:`TasmotaPowerDriver` controls a `TasmotaPowerPort`_, allowing the outlet
+to be switched on and off.
 
 Binds to:
   power:
@@ -2079,7 +2109,7 @@ Arguments:
 
 GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
-The GpioDigitalOutputDriver writes a digital signal to a GPIO line.
+The :any:`GpioDigitalOutputDriver` writes a digital signal to a GPIO line.
 
 This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`.
 While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.
@@ -2101,7 +2131,7 @@ Arguments:
 
 SerialPortDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The SerialPortDigitalOutputDriver makes it possible to use a UART
+The :any:`SerialPortDigitalOutputDriver` makes it possible to use a UART
 as a 1-Bit general-purpose digital output.
 
 This driver acts on top of a SerialDriver and uses the its pyserial port to
@@ -2130,7 +2160,7 @@ Arguments:
 
 FileDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
-The FileDigitalOutputDriver uses a file
+The :any:`FileDigitalOutputDriver` uses a file
 to write arbitrary string representations of booleans
 to a file and read from it.
 
@@ -2159,7 +2189,7 @@ Arguments:
 
 DigitalOutputResetDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~
-A DigitalOutputResetDriver uses a DigitalOutput to reset the target.
+A :any:`DigitalOutputResetDriver` uses a DigitalOutput to reset the target.
 
 Binds to:
   output:
@@ -2178,7 +2208,7 @@ Arguments:
 
 ModbusCoilDriver
 ~~~~~~~~~~~~~~~~
-A ModbusCoilDriver controls a `ModbusTCPCoil` resource.
+A :any:`ModbusCoilDriver` controls a `ModbusTCPCoil`_ resource.
 It can set and get the current state of the resource.
 
 Binds to:
@@ -2197,7 +2227,7 @@ Arguments:
 
 HIDRelayDriver
 ~~~~~~~~~~~~~~
-A HIDRelayDriver controls a `HIDRelay` or `NetworkHIDRelay` resource.
+A :any:`HIDRelayDriver` controls a `HIDRelay`_ or `NetworkHIDRelay`_ resource.
 It can set and get the current state of the resource.
 
 Binds to:
@@ -2217,9 +2247,10 @@ Arguments:
 
 ManualSwitchDriver
 ~~~~~~~~~~~~~~~~~~
-A ManualSwitchDriver requires the user to control a switch or jumper on the
-target. This can be used if a driver binds to a :any:`DigitalOutputProtocol`,
-but no automatic control is available.
+A :any:`ManualSwitchDriver` requires the user to control a switch or jumper on
+the target.
+This can be used if a driver binds to a :any:`DigitalOutputProtocol`, but no
+automatic control is available.
 
 Binds to:
   - None
@@ -2237,7 +2268,7 @@ Arguments:
 
 DeditecRelaisDriver
 ~~~~~~~~~~~~~~~~~~~
-A DeditecRelaisDriver controls a Deditec relay resource.
+A :any:`DeditecRelaisDriver` controls a Deditec relay resource.
 It can set and get the current state of the resource.
 
 Binds to:
@@ -2257,8 +2288,9 @@ Arguments:
 
 MXSUSBDriver
 ~~~~~~~~~~~~
-A MXUSBDriver is used to upload an image into a device in the mxs USB loader
-state. This is useful to bootstrap a bootloader onto a device.
+An :any:`MXSUSBDriver` is used to upload an image into a device in the mxs USB
+loader state.
+This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
   loader:
@@ -2285,8 +2317,9 @@ Arguments:
 
 IMXUSBDriver
 ~~~~~~~~~~~~
-A IMXUSBDriver is used to upload an image into a device in the imx USB loader
-state. This is useful to bootstrap a bootloader onto a device.
+A :any:`IMXUSBDriver` is used to upload an image into a device in the imx USB
+loader state.
+This is useful to bootstrap a bootloader onto a device.
 This driver uses the imx-usb-loader tool from barebox.
 
 Binds to:
@@ -2316,8 +2349,8 @@ Arguments:
 
 BDIMXUSBDriver
 ~~~~~~~~~~~~~~
-The BDIMXUSBDriver is used to upload bootloader images into an i.MX device in
-the USB SDP mode.
+The :any:`BDIMXUSBDriver` is used to upload bootloader images into an i.MX
+device in the USB SDP mode.
 This driver uses the imx_usb tool by Boundary Devices.
 Compared to the IMXUSBLoader, it supports two-stage upload of U-Boot images.
 The images paths need to be specified from code instead of in the YAML
@@ -2343,8 +2376,9 @@ Arguments:
 
 RKUSBDriver
 ~~~~~~~~~~~
-A RKUSBDriver is used to upload an image into a device in the rockchip USB loader
-state. This is useful to bootstrap a bootloader onto a device.
+A :any:`RKUSBDriver` is used to upload an image into a device in the rockchip
+USB loader state.
+This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
   loader:
@@ -2375,8 +2409,9 @@ Arguments:
 
 UUUDriver
 ~~~~~~~~~
-A UUUDriver is used to upload an image into a device in the NXP USB loader
-state. This is useful to bootstrap a bootloader onto a device.
+A :any:`UUUDriver` is used to upload an image into a device in the NXP USB
+loader state.
+This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
   loader:
@@ -2407,7 +2442,7 @@ Arguments:
 
 USBStorageDriver
 ~~~~~~~~~~~~~~~~
-A USBStorageDriver allows access to a USB stick or similar local or
+A :any:`USBStorageDriver` allows access to a USB stick or similar local or
 remote device.
 
 Binds to:
@@ -2439,7 +2474,7 @@ Arguments:
 
 OneWirePIODriver
 ~~~~~~~~~~~~~~~~
-A OneWirePIODriver controls a `OneWirePIO` resource.
+A :any:`OneWirePIODriver` controls a `OneWirePIO`_ resource.
 It can set and get the current state of the resource.
 
 Binds to:
@@ -2461,8 +2496,8 @@ Arguments:
 
 TFTPProviderDriver / HTTPProviderDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-These drivers control their corresponding Provider resources, either locally or
-remotely.
+The :any:`TFTPProviderDriver` and :any:`HTTPProviderDriver` control their
+corresponding Provider resources, either locally or remotely.
 
 Binds to:
   provider:
@@ -2488,7 +2523,7 @@ returns the path to be used by the target.
 
 NFSProviderDriver
 ~~~~~~~~~~~~~~~~~
-An NFSProviderDriver controls an `NFSProvider` resource.
+An :any:`NFSProviderDriver` controls an `NFSProvider`_ resource.
 
 Binds to:
   provider:
@@ -2511,8 +2546,8 @@ attributes.
 
 QEMUDriver
 ~~~~~~~~~~
-The QEMUDriver allows the usage of a QEMU instance as a target. It requires
-several arguments, listed below.
+The :any:`QEMUDriver` allows the usage of a QEMU instance as a target.
+It requires several arguments, listed below.
 The kernel, flash, rootfs and dtb arguments refer to images and paths declared
 in the environment configuration.
 
@@ -2579,7 +2614,7 @@ The QEMUDriver also requires the specification of:
 
 SigrokDriver
 ~~~~~~~~~~~~
-The SigrokDriver uses a SigrokDevice resource to record samples and provides
+The :any:`SigrokDriver` uses a `SigrokDevice`_ resource to record samples and provides
 them during test runs.
 
 Binds to:
@@ -2599,8 +2634,8 @@ The driver can be used in test cases by calling the `capture`, `stop` and
 
 SigrokPowerDriver
 ~~~~~~~~~~~~~~~~~
-The SigrokPowerDriver uses a `SigrokUSBSerialDevice`_ resource to control a
-programmable power supply.
+The :any:`SigrokPowerDriver` uses a `SigrokUSBSerialDevice`_ resource to
+control a programmable power supply.
 
 Binds to:
   sigrok:
@@ -2625,8 +2660,8 @@ Arguments:
 
 SigrokDmmDriver
 ~~~~~~~~~~~~~~~
-The `SigrokDmmDriver` uses a  `SigrokDevice` resource to record samples from a digital multimeter (DMM) and provides
-them during test runs.
+The :any:`SigrokDmmDriver` uses a `SigrokDevice`_ resource to record samples
+from a digital multimeter (DMM) and provides them during test runs.
 
 It is known to work with Unit-T `UT61B` and `UT61C` devices but should also work with other DMMs supported by *sigrok*.
 
@@ -2659,7 +2694,7 @@ Reading a few samples will very likely work - but obtaining a lot of samples may
 
 USBSDMuxDriver
 ~~~~~~~~~~~~~~
-The :any:`USBSDMuxDriver` uses a USBSDMuxDevice resource to control a
+The :any:`USBSDMuxDriver` uses a `USBSDMuxDevice`_ resource to control a
 USB-SD-Mux device via `usbsdmux <https://github.com/pengutronix/usbsdmux>`_
 tool.
 
@@ -2674,14 +2709,13 @@ Implements:
 Arguments:
   - None
 
-The driver can be used in test cases by calling the `set_mode()` function with
-argument being `dut`, `host`, `off`, or `client`.
+The driver can be used in test cases by calling its ``set_mode()`` method with
+argument being "dut", "host", "off", or "client".
 
 LXAUSBMuxDriver
 ~~~~~~~~~~~~~~~
-The :any:`LXAUSBMuxDriver` uses a LXAUSBMux resource to control a USB-Mux
-device via the `usbmuxctl <https://github.com/linux-automation/usbmuxctl>`_
-tool.
+The :any:`LXAUSBMuxDriver` uses a `LXAUSBMux`_ resource to control a USB-Mux
+device via the `usbmuxctl <https://github.com/linux-automation/usbmuxctl>`_ tool.
 
 Binds to:
   mux:
@@ -2700,7 +2734,7 @@ Not all combinations can be configured at the same time.
 
 USBSDWireDriver
 ~~~~~~~~~~~~~~~
-The :any:`USBSDWireDriver` uses a USBSDWireDevice resource to control a
+The :any:`USBSDWireDriver` uses a `USBSDWireDevice`_ resource to control a
 USB-SD-Wire device via `sd-mux-ctrl <https://wiki.tizen.org/SD_MUX#Software>`_
 tool.
 
@@ -2926,7 +2960,7 @@ DediprogFlasher SF100 for instance, to the device being flashed.
 
 XenaDriver
 ~~~~~~~~~~
-The XenaDriver allows to use Xena networking test equipment.
+The :any:`XenaDriver` allows to use Xena networking test equipment.
 Using the `xenavalkyrie` library a full API to control the tester is available.
 
 Binds to:
@@ -2938,8 +2972,8 @@ Currently tested on a `XenaCompact` chassis equipped with a `1 GE test module`.
 
 DockerDriver
 ~~~~~~~~~~~~
-A DockerDriver binds to a `DockerDaemon` and is used to create and control one
-docker container.
+A :any:`DockerDriver` binds to a `DockerDaemon`_ and is used to create and
+control one docker container.
 
 | The driver uses the docker python module to interact with the docker daemon.
 | For more information on the parameters see:
@@ -2974,8 +3008,8 @@ Arguments:
 
 LXAIOBusPIODriver
 ~~~~~~~~~~~~~~~~~
-An LXAIOBusPIODriver binds to a single `LXAIOBusPIO` to toggle and read the PIO
-states.
+An :any:`LXAIOBusPIODriver` binds to a single `LXAIOBusPIO`_ to toggle and read
+the PIO states.
 
 Binds to:
   pio:
@@ -2994,8 +3028,8 @@ Arguments:
 
 HttpDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
-A HttpDigitalOutputDriver binds to a `HttpDigitalOutput` to set and get a
-digital output state via HTTP.
+A :any:`HttpDigitalOutputDriver` binds to a `HttpDigitalOutput`_ to set and get
+a digital output state via HTTP.
 
 Binds to:
   http:
@@ -3013,7 +3047,8 @@ Arguments:
 
 PyVISADriver
 ~~~~~~~~~~~~
-The PyVISADriver uses a PyVISADevice resource to control test equipment manageable by PyVISA.
+The :any:`PyVISADriver` uses a `PyVISADevice`_ resource to control test
+equipment manageable by PyVISA.
 
 Binds to:
   pyvisa_resource:
@@ -3027,8 +3062,8 @@ Arguments:
 
 NetworkInterfaceDriver
 ~~~~~~~~~~~~~~~~~~~~~~
-This driver allows controlling a network interface (such as Ethernet or WiFi) on
-the exporter using NetworkManager.
+The :any:`NetworkInterfaceDriver` allows controlling a network interface (such
+as Ethernet or WiFi) on the exporter using NetworkManager.
 
 The configuration is based on dictionaries with contents similar to NM's
 connection files in INI-format.
@@ -3059,8 +3094,8 @@ Arguments:
 
 RawNetworkInterfaceDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-This driver allows "raw" control of a network interface (such as Ethernet or
-WiFi).
+The :any:`RawNetworkInterfaceDriver` allows "raw" control of a network
+interface (such as Ethernet or WiFi).
 
 The labgrid-raw-interface helper (``helpers/labgrid-raw-interface``) needs to
 be installed in the PATH and usable via sudo without password.
@@ -3110,7 +3145,7 @@ Such a state could be the bootloader or a booted Linux kernel with shell.
 
 BareboxStrategy
 ~~~~~~~~~~~~~~~
-A BareboxStrategy has four states:
+A :any:`BareboxStrategy` has four states:
 
 - unknown
 - off
@@ -3155,11 +3190,11 @@ the ``shell`` state:
    >>> s.transition("shell")
 
 This command would transition from the bootloader into a Linux shell and
-activate the ShellDriver.
+activate the `ShellDriver`_.
 
 ShellStrategy
 ~~~~~~~~~~~~~
-A ShellStrategy has three states:
+A :any:`ShellStrategy` has three states:
 
 - unknown
 - off
@@ -3201,11 +3236,11 @@ the ``shell`` state:
    >>> s = t.get_driver("ShellStrategy")
 
 This command would transition directly into a Linux shell and
-activate the ShellDriver.
+activate the `ShellDriver`_.
 
 UBootStrategy
 ~~~~~~~~~~~~~
-A UBootStrategy has four states:
+A :any:`UBootStrategy` has four states:
 
 - unknown
 - off
@@ -3250,11 +3285,11 @@ the ``shell`` state:
    >>> s.transition("shell")
 
 This command would transition from the bootloader into a Linux shell and
-activate the ShellDriver.
+activate the `ShellDriver`_.
 
 DockerStrategy
 ~~~~~~~~~~~~~~
-A DockerStrategy has three states:
+A :any:`DockerStrategy` has three states:
 
 - unknown
 - gone
@@ -3305,7 +3340,7 @@ Reporters
 
 StepReporter
 ~~~~~~~~~~~~
-The StepReporter outputs individual labgrid steps to `STDOUT`.
+The :any:`StepReporter` outputs individual labgrid steps to `STDOUT`.
 
 .. doctest::
 
@@ -3324,7 +3359,7 @@ AssertionError, as will starting an already started StepReporter.
 
 ConsoleLoggingReporter
 ~~~~~~~~~~~~~~~~~~~~~~
-The ConsoleLoggingReporter outputs read calls from the console transports into
+The :any:`ConsoleLoggingReporter` outputs read calls from the console transports into
 files. It takes the path as a parameter.
 
 .. doctest::
@@ -3429,8 +3464,8 @@ becomes:
   - SerialDriver: {}
   - SerialDriver: {}
 
-This configuration doesn't specify which :any:`RawSerialPort` to use for each
-:any:`SerialDriver`, so it will cause an exception when instantiating the
+This configuration doesn't specify which `RawSerialPort`_ to use for each
+`SerialDriver`_, so it will cause an exception when instantiating the
 :any:`Target`.
 To bind the correct driver to the correct resource, explicit ``name`` and
 ``bindings`` properties are used:
@@ -3476,7 +3511,7 @@ As an example:
     qemu_bin: !template "$BASE/bin/qemu-bin"
 
 would resolve the qemu_bin path relative to the BASE dir of the YAML file and
-try to use the RemotePlace with the name set in the LG_PLACE environment
+try to use the `RemotePlace`_ with the name set in the LG_PLACE environment
 variable.
 
 See the :ref:`labgrid-device-config` man page for documentation on the
@@ -3517,7 +3552,7 @@ and `<params>` will be passed to its constructor.
 For USB resources, you will most likely want to use :ref:`udev-matching` here.
 
 As a simple example, here is one group called *usb-hub-in-rack12* containing
-a single :any:`USBSerialPort` resource (using udev matching), which will be
+a single `USBSerialPort`_ resource (using udev matching), which will be
 exported as `exportername/usb-hub-in-rack12/NetworkSerialPort/USBSerialPort`:
 
 .. code-block:: yaml
@@ -3531,9 +3566,9 @@ To export multiple resources of the same class in the same group,
 you can choose a unique resource name, and then use the ``cls`` parameter to
 specify the class name instead (which will not be passed as a parameter to the
 class constructor).
-In this next example we will export one :any:`USBSerialPort` as
+In this next example we will export one `USBSerialPort`_ as
 `exportername/usb-hub-in-rack12/NetworkSerialPort/console-main`,
-and another :any:`USBSerialPort` as
+and another `USBSerialPort`_ as
 `exportername/usb-hub-in-rack12/NetworkSerialPort/console-secondary`:
 
 .. code-block:: yaml

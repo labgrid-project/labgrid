@@ -46,7 +46,7 @@ NetworkSerialPort
 +++++++++++++++++
 A :any:`NetworkSerialPort` describes a serial port which is exported over the
 network, usually using `RFC2217 <https://datatracker.ietf.org/doc/rfc2217/>`_
-or raw tcp.
+or raw TCP.
 
 .. code-block:: yaml
 
@@ -157,13 +157,13 @@ The ``model`` property selects one of several `backend implementations
 Currently available are:
 
 ``apc``
-  Controls an *APU PDU* via SNMP.
+  Controls *APU PDUs* via SNMP.
 
 ``digipower``
-  Controls a *DigiPower PDU* via a simple HTTP API.
+  Controls *DigiPower PDUs* via a simple HTTP API.
 
 ``digitalloggers_http``
-  Control a *Digital Loggers PDUs* that use the legacy HTTP API. Note that
+  Controls *Digital Loggers PDUs* that use the legacy HTTP API. Note that
   host argument must include the protocol, such as
   ``http://192.168.0.3`` or ``http://admin:pass@192.168.0.4``.
 
@@ -171,34 +171,34 @@ Currently available are:
   Controls *Eaton ePDUs* via SNMP.
 
 ``eg_pms2_network``
-  Controls the *EG_PMS2_LAN* & *EG_PMS2_WLAN* devices, through simple HTTP POST
+  Controls *EG_PMS2_LAN* and *EG_PMS2_WLAN* devices, through simple HTTP POST
   and GET requests. The device requires a password for logging into the
   control interface, this module deliberately uses the standard password ``1``
   and is not compatible with a different password.
 
 ``eth008``
-  Controls a *Robot-Electronics eth008* via a simple HTTP API.
+  Controls *Robot-Electronics eth008* via a simple HTTP API.
 
 ``gude``
-  Controls a *Gude PDU* via a simple HTTP API.
+  Controls *Gude PDUs* via a simple HTTP API.
 
 ``gude24``
-  Controls a *Gude Expert Power Control 8008 PDU* via a simple HTTP API.
+  Controls *Gude Expert Power Control 8008 PDUs* via a simple HTTP API.
 
 ``gude8031``
-  Controls a *Gude Expert Power Control 8031 PDU* via a simple HTTP API.
+  Controls *Gude Expert Power Control 8031 PDUs* via a simple HTTP API.
 
 ``gude8225``
-  Controls a *Gude Expert Power Control 8225 PDUs via a simple HTTP API.
+  Controls *Gude Expert Power Control 8225 PDUs* via a simple HTTP API.
 
 ``gude8316``
-  Controls a *Gude Expert Power Control 8316 PDU* via a simple HTTP API.
+  Controls *Gude Expert Power Control 8316 PDUs* via a simple HTTP API.
 
 ``netio``
-  Controls a *NETIO 4-Port PDU* via a simple HTTP API.
+  Controls *NETIO 4-Port PDUs* via a simple HTTP API.
 
 ``netio_kshell``
-  Controls a *NETIO 4C PDU* via a Telnet interface.
+  Controls *NETIO 4C PDUs* via a Telnet interface.
 
 ``raritan``
   Controls *Raritan PDUs* via SNMP.
@@ -211,7 +211,7 @@ Currently available are:
   for details.
 
 ``sentry``
-  Controls a *Sentry PDU* via SNMP using Sentry3-MIB.
+  Controls *Sentry PDUs* via SNMP using Sentry3-MIB.
   It was tested on *CW-24VDD* and *4805-XLS-16*.
 
 ``shelly_gen1``
@@ -317,7 +317,7 @@ Used by:
   - `USBPowerDriver`_
 
 .. note::
-   Labgrid requires that the interface is contained in the ID_PATH.
+   labgrid requires that the interface is contained in the ID_PATH.
    This usually means that the ID_PATH should end with ``:1.0``.
    Only this first interface is registered with the ``hub`` driver labgrid is
    looking for, paths without the interface will fail to match since they use
@@ -473,7 +473,7 @@ A :any:`NetworkLXAIOBusPIO` describes an `LXAIOBusPIO`_ exported over the networ
 
 HIDRelay
 ++++++++
-An :any:`HIDRelay` resource describes a single output of a HID protocol based
+An :any:`HIDRelay` resource describes a single output of an HID protocol based
 USB relays.
 It currently supports the widely used *dcttech USBRelay*.
 
@@ -495,8 +495,8 @@ Used by:
 
 HttpDigitalOutput
 +++++++++++++++++
-A :any:`HttpDigitalOutput` resource describes a generic digital output that can be
-controlled via HTTP.
+An :any:`HttpDigitalOutput` resource describes a generic digital output that
+can be controlled via HTTP.
 
 .. code-block:: yaml
 
@@ -794,7 +794,7 @@ Used by:
 
 USBDebugger
 ~~~~~~~~~~~
-An :any:`USBDebugger` resource describes a JTAG USB adapter (for example an
+A :any:`USBDebugger` resource describes a JTAG USB adapter (for example an
 *FTDI FT2232H*).
 
 .. code-block:: yaml
@@ -903,7 +903,7 @@ on a remote computer.
 
 LXAUSBMux
 ~~~~~~~~~
-A :any:`LXAUSBMux` resource describes a *Linux Automation GmbH USB-Mux* device.
+An :any:`LXAUSBMux` resource describes a *Linux Automation GmbH USB-Mux* device.
 
 .. code-block:: yaml
 
@@ -919,14 +919,13 @@ Used by:
 
 NetworkLXAUSBMux
 ~~~~~~~~~~~~~~~~
-A :any:`NetworkLXAUSBMux` resource describes a `LXAUSBMux`_ available on a
+A :any:`NetworkLXAUSBMux` resource describes an `LXAUSBMux`_ available on a
 remote computer.
 
 USBSDWireDevice
 ~~~~~~~~~~~~~~~
 A :any:`USBSDWireDevice` resource describes a Tizen
-`SD Wire device <https://wiki.tizen.org/SDWire>`_
-device.
+`SD Wire device <https://wiki.tizen.org/SDWire>`_.
 
 .. code-block:: yaml
 
@@ -949,7 +948,7 @@ on a remote computer.
 USBVideo
 ~~~~~~~~
 A :any:`USBVideo` resource describes a USB video camera which is supported by a
-Video4Linux2 kernel driver.
+Video4Linux2 (v4l2) kernel driver.
 
 .. code-block:: yaml
 
@@ -1161,7 +1160,7 @@ Such device could be a signal generator.
      url: '192.168.110.11'
 
 Arguments:
-  - type (str): device resource type following the pyVISA resource syntax, e.g.
+  - type (str): device resource type following the PyVISA resource syntax, e.g.
     ASRL, TCPIP...
   - url (str): device identifier on selected resource, e.g. <ip> for TCPIP
     resource
@@ -1171,7 +1170,7 @@ Used by:
 
 HTTPVideoStream
 ~~~~~~~~~~~~~~~
-A :any:`HTTPVideoStream` resource describes a IP video stream over HTTP or HTTPS.
+An :any:`HTTPVideoStream` resource describes an IP video stream over HTTP or HTTPS.
 
 .. code-block:: yaml
 
@@ -1624,7 +1623,7 @@ Arguments:
 
 SSHDriver
 ~~~~~~~~~
-A :any:`SSHDriver` requires a `NetworkService`_ resource and allows the
+An :any:`SSHDriver` requires a `NetworkService`_ resource and allows the
 execution of commands and file upload via network.
 It uses SSH's ``ServerAliveInterval`` option to detect failed connections.
 
@@ -2234,7 +2233,7 @@ Arguments:
 
 HIDRelayDriver
 ~~~~~~~~~~~~~~
-A :any:`HIDRelayDriver` controls a `HIDRelay`_ or `NetworkHIDRelay`_ resource.
+An :any:`HIDRelayDriver` controls an `HIDRelay`_ or `NetworkHIDRelay`_ resource.
 It can set and get the current state of the resource.
 
 Binds to:
@@ -2384,8 +2383,9 @@ Arguments:
 
 RKUSBDriver
 ~~~~~~~~~~~
-A :any:`RKUSBDriver` is used to upload an image into a device in the *Rockchip
-USB loader state*. This is useful to bootstrap a bootloader onto a device.
+An :any:`RKUSBDriver` is used to upload an image into a device in the *Rockchip
+USB loader state*.
+This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
   loader:
@@ -2721,8 +2721,9 @@ argument being "dut", "host", "off", or "client".
 
 LXAUSBMuxDriver
 ~~~~~~~~~~~~~~~
-The :any:`LXAUSBMuxDriver` uses a `LXAUSBMux`_ resource to control a USB-Mux
-device via the `usbmuxctl <https://github.com/linux-automation/usbmuxctl>`_ tool.
+The :any:`LXAUSBMuxDriver` uses an `LXAUSBMux`_ resource to control a USB-Mux
+device via the `usbmuxctl <https://github.com/linux-automation/usbmuxctl>`_
+tool.
 
 Binds to:
   mux:
@@ -2789,7 +2790,7 @@ Appropriate configuration parameters can be determined by using the GStreamer
 
 USBAudioInputDriver
 ~~~~~~~~~~~~~~~~~~~
-The :any:`USBAudioInputDriver` is used to receive a audio stream from a local
+The :any:`USBAudioInputDriver` is used to receive an audio stream from a local
 or remote USB audio input.
 It uses the GStreamer command line utility ``gst-launch`` on the sender side to
 stream the audio to the client.
@@ -2811,7 +2812,7 @@ Arguments:
 
 USBTMCDriver
 ~~~~~~~~~~~~
-The :any:`USBTMCDriver` is used to control a oscilloscope via the *USB TMC
+The :any:`USBTMCDriver` is used to control an oscilloscope via the *USB TMC
 protocol*.
 
 Binds to:
@@ -2835,7 +2836,7 @@ but more devices can be added by extending ``on_activate()`` in
 
 FlashromDriver
 ~~~~~~~~~~~~~~
-The :any:`FlashromDriver` is used to flash a rom, using the flashrom utility.
+The :any:`FlashromDriver` is used to flash a ROM, using the flashrom utility.
 
 .. code-block:: yaml
 
@@ -3036,8 +3037,8 @@ Arguments:
 
 HttpDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
-A :any:`HttpDigitalOutputDriver` binds to a `HttpDigitalOutput`_ to set and get
-a digital output state via HTTP.
+A :any:`HttpDigitalOutputDriver` binds to an `HttpDigitalOutput`_ to set and
+get a digital output state via HTTP.
 
 Binds to:
   http:

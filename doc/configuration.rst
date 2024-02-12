@@ -2842,6 +2842,9 @@ The :any:`FlashromDriver` is used to flash a ROM, using the flashrom utility.
 
    FlashromDriver:
      image: 'foo'
+
+.. code-block:: yaml
+
    images:
      foo: '../images/image_to_load.raw'
 

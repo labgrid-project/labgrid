@@ -2957,6 +2957,7 @@ To use it, `PyGObject <https://pygobject.readthedocs.io/>`_ must be installed
 For Debian, the necessary packages are `python3-gi` and `gir1.2-nm-1.0`.
 
 It supports:
+
 - static and DHCP address configuration
 - WiFi client or AP
 - connection sharing (DHCP server with NAT)
@@ -2991,15 +2992,17 @@ exporting network interfaces for the RawNetworkInterfaceDriver, e.g.:
        - eth1
 
 It supports:
+
 - recording traffic
 - replaying traffic
 - basic statistic collection
 
 For now, the RawNetworkInterfaceDriver leaves pre-configuration of the exported
 network interface to the user, including:
+
 - disabling DHCP
 - disabling IPv6 Duplicate Address Detection (DAD) by SLAAC (Stateless
-Address Autoconfiguration) and Neighbor Discovery
+  Address Autoconfiguration) and Neighbor Discovery
 - disabling Generic Receive Offload (GRO)
 
 This might change in the future.

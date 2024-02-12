@@ -1195,19 +1195,28 @@ see below.
 For now, the TFTP/NFS/HTTP server needs to be configured before using it from
 labgrid.
 
-.. _TFTPProvider:
-.. _HTTPProvider:
-
-TFTPProvider / HTTPProvider
-+++++++++++++++++++++++++++
-A :any:`TFTPProvider` resource describes TFTP server.
-A :any:`HTTPProvider` resource describes an HTTP server.
+TFTPProvider
+++++++++++++
+A :any:`TFTPProvider` resource describes a TFTP server.
 
 .. code-block:: yaml
 
    TFTPProvider:
      internal: '/srv/tftp/board-23/'
      external: 'board-23/'
+
+Arguments:
+  - internal (str): path prefix to the local directory accessible by the target
+  - external (str): corresponding path prefix for use by the target
+
+Used by:
+  - `TFTPProviderDriver`_
+
+HTTPProvider
+++++++++++++
+An :any:`HTTPProvider` resource describes an HTTP server.
+
+.. code-block:: yaml
 
    HTTPProvider:
      internal: '/srv/www/board-23/'
@@ -1218,7 +1227,6 @@ Arguments:
   - external (str): corresponding path prefix for use by the target
 
 Used by:
-  - `TFTPProviderDriver`_
   - `HTTPProviderDriver`_
 
 NFSProvider
@@ -1235,14 +1243,9 @@ Arguments:
 Used by:
   - `NFSProviderDriver`_
 
-.. _RemoteTFTPProvider:
-.. _RemoteHTTPProvider:
-
-RemoteTFTPProvider / RemoteHTTPProvider
-+++++++++++++++++++++++++++++++++++++++
+RemoteTFTPProvider
+++++++++++++++++++
 A :any:`RemoteTFTPProvider` describes a `TFTPProvider`_ resource available on
-a remote computer.
-A :any:`RemoteHTTPProvider` describes a `HTTPProvider`_ resource available on
 a remote computer.
 
 .. code-block:: yaml
@@ -1252,6 +1255,21 @@ a remote computer.
      internal: '/srv/tftp/board-23/'
      external: 'board-23/'
 
+Arguments:
+  - host (str): hostname of the remote host
+  - internal (str): path prefix to the TFTP root directory on ``host``
+  - external (str): corresponding path prefix for use by the target
+
+Used by:
+  - `TFTPProviderDriver`_
+
+RemoteHTTPProvider
+++++++++++++++++++
+A :any:`RemoteHTTPProvider` describes an `HTTPProvider`_ resource available on
+a remote computer.
+
+.. code-block:: yaml
+
    RemoteHTTPProvider:
      host: 'httphost'
      internal: '/srv/www/board-23/'
@@ -1259,11 +1277,10 @@ a remote computer.
 
 Arguments:
   - host (str): hostname of the remote host
-  - internal (str): path prefix to the HTTP/TFTP root directory on ``host``
+  - internal (str): path prefix to the HTTP root directory on ``host``
   - external (str): corresponding path prefix for use by the target
 
 Used by:
-  - `TFTPProviderDriver`_
   - `HTTPProviderDriver`_
 
 RemoteNFSProvider
@@ -2496,20 +2513,15 @@ Implements:
 Arguments:
   - None
 
-.. _TFTPProviderDriver:
-.. _HTTPProviderDriver:
-
-TFTPProviderDriver / HTTPProviderDriver
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The :any:`TFTPProviderDriver` and :any:`HTTPProviderDriver` control their
-corresponding Provider resources, either locally or remotely.
+TFTPProviderDriver
+~~~~~~~~~~~~~~~~~~
+The :any:`TFTPProviderDriver` controls its corresponding TFTP resource, either
+locally or remotely.
 
 Binds to:
   provider:
     - `TFTPProvider`_
     - `RemoteTFTPProvider`_
-    - `HTTPProvider`_
-    - `RemoteHTTPProvider`_
 
 Implements:
   - None (yet)
@@ -2517,6 +2529,27 @@ Implements:
 .. code-block:: yaml
 
    TFTPProviderDriver: {}
+
+Arguments:
+  - None
+
+The driver can be used in test cases by calling its ``stage()`` method, which
+returns the path to be used by the target.
+
+HTTPProviderDriver
+~~~~~~~~~~~~~~~~~~
+The :any:`HTTPProviderDriver` controls its corresponding HTTP resource, either
+locally or remotely.
+
+Binds to:
+  provider:
+    - `HTTPProvider`_
+    - `RemoteHTTPProvider`_
+
+Implements:
+  - None (yet)
+
+.. code-block:: yaml
 
    HTTPProviderDriver: {}
 

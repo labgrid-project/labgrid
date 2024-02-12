@@ -29,7 +29,7 @@ enumeration order.
 .. code-block:: yaml
 
    RawSerialPort:
-     port: /dev/ttyUSB0
+     port: '/dev/ttyUSB0'
      speed: 115200
 
 The example would access the serial port /dev/ttyUSB0 on the local computer with
@@ -51,7 +51,7 @@ or raw tcp.
 .. code-block:: yaml
 
    NetworkSerialPort:
-     host: remote.example.computer
+     host: 'remote.example.computer'
      port: 53867
      speed: 115200
 
@@ -90,7 +90,7 @@ exporter.
 .. code-block:: yaml
 
     ModbusRTU:
-      port: "/dev/ttyUSB0"
+      port: '/dev/ttyUSB0'
       address: 16
       speed: 115200
       timeout: 0.25
@@ -114,7 +114,7 @@ This allows identification through hot-plugging or rebooting.
 
    USBSerialPort:
      match:
-       ID_SERIAL_SHORT: P-00-00682
+       ID_SERIAL_SHORT: 'P-00-00682'
      speed: 115200
 
 The example would search for a USB serial converter with the key
@@ -139,8 +139,8 @@ A :any:`NetworkPowerPort` describes a remotely switchable power port.
 .. code-block:: yaml
 
    NetworkPowerPort:
-     model: gude
-     host: powerswitch.example.computer
+     model: 'gude'
+     host: 'powerswitch.example.computer'
      index: 0
 
 The example describes port 0 on the remote power switch
@@ -250,8 +250,8 @@ PDUDaemon configuration file needs to be specified.
 .. code-block:: yaml
 
    PDUDaemonPort:
-     host: pduserver
-     pdu: apc-snmpv3-noauth
+     host: 'pduserver'
+     pdu: 'apc-snmpv3-noauth'
      index: 1
 
 The example describes port 1 on the PDU configured as `apc-snmpv3-noauth`, with
@@ -272,7 +272,7 @@ A :any:`YKUSHPowerPort` describes a YEPKIT YKUSH USB (HID) switchable USB hub.
 .. code-block:: yaml
 
    YKUSHPowerPort:
-     serial: YK12345
+     serial: 'YK12345'
      index: 1
 
 The example describes port 1 on the YKUSH USB hub with the
@@ -300,7 +300,7 @@ A :any:`USBPowerPort` describes a generic switchable USB hub as supported by
 
    USBPowerPort:
      match:
-       ID_PATH: pci-0000:00:14.0-usb-0:2:1.0
+       ID_PATH: 'pci-0000:00:14.0-usb-0:2:1.0'
      index: 1
 
 The example describes port 1 on the hub with the ID_PATH
@@ -330,7 +330,7 @@ A :any:`SiSPMPowerPort` describes a GEMBIRD SiS-PM as supported by
 
    SiSPMPowerPort:
      match:
-       ID_PATH: platform-1c1a400.usb-usb-0:2
+       ID_PATH: 'platform-1c1a400.usb-usb-0:2'
      index: 1
 
 The example describes port 1 on the hub with the ID_PATH
@@ -351,10 +351,10 @@ A :any:`TasmotaPowerPort` resource describes a switchable `Tasmota
 .. code-block:: yaml
 
    TasmotaPowerPort:
-     host: this.is.an.example.host.com
-     status_topic: stat/tasmota_575A2B/POWER
-     power_topic: cmnd/tasmota_575A2B/POWER
-     avail_topic: tele/tasmota_575A2B/LWT
+     host: 'this.is.an.example.host.com'
+     status_topic: 'stat/tasmota_575A2B/POWER'
+     power_topic: 'cmnd/tasmota_575A2B/POWER'
+     avail_topic: 'tele/tasmota_575A2B/LWT'
 
 The example uses a mosquitto server at "this.is.an.example.host.com" and has the
 topics setup for a tasmota power port that has the ID 575A2B.
@@ -380,7 +380,7 @@ A :any:`ModbusTCPCoil` describes a coil accessible via ModbusTCP.
 .. code-block:: yaml
 
    ModbusTCPCoil:
-     host: "192.168.23.42"
+     host: '192.168.23.42'
      coil: 1
 
 The example describes the coil with the address 1 on the ModbusTCP device
@@ -407,7 +407,7 @@ A :any:`DeditecRelais8` describes a Deditec USB GPO module with 8 relays.
      index: 1
      invert: false
      match:
-       ID_PATH: pci-0000:00:14.0-usb-0:2:1.0
+       ID_PATH: 'pci-0000:00:14.0-usb-0:2:1.0'
 
 Arguments:
   - index (int): number of the relay to use
@@ -425,8 +425,8 @@ A :any:`OneWirePIO` describes a onewire programmable I/O pin.
 .. code-block:: yaml
 
    OneWirePIO:
-     host: example.computer
-     path: /29.7D6913000000/PIO.0
+     host: 'example.computer'
+     path: '/29.7D6913000000/PIO.0'
      invert: false
 
 The example describes a `PIO.0` at device address `29.7D6913000000` via the onewire
@@ -448,10 +448,10 @@ An :any:`LXAIOBusPIO` resource describes a single PIO pin on an LXAIOBusNode.
 .. code-block:: yaml
 
    LXAIOBusPIO:
-     host: localhost:8080
-     node: IOMux-00000003
-     pin: OUT0
-     invert: False
+     host: 'localhost:8080'
+     node: 'IOMux-00000003'
+     pin: 'OUT0'
+     invert: false
 
 The example uses an lxa-iobus-server running on localhost:8080, with node
 IOMux-00000003 and pin OUT0.
@@ -479,9 +479,9 @@ It currently supports the widely used "dcttech USBRelay".
 
    HIDRelay:
      index: 2
-     invert: False
+     invert: false
      match:
-       ID_PATH: pci-0000:00:14.0-usb-0:2:1.0
+       ID_PATH: 'pci-0000:00:14.0-usb-0:2:1.0'
 
 Arguments:
   - index (int, default=1): number of the relay to use
@@ -499,9 +499,9 @@ controlled via HTTP.
 .. code-block:: yaml
 
    HttpDigitalOutput:
-     url: http://host.example/some/endpoint
-     body_asserted: "On"
-     body_deasserted: "Off"
+     url: 'http://host.example/some/endpoint'
+     body_asserted: 'On'
+     body_deasserted: 'Off'
 
 The example assumes a simple scenario where the same URL is used for PUT
 requests that set the output state and GET requests to get the current state.
@@ -535,8 +535,8 @@ A :any:`NetworkService` describes a remote SSH connection.
 .. code-block:: yaml
 
    NetworkService:
-     address: example.computer
-     username: root
+     address: 'example.computer'
+     username: 'root'
 
 The example describes a remote SSH connection to the computer `example.computer`
 with the username `root`.
@@ -568,7 +568,7 @@ device.
 
    USBMassStorage:
      match:
-       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0-scsi-0:0:0:3
+       ID_PATH: 'pci-0000:06:00.0-usb-0:1.3.2:1.0-scsi-0:0:0:3'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -592,8 +592,8 @@ device from all connected supported devices use the `SigrokUSBDevice`_.
 .. code-block:: yaml
 
    SigrokDevice:
-     driver: fx2lafw
-     channels: "D0=CLK,D1=DATA"
+     driver: 'fx2lafw'
+     channels: 'D0=CLK,D1=DATA'
 
 Arguments:
   - driver (str): name of the sigrok driver to use
@@ -611,7 +611,7 @@ An :any:`IMXUSBLoader` resource describes a USB device in the imx loader state.
 
    IMXUSBLoader:
      match:
-       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
+       ID_PATH: 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -629,7 +629,7 @@ An :any:`MXSUSBLoader` resource describes a USB device in the mxs loader state.
 
    MXSUSBLoader:
      match:
-       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
+       ID_PATH: 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -648,7 +648,7 @@ state.
 
    RKUSBLoader:
      match:
-       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
+       ID_PATH: 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -682,7 +682,7 @@ supported for backwards compatibility.
 
    AndroidUSBFastboot:
      match:
-       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
+       ID_PATH: 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 Arguments:
   - usb_vendor_id (str, default="1d6b"): USB vendor ID to be compared with the
@@ -702,7 +702,7 @@ state.
 .. code-block:: yaml
 
    AndroidNetFastboot:
-     address: "192.168.23.42"
+     address: '192.168.23.42'
 
 Arguments:
   - address (str): ip address of the fastboot device
@@ -723,7 +723,7 @@ Upgrade) mode.
 
    DFUDevice:
      match:
-       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
+       ID_PATH: 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -739,7 +739,7 @@ Ethernet or WiFi)
 .. code-block:: yaml
 
    NetworkInterface:
-     ifname: eth0
+     ifname: 'eth0'
 
 Arguments:
   - ifname (str): name of the interface
@@ -757,7 +757,7 @@ Ethernet or WiFi)
 
    USBNetworkInterface:
      match:
-       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
+       ID_PATH: 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -779,7 +779,7 @@ An :any:`AlteraUSBBlaster` resource describes an Altera USB blaster.
 
    AlteraUSBBlaster:
      match:
-       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
+       ID_PATH: 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -797,7 +797,7 @@ FTDI FT2232H).
 
    USBDebugger:
      match:
-       ID_PATH: pci-0000:00:10.0-usb-0:1.4
+       ID_PATH: 'pci-0000:00:10.0-usb-0:1.4'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -813,8 +813,8 @@ which is accessible via SNMP.
 .. code-block:: yaml
 
    SNMPEthernetPort:
-     switch: "switch-012"
-     interface: "17"
+     switch: 'switch-012'
+     interface: '17'
 
 Arguments:
   - switch (str): host name of the Ethernet switch
@@ -830,10 +830,10 @@ A :any:`SigrokUSBDevice` resource describes a sigrok USB device.
 .. code-block:: yaml
 
    SigrokUSBDevice:
-     driver: fx2lafw
-     channels: "D0=CLK,D1=DATA"
+     driver: 'fx2lafw'
+     channels: 'D0=CLK,D1=DATA'
      match:
-       ID_PATH: pci-0000:06:00.0-usb-0:1.3.2:1.0
+       ID_PATH: 'pci-0000:06:00.0-usb-0:1.3.2:1.0'
 
 Arguments:
   - driver (str): name of the sigrok driver to use
@@ -859,9 +859,9 @@ communicates over a USB serial port instead of being a USB device itself (see
 .. code-block:: yaml
 
    SigrokUSBSerialDevice:
-     driver: manson-hcs-3xxx
+     driver: 'manson-hcs-3xxx'
      match:
-       '@ID_SERIAL_SHORT': P-00-02389
+       '@ID_SERIAL_SHORT': 'P-00-02389'
 
 Arguments:
   - driver (str): name of the sigrok driver to use
@@ -883,7 +883,7 @@ device.
 
    USBSDMuxDevice:
      match:
-       '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -905,7 +905,7 @@ A :any:`LXAUSBMux` resource describes a Linux Automation GmbH USB-Mux device.
 
    LXAUSBMux:
      match:
-       '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -928,7 +928,7 @@ device.
 
    USBSDWireDevice:
      match:
-       '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -951,7 +951,7 @@ Video4Linux2 kernel driver.
 
    USBVideo:
      match:
-       '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -988,7 +988,7 @@ by an ALSA kernel driver.
 
    USBAudioInput:
      match:
-       ID_PATH: pci-0000:00:14.0-usb-0:3:1.0
+       ID_PATH: 'pci-0000:00:14.0-usb-0:3:1.0'
 
 Arguments:
   - index (int, default=0): ALSA PCM device number (as in
@@ -1014,7 +1014,7 @@ The low-level communication is handled by the ``usbtmc`` kernel driver.
 
    USBTMC:
      match:
-       '@ID_PATH': pci-0000:00:14.0-usb-0:1.2
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -1081,7 +1081,7 @@ than running a flashing program with `FlashScriptDriver`_.
 
    USBFlashableDevice:
      match:
-       SUBSYSTEM: usb
+       SUBSYSTEM: 'usb'
        ID_SERIAL: '1234'
 
 Arguments:
@@ -1134,7 +1134,7 @@ instance the `XenaDriver`_ must connect to in order to configure a Xena chassis.
 .. code-block:: yaml
 
    XenaManager:
-     hostname: "example.computer"
+     hostname: 'example.computer'
 
 Arguments:
   - hostname (str): hostname or IP of the management address of the Xena tester
@@ -1151,8 +1151,8 @@ Such device could be a signal generator.
 .. code-block:: yaml
 
    PyVISADevice:
-     type: "TCPIP"
-     url: "192.168.110.11"
+     type: 'TCPIP'
+     url: '192.168.110.11'
 
 Arguments:
   - type (str): device resource type following the pyVISA resource syntax, e.g.
@@ -1170,7 +1170,7 @@ A :any:`HTTPVideoStream` resource describes a IP video stream over HTTP or HTTPS
 .. code-block:: yaml
 
    HTTPVideoStream:
-     url: http://192.168.110.11/0.ts
+     url: 'http://192.168.110.11/0.ts'
 
 Arguments:
   - url (str): URI of the IP video stream
@@ -1208,12 +1208,12 @@ A :any:`HTTPProvider` resource describes an HTTP server.
 .. code-block:: yaml
 
    TFTPProvider:
-     internal: "/srv/tftp/board-23/"
-     external: "board-23/"
+     internal: '/srv/tftp/board-23/'
+     external: 'board-23/'
 
    HTTPProvider:
-     internal: "/srv/www/board-23/"
-     external: "http://192.168.1.1/board-23/"
+     internal: '/srv/www/board-23/'
+     external: 'http://192.168.1.1/board-23/'
 
 Arguments:
   - internal (str): path prefix to the local directory accessible by the target
@@ -1250,14 +1250,14 @@ a remote computer.
 .. code-block:: yaml
 
    RemoteTFTPProvider
-     host: "tftphost"
-     internal: "/srv/tftp/board-23/"
-     external: "board-23/"
+     host: 'tftphost'
+     internal: '/srv/tftp/board-23/'
+     external: 'board-23/'
 
    RemoteHTTPProvider:
-     host: "httphost"
-     internal: "/srv/www/board-23/"
-     external: "http://192.168.1.1/board-23/"
+     host: 'httphost'
+     internal: '/srv/www/board-23/'
+     external: 'http://192.168.1.1/board-23/'
 
 Arguments:
   - host (str): hostname of the remote host
@@ -1276,7 +1276,7 @@ remote computer.
 .. code-block:: yaml
 
    RemoteNFSProvider:
-     host: "nfshost"
+     host: 'nfshost'
 
 Arguments:
   - host (str): hostname of the remote host
@@ -1292,7 +1292,7 @@ place.
 .. code-block:: yaml
 
    RemotePlace:
-     name: example-place
+     name: 'example-place'
 
 The example describes the remote place `example-place`. It will connect to the
 labgrid remote coordinator, wait until the resources become available and expose
@@ -1313,7 +1313,7 @@ created through interaction with that daemon.
 .. code-block:: yaml
 
    DockerDaemon:
-     docker_daemon_url: unix://var/run/docker.sock
+     docker_daemon_url: 'unix://var/run/docker.sock'
 
 The example describes a docker daemon accessible via the
 ``/var/run/docker.sock`` unix socket. When used by a `DockerDriver`_, the
@@ -1404,7 +1404,7 @@ with ``udevadm info /dev/ttyUSB0``.
 
   USBSerialPort:
     match:
-      '@ID_PATH': pci-0000:05:00.0-usb-0:1.2.5.5
+      '@ID_PATH': 'pci-0000:05:00.0-usb-0:1.2.5.5'
 
 Note the ``@`` in the ``@ID_PATH`` match, which applies this match to the
 device's parents instead of directly to itself.
@@ -1470,7 +1470,7 @@ We use the ``ID_USB_INTERFACE_NUM`` to distinguish between the two ports:
 
   USBSerialPort:
     match:
-      '@ID_PATH': pci-0000:05:00.0-usb-2:10.2.2.2'
+      '@ID_PATH': 'pci-0000:05:00.0-usb-2:10.2.2.2'
       ID_USB_INTERFACE_NUM: '01'
 
 Matching a USB UART by Serial Number
@@ -1484,7 +1484,7 @@ changes or a board has been moved between host systems.
 
   USBSerialPort:
     match:
-      ID_SERIAL_SHORT: P-00-03564
+      ID_SERIAL_SHORT: 'P-00-03564'
 
 To check if your device has a serial number, you can use ``udevadm info``:
 
@@ -1583,7 +1583,7 @@ Implements:
    ShellDriver:
      prompt: 'root@\w+:[^ ]+ '
      login_prompt: ' login: '
-     username: root
+     username: 'root'
 
 Arguments:
   - prompt (regex): shell prompt to match after logging in
@@ -1638,7 +1638,7 @@ Implements:
 .. code-block:: yaml
 
    SSHDriver:
-     keyfile: example.key
+     keyfile: 'example.key'
 
 Arguments:
   - keyfile (str): optional, filename of private key to login into the remote system
@@ -1672,8 +1672,8 @@ Implements:
    UBootDriver:
      prompt: 'Uboot> '
      boot_commands:
-       net: run netboot
-       spi: run spiboot
+       net: 'run netboot'
+       spi: 'run spiboot'
 
 Arguments:
   - prompt (regex, default=""): U-Boot prompt to match
@@ -1733,7 +1733,7 @@ Implements:
    SmallUBootDriver:
      prompt: 'ap143-2\.0> '
      boot_expression: 'Autobooting in 1 seconds'
-     boot_secret: "tpl"
+     boot_secret: 'tpl'
 
 Arguments:
   - boot_expression (str, default="U-Boot 20\\d+"): regex to match the U-Boot start string
@@ -1808,8 +1808,8 @@ Implements:
 .. code-block:: yaml
 
    AndroidFastbootDriver:
-     boot_image: mylocal.image
-     sparse_size: 100M
+     boot_image: 'mylocal.image'
+     sparse_size: '100M'
 
 Arguments:
   - boot_image (str): optional, image key referring to the image to boot
@@ -1866,14 +1866,14 @@ Implements:
 .. code-block:: yaml
 
    OpenOCDDriver:
-     config: local-settings.cfg
-     image: bitstream
-     interface_config: ftdi/lambdaconcept_ecpix-5.cfg
-     board_config: lambdaconcept_ecpix-5.cfg
+     config: 'local-settings.cfg'
+     image: 'bitstream'
+     interface_config: 'ftdi/lambdaconcept_ecpix-5.cfg'
+     board_config: 'lambdaconcept_ecpix-5.cfg'
      load_commands:
-     - "init"
-     - "svf -quiet {filename}"
-     - "exit"
+     - 'init'
+     - 'svf -quiet {filename}'
+     - 'exit'
 
 Arguments:
   - config (str/list): optional, OpenOCD configuration file(s)
@@ -1941,9 +1941,9 @@ Implements:
 .. code-block:: yaml
 
    ExternalPowerDriver:
-     cmd_on: example_command on
-     cmd_off: example_command off
-     cmd_cycle: example_command cycle
+     cmd_on: 'example_command on'
+     cmd_off: 'example_command off'
+     cmd_cycle: 'example_command cycle'
 
 Arguments:
   - cmd_on (str): command to turn power to the board on
@@ -2147,8 +2147,9 @@ Implements:
 .. code-block:: yaml
 
    SerialPortDigitalOutputDriver:
-     signal: "dtr"
-     bindings: { serial : "nameOfSerial" }
+     signal: 'dtr'
+     bindings:
+       serial: 'nameOfSerial'
 
 Arguments:
   - signal (str): control signal to use: "dtr" or "rts"
@@ -2180,7 +2181,7 @@ Implements:
 .. code-block:: yaml
 
    FileDigitalOutputDriver:
-     filepath: "/sys/class/leds/myled/brightness"
+     filepath: '/sys/class/leds/myled/brightness'
 
 Arguments:
   - filepath (str): file that is used for reads and writes.
@@ -2306,10 +2307,10 @@ Implements:
      main:
        drivers:
          MXSUSBDriver:
-           image: mybootloaderkey
+           image: 'mybootloaderkey'
 
    images:
-     mybootloaderkey: path/to/mybootloader.img
+     mybootloaderkey: 'path/to/mybootloader.img'
 
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
@@ -2338,10 +2339,10 @@ Implements:
      main:
        drivers:
          IMXUSBDriver:
-           image: mybootloaderkey
+           image: 'mybootloaderkey'
 
    images:
-     mybootloaderkey: path/to/mybootloader.img
+     mybootloaderkey: 'path/to/mybootloader.img'
 
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
@@ -2394,12 +2395,12 @@ Implements:
      main:
        drivers:
          RKUSBDriver:
-           image: mybootloaderkey
-           usb_loader: myloaderkey
+           image: 'mybootloaderkey'
+           usb_loader: 'myloaderkey'
 
    images:
-     mybootloaderkey: path/to/mybootloader.img
-     myloaderkey: path/to/myloader.bin
+     mybootloaderkey: 'path/to/mybootloader.img'
+     myloaderkey: 'path/to/myloader.bin'
 
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
@@ -2429,11 +2430,11 @@ Implements:
      main:
        drivers:
          UUUDriver:
-           image: mybootloaderkey
-           cmd: spl
+           image: 'mybootloaderkey'
+           cmd: 'spl'
 
    images:
-     mybootloaderkey: path/to/mybootloader.img
+     mybootloaderkey: 'path/to/mybootloader.img'
 
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
@@ -2454,19 +2455,18 @@ Binds to:
     - `USBSDWireDevice`_
     - `NetworkUSBSDWireDevice`_
 
-
 Implements:
   - None (yet)
 
 .. code-block:: yaml
 
    USBStorageDriver:
-     image: flashimage
+     image: 'flashimage'
 
 .. code-block:: yaml
 
    images:
-     flashimage: ../images/myusb.image
+     flashimage: '../images/myusb.image'
 
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
@@ -2557,26 +2557,26 @@ Binds to:
 .. code-block:: yaml
 
    QEMUDriver:
-     qemu_bin: qemu_arm
-     machine: vexpress-a9
-     cpu: cortex-a9
-     memory: 512M
-     boot_args: "root=/dev/root console=ttyAMA0,115200"
-     extra_args: ""
-     kernel: kernel
-     rootfs: rootfs
-     dtb: dtb
-     nic: user
+     qemu_bin: 'qemu_arm'
+     machine: 'vexpress-a9'
+     cpu: 'cortex-a9'
+     memory: '512M'
+     boot_args: 'root=/dev/root console=ttyAMA0,115200'
+     extra_args: ''
+     kernel: 'kernel'
+     rootfs: 'rootfs'
+     dtb: 'dtb'
+     nic: 'user'
 
 .. code-block:: yaml
 
    tools:
-     qemu_arm: /bin/qemu-system-arm
+     qemu_arm: '/bin/qemu-system-arm'
    paths:
-     rootfs: ../images/root
+     rootfs: '../images/root'
    images:
-     dtb: ../images/mydtb.dtb
-     kernel: ../images/vmlinuz
+     dtb: '../images/mydtb.dtb'
+     kernel: '../images/vmlinuz'
 
 
 Implements:
@@ -2835,7 +2835,7 @@ The :any:`FlashromDriver` is used to flash a rom, using the flashrom utility.
    FlashromDriver:
      image: 'foo'
    images:
-     foo: ../images/image_to_load.raw
+     foo: '../images/image_to_load.raw'
 
 Binds to:
   flashrom_resource:
@@ -2874,7 +2874,7 @@ a device.
 .. code-block:: yaml
 
    images:
-     foo: ../images/flash_device.sh
+     foo: '../images/flash_device.sh'
 
 Binds to:
   device:
@@ -2940,7 +2940,7 @@ The :any:`DediprogFlashDriver` is used to flash an SPI device using DediprogFlas
    DediprogFlashDriver:
      image: 'foo'
    images:
-     foo: ../images/image_to_load.raw
+     foo: '../images/image_to_load.raw'
 
 Binds to:
   flasher:
@@ -2989,10 +2989,10 @@ Implements:
 .. code-block:: yaml
 
    DockerDriver:
-     image_uri: "rastasheep/ubuntu-sshd:16.04"
-     container_name: "ubuntu-lg-example"
-     host_config: {"network_mode":"bridge"}
-     network_services: [{"port":22,"username":"root","password":"root"}]
+     image_uri: 'rastasheep/ubuntu-sshd:16.04'
+     container_name: 'ubuntu-lg-example'
+     host_config: {'network_mode': 'bridge'}
+     network_services: [{'port': 22, 'username': 'root', 'password': 'root'}]
 
 Arguments:
   - image_uri (str): identifier of the docker image to use (may have a tag suffix)
@@ -3106,7 +3106,7 @@ exporting network interfaces for the RawNetworkInterfaceDriver, e.g.:
 
    raw-interface:
      denied-interfaces:
-       - eth1
+       - 'eth1'
 
 It supports:
 
@@ -3169,7 +3169,7 @@ Here is an example environment config:
          ShellDriver:
            prompt: 'root@\w+:[^ ]+ '
            login_prompt: ' login: '
-           username: root
+           username: 'root'
          BareboxStrategy: {}
 
 In order to use the BareboxStrategy via labgrid as a library and transition to
@@ -3216,7 +3216,7 @@ Here is an example environment config:
          ShellDriver:
            prompt: 'root@\w+:[^ ]+ '
            login_prompt: ' login: '
-           username: root
+           username: 'root'
          ShellStrategy: {}
 
 In order to use the ShellStrategy via labgrid as a library and transition to
@@ -3264,7 +3264,7 @@ Here is an example environment config:
          ShellDriver:
            prompt: 'root@\w+:[^ ]+ '
            login_prompt: ' login: '
-           username: root
+           username: 'root'
          UBootStrategy: {}
 
 In order to use the UBootStrategy via labgrid as a library and transition to
@@ -3304,13 +3304,13 @@ Here is an example environment config:
      main:
        resources:
          DockerDaemon:
-           docker_daemon_url: unix://var/run/docker.sock
+           docker_daemon_url: 'unix://var/run/docker.sock'
        drivers:
          DockerDriver:
-           image_uri: "rastasheep/ubuntu-sshd:16.04"
-           container_name: "ubuntu-lg-example"
-           host_config: {"network_mode":"bridge"}
-           network_services: [{"port":22,"username":"root","password":"root"}]
+           image_uri: 'rastasheep/ubuntu-sshd:16.04'
+           container_name: 'ubuntu-lg-example'
+           host_config: {'network_mode': 'bridge'}
+           network_services: [{'port': 22, 'username': 'root', 'password': 'root'}]
          DockerStrategy: {}
 
 In order to use the DockerStrategy via labgrid as a library and transition to
@@ -3506,9 +3506,9 @@ As an example:
     main:
       resources:
         RemotePlace:
-          name: !template $LG_PLACE
+          name: !template '$LG_PLACE'
   tools:
-    qemu_bin: !template "$BASE/bin/qemu-bin"
+    qemu_bin: !template '$BASE/bin/qemu-bin'
 
 would resolve the qemu_bin path relative to the BASE dir of the YAML file and
 try to use the `RemotePlace`_ with the name set in the LG_PLACE environment
@@ -3560,7 +3560,7 @@ exported as `exportername/usb-hub-in-rack12/NetworkSerialPort/USBSerialPort`:
    usb-hub-in-rack12:
      USBSerialPort:
        match:
-         '@ID_PATH': pci-0000:05:00.0-usb-3-1.3
+         '@ID_PATH': 'pci-0000:05:00.0-usb-3-1.3'
 
 To export multiple resources of the same class in the same group,
 you can choose a unique resource name, and then use the ``cls`` parameter to
@@ -3575,13 +3575,13 @@ and another `USBSerialPort`_ as
 
    usb-hub-in-rack12:
      console-main:
-       cls: USBSerialPort
+       cls: 'USBSerialPort'
        match:
-         '@ID_PATH': pci-0000:05:00.0-usb-3-1.3
+         '@ID_PATH': 'pci-0000:05:00.0-usb-3-1.3'
      console-secondary:
-       cls: USBSerialPort
+       cls: 'USBSerialPort'
        match:
-         '@ID_PATH': pci-0000:05:00.0-usb-3-1.4
+         '@ID_PATH': 'pci-0000:05:00.0-usb-3-1.4'
 
 Note that you could also split the resources up into distinct groups instead
 to achieve the same effect:
@@ -3591,11 +3591,11 @@ to achieve the same effect:
    usb-hub-in-rack12-port3:
      USBSerialPort:
        match:
-         '@ID_PATH': pci-0000:05:00.0-usb-3-1.3
+         '@ID_PATH': 'pci-0000:05:00.0-usb-3-1.3'
    usb-hub-in-rack12-port4:
      USBSerialPort:
        match:
-         '@ID_PATH': pci-0000:05:00.0-usb-3-1.4
+         '@ID_PATH': 'pci-0000:05:00.0-usb-3-1.4'
 
 Templating
 ~~~~~~~~~~
@@ -3609,14 +3609,21 @@ is used as a preprocessor for the configuration file:
    # for idx in range(1, 17)
    {{ 1000 + idx }}:
      NetworkSerialPort:
-       {host: rl1, port: {{ 4000 + idx }}}
+       host: 'rl1'
+       port: {{ 4000 + idx }}
      NetworkPowerPort:
        # if 1 <= idx <= 8
-       {model: apc, host: apc1, index: {{ idx }}}
+       model: 'apc'
+       host: 'apc1'
+       index: {{ idx }}
        # elif 9 <= idx <= 12
-       {model: netio, host: netio4, index: {{ idx - 8 }}}
+       model: 'netio'
+       host: 'netio4'
+       index: {{ idx - 8 }}
        # elif 13 <= idx <= 16
-       {model: netio, host: netio5, index: {{ idx - 12 }}}
+       model: 'netio'
+       host: 'netio5'
+       index: {{ idx - 12 }}
        # endif
    # endfor
 

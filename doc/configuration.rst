@@ -79,14 +79,7 @@ Modbus is normally implemented on top of RS-485, though this is not strictly
 necessary, as long as the Modbus network only has one master (and up to 256
 slaves).
 
-The labgrid driver is implemented using the
-`minimalmodbus <https://minimalmodbus.readthedocs.io/en/stable/>`_ Python
-library.
-The implementation only supports that labgrid will be the master on the Modbus
-network.
-
-This resource and driver only supports local usage and will not work with an
-exporter.
+This resource only supports local usage and will not work with an exporter.
 
 .. code-block:: yaml
 
@@ -1555,6 +1548,12 @@ ModbusRTUDriver
 ~~~~~~~~~~~~~~~
 A :any:`ModbusRTUDriver` connects to a ModbusRTU resource. This driver only
 supports local usage and will not work with an exporter.
+
+The driver is implemented using the
+`minimalmodbus <https://minimalmodbus.readthedocs.io/en/stable/>`_ Python
+library.
+The implementation only supports that labgrid will be the master on the Modbus
+network.
 
 .. code-block:: yaml
 

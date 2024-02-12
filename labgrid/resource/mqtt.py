@@ -17,7 +17,7 @@ class MQTTManager(ResourceManager):
 
     def _create_mqtt_connection(self, host):
         import paho.mqtt.client as mqtt
-        client = mqtt.Client()
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         client.connect(host)
         client.on_message = self._on_message
         client.loop_start()

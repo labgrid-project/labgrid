@@ -32,8 +32,8 @@ enumeration order.
      port: '/dev/ttyUSB0'
      speed: 115200
 
-The example would access the serial port /dev/ttyUSB0 on the local computer with
-a baud rate of 115200.
+The example would access the serial port ``/dev/ttyUSB0`` on the local computer
+with a baud rate of ``115200``.
 
 Arguments:
   - port (str): path to the serial device
@@ -55,8 +55,9 @@ or raw tcp.
      port: 53867
      speed: 115200
 
-The example would access the serial port on computer remote.example.computer via
-port 53867 and use a baud rate of 115200 with the RFC2217 protocol.
+The example would access the serial port on computer
+``remote.example.computer`` via port ``53867`` and use a baud rate of
+``115200`` with the RFC2217 protocol.
 
 Arguments:
   - host (str): hostname of the remote host
@@ -96,7 +97,7 @@ exporter.
       timeout: 0.25
 
 Arguments:
-  - port (str): tty the instrument is connected to, e.g. '/dev/ttyUSB0'
+  - port (str): tty the instrument is connected to, e.g. ``/dev/ttyUSB0``
   - address (int): slave address on the modbus, e.g. 16
   - speed (int, default=115200): baud rate of the serial port
   - timeout (float, default=0.25): timeout in seconds
@@ -118,9 +119,9 @@ This allows identification through hot-plugging or rebooting.
      speed: 115200
 
 The example would search for a USB serial converter with the key
-`ID_SERIAL_SHORT` and the value `P-00-00682` and use it with a baud rate
-of 115200.
-The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
+``ID_SERIAL_SHORT`` and the value ``P-00-00682`` and use it with a baud rate
+of ``115200``.
+The ``ID_SERIAL_SHORT`` property is set by the ``usb_id`` builtin helper program.
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -144,63 +145,63 @@ A :any:`NetworkPowerPort` describes a remotely switchable power port.
      index: 0
 
 The example describes port 0 on the remote power switch
-`powerswitch.example.computer`, which is a `gude` model.
+``powerswitch.example.computer``, which is a ``gude`` model.
 
 Arguments:
   - model (str): model of the power switch
   - host (str): hostname of the power switch
   - index (int): number of the port to switch
 
-The `model` property selects one of several `backend implementations
+The ``model`` property selects one of several `backend implementations
 <https://github.com/labgrid-project/labgrid/tree/master/labgrid/driver/power>`_.
 Currently available are:
 
 ``apc``
-  Controls an APU PDU via SNMP.
+  Controls an *APU PDU* via SNMP.
 
 ``digipower``
-  Controls a DigiPower PDU via a simple HTTP API.
+  Controls a *DigiPower PDU* via a simple HTTP API.
 
 ``digitalloggers_http``
-  Control a Digital Loggers PDU that use the legacy HTTP API. Note that
+  Control a *Digital Loggers PDUs* that use the legacy HTTP API. Note that
   host argument must include the protocol, such as
   ``http://192.168.0.3`` or ``http://admin:pass@192.168.0.4``.
 
 ``eaton``
-  Controls Eaton ePDUs via SNMP.
+  Controls *Eaton ePDUs* via SNMP.
 
 ``eg_pms2_network``
-  Controls the EG_PMS2_LAN & EG_PMS2_WLAN devices, through simple HTTP POST and
-  GET requests.  The device requires a password for logging into the control
-  interface, this module deliberately uses the standard password '1' and is
-  not compatible with a different password.
+  Controls the *EG_PMS2_LAN* & *EG_PMS2_WLAN* devices, through simple HTTP POST
+  and GET requests. The device requires a password for logging into the
+  control interface, this module deliberately uses the standard password ``1``
+  and is not compatible with a different password.
 
 ``eth008``
-  Controls a Robot-Electronics eth008 via a simple HTTP API.
+  Controls a *Robot-Electronics eth008* via a simple HTTP API.
 
 ``gude``
-  Controls a Gude PDU via a simple HTTP API.
+  Controls a *Gude PDU* via a simple HTTP API.
 
 ``gude24``
-  Controls a Gude Expert Power Control 8008 PDU via a simple HTTP API.
+  Controls a *Gude Expert Power Control 8008 PDU* via a simple HTTP API.
 
 ``gude8031``
-  Controls a Gude Expert Power Control 8031 PDU via a simple HTTP API.
+  Controls a *Gude Expert Power Control 8031 PDU* via a simple HTTP API.
 
 ``gude8225``
-  Controls a Gude Expert Power Control 8225 PDU via a simple HTTP API.
+  Controls a *Gude Expert Power Control 8225 PDUs via a simple HTTP API.
 
 ``gude8316``
-  Controls a Gude Expert Power Control 8316 PDU via a simple HTTP API.
+  Controls a *Gude Expert Power Control 8316 PDU* via a simple HTTP API.
 
 ``netio``
-  Controls a NETIO 4-Port PDU via a simple HTTP API.
+  Controls a *NETIO 4-Port PDU* via a simple HTTP API.
 
 ``netio_kshell``
-  Controls a NETIO 4C PDU via a Telnet interface.
+  Controls a *NETIO 4C PDU* via a Telnet interface.
 
 ``raritan``
-  Controls Raritan PDUs via SNMP.
+  Controls *Raritan PDUs* via SNMP.
 
 ``rest``
   This is a generic backend for PDU implementations which can be controlled via
@@ -210,17 +211,17 @@ Currently available are:
   for details.
 
 ``sentry``
-  Controls a Sentry PDU via SNMP using Sentry3-MIB.
-  It was tested on CW-24VDD and 4805-XLS-16.
+  Controls a *Sentry PDU* via SNMP using Sentry3-MIB.
+  It was tested on *CW-24VDD* and *4805-XLS-16*.
 
 ``shelly_gen1``
-  Controls relays of Shelly devices using the Gen 1 Device API.
+  Controls relays of *Shelly* devices using the Gen 1 Device API.
   See the `docstring in the module
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/shelly_gen1.py>`__
   for details.
 
 ``siglent``
-  Controls Siglent SPD3000X series modules via the `vxi11 Python module
+  Controls *Siglent SPD3000X* series modules via the `vxi11 Python module
   <https://pypi.org/project/python-vxi11/>`_.
 
 ``simplerest``
@@ -231,7 +232,7 @@ Currently available are:
   for details.
 
 ``tplink``
-  Controls TP-Link power strips via `python-kasa
+  Controls *TP-Link power strips* via `python-kasa
   <https://github.com/python-kasa/python-kasa>`_.
 
 ``poe_mib``
@@ -254,8 +255,8 @@ PDUDaemon configuration file needs to be specified.
      pdu: 'apc-snmpv3-noauth'
      index: 1
 
-The example describes port 1 on the PDU configured as `apc-snmpv3-noauth`, with
-PDUDaemon running on the host `pduserver`.
+The example describes port ``1`` on the PDU configured as
+``apc-snmpv3-noauth``, with PDUDaemon running on the host ``pduserver``.
 
 Arguments:
   - host (str): name of the host running the PDUDaemon
@@ -267,7 +268,8 @@ Used by:
 
 YKUSHPowerPort
 ++++++++++++++
-A :any:`YKUSHPowerPort` describes a YEPKIT YKUSH USB (HID) switchable USB hub.
+A :any:`YKUSHPowerPort` describes a *YEPKIT YKUSH* USB (HID) switchable USB
+hub.
 
 .. code-block:: yaml
 
@@ -276,8 +278,8 @@ A :any:`YKUSHPowerPort` describes a YEPKIT YKUSH USB (HID) switchable USB hub.
      index: 1
 
 The example describes port 1 on the YKUSH USB hub with the
-serial "YK12345".
-(use "ykushcmd -l" to get your serial...)
+serial ``YK12345``.
+Use ``ykushcmd -l`` to get your serial number.
 
 Arguments:
   - serial (str): serial number of the YKUSH hub
@@ -304,7 +306,7 @@ A :any:`USBPowerPort` describes a generic switchable USB hub as supported by
      index: 1
 
 The example describes port 1 on the hub with the ID_PATH
-"pci-0000:00:14.0-usb-0:2:1.0".
+``pci-0000:00:14.0-usb-0:2:1.0``.
 (use ``udevadm info /sys/bus/usb/devices/...`` to find the ID_PATH value)
 
 Arguments:
@@ -323,7 +325,7 @@ Used by:
 
 SiSPMPowerPort
 ++++++++++++++
-A :any:`SiSPMPowerPort` describes a GEMBIRD SiS-PM as supported by
+A :any:`SiSPMPowerPort` describes a *GEMBIRD SiS-PM* as supported by
 `sispmctl <https://sourceforge.net/projects/sispmctl/>`_.
 
 .. code-block:: yaml
@@ -334,7 +336,7 @@ A :any:`SiSPMPowerPort` describes a GEMBIRD SiS-PM as supported by
      index: 1
 
 The example describes port 1 on the hub with the ID_PATH
-"platform-1c1a400.usb-usb-0:2".
+``platform-1c1a400.usb-usb-0:2``.
 
 Arguments:
   - index (int): number of the port to switch
@@ -346,7 +348,7 @@ Used by:
 TasmotaPowerPort
 ++++++++++++++++
 A :any:`TasmotaPowerPort` resource describes a switchable `Tasmota
-<https://tasmota.github.io/docs/>`_ power outlet accessed over MQTT.
+<https://tasmota.github.io/docs/>`_ power outlet accessed over *MQTT*.
 
 .. code-block:: yaml
 
@@ -356,8 +358,8 @@ A :any:`TasmotaPowerPort` resource describes a switchable `Tasmota
      power_topic: 'cmnd/tasmota_575A2B/POWER'
      avail_topic: 'tele/tasmota_575A2B/LWT'
 
-The example uses a mosquitto server at "this.is.an.example.host.com" and has the
-topics setup for a tasmota power port that has the ID 575A2B.
+The example uses a *Mosquitto* server at ``this.is.an.example.host.com`` and
+has the topics setup for a Tasmota power port that has the ID ``575A2B``.
 
 Arguments:
   - host (str): hostname of the MQTT server
@@ -375,7 +377,7 @@ Digital Outputs
 
 ModbusTCPCoil
 +++++++++++++
-A :any:`ModbusTCPCoil` describes a coil accessible via ModbusTCP.
+A :any:`ModbusTCPCoil` describes a coil accessible via *Modbus TCP*.
 
 .. code-block:: yaml
 
@@ -383,12 +385,12 @@ A :any:`ModbusTCPCoil` describes a coil accessible via ModbusTCP.
      host: '192.168.23.42'
      coil: 1
 
-The example describes the coil with the address 1 on the ModbusTCP device
-`192.168.23.42`.
+The example describes the coil with the address ``1`` on the Modbus TCP device
+``192.168.23.42``.
 
 Arguments:
-  - host (str): hostname of the Modbus TCP server e.g. "192.168.23.42:502"
-  - coil (int): index of the coil e.g. 3
+  - host (str): hostname of the Modbus TCP server e.g. ``192.168.23.42:502``
+  - coil (int): index of the coil, e.g. ``3``
   - invert (bool, default=False): whether the logic level is inverted
     (active-low)
   - write_multiple_coils (bool, default=False): whether to perform write
@@ -399,7 +401,7 @@ Used by:
 
 DeditecRelais8
 ++++++++++++++
-A :any:`DeditecRelais8` describes a Deditec USB GPO module with 8 relays.
+A :any:`DeditecRelais8` describes a *Deditec USB GPO module* with 8 relays.
 
 .. code-block:: yaml
 
@@ -420,7 +422,7 @@ Used by:
 
 OneWirePIO
 ++++++++++
-A :any:`OneWirePIO` describes a onewire programmable I/O pin.
+A :any:`OneWirePIO` describes a *1-Wire* programmable I/O pin.
 
 .. code-block:: yaml
 
@@ -429,11 +431,11 @@ A :any:`OneWirePIO` describes a onewire programmable I/O pin.
      path: '/29.7D6913000000/PIO.0'
      invert: false
 
-The example describes a `PIO.0` at device address `29.7D6913000000` via the onewire
-server on `example.computer`.
+The example describes a ``PIO.0`` at device address ``29.7D6913000000`` via the
+1-Wire server on ``example.computer``.
 
 Arguments:
-  - host (str): hostname of the remote system running the onewire server
+  - host (str): hostname of the remote system running the 1-Wire server
   - path (str): path on the server to the programmable I/O pin
   - invert (bool, default=False): whether the logic level is inverted
     (active-low)
@@ -453,8 +455,8 @@ An :any:`LXAIOBusPIO` resource describes a single PIO pin on an LXAIOBusNode.
      pin: 'OUT0'
      invert: false
 
-The example uses an lxa-iobus-server running on localhost:8080, with node
-IOMux-00000003 and pin OUT0.
+The example uses an lxa-iobus-server running on ``localhost:8080``, with node
+``IOMux-00000003`` and pin ``OUT0``.
 
 Arguments:
   - host (str): hostname with port of the lxa-io-bus server
@@ -473,7 +475,7 @@ HIDRelay
 ++++++++
 An :any:`HIDRelay` resource describes a single output of a HID protocol based
 USB relays.
-It currently supports the widely used "dcttech USBRelay".
+It currently supports the widely used *dcttech USBRelay*.
 
 .. code-block:: yaml
 
@@ -538,8 +540,8 @@ A :any:`NetworkService` describes a remote SSH connection.
      address: 'example.computer'
      username: 'root'
 
-The example describes a remote SSH connection to the computer `example.computer`
-with the username `root`.
+The example describes a remote SSH connection to the computer
+``example.computer`` with the username ``root``.
 Set the optional password password property to make SSH login with a password
 instead of the key file.
 
@@ -582,12 +584,13 @@ A :any:`NetworkUSBMassStorage` resource describes a USB memory stick or similar
 device available on a remote computer.
 
 The NetworkUSBMassStorage can be used in test cases by calling the
-`write_image()`, and `get_size()` functions.
+``write_image()``, and ``get_size()`` functions.
 
 SigrokDevice
 ~~~~~~~~~~~~
-A :any:`SigrokDevice` resource describes a sigrok device. To select a specific
-device from all connected supported devices use the `SigrokUSBDevice`_.
+A :any:`SigrokDevice` resource describes a *Sigrok* device. To select a
+specific device from all connected supported devices use the
+`SigrokUSBDevice`_.
 
 .. code-block:: yaml
 
@@ -623,7 +626,8 @@ Used by:
 
 MXSUSBLoader
 ~~~~~~~~~~~~
-An :any:`MXSUSBLoader` resource describes a USB device in the mxs loader state.
+An :any:`MXSUSBLoader` resource describes a USB device in the *MXS loader
+state*.
 
 .. code-block:: yaml
 
@@ -641,8 +645,8 @@ Used by:
 
 RKUSBLoader
 ~~~~~~~~~~~
-An :any:`RKUSBLoader` resource describes a USB device in the rockchip loader
-state.
+An :any:`RKUSBLoader` resource describes a USB device in the *Rockchip loader
+state*.
 
 .. code-block:: yaml
 
@@ -673,8 +677,8 @@ computer.
 
 AndroidUSBFastboot
 ~~~~~~~~~~~~~~~~~~
-An :any:`AndroidUSBFastboot` resource describes a USB device in the fastboot
-state.
+An :any:`AndroidUSBFastboot` resource describes a USB device in the *Fastboot
+state*.
 Previously, this resource was named AndroidFastboot and this name still
 supported for backwards compatibility.
 
@@ -696,8 +700,8 @@ Used by:
 
 AndroidNetFastboot
 ~~~~~~~~~~~~~~~~~~
-An :any:`AndroidNetFastboot` resource describes a network device in fastboot
-state.
+An :any:`AndroidNetFastboot` resource describes a network device in *Fastboot
+state*.
 
 .. code-block:: yaml
 
@@ -791,7 +795,7 @@ Used by:
 USBDebugger
 ~~~~~~~~~~~
 An :any:`USBDebugger` resource describes a JTAG USB adapter (for example an
-FTDI FT2232H).
+*FTDI FT2232H*).
 
 .. code-block:: yaml
 
@@ -825,7 +829,7 @@ Used by:
 
 SigrokUSBDevice
 ~~~~~~~~~~~~~~~
-A :any:`SigrokUSBDevice` resource describes a sigrok USB device.
+A :any:`SigrokUSBDevice` resource describes a *Sigrok* USB device.
 
 .. code-block:: yaml
 
@@ -846,13 +850,13 @@ Used by:
 
 NetworkSigrokUSBDevice
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkSigrokUSBDevice` resource describes a sigrok USB device
+A :any:`NetworkSigrokUSBDevice` resource describes a *Sigrok* USB device
 connected to a host which is exported over the network.
 The `SigrokDriver`_ will access it via SSH.
 
 SigrokUSBSerialDevice
 ~~~~~~~~~~~~~~~~~~~~~
-A :any:`SigrokUSBSerialDevice` resource describes a sigrok device which
+A :any:`SigrokUSBSerialDevice` resource describes a *Sigrok* device which
 communicates over a USB serial port instead of being a USB device itself (see
 `SigrokUSBDevice`_ for that case).
 
@@ -865,8 +869,8 @@ communicates over a USB serial port instead of being a USB device itself (see
 
 Arguments:
   - driver (str): name of the sigrok driver to use
-  - channels (str): optional, channel mapping as described in the sigrok-cli
-    man page
+  - channels (str): optional, channel mapping as described in the
+    ``sigrok-cli`` man page
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
 
 Used by:
@@ -899,7 +903,7 @@ on a remote computer.
 
 LXAUSBMux
 ~~~~~~~~~
-A :any:`LXAUSBMux` resource describes a Linux Automation GmbH USB-Mux device.
+A :any:`LXAUSBMux` resource describes a *Linux Automation GmbH USB-Mux* device.
 
 .. code-block:: yaml
 
@@ -992,7 +996,7 @@ by an ALSA kernel driver.
 
 Arguments:
   - index (int, default=0): ALSA PCM device number (as in
-    `hw:CARD=<card>,DEV=<index>`)
+    ``hw:CARD=<card>,DEV=<index>``)
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
 
 Used by:
@@ -1005,9 +1009,9 @@ available on a remote computer.
 
 USBTMC
 ~~~~~~
-A :any:`USBTMC` resource describes an oscilloscope connected via the USB TMC
-protocol.
-The low-level communication is handled by the ``usbtmc`` kernel driver.
+A :any:`USBTMC` resource describes an oscilloscope connected via the *USB TMC
+protocol*.
+The low-level communication is handled by the "usbtmc" kernel driver.
 
 
 .. code-block:: yaml
@@ -1046,12 +1050,13 @@ configured in:
     flashrom: '/usr/sbin/flashrom'
 
 Arguments:
-  - programmer (str): programmer device as described in `-p, --programmer` in
-    `man 8 flashrom`
+  - programmer (str): programmer device as described in ``-p, --programmer`` in
+    ``man 8 flashrom``
 
-The resource must configure which programmer to use and the parameters to the programmer.
-The programmer parameter is passed directly to the flashrom bin hence man(8) flashrom
-can be used for reference.
+The resource must configure which programmer to use and the parameters to the
+programmer.
+The programmer parameter is passed directly to the flashrom bin hence
+``man 8 flashrom`` can be used for reference.
 Below an example where the local spidev is used.
 
 .. code-block:: yaml
@@ -1109,9 +1114,9 @@ configured via:
     dpcmd: '/usr/sbin/dpcmd'
 
 Arguments:
-  - vcc (str): '3.5V', '2.5V' or '1.8V'.
+  - vcc (str): ``3.5V``, ``2.5V`` or ``1.8V``.
 
-For instance, to flash using 3.5V vcc:
+For instance, to flash using 3.5 V VCC:
 
 .. code-block:: yaml
 
@@ -1128,8 +1133,9 @@ remote computer.
 
 XenaManager
 ~~~~~~~~~~~
-A :any:`XenaManager` resource describes a Xena Manager instance which is the
-instance the `XenaDriver`_ must connect to in order to configure a Xena chassis.
+A :any:`XenaManager` resource describes a *Xena Manager* instance which is the
+instance the `XenaDriver`_ must connect to in order to configure a Xena
+chassis.
 
 .. code-block:: yaml
 
@@ -1294,7 +1300,7 @@ place.
    RemotePlace:
      name: 'example-place'
 
-The example describes the remote place `example-place`. It will connect to the
+The example describes the remote place ``example-place``. It will connect to the
 labgrid remote coordinator, wait until the resources become available and expose
 them to the internal environment.
 
@@ -1306,7 +1312,7 @@ Used by:
 
 DockerDaemon
 ~~~~~~~~~~~~
-A :any:`DockerDaemon` describes where to contact a docker daemon process.
+A :any:`DockerDaemon` describes where to contact a *docker daemon* process.
 DockerDaemon also participates in managing `NetworkService`_ instances
 created through interaction with that daemon.
 
@@ -1397,7 +1403,7 @@ Matching a USB Serial Converter on a Hub Port
 +++++++++++++++++++++++++++++++++++++++++++++
 This will match any USB serial converter connected below the hub port 1.2.5.5
 on bus 1.
-The `ID_PATH` value corresponds to the hierarchy of buses and ports as shown
+The ``ID_PATH`` value corresponds to the hierarchy of buses and ports as shown
 with ``udevadm info /dev/ttyUSB0``.
 
 .. code-block:: yaml
@@ -1420,13 +1426,13 @@ don't use a parent match.
 
   AndroidUSBFastboot:
     match:
-      ID_PATH: pci-0000:05:00.0-usb-0:1.2.3
+      ID_PATH: 'pci-0000:05:00.0-usb-0:1.2.3'
 
 Matching a Specific UART in a Dual-Port Adapter
 +++++++++++++++++++++++++++++++++++++++++++++++
 On this board, the serial console is connected to the second port of an
 on-board dual-port USB-UART.
-The board itself is connected to the bus 3 and port path 10.2.2.2.
+The board itself is connected to the bus 3 and port path ``10.2.2.2``.
 The correct value can be shown by running ``udevadm info /dev/ttyUSB9`` in our
 case:
 
@@ -1620,11 +1626,11 @@ SSHDriver
 ~~~~~~~~~
 A :any:`SSHDriver` requires a `NetworkService`_ resource and allows the
 execution of commands and file upload via network.
-It uses SSH's `ServerAliveInterval` option to detect failed connections.
+It uses SSH's ``ServerAliveInterval`` option to detect failed connections.
 
 If a shared SSH connection to the target is already open, it will reuse it when
 running commands.
-In that case, `ServerAliveInterval` should be set outside of labgrid, as it
+In that case, ``ServerAliveInterval`` should be set outside of labgrid, as it
 cannot be enabled for an existing connection.
 
 Binds to:
@@ -1643,14 +1649,14 @@ Implements:
 Arguments:
   - keyfile (str): optional, filename of private key to login into the remote system
     (has precedence over `NetworkService`_'s password)
-  - stderr_merge (bool, default=False): set to True to make `run()` return stderr merged with
+  - stderr_merge (bool, default=False): set to True to make ``run()`` return stderr merged with
     stdout, and an empty list as second element.
   - connection_timeout (float, default=30.0): timeout when trying to establish connection to
     target.
-  - explicit_sftp_mode (bool, default=False): if set to True, `put()`, `get()`, and `scp()` will
-    explicitly use the SFTP protocol for file transfers instead of scp's default protocol
-  - explicit_scp_mode (bool, default=False): if set to True, `put()`, `get()`, and `scp()` will
-    explicitly use the SCP protocol for file transfers instead of scp's default protocol
+  - explicit_sftp_mode (bool, default=False): if set to True, ``put()``, ``get()``, and ``scp()``
+    will explicitly use the SFTP protocol for file transfers instead of scp's default protocol
+  - explicit_scp_mode (bool, default=False): if set to True, ``put()``, ``get()``, and ``scp()``
+    will explicitly use the SCP protocol for file transfers instead of scp's default protocol
   - username (str, default=username from `NetworkService`_): username used by SSH
   - password (str, default=password from `NetworkService`_): password used by SSH
 
@@ -1679,7 +1685,7 @@ Arguments:
   - prompt (regex, default=""): U-Boot prompt to match
   - autoboot (regex, default="stop autoboot"): autoboot message to match
   - password (str): optional, U-Boot unlock password
-  - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
+  - interrupt (str, default="\\n"): string to interrupt autoboot (use ``\\x03`` for CTRL-C)
   - init_commands (tuple): optional, tuple of commands to execute after matching the
     prompt
   - password_prompt (str, default="enter Password: "): regex to match the U-Boot password prompt
@@ -1691,7 +1697,7 @@ Arguments:
 
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~
-A :any:`SmallUBootDriver` interfaces with stripped-down U-Boot variants that
+A :any:`SmallUBootDriver` interfaces with stripped-down *U-Boot* variants that
 are sometimes used in cheap consumer electronics.
 
 SmallUBootDriver is meant as a driver for U-Boot with only little functionality
@@ -1701,7 +1707,7 @@ Especially is copes with the following limitations:
 - The U-Boot does not have a real password-prompt but can be activated by
   entering a "secret" after a message was displayed.
 - The command line does not have a built-in echo command.
-  Thus this driver uses 'Unknown Command' messages as marker before and after
+  Thus this driver uses "Unknown Command" messages as marker before and after
   the output of a command.
 - Since there is no echo we cannot return the exit code of the command.
   Commands will always return 0 unless the command was not found.
@@ -1793,7 +1799,7 @@ Arguments:
 AndroidFastbootDriver
 ~~~~~~~~~~~~~~~~~~~~~
 An :any:`AndroidFastbootDriver` allows the upload of images to a device in the
-USB or network fastboot state.
+USB or network *Fastboot state*.
 
 Binds to:
   fastboot:
@@ -1842,7 +1848,7 @@ Arguments:
 
 OpenOCDDriver
 ~~~~~~~~~~~~~
-An :any:`OpenOCDDriver` controls OpenOCD to bootstrap a target with a
+An :any:`OpenOCDDriver` controls *OpenOCD* to bootstrap a target with a
 bootloader.
 
 Note that OpenOCD supports specifying USB paths since
@@ -1899,7 +1905,7 @@ Implements:
 Arguments:
   - image (str): optional, filename of image to write into QSPI flash
 
-The driver can be used in test cases by calling the `flash` function. An
+The driver can be used in test cases by calling its ``flash()`` method. An
 example strategy is included in labgrid.
 
 ManualPowerDriver
@@ -2269,7 +2275,7 @@ Arguments:
 
 DeditecRelaisDriver
 ~~~~~~~~~~~~~~~~~~~
-A :any:`DeditecRelaisDriver` controls a Deditec relay resource.
+A :any:`DeditecRelaisDriver` controls a *Deditec* relay resource.
 It can set and get the current state of the resource.
 
 Binds to:
@@ -2289,8 +2295,8 @@ Arguments:
 
 MXSUSBDriver
 ~~~~~~~~~~~~
-An :any:`MXSUSBDriver` is used to upload an image into a device in the mxs USB
-loader state.
+An :any:`MXSUSBDriver` is used to upload an image into a device in the *MXS USB
+loader state*.
 This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
@@ -2318,10 +2324,10 @@ Arguments:
 
 IMXUSBDriver
 ~~~~~~~~~~~~
-A :any:`IMXUSBDriver` is used to upload an image into a device in the imx USB
-loader state.
+An :any:`IMXUSBDriver` is used to upload an image into a device in the *i.MX
+USB loader state*.
 This is useful to bootstrap a bootloader onto a device.
-This driver uses the imx-usb-loader tool from barebox.
+This driver uses the ``imx-usb-loader`` tool from barebox.
 
 Binds to:
   loader:
@@ -2350,10 +2356,11 @@ Arguments:
 
 BDIMXUSBDriver
 ~~~~~~~~~~~~~~
-The :any:`BDIMXUSBDriver` is used to upload bootloader images into an i.MX
-device in the USB SDP mode.
-This driver uses the imx_usb tool by Boundary Devices.
-Compared to the IMXUSBLoader, it supports two-stage upload of U-Boot images.
+The :any:`BDIMXUSBDriver` is used to upload bootloader images into an *i.MX
+device* in the *USB SDP mode*.
+This driver uses the ``imx_usb`` tool by Boundary Devices.
+Compared to the ``imx-usb-loader``, it supports two-stage upload of U-Boot
+images.
 The images paths need to be specified from code instead of in the YAML
 environment, as the correct image depends on the system state.
 
@@ -2377,9 +2384,8 @@ Arguments:
 
 RKUSBDriver
 ~~~~~~~~~~~
-A :any:`RKUSBDriver` is used to upload an image into a device in the rockchip
-USB loader state.
-This is useful to bootstrap a bootloader onto a device.
+A :any:`RKUSBDriver` is used to upload an image into a device in the *Rockchip
+USB loader state*. This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
   loader:
@@ -2410,8 +2416,8 @@ Arguments:
 
 UUUDriver
 ~~~~~~~~~
-A :any:`UUUDriver` is used to upload an image into a device in the NXP USB
-loader state.
+A :any:`UUUDriver` is used to upload an image into a device in the *NXP USB
+loader state*.
 This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
@@ -2439,7 +2445,7 @@ Implements:
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of an image to bootstrap onto the target
-  - script (str): run built-in script with "uuu -b", called with image as arg0
+  - script (str): run built-in script with ``uuu -b``, called with image as arg0
 
 USBStorageDriver
 ~~~~~~~~~~~~~~~~
@@ -2518,7 +2524,7 @@ Implements:
 Arguments:
   - None
 
-The driver can be used in test cases by calling the `stage()` function, which
+The driver can be used in test cases by calling its ``stage()`` method, which
 returns the path to be used by the target.
 
 NFSProviderDriver
@@ -2540,7 +2546,7 @@ Implements:
 Arguments:
   - None
 
-The driver can be used in test cases by calling the `stage()` function, which
+The driver can be used in test cases by calling its ``stage()`` method, which
 returns an NFSFile object with ``host``, ``export`` and ``relative_file_path``
 attributes.
 
@@ -2629,8 +2635,8 @@ Implements:
 Arguments:
   - None
 
-The driver can be used in test cases by calling the `capture`, `stop` and
-`analyze` functions.
+The driver can be used in test cases by calling its ``capture()``, ``stop()``
+and ``analyze()`` methods.
 
 SigrokPowerDriver
 ~~~~~~~~~~~~~~~~~
@@ -2661,9 +2667,10 @@ Arguments:
 SigrokDmmDriver
 ~~~~~~~~~~~~~~~
 The :any:`SigrokDmmDriver` uses a `SigrokDevice`_ resource to record samples
-from a digital multimeter (DMM) and provides them during test runs.
+from a *digital multimeter* (DMM) and provides them during test runs.
 
-It is known to work with Unit-T `UT61B` and `UT61C` devices but should also work with other DMMs supported by *sigrok*.
+It is known to work with *Unit-T UT61B* and *UT61C* devices but should also
+work with other DMMs supported by *Sigrok*.
 
 Binds to:
   sigrok:
@@ -2678,15 +2685,15 @@ Implements:
 Arguments:
   - None
 
-Sampling can be started calling `capture(samples, timeout=None)`.
+Sampling can be started calling ``capture(samples, timeout=None)``.
 It sets up sampling and returns immediately.
-The default timeout has been chosen to work with Unit-T `UT61B`.
+The default timeout has been chosen to work with *Unit-T UT61B*.
 Other devices may require a different timeout setting.
 
-Samples can be obtained using `stop()`.
-`stop()` will block until either *sigrok* terminates or `timeout` is reached.
-This method returns a `(unit, samples)` tuple:
-`unit` is the physical unit reported by the DMM;
+Samples can be obtained using ``stop()``.
+``stop()`` will block until either *sigrok* terminates or *timeout* is reached.
+This method returns a ``(unit, samples)`` tuple:
+``unit`` is the physical unit reported by the DMM;
 samples is an iterable of samples.
 
 This driver relies on buffering of the subprocess call.
@@ -2728,7 +2735,7 @@ Implements:
 Arguments:
   - None
 
-The driver can be used in test cases by calling the `set_links()` function with
+The driver can be used in test cases by calling its ``set_links()`` method with
 a list containing one or more of "dut-device", "host-dut" and "host-device".
 Not all combinations can be configured at the same time.
 
@@ -2749,8 +2756,8 @@ Implements:
 Arguments:
   - None
 
-The driver can be used in test cases by calling the `set_mode()` function with
-argument being `dut`, `host`, `off`, or `client`.
+The driver can be used in test cases by calling its ``set_mode()`` method with
+argument being "dut", "host", "off", or "client".
 
 USBVideoDriver
 ~~~~~~~~~~~~~~
@@ -2770,12 +2777,12 @@ Implements:
 Arguments:
   - None
 
-Although the driver can be used from Python code by calling the `stream()`
+Although the driver can be used from Python code by calling the ``stream()``
 method, it is currently mainly useful for the ``video`` subcommand of
 ``labgrid-client``.
 It supports the `Logitech HD Pro Webcam C920` with the USB ID 046d:082d and a
 few others.
-More cameras can be added to `get_qualities()` and `get_pipeline()` in
+More cameras can be added to ``get_qualities()`` and ``get_pipeline()`` in
 ``labgrid/driver/usbvideodriver.py``.
 Appropriate configuration parameters can be determined by using the GStreamer
 ``gst-device-monitor-1.0`` command line utility.
@@ -2804,8 +2811,8 @@ Arguments:
 
 USBTMCDriver
 ~~~~~~~~~~~~
-The :any:`USBTMCDriver` is used to control a oscilloscope via the USB TMC
-protocol.
+The :any:`USBTMCDriver` is used to control a oscilloscope via the *USB TMC
+protocol*.
 
 Binds to:
   tmc:
@@ -2822,7 +2829,7 @@ Currently, it can be used by the ``labgrid-client`` ``tmc`` subcommands to show
 (and save) a screenshot, to show per channel measurements and to execute raw
 TMC commands.
 It only supports the `Keysight DSO-X 2000` series (with the USB ID 0957:1798),
-but more devices can be added by extending `on_activate()` in
+but more devices can be added by extending ``on_activate()`` in
 ``labgrid/driver/usbtmcdriver.py`` and writing a corresponding backend in
 ``labgrid/driver/usbtmc/``.
 
@@ -2916,7 +2923,7 @@ Implements:
 Arguments:
   - None
 
-Although the driver can be used from Python code by calling the `stream()`
+Although the driver can be used from Python code by calling the ``stream()``
 method, it is currently mainly useful for the ``video`` subcommand of
 ``labgrid-client``.
 
@@ -2928,8 +2935,8 @@ Key        Description
 ========== =========================================================
 
 Properties of these keys can be selected using the Python format string syntax,
-e.g. ``{device.devnode}`` to select the device node path of
-:any:`USBFlashableDevice`
+e.g. ``{device.devnode}`` to select the device node path of a
+:any:`USBFlashableDevice`.
 
 DediprogFlashDriver
 ~~~~~~~~~~~~~~~~~~~
@@ -2955,8 +2962,9 @@ Arguments:
     of an image to flash onto the target
 
 The DediprogFlashDriver allows using DediprogFlasher dpcmd to flash or erase SPI
-devices. It is assumed that the device flashing is an exporter wired, via
-DediprogFlasher SF100 for instance, to the device being flashed.
+devices. It is assumed that the device flashing is an exporter wired, via a
+*Dediprog SF100 SPI NOR Flash Programmer* for instance, to the device being
+flashed.
 
 XenaDriver
 ~~~~~~~~~~
@@ -3071,7 +3079,7 @@ Currently basic wired and wireless configuration options have been tested.
 
 To use it, `PyGObject <https://pygobject.readthedocs.io/>`_ must be installed
 (on the same system as the network interface).
-For Debian, the necessary packages are `python3-gi` and `gir1.2-nm-1.0`.
+For Debian, the necessary packages are ``python3-gi`` and ``gir1.2-nm-1.0``.
 
 It supports:
 
@@ -3173,7 +3181,7 @@ Here is an example environment config:
          BareboxStrategy: {}
 
 In order to use the BareboxStrategy via labgrid as a library and transition to
-the ``shell`` state:
+the "shell" state:
 
 .. testsetup:: barebox-strategy
 
@@ -3220,7 +3228,7 @@ Here is an example environment config:
          ShellStrategy: {}
 
 In order to use the ShellStrategy via labgrid as a library and transition to
-the ``shell`` state:
+the "shell" state:
 
 .. testsetup:: shell-strategy
 
@@ -3268,7 +3276,7 @@ Here is an example environment config:
          UBootStrategy: {}
 
 In order to use the UBootStrategy via labgrid as a library and transition to
-the ``shell`` state:
+the "shell" state:
 
 .. testsetup:: uboot-strategy
 
@@ -3314,7 +3322,7 @@ Here is an example environment config:
          DockerStrategy: {}
 
 In order to use the DockerStrategy via labgrid as a library and transition to
-the ``accessible`` state:
+the "accessible" state:
 
 .. testsetup:: docker-strategy
 
@@ -3489,14 +3497,15 @@ To bind the correct driver to the correct resource, explicit ``name`` and
       bindings:
         port: 'bar'
 
-The property name for the binding (e.g. `port` in the example above) is
+The property name for the binding (e.g. ``port`` in the example above) is
 documented for each individual driver in this chapter.
 
 The YAML configuration file also supports templating for some substitutions,
 these are:
 
-- LG_* variables, are replaced with their respective LG_* environment variable
-- BASE is substituted with the base directory of the YAML file.
+- ``LG_*`` variables, are replaced with their respective ``LG_*`` environment
+  variable
+- ``BASE`` is substituted with the base directory of the YAML file.
 
 As an example:
 
@@ -3510,9 +3519,9 @@ As an example:
   tools:
     qemu_bin: !template '$BASE/bin/qemu-bin'
 
-would resolve the qemu_bin path relative to the BASE dir of the YAML file and
-try to use the `RemotePlace`_ with the name set in the LG_PLACE environment
-variable.
+would resolve the ``qemu_bin`` path relative to the ``BASE`` dir of the YAML
+file and try to use the `RemotePlace`_ with the name set in the ``LG_PLACE``
+environment variable.
 
 See the :ref:`labgrid-device-config` man page for documentation on the
 top-level ``options``, ``images``, ``tools``, and ``examples`` keys in the
@@ -3551,9 +3560,9 @@ By default, the class name is inferred from the resource name,
 and `<params>` will be passed to its constructor.
 For USB resources, you will most likely want to use :ref:`udev-matching` here.
 
-As a simple example, here is one group called *usb-hub-in-rack12* containing
+As a simple example, here is one group called ``usb-hub-in-rack12`` containing
 a single `USBSerialPort`_ resource (using udev matching), which will be
-exported as `exportername/usb-hub-in-rack12/NetworkSerialPort/USBSerialPort`:
+exported as ``exportername/usb-hub-in-rack12/NetworkSerialPort/USBSerialPort``:
 
 .. code-block:: yaml
 
@@ -3567,9 +3576,9 @@ you can choose a unique resource name, and then use the ``cls`` parameter to
 specify the class name instead (which will not be passed as a parameter to the
 class constructor).
 In this next example we will export one `USBSerialPort`_ as
-`exportername/usb-hub-in-rack12/NetworkSerialPort/console-main`,
+``exportername/usb-hub-in-rack12/NetworkSerialPort/console-main``,
 and another `USBSerialPort`_ as
-`exportername/usb-hub-in-rack12/NetworkSerialPort/console-secondary`:
+``exportername/usb-hub-in-rack12/NetworkSerialPort/console-secondary``:
 
 .. code-block:: yaml
 

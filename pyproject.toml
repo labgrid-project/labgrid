@@ -60,7 +60,7 @@ graph = ["graphviz>=0.17.0"]
 kasa = ["python-kasa>=0.4.0"]
 modbus = ["pyModbusTCP>=0.2.0"]
 modbusrtu = ["minimalmodbus>=1.0.2"]
-mqtt = ["paho-mqtt>=1.5.1"]
+mqtt = ["paho-mqtt>=2.0.0"]
 onewire = ["onewire>=0.2"]
 pyvisa = [
     "pyvisa>=1.11.3",
@@ -101,7 +101,7 @@ dev = [
     "minimalmodbus>=1.0.2",
 
     # labgrid[mqtt]
-    "paho-mqtt>=1.5.1",
+    "paho-mqtt>=2.0.0",
 
     # labgrid[onewire]
     "onewire>=0.2",

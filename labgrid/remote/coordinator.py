@@ -10,6 +10,8 @@ from enum import Enum
 from functools import wraps
 
 import attr
+import txaio
+txaio.use_asyncio()
 from autobahn import wamp
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 from autobahn.wamp.types import RegisterOptions

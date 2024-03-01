@@ -91,12 +91,22 @@ class USBResource(ManagedResource):
                 suggestions.append({'@ID_PATH': path})
 
         serial = self.device.properties.get('ID_SERIAL_SHORT')
+        interface_num = self.device.properties.get('ID_USB_INTERFACE_NUM')
         if serial:
-            suggestions.append({'ID_SERIAL_SHORT': serial})
+            if interface_num is not None:
+                suggestions.append({'ID_SERIAL_SHORT': serial,
+                                    'ID_USB_INTERFACE_NUM': interface_num})
+            else:
+                suggestions.append({'ID_SERIAL_SHORT': serial})
         elif self.match.get('@SUBSYSTEM', None) == 'usb':
             serial = self._get_usb_device().properties.get('ID_SERIAL_SHORT')
+            interface_num = self._get_usb_device().properties.get('ID_USB_INTERFACE_NUM')
             if serial:
-                suggestions.append({'@ID_SERIAL_SHORT': serial})
+                if interface_num is not None:
+                    suggestions.append({'@ID_SERIAL_SHORT': serial,
+                                        '@ID_USB_INTERFACE_NUM': interface_num})
+                else:
+                    suggestions.append({'@ID_SERIAL_SHORT': serial})
 
         return meta, suggestions
 

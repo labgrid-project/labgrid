@@ -523,6 +523,22 @@ NetworkHIDRelay
 +++++++++++++++
 A :any:`NetworkHIDRelay` describes an `HIDRelay`_ exported over the network.
 
+SysfsGPIO
++++++++++
+
+A :any:`SysfsGPIO` resource describes a GPIO line.
+
+.. code-block:: yaml
+
+   SysfsGPIO:
+     index: 12
+
+Arguments:
+  - index (int): index of the GPIO line
+
+Used by:
+  - `GpioDigitalOutputDriver`_
+
 NetworkService
 ~~~~~~~~~~~~~~
 A :any:`NetworkService` describes a remote SSH connection.
@@ -954,21 +970,6 @@ Arguments:
 
 Used by:
   - `USBVideoDriver`_
-
-SysfsGPIO
-~~~~~~~~~
-A :any:`SysfsGPIO` resource describes a GPIO line.
-
-.. code-block:: yaml
-
-   SysfsGPIO:
-     index: 12
-
-Arguments:
-  - index (int): index of the GPIO line
-
-Used by:
-  - `GpioDigitalOutputDriver`_
 
 NetworkUSBVideo
 ~~~~~~~~~~~~~~~

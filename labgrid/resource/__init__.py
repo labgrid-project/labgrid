@@ -15,6 +15,7 @@ from .udev import (
     HIDRelay,
     IMXUSBLoader,
     LXAUSBMux,
+    MatchedSysfsGPIO,
     MXSUSBLoader,
     RKUSBLoader,
     SiSPMPowerPort,

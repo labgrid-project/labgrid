@@ -708,3 +708,32 @@ class USBDebugger(USBResource):
             return False
 
         return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class MatchedSysfsGPIO(USBResource):
+    """The MatchedSysfsGPIO described a SysfsGPIO matched by Udev
+
+    Args:
+        pin (int): gpio pin number within the matched gpiochip."""
+    pin = attr.ib(default=None, validator=attr.validators.instance_of(int))
+    index = None
+
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'gpio'
+        super().__attrs_post_init__()
+
+    def filter_match(self, device):
+        # Filter out the char device
+        if device.properties.get('DEVNAME') is not None:
+            return False
+        return super().filter_match(device)
+
+    def update(self):
+        super().update()
+        if self.device is not None:
+            if self.pin >= int(self.read_attr('ngpio')):
+                raise ValueError("MatchedSysfsGPIO pin out of bound")
+            self.index = int(self.read_attr('base')) + self.pin
+        else:
+            self.index = None

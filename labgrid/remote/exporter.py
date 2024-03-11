@@ -579,11 +579,13 @@ class GPIOSysFSExport(ResourceExport):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        local_cls_name = self.cls
-        self.data['cls'] = f"Network{self.cls}"
-        from ..resource import base
-        local_cls = getattr(base, local_cls_name)
-        self.local = local_cls(target=None, name=None, **self.local_params)
+        if self.cls == "SysfsGPIO":
+            from ..resource.base import SysfsGPIO
+            self.local = SysfsGPIO(target=None, name=None, **self.local_params)
+        elif self.cls == "MatchedSysfsGPIO":
+            from ..resource.udev import MatchedSysfsGPIO
+            self.local = MatchedSysfsGPIO(target=None, name=None, **self.local_params)
+        self.data['cls'] = "NetworkSysfsGPIO"
         self.export_path = Path(GPIOSysFSExport._gpio_sysfs_path_prefix,
                                 f'gpio{self.local.index}')
         self.system_exported = False
@@ -624,6 +626,7 @@ class GPIOSysFSExport(ResourceExport):
             unexport.write(str(index).encode('utf-8'))
 
 exports["SysfsGPIO"] = GPIOSysFSExport
+exports["MatchedSysfsGPIO"] = GPIOSysFSExport
 
 
 @attr.s

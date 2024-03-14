@@ -109,12 +109,15 @@ This allows identification through hot-plugging or rebooting.
    USBSerialPort:
      match:
        ID_SERIAL_SHORT: 'P-00-00682'
+       ID_USB_INTERFACE_NUM: '00'
      speed: 115200
 
-The example would search for a USB serial converter with the key
-``ID_SERIAL_SHORT`` and the value ``P-00-00682`` and use it with a baud rate
-of ``115200``.
-The ``ID_SERIAL_SHORT`` property is set by the ``usb_id`` builtin helper program.
+The example would search for a USB serial converter with a given serial number
+(``ID_SERIAL_SHORT`` = ``P-00-00682``) and use first interface
+(``ID_USB_INTERFACE_NUM`` = ``00``) with a baud rate of 115200.
+
+The ``ID_SERIAL_SHORT`` and ``ID_USB_INTERFACE_NUM`` properties are set by the
+``usb_id`` builtin helper program.
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_

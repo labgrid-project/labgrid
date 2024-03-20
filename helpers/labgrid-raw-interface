@@ -32,7 +32,7 @@ def get_denylist():
     return denylist
 
 
-def main(program, ifname, count):
+def main(program, ifname, count, duration):
     if not ifname:
         raise ValueError("Empty interface name.")
     if any((c == "/" or c.isspace()) for c in ifname):
@@ -60,12 +60,23 @@ def main(program, ifname, count):
     if program == "tcpdump":
         args.append("-n")
         args.append(f"--interface={ifname}")
+        args.append("-U")
+        args.append("-s0")
         args.append("-w")
         args.append('-')
 
         if count:
             args.append("-c")
             args.append(str(count))
+
+        if duration:
+            # The duration is implemented by specifying the number of seconds
+            # before rotating the dump file, but limiting the number of files
+            # to 1
+            args.append("-G")
+            args.append(str(duration))
+            args.append("-W")
+            args.append("1")
 
     try:
         os.execvp(args[0], args)
@@ -85,9 +96,10 @@ if __name__ == "__main__":
     parser.add_argument('program', type=str, help='program to run, either tcpreplay or tcpdump')
     parser.add_argument('interface', type=str, help='interface name')
     parser.add_argument('count', nargs="?", type=int, default=None, help='amount of frames to capture while recording')
+    parser.add_argument('--duration', type=int, default=None, help="Amount of time to capture while recording")
     args = parser.parse_args()
     try:
-        main(args.program, args.interface, args.count)
+        main(args.program, args.interface, args.count, args.duration)
     except Exception as e:  # pylint: disable=broad-except
         if args.debug:
             import traceback

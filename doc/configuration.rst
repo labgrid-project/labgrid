@@ -126,6 +126,27 @@ Arguments:
 Used by:
   - `SerialDriver`_
 
+USBResetPort
++++++++++++++
+Describes the resource required to use the `bcu <https://github.com/nxp-imx/bcu#readme>`_ tool.
+
+.. code-block:: yaml
+
+   USBResetPort:
+     board: 'imx8dxlevk'
+     match:
+        'sys_name': '2-1.3.3'
+
+Arguments:
+  - board (str): is the board type and can be retrieved with ``bcu lsboard``
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_ ;
+    we need the sys_name as the path of the board serial - it can be retrieved
+    with ``bcu lsftdi`` command or from ``dmesg`` of the workstation after
+    you unplug/plug the board serial cable
+
+Used by:
+  - `BCUResetDriver`_
+
 Power Ports
 ~~~~~~~~~~~
 
@@ -1792,6 +1813,38 @@ Arguments:
     booting
   - password (str): optional, password to use for access to the shell
   - login_timeout (int, default=60): timeout for access to the shell
+
+BCUResetDriver
+~~~~~~~~~~~~~~
+BCUResetDriver is the driver that calls  `bcu <https://github.com/nxp-imx/bcu#readme>`_ tool. It runs the following command on the exporter:
+
+.. code-block::
+
+   bcu reset <mode> -board=USBResetPort.board \
+                    -id=USBResetPort.path \
+                    -delay=BCUResetDriver.delay
+
+Binds to:
+  port:
+    - `USBResetPort`_
+
+Implements:
+  - :any:`BootCfgProtocol`
+  - :any:`ResetProtocol`
+
+.. code-block:: yaml
+
+   BCUResetDriver:
+     qspi_cfg: 'spi'
+
+Arguments:
+  - delay (int, default=1000): time in ms before bcu reset
+  - emmc_cfg (str, default="emmc"): boot mode for emmc
+  - sd_cfg (str, default="sd"): boot mode for sd
+  - usb_cfg (str, default="usb"): boot mode for usb serial download
+  - qspi_cfg (str, default=""): boot mode for spi
+
+To find out boot modes for a specific board use ``bcu lsbootmode -board=<board>``
 
 ExternalConsoleDriver
 ~~~~~~~~~~~~~~~~~~~~~

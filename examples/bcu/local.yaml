@@ -1,0 +1,20 @@
+features:
+  - SDcard
+targets:
+  main:
+    resources:
+      RawSerialPort:
+        port: "/dev/ttyUSB2"
+      USBResetPort:
+        board: 'imx8dxlevk'
+        match:
+            'sys_name': '3-11.3'
+    drivers:
+      SerialDriver: {}
+      BCUResetDriver:
+        qspi_cfg: 'spi'
+      ShellDriver:
+        prompt: 'root@[\w-]+:[^ ]+ '
+        login_prompt: ' login: '
+        username: 'root'
+        login_timeout: 180

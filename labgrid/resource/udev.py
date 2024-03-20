@@ -718,3 +718,15 @@ class USBDebugger(USBResource):
             return False
 
         return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(cmp=False)
+class USBResetPort(USBResource):
+    """The USBResetPort is the board serial cable (not the interface),
+    it is identified via usb using udev and it accepts any vendor/product id
+
+    Args:
+        board (str): mandatory arg to declare a board type recognized by bcu
+    """
+
+    board = attr.ib(default=None, validator=attr.validators.instance_of(str))

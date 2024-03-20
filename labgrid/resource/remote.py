@@ -409,3 +409,15 @@ class RemoteNFSProvider(NetworkResource):
 @attr.s(eq=False)
 class RemoteHTTPProvider(RemoteBaseProvider):
     pass
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkUSBResetPort(RemoteUSBResource):
+    board = attr.ib(
+        default=None,
+        validator=attr.validators.instance_of(str)
+    )
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()

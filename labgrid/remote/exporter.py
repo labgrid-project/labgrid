@@ -502,6 +502,25 @@ class USBGenericRemoteExport(USBGenericExport):
         super().__attrs_post_init__()
         self.data['cls'] = f"Remote{self.cls}".replace("Network", "")
 
+@attr.s(eq=False)
+class USBResetPortExport(USBGenericExport):
+    """ResourceExport for ports used by bcu"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': self.host,
+            'busnum': self.local.busnum,
+            'devnum': self.local.devnum,
+            'path': self.local.path,
+            'vendor_id': self.local.vendor_id,
+            'model_id': self.local.model_id,
+            'board': self.local.board,
+        }
+
 exports["AndroidFastboot"] = USBGenericExport
 exports["AndroidUSBFastboot"] = USBGenericRemoteExport
 exports["DFUDevice"] = USBGenericExport
@@ -514,6 +533,7 @@ exports["SigrokUSBSerialDevice"] = USBSigrokExport
 exports["USBSDMuxDevice"] = USBSDMuxExport
 exports["USBSDWireDevice"] = USBSDWireExport
 exports["USBDebugger"] = USBGenericExport
+exports["USBResetPort"] = USBResetPortExport
 
 exports["USBMassStorage"] = USBGenericExport
 exports["USBVideo"] = USBGenericExport

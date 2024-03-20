@@ -526,6 +526,48 @@ NetworkHIDRelay
 +++++++++++++++
 A :any:`NetworkHIDRelay` describes an `HIDRelay`_ exported over the network.
 
+SysfsGPIO
++++++++++
+
+A :any:`SysfsGPIO` resource describes a GPIO line.
+
+.. code-block:: yaml
+
+   SysfsGPIO:
+     index: 12
+
+Arguments:
+  - index (int): index of the GPIO line
+
+Used by:
+  - `GpioDigitalOutputDriver`_
+
+MatchedSysfsGpio
+++++++++++++++++
+A MatchedSysfsGpio resource describes a GPIO line, like a SysfsGPIO.
+The gpiochip is identified by matching udev properties. This allows
+identification through hot-plugging or rebooting for controllers like
+USB based gpiochips.
+
+.. code-block:: yaml
+
+   MatchedSysfsGpio:
+     match:
+       '@SUBSYSTEM': 'usb'
+       '@ID_SERIAL_SHORT': 'D38EJ8LF'
+     pin: 0
+
+The example would search for a USB gpiochip with the key `ID_SERIAL_SHORT`
+and the value `D38EJ8LF` and use the pin 0 of this device.
+The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+  - pin (int): gpio pin number within the matched gpiochip.
+
+Used by:
+  - `GpioDigitalOutputDriver`_
+
 NetworkService
 ~~~~~~~~~~~~~~
 A :any:`NetworkService` describes a remote SSH connection.
@@ -957,21 +999,6 @@ Arguments:
 
 Used by:
   - `USBVideoDriver`_
-
-SysfsGPIO
-~~~~~~~~~
-A :any:`SysfsGPIO` resource describes a GPIO line.
-
-.. code-block:: yaml
-
-   SysfsGPIO:
-     index: 12
-
-Arguments:
-  - index (int): index of the GPIO line
-
-Used by:
-  - `GpioDigitalOutputDriver`_
 
 NetworkUSBVideo
 ~~~~~~~~~~~~~~~
@@ -2142,6 +2169,7 @@ While the driver automatically exports the GPIO, it does not configure it in any
 Binds to:
   gpio:
     - `SysfsGPIO`_
+    - `MatchedSysfsGPIO`_
     - NetworkSysfsGPIO
 
 Implements:

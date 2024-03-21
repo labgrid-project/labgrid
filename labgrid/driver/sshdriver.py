@@ -447,7 +447,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def _ssh_version(self):
         version = subprocess.run(["ssh", "-V"], capture_output=True, text=True)
         version = re.match(r"^OpenSSH_(\d+)\.(\d+)", version.stderr)
-        return map(int, version.groups())
+        return tuple(int(x) for x in version.groups())
 
     def _scp_supports_explicit_sftp_mode(self):
         major, minor = self._ssh_version

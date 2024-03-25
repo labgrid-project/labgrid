@@ -610,6 +610,14 @@ device.
      match:
        ID_PATH: 'pci-0000:06:00.0-usb-0:1.3.2:1.0-scsi-0:0:0:3'
 
+Writing images to disk requires installation of ``dd`` or optionally
+``bmaptool`` on the same system as the block device.
+
+For mounting the file system and writing into it,
+`PyGObject <https://pygobject.readthedocs.io/>`_ must be installed.
+For Debian, the necessary packages are `python3-gi` and `gir1.2-udisks-2.0`.
+This is not required for writing images to disks.
+
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
 
@@ -622,7 +630,7 @@ A :any:`NetworkUSBMassStorage` resource describes a USB memory stick or similar
 device available on a remote computer.
 
 The NetworkUSBMassStorage can be used in test cases by calling the
-``write_image()``, and ``get_size()`` functions.
+``write_files()``, ``write_image()``, and ``get_size()`` functions.
 
 SigrokDevice
 ~~~~~~~~~~~~

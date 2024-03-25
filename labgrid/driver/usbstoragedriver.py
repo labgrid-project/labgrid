@@ -1,17 +1,20 @@
 import enum
 import os
+import pathlib
 import time
 import subprocess
 
 import attr
 
 from ..factory import target_factory
+from ..resource.remote import RemoteUSBResource
 from ..step import step
 from ..util.managedfile import ManagedFile
 from .common import Driver
 from ..driver.exception import ExecutionError
 
 from ..util.helper import processwrapper
+from ..util.agentwrapper import AgentWrapper
 from ..util import Timeout
 
 
@@ -40,12 +43,69 @@ class USBStorageDriver(Driver):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
+    WAIT_FOR_MEDIUM_TIMEOUT = 10.0 # s
+    WAIT_FOR_MEDIUM_SLEEP = 0.5 # s
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self.wrapper = None
 
     def on_activate(self):
-        pass
+        host = self.storage.host if isinstance(self.storage, RemoteUSBResource) else None
+        self.wrapper = AgentWrapper(host)
+        self.proxy = self.wrapper.load('udisks2')
 
     def on_deactivate(self):
-        pass
+        self.wrapper.close()
+        self.wrapper = None
+        self.proxy = None
+
+    @Driver.check_active
+    @step(args=['sources', 'target', 'partition', 'target_is_directory'])
+    def write_files(self, sources, target, partition, target_is_directory=True):
+        """
+        Write the file(s) specified by filename(s) to the
+        bound USB storage partition.
+
+        Args:
+            sources (List[str]): path(s) to the file(s) to be copied to the bound USB storage
+                partition.
+            target (str): target directory or file to copy to
+            partition (int): mount the specified partition or None to mount the whole disk
+            target_is_directory (bool): Whether target is a directory
+        """
+
+        self.devpath = self._get_devpath(partition)
+        mount_path = self.proxy.mount(self.devpath)
+
+        try:
+            # (pathlib.PurePath(...) / "/") == "/", so we turn absolute paths into relative
+            # paths with respect to the mount point here
+            target_rel = target.relative_to(target.root) if target.root is not None else target
+            target_path = str(pathlib.PurePath(mount_path) / target_rel)
+
+            copied_sources = []
+
+            for f in sources:
+                mf = ManagedFile(f, self.storage)
+                mf.sync_to_resource()
+                copied_sources.append(mf.get_remote_path())
+
+            if target_is_directory:
+                args = ["cp", "-t", target_path] + copied_sources
+            else:
+                if len(sources) != 1:
+                    raise ValueError("single source argument required when target_is_directory=False")
+
+                args = ["cp", "-T", copied_sources[0], target_path]
+
+            processwrapper.check_output(self.storage.command_prefix + args)
+            self.proxy.unmount(self.devpath)
+        except:
+            # We are going to die with an exception anyway, so no point in waiting
+            # to make sure everything has been written before continuing
+            self.proxy.unmount(self.devpath, lazy=True)
+            raise
 
     @Driver.check_active
     @step(args=['filename'])
@@ -68,22 +128,10 @@ class USBStorageDriver(Driver):
         mf = ManagedFile(filename, self.storage)
         mf.sync_to_resource()
 
-        # wait for medium
-        timeout = Timeout(10.0)
-        while not timeout.expired:
-            try:
-                if self.get_size() > 0:
-                    break
-                time.sleep(0.5)
-            except ValueError:
-                # when the medium gets ready the sysfs attribute is empty for a short time span
-                continue
-        else:
-            raise ExecutionError("Timeout while waiting for medium")
+        self._wait_for_medium(partition)
 
-        partition = "" if partition is None else partition
+        target = self._get_devpath(partition)
         remote_path = mf.get_remote_path()
-        target = f"{self.storage.path}{partition}"
 
         if mode == Mode.DD:
             self.logger.info('Writing %s to %s using dd.', remote_path, target)
@@ -139,12 +187,41 @@ class USBStorageDriver(Driver):
             print_on_silent_log=True
         )
 
+    def _get_devpath(self, partition):
+        partition = "" if partition is None else partition
+        # simple concatenation is sufficient for USB mass storage
+        return f"{self.storage.path}{partition}"
+
     @Driver.check_active
-    @step(result=True)
-    def get_size(self):
-        args = ["cat", f"/sys/class/block/{self.storage.path[5:]}/size"]
+    def _wait_for_medium(self, partition):
+        timeout = Timeout(self.WAIT_FOR_MEDIUM_TIMEOUT)
+        while not timeout.expired:
+            if self.get_size(partition) > 0:
+                break
+            time.sleep(self.WAIT_FOR_MEDIUM_SLEEP)
+        else:
+            raise ExecutionError("Timeout while waiting for medium")
+
+    @Driver.check_active
+    @step(args=['partition'], result=True)
+    def get_size(self, partition=None):
+        """
+        Get the size of the bound USB storage root device or partition.
+
+        Args:
+            partition (int or None): optional, get size of the specified partition or None for
+                getting the size of the root device (defaults to None)
+
+        Returns:
+            int: size in bytes
+        """
+        args = ["cat", f"/sys/class/block/{self._get_devpath(partition)[5:]}/size"]
         size = subprocess.check_output(self.storage.command_prefix + args)
-        return int(size)*512
+        try:
+            return int(size) * 512
+        except ValueError:
+            # when the medium gets ready the sysfs attribute is empty for a short time span
+            return 0
 
 
 @target_factory.reg_driver

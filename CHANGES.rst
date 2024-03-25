@@ -12,6 +12,8 @@ New Features in 24.0
   to the serial console during testing.
 - The `QEMUDriver` now has an additional ``disk_opts`` property which can be
   used to pass additional options for the disk directly to QEMU
+- labgrid-client now has a ``write-files`` subcommand to copy files onto mass
+  storage devices.
 
 Bug fixes in 24.0
 ~~~~~~~~~~~~~~~~~

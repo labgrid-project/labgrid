@@ -319,6 +319,12 @@ published as declared in the configuration file.
 This is useful to register externally configured resources such as network
 power switches or serial port servers with a labgrid coordinator.
 
+.. note::
+  Users will require SSH access to the exporter to access services and command
+  line utilities. You also have to ensure that users can access usb devices for
+  i.e. imx-usb-loader. To test a SSH jump to a device over the exporter outside
+  of labgrid, `ssh -J EXPORTER USER@DEVICE` can be used.
+
 .. _overview-client:
 
 Client

@@ -542,16 +542,16 @@ Arguments:
 Used by:
   - `GpioDigitalOutputDriver`_
 
-MatchedSysfsGpio
+MatchedSysfsGPIO
 ++++++++++++++++
-A MatchedSysfsGpio resource describes a GPIO line, like a SysfsGPIO.
+A :any:`MatchedSysfsGPIO` describes a GPIO line, like a `SysfsGPIO`_.
 The gpiochip is identified by matching udev properties. This allows
 identification through hot-plugging or rebooting for controllers like
 USB based gpiochips.
 
 .. code-block:: yaml
 
-   MatchedSysfsGpio:
+   MatchedSysfsGPIO:
      match:
        '@SUBSYSTEM': 'usb'
        '@ID_SERIAL_SHORT': 'D38EJ8LF'

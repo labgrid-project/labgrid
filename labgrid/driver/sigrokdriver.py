@@ -212,7 +212,7 @@ class SigrokDriver(SigrokCommon):
     def analyze(self, args, filename=None):
         annotation_regex = re.compile(r'(?P<startnum>\d+)-(?P<endnum>\d+) (?P<decoder>[\w\-]+): (?P<annotation>[\w\-]+): (?P<data>".*)')  # pylint: disable=line-too-long
         if not filename and self._filename:
-            filename = self._filename
+            filename = os.path.join(self._tmpdir, self._basename)
         else:
             filename = os.path.abspath(filename)
         check_file(filename, command_prefix=self.sigrok.command_prefix)

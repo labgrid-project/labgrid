@@ -179,7 +179,7 @@ class SigrokDriver(SigrokCommon):
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
             subprocess.call([
                 'scp', f'{self.sigrok.host}:{os.path.join(self._tmpdir, self._basename)}',
-                os.path.join(self._local_tmpdir, self._filename)
+                os.path.abspath(self._filename)
             ],
                             stdin=subprocess.DEVNULL,
                             stdout=subprocess.DEVNULL,

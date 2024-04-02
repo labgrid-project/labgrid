@@ -169,7 +169,7 @@ class SigrokDriver(SigrokCommon):
         # Convert from .sr to .csv
         cmd = [
             '-i',
-            os.path.join(self._tmpdir, self._basename), '-O', 'csv', '-o',
+            os.path.join(self._tmpdir, self._basename), '-O', 'csv:time=true', '-o',
             os.path.join(self._tmpdir, csv_filename)
         ]
         self._call(*cmd)

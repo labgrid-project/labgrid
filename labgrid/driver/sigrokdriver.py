@@ -94,7 +94,7 @@ class SigrokCommon(Driver):
         return self.sigrok.command_prefix + prefix
 
     @Driver.check_active
-    @step(title='call', args=['args'])
+    @step(title='call_with_driver', args=['args'])
     def _call_with_driver(self, *args):
         combined = self._get_sigrok_prefix() + list(args)
         self.logger.debug("Combined command: %s", " ".join(combined))
@@ -102,8 +102,30 @@ class SigrokCommon(Driver):
             combined,
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
+            text=True
         )
+
+    @Driver.check_active
+    @step(title='call_with_driver_blocking', args=['args'])
+    def _call_with_driver_blocking(self, *args, log_output=False):
+        combined = self._get_sigrok_prefix() + list(args)
+        self.logger.debug("Combined command: %s", " ".join(combined))
+        process = subprocess.Popen(
+            combined,
+            stdout=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        stdout, stderr = process.communicate()
+        if log_output:
+            self.logger.debug("stdout: %s", stdout)
+            self.logger.debug("stderr: %s", stderr)
+        if process.returncode != 0:
+            raise OSError
+        return stdout, stderr
+
 
     @Driver.check_active
     @step(title='call', args=['args'])
@@ -137,6 +159,19 @@ class SigrokDriver(SigrokCommon):
 
     @Driver.check_active
     def capture(self, filename, samplerate="200k"):
+        """
+        Starts to capture samples, in the background.
+
+        Args:
+            filename: the path to the file where the capture is saved.
+            samplerate: the sample-rate of the capture
+
+        Raises:
+            RuntimeError() if a capture is already running.
+        """
+        if self._running:
+            raise RuntimeError("capture is already running")
+
         self._filename = filename
         self._basename = os.path.basename(self._filename)
         self.logger.debug(
@@ -149,6 +184,7 @@ class SigrokDriver(SigrokCommon):
         filename = os.path.join(self._tmpdir, self._basename)
         cmd.append(filename)
         self._call_with_driver(*cmd)
+
         args = self.sigrok.command_prefix + ['test', '-e', filename]
 
         while subprocess.call(args):
@@ -167,11 +203,64 @@ class SigrokDriver(SigrokCommon):
         self._running = True
 
     @Driver.check_active
+    def capture_for_time(self, filename, time_ms, samplerate="200k"):
+        """
+        Captures samples for a specified time (ms).
+
+        Blocks while capturing.
+
+        Args:
+            filename: the path to the file where the capture is saved.
+            time: time (in ms) for capture duration
+            samplerate: the sample-rate of the capture
+
+        Returns:
+            The capture as a list containing dict's with fields "Time"
+            and the channel names
+
+        Raises:
+            OSError() if the subprocess returned with non-zero return-code
+        """
+        return self._capture_blocking(filename, ["--time", str(time_ms)], samplerate)
+
+    @Driver.check_active
+    def capture_samples(self, filename, samples, samplerate="200k"):
+        """
+        Captures a specified number of samples.
+
+        Blocks while capturing.
+
+        Args:
+            filename: the path to the file where the capture is saved.
+            samples: number of samples to capture
+            samplerate: the sample-rate of the capture
+
+        Returns:
+            The capture as a list containing dict's with fields "Time"
+            and the channel names
+        """
+        return self._capture_blocking(filename, ["--samples", str(samples)], samplerate)
+
+    @Driver.check_active
     def stop(self):
-        assert self._running
+        """
+        Stops the capture and returns recorded samples.
+
+        Note that this method might block for several seconds because it needs
+        to wait for output, parse the capture file and prepare the list
+        containing the samples.
+
+        Returns:
+            The capture as a list containing dict's with fields "Time"
+            and the channel names
+
+        Raises:
+            RuntimeError() if capture has not been started
+        """
+        if not self._running:
+            raise RuntimeError("no capture started yet")
         self._running = False
-        fnames = ['time']
-        fnames.extend(self.sigrok.channels.split(','))
+
         csv_filename = f'{os.path.splitext(self._basename)[0]}.csv'
 
         # sigrok-cli can be quit through any keypress
@@ -179,16 +268,49 @@ class SigrokDriver(SigrokCommon):
         self.logger.debug("stdout: %s", stdout)
         self.logger.debug("stderr: %s", stderr)
 
-        # Convert from .sr to .csv
+        self._convert_sr_csv(os.path.join(self._tmpdir, self._basename),
+                             os.path.join(self._tmpdir, csv_filename))
+        self._transfer_tmp_file(csv_filename)
+        return self._process_csv(csv_filename)
+
+    def _capture_blocking(self, filename, capture_args, samplerate):
+        self._filename = filename
+        self._basename = os.path.basename(self._filename)
+        csv_filename = f'{os.path.splitext(self._basename)[0]}.csv'
+        self.logger.debug(
+            "Saving to: %s with basename: %s", self._filename, self._basename
+        )
+        cmd = [
+            "-l", "4", "--config", f"samplerate={samplerate}",
+            *capture_args, "-o"
+        ]
+        filename = os.path.join(self._tmpdir, self._basename)
+        cmd.append(filename)
+        self._call_with_driver_blocking(*cmd, log_output=True)
+
+        args = self.sigrok.command_prefix + ['test', '-e', filename]
+
+        while subprocess.call(args):
+            sleep(0.1)
+
+        self._convert_sr_csv(os.path.join(self._tmpdir, self._basename),
+                             os.path.join(self._tmpdir, csv_filename))
+        self._transfer_tmp_file(csv_filename)
+        return self._process_csv(csv_filename)
+
+    def _convert_sr_csv(self, file_path_sr, file_path_scv):
         cmd = [
             '-i',
-            os.path.join(self._tmpdir, self._basename), '-O', 'csv:time=true', '-o',
-            os.path.join(self._tmpdir, csv_filename)
+            file_path_sr, '-O', 'csv:time=true', '-o',
+            file_path_scv
         ]
         self._call(*cmd)
         stdout, stderr = self._process.communicate()
         self.logger.debug("stdout: %s", stdout)
         self.logger.debug("stderr: %s", stderr)
+
+
+    def _transfer_tmp_file(self, csv_filename):
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
             subprocess.call([
                 'scp', f'{self.sigrok.host}:{os.path.join(self._tmpdir, self._basename)}',
@@ -205,6 +327,16 @@ class SigrokDriver(SigrokCommon):
                             stdin=subprocess.DEVNULL,
                             stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL)
+        else:
+            shutil.copyfile(
+                os.path.join(self._tmpdir, self._basename), self._filename
+            )
+
+    def _process_csv(self, csv_filename):
+        fnames = ['time']
+        fnames.extend(self.sigrok.channels.split(','))
+
+        if isinstance(self.sigrok, NetworkSigrokUSBDevice):
             with open(os.path.join(self._local_tmpdir,
                                    csv_filename)) as csv_file:
                 # skip first 5 lines of the csv output, contains metadata and fieldnames
@@ -212,9 +344,6 @@ class SigrokDriver(SigrokCommon):
                     next(csv_file)
                 return list(csv.DictReader(csv_file, fieldnames=fnames))
         else:
-            shutil.copyfile(
-                os.path.join(self._tmpdir, self._basename), self._filename
-            )
             with open(os.path.join(self._tmpdir, csv_filename)) as csv_file:
                 # skip first 5 lines of the csv output, contains metadata and fieldnames
                 for _ in range(0, 5):
@@ -223,6 +352,15 @@ class SigrokDriver(SigrokCommon):
 
     @Driver.check_active
     def analyze(self, args, filename=None):
+        """
+        Analyzes captured data through `sigrok-cli`'s command line interface
+
+        Args:
+            args: args to `sigrok-cli`
+
+        Returns:
+            A dictionary containing the matched groups.
+        """
         annotation_regex = re.compile(r'(?P<startnum>\d+)-(?P<endnum>\d+) (?P<decoder>[\w\-]+): (?P<annotation>[\w\-]+): (?P<data>".*)')  # pylint: disable=line-too-long
         if not filename and self._filename:
             filename = os.path.join(self._tmpdir, self._basename)
@@ -412,12 +550,15 @@ class SigrokDmmDriver(SigrokCommon):
 
         Raises:
             RuntimeError() if capture has not been started
+            OSError() if the subprocess returned with non-zero return-code
         """
         if not self._running:
             raise RuntimeError("no capture started yet")
         while not self._timeout.expired:
             if self._process.poll() is not None:
                 # process has finished. no need to wait for the timeout
+                if self._process.returncode != 0:
+                    raise OSError
                 break
             time.sleep(0.1)
         else:

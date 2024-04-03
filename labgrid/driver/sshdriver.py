@@ -204,7 +204,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             stderr_pipe = subprocess.PIPE
         try:
             sub = subprocess.Popen(
-                complete_cmd, stdout=subprocess.PIPE, stderr=stderr_pipe
+                complete_cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=stderr_pipe
             )
         except:
             raise ExecutionError(

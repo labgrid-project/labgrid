@@ -49,14 +49,21 @@ class USBStorageDriver(Driver):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.wrapper = None
+        self.proxy = None
 
-    def on_activate(self):
+    def _start_wrapper(self):
+        if self.wrapper:
+            return
         host = self.storage.host if isinstance(self.storage, RemoteUSBResource) else None
         self.wrapper = AgentWrapper(host)
         self.proxy = self.wrapper.load('udisks2')
 
+    def on_activate(self):
+        pass
+
     def on_deactivate(self):
-        self.wrapper.close()
+        if self.wrapper:
+            self.wrapper.close()
         self.wrapper = None
         self.proxy = None
 
@@ -74,6 +81,8 @@ class USBStorageDriver(Driver):
             partition (int): mount the specified partition or None to mount the whole disk
             target_is_directory (bool): Whether target is a directory
         """
+
+        self._start_wrapper()
 
         self.devpath = self._get_devpath(partition)
         mount_path = self.proxy.mount(self.devpath)

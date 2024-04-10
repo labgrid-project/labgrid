@@ -38,4 +38,6 @@ installation.
 
 By default the application will start on port 8800.
 
+To see the graph, go to http://0.0.0.0:8800/labgrid/graph
+
 See http://0.0.0.0:8800/docs for more information on available endpoints.

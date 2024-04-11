@@ -45,6 +45,7 @@ class USBStorageDriver(Driver):
     )
     WAIT_FOR_MEDIUM_TIMEOUT = 10.0 # s
     WAIT_FOR_MEDIUM_SLEEP = 0.5 # s
+    MOUNT_RETRIES = 5
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -77,15 +78,19 @@ class USBStorageDriver(Driver):
         Args:
             sources (List[str]): path(s) to the file(s) to be copied to the bound USB storage
                 partition.
-            target (str): target directory or file to copy to
+            target (PurePath): target directory or file to copy to
             partition (int): mount the specified partition or None to mount the whole disk
             target_is_directory (bool): Whether target is a directory
+
+        Raises:
+            Exception if anything goes wrong
         """
+        self._wait_for_medium(partition)
 
         self._start_wrapper()
 
         self.devpath = self._get_devpath(partition)
-        mount_path = self.proxy.mount(self.devpath)
+        mount_path = self.proxy.mount(self.devpath, self.MOUNT_RETRIES)
 
         try:
             # (pathlib.PurePath(...) / "/") == "/", so we turn absolute paths into relative
@@ -222,10 +227,14 @@ class USBStorageDriver(Driver):
                 getting the size of the root device (defaults to None)
 
         Returns:
-            int: size in bytes
+            int: size in bytes, or 0 if the partition is not found
         """
         args = ["cat", f"/sys/class/block/{self._get_devpath(partition)[5:]}/size"]
-        size = subprocess.check_output(self.storage.command_prefix + args)
+        try:
+            size = subprocess.check_output(self.storage.command_prefix + args)
+        except subprocess.CalledProcessError:
+            # while the medium is getting ready, the file does not yet exist
+            return 0
         try:
             return int(size) * 512
         except ValueError:

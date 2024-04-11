@@ -24,7 +24,7 @@ Quick Start
      --port PORT           Port to serve on
      --proxy PROXY, -P PROXY
 
-   venv $ ./contrib/labgrid-webapp --help
+   venv $ ./contrib/labgrid-webapp
    INFO:     Available routes:
    INFO:       - /labgrid/graph
    INFO:     Started server process [2378028]
@@ -34,8 +34,10 @@ Quick Start
    ...
 
 Please note that the graph feature relies on a valid `graphviz` system
-installation.
+installation. See http://graphviz.org/download/
 
 By default the application will start on port 8800.
+
+To see the graph, go to http://0.0.0.0:8800/labgrid/graph
 
 See http://0.0.0.0:8800/docs for more information on available endpoints.

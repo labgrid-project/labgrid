@@ -3939,6 +3939,12 @@ set the `do-bootstrap` variable and see `UBootWriterDriver`_ for more details:
 
    labgrid-client -V do-bootstrap 1 -s start console
 
+To write the board using USB instead of boot media, set `do-send`:
+
+.. code-block:: bash
+
+   labgrid-client -V do-bootstrap 1 -V do-send 1 -s start console
+
 To build U-Boot from source before writing it, set the `do-build` variable and
 see `UBootProviderDriver`_ for more details.
 

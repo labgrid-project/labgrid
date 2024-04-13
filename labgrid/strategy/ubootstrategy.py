@@ -7,6 +7,7 @@ import attr
 from ..factory import target_factory
 from .common import Strategy, StrategyError
 from labgrid.var_dict import get_var
+from ..driver.servodriver import ServoResetDriver
 
 
 class Status(enum.Enum):
@@ -27,9 +28,14 @@ class Status(enum.Enum):
 class UBootStrategy(Strategy):
     """UbootStrategy - Strategy to switch to uboot or shell
 
+    Args:
+        send_only (bool): True if the board only supports sending over USB, no
+            flash
+
     Variables:
         do-build: Build U-Boot before bootstrapping it
         do-bootstrap: Bootstrap U-Boot by writing it to the board
+        do-send: Bootstrap over USB instead of using boot media
     """
     bindings = {
         "power": "PowerProtocol",
@@ -37,13 +43,18 @@ class UBootStrategy(Strategy):
         "uboot": "UBootDriver",
         "shell": "ShellDriver",
         "reset": {"ResetProtocol", None},
+        "recovery": {"RecoveryProtocol", None},
     }
 
     status = attr.ib(default=Status.unknown)
+    send_only = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.bootstrapped = False
+
+    def use_send(self):
+        return self.send_only or get_var('do-send', '0') == '1'
 
     def bootstrap(self):
         builder = self.target.get_driver("UBootProviderDriver")
@@ -58,7 +69,38 @@ class UBootStrategy(Strategy):
         print(f"Bootstrapping U-Boot from {msg}")
 
         writer = self.target.get_driver("UBootWriterDriver")
-        writer.write(image_dirs)
+        if self.use_send():
+            self.target.activate(self.power)
+            self.target.activate(self.reset)
+
+            # Hold the board in reset, except for Servo since this prevents the
+            # USB-download mode from working (at least with snow)
+            if not isinstance(self.reset, ServoResetDriver):
+                self.reset.set_reset_enable(True, mode='warm')
+
+            if self.power != self.reset:
+                self.power.on()
+
+            self.target.activate(self.recovery)
+            self.recovery.set_enable(True)
+
+            # Do the Servo reset now
+            if isinstance(self.reset, ServoResetDriver):
+                self.reset.set_reset_enable(True, mode='warm')
+                time.sleep(1)
+
+            self.target.activate(self.console)
+
+            # Release reset
+            self.reset.set_reset_enable(False, mode='warm')
+
+            # Give the board time to notice
+            time.sleep(.2)
+            self.recovery.set_enable(False)
+
+            writer.send(image_dirs)
+        else:
+            writer.write(image_dirs)
         self.bootstrapped = True
 
     def start(self):
@@ -68,19 +110,19 @@ class UBootStrategy(Strategy):
         else:
             writer = self.target.get_driver("UBootWriterDriver")
             writer.prepare_boot()
+        if not self.use_send():
+            self.target.activate(self.console)
+            if self.reset:
+                self.target.activate(self.reset)
 
-        self.target.activate(self.console)
-        if self.reset:
-            self.target.activate(self.reset)
+                # Hold in reset across the power cycle, to avoid booting the
+                # board twice
+                self.reset.set_reset_enable(True)
+            if self.reset != self.power:
+                self.power.cycle()
 
-            # Hold in reset across the power cycle, to avoid booting the
-            # board twice
-            self.reset.set_reset_enable(True)
-        if self.reset != self.power:
-            self.power.cycle()
-
-        if self.reset:
-            self.reset.set_reset_enable(False)
+            if self.reset:
+                self.reset.set_reset_enable(False)
 
     def transition(self, status):
         if not isinstance(status, Status):

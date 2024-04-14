@@ -118,6 +118,7 @@ dev = [
 
     # additional dev dependencies
     "psutil>=5.8.0",
+    "py>=1.11",
     "pytest-cov>=3.0.0",
     "pytest-dependency>=0.5.1",
     "pytest-isort>=2.0.0",

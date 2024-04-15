@@ -152,7 +152,7 @@ LABGRID-CLIENT COMMANDS
 
 ``set-comment`` comment         Update or set the place comment
 
-``set-tags`` comment            Set place tags (key=value)
+``set-tags`` key=value          Set place tags (key=value)
 
 ``add-match`` match             Add one (or multiple) match pattern(s) to a place, see MATCHES
 

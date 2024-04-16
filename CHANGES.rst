@@ -1,3 +1,15 @@
+Release 23.0.6 (Released Apr 16, 2024)
+--------------------------------------
+
+Bug fixes in 23.0.6
+~~~~~~~~~~~~~~~~~~~
+- In `USBVideoDriver`, use the ``playbin3`` element instead of ``playbin`` to
+  fix decoding via VA-API for certain webcams on AMD graphic cards.
+- Let the `SSHDriver` redirect ``/dev/null`` to stdin on ``run()`` to prevent
+  unexpected consumption of stdin of the remotely started process.
+- Cover more failure scenarios in the exporter and coordinator systemd
+  services, fix the service startup order, do not buffer journal logs.
+
 Release 23.0.5 (Released Jan 13, 2024)
 --------------------------------------
 

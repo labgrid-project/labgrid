@@ -11,8 +11,7 @@ RUN set -e ;\
     apt install -q=2 --yes --no-install-recommends python3 python3-dev python3-pip python3-setuptools git build-essential libsnappy-dev ;\
     pip3 install --break-system-packages -U pip;\
     apt clean ;\
-    rm -rf /var/lib/apt/lists/* ;\
-    git clone https://github.com/vishnubob/wait-for-it.git opt/wait-for-it && cd opt/wait-for-it  && git reset --hard 54d1f0bfeb6557adf8a3204455389d0901652242
+    rm -rf /var/lib/apt/lists/*
 
 #
 # Client

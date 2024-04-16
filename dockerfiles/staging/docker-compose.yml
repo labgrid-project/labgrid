@@ -17,12 +17,12 @@ services:
     stdin_open: true
     network_mode: "host"
     tmpfs: "/tmp"
-    # Use wait-for-it to ensure exporter service is up, as exporter is assuming exporter to
+    # Wait until coordinator is up
     # Use labgrid-client r to ensure the exporter has populated the resource list in the coordinator
     # Use sleep to fix the problem that sometimes the coordinator is not ready even though the service is up
     command: timeout 60 bash -c "set -e &&
       cd /simple-test &&
-      /opt/wait-for-it/wait-for-it.sh 127.0.0.1:20408 &&
+      until echo > /dev/tcp/localhost/20408; do sleep 1; done &&
       sleep 5 &&
       while [ -z $$(/usr/local/bin/labgrid-client r) ]; do echo 'Wait one sec on coordinator' && sleep 1; done &&
       /usr/local/bin/labgrid-client -p example-place lock &&
@@ -43,7 +43,7 @@ services:
     network_mode: "host"
     stdin_open: true
     command: bash -c "set -e &&
-      /opt/wait-for-it/wait-for-it.sh 127.0.0.1:20408 -- labgrid-exporter /opt/conf/exporter.yaml"
+      until echo > /dev/tcp/localhost/20408; do sleep 1; done && labgrid-exporter /opt/conf/exporter.yaml"
   dut:
     build:
       context: "./dut"

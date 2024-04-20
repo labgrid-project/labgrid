@@ -679,7 +679,7 @@ When contributing to documentation it's practical to be able to build it also lo
 
     git clone https://github.com/labgrid-project/labgrid.git
     cd labgrid
-    pip install -e ".[doc]"
+    pip install -e ".[dev]"
     cd doc
     make html
 

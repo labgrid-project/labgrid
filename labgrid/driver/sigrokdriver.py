@@ -149,6 +149,16 @@ class SigrokDriver(SigrokCommon):
         args = self.sigrok.command_prefix + ['test', '-e', filename]
 
         while subprocess.call(args):
+            # in case the sigrok-cli call fails, this would wait forever.
+            # to avoid this, we also check the spawned sigrok process
+            if self._process.poll() is not None:
+                ret = self._process.returncode
+                if ret != 0:
+                    stdout, stderr = self._process.communicate()
+                    self.logger.debug("sigrok-cli call terminated prematurely with non-zero return-code")
+                    self.logger.debug("stdout: %s", stdout)
+                    self.logger.debug("stderr: %s", stderr)
+                    raise ExecutionError(f"sigrok-cli call terminated prematurely with return-code '{ret}'.")
             sleep(0.1)
 
         self._running = True

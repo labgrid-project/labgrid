@@ -596,7 +596,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             device = self.get_default_interface_device_name()
 
         regex = r"""\d+: # leading number
-                \s+\w+ # interface name
+                \s+[\w\.-]+ # interface name
                 \s+inet6?\s+(\S+) # IP address, prefix
                 .*global # global scope, not host scope"""
 

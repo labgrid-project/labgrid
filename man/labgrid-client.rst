@@ -152,7 +152,7 @@ LABGRID-CLIENT COMMANDS
 
 ``set-comment`` comment         Update or set the place comment
 
-``set-tags`` comment            Set place tags (key=value)
+``set-tags`` key=value          Set place tags (key=value)
 
 ``add-match`` match             Add one (or multiple) match pattern(s) to a place, see MATCHES
 
@@ -177,9 +177,9 @@ LABGRID-CLIENT COMMANDS
 
 ``power (pw)`` action           Change (or get) a place's power status, where action is one of get, on, off, cycle
 
-``io`` action                   Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
+``io`` action [name]            Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
 
-``console (con)``               Connect to the console
+``console (con)`` [name]        Connect to the console
 
 ``dfu`` arg                     Run dfu commands
 
@@ -193,13 +193,13 @@ LABGRID-CLIENT COMMANDS
 
 ``usb-mux`` action              Switch USB Muxer, where action is one of off, dut-device, host-dut, host-device, host-dut+host-device
 
-``ssh``                         Connect via SSH
+``ssh`` [command]               Connect via SSH. Additional arguments are passed to ssh.
 
-``scp``                         Transfer file via scp (use ':dir/file' for the remote side)
+``scp`` source destination      Transfer file via scp (use ':dir/file' for the remote side)
 
-``rsync``                       Transfer files via rsync (use ':dir/file' for the remote side)
+``rsync`` source destination    Transfer files via rsync (use ':dir/file' for the remote side)
 
-``sshfs``                       Mount a remote path via sshfs
+``sshfs`` remotepath mountpoint Mount a remote path via sshfs
 
 ``forward``                     Forward local port to remote target
 
@@ -213,7 +213,7 @@ LABGRID-CLIENT COMMANDS
 
 ``write-files`` filename(s)     Copy files onto mass storage device
 
-``write-image``                 Write images onto block devices (USBSDMux, USB Sticks, …)
+``write-image`` filename        Write images onto block devices (USBSDMux, USB Sticks, …)
 
 ``reserve`` filter              Create a reservation
 

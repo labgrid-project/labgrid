@@ -157,7 +157,7 @@ matches anything.
 .sp
 \fBset\-comment\fP comment         Update or set the place comment
 .sp
-\fBset\-tags\fP comment            Set place tags (key=value)
+\fBset\-tags\fP key=value          Set place tags (key=value)
 .sp
 \fBadd\-match\fP match             Add one (or multiple) match pattern(s) to a place, see MATCHES
 .sp
@@ -185,9 +185,9 @@ not at all.
 .sp
 \fBpower (pw)\fP action           Change (or get) a place\(aqs power status, where action is one of get, on, off, cycle
 .sp
-\fBio\fP action                   Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
+\fBio\fP action [name]            Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
 .sp
-\fBconsole (con)\fP               Connect to the console
+\fBconsole (con)\fP [name]        Connect to the console
 .sp
 \fBdfu\fP arg                     Run dfu commands
 .sp
@@ -201,13 +201,13 @@ not at all.
 .sp
 \fBusb\-mux\fP action              Switch USB Muxer, where action is one of off, dut\-device, host\-dut, host\-device, host\-dut+host\-device
 .sp
-\fBssh\fP                         Connect via SSH
+\fBssh\fP [command]               Connect via SSH. Additional arguments are passed to ssh.
 .sp
-\fBscp\fP                         Transfer file via scp (use \(aq:dir/file\(aq for the remote side)
+\fBscp\fP source destination      Transfer file via scp (use \(aq:dir/file\(aq for the remote side)
 .sp
-\fBrsync\fP                       Transfer files via rsync (use \(aq:dir/file\(aq for the remote side)
+\fBrsync\fP source destination    Transfer files via rsync (use \(aq:dir/file\(aq for the remote side)
 .sp
-\fBsshfs\fP                       Mount a remote path via sshfs
+\fBsshfs\fP remotepath mountpoint Mount a remote path via sshfs
 .sp
 \fBforward\fP                     Forward local port to remote target
 .sp
@@ -221,7 +221,7 @@ not at all.
 .sp
 \fBwrite\-files\fP filename(s)     Copy files onto mass storage device
 .sp
-\fBwrite\-image\fP                 Write images onto block devices (USBSDMux, USB Sticks, …)
+\fBwrite\-image\fP filename        Write images onto block devices (USBSDMux, USB Sticks, …)
 .sp
 \fBreserve\fP filter              Create a reservation
 .sp

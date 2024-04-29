@@ -2,7 +2,6 @@ import os.path
 import re
 import subprocess
 import shutil
-import signal
 import tempfile
 import time
 import uuid
@@ -171,8 +170,8 @@ class SigrokDriver(SigrokCommon):
         fnames.extend(self.sigrok.channels.split(','))
         csv_filename = f'{os.path.splitext(self._basename)[0]}.csv'
 
-        self._process.send_signal(signal.SIGINT)
-        stdout, stderr = self._process.communicate()
+        # sigrok-cli can be quit through any keypress
+        stdout, stderr = self._process.communicate(input="q")
         self.logger.debug("stdout: %s", stdout)
         self.logger.debug("stderr: %s", stderr)
 

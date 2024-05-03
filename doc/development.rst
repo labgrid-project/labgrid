@@ -304,6 +304,12 @@ while the `shell` state uses the barebox state to cycle the board and then boot
 the linux kernel.
 The `off` state switches the power off.
 
+Oftentimes it is also necessary to wait for specific resources to appear before
+a transition can be continued. The `await_resources` function of the target
+implements this functionality, it expects a list of resources to wait for and
+optionally takes a timeout and whether the resource should be available or
+unavailable.
+
 
 Tips for Writing and Debugging Tests
 ------------------------------------

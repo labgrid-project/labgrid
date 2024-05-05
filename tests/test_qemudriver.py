@@ -90,3 +90,25 @@ def test_qemu_read_write(qemu_target, qemu_driver, qemu_mock, qemu_version_mock)
     qemu_driver.write(b'abc')
 
     qemu_target.deactivate(qemu_driver)
+
+def test_qemu_port_forwarding(qemu_target, qemu_driver, qemu_mock, qemu_version_mock):
+    qemu_target.activate(qemu_driver)
+
+    qemu_driver.on()
+    qemu_driver.add_port_forward('tcp', '127.0.0.1', 8080, '127.0.0.1', 80)
+    assert ('tcp', '127.0.0.1', 8080, '') in qemu_driver._forwarded_ports.keys()
+    qemu_driver.remove_port_forward('tcp', '127.0.0.1', 8080)
+    assert qemu_driver._forwarded_ports == {}
+
+    qemu_target.deactivate(qemu_driver)
+
+def test_qemu_port_forwarding_with_netdev(qemu_target, qemu_driver, qemu_mock, qemu_version_mock):
+    qemu_target.activate(qemu_driver)
+
+    qemu_driver.on()
+    qemu_driver.add_port_forward('tcp', '127.0.0.1', 8080, '127.0.0.1', 80, netdev='netdev0')
+    assert ('tcp', '127.0.0.1', 8080, 'netdev0') in qemu_driver._forwarded_ports.keys()
+    qemu_driver.remove_port_forward('tcp', '127.0.0.1', 8080, netdev='netdev0')
+    assert qemu_driver._forwarded_ports == {}
+
+    qemu_target.deactivate(qemu_driver)

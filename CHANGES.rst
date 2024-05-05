@@ -8,6 +8,9 @@ New Features in 25.1
   instead of a line feed (``\n``). barebox v2025.03.0 onwards handles
   CTRL+D specially to halt autoboot countdown without running interactive
   hooks like bringing up network interfaces automatically.
+- The `QEMUDriver` now supports a ``netdev`` argument which can be added to
+  ``add_port_forward`` in case there is more than one network interface
+  defined.
 
 Release 25.0 (Released May 7, 2025)
 -----------------------------------

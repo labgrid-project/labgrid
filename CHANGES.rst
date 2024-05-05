@@ -1,3 +1,12 @@
+Release 26.0 (unreleased)
+-------------------------
+
+New Features in 26.0
+~~~~~~~~~~~~~~~~~~~~
+- The `QEMUDriver` now supports a ``netdev`` argumet which can be added to the
+  ``add_port_forward`` in case there are more than one network interfaces
+  defined.
+
 Release 25.0 (Released May 7, 2025)
 -----------------------------------
 As announced `before

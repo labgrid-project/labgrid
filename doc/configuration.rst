@@ -2321,6 +2321,30 @@ Implements:
 Arguments:
   - None
 
+WaveshareRTURelaisDriver
+~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`WaveshareRTURelaisDriver` controls a *Waveshare* Modbus-RTU relay.
+
+Binds to:
+  relais:
+    - `NetworkSerialPort`_
+    - `RawSerialPort`_
+    - `USBSerialPort`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   WaveshareRTURelaisDriver:
+     address: 1
+     relais: 2
+
+Arguments:
+  - address (int): slave address on the modbus, e.g. 16
+  - timeout (float): 0.5
+  - relais (int): the register address/index of the relais that will be controlled
+
 MXSUSBDriver
 ~~~~~~~~~~~~
 An :any:`MXSUSBDriver` is used to upload an image into a device in the *MXS USB

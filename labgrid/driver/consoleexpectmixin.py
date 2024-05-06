@@ -1,4 +1,5 @@
 import time
+import attr
 import pexpect
 
 from ..util import PtxExpect, Timeout
@@ -14,9 +15,12 @@ class ConsoleExpectMixin:
     The class using the ConsoleExpectMixin must provide a logger and a txdelay attribute.
     """
 
+    linesep = attr.ib(default="\n", validator=attr.validators.instance_of(str))
+
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self._expect = PtxExpect(self)
+        linesep = self.linesep.encode('ASCII') # pylint: disable=no-member
+        self._expect = PtxExpect(self, linesep)
 
     @Driver.check_active
     @step(result=True, tag='console')

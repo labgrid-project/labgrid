@@ -1095,6 +1095,7 @@ class ClientSession:
             NetworkIMXUSBLoader,
             NetworkRKUSBLoader,
             NetworkSunxiUSBLoader,
+            NetworkTegraUSBLoader,
             NetworkAlteraUSBBlaster,
         )
         from ..driver import OpenOCDDriver
@@ -1122,6 +1123,9 @@ class ClientSession:
                     drv.loader.timeout = self.args.wait
                 elif isinstance(resource, NetworkSunxiUSBLoader):
                     drv = self._get_driver_or_new(target, "SunxiUSBDriver", activate=False, name=name)
+                    drv.loader.timeout = self.args.wait
+                elif isinstance(resource, NetworkTegraUSBLoader):
+                    drv = self._get_driver_or_new(target, "TegraUSBDriver", activate=False, name=name)
                     drv.loader.timeout = self.args.wait
                 if drv:
                     break

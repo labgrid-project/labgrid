@@ -3935,3 +3935,20 @@ hostname
 
 name
   The name of the exporter.
+
+Strategy variables
+------------------
+Some complex strategies may provide control variables to adjust their operation.
+These can be provided on the labgrid-client command line and passed to the
+strategy implementation.
+
+Variables are not formally declared, but can be accessed using the get_var()
+call in ``labgrid/var_dict.py``.
+
+To provide variables to the strategy, use the -V option when running
+labgrid-client. Multiple options can be used. In each case there is a variable
+name and a value. This example shows telling the U-Boot strategy to build U-Boot
+and write it to the board, before starting up and checking that U-Boot boots
+OK::
+
+   labgrid-client -V do-bootstrap 1 -V do-build 1 -p rpi3 -s uboot -a console

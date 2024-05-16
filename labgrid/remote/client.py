@@ -47,6 +47,7 @@ from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
 from ..driver import Mode, ExecutionError
 from ..logging import basicConfig, StepLogger
+from ..var_dict import add_var
 
 # This is a workround for the gRPC issue
 # https://github.com/grpc/grpc/issues/38679.
@@ -84,6 +85,7 @@ class ClientSession:
     prog = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     args = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(argparse.Namespace)))
     monitor = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    var_dict = attr.ib(default={}, validator=attr.validators.instance_of(dict))
 
     def gethostname(self):
         return os.environ.get("LG_HOSTNAME", gethostname())
@@ -1759,6 +1761,14 @@ def main():
     )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     parser.add_argument("-P", "--proxy", type=str, help="proxy connections via given ssh host")
+    parser.add_argument(
+        '-V',
+        '--variable',
+        type=str,
+        nargs='*',
+        action='append',
+        help="Add a variable value (-V <var> <value>)"
+    )
     subparsers = parser.add_subparsers(
         dest="command",
         title="available subcommands",
@@ -2135,6 +2145,10 @@ def main():
                 print("No RemotePlace found in configuration file", file=sys.stderr)
                 exit(1)
             print(f"Selected role {role} and place {args.place} from configuration file")
+
+    for arg in args.variable or []:
+        name, value = arg
+        add_var(name, value)
 
     extra = {
         "args": args,

@@ -158,6 +158,10 @@ TOOLS KEYS
     Path to the sunxi-fel binary, used by the SunxiUSBDriver.
     See: https://linux-sunxi.org/FEL
 
+``tegrarcm``
+    Path to the tegrarcm binary, used by the TegraUSBDriver.
+    See: https://github.com/NVIDIA/tegrarcm
+
 ``uhubctl``
     Path to the uhubctl binary, used by the USBPowerDriver.
     See: https://github.com/mvp/uhubctl

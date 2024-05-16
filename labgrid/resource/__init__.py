@@ -53,3 +53,5 @@ from .laa import LAASerialPort, LAAPowerPort, LAAUSBGadgetMassStorage, \
                  LAAUSBPort, LAAButtonPort, \
                  LAALed, LAATempSensor, LAAWattMeter, LAAProvider
 from .sfemulator import SFEmulator, NetworkSFEmulator
+from .servo import Servo, NetworkServo, ServoReset, NetworkServoReset
+from .servo import ServoSerialPort, ServoRecovery

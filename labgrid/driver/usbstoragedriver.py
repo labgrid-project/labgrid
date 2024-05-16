@@ -152,6 +152,7 @@ class USBStorageDriver(Driver):
         target = self._get_devpath(partition)
         remote_path = mf.get_remote_path()
 
+        start = time.time()
         if mode == Mode.DD:
             self.logger.info('Writing %s to %s using dd.', remote_path, target)
             if block_size == "auto":
@@ -205,9 +206,8 @@ class USBStorageDriver(Driver):
         processwrapper.check_output(
             self.storage.command_prefix + args,
         )
-        processwrapper.check_output(
-            self.storage.command_prefix + ['sync'],
-        )
+        duration = time.time() - start
+        self.logger.info('Image written in {%.1f}', duration)
 
     def _get_devpath(self, partition):
         partition = "" if partition is None else partition

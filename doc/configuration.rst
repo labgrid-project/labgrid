@@ -2045,6 +2045,50 @@ Tools:
    tools:
      buildman: "buildman.stable"
 
+UBootWriterDriver
+~~~~~~~~~~~~~~~~~
+
+Writing U-Boot to a board can be complicated, because each SoC uses its own
+means of booting. This driver encapsulates those differences and is able to
+write U-Boot to a wide variety of boards. It works using a U-Boot build
+directory, where U-Boot has been built for a particular board. typically using
+the `UBootProviderDriver`_ driver. It then picks out the necessary files from
+that directory and writes them to the selected boot media, or sends them using
+the SoC-specific bootrom.
+
+This driver is automatically used by the UBootStrategy driver, when
+bootstrapping is selected.  It uses the 'send' method when 'do-send' is set to 1
+and the 'write()' method otherwise. For the 'send' method, the relevant
+SoC-specific, USB-loader driver must be provided.
+
+Binds to:
+  serial:
+    - `USBStorageDriver`_ Storage device, required when writing using a method
+      other than 'em100'
+    - `USBSDWireDriver`_ SDwire device (optional)
+    - `SFEmulatorDriver`_ SPI-flash emulator driver, required when writing
+      using the 'em100' method
+
+Arguments:
+  - method (str): Name of the SoC-specific method to use, e.g. 'sunxi'. See the
+    driver for supported methods
+  - bl1 (str): Optional filename of the BL1 binary
+  - bl2 (str): Optional filename of the BL2 binary
+  - tzsw (str): Optional filename of the Trustzone software binary
+
+.. code-block:: yaml
+
+   UBootWriterDriver:
+     method: em100
+
+.. code-block:: yaml
+
+   UBootWriterDriver:
+     method: samsung
+     bl1: /home/dev/xu3/bl1.bin.hardkernel
+     bl2: /home/dev/xu3/bl2.bin.hardkernel.1mb_uboot
+     tzsw: /home/dev/xu3/tzsw.bin.hardkernel
+
 BareboxDriver
 ~~~~~~~~~~~~~
 A :any:`BareboxDriver` interfaces with a *barebox* bootloader via a

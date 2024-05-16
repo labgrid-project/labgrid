@@ -238,3 +238,85 @@ class BDIMXUSBDriver(Driver, BootstrapProtocol):
             ],
             print_on_silent_log=True
         )
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class SunxiUSBDriver(Driver, BootstrapProtocol):
+    bindings = {
+        "loader": {"SunxiUSBLoader", "NetworkSunxiUSBLoader"},
+    }
+
+    loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    image = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('sunxi-fel')
+        else:
+            self.tool = 'sunxi-fel'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    def _run_tool(self, *part):
+        """Run sunxi-fel against the loader's USB device
+
+        Args:
+            part: Arguments to pass to the tool
+        """
+        args = ['-d', '%s:%s' % (self.loader.busnum, self.loader.devnum)]
+        cmd = [self.tool] + args + list(part)
+
+        processwrapper.check_output(
+            self.loader.command_prefix + cmd,
+            print_on_silent_log=True
+        )
+
+    @staticmethod
+    def _is_boot_image(filename):
+        """Check whether a file is an image which the boot ROM can run
+
+        Such an image starts with SPL, which has an eGON header. It may also
+        contain U-Boot proper, e.g. u-boot-sunxi-with-spl.bin
+
+        Args:
+            filename (str): Path to the file
+
+        Returns:
+            bool: True if the file has an eGON header
+        """
+        with open(filename, 'rb') as inf:
+            return inf.read(12)[4:] == b'eGON.BT0'
+
+    @Driver.check_active
+    @step(args=['filename', 'phase'])
+    def load(self, filename=None, phase=None):
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        if phase not in (None, 'spl', 'u-boot'):
+            raise ValueError(f"Unknown phase '{phase}'")
+        boot_image = phase is None and self._is_boot_image(filename)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        pathname = mf.get_remote_path()
+        if phase == 'spl':
+            self._run_tool('spl', pathname)
+        elif boot_image:
+            # SPL must set up DRAM before U-Boot proper can be written, so run
+            # SPL, then write U-Boot proper and start it
+            self._run_tool('uboot', pathname)
+        else:
+            self._run_tool('write', '%#x' % self.loadaddr, pathname)
+
+    @Driver.check_active
+    @step()
+    def execute(self):
+        """Start executing the loaded image at the load address"""
+        self._run_tool('exe', '%#x' % self.loadaddr)

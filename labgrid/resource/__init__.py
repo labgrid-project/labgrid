@@ -23,6 +23,7 @@ from .udev import (
     SiSPMPowerPort,
     SigrokUSBDevice,
     SigrokUSBSerialDevice,
+    SunxiUSBLoader,
     USBAudioInput,
     USBDebugger,
     USBFlashableDevice,

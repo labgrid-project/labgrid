@@ -124,7 +124,7 @@ class USBStorageDriver(Driver):
     @Driver.check_active
     @step(args=['filename'])
     def write_image(self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0,
-                    block_size="auto"):
+                    block_size="auto", count=None):
         """
         Writes the file specified by filename or if not specified by config image subkey to the
         bound USB storage root device or partition.
@@ -139,6 +139,7 @@ class USBStorageDriver(Driver):
             block_size (int or str): optional, block size for writing (in bytes)
                 "auto": Special value which means to use a block size of 512 if
                 skip or seek are non-zero, else "4M"
+            count (int): optional, number of blocks to write
         """
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
@@ -166,6 +167,8 @@ class USBStorageDriver(Driver):
                 f"seek={seek}",
                 "conv=fdatasync"
             ]
+            if count is not None:
+                args.append(f'count={count}')
         elif mode == Mode.BMAPTOOL:
             if skip or seek:
                 raise ExecutionError("bmaptool does not support skip or seek")

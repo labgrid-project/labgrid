@@ -310,15 +310,15 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 "Can't use monitor command on non-running target")
         return self.qmp.execute(command, arguments)
 
-    def _add_port_forward(self, proto, local_address, local_port, remote_address, remote_port):
+    def _add_port_forward(self, proto, local_address, local_port, remote_address, remote_port, netdev):
         self.monitor_command(
             "human-monitor-command",
-            {"command-line": f"hostfwd_add {proto}:{local_address}:{local_port}-{remote_address}:{remote_port}"},
+            {"command-line": f"hostfwd_add {netdev} {proto}:{local_address}:{local_port}-{remote_address}:{remote_port}" },
         )
 
-    def add_port_forward(self, proto, local_address, local_port, remote_address, remote_port):
-        self._add_port_forward(proto, local_address, local_port, remote_address, remote_port)
-        self._forwarded_ports[(proto, local_address, local_port)] = (proto, local_address, local_port, remote_address, remote_port)
+    def add_port_forward(self, proto, local_address, local_port, remote_address, remote_port, netdev=""):
+        self._add_port_forward(proto, local_address, local_port, remote_address, remote_port, netdev)
+        self._forwarded_ports[(proto, local_address, local_port)] = (proto, local_address, local_port, remote_address, remote_port, netdev)
 
     def remove_port_forward(self, proto, local_address, local_port):
         del self._forwarded_ports[(proto, local_address, local_port)]

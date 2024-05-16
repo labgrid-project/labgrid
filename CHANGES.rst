@@ -14,6 +14,10 @@ New Features in 24.0
   used to pass additional options for the disk directly to QEMU
 - labgrid-client now has a ``write-files`` subcommand to copy files onto mass
   storage devices.
+- The `QEMUDriver` now supports a ``netdev`` argumet which can be added to the
+  ``tadd_port_forward`` in case there are more than one network interfaces
+  defined.
+
 
 Bug fixes in 24.0
 ~~~~~~~~~~~~~~~~~

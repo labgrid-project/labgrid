@@ -48,3 +48,5 @@ from .httpdigitalout import HttpDigitalOutput
 from .sigrok import SigrokDevice
 from .fastboot import AndroidNetFastboot
 from .sfemulator import SFEmulator, NetworkSFEmulator
+from .servo import Servo, NetworkServo, ServoReset, NetworkServoReset
+from .servo import ServoSerialPort, ServoRecovery

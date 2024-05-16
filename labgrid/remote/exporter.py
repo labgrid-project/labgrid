@@ -186,7 +186,7 @@ class ResourceExport(ResourceEntry):
 
 @attr.s(eq=False)
 class SerialPortExport(ResourceExport):
-    """ResourceExport for a USB or Raw SerialPort"""
+    """ResourceExport for a USB, Raw or Servo SerialPort"""
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -198,6 +198,11 @@ class SerialPortExport(ResourceExport):
             from ..resource.udev import USBSerialPort
 
             self.local = USBSerialPort(target=None, name=None, **self.local_params)
+        elif self.cls == "ServoSerialPort":
+            from ..resource.servo import ServoSerialPort
+            self.local = ServoSerialPort(target=None, name=None, **self.local_params)
+        else:
+            raise ExporterError(f'Unknown class nane {self.cls} in in SerialPortExport')
         self.data["cls"] = "NetworkSerialPort"
         self.child = None
         self.port = None
@@ -302,6 +307,48 @@ class SerialPortExport(ResourceExport):
 
 exports["USBSerialPort"] = SerialPortExport
 exports["RawSerialPort"] = SerialPortExport
+exports["ServoSerialPort"] = SerialPortExport
+
+@attr.s(eq=False)
+class ServoResetExport(ResourceExport):
+    """ResourceExport for CPU reset on a Servo board"""
+    servo_name = attr.ib(default='', validator=attr.validators.instance_of(str))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.servo import ServoReset
+        self.local = ServoReset(target=None, name=None, **self.local_params)
+        self.data['cls'] = "NetworkServoReset"
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': self.host,
+            'servo_name': self.local.servo_name,
+        }
+
+exports["ServoReset"] = ServoResetExport
+
+
+@attr.s(eq=False)
+class ServoRecoveryExport(ResourceExport):
+    """ResourceExport for recovery button on a Servo board"""
+    servo_name = attr.ib(default='', validator=attr.validators.instance_of(str))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.servo import ServoRecovery
+        self.local = ServoRecovery(target=None, name=None, **self.local_params)
+        self.data['cls'] = "NetworkServoRecovery"
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': self.host,
+            'servo_name': self.local.servo_name,
+        }
+
+exports["ServoRecovery"] = ServoRecoveryExport
 
 
 @attr.s(eq=False)
@@ -799,6 +846,26 @@ class SFEmulatorExport(ResourceExport):
         }
 
 exports["SFEmulator"] = SFEmulatorExport
+
+@attr.s(eq=False)
+class ServoExport(ResourceExport):
+    """ResourceExport for Servo devices"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = f"Network{local_cls_name}"
+        from ..resource import servo
+        local_cls = getattr(servo, local_cls_name)
+        self.local = local_cls(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return {
+            "host": self.host,
+            **self.local_params
+        }
+
+exports["Servo"] = ServoExport
 
 class Exporter:
     def __init__(self, config) -> None:

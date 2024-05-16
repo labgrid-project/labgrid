@@ -51,3 +51,4 @@ from .dediprogflashdriver import DediprogFlashDriver
 from .httpdigitaloutput import HttpDigitalOutputDriver
 from .sfemulatordriver import SFEmulatorDriver
 from .servodriver import ServoDriver
+from .ubootproviderdriver import UBootProviderDriver

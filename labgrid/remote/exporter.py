@@ -596,6 +596,19 @@ class USBFlashableExport(USBGenericExport):
 
 
 @attr.s(eq=False)
+class USBSFEmulatorExport(USBGenericExport):
+    """ResourceExport for SPI-flash emulators"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        p = super()._get_params()
+        p["chip"] = self.local.chip
+        return p
+
+
+@attr.s(eq=False)
 class USBGenericRemoteExport(USBGenericExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -627,6 +640,7 @@ exports["HIDRelay"] = USBHIDRelayExport
 exports["FTDIGPIO"] = USBFTDIGPIOExport
 exports["USBFlashableDevice"] = USBFlashableExport
 exports["LXAUSBMux"] = USBGenericExport
+exports["SFEmulator"] = USBSFEmulatorExport
 
 
 @attr.s(eq=False)

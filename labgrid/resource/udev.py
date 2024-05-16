@@ -428,6 +428,30 @@ class AlteraUSBBlaster(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class SFEmulator(USBResource):
+    """The SFEmulator describes an attached Dediprog EM100-PRO SPI-flash
+    emulator, identified via usb using udev.
+
+    The EM100-PRO has no USB serial number, so it is normally matched by its
+    USB path.
+
+    Args:
+        chip (str): SPI-flash chip to emulate, e.g. W25Q64CV
+    """
+    chip = attr.ib(
+        default=None,
+        validator=attr.validators.instance_of(str)
+    )
+
+    def filter_match(self, device):
+        if device.properties.get('ID_VENDOR_ID') != "04b4":
+            return False
+        if device.properties.get('ID_MODEL_ID') != "1235":
+            return False
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class SigrokUSBDevice(USBResource):
     """The SigrokUSBDevice describes an attached sigrok device with driver and
     optional channel mapping, it is identified via usb using udev.

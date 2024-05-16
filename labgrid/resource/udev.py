@@ -319,6 +319,17 @@ class MXSUSBLoader(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class SunxiUSBLoader(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("1f3a", "efe8")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class AndroidUSBFastboot(USBResource):
     usb_vendor_id = attr.ib(default='1d6b', validator=attr.validators.instance_of(str))
     usb_product_id = attr.ib(default='0104', validator=attr.validators.instance_of(str))

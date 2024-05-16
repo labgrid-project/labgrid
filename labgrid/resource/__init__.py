@@ -54,3 +54,4 @@ from .eth008 import Eth008DigitalOutput
 from .laa import LAASerialPort, LAAPowerPort, LAAUSBGadgetMassStorage, \
                  LAAUSBPort, LAAButtonPort, \
                  LAALed, LAATempSensor, LAAWattMeter, LAAProvider
+from .sfemulator import SFEmulator, NetworkSFEmulator

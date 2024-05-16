@@ -600,6 +600,7 @@ exports["IMXUSBLoader"] = USBGenericExport
 exports["MXSUSBLoader"] = USBGenericExport
 exports["RKUSBLoader"] = USBGenericExport
 exports["SunxiUSBLoader"] = USBGenericExport
+exports["TegraUSBLoader"] = USBGenericExport
 exports["AlteraUSBBlaster"] = USBGenericExport
 exports["SigrokUSBDevice"] = USBSigrokExport
 exports["SigrokUSBSerialDevice"] = USBSigrokExport

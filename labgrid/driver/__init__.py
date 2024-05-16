@@ -58,3 +58,4 @@ from .laadriver import LAASerialDriver, LAAPowerDriver, \
 from .sfemulatordriver import SFEmulatorDriver
 from .servodriver import ServoDriver
 from .ubootproviderdriver import UBootProviderDriver
+from .ubootwriterdriver import UBootWriterDriver

@@ -19,6 +19,7 @@ from .udev import (
     MatchedSysfsGPIO,
     MXSUSBLoader,
     RKUSBLoader,
+    SunxiUSBLoader,
     SiSPMPowerPort,
     SigrokUSBDevice,
     SigrokUSBSerialDevice,

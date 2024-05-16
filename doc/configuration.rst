@@ -747,6 +747,23 @@ Arguments:
 Used by:
   - `SunxiUSBDriver`_
 
+TegraUSBLoader
+~~~~~~~~~~~~~~
+A :any:`TegraUSBLoader` resource describes a USB device in the *Tegra
+loader state*.
+
+.. code-block:: yaml
+
+   TegraUSBLoader:
+     match:
+       'ID_PATH': 'pci-0000:03:00.2-usb-0:3.4.1'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `TegraUSBDriver`_
+
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ available on a remote
@@ -765,6 +782,11 @@ computer.
 NetworkSunxiUSBLoader
 ~~~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkSunxiUSBLoader` describes a `SunxiUSBLoader`_ available on a
+remote computer.
+
+NetworkTegraUSBLoader
+~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkTegraUSBLoader` describes a `TegraUSBLoader`_ available on a
 remote computer.
 
 AndroidUSBFastboot
@@ -2577,6 +2599,49 @@ Arguments:
 
  Tools:
   - sunxi-fel: Path to the 'sunxi-fel' tool (default is 'sunxi-fel')
+
+TegraUSBDriver
+~~~~~~~~~~~~~~
+A :any:`TegraUSBDriver` is used to upload an image into a device in the
+*Nvidia Tegra loader state*. This is useful to bootstrap a bootloader onto a
+device.
+
+The load happens in a single stage, with U-Boot proper sent along with a
+*BCT* (Binary Control Tool) configuration file which contains memory timings,
+etc.
+
+Binds to:
+  loader:
+    - `TegraUSBLoader`_
+    - `NetworkTegraUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         TegraUSBDriver:
+           loadaddr: 0x80108000
+           bct: '/home/dev/tegra124/nvidia/norrin/PM370_Hynix_2GB_H5TC4G63AFR_PBA_924MHz_01212014.bct'
+           usb_path: 1-3.4.1
+   tools:
+     tegrarcm: '/home/dev/bin/tegrarcm'
+
+Arguments:
+  - loadaddr (int): address to use when loading the firmware. This depends on
+    the SoC being used. For U-Boot the easiest way to find this value is to
+    check the *CONFIG_TEXT_BASE* value
+  - bct (str): path to the BCT (configuration file)
+  - usb_path (str): USB device to program. This can be obtained using udevadm
+    with the USB bus and device number. For example
+    `udevadm info /dev/bus/usb/003/042` then look at DEVPATH.
+  - image (str): Optional image filename
+
+ Tools:
+  - tegrarcm: Path to the 'tegrarcm' tool (default is 'tegrarcm')
 
 UUUDriver
 ~~~~~~~~~

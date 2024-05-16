@@ -56,3 +56,4 @@ from .laadriver import LAASerialDriver, LAAPowerDriver, \
                        LAAButtonDriver, LAALedDriver, LAATempDriver, LAAWattDriver, \
                        LAAProviderDriver
 from .sfemulatordriver import SFEmulatorDriver
+from .servodriver import ServoDriver

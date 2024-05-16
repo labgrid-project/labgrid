@@ -146,6 +146,10 @@ TOOLS KEYS
     Path to the sispmctl binary, used by the SiSPMPowerDriver.
     See: https://sispmctl.sourceforge.net/
 
+``smdk-usbdl``
+    Path to the smdk-usbdl binary, used by the SamsungUSBDriver.
+    See: http://www.fluff.org/ben/smdk/tools
+
 ``ssh``
     Path to the ssh binary, used by the SSHDriver.
     See: https://github.com/openssh/openssh-portable

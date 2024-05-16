@@ -319,6 +319,17 @@ class MXSUSBLoader(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class SamsungUSBLoader(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("04e8", "1234")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class SunxiUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))

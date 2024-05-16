@@ -1094,6 +1094,7 @@ class ClientSession:
             NetworkMXSUSBLoader,
             NetworkIMXUSBLoader,
             NetworkRKUSBLoader,
+            NetworkSamsungUSBLoader,
             NetworkSunxiUSBLoader,
             NetworkTegraUSBLoader,
             NetworkAlteraUSBBlaster,
@@ -1120,6 +1121,9 @@ class ClientSession:
                     drv.interface.timeout = self.args.wait
                 elif isinstance(resource, NetworkRKUSBLoader):
                     drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False, name=name)
+                    drv.loader.timeout = self.args.wait
+                elif isinstance(resource, NetworkSamsungUSBLoader):
+                    drv = self._get_driver_or_new(target, "SamsungUSBDriver", activate=False, name=name)
                     drv.loader.timeout = self.args.wait
                 elif isinstance(resource, NetworkSunxiUSBLoader):
                     drv = self._get_driver_or_new(target, "SunxiUSBDriver", activate=False, name=name)

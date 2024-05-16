@@ -1,8 +1,12 @@
 import pytest
 
-from labgrid.resource.udev import SunxiUSBLoader, TegraUSBLoader
-from labgrid.resource.remote import NetworkSunxiUSBLoader, NetworkTegraUSBLoader
-from labgrid.driver.usbloader import SunxiUSBDriver, TegraUSBDriver
+from labgrid.resource.udev import SamsungUSBLoader, SunxiUSBLoader
+from labgrid.resource.udev import TegraUSBLoader
+from labgrid.resource.remote import NetworkSamsungUSBLoader
+from labgrid.resource.remote import NetworkSunxiUSBLoader
+from labgrid.resource.remote import NetworkTegraUSBLoader
+from labgrid.driver.usbloader import SamsungUSBDriver, SunxiUSBDriver
+from labgrid.driver.usbloader import TegraUSBDriver
 
 
 class FakeDevice:
@@ -116,3 +120,55 @@ def test_tegrausb_driver_load(target, mocker, tmpdir):
     pwrap.check_output.assert_called_once_with(
         ['tegrarcm', '--bct=bct', f'--bootloader={main}', '--loadaddr=0x000100',
          '--usb-port-path', '3/4'], print_on_silent_log=True)
+
+
+def test_samsungusb_network_create(target):
+    r = NetworkSamsungUSBLoader(target, busnum=1, devnum=2, path='a/path',
+                                vendor_id=1234, model_id=5678, name=None,
+                                host='localhost')
+    assert isinstance(r, NetworkSamsungUSBLoader)
+    assert r.busnum == 1
+    assert r.devnum == 2
+    assert r.path == 'a/path'
+    assert r.vendor_id == 1234
+    assert r.model_id == 5678
+    assert r.name is None
+    d = SamsungUSBDriver(target, bl1='bl1', bl1_loadaddr=0x100,
+                         spl_loadaddr=0x200, loadaddr=0x300, name=None)
+    assert isinstance(d, SamsungUSBDriver)
+    assert d.bl1 == 'bl1'
+    assert d.bl1_loadaddr == 0x100
+    assert d.spl_loadaddr == 0x200
+    assert d.loadaddr == 0x300
+    assert d.name is None
+
+
+def test_samsungusb_driver_create(target):
+    r = SamsungUSBLoader(target, name=None)
+    assert isinstance(r, SamsungUSBLoader)
+
+    d = SamsungUSBDriver(target, bl1='bl1', bl1_loadaddr=0x100,
+                         spl_loadaddr=0x200, loadaddr=0x300, name=None)
+    assert isinstance(d, SamsungUSBDriver)
+
+
+def test_samsungusb_driver_load(target, mocker, tmpdir):
+    r = SamsungUSBLoader(target, name=None)
+    assert isinstance(r, SamsungUSBLoader)
+
+    bl1 = tmpdir.join('bl1').strpath
+    d = SamsungUSBDriver(target, bl1=bl1, bl1_loadaddr=0x100,
+                         spl_loadaddr=0x200, loadaddr=0x300, name=None)
+    r.avail = True
+    dev = FakeDevice()
+    r.device = dev
+    target.activate(d)
+
+    with open(bl1, 'wb') as outf:
+        outf.write(b'blah')
+
+    pwrap = mocker.patch('labgrid.driver.usbloader.processwrapper')
+
+    d.load(phase='bl1')
+    pwrap.check_output.assert_called_once_with(
+        ['smdk-usbdl', '-a', '100', '-b', '001', '-d', '002', '-f', bl1])

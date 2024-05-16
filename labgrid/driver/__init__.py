@@ -15,7 +15,7 @@ from .onewiredriver import OneWirePIODriver
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver, \
                          DigitalOutputPowerDriver, YKUSHPowerDriver, \
                          USBPowerDriver, SiSPMPowerDriver, NetworkPowerDriver, \
-                         PDUDaemonDriver
+                         PDUDaemonDriver, AlwaysPowerDriver
 from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, RKUSBDriver, UUUDriver
 from .usbsdmuxdriver import USBSDMuxDriver
 from .usbsdwiredriver import USBSDWireDriver

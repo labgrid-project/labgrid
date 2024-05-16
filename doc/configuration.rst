@@ -2298,6 +2298,20 @@ Arguments:
   - cmd_cycle (str): optional command to switch the board off and on
   - delay (float, default=2.0): delay in seconds between off and on, if cmd_cycle is not set
 
+AlwaysPowerDriver
+~~~~~~~~~~~~~~~~~
+An :any:`ExternalPowerDriver` can be used for target which have no power
+control but are always on. This allows the strategy to still expect a
+:any:`PowerProtocol` driver and obtain one.
+
+Any attempt to power on or off is ignored.
+
+Binds to:
+  - None
+
+Implements:
+  - :any:`PowerProtocol`
+
 NetworkPowerDriver
 ~~~~~~~~~~~~~~~~~~
 A :any:`NetworkPowerDriver` controls a `NetworkPowerPort`_, allowing control of

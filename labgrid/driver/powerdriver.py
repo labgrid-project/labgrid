@@ -67,6 +67,27 @@ class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 
 @target_factory.reg_driver
 @attr.s(eq=False)
+class AlwaysPowerDriver(Driver, PowerProtocol):
+    """AlwaysPowerDriver - Target power is always on"""
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        pass
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        pass
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        pass
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
 class SiSPMPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     """SiSPMPowerDriver - Driver using a SiS-PM (Silver Shield PM) to control a
        target's power using the sispmctl tool - http://sispmctl.sourceforge.net/"""

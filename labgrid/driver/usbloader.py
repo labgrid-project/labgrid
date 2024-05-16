@@ -337,3 +337,67 @@ class TegraUSBDriver(Driver, BootstrapProtocol):
     @step()
     def execute(self):
         pass
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class SamsungUSBDriver(Driver, BootstrapProtocol):
+    bindings = {
+        'loader': {'SamsungUSBLoader', 'NetworkSamsungUSBLoader'},
+    }
+
+    bl1 = attr.ib(validator=attr.validators.instance_of(str))
+    bl1_loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    spl_loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    image = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('smdk-usbdl')
+        else:
+            self.tool = 'smdk-usbdl'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    @Driver.check_active
+    @step(args=['filename'])
+    def load(self, filename=None, phase=None):
+        if filename is None and phase == 'bl1':
+            filename = self.bl1
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        if phase == 'bl1':
+            addr = self.bl1_loadaddr
+        elif phase == 'spl':
+            addr = self.spl_loadaddr
+        elif phase in (None, 'u-boot'):
+            addr = self.loadaddr
+        else:
+            raise ValueError(f"Unknown phase '{phase}'")
+        pathname = mf.get_remote_path()
+        #time.sleep(0.5)
+
+        args = [self.tool, '-a', f'{addr:x}',
+                '-b', f'{self.loader.busnum:03d}',
+                '-d', f'{self.loader.devnum:03d}',
+                '-f', pathname]
+
+        processwrapper.check_output(
+            self.loader.command_prefix + args,
+            #print_on_silent_log=True
+        )
+
+    @Driver.check_active
+    @step()
+    def execute(self):
+        pass

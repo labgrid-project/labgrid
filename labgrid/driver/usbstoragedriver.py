@@ -123,7 +123,8 @@ class USBStorageDriver(Driver):
 
     @Driver.check_active
     @step(args=['filename'])
-    def write_image(self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0):
+    def write_image(self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0,
+                    block_size="auto"):
         """
         Writes the file specified by filename or if not specified by config image subkey to the
         bound USB storage root device or partition.
@@ -135,6 +136,9 @@ class USBStorageDriver(Driver):
                 to root device (defaults to None)
             skip (int): optional, skip n 512-sized blocks at start of input file (defaults to 0)
             seek (int): optional, skip n 512-sized blocks at start of output (defaults to 0)
+            block_size (int or str): optional, block size for writing (in bytes)
+                "auto": Special value which means to use a block size of 512 if
+                skip or seek are non-zero, else "4M"
         """
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
@@ -149,7 +153,8 @@ class USBStorageDriver(Driver):
 
         if mode == Mode.DD:
             self.logger.info('Writing %s to %s using dd.', remote_path, target)
-            block_size = '512' if skip or seek else '4M'
+            if block_size == "auto":
+                block_size = "512" if skip or seek else "4M"
             args = [
                 "dd",
                 f"if={remote_path}",

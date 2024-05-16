@@ -1,8 +1,8 @@
 import pytest
 
-from labgrid.resource.udev import SunxiUSBLoader
-from labgrid.resource.remote import NetworkSunxiUSBLoader
-from labgrid.driver.usbloader import SunxiUSBDriver
+from labgrid.resource.udev import SunxiUSBLoader, TegraUSBLoader
+from labgrid.resource.remote import NetworkSunxiUSBLoader, NetworkTegraUSBLoader
+from labgrid.driver.usbloader import SunxiUSBDriver, TegraUSBDriver
 
 
 class FakeDevice:
@@ -10,6 +10,7 @@ class FakeDevice:
     subsystem = 'usb'
     device_type = 'usb_device'
     properties= {'BUSNUM': 1, 'DEVNUM': 2}
+    sys_name = '3/4'
 
 
 def test_sunxiusb_network_create(target):
@@ -65,3 +66,61 @@ def test_sunxiusb_driver_load(target, mocker, tmpdir):
     d.load(main)
     pwrap.check_output.assert_called_once_with(
         ['sunxi-fel', '-d', '1:2', 'write', '0x100', main], print_on_silent_log=True)
+
+
+def test_tegrausb_network_create(target):
+    r = NetworkTegraUSBLoader(target, busnum=1, devnum=2, path='a/path',
+                                vendor_id=1234, model_id=5678, name=None,
+                                host='localhost')
+    assert isinstance(r, NetworkTegraUSBLoader)
+    assert r.busnum == 1
+    assert r.devnum == 2
+    assert r.path == 'a/path'
+    assert r.vendor_id == 1234
+    assert r.model_id == 5678
+    assert r.name is None
+    d = TegraUSBDriver(target, loadaddr=0x100, name=None)
+    assert isinstance(d, TegraUSBDriver)
+    assert d.loadaddr == 0x100
+    assert d.name is None
+
+
+def test_tegrausb_driver_create(target):
+    r = TegraUSBLoader(target, name=None)
+    assert isinstance(r, TegraUSBLoader)
+
+    d = TegraUSBDriver(target, loadaddr=0x100, name=None)
+    assert isinstance(d, TegraUSBDriver)
+
+
+def test_tegrausb_driver_load(target, mocker, tmpdir):
+    r = TegraUSBLoader(target, name=None)
+    assert isinstance(r, TegraUSBLoader)
+
+    d = TegraUSBDriver(target, loadaddr=0x100, name=None)
+    r.avail = True
+    dev = FakeDevice()
+    r.device = dev
+    target.activate(d)
+
+    main = tmpdir.join('boot').strpath
+    with open(main, 'wb') as outf:
+        outf.write(b'main image')
+
+    # The BCT filename comes from the env's 'images:' section, not a driver
+    # arg. It is a real file here since it is pushed with ManagedFile
+    bct = tmpdir.join('the.bct').strpath
+    with open(bct, 'wb') as outf:
+        outf.write(b'bct data')
+    target.env = mocker.MagicMock()
+    target.env.config.get_image_path.return_value = bct
+
+    pwrap = mocker.patch('labgrid.driver.usbloader.processwrapper')
+
+    pwrap.reset_mock()
+    d.load(main)
+    target.env.config.get_image_path.assert_called_once_with('bct')
+    pwrap.check_output.assert_called_once_with(
+        ['tegrarcm', f'--bct={bct}', f'--bootloader={main}',
+         '--loadaddr=0x000100', '--usb-port-path', '3/4'],
+        print_on_silent_log=True)

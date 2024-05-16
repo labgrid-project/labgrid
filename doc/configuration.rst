@@ -840,6 +840,23 @@ Arguments:
 Used by:
   - `SunxiUSBDriver`_
 
+TegraUSBLoader
+~~~~~~~~~~~~~~
+A :any:`TegraUSBLoader` resource describes a USB device in the *Tegra
+loader state*.
+
+.. code-block:: yaml
+
+   TegraUSBLoader:
+     match:
+       'ID_PATH': 'pci-0000:03:00.2-usb-0:3.4.1'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `TegraUSBDriver`_
+
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ resource available on
@@ -858,6 +875,11 @@ remote computer.
 NetworkSunxiUSBLoader
 ~~~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkSunxiUSBLoader` describes a `SunxiUSBLoader`_ available on a
+remote computer.
+
+NetworkTegraUSBLoader
+~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkTegraUSBLoader` describes a `TegraUSBLoader`_ available on a
 remote computer.
 
 AndroidUSBFastboot
@@ -2953,6 +2975,49 @@ Arguments:
 
  Tools:
   - sunxi-fel: Path to the 'sunxi-fel' tool (default is 'sunxi-fel')
+
+TegraUSBDriver
+~~~~~~~~~~~~~~
+A :any:`TegraUSBDriver` is used to upload an image into a device in the
+*Nvidia Tegra loader state*. This is useful to bootstrap a bootloader onto a
+device.
+
+The load happens in a single stage, with the bootloader proper (e.g. U-Boot)
+sent along with a *BCT* (Binary Control Tool) configuration file which
+contains memory timings, etc.
+
+Binds to:
+  loader:
+    - `TegraUSBLoader`_
+    - `NetworkTegraUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         TegraUSBDriver:
+           loadaddr: 0x80108000
+   images:
+     bct: '/home/dev/tegra124/nvidia/norrin/PM370_Hynix_2GB_H5TC4G63AFR_PBA_924MHz_01212014.bct'
+   tools:
+     tegrarcm: '/home/dev/bin/tegrarcm'
+
+Arguments:
+  - loadaddr (int): address to use when loading U-Boot. This depends on the
+    SoC being used. The easiest way to find this value is to check the
+    *CONFIG_TEXT_BASE* value in U-Boot
+  - image (str): optional, reference to the images key for the image to load
+    when no filename is given
+
+ Images:
+  - bct: reference to the images key for the BCT (configuration file)
+
+ Tools:
+  - tegrarcm: Path to the 'tegrarcm' tool (default is 'tegrarcm')
 
 UUUDriver
 ~~~~~~~~~

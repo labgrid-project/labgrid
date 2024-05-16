@@ -142,6 +142,10 @@ TOOLS KEYS
     Path to the sshfs binary, used by the SSHDriver.
     See: https://github.com/libfuse/sshfs
 
+``sunxi-fel``
+    Path to the sunxi-fel binary, used by the SunxiUSBDriver.
+    See: https://github.com/linux-sunxi/sunxi-tools
+
 ``uhubctl``
     Path to the uhubctl binary, used by the USBPowerDriver.
     See: https://github.com/mvp/uhubctl

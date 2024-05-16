@@ -729,6 +729,23 @@ Arguments:
 Used by:
   - `RKUSBDriver`_
 
+SamsungUSBLoader
+~~~~~~~~~~~~~~~~
+A :any:`SamsungUSBLoader` resource describes a USB device in the *Samsung
+loader state*.
+
+.. code-block:: yaml
+
+   SamsungUSBLoader:
+     match:
+       ID_PATH: pci-0000:03:00.2-usb-0:4.2.4
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `SamsungUSBDriver`_
+
 SunxiUSBLoader
 ~~~~~~~~~~~~~~
 A :any:`SunxiUSBLoader` resource describes a USB device in the *Allwinner
@@ -778,6 +795,11 @@ NetworkRKUSBLoader
 ~~~~~~~~~~~~~~~~~~
 A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ available on a remote
 computer.
+
+NetworkSamsungUSBLoader
+~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkSamsungUSBLoader` describes a `SamsungUSBLoader`_ available on a
+remote computer.
 
 NetworkSunxiUSBLoader
 ~~~~~~~~~~~~~~~~~~~~~
@@ -2599,6 +2621,47 @@ Arguments:
 
  Tools:
   - sunxi-fel: Path to the 'sunxi-fel' tool (default is 'sunxi-fel')
+
+SamsungUSBDriver
+~~~~~~~~~~~~~~~~
+A :any:`SamsungUSBDriver` is used to upload an image into a device in the
+*Samsung loader state*. This is useful to bootstrap a bootloader onto a device.
+
+The load happens in three stages: BL1, SPL and U-Boot proper.
+
+Binds to:
+  loader:
+    - `SamsungUSBLoader`_
+    - `NetworkSamsungUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         SamsungUSBDriver:
+           bl1: '/home/dev/exynos/snow/u-boot.bl1.bin'
+           bl1_loadaddr: 0x02021400
+           spl_loadaddr: 0x02023400
+           loadaddr: 0x43e00000
+   tools:
+     smdk-usbdl: '/home/dev/bin/smdk-usbdl'
+
+Arguments:
+  - bl1 (str): Filename of the BL1 file which sets up the SoC
+  - bl1_loadaddr (int): Load address of the BL1 file. This depends on the SoC
+    spl_load_addr (int): Load address of SPL. The easiest way to find this value
+    is to check the *CONFIG_SPL_TEXT_BASE* value in U-Boot
+  - loadaddr (int): address to use when loading U-Boot. This depends on the
+    SoC being used. The easiest way to find this value is to check the
+    *CONFIG_TEXT_BASE* value in U-Boot
+  - image (str): Optional image filename
+
+ Tools:
+  - smdk-usbdl: Path to the 'smdk-usbdl' tool (default is 'smdk-usbdl')
 
 TegraUSBDriver
 ~~~~~~~~~~~~~~

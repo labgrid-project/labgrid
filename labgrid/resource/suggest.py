@@ -16,6 +16,7 @@ from .udev import (
     USBSDWireDevice,
     AlteraUSBBlaster,
     RKUSBLoader,
+    SamsungUSBLoader,
     SunxiUSBLoader,
     TegraUSBLoader,
     USBNetworkInterface,
@@ -52,6 +53,7 @@ class Suggester:
         self.resources.append(USBSDWireDevice(**args))
         self.resources.append(AlteraUSBBlaster(**args))
         self.resources.append(RKUSBLoader(**args))
+        self.resources.append(SamsungUSBLoader(**args))
         self.resources.append(SunxiUSBLoader(**args))
         self.resources.append(TegraUSBLoader(**args))
         self.resources.append(USBNetworkInterface(**args))

@@ -204,7 +204,6 @@ class USBStorageDriver(Driver):
 
         processwrapper.check_output(
             self.storage.command_prefix + args,
-            print_on_silent_log=True
         )
         processwrapper.check_output(
             self.storage.command_prefix + ['sync'],

@@ -12,7 +12,7 @@ from ..util.agentwrapper import AgentWrapper
 @attr.s(eq=False)
 class HIDRelayDriver(Driver, DigitalOutputProtocol):
     bindings = {
-        "relay": {"HIDRelay", NetworkHIDRelay},
+        "relay": {"HIDRelay", "NetworkHIDRelay"},
     }
 
     def __attrs_post_init__(self):

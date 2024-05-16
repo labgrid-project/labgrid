@@ -729,6 +729,24 @@ Arguments:
 Used by:
   - `RKUSBDriver`_
 
+SunxiUSBLoader
+~~~~~~~~~~~~~~
+A :any:`SunxiUSBLoader` resource describes a USB device in the *Allwinner
+loader state*.
+
+.. code-block:: yaml
+
+   SunxiUSBLoader:
+     ## hub a12
+     match:
+       'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.4:1.0'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `SunxiUSBDriver`_
+
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ available on a remote
@@ -743,6 +761,11 @@ NetworkRKUSBLoader
 ~~~~~~~~~~~~~~~~~~
 A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ available on a remote
 computer.
+
+NetworkSunxiUSBLoader
+~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkSunxiUSBLoader` describes a `SunxiUSBLoader`_ available on a
+remote computer.
 
 AndroidUSBFastboot
 ~~~~~~~~~~~~~~~~~~
@@ -2516,6 +2539,44 @@ Arguments:
     of an image to bootstrap onto the target
   - usb_loader (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of a first-stage bootloader image to write
+
+SunxiUSBDriver
+~~~~~~~~~~~~~~
+A :any:`SunxiUSBDriver` is used to upload an image into a device in the
+*Allwinner loader state*. This is useful to bootstrap a bootloader onto a
+device.
+
+Note that sunxi is the common name for Allwinner SoCs, since they have product
+codes like sun50i, sun7i, etc.
+
+The load happens in two stages, first SPL and then U-Boot proper.
+
+Binds to:
+  loader:
+    - `SunxiUSBLoader`_
+    - `NetworkSunxiUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         SunxiUSBDriver:
+           loadaddr: 0x4a000000
+   tools:
+     sunxi-fel: '/home/dev/bin/sunxi-fel'
+
+Arguments:
+  - loadaddr (int): address to use when loading U-Boot. This depends on the
+    SoC being used. The easiest way to find this value is to check the
+    *CONFIG_TEXT_BASE* value in U-Boot
+  - image (str): Optional image filename
+
+ Tools:
+  - sunxi-fel: Path to the 'sunxi-fel' tool (default is 'sunxi-fel')
 
 UUUDriver
 ~~~~~~~~~

@@ -1951,6 +1951,100 @@ Arguments:
   - login_timeout (int, default=60): timeout for password/login prompt detection
   - for other arguments, see `UBootDriver`_
 
+UBootProviderDriver
+~~~~~~~~~~~~~~~~~~~
+
+The :any:`UBootProviderDriver` provides a way to build U-Boot for a target.
+U-Boot provides a 'buildman' tool which this driver uses, so Labgrid itself does
+not know how to build U-Boot. The buildman tool works automatically provided
+that you have set it up with suitable toolchains. See
+`buildman <https://docs.u-boot.org/en/latest/build/buildman.html>`_ for more
+information.
+
+This driver is most commonly used to build the current U-Boot source (checked
+out in a development directory) to produce an image which Labgrid can write to
+a board for development and testing purposes.
+
+It can also build a source tree as is, a specific commit, or even apply a patch
+to a specific commit.
+
+When using U-Boot's pytest, this driver can use the U_BOOT_SOURCE_DIR and
+U_BOOT_BUILD_DIR environment variables provided by pytest to select the source
+directory. It can then build U-Boot under the control of the pytests, allowing
+U-Boot's tests to be run on any board in your lab.
+
+U-Boot has a
+`Binman <https://docs.u-boot.org/en/latest/develop/package/index.html>`_
+tool which can locate required binary blobs needed to make
+a particular build work. Where these binaries are missing, the driver reports
+the Binman error. The arguments can be used to provide the directory used to
+hold the binaries.
+
+If the build fails, e.g. due to a compile error, the driver raises a
+subprocess.CalledProcessError exception and labgrid-client shows the error
+output.
+
+This driver is automatically used by the UBootStrategy driver, when
+bootstrapping is selected.
+
+Variables:
+  - commit (str): Optional commit to build (branch name, tag or hash)
+  - patch (str): Optional file containing a patch to apply
+  - use-board (str): Optional board to build, instead of the normal one
+    specified in the environment file
+  - do-clean (str): If set to "1" this cleans the build before starting,
+    otherwise it does an incremental build
+
+Environment variables:
+  - U_BOOT_BUILD_DIR (str): If present, this is used as the build directory for
+    U-Boot, otherwise the directory <uboot_build_base>/<board> is used
+  - U_BOOT_SOURCE_DIR (str): If present, this is used as a source directory for
+    U-Boot, otherwise uboot_source is used, unless a commit is provided, in
+    which case a workdir is used (see uboot_workdirs)
+
+Arguments:
+  - board (str): Name of the board to use (U-Boot build target)
+  - bl31 (str): Optional filename of the BL31 binary
+  - binman_indir (str): Optional directory containing required binaries
+
+Paths:
+  - uboot_build_base (str): Base directory to hold the builds, e.g. '/tmp/b'.
+    Each board is built in a subdirectory of this.
+  - uboot_workdirs (str): Base directory to hold the git work directories, e.g.
+    '/tmp/b/workdirs'. Each board's source code is staged in a subdirectory of
+    this. This path is only needed if a commit is provided to be cherry-picked
+    onto the main source tree.
+  - uboot_source (str): Directory of the main git tree containing the U-Boot
+    source, e.g. '/home/fred/u-boot'
+
+Tools:
+  - buildman (str): Path to the buildman tool. The path to this tool within the
+    U-Boot tree is 'tools/buildman/buildman' but it common to use a separate
+    checkout so that the tool does not change when you are building different
+    U-Boot commits. In the example below, a 'buildman.stable' symlink has been
+    created from ~/bin to 'tools/buildman/buildman' in a separate U-Boot tree,
+    which is seldom updated.
+
+.. code-block:: yaml
+
+   UBootProviderDriver:
+     board: chromebook_samus
+     binman_indir: /home/dev/samus/bin
+
+   UBootProviderDriver:
+     board: orangepi_pc2
+     bl31: /home/dev/arm-trusted-firmware/build/sun50i_a64/debug/bl31.bin
+
+.. code-block:: yaml
+
+   paths:
+     uboot_build_base: "/tmp/b"
+     uboot_workdirs: "/tmp/b/workdirs"
+     uboot_source: "/home/dev/u-boot/files"
+
+   tools:
+     buildman: "buildman.stable"
+
 BareboxDriver
 ~~~~~~~~~~~~~
 A :any:`BareboxDriver` interfaces with a *barebox* bootloader via a

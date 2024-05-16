@@ -139,6 +139,10 @@ TOOLS KEYS
     Path to the sispmctl binary, used by the SiSPMPowerDriver.
     See: https://sispmctl.sourceforge.net/
 
+``sunxi-fel``
+    Path to the sunxi-fel binary, used by the SunxiUSBDriver.
+    See: https://linux-sunxi.org/FEL
+
 ``uhubctl``
     Path to the uhubctl binary, used by the USBPowerDriver.
     See: https://github.com/mvp/uhubctl

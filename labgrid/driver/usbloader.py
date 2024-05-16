@@ -201,7 +201,7 @@ class BDIMXUSBDriver(Driver, BootstrapProtocol):
     must be specified explicitly.
     """
     bindings = {
-        "loader": {"IMXUSBLoader", "NetworkIMXUSBLoader"},
+        'loader': {'IMXUSBLoader', 'NetworkIMXUSBLoader'},
     }
 
     def __attrs_post_init__(self):
@@ -233,3 +233,56 @@ class BDIMXUSBDriver(Driver, BootstrapProtocol):
             ],
             print_on_silent_log=True
         )
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class SunxiUSBDriver(Driver, BootstrapProtocol):
+    bindings = {
+        "loader": {"SunxiUSBLoader", "NetworkSunxiUSBLoader"},
+    }
+
+    loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    image = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('sunxi-fel')
+        else:
+            self.tool = 'sunxi-fel'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    def _run_tool(self, *part):
+        args = ['-d', '%s:%s' % (self.loader.busnum, self.loader.devnum)]
+        cmd = ['sunxi-fel'] + args + list(part)
+
+        processwrapper.check_output(
+            self.loader.command_prefix + cmd,
+            print_on_silent_log=True
+        )
+
+    @Driver.check_active
+    @step(args=['filename', 'phase'])
+    def load(self, filename=None, phase=None):
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        pathname = mf.get_remote_path()
+        if phase == 'spl':
+            self._run_tool('spl', pathname)
+        else:
+            self._run_tool('write', '%#x' % self.loadaddr, pathname)
+
+    @Driver.check_active
+    @step()
+    def execute(self):
+        self._run_tool('exe', '%#x' % self.loadaddr)

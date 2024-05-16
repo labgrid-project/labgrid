@@ -864,6 +864,120 @@ Arguments:
 Used by:
   - `OpenOCDDriver`_
 
+Servo
+~~~~~
+A :any:`Servo` resource describes a ChromiumOS
+`servo board <https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/HEAD/docs/servo.md>`_
+used to control a single DUT. The servo board is connected over USB
+and has a unique serial number. A 'servod' daemon takes care of communicating
+with servo. It supports all versions of the servo board.
+
+If servod and dut-control are not on your path, set the ``HDCTOOLS`` environment
+variable to the correct path.
+
+Note: servod must run as root so you should set up password-less sudo access,
+for example by :
+
+.. code-block:: bash
+
+  echo "user ALL=(root) NOPASSWD: /path/to/servod" |sudo tee /etc/sudoers.d/servod
+  echo "user ALL=(root) NOPASSWD: /usr/bin/chmod a+rw	/dev/pts*" |sudo tee -a /etc/sudoers.d/servod
+
+Replace 'user' with the username you use to run the exporter. Set the path to
+servod correctly. The second line allows the /dev/pts files used by servod to
+be accessed by anyone.
+
+To use the Servo resource, install the
+`hcdtools <https://chromium.googlesource.com/chromiumos/platform/standalone-hdctools>`_
+package on each machine that has servo boards attached.
+
+Note: The Servo resource should appear before resource which use it, such as
+`ServoSerialPort`_.
+
+Arguments:
+  - servo_name (str): A name used to refer to this servo board. This can be
+    anything, so long as it is unique among the Servo resources. Since there
+    is one servo for each DUT, it is common to use the target name as the
+    servo name.
+  - serial (str): Serial number of the servo board
+  - port (int): Port number to allocate to the servo board. This is typically
+    something in the 9900-9999 range. The port must be unique to the exporter
+    which has the servo board. It is recommended to use unique port numbers
+    across your entire lab, to avoid confusion
+  - board (str): Name of the board that the servo is connected to. This is a
+    ChromiumOS code name. It provides hints as to any quirks of the particular
+    board. Generally these are not relevant to Labgrid. If the board is
+    unknown or not supported, it is silently ignored.
+
+Used by:
+  - `ServoDriver`_
+
+.. code-block:: yaml
+
+   Servo:
+     servo_name: snow
+     serial: 911416-00558
+     port: 9906
+     board: daisy
+
+NetworkServo
+~~~~~~~~~~~~
+A :any:`NetworkServo` resource describes a `Servo`_ available
+on a remote computer.
+
+ServoSerialPort
+~~~~~~~~~~~~~~~
+A :any:`ServoSerialPort` resource describes a DUT serial port accessible via
+a `Servo`_ board. Only the AP UART is supported.
+
+Arguments:
+  - servo_name (str): A name used to refer to the servo board providing the
+    serial port. It must match the name in a `Servo`_ reousrce.
+
+.. code-block:: yaml
+
+   ServoSerialPort:
+     servo_name: snow
+
+ServoReset
+~~~~~~~~~~
+A :any:`ServoReset` resource describes a reset signal accessible via a `Servo`_
+board. This can be used to reset the DUT.
+
+Arguments:
+  - servo_name (str): A name used to refer to the servo board providing the
+    serial port. It must match the name in a `Servo`_ reousrce.
+
+.. code-block:: yaml
+
+   ServoReset:
+     servo_name: snow
+
+NetworkServoReset
+~~~~~~~~~~~~~~~~~
+A :any:`NetworkServoReset` resource describes a `ServoReset`_ available
+on a remote computer.
+
+ServoRecovery
+~~~~~~~~~~~~~
+A :any:`ServoRecovery` resource describes a reset signal accessible via a
+`Servo`_ board. This can be used to place the DUT in SoC-recovery mode, so that
+the boot ROM can be accessed over USB, for firmware download.
+
+Arguments:
+  - servo_name (str): A name used to refer to the servo board providing the
+    serial port. It must match the name in a `Servo`_ reousrce.
+
+.. code-block:: yaml
+
+   ServoRecovery:
+     servo_name: snow
+
+NetworkServoRecovery
+~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkServoRecovery` resource describes a `ServoRecovery`_ available
+on a remote computer.
+
 SNMPEthernetPort
 ~~~~~~~~~~~~~~~~
 A :any:`SNMPEthernetPort` resource describes a port on an Ethernet switch,
@@ -2743,6 +2857,34 @@ The QEMUDriver also requires the specification of:
 - an image key, the path to the kernel image and optionally the dtb key to
   specify the build device tree
 - a path key, this is the path to the rootfs
+
+ServoDriver
+~~~~~~~~~~~
+The :any:`ServoDriver` uses a `Servo`_ resource to provide access to a servo
+board attached over USB, as used with ChromiumOS. This board can provide an AP
+console as well as signals to reset the DUT.
+
+A ``servod`` daemon must be running for each attached servo board. This is
+handled automatically by the resource.
+
+The ``ServoDriver`` provides a console, with the other features (reset and
+recovery) being provided by other drivers. Note that only the AP console is
+supported at present, so there is no way to use the EC console, for example.
+
+The pathname of the dut-control tool can be set using the 'dut-control'
+tool setting in the environment.
+
+ServoResetDriver
+~~~~~~~~~~~~~~~~
+The :any:`ServoResetDriver` provides control of the AP reset signal on servo.
+This can be used to perform a cold reset on the DUT. See `ServoDriver`_ for more
+details.
+
+ServoRecoveryDriver
+~~~~~~~~~~~~~~~~~~~
+The :any:`ServoRecoveryDriver` provides control of the recovery signal on servo.
+This can be used to control whether the DUT goes into SoC-recovery mode on
+reset or power on. See `ServoDriver`_ for more details.
 
 SigrokDriver
 ~~~~~~~~~~~~

@@ -49,6 +49,12 @@ def pytest_addoption(parser):
         dest='lg_initial_state',
         metavar='STATE_NAME',
         help='set the strategy\'s initial state (during development)')
+    group.addoption(
+        '--lg-target',
+        action='store',
+        dest='lg_target',
+        metavar='TARGET',
+        help='labgrid target to use')
 
     # We would like to use a default value hook for log_format in the logging plugin,
     # similar to the approach below:
@@ -69,8 +75,12 @@ def env(request, record_testsuite_property):
     record_testsuite_property('ENV_CONFIG', env.config_file)
     targets = list(env.config.get_targets().keys())
     record_testsuite_property('TARGETS', targets)
+    name = request.config.option.lg_target
+    env.target_name = name
 
     for target_name in targets:
+        if env.target_name and env.target_name != target_name:
+            continue
         try:
             target = env.get_target(target_name)
         except UserError as e:
@@ -120,7 +130,8 @@ def env(request, record_testsuite_property):
 def target(env):
     """Return the default target `main` configured in the supplied
     configuration file."""
-    target = env.get_target()
+    name = env.target_name
+    target = env.get_target(name)
     if target is None:
         raise UserError("Using target fixture without 'main' target in config")
 

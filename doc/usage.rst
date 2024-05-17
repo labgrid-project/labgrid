@@ -458,6 +458,12 @@ Other labgrid-related pytest plugin options are:
   The Strategy used must implement the ``force()`` method.
   See the shipped :any:`ShellStrategy` for an example.
 
+``--lg-target``
+  Sets the target to use for the test. This is optional since the target can be
+  provided in the configuration file. Specify this option if you have an
+  environment containing multiple boards and you want to select which one to
+  use.
+
 ``pytest --help`` shows these options in a separate *labgrid* section.
 
 Environment Variables

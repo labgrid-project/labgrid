@@ -2304,6 +2304,25 @@ Implements:
 Arguments:
   - delay (float, default=1.0): delay in seconds between setting the output 0 and 1.
 
+DigitalOutputRecoveryDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`DigitalOutputRecoveryDriver` uses a DigitalOutput to hold the target in
+reset.
+
+Binds to:
+  output:
+    - :any:`DigitalOutputProtocol`
+
+Implements:
+  - :any:`RecoveryProtocol`
+
+.. code-block:: yaml
+
+   DigitalOutputRecoveryDriver:
+
+Arguments:
+  - delay (float, default=1.0): delay in seconds between setting the output 0 and 1.
+
 ModbusCoilDriver
 ~~~~~~~~~~~~~~~~
 A :any:`ModbusCoilDriver` controls a `ModbusTCPCoil`_ resource.

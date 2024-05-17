@@ -73,6 +73,11 @@ def pytest_addoption(parser):
         action='store',
         dest='lg_console_logfile',
         help='name of console-log file, used to record board console')
+    group.addoption(
+        '--lg_log-output',
+        action='store',
+        dest='lg_log_output',
+        help='file to send logging output to, instead of stdout')
 
     # We would like to use a default value hook for log_format in the logging plugin,
     # similar to the approach below:

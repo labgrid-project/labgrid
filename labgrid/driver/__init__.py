@@ -26,6 +26,7 @@ from .modbusrtudriver import ModbusRTUDriver
 from .sigrokdriver import SigrokDriver, SigrokPowerDriver, SigrokDmmDriver
 from .usbstoragedriver import USBStorageDriver, NetworkUSBStorageDriver, Mode
 from .resetdriver import DigitalOutputResetDriver
+from .recoverydriver import DigitalOutputRecoveryDriver
 from .gpiodriver import GpioDigitalOutputDriver
 from .filedigitaloutput import FileDigitalOutputDriver
 from .serialdigitaloutput import SerialPortDigitalOutputDriver

@@ -68,6 +68,11 @@ def pytest_addoption(parser):
         action='store_true',
         dest='lg_use_running_system',
         help="Assume that the machine is ready and don't wait for a prompt")
+    group.addoption(
+        '--lg-console-logfile',
+        action='store',
+        dest='lg_console_logfile',
+        help='name of console-log file, used to record board console')
 
     # We would like to use a default value hook for log_format in the logging plugin,
     # similar to the approach below:

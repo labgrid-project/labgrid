@@ -63,6 +63,11 @@ def pytest_addoption(parser):
         dest='lg_var',
         metavar='VARIABLE',
         help='Add a variable value (-V <var> <value>)')
+    group.addoption(
+        '--lg-use-running-system',
+        action='store_true',
+        dest='lg_use_running_system',
+        help="Assume that the machine is ready and don't wait for a prompt")
 
     # We would like to use a default value hook for log_format in the logging plugin,
     # similar to the approach below:

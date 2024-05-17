@@ -469,6 +469,11 @@ Other labgrid-related pytest plugin options are:
   strategies which can be controlled by variables. This option can be specified
   multiple types as needed.
 
+``--lg-use-running-system``
+  Assume that the machine is ready and don't wait for a prompt. This is a signal
+  implemented by UBootDriver. It is useful when the board is already started up
+  and is ready for testing.
+
 ``pytest --help`` shows these options in a separate *labgrid* section.
 
 Environment Variables

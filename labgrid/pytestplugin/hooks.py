@@ -68,6 +68,15 @@ def configure_pytest_logging(config, plugin):
 def pytest_configure(config):
     apply_rcfile()
 
+    if config.option.lg_log_output:
+        logger = logging.getLogger()
+
+        # Create and add the new file handler
+        file_handler = logging.FileHandler(config.option.lg_log_output)
+        file_formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+        logger.setLevel(logging.INFO)
 
     StepLogger.start()
     config.add_cleanup(StepLogger.stop)

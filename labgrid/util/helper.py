@@ -40,7 +40,8 @@ class ProcessWrapper:
     loglevel = logging.INFO
 
     @step(args=['command'], result=True, tag='process')
-    def check_output(self, command, *, print_on_silent_log=False, input=None, stdin=None): # pylint: disable=redefined-builtin
+    def check_output(self, command, *, print_on_silent_log=False, input=None,
+                     stdin=None, cwd=None, env=None): # pylint: disable=redefined-builtin
         """Run a command and supply the output to callback functions"""
         logger = logging.getLogger("Process")
         res = []
@@ -58,8 +59,8 @@ class ProcessWrapper:
         elif stdin is not None:
             kwargs['stdin'] = stdin
 
-        process = subprocess.Popen(command, stderr=sfd,
-                                   stdout=sfd, bufsize=0, **kwargs)
+        process = subprocess.Popen(command, stderr=sfd, env=env,
+                                   stdout=sfd, bufsize=0, cwd=cwd, **kwargs)
 
         logger.log(ProcessWrapper.loglevel, "[%d] command: %s", process.pid, " ".join(command))
 

@@ -55,6 +55,14 @@ def pytest_addoption(parser):
         dest='lg_target',
         metavar='TARGET',
         help='labgrid target to use')
+    group.addoption(
+        '--lg-var',
+        type=str,
+        nargs='*',
+        action='append',
+        dest='lg_var',
+        metavar='VARIABLE',
+        help='Add a variable value (-V <var> <value>)')
 
     # We would like to use a default value hook for log_format in the logging plugin,
     # similar to the approach below:

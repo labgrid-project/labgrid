@@ -7,6 +7,7 @@ from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
 from ..logging import StepFormatter, StepLogger
+from ..var_dict import add_var
 
 LABGRID_ENV_KEY = pytest.StashKey[Environment]()
 
@@ -78,6 +79,10 @@ def pytest_configure(config):
     lg_env = config.option.lg_env
     lg_coordinator = config.option.lg_coordinator
     lg_target = config.option.lg_target
+
+    for arg in config.option.lg_var or []:
+        name, value = arg
+        add_var(name, value)
 
     if lg_env is None:
         if env_config is not None:

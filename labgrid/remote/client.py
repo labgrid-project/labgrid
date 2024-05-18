@@ -869,7 +869,7 @@ class ClientSession:
             if self.role is None:
                 self.role = find_role_by_place(self.env.config.get_targets(), place.name)
                 if self.role is not None:
-                    print(f"Selected role {self.role} from configuration file")
+                    logging.info(f"Selected role {self.role} from configuration file")
             target = self.env.get_target(self.role)
         if target:
             self.set_initial_state(target)

@@ -5,14 +5,19 @@ import time
 import attr
 
 from ..factory import target_factory
-from .common import Strategy, StrategyError, never_retry
+from .common import Strategy, StrategyError
 
 
 class Status(enum.Enum):
-    unknown = 0
-    off = 1
-    uboot = 2
-    shell = 3
+    """States supported by this strategy:
+
+        unknown: State is not known
+        off: Power is off
+        start: Board has started booting
+        uboot: Board has stopped at the U-Boot prompt
+        shell: Board has stopped at the Linux prompt
+    """
+    unknown, off, start, uboot, shell = range(5)
 
 
 @target_factory.reg_driver
@@ -24,6 +29,7 @@ class UBootStrategy(Strategy):
         "console": "ConsoleProtocol",
         "uboot": "UBootDriver",
         "shell": "ShellDriver",
+        "reset": {"ResetProtocol", None},
     }
 
     status = attr.ib(default=Status.unknown)
@@ -31,7 +37,21 @@ class UBootStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
-    @never_retry
+    def start(self):
+        """Start U-Boot, by powering on / resetting the board"""
+        self.target.activate(self.console)
+        if self.reset:
+            self.target.activate(self.reset)
+
+            # Hold in reset across the power cycle, to avoid booting the
+            # board twice
+            self.reset.set_reset_enable(True)
+        if self.reset != self.power:
+            self.power.cycle()
+
+        if self.reset:
+            self.reset.set_reset_enable(False)
+
     def transition(self, status):
         if not isinstance(status, Status):
             status = Status[status]
@@ -43,11 +63,11 @@ class UBootStrategy(Strategy):
             self.target.deactivate(self.console)
             self.target.activate(self.power)
             self.power.off()
-        elif status == Status.uboot:
+        elif status == Status.start:
             self.transition(Status.off)
-            self.target.activate(self.console)
-            # cycle power
-            self.power.cycle()
+            self.start()
+        elif status == Status.uboot:
+            self.transition(Status.start)
             start = time.time()
             # interrupt uboot
             self.target.activate(self.uboot)
@@ -66,7 +86,6 @@ class UBootStrategy(Strategy):
             raise StrategyError(f"no transition found from {self.status} to {status}")
         self.status = status
 
-    @never_retry
     def force(self, status):
         if not isinstance(status, Status):
             status = Status[status]

@@ -184,7 +184,29 @@ class Target:
             self.await_resources(found)
         return found[0]
 
-    def _get_driver(self, cls, *, name=None, resource=None, activate=True, active=False):
+    def _get_driver(self, cls, *, name=None, resource=None, active=False,
+                    activate=True):
+        """Find a single driver referenced by the target
+
+        Targets have a list of associated drivers. This method provides various
+        ways of looking up that list. The search fails if multiple drivers
+        match the criteria
+
+        Args:
+            cls (str): driver class to search for
+            name (str): name to use as a filter, or None
+            resource (Resource): resource to use as a filter, or None
+            active (bool): True to only return activated drivers, False to
+                return any matching driver
+            activate (bool): True to activate the driver once found
+
+        Returns:
+            Driver: driver found
+
+        Except:
+            NoDriverFoundError: No matching driver found or multiple matching
+                drivers found
+        """
         assert not (activate is True and active is True)
 
         found = []
@@ -247,24 +269,43 @@ class Target:
 
         Args:
             cls (str): driver class to search for
+            *: Note sure what this is for
             name (str): name to use as a filter, or None
             resource -- optional resource to use as a filter
-        Returns the active driver found, otherwise None.
+
+        Returns:
+            Driver: no matching (activated) driver found
+
+        Except:
+            NoDriverFoundError: No matching driver found, or multiple matching
+                drivers found
         """
-        return self._get_driver(cls, name=name, resource=resource, activate=False, active=True)
+        return self._get_driver(cls, name=name, resource=resource,
+                                active=True, activate=False)
 
     def get_driver(self, cls, *, name=None, resource=None, activate=True):
-        """
-        Helper function to get a driver of the target.
-        Returns the first valid driver found, otherwise None.
+        """Get the active driver of the target
 
-        Arguments:
-        cls -- driver-class to return as a resource
-        name -- optional name to use as a filter
-        resource -- optional resource to use as a filter
-        activate -- activate the driver (default True)
+        This looks for a driver of the given class (which can be a protocol)
+        which has already been activated. This useful when there are two drivers
+        providing a certain protocol, but only one is active at a time.
+
+        Args:
+            cls (str): driver class to search for
+            *: Note sure what this is for
+            name (str): name to use as a filter, or None
+            resource -- optional resource to use as a filter
+            activate (bool): True to activate the driver once found
+
+        Returns:
+            Driver: no matching driver found
+
+        Except:
+            NoDriverFoundError: No matching driver found, or multiple matching
+                drivers found
         """
-        return self._get_driver(cls, name=name, resource=resource, activate=activate)
+        return self._get_driver(cls, name=name, resource=resource,
+                                activate=activate)
 
     def get_strategy(self):
         """

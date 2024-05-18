@@ -37,7 +37,7 @@ def set_nonblocking(fd):
 @attr.s
 class ProcessWrapper:
     callbacks = attr.ib(default=attr.Factory(list))
-    loglevel = logging.INFO
+    loglevel = logging.DEBUG
 
     @step(args=['command'], result=True, tag='process')
     def check_output(self, command, *, print_on_silent_log=False, input=None,

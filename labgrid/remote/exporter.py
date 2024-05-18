@@ -277,7 +277,7 @@ class SerialPortExport(ResourceExport):
                 "-C",
                 f"{self.port}:telnet:0:{start_params['path']}:{self.local.speed} NONE 8DATABITS 1STOPBIT LOCAL",  # pylint: disable=line-too-long
             ]
-        self.logger.info("Starting ser2net with: %s", " ".join(cmd))
+        self.logger.debug("Starting ser2net with: %s", ' '.join(cmd))
         self.child = subprocess.Popen(cmd)
         try:
             self.child.wait(timeout=0.5)
@@ -1078,7 +1078,8 @@ class Exporter:
 
     async def add_resource(self, group_name, resource_name, cls, params):
         """Add a resource to the exporter and update status on the coordinator"""
-        print(f"add resource {group_name}/{resource_name}: {cls}/{params}")
+        logging.debug("add resource %s/%s: %s/%s", group_name, resource_name,
+                      cls, params)
         group = self.groups.setdefault(group_name, {})
         assert resource_name not in group
         export_cls = exports.get(cls, ResourceEntry)
@@ -1104,12 +1105,16 @@ class Exporter:
     async def update_resource(self, group_name, resource_name):
         """Update status on the coordinator"""
         resource = self.groups[group_name][resource_name]
+        logging.debug(resource)
+        data = resource.asdict()
+        logging.debug(data)
         msg = labgrid_coordinator_pb2.ExporterInMessage()
         msg.resource.CopyFrom(resource.as_pb2())
         msg.resource.path.group_name = group_name
         msg.resource.path.resource_name = resource_name
         self.out_queue.put_nowait(msg)
-        logging.info("queued update for resource %s/%s", group_name, resource_name)
+        logging.debug("queued update for resource %s/%s", group_name,
+                      resource_name)
 
 
 async def amain(config) -> bool:

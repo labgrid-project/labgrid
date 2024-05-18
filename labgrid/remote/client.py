@@ -834,7 +834,7 @@ class ClientSession:
                 if self.args.initial_state:
                     print(f"Setting initial state to {self.args.initial_state}")
                     strategy.force(self.args.initial_state)
-                print(f"Transitioning into state {self.args.state}")
+                logging.info("Transitioning into state %s", self.args.state)
                 strategy.transition(self.args.state)
                 # deactivate console drivers so we are able to connect with microcom later
                 try:
@@ -1011,7 +1011,9 @@ class ClientSession:
             if logfile:
                 logging.warning("--logfile option not supported by telnet, ignoring")
 
-        print(f"connecting to {resource} calling {' '.join(call)}")
+        if logfile:
+            call.append(f"--logfile={logfile}")
+        logging.info("connecting to %s calling %s", resource, ' '.join(call))
         try:
             p = await asyncio.create_subprocess_exec(*call)
         except FileNotFoundError as e:
@@ -2205,7 +2207,7 @@ def main():
                 if not role:
                     print(f"RemotePlace {args.place} not found in configuration file", file=sys.stderr)
                     exit(1)
-                print(f"Selected role {role} from configuration file")
+                logging.info("Selected role %s from configuration file", role)
         else:
             role, args.place = find_any_role_with_place(env.config.get_targets())
             if not role:

@@ -1,4 +1,6 @@
 import enum
+import sys
+import time
 
 import attr
 
@@ -45,8 +47,13 @@ class UBootStrategy(Strategy):
             self.target.activate(self.console)
             # cycle power
             self.power.cycle()
+            start = time.time()
             # interrupt uboot
             self.target.activate(self.uboot)
+            output = self.console.read_output()
+            sys.stdout.buffer.write(output)
+            duration = time.time() - start
+            print(f'\n{{lab ready in {duration:.1f}s: {self.uboot.version}}}')
         elif status == Status.shell:
             # transition to uboot
             self.transition(Status.uboot)

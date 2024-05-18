@@ -46,3 +46,8 @@ class HIDRelayDriver(Driver, DigitalOutputProtocol):
         if self.relay.invert:
             status = not status
         return status
+
+    @Driver.check_active
+    @step()
+    def set_enable(self, enable):
+        self.set(enable)

@@ -3881,6 +3881,7 @@ A :any:`UBootStrategy` has five states:
 
 - unknown: State is not known
 - off: Power is off
+- bootstrap: U-Boot has been written to the board
 - start: Board has started booting
 - uboot: Board has stopped at the U-Boot prompt
 - shell: Board has stopped at the Linux prompt
@@ -3925,6 +3926,25 @@ the "shell" state:
 This command would transition from the bootloader into a Linux shell and
 activate the `ShellDriver`_. Any console output received in booting U-Boot iself
 will be written to the terminal.
+
+To see U-Boot booting you can select the `start` strategy with the
+`labgrid-client -s start console` command. It will boot up and show you the
+console.
+
+This strategy supports writing to the board's boot media using an SD mux such as
+`USBSDWireDevice`_. If you wish to write U-Boot to the board before starting it,
+set the `do-bootstrap` variable and see `UBootWriterDriver`_ for more details:
+
+.. code-block:: bash
+
+   labgrid-client -V do-bootstrap 1 -s start console
+
+To build U-Boot from source before writing it, set the `do-build` variable and
+see `UBootProviderDriver`_ for more details.
+
+.. code-block:: bash
+
+   labgrid-client -V do-build 1 -V do-bootstrap 1 -V do-send 1 -s start console
 
 DockerStrategy
 ~~~~~~~~~~~~~~

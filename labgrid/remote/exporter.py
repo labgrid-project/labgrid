@@ -950,6 +950,7 @@ class Exporter:
 
         self.verbose = config['verbose']
         self.poll_task = None
+        self.resource_count = 0
 
         self.groups = {}
 
@@ -992,6 +993,7 @@ class Exporter:
 
         logging.info("creating poll task")
         self.poll_task = self.loop.create_task(self.poll())
+        print(f'Exporting completed ({self.resource_count} resources)')
 
         (done, pending) = await asyncio.wait((self.pump_task, self.poll_task), return_when=asyncio.FIRST_COMPLETED)
         logging.debug("task(s) %s exited, shutting down exporter", done)
@@ -1146,7 +1148,9 @@ class Exporter:
                 "proxy": getfqdn(),
                 "proxy_required": proxy_req,
             }
-            group[resource_name] = export_cls(config)
+            resource = export_cls(config)
+            group[resource_name] = resource
+        self.resource_count += 1
         await self.update_resource(group_name, resource_name)
 
     async def update_resource(self, group_name, resource_name):

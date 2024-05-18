@@ -1791,6 +1791,13 @@ def main():
         help="strategy state to switch into before command (default: value from env varibale LG_STATE)",
     )
     parser.add_argument(
+        '-a',
+        '--acquire',
+        action='store_true',
+        default=False,
+        help="acquire place before starting and release after finishing"
+    )
+    parser.add_argument(
         '-r',
         '--role',
         type=str,
@@ -2236,13 +2243,24 @@ def main():
 
             try:
                 if asyncio.iscoroutinefunction(args.func):
+                    auto_release = False
                     if getattr(args.func, "needs_target", False):
+                        if args.acquire:
+                            place = session.get_place(args.place)
+                            if not place.acquired:
+                                args.allow_unmatched = True
+                                coro = session.acquire()
+                                session.loop.run_until_complete(coro)
+                                auto_release = True
                         place = session.get_acquired_place()
                         target = session._get_target(place)
                         coro = args.func(session, place, target)
                     else:
                         coro = args.func(session)
                     session.loop.run_until_complete(coro)
+                    if auto_release:
+                        coro = session.release()
+                        session.loop.run_until_complete(coro)
                 else:
                     args.func(session)
             finally:

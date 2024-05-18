@@ -904,6 +904,7 @@ class Exporter:
         self.out_queue = asyncio.Queue()
         self.pump_task = None
 
+        self.verbose = config['verbose']
         self.poll_task = None
 
         self.groups = {}
@@ -918,7 +919,9 @@ class Exporter:
             "hostname": self.hostname,
             "name": self.name,
         }
-        resource_config = ResourceConfig(self.config["resources"], config_template_env)
+        resource_config = ResourceConfig(self.config["resources"],
+                                         config_template_env,
+                                         verbose=self.verbose)
         for group_name, group in resource_config.data.items():
             group_name = str(group_name)
             for resource_name, params in group.items():
@@ -1165,6 +1168,13 @@ def main():
     parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
     parser.add_argument(
         "--pystuck-port", metavar="PORT", type=int, default=6667, help="use a different pystuck port than 6667"
+        )
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        action='store_true',
+        default=False,
+        help="enable verbose mode"
     )
     parser.add_argument("resources", metavar="RESOURCES", type=str, help="resource config file name")
 
@@ -1178,6 +1188,7 @@ def main():
         "resources": args.resources,
         "coordinator": args.coordinator,
         "isolated": args.isolated,
+        "verbose": args.debug,
     }
 
     print(f"exporter name: {config['name']}")

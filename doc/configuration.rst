@@ -3922,7 +3922,8 @@ the "shell" state:
    >>> s.transition("shell")
 
 This command would transition from the bootloader into a Linux shell and
-activate the `ShellDriver`_.
+activate the `ShellDriver`_. Any console output received in booting U-Boot iself
+will be written to the terminal.
 
 DockerStrategy
 ~~~~~~~~~~~~~~

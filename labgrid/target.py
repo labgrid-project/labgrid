@@ -185,7 +185,7 @@ class Target:
         return found[0]
 
     def _get_driver(self, cls, *, name=None, resource=None, active=False,
-                    activate=True):
+                    activate=True, allow_missing=False):
         """Find a single driver referenced by the target
 
         Targets have a list of associated drivers. This method provides various
@@ -198,14 +198,17 @@ class Target:
             resource (Resource): resource to use as a filter, or None
             active (bool): True to only return activated drivers, False to
                 return any matching driver
+            allow_missing (bool): True to allow the driver to be missing,
+                in which case None is returned
             activate (bool): True to activate the driver once found
 
         Returns:
-            Driver: driver found
+            Driver: driver found, or None if there is none and allow_missing is
+                True
 
         Except:
-            NoDriverFoundError: No matching driver found or multiple matching
-                drivers found
+            NoDriverFoundError: No matching driver found (and allow_missing is
+                False), or multiple matching drivers found
         """
         assert not (activate is True and active is True)
 
@@ -226,6 +229,8 @@ class Target:
                 continue
             found.append(drv)
         if not found:
+            if allow_missing:
+                return None
             name_msg = f" named '{name}'" if name else ""
             if other_names:
                 raise NoDriverFoundError(
@@ -283,7 +288,8 @@ class Target:
         return self._get_driver(cls, name=name, resource=resource,
                                 active=True, activate=False)
 
-    def get_driver(self, cls, *, name=None, resource=None, activate=True):
+    def get_driver(self, cls, *, name=None, resource=None, activate=True,
+                   allow_missing=False):
         """Get the active driver of the target
 
         This looks for a driver of the given class (which can be a protocol)
@@ -296,6 +302,8 @@ class Target:
             name (str): name to use as a filter, or None
             resource -- optional resource to use as a filter
             activate (bool): True to activate the driver once found
+            allow_missing (bool): True to allow the driver to be missing,
+                in which case None is returned
 
         Returns:
             Driver: no matching driver found
@@ -305,7 +313,7 @@ class Target:
                 drivers found
         """
         return self._get_driver(cls, name=name, resource=resource,
-                                activate=activate)
+                                activate=activate, allow_missing=allow_missing)
 
     def get_strategy(self):
         """

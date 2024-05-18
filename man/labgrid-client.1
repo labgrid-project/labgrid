@@ -39,7 +39,7 @@ This is the client to control a boards status and interface with it on remote ma
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client [\-x ADDRESS] [\-c CONFIG] [\-p PLACE] [\-s STATE]
+usage: labgrid\-client [\-x ADDRESS] [\-c CONFIG] [\-p PLACE] [\-s STATE] [\-a]
                       [\-i INITIAL_STATE] [\-d] [\-v] [\-P PROXY]
                       COMMAND ...
 .EE
@@ -64,6 +64,11 @@ place name/alias (default: value from env variable LG_PLACE)
 .TP
 .B \-s <state>, \-\-state <state>
 strategy state to switch into before command (default: value from env varibale LG_STATE)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-a, \-\-acquire
+acquire place before starting and release after finishing
 .UNINDENT
 .INDENT 0.0
 .TP

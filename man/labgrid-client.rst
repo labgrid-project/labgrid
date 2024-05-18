@@ -48,6 +48,8 @@ OPTIONS
 -i INITIAL_STATE, --initial-state INITIAL_STATE
     strategy state to force into before switching to desired state, requires a
     desired state (``-s``/``--state``/``LG_STATE``)
+-a, --acquire
+    acquire the place before performing the requested operation
 -d, --debug
     enable debugging
 -v, --verbose

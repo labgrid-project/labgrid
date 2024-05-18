@@ -17,6 +17,35 @@ from .factory import target_factory
 
 @attr.s(eq=False)
 class Target:
+    """Target device (DUT)
+
+    Implements a target device which has a select of resources and drivers
+    attached.
+
+    Attributes:
+        name (str): Name of the target, e.g. 'samus'
+        env (Environment): Environment object containing various settings
+        var_dict (dict): Dictionary of variables provided from cmdline:
+            key (str): variable name
+            value (str): variable value
+        log (logging.Logger): Logger to use for logging output
+        resources (list of Resource): Resources attached to this target
+        drivers (list of Driver): Drivers attached to this target
+        last_update (int): Monotonic time of last call to update_resources(),
+            used to ensure that updates happen no more than 10 times a second
+        _binding_map (dict): Maps resources used by the target to a member name:
+            key (str): Name of binding, .e.g. 'power'
+            value (Driver): Driver to use for this binding, e.g. 'PowerProtocol'
+
+            Note that this is set by set_binding_map() and emptied when
+            bind_driver() is called.
+        _lookup_table (dict): Maps resource names to their classes:
+            key (str): Resource-class name
+            value (Resource): Associated resource class
+
+            Note that this does not appear to be used in Labgrid, even though
+            it is maintained.
+    """
     name = attr.ib(validator=attr.validators.instance_of(str))
     env = attr.ib(default=None)
     var_dict = attr.ib(default={})
@@ -210,14 +239,17 @@ class Target:
         return found[0]
 
     def get_active_driver(self, cls, *, name=None, resource=None):
-        """
-        Helper function to get the active driver of the target.
-        Returns the active driver found, otherwise None.
+        """Get the active driver of the target
 
-        Arguments:
-        cls -- driver-class to return as a resource
-        name -- optional name to use as a filter
-        resource -- optional resource to use as a filter
+        This looks for a driver of the given class (which can be a protocol)
+        which has already been activated. This useful when there are two drivers
+        providing a certain protocol, but only one is active at a time.
+
+        Args:
+            cls (str): driver class to search for
+            name (str): name to use as a filter, or None
+            resource -- optional resource to use as a filter
+        Returns the active driver found, otherwise None.
         """
         return self._get_driver(cls, name=name, resource=resource, activate=False, active=True)
 

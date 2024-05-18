@@ -3877,12 +3877,13 @@ activate the `ShellDriver`_.
 
 UBootStrategy
 ~~~~~~~~~~~~~
-A :any:`UBootStrategy` has four states:
+A :any:`UBootStrategy` has five states:
 
-- unknown
-- off
-- uboot
-- shell
+- unknown: State is not known
+- off: Power is off
+- start: Board has started booting
+- uboot: Board has stopped at the U-Boot prompt
+- shell: Board has stopped at the Linux prompt
 
 Here is an example environment config:
 

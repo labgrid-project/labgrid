@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Usage
+# . lg-env                    (set lab environment variables)
+
+# Set the lab parameters (replace these with your own)
+export LG_COORDINATOR=kea:20408
+export LG_ENV=/vid/software/devel/ubtest/lab/cfg/env.cfg
+export UB_TEST_HOOKS=/vid/software/devel/ubtest/u-boot-test-hooks
+export LG_CONSOLE=internal

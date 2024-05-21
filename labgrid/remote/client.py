@@ -1530,7 +1530,19 @@ class ClientSession:
 
     export.needs_target = True
 
-    def print_version(self):
+    async def query(self, place, target):
+        for item in self.args.items:
+            cls_name, names = item.split(':')
+            drv = target.get_driver(cls_name)
+            for name in names.split(','):
+                val = drv.query_info(name)
+                if self.args.show_name:
+                    print(f'{cls_name}:{name} {val}')
+                else:
+                    print(f'{val}')
+    query.needs_target = True
+
+    def print_version(self, target):
         print(labgrid_version())
 
 
@@ -1987,6 +1999,13 @@ def main():
     )
     subparser.add_argument("filename", help="output filename")
     subparser.set_defaults(func=ClientSession.export)
+
+    subparser = subparsers.add_parser('query', help="query information")
+    subparser.add_argument("-n", "--show-name", action="store_true",
+                           help="use name:value format")
+    subparser.add_argument('items', type=str, nargs='*',
+                           help='item to query (class:name)')
+    subparser.set_defaults(func=ClientSession.query)
 
     subparser = subparsers.add_parser("version", help="show version")
     subparser.set_defaults(func=ClientSession.print_version)

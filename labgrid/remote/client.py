@@ -1575,6 +1575,28 @@ class ClientSession:
 
     export.needs_target = True
 
+    def query(self, place, target):
+        for item in self.args.items:
+            if ':' not in item:
+                raise UserError(f"{item}: Expected Driver:name[,name...]")
+            cls_name, names = item.split(':')
+            drv = target.get_driver(cls_name)
+
+            # Collect all values before we print anything
+            values = OrderedDict()
+            for name in names.split(','):
+                values[name] = drv.query_info(name)
+
+            for name, val in values.items():
+                if val is None:
+                    val = ''
+                if self.args.show_name:
+                    print(f'{cls_name}:{name} {val}')
+                else:
+                    print(f'{val}')
+
+    query.needs_target = True
+
     def print_version(self):
         print(labgrid_version())
 
@@ -2098,6 +2120,13 @@ def main():
     )
     subparser.add_argument("filename", help="output filename")
     subparser.set_defaults(func=ClientSession.export)
+
+    subparser = subparsers.add_parser('query', help="query information")
+    subparser.add_argument("-n", "--show-name", action="store_true",
+                           help="use name:value format")
+    subparser.add_argument('items', type=str, nargs='*',
+                           help='item to query (class:name)')
+    subparser.set_defaults(func=ClientSession.query)
 
     subparser = subparsers.add_parser("version", help="show version")
     subparser.set_defaults(func=ClientSession.print_version)

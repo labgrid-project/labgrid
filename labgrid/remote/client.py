@@ -705,7 +705,7 @@ class ClientSession:
         try:
             await self.stub.AcquirePlace(request)
             await self.sync_with_coordinator()
-            print(f"acquired place {place.name}")
+            logging.info("acquired place %s", place.name)
         except grpc.aio.AioRpcError as e:
             # check potential failure causes
             for exporter, groups in sorted(self.resources.items()):
@@ -749,7 +749,7 @@ class ClientSession:
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
 
-        print(f"released place {place.name}")
+        logging.info("released place %s", place.name)
 
     async def release_from(self):
         """Release a place, but only if acquired by a specific user"""

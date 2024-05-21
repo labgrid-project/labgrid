@@ -234,10 +234,45 @@ class TestNetworkPowerDriver:
         expected_host = f"{host}/relay/{index}"
         url = urlparse(expected_host)
         if url.port is None:
-            implicit_port = 443 if url.scheme == 'https' else 80
-            expected_host = expected_host.replace(url.netloc, f'{url.netloc}:{implicit_port}')
+            implicit_port = 443 if url.scheme == "https" else 80
+            expected_host = expected_host.replace(
+                url.netloc, f"{url.netloc}:{implicit_port}"
+            )
 
         get.assert_called_with(expected_host)
+
+    def test_create_ubus_backend(self, target, mocker):
+        post = mocker.patch("requests.post")
+        post.return_value.json.return_value = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": [
+                0,
+                {
+                    "firmware": "v80.1",
+                    "budget": 77.000000,
+                    "consumption": 1.700000,
+                    "ports": {
+                        "lan1": {
+                            "priority": 0,
+                            "mode": "PoE+",
+                            "status": "Delivering power",
+                            "consumption": 1.700000,
+                        }
+                    },
+                },
+            ],
+        }
+
+        index = "1"
+        NetworkPowerPort(
+            target, "power", model="ubus", host="http://example.com/ubus", index=index
+        )
+        d = NetworkPowerDriver(target, "power")
+        target.activate(d)
+
+        d.cycle()
+        assert d.get() is True
 
     def test_import_backends(self):
         import labgrid.driver.power
@@ -253,6 +288,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.sentry
         import labgrid.driver.power.eg_pms2_network
         import labgrid.driver.power.shelly_gen1
+        import labgrid.driver.power.ubus
 
     def test_import_backend_eaton(self):
         pytest.importorskip("pysnmp")

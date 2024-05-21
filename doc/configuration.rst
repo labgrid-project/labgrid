@@ -234,6 +234,10 @@ Currently available are:
 ``poe_mib``
   Controls PoE switches using the PoE SNMP administration MiBs.
 
+``ubus``
+  Controls *PoE switches* running OpenWrt using the *ubus* interface.
+  Further infromation available at <https://openwrt.org/docs/techref/ubus>
+
 Used by:
   - `NetworkPowerDriver`_
 

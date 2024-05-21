@@ -2021,6 +2021,8 @@ Arguments:
   - login_timeout (int, default=60): timeout for password/login prompt detection
   - for other arguments, see `UBootDriver`_
 
+.. _UBootProviderInfo:
+
 UBootProviderDriver
 ~~~~~~~~~~~~~~~~~~~
 
@@ -2064,6 +2066,11 @@ Variables:
     specified in the environment file
   - do-clean (str): If set to "1" this cleans the build before starting,
     otherwise it does an incremental build
+  - build-dir (str): If set, this is used as the build directory for U-Boot
+  - process-limit (int): Limits the number of buildman processes which can
+    be running jobs at once. Set this to 1 to avoid over-taxing your
+    CPU. Buildman does its own multithreading, so each process will use
+    all available CPUs anyway.
 
 Environment variables:
   - U_BOOT_BUILD_DIR (str): If present, this is used as the build directory for
@@ -2114,6 +2121,8 @@ Tools:
 
    tools:
      buildman: "buildman.stable"
+
+.. _UBootWriterInfo:
 
 UBootWriterDriver
 ~~~~~~~~~~~~~~~~~
@@ -3874,6 +3883,8 @@ the "shell" state:
 
 This command would transition directly into a Linux shell and
 activate the `ShellDriver`_.
+
+.. _UBootStrategyInfo:
 
 UBootStrategy
 ~~~~~~~~~~~~~

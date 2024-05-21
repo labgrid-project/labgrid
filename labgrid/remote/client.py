@@ -1568,6 +1568,20 @@ def find_role_by_place(config, place):
             return role
     return None
 
+def find_role(config, role, place):
+    role_config = config.get(role)
+    if not role_config:
+        print(f'Role {role} not found')
+        return None, None
+    resources, _ = target_factory.normalize_config(role_config)
+    remote_places = resources.get('RemotePlace', {})
+    if not place:
+        place = next(iter(remote_places.keys()))
+    elif place not in remote_places:
+        print(f'No place {place} in role {role} (have {remote_places.keys()})')
+        return None, None
+
+    return role, place
 
 def find_any_role_with_place(config):
     for role, role_config in config.items():
@@ -1651,6 +1665,12 @@ def main():
     parser.add_argument("-c", "--config", type=str, default=os.environ.get("LG_ENV"), help="config file")
     parser.add_argument("-p", "--place", type=str, default=place, help="place name/alias")
     parser.add_argument("-s", "--state", type=str, default=state, help="strategy state to switch into before command")
+    parser.add_argument(
+        '-r',
+        '--role',
+        type=str,
+        help="role name/alias"
+    )
     parser.add_argument(
         "-i",
         "--initial-state",
@@ -2040,7 +2060,13 @@ def main():
 
     role = None
     if args.command != "reserve" and env and env.config.get_targets():
-        if args.place:
+        if args.role:
+            role, args.place = find_role(env.config.get_targets(), args.role,
+                                         args.place)
+            if not role:
+                print(f"No role '{args.role}' found in environemnt")
+                exit(1)
+        elif args.place:
             if not args.place.startswith("+"):
                 role = find_role_by_place(env.config.get_targets(), args.place)
                 if not role:

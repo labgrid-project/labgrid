@@ -38,6 +38,8 @@ OPTIONS
     display command line help
 -p PLACE, --place PLACE
     specify the place to operate on
+-p ROLE, --role ROLE
+    specify the role to operate on
 -x URL, --crossbar URL
     the crossbar url of the coordinator, defaults to ``ws://127.0.0.1:20408/ws``
 -c CONFIG, --config CONFIG

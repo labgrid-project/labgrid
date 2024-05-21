@@ -888,3 +888,393 @@ like this:
   $ labgrid-client -p example allow sirius/john
 
 To remove the allow it is currently necessary to unlock and lock the place.
+
+U-Boot Integration
+------------------
+
+.. note::
+   See status_ for current status and development branches.
+
+Most ARM boards (and some others) use U-Boot as their bootloader. Labgrid
+provides various features to help with development and testing on these boards.
+Together these features allow interactive use of Labgrid to build U-Boot from
+source, write it to a board and boot it. Support is provided for U-Boot's pytest
+and Gitlab setup.
+
+This section describes the various features which contribute to the overall
+functionality. The names of contributed scripts (in *contrib/u-boot*) are shown
+in brackets.
+
+Compatibility
+~~~~~~~~~~~~~
+
+This integration mostly does not require special support in U-Boot's pytest
+system, but it does benefit from it. Specifically, newer U-Boot versions
+understand the Labgrid concept of a role (corresponding to --board-identity in
+test.py), which simplifies the integration.
+
+Also, with newer U-Boot versions, the following features are available:
+
+- Support for pytest with boards needing multiple U-Boot builds, e.g. Beagleplay
+- A special 'Lab mode' lets Labgrid handle detecting the U-Boot banner and
+  stopping autoboot, thus avoiding SPL banner counting and other complexities
+  in test.py
+- Dead connections are detected quickly and cause testing to halt, thus avoiding
+  hour-long delays when a board in the lab is just broken
+- The double echo on start-up is resolved, which can cause pytest to fail,
+  thinking that U-Boot is not responding. For example, when pytest sends
+  "version", the first three characters may be echoed by the PTY before Labgrid
+  puts it into no-echo mode; when it finally does, U-Boot echos "version" and
+  the result is that pytest sees "verversion" and fails.
+
+Interactive use
+~~~~~~~~~~~~~~~
+
+Labgrid provides a 'console' command which can be used to connect to a board.
+The :ref:`UBootStrategyInfo` driver provides a way to power cycle (or reset)
+the board so that U-Boot starts. It also provides two useful states:
+
+- `start` which starts up U-Boot and lets it boot (*ub-int*)
+- `uboot` which starts up U-Boot and stops it at the CLI prompt (*ub-cli*)
+
+Both of these are useful in development.
+
+Building U-Boot
+~~~~~~~~~~~~~~~
+
+Labgrid intentionally
+`doesn't include <https://github.com/labgrid-project/labgrid/issues/1068>`_
+build functionality as usually the software-under-test already comes with a
+build system and it wants to test the artifacts as built by the "real" build
+system.
+
+U-Boot is no exception and it provides the
+`buildman <https://docs.u-boot.org/en/latest/build/buildman.html>`_ for this
+purpose.
+
+Still, for interactive use some sort of build is needed. The
+:ref:`UBootProviderInfo` provides an interface to buildman and a way of dealing
+with board-specific binary blobs. The buildman tool works automatically provided
+that you have set it up with suitable toolchains. See
+`buildman <https://docs.u-boot.org/en/latest/build/buildman.html>`_ for more
+information.
+
+Writing U-Boot
+~~~~~~~~~~~~~~
+
+Writing U-Boot to a board can be complicated, because each SoC uses its own
+means of booting. The other problem is that special lab hardware is generally
+needed to update the boot device, e.g.
+`SD-wire <https://wiki.tizen.org/SD_MUX>`_.
+
+Fortunately Labgrid provides the means for manipulating the lab hardware. All
+that is needed is a driver which understands where to write images, which files
+to use and the sequence to use in each case. The :ref:`UBootWriterInfo` driver
+handles this. It picks out the necessary files from a build directory and writes
+them to the selected boot media, or sends them using the SoC-specific bootrom.
+Combined with :ref:`UBootStrategyInfo` it provides automated updating of U-Boot
+on suported SoCs regardless of the lab setup.
+
+Run labgrid tests
+~~~~~~~~~~~~~~~~~
+
+Labgrid provides integration with pytest. As part of the U-Boot integration, a
+conftest.py file is provided which can build and smoke-test U-Boot on a board
+(*ub-smoke*).
+
+Run U-Boot tests
+~~~~~~~~~~~~~~~~~
+
+It is also possible to run the U-Boot tests (*ub-pyt*). To do this you will need
+to set up Labgrid integration with the
+`U-Boot test hooks <https://source.denx.de/u-boot/u-boot-test-hooks>`_.
+To do this, create the directory `u-boot-test-hooks/bin/$hostname` and add an
+executable file called `common.labgrid` which sets the crossbar and environment
+information:
+
+.. code-block:: bash
+
+    export LG_CROSSBAR="ws://kea:20408/ws"
+    export LG_ENV="/path/to/env.cfg"
+
+    flash_impl=none
+    reset_impl=none
+    console_impl=labgrid
+    release_impl=labgrid
+
+The last four lines tell the hooks to use labgrid.
+
+Then create another executable file (in the same directory) called 'conf.all',
+containing:
+
+.. code-block:: bash
+
+    . "${bin_dir}/${hostname}/common-labgrid"
+
+Bisecting
+~~~~~~~~~
+
+It is possible to use the *ub-pyt* or *ub-smoke* scripts with `git bisect run`
+to bisect a problem on a particular board. However there is a slightly more
+powerful script which supports applying a commit each time (*ub-bisect*).
+
+Setting up pytest
+~~~~~~~~~~~~~~~~~
+
+To set up the U-Boot pytest integration:
+
+#. Copy the `contrib/u-boot` directory to somewhere suitable and add it to your
+   path. For example:
+
+.. code-block:: bash
+
+      cp -a contrib/u-boot ~/bin/u-boot
+      echo 'PATH="$PATH:~/bin/u-boot"' >> ~/.bashrc
+
+#. Edit the `lg-env` file to set the lab parameters according to your setup.
+#. Start a new terminal, or login again, so the path updates. You can now use
+   the scripts as documented below.
+
+Note that the ub-pyt scripts must be run from the U-Boot source directory, since
+it uses files in the test/py directory.
+
+Script usage
+~~~~~~~~~~~~
+
+The scripts are intended to run inside the U-Boot source directory, alongside
+normal U-Boot development. For example::
+
+    ub-int play
+
+builds U-Boot for 'play' (which must be defined in your environment file), loads
+it onto the board and starts an interactive session. An internal terminal is
+used by default, use press Ctrl-] twice (quickly) to exit.
+
+The U-Boot 'strategy' within Labgrid handles most of the complexity. The scripts
+are really just an interface to labgrid-client. When bootstrapping U-Boot onto a
+board, some directories are needed in your environment::
+
+    paths:
+      uboot_build_base: "/tmp/b"
+      uboot_workdirs: "/tmp/b/workdirs"
+      uboot_source: "/home/sglass/dev/u-boot"
+
+    tools:
+      buildman: "buildman"
+      servod: "/tools/standalone-hdctools/servod"
+      dut-control: "/tools/standalone-hdctools/dut-control"
+
+Builds are stored in a target subdirectory of uboot_build_base, so the target
+'play' would be built in /tmp/b/play in this example. Each board has its own
+directory so that incremental building works correctly and the existing build
+can be reused. A workdir is created (here in /tmp/b/workdirs/play) if you
+specify a patch to add to the build. The last two tools relate to the ChromiumOS
+Servo board.
+
+The uboot_source directory points to the U-Boot source code which is built.
+
+The integration uses the concept of a role to encapsule both the target being
+used and the environment attached to it. This allows the same target  to be
+mentioned twice in the environment, each with different settings. For example,
+a target which can support two differents U-Boot boards (such as Samus, which
+has chromebook_samus and chromebook_samus_tpl) can be invoked with either.
+
+Various flags are available in the different tools - use '-h' to get help.
+
+The normal case (with no flags) is to build, bootstrap, power on/reset and
+connect to the board. This uses UBootStrategy 'start' to get things running,
+then selects 'off' when done.
+
+For example::
+
+  $ ub-int play
+  Building U-Boot in sourcedir for am62x_beagleplay_a53
+  Building U-Boot in sourcedir for am62x_beagleplay_r5
+  Bootstrapping U-Boot from dir /tmp/b/am62x_beagleplay_a53 /tmp/b/am62x_beagleplay_r5
+  Writing U-Boot using method ti,am625
+
+  U-Boot SPL 2024.10-rc3-00327-g428ab736ed5a (Aug 28 2024 - 06:30:35 -0600)
+  SYSFW ABI: 3.1 (firmware rev 0x0009 '9.2.8--v09.02.08 (Kool Koala)')
+  Changed A53 CPU frequency to 1250000000Hz (T grade) in DT
+  ...
+  Ctrl-] Ctrl-]
+  (board powers off)
+
+You can use -R to avoid any building/bootstrapping or even resetting the board:
+it just connects to the running board, assuming it is powering out. The -T
+option handles power and reset, but does not build or bootstrap, so normally the
+board will start up the version of U-Boot already installed. Use -B to skip the
+build but do the bootstrap and power/reset. The existing build will be
+bootstrapped onto the board. The -d option is useful here, since it lets you
+specify the build directory to use.
+
+To perform a clean build using 'make mrproper', use the -c flag. Normally,
+bootstrapping uses the device's storage, e.g. using an SD-Wire mux, but the -s
+option sends U-Boot over USB instead. For this to work, the board needs a USB
+connection and a BootstrapProtocol driver (e.g. MXSUSBDriver).
+
+Use the -l option to log the console output to a file. Since U-Boot normally
+echoes its input, this should provide the full session log.
+
+To see a bit more of what is going on under the hood, the -v (verbose) and
+-d (debug) flags can be useful.
+
+The above flags can be used when running tests as well, for example::
+
+    ub-pyt -B play help or bdinfo
+
+Note that when testing U-Boot versions without the pytest enhancements, some
+options may not be available, e.g.
+
+Gitlab Integration
+~~~~~~~~~~~~~~~~~~
+
+U-Boot uses `Gitlab <https://gitlab.com>`_ as the basis for its Continuous
+Integration (CI) system (`U-Boot instance <https://source.denx.de/u-boot>`_).
+It is possible to set up your own lab which integrates with Gitlab, with your
+own Git lab 'runner' which can control Labgrid. This allows pushing branches to
+Gitlab and running tests on real hardware, similarly to how QEMU is used in
+Gitlab.
+
+To set this up:
+
+#. Install `gitlab-runner` using these
+   `instructions <https://docs.gitlab.com/runner/install/linux-repository.html>`_.
+
+#. Register a
+   `new runner <https://docs.gitlab.com/ee/tutorials/create_register_first_runner>`_
+   following the instructions using your custodian CI settings (i.e. do this at
+   `https://source.denx.de`).
+
+   Select Linux and with tags set to `lab`. Click `Create runner` and use the
+   command line to register the runner. Use `<hostname>-lab` (for example
+   `kea-lab`) as your host name and select `shell` as the executor:
+
+   .. code-block:: console
+
+       $ gitlab-runner register  --url https://source.denx.de  --token glrt-xxx
+       Enter the GitLab instance URL (for example, https://gitlab.com/):
+       [https://source.denx.de]:
+       Verifying runner... is valid                        runner=yyy
+       Enter a name for the runner. This is stored only in the local config.toml file:
+       [<hostname>]: <hostname>-lab
+       Enter an executor: ssh, parallels, docker-windows, docker+machine, kubernetes, instance, custom, shell, virtualbox, docker, docker-autoscaler:
+       shell
+       Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded!
+
+#. Edit the resulting `/etc/gitlab-runner/config.toml` file to allow more than
+   one job at a time by adding 'concurrent = x' where x is the number of jobs.
+   Here we use concurrent = 8 (this is just an example; don't replace your file
+   with this):
+
+   .. code-block:: toml
+
+       concurrent = 8
+       check_interval = 0
+       shutdown_timeout = 0
+
+       [session_server]
+         session_timeout = 1800
+
+       [[runners]]
+         name = "ellesmere-lab"
+         url = "https://source.denx.de"
+         id = 130
+         token = "..."
+         token_obtained_at = 2024-05-15T20:41:29Z
+         token_expires_at = 0001-01-01T00:00:00Z
+         executor = "shell"
+         [runners.custom_build_dir]
+
+#. Gitlab will run tests as the 'gitlab-runner' user. Make sure your labgrid
+   installation is installed such that it is visible to that user. One way is:
+
+   .. code-block:: bash
+
+       sudo su - gitlab-runner
+       cd /path/to/labgrid
+       pip install .
+
+#. Add the following to U-Boot's `.gitlab-ci.yml`, adjusting the variables as
+   needed. For trying it out initially you might want to disable all the other
+   rules by changing `when: always` to `when: never`:
+
+   .. code-block:: yaml
+
+       .lab_template: &lab_dfn
+         stage: lab
+         tags: [ 'lab' ]
+         script:
+           # Environment:
+           #   SRC  - source tree
+           #   ROOT - directory above that
+           #   OUT  - output directory for builds
+           - export SRC="$(pwd)"
+           - ROOT="$(dirname ${SRC})"
+           - export OUT="${ROOT}/out"
+           - export PATH=$PATH:~/bin
+           - export PATH=$PATH:/vid/software/devel/ubtest/u-boot-test-hooks/bin
+
+           # Load it on the device
+           - ret=0
+           - echo "board ${BOARD} id ${ID}"
+           - ${SRC}/test/py/test.py -B "${BOARD}" --id ${ID} --configure
+               --build-dir "${OUT}/current/${BOARD}" -k "not bootstd"|| ret=$?
+           - if [[ $ret -ne 0 ]]; then
+               exit $ret;
+             fi
+
+       rpi3:
+         variables:
+           BOARD: rpi_3_32b     ## This is a U-Boot board name
+           ID: rpi3             ## This is the corresponding role/target
+         <<: *lab_dfn
+
+#. Commit your changes and push to your custodian tree. This example shows the
+   driver model tree at a remote called 'dm':
+
+   .. code-block:: bash
+
+       $ git remote -v |grep dm
+       dm       git@source.denx.de:u-boot/custodians/u-boot-dm.git (fetch)
+       dm       git@source.denx.de:u-boot/custodians/u-boot-dm.git (push)
+       $ git push dm HEAD:try
+
+#. Navigate to the pipelines and you should see your tests running. You can
+   debug things from there, e.g. using the `ub-int` or `ub-pyt` scripts on an
+   individual board. An example may be visible
+   `here <https://source.denx.de/u-boot/custodians/u-boot-dm/-/pipelines/20769>`_.
+
+Scripts
+~~~~~~~
+
+Various scripts are provided in the `contrib/` directory, specifically targeted
+at U-Boot testing and development.
+
+.. include:: ../contrib/u-boot/index.rst
+
+
+.. _status:
+
+U-Boot Integration Status
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Date: May '24
+Overall status: Ready for early testing
+
+Required pieces:
+
+- `Labgrid WIP PR <https://github.com/sjg20/labgrid/tree/u-boot-integration>`_
+- `U-Boot test hooks branch <https://github.com/sjg20/uboot-test-hooks/tree/labgrid>`_
+- `U-Boot branch <https://github.com/sjg20/u-boot/tree/labgrid>`_ (needed for
+  U-Boot pytest integration)
+
+Testing has been very limited, basically a set of 21 boards, including sunxi,
+rpi, RK3399, ODroid-C4, pine64, Orange Pi PC, various Chromebooks and Intel
+Minnowboard Max.
+
+Some U-Boot pytests fails on some hardware:
+- TPM tests fail on boards with a TPM
+- test_log_format fails on several (perhaps all?) boards
+
+There are likely many other problems.

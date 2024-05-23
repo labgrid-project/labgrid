@@ -13,6 +13,7 @@ import logging
 import signal
 import sys
 import shlex
+import shutil
 import json
 from textwrap import indent
 from socket import gethostname
@@ -826,18 +827,32 @@ class ClientSession(ApplicationSession):
         # check for valid resources
         assert port is not None, "Port is not set"
 
-        call = ["microcom", "-s", str(resource.speed), "-t", f"{host}:{port}"]
+        microcom_bin = shutil.which("microcom")
 
-        if listen_only:
-            call.append("--listenonly")
+        if microcom_bin is not None:
+            call = [microcom_bin, "-s", str(resource.speed), "-t", f"{host}:{port}"]
 
-        if logfile:
-            call.append(f"--logfile={logfile}")
+            if listen_only:
+                call.append("--listenonly")
+
+            if logfile:
+                call.append(f"--logfile={logfile}")
+        else:
+            call = ["telnet", host, str(port)]
+
+            logging.info("microcom not available, using telnet instead")
+
+            if listen_only:
+                logging.warning("--listenonly option not supported by telnet, ignoring")
+
+            if logfile:
+                logging.warning("--logfile option not supported by telnet, ignoring")
+
         print(f"connecting to {resource} calling {' '.join(call)}")
         try:
             p = await asyncio.create_subprocess_exec(*call)
         except FileNotFoundError as e:
-            raise ServerError(f"failed to execute microcom: {e}")
+            raise ServerError(f"failed to execute remote console command: {e}")
         while p.returncode is None:
             try:
                 await asyncio.wait_for(p.wait(), 1.0)

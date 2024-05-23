@@ -47,6 +47,7 @@ New Features in 24.0
   switches running OpenWrt using the ubus interface.
 - The pyproject.toml gained a config for `ruff <https://github.com/astral-sh/ruff>`_.
 - ``setuptools_scm`` is now used to generate a version file.
+- labgrid-client console will fallback to telnet if microcom is not available.
 
 
 Bug fixes in 24.0

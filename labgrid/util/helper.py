@@ -34,123 +34,156 @@ def set_nonblocking(fd):
     flags = fcntl.fcntl(fd, fcntl.F_GETFL)
     fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
+class ProcessRunner(subprocess.Popen):
+    # pylint: disable=redefined-builtin
+    def __init__(self, args, print_on_silent_log=False, input=None,
+                 stdin=None, stdout=None, cwd=None, env=None,
+                 loglevel=logging.DEBUG, callbacks=None):
+        self.logger = logging.getLogger("Process")
+        self.callbacks = callbacks or []
+        self.loglevel = loglevel
+        self.print_on_silent_log = print_on_silent_log
+        self.input = input
+        self.args = args
+        self.cwd = cwd
+
+        self.res = []
+        if stdout:
+            sfd = stdout
+            self.mfd = None
+        else:
+            self.mfd, sfd = pty.openpty()
+            set_nonblocking(self.mfd)
+
+        stdin_r = None
+        self.stdin_w = None
+        if self.input is not None:
+            stdin_r, self.stdin_w = os.pipe()
+            stdin = stdin_r
+            set_nonblocking(self.stdin_w)
+
+        super().__init__(args, stdin=stdin, stdout=sfd, stderr=sfd, bufsize=0,
+                         cwd=cwd, env=env)
+        self.logger.log(self.loglevel, "[%d] command: %s", self.pid,
+                   " ".join(args))
+
+        if print_on_silent_log and self.logger.getEffectiveLevel() > loglevel:
+            processwrapper.enable_print()
+
+        if stdin_r is not None:
+            os.close(stdin_r)
+
+        # get a file object from the fd
+        self.buf = b""
+        self.read_fds = []
+        if self.mfd:
+            self.read_fds.append(self.mfd)
+            # close sfd so we notice when the child is gone
+            os.close(sfd)
+        self.write_fds = []
+        if self.stdin_w is not None:
+            self.write_fds.append(self.stdin_w)
+
+    def check(self):
+        ready_r, ready_w, _ = select.select(self.read_fds, self.write_fds, [],
+                                            0.1)
+
+        if self.mfd in ready_r:
+            raw = None
+
+            try:
+                raw = os.read(self.mfd, 4096)
+            except BlockingIOError:
+                pass
+            except OSError as e:
+                if e.errno == errno.EIO:
+                    return True
+                raise
+
+            if raw:
+                self.buf += raw
+                *parts, self.buf = self.buf.split(b'\r')
+                self.res.extend(parts)
+                for part in parts:
+                    for callback in self.callbacks:
+                        callback(part, self)
+
+        if self.stdin_w in ready_w:
+            if self.input:
+                amt = 0
+                try:
+                    amt = os.write(self.stdin_w, self.input)
+                except BlockingIOError:
+                    pass
+                except OSError as e:
+                    if e.errno == errno.EIO:
+                        return True
+                    raise
+                self.input = self.input[amt:]
+
+            if not self.input:
+                self.write_fds.remove(self.stdin_w)
+                os.close(self.stdin_w)
+                self.stdin_w = None
+
+        self.poll()
+        if self.returncode is not None:
+            return True
+        return False
+
+    def finish(self):
+        if self.stdin_w is not None:
+            os.close(self.stdin_w)
+
+        if self.mfd:
+            os.close(self.mfd)
+        self.wait()
+        if self.buf:
+            # process incomplete line
+            self.res.append(self.buf)
+            if self.buf[-1] != b'\n':
+                self.buf += b'\n'
+            for callback in self.callbacks:
+                callback(self.buf, self)
+
+        if self.print_on_silent_log and self.logger.getEffectiveLevel() > self.loglevel:
+            processwrapper.disable_print()
+
+        if self.returncode != 0:
+            raise subprocess.CalledProcessError(
+                self.returncode, self.args + [f'cwd={self.cwd}'],
+                output=b'\r'.join(self.res))
+
+    def combined_output(self, remove_cr=True):
+        # this converts '\r\n' to '\n' to be more compatible to the behaviour
+        # of the normal subprocess module
+        return b'\n'.join([r.strip(b'\n')
+                           if remove_cr else r for r in self.res])
+
 @attr.s
 class ProcessWrapper:
     callbacks = attr.ib(default=attr.Factory(list))
     loglevel = logging.DEBUG
 
     @step(args=['command'], result=True, tag='process')
+    # pylint: disable=redefined-builtin
     def check_output(self, command, *, print_on_silent_log=False, input=None,
-                     stdin=None, cwd=None, env=None): # pylint: disable=redefined-builtin
+                     stdin=None, cwd=None, env=None):
         """Run a command and supply the output to callback functions"""
-        logger = logging.getLogger("Process")
-        res = []
-        mfd, sfd = pty.openpty()
-        set_nonblocking(mfd)
-
-        kwargs = {}
-
-        stdin_r = None
-        stdin_w = None
-        if input is not None:
-            stdin_r, stdin_w = os.pipe()
-            kwargs['stdin'] = stdin_r
-            set_nonblocking(stdin_w)
-        elif stdin is not None:
-            kwargs['stdin'] = stdin
-
-        process = subprocess.Popen(command, stderr=sfd, env=env,
-                                   stdout=sfd, bufsize=0, cwd=cwd, **kwargs)
-
-        logger.log(ProcessWrapper.loglevel, "[%d] command: %s", process.pid, " ".join(command))
-
         # do not register/unregister already registered print_callback
         if ProcessWrapper.print_callback in self.callbacks:
             print_on_silent_log = False
 
-        if print_on_silent_log and logger.getEffectiveLevel() > ProcessWrapper.loglevel:
-            self.enable_print()
-
-        if stdin_r is not None:
-            os.close(stdin_r)
-
-        # close sfd so we notice when the child is gone
-        os.close(sfd)
-        # get a file object from the fd
-        buf = b""
-        read_fds = [mfd]
-        write_fds = []
-        if stdin_w is not None:
-            write_fds.append(stdin_w)
+        proc = ProcessRunner(command, print_on_silent_log, input, stdin, None,
+                             cwd, env, self.loglevel, self.callbacks)
 
         while True:
-            ready_r, ready_w, _ = select.select(read_fds, write_fds, [], 0.1)
-
-            if mfd in ready_r:
-                raw = None
-
-                try:
-                    raw = os.read(mfd, 4096)
-                except BlockingIOError:
-                    pass
-                except OSError as e:
-                    if e.errno == errno.EIO:
-                        break
-                    raise
-
-                if raw:
-                    buf += raw
-                    *parts, buf = buf.split(b'\r')
-                    res.extend(parts)
-                    for part in parts:
-                        for callback in self.callbacks:
-                            callback(part, process)
-
-            if stdin_w in ready_w:
-                if input:
-                    amt = 0
-                    try:
-                        amt = os.write(stdin_w, input)
-                    except BlockingIOError:
-                        pass
-                    except OSError as e:
-                        if e.errno == errno.EIO:
-                            break
-                        raise
-                    input = input[amt:]
-
-                if not input:
-                    write_fds.remove(stdin_w)
-                    os.close(stdin_w)
-                    stdin_w = None
-
-            process.poll()
-            if process.returncode is not None:
+            if proc.check():
                 break
 
-        if stdin_w is not None:
-            os.close(stdin_w)
+        proc.finish()
 
-        os.close(mfd)
-        process.wait()
-        if buf:
-            # process incomplete line
-            res.append(buf)
-            if buf[-1] != b'\n':
-                buf += b'\n'
-            for callback in self.callbacks:
-                callback(buf, process)
-
-        if print_on_silent_log and logger.getEffectiveLevel() > ProcessWrapper.loglevel:
-            self.disable_print()
-
-        if process.returncode != 0:
-            raise subprocess.CalledProcessError(process.returncode,
-                                                command + [f'cwd={cwd}'],
-                                                output=b'\r'.join(res))
-        # this converts '\r\n' to '\n' to be more compatible to the behaviour
-        # of the normal subprocess module
-        return b'\n'.join([r.strip(b'\n') for r in res])
+        return proc.combined_output(remove_cr=True)
 
     def register(self, callback):
         """Register a callback with the ProcessWrapper"""

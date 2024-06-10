@@ -2203,7 +2203,7 @@ def main():
             role, args.place = find_role(env.config.get_targets(), args.role,
                                          args.place)
             if not role:
-                print(f"No role '{args.role}' found in environemnt")
+                print(f"No role '{args.role}' found in environment")
                 exit(1)
         elif args.place:
             if not args.place.startswith("+"):

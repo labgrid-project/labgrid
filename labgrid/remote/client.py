@@ -838,12 +838,6 @@ class ClientSession:
                     strategy.force(self.args.initial_state)
                 logging.info("Transitioning into state %s", self.args.state)
                 strategy.transition(self.args.state)
-                # deactivate console drivers so we are able to connect with microcom later
-                try:
-                    con = target.get_active_driver("ConsoleProtocol")
-                    target.deactivate(con)
-                except NoDriverFoundError:
-                    pass
         else:
             target = Target(place.name, env=self.env)
             RemotePlace(target, name=place.name)
@@ -969,6 +963,13 @@ class ClientSession:
     async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
         name = self.args.name
         from ..resource import NetworkSerialPort
+
+        # deactivate console drivers so we are able to connect with microcom
+        try:
+            con = target.get_active_driver("ConsoleProtocol")
+            target.deactivate(con)
+        except NoDriverFoundError:
+            pass
 
         resource = target.get_resource(NetworkSerialPort, name=name, wait_avail=False)
 

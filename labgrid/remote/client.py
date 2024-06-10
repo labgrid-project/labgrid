@@ -1114,44 +1114,68 @@ class ClientSession:
         elif action == "low":
             drv.set(False)
 
+    def _get_console(self, target, name=None):
+        """Get a console driver for the target, creating one if needed
+
+        Without an environment config there is no console driver, so create a
+        SerialDriver for the target's serial port
+
+        Args:
+            target (Target): Target to get the console for
+            name (str): Name of the serial port, or None if there is only one
+
+        Returns:
+            ConsoleProtocol: Console driver
+        """
+        from ..protocol import ConsoleProtocol
+
+        try:
+            return target.get_driver(ConsoleProtocol, name=name)
+        except NoDriverFoundError:
+            return self._get_driver_or_new(target, "SerialDriver", name=name)
+
     async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
         name = self.args.name
-        from ..resource import NetworkSerialPort
-
-        # deactivate console drivers so we are able to connect with microcom
-        try:
-            con = target.get_active_driver("ConsoleProtocol")
-            target.deactivate(con)
-        except NoDriverFoundError:
-            pass
-
-        resource = target.get_resource(NetworkSerialPort, name=name, wait_avail=False)
-
-        # async await resources
-        timeout = Timeout(timeout)
-        while True:
-            target.update_resources()
-            if resource.avail or (not loop and timeout.expired):
-                break
-            await asyncio.sleep(0.1)
-
-        # use zero timeout to prevent blocking sleeps
-        target.await_resources([resource], timeout=0.0)
 
         if not place.acquired:
             print("place released")
             return 255
 
-        host, port = proxymanager.get_host_and_port(resource)
+        if self.args.internal or os.environ.get("LG_CONSOLE") == "internal":
+            console = self._get_console(target, name)
+            returncode = await term.internal(lambda: self.is_allowed(place), console, logfile, listen_only)
+        else:
+            from ..resource import NetworkSerialPort
 
-        # check for valid resources
-        assert port is not None, "Port is not set"
-        try:
-            returncode = await term.external(
-                lambda: self.is_allowed(place), host, port, resource, logfile, listen_only
-            )
-        except FileNotFoundError as e:
-            raise ServerError(f"failed to execute remote console command: {e}")
+            # deactivate console drivers so we are able to connect with microcom
+            try:
+                con = target.get_active_driver("ConsoleProtocol")
+                target.deactivate(con)
+            except NoDriverFoundError:
+                pass
+
+            resource = target.get_resource(NetworkSerialPort, name=name, wait_avail=False)
+
+            # async await resources
+            timeout = Timeout(timeout)
+            while True:
+                target.update_resources()
+                if resource.avail or (not loop and timeout.expired):
+                    break
+                await asyncio.sleep(0.1)
+
+            # use zero timeout to prevent blocking sleeps
+            target.await_resources([resource], timeout=0.0)
+            host, port = proxymanager.get_host_and_port(resource)
+
+            # check for valid resources
+            assert port is not None, "Port is not set"
+            try:
+                returncode = await term.external(
+                    lambda: self.is_allowed(place), host, port, resource, logfile, listen_only
+                )
+            except FileNotFoundError as e:
+                raise ServerError(f"failed to execute remote console command: {e}")
 
         # Raise an exception if the place was released
         self._check_allowed(place)
@@ -2242,6 +2266,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.set_defaults(func=ClientSession.digital_io)
 
     subparser = subparsers.add_parser("console", aliases=("con",), help="connect to the console")
+    subparser.add_argument("-i", "--internal", action="store_true", help="use an internal console instead of microcom")
     subparser.add_argument(
         "-l", "--loop", action="store_true", help="keep trying to connect if the console is unavailable"
     )

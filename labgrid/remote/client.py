@@ -887,6 +887,12 @@ class ClientSession:
             logging.info("Transitioning into state %s", self.args.state)
             strategy.transition(self.args.state)
 
+    def set_end_state(self, target):
+        if self.args.end_state:
+            strategy = target.get_driver("Strategy")
+            logging.info("Transitioning into state %s", self.args.end_state)
+            strategy.transition(self.args.end_state)
+
     def _get_target(self, place):
         self._prepare_manager()
         target = None
@@ -1896,6 +1902,15 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     # use custom parser for sphinxcontrib.autoprogram
     parser = AutoProgramArgumentParser() if auto_doc_mode else argparse.ArgumentParser()
 
+    # Support both legacy variables and properly namespaced ones
+    place = os.environ.get("PLACE", None)
+    place = os.environ.get("LG_PLACE", place)
+    state = os.environ.get("STATE", None)
+    state = os.environ.get("LG_STATE", state)
+    end_state = os.environ.get('LG_END_STATE', state)
+    initial_state = os.environ.get("LG_INITIAL_STATE", None)
+    token = os.environ.get("LG_TOKEN", None)
+
     parser.add_argument(
         "-x",
         "--coordinator",
@@ -1934,6 +1949,13 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         "--initial-state",
         type=str,
         help="strategy state to force into before switching to desired state",
+    )
+    parser.add_argument(
+        '-e',
+        '--end-state',
+        type=str,
+        default=end_state,
+        help="strategy state to switch into after command"
     )
     parser.add_argument(
         "-d", "--debug", action="store_true", default=False, help="enable debug mode (show python tracebacks)"
@@ -2449,6 +2471,7 @@ def main():
             try:
                 if inspect.iscoroutinefunction(args.func):
                     auto_release = False
+                    target = None
                     if getattr(args.func, "needs_target", False):
                         if args.acquire:
                             place = session.get_place(args.place)
@@ -2463,6 +2486,7 @@ def main():
                     else:
                         coro = args.func(session)
                     session.loop.run_until_complete(coro)
+                    session.set_end_state(target)
                     if auto_release:
                         coro = session.release()
                         session.loop.run_until_complete(coro)

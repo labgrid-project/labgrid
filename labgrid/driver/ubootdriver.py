@@ -1,5 +1,6 @@
 """The U-Boot Module contains the UBootDriver"""
 import re
+
 import attr
 from pexpect import TIMEOUT
 
@@ -11,6 +12,7 @@ from .common import Driver
 from .commandmixin import CommandMixin
 
 re_uboot_timestamp = re.compile(r"^\[\s+\d+\.\d+\]\s*")
+pattern_u_boot_main_signon = re.compile(b'(U-Boot( Concept)? \\d{4}\\.\\d{2}[^\r\n]*\\))')
 
 @target_factory.reg_driver
 @attr.s(eq=False)
@@ -51,6 +53,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self._status = 0
+        self.version = None
 
         if self.boot_expression:
             import warnings
@@ -161,9 +164,10 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # occours, we can't lose any data this way.
         last_before = None
 
-        expectations = [self.prompt, self.autoboot, self.password_prompt, TIMEOUT]
+        expectations = [self.prompt, self.autoboot, self.password_prompt,
+                        pattern_u_boot_main_signon, TIMEOUT]
         while True:
-            index, before, _, _ = self.console.expect(
+            index, before, m, _ = self.console.expect(
                 expectations,
                 timeout=2
             )
@@ -180,6 +184,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 self.console.sendline(self.password)
 
             elif index == 3:
+                self.version = m.group(1).decode('ASCII')
+            elif index == 4:
                 # expect hit a timeout while waiting for a match
                 if before == last_before:
                     # we did not receive anything during the previous expect cycle

@@ -730,6 +730,8 @@ class ClientSession:
         """Release a previously acquired place"""
         place = self.get_place()
         if not place.acquired:
+            if self.args.auto:
+                return
             raise UserError(f"place {place.name} is not acquired")
         _, user = place.acquired.split("/")
         if user != self.getuser():
@@ -1851,6 +1853,9 @@ def main():
     subparser.set_defaults(func=ClientSession.acquire)
 
     subparser = subparsers.add_parser("release", aliases=("unlock",), help="release a place")
+    subparser.add_argument(
+        "-f", "--force", action="store_true", help="don't raise an error if the place is not acquired"
+    )
     subparser.add_argument(
         "-k", "--kick", action="store_true", help="release a place even if it is acquired by a different user"
     )

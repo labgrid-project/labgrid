@@ -828,6 +828,12 @@ class ClientSession:
             logging.info("Transitioning into state %s", self.args.state)
             strategy.transition(self.args.state)
 
+    def set_end_state(self, target):
+        if self.args.end_state:
+            strategy = target.get_driver("Strategy")
+            logging.info("Transitioning into state %s", self.args.end_state)
+            strategy.transition(self.args.end_state)
+
     def _get_target(self, place):
         self._prepare_manager()
         target = None
@@ -1727,6 +1733,7 @@ def main():
     place = os.environ.get("LG_PLACE", place)
     state = os.environ.get("STATE", None)
     state = os.environ.get("LG_STATE", state)
+    end_state = os.environ.get("LG_END_STATE", state)
     initial_state = os.environ.get("LG_INITIAL_STATE", None)
     token = os.environ.get("LG_TOKEN", None)
 
@@ -1768,6 +1775,9 @@ def main():
         type=str,
         default=initial_state,
         help="strategy state to force into before switching to desired state",
+    )
+    parser.add_argument(
+        "-e", "--end-state", type=str, default=end_state, help="strategy state to switch into after command"
     )
     parser.add_argument(
         "-d", "--debug", action="store_true", default=False, help="enable debug mode (show python tracebacks)"
@@ -2181,6 +2191,7 @@ def main():
             try:
                 if asyncio.iscoroutinefunction(args.func):
                     auto_release = False
+                    target = None
                     if getattr(args.func, "needs_target", False):
                         if args.acquire:
                             place = session.get_place(args.place)
@@ -2195,6 +2206,7 @@ def main():
                     else:
                         coro = args.func(session)
                     session.loop.run_until_complete(coro)
+                    session.set_end_state(target)
                     if auto_release:
                         coro = session.release()
                         session.loop.run_until_complete(coro)

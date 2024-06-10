@@ -39,6 +39,7 @@ dependencies = [
     "protobuf>=5.27.0",
     "jinja2>=3.0.2",
     "pexpect>=4.8.0",
+    "prompt-toolkit>=3.0.0",
     "pyserial-labgrid>=3.4.0.1",
     "pytest>=7.0.0",
     "pyudev>=0.24.4",

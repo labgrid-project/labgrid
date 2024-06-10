@@ -945,44 +945,53 @@ class ClientSession:
             drv.set(False)
 
     async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
+        from ..protocol import ConsoleProtocol
+
         name = self.args.name
-        from ..resource import NetworkSerialPort
-
-        # deactivate console drivers so we are able to connect with microcom
-        try:
-            con = target.get_active_driver("ConsoleProtocol")
-            target.deactivate(con)
-        except NoDriverFoundError:
-            pass
-
-        resource = target.get_resource(NetworkSerialPort, name=name, wait_avail=False)
-
-        # async await resources
-        timeout = Timeout(timeout)
-        while True:
-            target.update_resources()
-            if resource.avail or (not loop and timeout.expired):
-                break
-            await asyncio.sleep(0.1)
-
-        # use zero timeout to prevent blocking sleeps
-        target.await_resources([resource], timeout=0.0)
 
         if not place.acquired:
             print("place released")
             return 255
 
-        host, port = proxymanager.get_host_and_port(resource)
+        if self.args.internal or os.environ.get('LG_CONSOLE') == 'internal':
+            console = target.get_driver(ConsoleProtocol, name=name)
+            returncode = await term.internal(lambda: self.is_allowed(place),
+                                             console, logfile, listen_only)
+        else:
+            from ..resource import NetworkSerialPort, SerialPort
 
-        # check for valid resources
-        assert port is not None, "Port is not set"
-        returncode = await term.external(lambda: self.is_allowed(place),
-                                         host, port, resource, logfile,
-                                         listen_only)
+            # deactivate console drivers so we are able to connect with microcom
+            try:
+                con = target.get_active_driver("ConsoleProtocol")
+                target.deactivate(con)
+            except NoDriverFoundError:
+                pass
+
+            resource = target.get_resource(NetworkSerialPort, name=name,
+                                           wait_avail=False)
+
+            # async await resources
+            timeout = Timeout(timeout)
+            while True:
+                target.update_resources()
+                if resource.avail or (not loop and timeout.expired):
+                    break
+                await asyncio.sleep(0.1)
+
+            # use zero timeout to prevent blocking sleeps
+            target.await_resources([resource], timeout=0.0)
+            host, port = proxymanager.get_host_and_port(resource)
+
+            # check for valid resources
+            assert port is not None, "Port is not set"
+            returncode = await term.external(lambda: self.is_allowed(place),
+                                             host, port, resource, logfile,
+                                             listen_only)
 
         # Raise an exception if the place was released
         self._check_allowed(place)
         return returncode
+
 
     async def console(self, place, target):
         while True:
@@ -1809,6 +1818,8 @@ def main():
     subparser.set_defaults(func=ClientSession.digital_io)
 
     subparser = subparsers.add_parser("console", aliases=("con",), help="connect to the console")
+    subparser.add_argument('-i', '--internal', action='store_true',
+                           help="use an internal console instead of microcom")
     subparser.add_argument(
         "-l", "--loop", action="store_true", help="keep trying to connect if the console is unavailable"
     )

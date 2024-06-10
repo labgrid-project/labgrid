@@ -821,6 +821,15 @@ class ClientSession:
         manager.session = self
         manager.loop = self.loop
 
+    def set_initial_state(self, target):
+        if self.args.state:
+            strategy = target.get_driver("Strategy")
+            if self.args.initial_state:
+                print(f"Setting initial state to {self.args.initial_state}")
+                strategy.force(self.args.initial_state)
+            logging.info("Transitioning into state %s", self.args.state)
+            strategy.transition(self.args.state)
+
     def _get_target(self, place):
         self._prepare_manager()
         target = None
@@ -831,13 +840,7 @@ class ClientSession:
                     print(f"Selected role {self.role} from configuration file")
             target = self.env.get_target(self.role)
         if target:
-            if self.args.state:
-                strategy = target.get_driver("Strategy")
-                if self.args.initial_state:
-                    print(f"Setting initial state to {self.args.initial_state}")
-                    strategy.force(self.args.initial_state)
-                logging.info("Transitioning into state %s", self.args.state)
-                strategy.transition(self.args.state)
+            self.set_initial_state(target)
         else:
             target = Target(place.name, env=self.env)
             RemotePlace(target, name=place.name)

@@ -50,6 +50,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self._status = 0
+        self._output = b''
         self.version = None
 
         if self.boot_expression:
@@ -186,11 +187,24 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                     self.console.sendline("")
 
                 if timeout.expired:
+                    output = self.console.read_output(False)
+                    for line in output.splitlines():
+                        print(line.decode('utf-8', errors='replace'))
                     raise TIMEOUT(
                         f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"
                     )
 
             last_before = before
+
+        output = self.console.read_output(False)
+        pos = output.find(self.autoboot.encode('utf-8'))
+        if pos == -1:
+            pos = output.find(self.prompt.encode('utf-8'))
+
+        if pos == -1:
+            self._output = output
+        else:
+            self._output = output[:pos]
 
         if self.prompt:
             self._check_prompt()
@@ -220,3 +234,6 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 raise Exception(f"{name} not found in boot_commands") from e
         else:
             self.console.sendline(self.boot_command)
+
+    def read_output(self):
+        return self._output

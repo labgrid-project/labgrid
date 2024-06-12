@@ -59,10 +59,17 @@ class ClientSession(ApplicationSession):
     the coordinator."""
 
     def gethostname(self):
-        return os.environ.get('LG_HOSTNAME', gethostname())
+        hostname=os.environ.get('LG_HOSTNAME', gethostname())
+        if '/' in hostname:
+            raise UserError("Hostname {} contains invalid character '/'".format(hostname))
+        return hostname
 
     def getuser(self):
-        return os.environ.get('LG_USERNAME', getuser())
+        
+        user=os.environ.get('LG_USERNAME', getuser())
+        if '/' in hostname:
+            raise UserError("Username {} contains invalid character '/'".format(user))
+        return user
 
     def onConnect(self):
         """Actions which are executed if a connection is successfully opened."""

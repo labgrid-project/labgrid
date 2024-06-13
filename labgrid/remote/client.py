@@ -1212,6 +1212,9 @@ class ClientSession(ApplicationSession):
             data = drv.get_channel_info(channel)
         elif action == 'values':
             data = drv.get_channel_values(channel)
+        else:
+            raise ValueError(f"unknown action {action}")
+
         for k, v in sorted(data.items()):
             print(f"{k:<16s} {str(v):<10s}")
 
@@ -1323,6 +1326,9 @@ class ClientSession(ApplicationSession):
             data = "\n".join(lines) + "\n"
         elif self.args.format is ExportFormat.JSON:
             data = json.dumps(exported)
+        else:
+            raise NotImplementedError(f"unsupported format {self.args.format}")
+
         if self.args.filename == "-":
             sys.stdout.write(data)
         else:

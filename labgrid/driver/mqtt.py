@@ -43,6 +43,8 @@ class TasmotaPowerDriver(Driver, PowerProtocol):
             status = True
         elif msg.payload == b'OFF':
             status = False
+        else:
+            raise ValueError(f"Unknown status: {msg.payload}. Must be 'ON' or 'OFF'")
         self._status = status
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):

@@ -95,7 +95,7 @@ def connection_from_dict(data):
 class NMDev:
     def __init__(self, interface):
         self._interface = interface
-        self._nm_dev = nm.get_device_by_iface(interface)
+        self._nm_dev = nm.get_device_by_iface(interface) # pylint: disable=possibly-used-before-assignment
 
     def _delete_connection(self, con):
         future = Future()
@@ -114,7 +114,7 @@ class NMDev:
         )
 
     def get_settings(self):
-        lg_con = nm.get_connection_by_id(f"labgrid-{self._interface}")
+        lg_con = nm.get_connection_by_id(f"labgrid-{self._interface}") # pylint: disable=possibly-used-before-assignment
         if lg_con:
             return dict(lg_con.to_dbus(NM.ConnectionSerializationFlags.ALL))
 
@@ -125,7 +125,7 @@ class NMDev:
             return dict(con.to_dbus(NM.ConnectionSerializationFlags.ALL))
 
     def configure(self, data):
-        lg_con = nm.get_connection_by_id(f"labgrid-{self._interface}")
+        lg_con = nm.get_connection_by_id(f"labgrid-{self._interface}") # pylint: disable=possibly-used-before-assignment
         if lg_con:
             self._delete_connection(lg_con)
         data['connection'].update({
@@ -139,12 +139,12 @@ class NMDev:
         def cb(dev, res, error):
             assert error is None
             try:
-                res = nm.add_and_activate_connection_finish(res)
+                res = nm.add_and_activate_connection_finish(res) # pylint: disable=possibly-used-before-assignment
                 future.set(res)
             except Exception as e:
                 future.set(e)
 
-        nm.add_and_activate_connection_async(
+        nm.add_and_activate_connection_async( # pylint: disable=possibly-used-before-assignment
             con,
             self._nm_dev,
             None,  # specific_object
@@ -172,7 +172,7 @@ class NMDev:
             )
 
     def disable(self):
-        lg_con = nm.get_connection_by_id(f"labgrid-{self._interface}")
+        lg_con = nm.get_connection_by_id(f"labgrid-{self._interface}") # pylint: disable=possibly-used-before-assignment
         if lg_con:
             self._delete_connection(lg_con)
 

@@ -84,6 +84,9 @@ def resolve_templates(data, mapping):
         items = enumerate(data)
     elif isinstance(data, dict):
         items = data.items()
+    else:
+        raise TypeError(f"Expected list or dict, got {type(data)}")
+
     for k, val in items:
         if isinstance(val, Template):
             try:

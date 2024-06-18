@@ -2,6 +2,7 @@ from .base import SerialPort, NetworkInterface, EthernetPort, SysfsGPIO
 from .ethernetport import SNMPEthernetPort
 from .serialport import RawSerialPort, NetworkSerialPort
 from .modbus import ModbusTCPCoil
+from .modbusrtu import ModbusRTU
 from .networkservice import NetworkService
 from .onewireport import OneWirePIO
 from .power import NetworkPowerPort, PDUDaemonPort

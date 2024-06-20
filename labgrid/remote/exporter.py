@@ -1,5 +1,6 @@
 """The remote.exporter module exports resources to the coordinator and makes
 them available to other clients on the same coordinator"""
+
 import argparse
 import asyncio
 import logging
@@ -28,6 +29,7 @@ __version__ = labgrid_version()
 exports: Dict[str, Type[ResourceEntry]] = {}
 reexec = False
 
+
 class ExporterError(Exception):
     pass
 
@@ -40,12 +42,13 @@ def log_subprocess_kernel_stack(logger, child):
     if child.poll() is not None:  # nothing to check if no longer running
         return
     try:
-        with open(f'/proc/{child.pid}/stack', 'r') as f:
+        with open(f"/proc/{child.pid}/stack", "r") as f:
             stack = f.read()
             stack = stack.strip()
     except PermissionError:
         return
     logger.info("current kernel stack of %s is:\n%s", child.args, stack)
+
 
 @attr.s(eq=False)
 class ResourceExport(ResourceEntry):
@@ -53,6 +56,7 @@ class ResourceExport(ResourceEntry):
 
     The ResourceEntry attributes contain the information for the client.
     """
+
     host = attr.ib(default=gethostname(), validator=attr.validators.instance_of(str))
     proxy = attr.ib(default=None)
     proxy_required = attr.ib(default=False)
@@ -86,7 +90,7 @@ class ResourceExport(ResourceEntry):
         # resource. For now, when trying to acquire a place with a match for
         # this resource, we get 'resource is already in used by <broken>',
         # instead of an unspecific error.
-        self.data['acquired'] = '<broken>'
+        self.data["acquired"] = "<broken>"
         self.logger.error("marked as broken: %s", reason)
 
     def _get_start_params(self):  # pylint: disable=no-self-use
@@ -145,17 +149,17 @@ class ResourceExport(ResourceEntry):
         # check if resulting information has changed
         dirty = False
         if self.avail != (self.local.avail and not self.broken):
-            self.data['avail'] = self.local.avail and not self.broken
+            self.data["avail"] = self.local.avail and not self.broken
             dirty = True
         params = self._get_params()
-        if not params.get('extra'):
-            params['extra'] = {}
-        params['extra']['proxy_required'] = self.proxy_required
-        params['extra']['proxy'] = self.proxy
+        if not params.get("extra"):
+            params["extra"] = {}
+        params["extra"]["proxy_required"] = self.proxy_required
+        params["extra"]["proxy"] = self.proxy
         if self.broken:
-            params['extra']['broken'] = self.broken
+            params["extra"]["broken"] = self.broken
         if self.params != params:
-            self.data['params'].update(params)
+            self.data["params"].update(params)
             dirty = True
 
         return dirty
@@ -181,11 +185,13 @@ class SerialPortExport(ResourceExport):
         super().__attrs_post_init__()
         if self.cls == "RawSerialPort":
             from ..resource.serialport import RawSerialPort
+
             self.local = RawSerialPort(target=None, name=None, **self.local_params)
         elif self.cls == "USBSerialPort":
             from ..resource.udev import USBSerialPort
+
             self.local = USBSerialPort(target=None, name=None, **self.local_params)
-        self.data['cls'] = "NetworkSerialPort"
+        self.data["cls"] = "NetworkSerialPort"
         self.child = None
         self.port = None
         self.ser2net_bin = shutil.which("ser2net")
@@ -203,31 +209,31 @@ class SerialPortExport(ResourceExport):
 
     def _get_start_params(self):
         return {
-            'path': self.local.port,
+            "path": self.local.port,
         }
 
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'port': self.port,
-            'speed': self.local.speed,
-            'extra': {
-                'path': self.local.port,
-            }
+            "host": self.host,
+            "port": self.port,
+            "speed": self.local.speed,
+            "extra": {
+                "path": self.local.port,
+            },
         }
 
     def _start(self, start_params):
         """Start ``ser2net`` subprocess"""
         assert self.local.avail
         assert self.child is None
-        assert start_params['path'].startswith('/dev/')
+        assert start_params["path"].startswith("/dev/")
         self.port = get_free_port()
 
         # Ser2net has switched to using YAML format at version 4.0.0.
-        result = subprocess.run([self.ser2net_bin,'-v'], capture_output=True, text=True)
-        _, _, version = str(result.stdout).split(' ')
-        major_version = version.split('.')[0]
+        result = subprocess.run([self.ser2net_bin, "-v"], capture_output=True, text=True)
+        _, _, version = str(result.stdout).split(" ")
+        major_version = version.split(".")[0]
 
         # There is a bug in ser2net between 4.4.0 and 4.6.1 where it
         # returns 1 on a successful call to 'ser2net -v'. We don't want
@@ -239,20 +245,24 @@ class SerialPortExport(ResourceExport):
         if int(major_version) >= 4:
             cmd = [
                 self.ser2net_bin,
-                '-d',
-                '-n',
-                '-Y', f'connection: &con01#  accepter: telnet(rfc2217,mode=server),{self.port}',
-                '-Y', f'  connector: serialdev(nouucplock=true),{start_params["path"]},{self.local.speed}n81,local',  # pylint: disable=line-too-long
-                '-Y', '  options:',
-                '-Y', '    max-connections: 10',
+                "-d",
+                "-n",
+                "-Y",
+                f"connection: &con01#  accepter: telnet(rfc2217,mode=server),{self.port}",
+                "-Y",
+                f'  connector: serialdev(nouucplock=true),{start_params["path"]},{self.local.speed}n81,local',  # pylint: disable=line-too-long
+                "-Y",
+                "  options:",
+                "-Y",
+                "    max-connections: 10",
             ]
         else:
             cmd = [
                 self.ser2net_bin,
-                '-d',
-                '-n',
-                '-u',
-                '-C',
+                "-d",
+                "-n",
+                "-u",
+                "-C",
                 f'{self.port}:telnet:0:{start_params["path"]}:{self.local.speed} NONE 8DATABITS 1STOPBIT LOCAL',  # pylint: disable=line-too-long
             ]
         self.logger.info("Starting ser2net with: %s", " ".join(cmd))
@@ -263,7 +273,7 @@ class SerialPortExport(ResourceExport):
         except subprocess.TimeoutExpired:
             # good, ser2net didn't exit immediately
             pass
-        self.logger.info("started ser2net for %s on port %d", start_params['path'], self.port)
+        self.logger.info("started ser2net for %s on port %d", start_params["path"], self.port)
 
     def _stop(self, start_params):
         """Stop ``ser2net`` subprocess"""
@@ -276,15 +286,16 @@ class SerialPortExport(ResourceExport):
         try:
             child.wait(2.0)  # ser2net takes about a second to react
         except subprocess.TimeoutExpired:
-            self.logger.warning("ser2net for %s still running after SIGTERM", start_params['path'])
+            self.logger.warning("ser2net for %s still running after SIGTERM", start_params["path"])
             log_subprocess_kernel_stack(self.logger, child)
             child.kill()
             child.wait(1.0)
-        self.logger.info("stopped ser2net for %s on port %d", start_params['path'], port)
+        self.logger.info("stopped ser2net for %s on port %d", start_params["path"], port)
 
 
 exports["USBSerialPort"] = SerialPortExport
 exports["RawSerialPort"] = SerialPortExport
+
 
 @attr.s(eq=False)
 class NetworkInterfaceExport(ResourceExport):
@@ -294,21 +305,23 @@ class NetworkInterfaceExport(ResourceExport):
         super().__attrs_post_init__()
         if self.cls == "NetworkInterface":
             from ..resource.base import NetworkInterface
+
             self.local = NetworkInterface(target=None, name=None, **self.local_params)
         elif self.cls == "USBNetworkInterface":
             from ..resource.udev import USBNetworkInterface
+
             self.local = USBNetworkInterface(target=None, name=None, **self.local_params)
-        self.data['cls'] = "RemoteNetworkInterface"
+        self.data["cls"] = "RemoteNetworkInterface"
 
     def _get_params(self):
         """Helper function to return parameters"""
         params = {
-            'host': self.host,
-            'ifname': self.local.ifname,
+            "host": self.host,
+            "ifname": self.local.ifname,
         }
         if self.cls == "USBNetworkInterface":
-            params['extra'] = {
-                'state': self.local.if_state,
+            params["extra"] = {
+                "state": self.local.if_state,
             }
 
         return params
@@ -317,6 +330,7 @@ class NetworkInterfaceExport(ResourceExport):
 exports["USBNetworkInterface"] = NetworkInterfaceExport
 exports["NetworkInterface"] = NetworkInterfaceExport
 
+
 @attr.s(eq=False)
 class USBGenericExport(ResourceExport):
     """ResourceExport for USB devices accessed directly from userspace"""
@@ -324,21 +338,23 @@ class USBGenericExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = f"Network{self.cls}"
+        self.data["cls"] = f"Network{self.cls}"
         from ..resource import udev
+
         local_cls = getattr(udev, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
         }
+
 
 @attr.s(eq=False)
 class USBSigrokExport(USBGenericExport):
@@ -350,15 +366,16 @@ class USBSigrokExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'driver': self.local.driver,
-            'channels': self.local.channels
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "driver": self.local.driver,
+            "channels": self.local.channels,
         }
+
 
 @attr.s(eq=False)
 class USBSDMuxExport(USBGenericExport):
@@ -370,14 +387,15 @@ class USBSDMuxExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'control_path': self.local.control_path,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "control_path": self.local.control_path,
         }
+
 
 @attr.s(eq=False)
 class USBSDWireExport(USBGenericExport):
@@ -389,14 +407,15 @@ class USBSDWireExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'control_serial': self.local.control_serial,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "control_serial": self.local.control_serial,
         }
+
 
 @attr.s(eq=False)
 class USBAudioInputExport(USBGenericExport):
@@ -408,15 +427,16 @@ class USBAudioInputExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'index': self.local.index,
-            'alsa_name': self.local.alsa_name,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
+            "alsa_name": self.local.alsa_name,
         }
+
 
 @attr.s(eq=False)
 class SiSPMPowerPortExport(USBGenericExport):
@@ -428,14 +448,15 @@ class SiSPMPowerPortExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'index': self.local.index,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
         }
+
 
 @attr.s(eq=False)
 class USBPowerPortExport(USBGenericExport):
@@ -447,14 +468,15 @@ class USBPowerPortExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'index': self.local.index,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
         }
+
 
 @attr.s(eq=False)
 class USBDeditecRelaisExport(USBGenericExport):
@@ -466,14 +488,15 @@ class USBDeditecRelaisExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'index': self.local.index,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
         }
+
 
 @attr.s(eq=False)
 class USBHIDRelayExport(USBGenericExport):
@@ -485,31 +508,35 @@ class USBHIDRelayExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'index': self.local.index,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
         }
+
 
 @attr.s(eq=False)
 class USBFlashableExport(USBGenericExport):
     """ResourceExport for Flashable USB devices"""
+
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
     def _get_params(self):
         p = super()._get_params()
-        p['devnode'] = self.local.devnode
+        p["devnode"] = self.local.devnode
         return p
+
 
 @attr.s(eq=False)
 class USBGenericRemoteExport(USBGenericExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.data['cls'] = f"Remote{self.cls}".replace("Network", "")
+        self.data["cls"] = f"Remote{self.cls}".replace("Network", "")
+
 
 exports["AndroidFastboot"] = USBGenericExport
 exports["AndroidUSBFastboot"] = USBGenericRemoteExport
@@ -535,6 +562,7 @@ exports["HIDRelay"] = USBHIDRelayExport
 exports["USBFlashableDevice"] = USBFlashableExport
 exports["LXAUSBMux"] = USBGenericExport
 
+
 @attr.s(eq=False)
 class ProviderGenericExport(ResourceExport):
     """ResourceExport for Resources derived from BaseProvider"""
@@ -542,22 +570,25 @@ class ProviderGenericExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = f"Remote{self.cls}"
+        self.data["cls"] = f"Remote{self.cls}"
         from ..resource import provider
+
         local_cls = getattr(provider, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'internal': self.local.internal,
-            'external': self.local.external,
+            "host": self.host,
+            "internal": self.local.internal,
+            "external": self.local.external,
         }
+
 
 exports["TFTPProvider"] = ProviderGenericExport
 exports["NFSProvider"] = ProviderGenericExport
 exports["HTTPProvider"] = ProviderGenericExport
+
 
 @attr.s
 class EthernetPortExport(ResourceExport):
@@ -566,23 +597,21 @@ class EthernetPortExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         from ..resource.ethernetport import SNMPEthernetPort
-        self.data['cls'] = "EthernetPort"
+
+        self.data["cls"] = "EthernetPort"
         self.local = SNMPEthernetPort(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
-        return {
-            'switch': self.local.switch,
-            'interface': self.local.interface,
-            'extra': self.local.extra
-        }
+        return {"switch": self.local.switch, "interface": self.local.interface, "extra": self.local.extra}
+
 
 exports["SNMPEthernetPort"] = EthernetPortExport
 
 
 @attr.s(eq=False)
 class GPIOSysFSExport(ResourceExport):
-    _gpio_sysfs_path_prefix = '/sys/class/gpio'
+    _gpio_sysfs_path_prefix = "/sys/class/gpio"
 
     """ResourceExport for GPIO lines accessed directly from userspace"""
 
@@ -590,49 +619,51 @@ class GPIOSysFSExport(ResourceExport):
         super().__attrs_post_init__()
         if self.cls == "SysfsGPIO":
             from ..resource.base import SysfsGPIO
+
             self.local = SysfsGPIO(target=None, name=None, **self.local_params)
         elif self.cls == "MatchedSysfsGPIO":
             from ..resource.udev import MatchedSysfsGPIO
+
             self.local = MatchedSysfsGPIO(target=None, name=None, **self.local_params)
-        self.data['cls'] = "NetworkSysfsGPIO"
-        self.export_path = Path(GPIOSysFSExport._gpio_sysfs_path_prefix,
-                                f'gpio{self.local.index}')
+        self.data["cls"] = "NetworkSysfsGPIO"
+        self.export_path = Path(GPIOSysFSExport._gpio_sysfs_path_prefix, f"gpio{self.local.index}")
         self.system_exported = False
 
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'index': self.local.index,
+            "host": self.host,
+            "index": self.local.index,
         }
 
     def _get_start_params(self):
         return {
-            'index': self.local.index,
+            "index": self.local.index,
         }
 
     def _start(self, start_params):
         """Start a GPIO export to userspace"""
-        index = start_params['index']
+        index = start_params["index"]
 
         if self.export_path.exists():
             self.system_exported = True
             return
 
-        export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, 'export')
-        with open(export_sysfs_path, mode='wb') as export:
-            export.write(str(index).encode('utf-8'))
+        export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, "export")
+        with open(export_sysfs_path, mode="wb") as export:
+            export.write(str(index).encode("utf-8"))
 
     def _stop(self, start_params):
         """Disable a GPIO export to userspace"""
-        index = start_params['index']
+        index = start_params["index"]
 
         if self.system_exported:
             return
 
-        export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, 'unexport')
-        with open(export_sysfs_path, mode='wb') as unexport:
-            unexport.write(str(index).encode('utf-8'))
+        export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, "unexport")
+        with open(export_sysfs_path, mode="wb") as unexport:
+            unexport.write(str(index).encode("utf-8"))
+
 
 exports["SysfsGPIO"] = GPIOSysFSExport
 exports["MatchedSysfsGPIO"] = GPIOSysFSExport
@@ -649,9 +680,10 @@ class NetworkServiceExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         from ..resource.networkservice import NetworkService
-        self.data['cls'] = "NetworkService"
+
+        self.data["cls"] = "NetworkService"
         self.local = NetworkService(target=None, name=None, **self.local_params)
-        if '%' in self.local_params['address']:
+        if "%" in self.local_params["address"]:
             self.proxy_required = True
 
     def _get_params(self):
@@ -660,21 +692,27 @@ class NetworkServiceExport(ResourceExport):
             **self.local_params,
         }
 
+
 exports["NetworkService"] = NetworkServiceExport
+
 
 @attr.s
 class HTTPVideoStreamExport(ResourceExport):
     """ResourceExport for an HTTPVideoStream"""
+
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         from ..resource.httpvideostream import HTTPVideoStream
-        self.data['cls'] = "HTTPVideoStream"
+
+        self.data["cls"] = "HTTPVideoStream"
         self.local = HTTPVideoStream(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         return self.local_params
 
+
 exports["HTTPVideoStream"] = HTTPVideoStreamExport
+
 
 @attr.s(eq=False)
 class LXAIOBusNodeExport(ResourceExport):
@@ -683,31 +721,37 @@ class LXAIOBusNodeExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = f"Network{self.cls}"
+        self.data["cls"] = f"Network{self.cls}"
         from ..resource import lxaiobus
+
         local_cls = getattr(lxaiobus, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         return self.local_params
 
+
 exports["LXAIOBusPIO"] = LXAIOBusNodeExport
+
 
 @attr.s(eq=False)
 class AndroidNetFastbootExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = f"Remote{self.cls}"
+        self.data["cls"] = f"Remote{self.cls}"
         from ..resource import fastboot
+
         local_cls = getattr(fastboot, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
-        return {'host' : self.host, **self.local_params}
+        return {"host": self.host, **self.local_params}
+
 
 exports["AndroidNetFastboot"] = AndroidNetFastbootExport
+
 
 @attr.s(eq=False)
 class YKUSHPowerPortExport(ResourceExport):
@@ -716,29 +760,29 @@ class YKUSHPowerPortExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = f"Network{local_cls_name}"
+        self.data["cls"] = f"Network{local_cls_name}"
         from ..resource import ykushpowerport
+
         local_cls = getattr(ykushpowerport, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):
-        return {
-            "host": self.host,
-            **self.local_params
-        }
+        return {"host": self.host, **self.local_params}
+
 
 exports["YKUSHPowerPort"] = YKUSHPowerPortExport
+
 
 class ExporterSession(ApplicationSession):
     def onConnect(self):
         """Set up internal datastructures on successful connection:
         - Setup loop, name, authid and address
         - Join the coordinator as an exporter"""
-        self.loop = self.config.extra['loop']
-        self.name = self.config.extra['name']
-        self.hostname = self.config.extra['hostname']
-        self.isolated = self.config.extra['isolated']
-        self.address = self._transport.transport.get_extra_info('sockname')[0]
+        self.loop = self.config.extra["loop"]
+        self.name = self.config.extra["name"]
+        self.hostname = self.config.extra["hostname"]
+        self.isolated = self.config.extra["isolated"]
+        self.address = self._transport.transport.get_extra_info("sockname")[0]
         self.checkpoint = time.monotonic()
         self.poll_task = None
 
@@ -765,35 +809,31 @@ class ExporterSession(ApplicationSession):
         """
         print(details)
 
-        prefix = f'org.labgrid.exporter.{self.name}'
+        prefix = f"org.labgrid.exporter.{self.name}"
         try:
-            await self.register(self.acquire, f'{prefix}.acquire')
-            await self.register(self.release, f'{prefix}.release')
-            await self.register(self.version, f'{prefix}.version')
+            await self.register(self.acquire, f"{prefix}.acquire")
+            await self.register(self.release, f"{prefix}.release")
+            await self.register(self.version, f"{prefix}.version")
 
             config_template_env = {
-                'env': os.environ,
-                'isolated': self.isolated,
-                'hostname': self.hostname,
-                'name': self.name,
+                "env": os.environ,
+                "isolated": self.isolated,
+                "hostname": self.hostname,
+                "name": self.name,
             }
-            resource_config = ResourceConfig(
-                self.config.extra['resources'], config_template_env
-            )
+            resource_config = ResourceConfig(self.config.extra["resources"], config_template_env)
             for group_name, group in resource_config.data.items():
                 group_name = str(group_name)
                 for resource_name, params in group.items():
                     resource_name = str(resource_name)
-                    if resource_name == 'location':
+                    if resource_name == "location":
                         continue
                     if params is None:
                         continue
-                    cls = params.pop('cls', resource_name)
+                    cls = params.pop("cls", resource_name)
 
                     # this may call back to acquire the resource immediately
-                    await self.add_resource(
-                        group_name, resource_name, cls, params
-                    )
+                    await self.add_resource(group_name, resource_name, cls, params)
                     self.checkpoint = time.monotonic()
 
         except Exception:  # pylint: disable=broad-except
@@ -817,7 +857,7 @@ class ExporterSession(ApplicationSession):
         if self.poll_task:
             self.poll_task.cancel()
             await asyncio.wait([self.poll_task])
-            await asyncio.sleep(0.5) # give others a chance to clean up
+            await asyncio.sleep(0.5)  # give others a chance to clean up
         self.loop.stop()
 
     async def acquire(self, group_name, resource_name, place_name):
@@ -871,25 +911,22 @@ class ExporterSession(ApplicationSession):
 
     async def add_resource(self, group_name, resource_name, cls, params):
         """Add a resource to the exporter and update status on the coordinator"""
-        print(
-            f"add resource {group_name}/{resource_name}: {cls}/{params}"
-        )
+        print(f"add resource {group_name}/{resource_name}: {cls}/{params}")
         group = self.groups.setdefault(group_name, {})
         assert resource_name not in group
         export_cls = exports.get(cls, ResourceEntry)
         config = {
-            'avail': export_cls is ResourceEntry,
-            'cls': cls,
-            'params': params,
+            "avail": export_cls is ResourceEntry,
+            "cls": cls,
+            "params": params,
         }
         proxy_req = self.isolated
         if issubclass(export_cls, ResourceExport):
-            group[resource_name] = export_cls(config, host=self.hostname, proxy=getfqdn(),
-                                              proxy_required=proxy_req)
+            group[resource_name] = export_cls(config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req)
         else:
-            config['params']['extra'] = {
-                'proxy': getfqdn(),
-                'proxy_required': proxy_req,
+            config["params"]["extra"] = {
+                "proxy": getfqdn(),
+                "proxy_required": proxy_req,
             }
             group[resource_name] = export_cls(config)
         await self.update_resource(group_name, resource_name)
@@ -899,73 +936,56 @@ class ExporterSession(ApplicationSession):
         resource = self.groups[group_name][resource_name]
         data = resource.asdict()
         print(data)
-        await self.call(
-            'org.labgrid.coordinator.set_resource', group_name, resource_name,
-            data
-        )
+        await self.call("org.labgrid.coordinator.set_resource", group_name, resource_name, data)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-x',
-        '--crossbar',
-        metavar='URL',
+        "-x",
+        "--crossbar",
+        metavar="URL",
         type=str,
         default=os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"),
-        help="crossbar websocket URL"
+        help="crossbar websocket URL",
     )
     parser.add_argument(
-        '-n',
-        '--name',
-        dest='name',
+        "-n",
+        "--name",
+        dest="name",
         type=str,
         default=None,
-        help='public name of this exporter (defaults to the system hostname)'
+        help="public name of this exporter (defaults to the system hostname)",
     )
     parser.add_argument(
-        '--hostname',
-        dest='hostname',
+        "--hostname",
+        dest="hostname",
         type=str,
         default=None,
-        help='hostname (or IP) published for accessing resources (defaults to the system hostname)'
+        help="hostname (or IP) published for accessing resources (defaults to the system hostname)",
     )
     parser.add_argument(
-        '--fqdn',
-        action='store_true',
+        "--fqdn", action="store_true", default=False, help="Use fully qualified domain name as default for hostname"
+    )
+    parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
+    parser.add_argument(
+        "-i",
+        "--isolated",
+        action="store_true",
         default=False,
-        help='Use fully qualified domain name as default for hostname'
+        help="enable isolated mode (always request SSH forwards)",
     )
-    parser.add_argument(
-        '-d',
-        '--debug',
-        action='store_true',
-        default=False,
-        help="enable debug mode"
-    )
-    parser.add_argument(
-        '-i',
-        '--isolated',
-        action='store_true',
-        default=False,
-        help="enable isolated mode (always request SSH forwards)"
-    )
-    parser.add_argument(
-        'resources',
-        metavar='RESOURCES',
-        type=str,
-        help='resource config file name'
-    )
+    parser.add_argument("resources", metavar="RESOURCES", type=str, help="resource config file name")
 
     args = parser.parse_args()
 
-    level = 'debug' if args.debug else 'info'
+    level = "debug" if args.debug else "info"
 
     extra = {
-        'name': args.name or gethostname(),
-        'hostname': args.hostname or (getfqdn() if args.fqdn else gethostname()),
-        'resources': args.resources,
-        'isolated': args.isolated
+        "name": args.name or gethostname(),
+        "hostname": args.hostname or (getfqdn() if args.fqdn else gethostname()),
+        "resources": args.resources,
+        "isolated": args.isolated,
     }
 
     crossbar_url = args.crossbar
@@ -977,7 +997,7 @@ def main():
     print(f"exporter hostname: {extra['hostname']}")
     print(f"resource config file: {extra['resources']}")
 
-    extra['loop'] = loop = asyncio.get_event_loop()
+    extra["loop"] = loop = asyncio.get_event_loop()
     if args.debug:
         loop.set_debug(True)
     runner = ApplicationRunner(url=crossbar_url, realm=crossbar_realm, extra=extra)

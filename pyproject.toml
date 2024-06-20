@@ -231,3 +231,20 @@ commands =
 extras = dev
 commands = pylint -f colorized labgrid
 """
+
+[tool.ruff]
+line-length = 119
+exclude = [
+  "__pycache__",
+  "labgrid.egg-info",
+  ".pybuild",
+  "build",
+  "debian",
+  "env",
+  "venv",
+  "envs",
+  "dist",
+]
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "SIM", "UP"]

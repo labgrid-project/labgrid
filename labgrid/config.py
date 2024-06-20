@@ -4,6 +4,7 @@ This class encapsulates access functions to the environment configuration
 
 """
 import os
+import warnings
 from yaml import YAMLError
 import attr
 
@@ -49,6 +50,9 @@ class Config:
             raise InvalidConfigError(
                 f"configuration file '{self.filename}' is invalid: {e}"
             )
+
+        if self.get_option("crossbar_url", ""):
+            warnings.warn("Ignored option 'crossbar_url' in config, use 'coordinator_address' instead", UserWarning)
 
     def resolve_path(self, path):
         """Resolve an absolute path

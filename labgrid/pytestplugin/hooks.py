@@ -91,7 +91,7 @@ def pytest_configure(config):
     if lg_env is not None:
         env = Environment(config_file=lg_env)
         if lg_coordinator is not None:
-            env.config.set_option('crossbar_url', lg_coordinator)
+            env.config.set_option('coordinator_address', lg_coordinator)
     config.stash[LABGRID_ENV_KEY] = env
 
     processwrapper.enable_logging()

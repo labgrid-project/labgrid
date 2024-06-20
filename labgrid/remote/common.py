@@ -1,13 +1,16 @@
-import socket
+import asyncio
 import time
 import enum
 import random
 import re
 import string
+import logging
 from datetime import datetime
 from fnmatch import fnmatchcase
 
 import attr
+
+from .generated import labgrid_coordinator_pb2
 
 __all__ = [
     "TAG_KEY",
@@ -17,12 +20,42 @@ __all__ = [
     "Place",
     "ReservationState",
     "Reservation",
-    "enable_tcp_nodelay",
-    "monkey_patch_max_msg_payload_size_ws_option",
 ]
 
 TAG_KEY = re.compile(r"[a-z][a-z0-9_]+")
 TAG_VAL = re.compile(r"[a-z0-9_]?")
+
+
+def set_map_from_dict(m, d):
+    for k, v in d.items():
+        assert isinstance(k, str)
+        if v is None:
+            m[k].Clear()
+        elif isinstance(v, bool):
+            m[k].bool_value = v
+        elif isinstance(v, int):
+            if v < 0:
+                m[k].int_value = v
+            else:
+                m[k].uint_value = v
+        elif isinstance(v, float):
+            m[k].float_value = v
+        elif isinstance(v, str):
+            m[k].string_value = v
+        else:
+            raise ValueError(f"cannot translate {repr(v)} to MapValue")
+
+
+def build_dict_from_map(m):
+    d = {}
+    for k, v in m.items():
+        v: labgrid_coordinator_pb2.MapValue
+        kind = v.WhichOneof("kind")
+        if kind is None:
+            d[k] = None
+        else:
+            d[k] = getattr(v, kind)
+    return d
 
 
 @attr.s(eq=False)
@@ -30,6 +63,7 @@ class ResourceEntry:
     data = attr.ib()  # cls, params
 
     def __attrs_post_init__(self):
+        assert isinstance(self.data, dict)
         self.data.setdefault("acquired", None)
         self.data.setdefault("avail", False)
 
@@ -84,6 +118,35 @@ class ResourceEntry:
         # ignore repeated releases
         self.data["acquired"] = None
 
+    def as_pb2(self):
+        msg = labgrid_coordinator_pb2.Resource()
+        msg.cls = self.cls
+        params = self.params.copy()
+        extra = params.pop("extra", {})
+        set_map_from_dict(msg.params, params)
+        set_map_from_dict(msg.extra, extra)
+        if self.acquired is not None:
+            msg.acquired = self.acquired
+        msg.avail = self.avail
+        return msg
+
+    @staticmethod
+    def data_from_pb2(pb2):
+        assert isinstance(pb2, labgrid_coordinator_pb2.Resource)
+        data = {
+            "cls": pb2.cls,
+            "params": build_dict_from_map(pb2.params),
+            "acquired": pb2.acquired or None,
+            "avail": pb2.avail,
+        }
+        data["params"]["extra"] = build_dict_from_map(pb2.extra)
+        return data
+
+    @classmethod
+    def from_pb2(cls, pb2):
+        assert isinstance(pb2, labgrid_coordinator_pb2.Place)
+        return cls(cls.data_from_pb2(pb2))
+
 
 @attr.s(eq=True, repr=False, str=False)
 # This class requires eq=True, since we put the matches into a list and require
@@ -133,6 +196,26 @@ class ResourceMatch:
 
         return True
 
+    def as_pb2(self):
+        return labgrid_coordinator_pb2.ResourceMatch(
+            exporter=self.exporter,
+            group=self.group,
+            cls=self.cls,
+            name=self.name,
+            rename=self.rename,
+        )
+
+    @classmethod
+    def from_pb2(cls, pb2):
+        assert isinstance(pb2, labgrid_coordinator_pb2.ResourceMatch)
+        return cls(
+            exporter=pb2.exporter,
+            group=pb2.group,
+            cls=pb2.cls,
+            name=pb2.name if pb2.HasField("name") else None,
+            rename=pb2.rename,
+        )
+
 
 @attr.s(eq=False)
 class Place:
@@ -170,13 +253,18 @@ class Place:
             "reservation": self.reservation,
         }
 
-    def update(self, config):
+    def update_from_pb2(self, place_pb2):
+        # FIXME untangle this...
+        place = Place.from_pb2(place_pb2)
         fields = attr.fields_dict(type(self))
-        for k, v in config.items():
+        for k, v in place.asdict().items():
             assert k in fields
             if k == "name":
                 # we cannot rename places
                 assert v == self.name
+                continue
+            if k == "matches":
+                self.matches = [ResourceMatch.from_pb2(m) for m in place_pb2.matches]
                 continue
             setattr(self, k, v)
 
@@ -241,6 +329,56 @@ class Place:
     def touch(self):
         self.changed = time.time()
 
+    def as_pb2(self):
+        try:
+            acquired_resources = []
+            for resource in self.acquired_resources:
+                assert not isinstance(resource, (tuple, list)), "as_pb2() only implemented for coordinator"
+                assert len(resource.path) == 4
+                path = "/".join(resource.path)
+                acquired_resources.append(path)
+
+            place = labgrid_coordinator_pb2.Place()
+            place.name = self.name
+            place.aliases.extend(self.aliases)
+            place.comment = self.comment
+            place.matches.extend(m.as_pb2() for m in self.matches)
+            place.acquired = self.acquired or ""
+            place.acquired_resources.extend(acquired_resources)
+            place.allowed.extend(self.allowed)
+            place.changed = self.changed
+            place.created = self.created
+            if self.reservation:
+                place.reservation = self.reservation
+            for key, value in self.tags.items():
+                place.tags[key] = value
+            return place
+        except TypeError:
+            logging.exception("failed to convert place %s to protobuf", self)
+            raise
+
+    @classmethod
+    def from_pb2(cls, pb2):
+        assert isinstance(pb2, labgrid_coordinator_pb2.Place)
+        acquired_resources = []
+        for path in pb2.acquired_resources:
+            path = path.split("/")
+            assert len(path) == 4
+            acquired_resources.append(path)
+        return cls(
+            name=pb2.name,
+            aliases=pb2.aliases,
+            comment=pb2.comment,
+            tags=dict(pb2.tags),
+            matches=[ResourceMatch.from_pb2(m) for m in pb2.matches],
+            acquired=pb2.acquired if pb2.HasField("acquired") and pb2.acquired else None,
+            acquired_resources=acquired_resources,
+            allowed=pb2.allowed,
+            created=pb2.created,
+            changed=pb2.changed,
+            reservation=pb2.reservation if pb2.HasField("reservation") else None,
+        )
+
 
 class ReservationState(enum.Enum):
     waiting = 0
@@ -304,44 +442,58 @@ class Reservation:
         print(indent + f"created: {datetime.fromtimestamp(self.created)}")
         print(indent + f"timeout: {datetime.fromtimestamp(self.timeout)}")
 
+    def as_pb2(self):
+        res = labgrid_coordinator_pb2.Reservation()
+        res.owner = self.owner
+        res.token = self.token
+        res.state = self.state.value
+        res.prio = self.prio
+        for name, fltr in self.filters.items():
+            res.filters[name].CopyFrom(labgrid_coordinator_pb2.Reservation.Filter(filter=fltr))
+        if self.allocations:
+            # TODO: refactor to have only one place per filter group
+            assert len(self.allocations) == 1
+            assert "main" in self.allocations
+            allocation = self.allocations["main"]
+            assert len(allocation) == 1
+            res.allocations.update({"main": allocation[0]})
+        res.created = self.created
+        res.timeout = self.timeout
+        return res
 
-def enable_tcp_nodelay(session):
-    """
-    asyncio/autobahn does not set TCP_NODELAY by default, so we need to do it
-    like this for now.
-    """
-    s = session._transport.transport.get_extra_info("socket")
-    s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
+    @classmethod
+    def from_pb2(cls, pb2: labgrid_coordinator_pb2.Reservation):
+        filters = {}
+        for name, fltr_pb2 in pb2.filters.items():
+            filters[name] = dict(fltr_pb2.filter)
+        allocations = {}
+        for fltr_name, place_name in pb2.allocations.items():
+            allocations[fltr_name] = [place_name]
+        return cls(
+            owner=pb2.owner,
+            token=pb2.token,
+            state=ReservationState(pb2.state),
+            prio=pb2.prio,
+            filters=filters,
+            allocations=allocations,
+            created=pb2.created,
+            timeout=pb2.timeout,
+        )
 
 
-def monkey_patch_max_msg_payload_size_ws_option():
-    """
-    The default maxMessagePayloadSize in autobahn is 1M. For larger setups with a big number of
-    exported resources, this becomes the limiting factor.
-    Increase maxMessagePayloadSize in WampWebSocketClientFactory.setProtocolOptions() by monkey
-    patching it, so autobahn.asyncio.wamp.ApplicationRunner effectively sets the increased value.
-
-    This function must be called before ApplicationRunner is instanciated.
-    """
-    from autobahn.asyncio.websocket import WampWebSocketClientFactory
-
-    original_method = WampWebSocketClientFactory.setProtocolOptions
-
-    def set_protocol_options(*args, **kwargs):
-        new_max_message_payload_size = 10485760
-
-        # maxMessagePayloadSize given as positional arg
-        args = list(args)
-        try:
-            args[9] = max((args[9], new_max_message_payload_size))
-        except IndexError:
-            pass
-
-        # maxMessagePayloadSize given as kwarg
-        kwarg_name = "maxMessagePayloadSize"
-        if kwarg_name in kwargs and kwargs[kwarg_name] is not None:
-            kwargs[kwarg_name] = max((kwargs[kwarg_name], new_max_message_payload_size))
-
-        return original_method(*args, **kwargs)
-
-    WampWebSocketClientFactory.setProtocolOptions = set_protocol_options
+async def queue_as_aiter(q):
+    try:
+        while True:
+            try:
+                item = await q.get()
+            except asyncio.CancelledError:
+                # gRPC doesn't like to receive exceptions from the request_iterator
+                return
+            if item is None:
+                return
+            yield item
+            q.task_done()
+            logging.debug("sent message %s", item)
+    except Exception:
+        logging.exception("error in queue_as_aiter")
+        raise

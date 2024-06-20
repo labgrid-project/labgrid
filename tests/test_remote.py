@@ -1,7 +1,4 @@
-import pytest
 import pexpect
-
-pytest.importorskip('autobahn')
 
 def test_client_help():
     with pexpect.spawn('python -m labgrid.remote.client --help') as spawn:

@@ -33,7 +33,9 @@ classifiers = [
 dependencies = [
     "ansicolors>=1.1.8",
     "attrs>=21.4.0",
-    "autobahn>=21.3.1",
+    "grpcio>=1.64.1, <2.0.0",
+    "grpcio-reflection>=1.64.1, <2.0.0",
+    "protobuf>=5.27.0",
     "jinja2>=3.0.2",
     "pexpect>=4.8.0",
     "pyserial-labgrid>=3.4.0.1",
@@ -118,11 +120,15 @@ dev = [
 
     # additional dev dependencies
     "psutil>=5.8.0",
+    "pytest-benchmark>=4.0.0",
     "pytest-cov>=3.0.0",
     "pytest-dependency>=0.5.1",
     "pytest-isort>=2.0.0",
     "pytest-mock>=3.6.1",
     "pylint>=3.0.0",
+
+    # GRPC Channelz support
+    "grpcio-channelz>=1.64.1, <2.0.0",
 ]
 
 [project.scripts]
@@ -130,6 +136,7 @@ labgrid-autoinstall = "labgrid.autoinstall.main:main"
 labgrid-client = "labgrid.remote.client:main"
 labgrid-exporter = "labgrid.remote.exporter:main"
 labgrid-suggest = "labgrid.resource.suggest:main"
+labgrid-coordinator = "labgrid.remote.coordinator:main"
 
 # the following makes a plugin available to pytest
 [project.entry-points.pytest11]
@@ -145,6 +152,7 @@ packages = [
     "labgrid.protocol",
     "labgrid.pytestplugin",
     "labgrid.remote",
+    "labgrid.remote.generated",
     "labgrid.resource",
     "labgrid.strategy",
     "labgrid.util",
@@ -211,6 +219,7 @@ enable = [
 generated-members = [
     "labgrid.driver.*",
     "labgrid.strategy.*",
+    "labgrid_coordinator_pb2",
 ]
 signature-mutators = ["labgrid.step.step"]
 

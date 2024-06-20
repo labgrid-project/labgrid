@@ -10,15 +10,15 @@ from fnmatch import fnmatchcase
 import attr
 
 __all__ = [
-    'TAG_KEY',
-    'TAG_VAL',
-    'ResourceEntry',
-    'ResourceMatch',
-    'Place',
-    'ReservationState',
-    'Reservation',
-    'enable_tcp_nodelay',
-    'monkey_patch_max_msg_payload_size_ws_option',
+    "TAG_KEY",
+    "TAG_VAL",
+    "ResourceEntry",
+    "ResourceMatch",
+    "Place",
+    "ReservationState",
+    "Reservation",
+    "enable_tcp_nodelay",
+    "monkey_patch_max_msg_payload_size_ws_option",
 ]
 
 TAG_KEY = re.compile(r"[a-z][a-z0-9_]+")
@@ -30,59 +30,59 @@ class ResourceEntry:
     data = attr.ib()  # cls, params
 
     def __attrs_post_init__(self):
-        self.data.setdefault('acquired', None)
-        self.data.setdefault('avail', False)
+        self.data.setdefault("acquired", None)
+        self.data.setdefault("avail", False)
 
     @property
     def acquired(self):
-        return self.data['acquired']
+        return self.data["acquired"]
 
     @property
     def avail(self):
-        return self.data['avail']
+        return self.data["avail"]
 
     @property
     def cls(self):
-        return self.data['cls']
+        return self.data["cls"]
 
     @property
     def params(self):
-        return self.data['params']
+        return self.data["params"]
 
     @property
     def args(self):
         """arguments for resource construction"""
-        args = self.data['params'].copy()
-        args.pop('extra', None)
+        args = self.data["params"].copy()
+        args.pop("extra", None)
         return args
 
     @property
     def extra(self):
         """extra resource information"""
-        return self.data['params'].get('extra', {})
+        return self.data["params"].get("extra", {})
 
     def asdict(self):
         return {
-            'cls': self.cls,
-            'params': self.params,
-            'acquired': self.acquired,
-            'avail': self.avail,
+            "cls": self.cls,
+            "params": self.params,
+            "acquired": self.acquired,
+            "avail": self.avail,
         }
 
     def update(self, data):
         """apply updated information from the exporter on the coordinator"""
         data = data.copy()
-        data.setdefault('acquired', None)
-        data.setdefault('avail', False)
+        data.setdefault("acquired", None)
+        data.setdefault("avail", False)
         self.data = data
 
     def acquire(self, place_name):
-        assert self.data['acquired'] is None
-        self.data['acquired'] = place_name
+        assert self.data["acquired"] is None
+        self.data["acquired"] = place_name
 
     def release(self):
         # ignore repeated releases
-        self.data['acquired'] = None
+        self.data["acquired"] = None
 
 
 @attr.s(eq=True, repr=False, str=False)
@@ -99,9 +99,7 @@ class ResourceMatch:
     @classmethod
     def fromstr(cls, pattern):
         if not 2 <= pattern.count("/") <= 3:
-            raise ValueError(
-                f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
-            )
+            raise ValueError(f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')")
         return cls(*pattern.split("/"))
 
     def __repr__(self):
@@ -160,30 +158,30 @@ class Place:
                 acquired_resources.append(resource.path)
 
         return {
-            'aliases': list(self.aliases),
-            'comment': self.comment,
-            'tags': self.tags,
-            'matches': [attr.asdict(x) for x in self.matches],
-            'acquired': self.acquired,
-            'acquired_resources': acquired_resources,
-            'allowed': list(self.allowed),
-            'created': self.created,
-            'changed': self.changed,
-            'reservation': self.reservation,
+            "aliases": list(self.aliases),
+            "comment": self.comment,
+            "tags": self.tags,
+            "matches": [attr.asdict(x) for x in self.matches],
+            "acquired": self.acquired,
+            "acquired_resources": acquired_resources,
+            "allowed": list(self.allowed),
+            "created": self.created,
+            "changed": self.changed,
+            "reservation": self.reservation,
         }
 
     def update(self, config):
         fields = attr.fields_dict(type(self))
         for k, v in config.items():
             assert k in fields
-            if k == 'name':
+            if k == "name":
                 # we cannot rename places
                 assert v == self.name
                 continue
             setattr(self, k, v)
 
     def show(self, level=0):
-        indent = '  ' * level
+        indent = "  " * level
         if self.aliases:
             print(indent + f"aliases: {', '.join(sorted(self.aliases))}")
         if self.comment:
@@ -240,7 +238,6 @@ class Place:
             if not any([match.ismatch(resource) for resource in resource_paths]):
                 return match
 
-
     def touch(self):
         self.changed = time.time()
 
@@ -256,12 +253,14 @@ class ReservationState(enum.Enum):
 @attr.s(eq=False)
 class Reservation:
     owner = attr.ib(validator=attr.validators.instance_of(str))
-    token = attr.ib(default=attr.Factory(
-        lambda: ''.join(random.choice(string.ascii_uppercase+string.digits) for i in range(10))))
+    token = attr.ib(
+        default=attr.Factory(lambda: "".join(random.choice(string.ascii_uppercase + string.digits) for i in range(10)))
+    )
     state = attr.ib(
-        default='waiting',
+        default="waiting",
         converter=lambda x: x if isinstance(x, ReservationState) else ReservationState[x],
-        validator=attr.validators.instance_of(ReservationState))
+        validator=attr.validators.instance_of(ReservationState),
+    )
     prio = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
     # a dictionary of name -> filter dicts
     filters = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
@@ -272,13 +271,13 @@ class Reservation:
 
     def asdict(self):
         return {
-            'owner': self.owner,
-            'state': self.state.name,
-            'prio': self.prio,
-            'filters': self.filters,
-            'allocations': self.allocations,
-            'created': self.created,
-            'timeout': self.timeout,
+            "owner": self.owner,
+            "state": self.state.name,
+            "prio": self.prio,
+            "filters": self.filters,
+            "allocations": self.allocations,
+            "created": self.created,
+            "timeout": self.timeout,
         }
 
     def refresh(self, delta=60):
@@ -289,7 +288,7 @@ class Reservation:
         return self.timeout < time.time()
 
     def show(self, level=0):
-        indent = '  ' * level
+        indent = "  " * level
         print(indent + f"owner: {self.owner}")
         print(indent + f"token: {self.token}")
         print(indent + f"state: {self.state.name}")
@@ -311,7 +310,7 @@ def enable_tcp_nodelay(session):
     asyncio/autobahn does not set TCP_NODELAY by default, so we need to do it
     like this for now.
     """
-    s = session._transport.transport.get_extra_info('socket')
+    s = session._transport.transport.get_extra_info("socket")
     s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
 
 

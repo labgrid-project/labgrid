@@ -1,4 +1,5 @@
 """The coordinator module coordinates exported resources and clients accessing them."""
+
 # pylint: disable=no-member,unused-argument
 import asyncio
 import sys
@@ -31,6 +32,7 @@ class Action(Enum):
 @attr.s(init=False, eq=False)
 class RemoteSession:
     """class encapsulating a session, used by ExporterSession and ClientSession"""
+
     coordinator = attr.ib()
     session = attr.ib()
     authid = attr.ib()
@@ -44,13 +46,14 @@ class RemoteSession:
     @property
     def name(self):
         """Name of the session"""
-        return self.authid.split('/', 1)[1]
+        return self.authid.split("/", 1)[1]
 
 
 @attr.s(eq=False)
 class ExporterSession(RemoteSession):
     """An ExporterSession is opened for each Exporter connecting to the
     coordinator, allowing the Exporter to get and set resources"""
+
     groups = attr.ib(default=attr.Factory(dict), init=False)
 
     def set_resource(self, groupname, resourcename, resourcedata):
@@ -61,8 +64,7 @@ class ExporterSession(RemoteSession):
             new = old
         elif resourcedata and not old:
             new = group[resourcename] = ResourceImport(
-                resourcedata,
-                path=(self.name, groupname, resourcedata['cls'], resourcename)
+                resourcedata, path=(self.name, groupname, resourcedata["cls"], resourcename)
             )
         elif not resourcedata and old:
             new = None
@@ -72,8 +74,7 @@ class ExporterSession(RemoteSession):
             new = None
 
         self.coordinator.publish(
-            'org.labgrid.coordinator.resource_changed', self.name,
-            groupname, resourcename, new.asdict() if new else {}
+            "org.labgrid.coordinator.resource_changed", self.name, groupname, resourcename, new.asdict() if new else {}
         )
 
         if old and new:
@@ -107,6 +108,7 @@ class ResourceImport(ResourceEntry):
 
     The ResourceEntry attributes contain the information for the client.
     """
+
     path = attr.ib(kw_only=True, validator=attr.validators.instance_of(tuple))
 
 
@@ -115,7 +117,9 @@ def locked(func):
     async def wrapper(self, *args, **kwargs):
         async with self.lock:
             return await func(self, *args, **kwargs)
+
     return wrapper
+
 
 class CoordinatorComponent(ApplicationSession):
     def __init__(self, *args, **kwargs):
@@ -143,93 +147,60 @@ class CoordinatorComponent(ApplicationSession):
 
     @locked
     async def onJoin(self, details):
-        await self.subscribe(self.on_session_join, 'wamp.session.on_join')
-        await self.subscribe(
-            self.on_session_leave, 'wamp.session.on_leave'
-        )
+        await self.subscribe(self.on_session_join, "wamp.session.on_join")
+        await self.subscribe(self.on_session_leave, "wamp.session.on_leave")
         await self.register(
-            self.attach,
-            'org.labgrid.coordinator.attach',
-            options=RegisterOptions(details_arg='details')
+            self.attach, "org.labgrid.coordinator.attach", options=RegisterOptions(details_arg="details")
         )
 
         # resources
         await self.register(
-            self.set_resource,
-            'org.labgrid.coordinator.set_resource',
-            options=RegisterOptions(details_arg='details')
+            self.set_resource, "org.labgrid.coordinator.set_resource", options=RegisterOptions(details_arg="details")
         )
-        await self.register(
-            self.get_resources,
-            'org.labgrid.coordinator.get_resources'
-        )
+        await self.register(self.get_resources, "org.labgrid.coordinator.get_resources")
 
         # places
+        await self.register(self.add_place, "org.labgrid.coordinator.add_place")
+        await self.register(self.del_place, "org.labgrid.coordinator.del_place")
+        await self.register(self.add_place_alias, "org.labgrid.coordinator.add_place_alias")
+        await self.register(self.del_place_alias, "org.labgrid.coordinator.del_place_alias")
+        await self.register(self.set_place_tags, "org.labgrid.coordinator.set_place_tags")
+        await self.register(self.set_place_comment, "org.labgrid.coordinator.set_place_comment")
+        await self.register(self.add_place_match, "org.labgrid.coordinator.add_place_match")
+        await self.register(self.del_place_match, "org.labgrid.coordinator.del_place_match")
         await self.register(
-            self.add_place, 'org.labgrid.coordinator.add_place'
+            self.acquire_place, "org.labgrid.coordinator.acquire_place", options=RegisterOptions(details_arg="details")
         )
         await self.register(
-            self.del_place, 'org.labgrid.coordinator.del_place'
-        )
-        await self.register(
-            self.add_place_alias, 'org.labgrid.coordinator.add_place_alias'
-        )
-        await self.register(
-            self.del_place_alias, 'org.labgrid.coordinator.del_place_alias'
-        )
-        await self.register(
-            self.set_place_tags, 'org.labgrid.coordinator.set_place_tags'
-        )
-        await self.register(
-            self.set_place_comment, 'org.labgrid.coordinator.set_place_comment'
-        )
-        await self.register(
-            self.add_place_match, 'org.labgrid.coordinator.add_place_match'
-        )
-        await self.register(
-            self.del_place_match, 'org.labgrid.coordinator.del_place_match'
-        )
-        await self.register(
-            self.acquire_place,
-            'org.labgrid.coordinator.acquire_place',
-            options=RegisterOptions(details_arg='details')
-        )
-        await self.register(
-            self.release_place,
-            'org.labgrid.coordinator.release_place',
-            options=RegisterOptions(details_arg='details')
+            self.release_place, "org.labgrid.coordinator.release_place", options=RegisterOptions(details_arg="details")
         )
         await self.register(
             self.release_place_from,
-            'org.labgrid.coordinator.release_place_from',
-            options=RegisterOptions(details_arg='details')
+            "org.labgrid.coordinator.release_place_from",
+            options=RegisterOptions(details_arg="details"),
         )
         await self.register(
-            self.allow_place,
-            'org.labgrid.coordinator.allow_place',
-            options=RegisterOptions(details_arg='details')
+            self.allow_place, "org.labgrid.coordinator.allow_place", options=RegisterOptions(details_arg="details")
         )
-        await self.register(
-            self.get_places, 'org.labgrid.coordinator.get_places'
-        )
+        await self.register(self.get_places, "org.labgrid.coordinator.get_places")
 
         # reservations
         await self.register(
             self.create_reservation,
-            'org.labgrid.coordinator.create_reservation',
-            options=RegisterOptions(details_arg='details'),
+            "org.labgrid.coordinator.create_reservation",
+            options=RegisterOptions(details_arg="details"),
         )
         await self.register(
             self.cancel_reservation,
-            'org.labgrid.coordinator.cancel_reservation',
+            "org.labgrid.coordinator.cancel_reservation",
         )
         await self.register(
             self.poll_reservation,
-            'org.labgrid.coordinator.poll_reservation',
+            "org.labgrid.coordinator.poll_reservation",
         )
         await self.register(
             self.get_reservations,
-            'org.labgrid.coordinator.get_reservations',
+            "org.labgrid.coordinator.get_reservations",
         )
 
         self.poll_task = asyncio.get_event_loop().create_task(self.poll())
@@ -250,7 +221,7 @@ class CoordinatorComponent(ApplicationSession):
         if self.poll_task:
             self.poll_task.cancel()
             await asyncio.wait([self.poll_task])
-            await asyncio.sleep(0.5) # give others a chance to clean up
+            await asyncio.sleep(0.5)  # give others a chance to clean up
 
     async def _poll_step(self):
         # save changes
@@ -259,26 +230,24 @@ class CoordinatorComponent(ApplicationSession):
         # poll exporters
         for session in list(self.sessions.values()):
             if isinstance(session, ExporterSession):
-                fut = self.call(
-                    f'org.labgrid.exporter.{session.name}.version'
-                )
+                fut = self.call(f"org.labgrid.exporter.{session.name}.version")
                 done, _ = await asyncio.wait([fut], timeout=5)
                 if not done:
-                    print(f'kicking exporter ({session.key}/{session.name})')
-                    await self.call('wamp.session.kill', session.key, message="timeout detected by coordinator")
-                    print(f'cleaning up exporter ({session.key}/{session.name})')
+                    print(f"kicking exporter ({session.key}/{session.name})")
+                    await self.call("wamp.session.kill", session.key, message="timeout detected by coordinator")
+                    print(f"cleaning up exporter ({session.key}/{session.name})")
                     await self.on_session_leave(session.key)
-                    print(f'removed exporter ({session.key}/{session.name})')
+                    print(f"removed exporter ({session.key}/{session.name})")
                     continue
                 try:
                     session.version = done.pop().result()
                 except wamp.exception.ApplicationError as e:
                     if e.error == "wamp.error.no_such_procedure":
-                        pass # old client
+                        pass  # old client
                     elif e.error == "wamp.error.canceled":
-                        pass # disconnected
+                        pass  # disconnected
                     elif e.error == "wamp.error.no_such_session":
-                        pass # client has already disconnected
+                        pass  # client has already disconnected
                     else:
                         raise
         # update reservations
@@ -309,26 +278,26 @@ class CoordinatorComponent(ApplicationSession):
         places = places.encode()
 
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, atomic_replace, 'resources.yaml', resources)
-        await loop.run_in_executor(None, atomic_replace, 'places.yaml', places)
+        await loop.run_in_executor(None, atomic_replace, "resources.yaml", resources)
+        await loop.run_in_executor(None, atomic_replace, "places.yaml", places)
 
     def load(self):
         try:
             self.places = {}
-            with open('places.yaml', 'r') as f:
+            with open("places.yaml", "r") as f:
                 self.places = yaml.load(f.read())
             for placename, config in self.places.items():
-                config['name'] = placename
+                config["name"] = placename
                 # FIXME maybe recover previously acquired places here?
-                if 'acquired' in config:
-                    del config['acquired']
-                if 'acquired_resources' in config:
-                    del config['acquired_resources']
-                if 'allowed' in config:
-                    del config['allowed']
-                if 'reservation' in config:
-                    del config['reservation']
-                config['matches'] = [ResourceMatch(**match) for match in config['matches']]
+                if "acquired" in config:
+                    del config["acquired"]
+                if "acquired_resources" in config:
+                    del config["acquired_resources"]
+                if "allowed" in config:
+                    del config["allowed"]
+                if "reservation" in config:
+                    del config["reservation"]
+                config["matches"] = [ResourceMatch(**match) for match in config["matches"]]
                 place = Place(**config)
                 self.places[placename] = place
         except FileNotFoundError:
@@ -371,28 +340,26 @@ class CoordinatorComponent(ApplicationSession):
                 self._publish_place(place)
 
     def _publish_place(self, place):
-        self.publish(
-            'org.labgrid.coordinator.place_changed', place.name, place.asdict()
-        )
+        self.publish("org.labgrid.coordinator.place_changed", place.name, place.asdict())
 
     def _publish_resource(self, resource):
         self.publish(
-            'org.labgrid.coordinator.resource_changed',
-            resource.path[0], # exporter name
-            resource.path[1], # group name
-            resource.path[3], # resource name
+            "org.labgrid.coordinator.resource_changed",
+            resource.path[0],  # exporter name
+            resource.path[1],  # group name
+            resource.path[3],  # resource name
             resource.asdict(),
         )
 
     @locked
     async def on_session_join(self, session_details):
-        print('join')
+        print("join")
         pprint(session_details)
-        session = session_details['session']
-        authid = session_details['authextra'].get('authid') or session_details['authid']
-        if authid.startswith('client/'):
+        session = session_details["session"]
+        authid = session_details["authextra"].get("authid") or session_details["authid"]
+        if authid.startswith("client/"):
             session = ClientSession(self, session, authid)
-        elif authid.startswith('exporter/'):
+        elif authid.startswith("exporter/"):
             session = ExporterSession(self, session, authid)
         else:
             return
@@ -400,7 +367,7 @@ class CoordinatorComponent(ApplicationSession):
 
     @locked
     async def on_session_leave(self, session_id):
-        print(f'leave ({session_id})')
+        print(f"leave ({session_id})")
         try:
             session = self.sessions.pop(session_id)
         except KeyError:
@@ -417,7 +384,7 @@ class CoordinatorComponent(ApplicationSession):
         # TODO check if name is in use
         session = self.sessions[details.caller]
         session_details = self.sessions[session]
-        session_details['name'] = name
+        session_details["name"] = name
         self.exporters[name] = defaultdict(dict)
 
     # not @locked because set_resource my be triggered by a acquire() call to
@@ -473,9 +440,7 @@ class CoordinatorComponent(ApplicationSession):
         if name not in self.places:
             return False
         del self.places[name]
-        self.publish(
-            'org.labgrid.coordinator.place_changed', name, {}
-        )
+        self.publish("org.labgrid.coordinator.place_changed", name, {})
         self.save_later()
         return True
 
@@ -551,7 +516,7 @@ class CoordinatorComponent(ApplicationSession):
             place = self.places[placename]
         except KeyError:
             return False
-        match = ResourceMatch(*pattern.split('/'), rename=rename)
+        match = ResourceMatch(*pattern.split("/"), rename=rename)
         if match in place.matches:
             return False
         place.matches.append(match)
@@ -566,7 +531,7 @@ class CoordinatorComponent(ApplicationSession):
             place = self.places[placename]
         except KeyError:
             return False
-        match = ResourceMatch(*pattern.split('/'), rename=rename)
+        match = ResourceMatch(*pattern.split("/"), rename=rename)
         try:
             place.matches.remove(match)
         except ValueError:
@@ -577,7 +542,7 @@ class CoordinatorComponent(ApplicationSession):
         return True
 
     async def _acquire_resources(self, place, resources):
-        resources = resources.copy() # we may modify the list
+        resources = resources.copy()  # we may modify the list
         # all resources need to be free
         for resource in resources:
             if resource.acquired:
@@ -589,8 +554,9 @@ class CoordinatorComponent(ApplicationSession):
             for resource in resources:
                 # this triggers an update from the exporter which is published
                 # to the clients
-                await self.call(f'org.labgrid.exporter.{resource.path[0]}.acquire',
-                                resource.path[1], resource.path[3], place.name)
+                await self.call(
+                    f"org.labgrid.exporter.{resource.path[0]}.acquire", resource.path[1], resource.path[3], place.name
+                )
                 acquired.append(resource)
         except:
             print(f"failed to acquire {resource}", file=sys.stderr)
@@ -604,7 +570,7 @@ class CoordinatorComponent(ApplicationSession):
         return True
 
     async def _release_resources(self, place, resources, callback=True):
-        resources = resources.copy() # we may modify the list
+        resources = resources.copy()  # we may modify the list
 
         for resource in resources:
             try:
@@ -617,8 +583,9 @@ class CoordinatorComponent(ApplicationSession):
                 # this triggers an update from the exporter which is published
                 # to the clients
                 if callback:
-                    await self.call(f'org.labgrid.exporter.{resource.path[0]}.release',
-                                    resource.path[1], resource.path[3])
+                    await self.call(
+                        f"org.labgrid.exporter.{resource.path[0]}.release", resource.path[1], resource.path[3]
+                    )
             except:
                 print(f"failed to release {resource}", file=sys.stderr)
                 # at leaset try to notify the clients
@@ -758,10 +725,10 @@ class CoordinatorComponent(ApplicationSession):
                 res.state = ReservationState.expired
                 res.allocations.clear()
                 res.refresh()
-                print(f'reservation ({res.owner}/{res.token}) is now {res.state.name}')
+                print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
             else:
                 del self.reservations[res.token]
-                print(f'removed {res.state.name} reservation ({res.owner}/{res.token})')
+                print(f"removed {res.state.name} reservation ({res.owner}/{res.token})")
 
         # check which places are already allocated and handle state transitions
         allocated_places = set()
@@ -775,7 +742,7 @@ class CoordinatorComponent(ApplicationSession):
                         res.state = ReservationState.invalid
                         res.allocations.clear()
                         res.refresh(300)
-                        print(f'reservation ({res.owner}/{res.token}) is now {res.state.name}')
+                        print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
                     if place.acquired is not None:
                         acquired_places.add(name)
                     assert name not in allocated_places, "conflicting allocation"
@@ -784,12 +751,12 @@ class CoordinatorComponent(ApplicationSession):
                 # an allocated place was acquired
                 res.state = ReservationState.acquired
                 res.refresh()
-                print(f'reservation ({res.owner}/{res.token}) is now {res.state.name}')
+                print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
             if not acquired_places and res.state is ReservationState.acquired:
                 # all allocated places were released
                 res.state = ReservationState.allocated
                 res.refresh()
-                print(f'reservation ({res.owner}/{res.token}) is now {res.state.name}')
+                print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
 
         # check which places are available for allocation
         available_places = set()
@@ -811,21 +778,21 @@ class CoordinatorComponent(ApplicationSession):
         for name in available_places:
             tags = set(self.places[name].tags.items())
             # support place names
-            tags |= {('name', name)}
+            tags |= {("name", name)}
             # support place aliases
             place_tagsets.append(TagSet(name, tags))
         filter_tagsets = []
         for res in pending_reservations:
-            filter_tagsets.append(TagSet(res.token, set(res.filters['main'].items())))
+            filter_tagsets.append(TagSet(res.token, set(res.filters["main"].items())))
         allocation = schedule(place_tagsets, filter_tagsets)
 
         # apply allocations
         for res_token, place_name in allocation.items():
             res = self.reservations[res_token]
-            res.allocations = {'main': [place_name]}
+            res.allocations = {"main": [place_name]}
             res.state = ReservationState.allocated
             res.refresh()
-            print(f'reservation ({res.owner}/{res.token}) is now {res.state.name}')
+            print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
 
         # update reservation property of each place and notify
         old_map = {}
@@ -853,7 +820,7 @@ class CoordinatorComponent(ApplicationSession):
         filter_ = {}
         for pair in spec.split():
             try:
-                k, v = pair.split('=')
+                k, v = pair.split("=")
             except ValueError:
                 return None
             if not TAG_KEY.match(k):
@@ -862,7 +829,7 @@ class CoordinatorComponent(ApplicationSession):
                 return None
             filter_[k] = v
 
-        filters = {'main': filter_} # currently, only one group is implemented
+        filters = {"main": filter_}  # currently, only one group is implemented
 
         owner = self.sessions[details.caller].name
         res = Reservation(owner=owner, prio=prio, filters=filters)
@@ -893,7 +860,8 @@ class CoordinatorComponent(ApplicationSession):
     async def get_reservations(self, details=None):
         return {k: v.asdict() for k, v in self.reservations.items()}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     runner = ApplicationRunner(
         url=environ.get("WS", "ws://127.0.0.1:20408/ws"),
         realm="realm1",

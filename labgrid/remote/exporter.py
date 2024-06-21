@@ -242,7 +242,7 @@ class SerialPortExport(ResourceExport):
         if version not in [(4, 4, 0), (4, 5, 0), (4, 5, 1), (4, 6, 0), (4, 6, 1)] and result.returncode == 1:
             raise ExporterError(f"ser2net {version} returned a nonzero code during version check.")
 
-        if version >= (4, 0, 0):
+        if version >= (4, 2, 0):
             cmd = [
                 self.ser2net_bin,
                 "-d",

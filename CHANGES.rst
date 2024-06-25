@@ -10,10 +10,44 @@ New Features in 24.0
 - A new log level called ``CONSOLE`` has been added between the default
   ``INFO`` and ``DEBUG`` levels. This level will show all reads and writes made
   to the serial console during testing.
-- The `QEMUDriver` now has an additional ``disk_opts`` property which can be
+- The docker support was extended to support buildx, allowing the build of arm64
+  container images.
+- The tool lookup function has been extended to return the original name in case
+  the path can't be found. This makes specification of the qemu binary easier to
+  use.
+- The ``bindings`` base class has been extended, allowing the user to retrieve
+  all resources used by a driver.
+- Support for STLink V2 was added.
+- ``UBootStrategy`` was extended with a ``force()`` function.
+- labgrid was switched from pysnmp to pysnmp-lexstudio.
+- Support for Segger J-Link was added.
+- Place tags are now exposed by the RemotePlace.
+- The sync-places contrib script has gained support for named matches.
+- Remote support for YKush Devices was added.
+- Support for sigrok DMMs was added.
+- Support for Digital Outputs switched via HTTP was added.
+- The ``QEMUDriver`` has a new get_qemu_base_args() function which can be used to
+  extract the arguments passed to qemu.
+- The ``SSHDriver`` has gained support to forward unix sockets.
+- The exporter has gained an ``--fqdn`` argument to set the hostname to the
+  fully qualified domain name instead of the hostname.
+- The ``QEMUDriver`` now has an additional ``disk_opts`` property which can be
   used to pass additional options for the disk directly to QEMU
+- All drivers now inherit a logger from the ``Driver`` base class and many
+  drivers were changed to use this logger.
+- The new ``poe_mib`` backend allows switching of power over Ethernet-capable
+  ports on switches that use the corresponding SNMP MIB.
+- The ``RawNetworkInterfaceDriver`` allows the replay and recording of network
+  packets on ethernet interfaces.
+- The i.MX93 usb loader USB ID has been added to the ``IMXUSBLoader`` resource.
+- Support for udev matched GPIOs has been added.
 - labgrid-client now has a ``write-files`` subcommand to copy files onto mass
   storage devices.
+- The ``NetworkPowerPort`` supports a new backend ``ubus``. It controls PoE
+  switches running OpenWrt using the ubus interface.
+- The pyproject.toml gained a config for `ruff <https://github.com/astral-sh/ruff>`_.
+- ``setuptools_scm`` is now used to generate a version file.
+
 
 Bug fixes in 24.0
 ~~~~~~~~~~~~~~~~~
@@ -22,19 +56,55 @@ Bug fixes in 24.0
   of pip.
 - Several tests have gained an importorskip() call to skip them if the
   module is not available.
+- labgrid now uses its own pyserial fork from pypi since installation from
+  github as an egg is no longer properly supported.
 - The build-and-release workflow supports building wheels.
-- The markers now are restricted to patterns which won't match WARN,
-  ERROR, INFO and similar log notifiers.
 - Fix named SSH lookups in conjunction with an environment file in
   labgrid-client.
+- The crossbar virtual-environment now needs to be separate from the labgrid
+  environment, for more information please consult the `current documentation <https://labgrid.readthedocs.io/en/latest/getting_started.html#coordinator>`_.
+- The markers now are restricted to patterns which won't match WARN,
+  ERROR, INFO and similar log notifiers.
+- A race inside the ``SSHDriver`` cleanup has been fixed.
+- The ``labgrid-client monitor`` command now outputs the full resource identifier.
+- Many of the USB loader commands e.g. imx-usb-loader will now print to the
+  console when logging is not enabled.
+- An ``UnboundLocalError`` inside the atomic_replace code which is used inside the
+  coordinator was fixed.
+- Resources of different classes can now have the same name.
+- A bug within the pytest logging setup was fixed.
+- The ``QemuDriver`` correctly handles the different command lines for virgl
+  enablement.
+- A bug was fixed where resource names were ignored during lookup of the correct
+  power driver.
+- ManagedFile was fixed to work with the stat command on Darwin.
+- Instead of using a private member on the pytest config, the labgrid plugin now
+  uses the pytest config stash.
+- The ``ShellDriver`` was fixed to set the correct status attribute.
+- The USBNetworkInterface now warns if the interface name is set, as it will be
+  overwritten by the ResourceManager to assign the correct interface name.
 - Fix sftp option issue in SSH driver that caused sftp to only work once per
   test run.
 - ManagedFile NFS detection heuristic now does symlink resolution on the
   local host.
-- The password for the ShellDriver can now be an empty string.
+- XModem support within the Shelldriver was fixed by removing the newline from
+  the marker.
+- A typo in the ``NFSProviderDriver`` class was fixed. Documentation was already
+  correct, however the classname contained an additional P.
+- The ``--loop`` argument for labgrid-client console was fixed.
+- The password for the ``ShellDriver`` can now be an empty string.
+- The default crossbar configuration now enables auto-fragmentation to handle
+  bigger labs where the payload size can be bigger than 1 megabyte.
+- The ``SSHDriver`` redirects ``/dev/null`` to stdin of commands run via SSH.
+  This prevents unexpected input, especially when using the
+  ``ManualPowerDriver`` or a REPL.
+- The ``ser2net`` version check for YAML configurations in the exporter was
+  fixed.
+- The exporter forces ``ser2net`` TCP connections for versions >=4.2.0.
 
 Breaking changes in 24.0
 ~~~~~~~~~~~~~~~~~~~~~~~~
+- Support for Python 3.7 was dropped.
 - Support for the legacy ticket authentication was dropped: If the coordinator
   logs ModuleNotFoundError on startup, switch the crossbar config to anonymous
   authentication (see ``.crossbar/config-anonymous.yaml`` for an example).
@@ -82,6 +152,7 @@ Breaking changes in 24.0
 
 Known issues in 24.0
 ~~~~~~~~~~~~~~~~~~~~
+- Some client commands return 0 even if the command failed.
 
 
 Release 23.0 (Released Apr 24, 2023)

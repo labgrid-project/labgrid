@@ -349,8 +349,8 @@ Now we can connect to the serial console:
 
     labgrid-venv $ labgrid-client -p example-place console
 
-.. note:: Using remote connection requires ``microcom`` installed on the host
-   where the labgrid-client is called.
+.. note:: Using remote connection requires ``microcom`` or ``telnet`` installed
+   on the host where the labgrid-client is called.
 
 See :ref:`remote-usage` for some more advanced features.
 For a complete reference have a look at the :doc:`labgrid-client(1) <man/client>`

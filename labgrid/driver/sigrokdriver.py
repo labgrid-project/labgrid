@@ -2,7 +2,6 @@ import os.path
 import re
 import subprocess
 import shutil
-import signal
 import tempfile
 import time
 import uuid
@@ -149,6 +148,16 @@ class SigrokDriver(SigrokCommon):
         args = self.sigrok.command_prefix + ['test', '-e', filename]
 
         while subprocess.call(args):
+            # in case the sigrok-cli call fails, this would wait forever.
+            # to avoid this, we also check the spawned sigrok process
+            if self._process.poll() is not None:
+                ret = self._process.returncode
+                if ret != 0:
+                    stdout, stderr = self._process.communicate()
+                    self.logger.debug("sigrok-cli call terminated prematurely with non-zero return-code")
+                    self.logger.debug("stdout: %s", stdout)
+                    self.logger.debug("stderr: %s", stderr)
+                    raise ExecutionError(f"sigrok-cli call terminated prematurely with return-code '{ret}'.")
             sleep(0.1)
 
         self._running = True
@@ -161,15 +170,15 @@ class SigrokDriver(SigrokCommon):
         fnames.extend(self.sigrok.channels.split(','))
         csv_filename = f'{os.path.splitext(self._basename)[0]}.csv'
 
-        self._process.send_signal(signal.SIGINT)
-        stdout, stderr = self._process.communicate()
+        # sigrok-cli can be quit through any keypress
+        stdout, stderr = self._process.communicate(input="q")
         self.logger.debug("stdout: %s", stdout)
         self.logger.debug("stderr: %s", stderr)
 
         # Convert from .sr to .csv
         cmd = [
             '-i',
-            os.path.join(self._tmpdir, self._basename), '-O', 'csv', '-o',
+            os.path.join(self._tmpdir, self._basename), '-O', 'csv:time=true', '-o',
             os.path.join(self._tmpdir, csv_filename)
         ]
         self._call(*cmd)
@@ -179,7 +188,7 @@ class SigrokDriver(SigrokCommon):
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
             subprocess.call([
                 'scp', f'{self.sigrok.host}:{os.path.join(self._tmpdir, self._basename)}',
-                os.path.join(self._local_tmpdir, self._filename)
+                os.path.abspath(self._filename)
             ],
                             stdin=subprocess.DEVNULL,
                             stdout=subprocess.DEVNULL,
@@ -212,7 +221,7 @@ class SigrokDriver(SigrokCommon):
     def analyze(self, args, filename=None):
         annotation_regex = re.compile(r'(?P<startnum>\d+)-(?P<endnum>\d+) (?P<decoder>[\w\-]+): (?P<annotation>[\w\-]+): (?P<data>".*)')  # pylint: disable=line-too-long
         if not filename and self._filename:
-            filename = self._filename
+            filename = os.path.join(self._tmpdir, self._basename)
         else:
             filename = os.path.abspath(filename)
         check_file(filename, command_prefix=self.sigrok.command_prefix)

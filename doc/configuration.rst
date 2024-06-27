@@ -2211,6 +2211,7 @@ Implements:
 
    SerialPortDigitalOutputDriver:
      signal: 'dtr'
+     invert: false
      bindings:
        serial: 'nameOfSerial'
 

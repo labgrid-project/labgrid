@@ -519,9 +519,9 @@ Arguments:
   - body_deasserted (str): Request body to send to de-assert the output
   - method (str, default="PUT"): HTTP method to set a new state
 
-  - url_get (str): URL to use instead of ``url`` for getting the state
-  - body_get_asserted (str): Regular Expression that matches an asserted response body
-  - body_get_deasserted (str): Regular Expression that matches a de-asserted response body
+  - url_get (str): optional, URL to use instead of ``url`` for getting the state
+  - body_get_asserted (str): optional, regular expression that matches an asserted response body
+  - body_get_deasserted (str): optional, regular expression that matches a de-asserted response body
 
 Used by:
   - `HttpDigitalOutputDriver`_
@@ -1197,7 +1197,7 @@ Arguments:
     ASRL, TCPIP...
   - url (str): device identifier on selected resource, e.g. <ip> for TCPIP
     resource
-  - backend (str): Visa library backend, e.g. '@sim' for pyvisa-sim backend
+  - backend (str): optional, Visa library backend, e.g. '@sim' for pyvisa-sim backend
 
 Used by:
   - `PyVISADriver`_
@@ -3081,10 +3081,10 @@ Implements:
 
 Arguments:
   - image_uri (str): identifier of the docker image to use (may have a tag suffix)
-  - command (str): command to run in the container (optional, depends on image)
-  - volumes (list): list to configure volumes mounted inside the container (optional)
+  - command (str): optional, command to run in the container (depends on image)
+  - volumes (list): optional, list to configure volumes mounted inside the container
   - container_name (str): name of the container
-  - environment (list): list of environment variables (optional)
+  - environment (list): optional, list of environment variables
   - host_config (dict): dictionary of host configurations
   - network_services (list): dictionaries that describe individual `NetworkService`_
     instances that come alive when the container is created. The "address" argument

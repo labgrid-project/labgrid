@@ -515,8 +515,8 @@ expressions.
 
 Arguments:
   - url (str): URL to use for setting a new state
-  - body_asserted (str): Request body to send to assert the output
-  - body_deasserted (str): Request body to send to de-assert the output
+  - body_asserted (str): request body to send to assert the output
+  - body_deasserted (str): request body to send to de-assert the output
   - method (str, default="PUT"): HTTP method to set a new state
 
   - url_get (str): optional, URL to use instead of ``url`` for getting the state
@@ -1387,7 +1387,7 @@ interrupts or unix kill signals may lead to hanging containers, however;
 therefore auto-cleanup is important.
 
 Arguments:
-  - docker_daemon_url (str): The url of the daemon to use for this target
+  - docker_daemon_url (str): url of the daemon to use for this target
 
 Used by:
   - `DockerDriver`_

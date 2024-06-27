@@ -1047,7 +1047,6 @@ A :any:`USBTMC` resource describes an oscilloscope connected via the *USB TMC
 protocol*.
 The low-level communication is handled by the "usbtmc" kernel driver.
 
-
 .. code-block:: yaml
 
    USBTMC:
@@ -1133,7 +1132,6 @@ NetworkUSBFlashableDevice
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkUSBFlashableDevice` resource describes a `USBFlashableDevice`_
 resource available on a remote computer
-
 
 DediprogFlasher
 ~~~~~~~~~~~~~~~
@@ -2659,7 +2657,6 @@ Binds to:
    images:
      dtb: '../images/mydtb.dtb'
      kernel: '../images/vmlinuz'
-
 
 Implements:
   - :any:`ConsoleProtocol`

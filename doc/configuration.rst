@@ -3024,6 +3024,9 @@ The :any:`DediprogFlashDriver` is used to flash an SPI device using DediprogFlas
 
    DediprogFlashDriver:
      image: 'foo'
+
+.. code-block:: yaml
+
    images:
      foo: '../images/image_to_load.raw'
 

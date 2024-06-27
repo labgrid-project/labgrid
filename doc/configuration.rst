@@ -236,7 +236,7 @@ Currently available are:
 
 ``ubus``
   Controls *PoE switches* running OpenWrt using the *ubus* interface.
-  Further infromation available at <https://openwrt.org/docs/techref/ubus>
+  Further information available at <https://openwrt.org/docs/techref/ubus>
 
 Used by:
   - `NetworkPowerDriver`_

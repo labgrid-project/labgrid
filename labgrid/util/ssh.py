@@ -521,9 +521,10 @@ class SSHConnection:
     def disconnect(self):
         assert self._connected
         try:
+            self._stop_keepalive()
+
             if self._socket:
                 self._logger.info("Closing SSH connection to %s", self.host)
-                self._stop_keepalive()
                 self._stop_own_master()
         finally:
             self._connected = False

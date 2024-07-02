@@ -542,6 +542,8 @@ environment config:
       '_run',
       Mock(return_value=(['OK'], [], 0))
   ).start()
+  patch.object(ShellDriver, "_silence_kernel", Mock()).start()
+  patch.object(ShellDriver, "_inject_run", Mock()).start()
 
 .. testcode:: pytest-example
   :hide:

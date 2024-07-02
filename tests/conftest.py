@@ -60,6 +60,54 @@ class Prefixer:
         return getattr(self.__wrapped, name)
 
 
+class Exporter:
+    def __init__(self, config, cwd):
+        self.cwd = str(cwd)
+        self.config = config
+        self.spawn = None
+        self.reader = None
+
+    def start(self):
+        assert self.spawn is None
+        assert self.reader is None
+
+        self.spawn = pexpect.spawn(
+            f'{sys.executable} -m labgrid.remote.exporter --name testhost {self.config}',
+            logfile=Prefixer(sys.stdout.buffer, 'exporter'),
+            cwd=self.cwd)
+        try:
+            self.spawn.expect('exporter name: testhost')
+            self.spawn.expect('connected to exporter')
+        except Exception as e:
+            raise Exception(f"exporter startup failed with {self.spawn.before}") from e
+
+        self.reader = threading.Thread(
+            target=keep_reading,
+            name=f'exporter-reader-{self.pid}',
+            args=(self.spawn,), daemon=True)
+        self.reader.start()
+
+    def stop(self):
+        logging.info("stopping exporter pid=%s", self.spawn.pid)
+        self.spawn.close(force=True)
+        assert not self.spawn.isalive()
+        self.reader.join()
+
+        self.spawn = None
+        self.reader = None
+
+    def isalive(self):
+        return self.spawn.isalive()
+
+    @property
+    def exitstatus(self):
+        return self.spawn.exitstatus
+
+    @property
+    def pid(self):
+        return self.spawn.pid
+
+
 @pytest.fixture(scope='function')
 def target():
     return Target('Test')
@@ -123,16 +171,9 @@ def coordinator(tmpdir):
     reader.join()
 
 @pytest.fixture(scope='function')
-def exporter(tmpdir, coordinator, start_exporter):
-    yield start_exporter()
-
-
-@pytest.fixture(scope='function')
-def start_exporter(tmpdir, coordinator):
-    spawns = []
-    readers = []
-
-    p = tmpdir.join("exports.yaml")
+def exporter(tmpdir, coordinator):
+    config = "exports.yaml"
+    p = tmpdir.join(config)
     p.write(
         """
     Testport:
@@ -152,32 +193,12 @@ def start_exporter(tmpdir, coordinator):
     """
     )
 
-    def _start_exporter():
-        spawn = pexpect.spawn(
-                f'{sys.executable} -m labgrid.remote.exporter --name testhost exports.yaml',
-                logfile=Prefixer(sys.stdout.buffer, 'exporter'),
-                cwd=str(tmpdir))
-        try:
-            spawn.expect('exporter name: testhost')
-            spawn.expect('connected to exporter')
-        except:
-            print(f"exporter startup failed with {spawn.before}")
-            raise
-        reader = threading.Thread(target=keep_reading, name=f'exporter-reader-{spawn.pid}', args=(spawn,), daemon=True)
-        reader.start()
+    exporter = Exporter(config, tmpdir)
+    exporter.start()
 
-        spawns.append(spawn)
-        readers.append(reader)
+    yield exporter
 
-        return spawn
-
-    yield _start_exporter
-
-    for spawn, reader in zip(spawns, readers):
-        print(f"stopping exporter pid={spawn.pid}")
-        spawn.close(force=True)
-        assert not spawn.isalive()
-        reader.join()
+    exporter.stop()
 
 def pytest_addoption(parser):
     parser.addoption("--sigrok-usb", action="store_true",

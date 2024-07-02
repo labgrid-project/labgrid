@@ -393,13 +393,11 @@ def test_reservation(place_acquire, tmpdir):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-def test_resource_acquired_state_on_exporter_restart(monkeypatch, place,start_exporter):
+def test_resource_acquired_state_on_exporter_restart(monkeypatch, place, exporter):
     user = "test-user"
     host = "test-host"
     monkeypatch.setenv("LG_USERNAME", user)
     monkeypatch.setenv("LG_HOSTNAME", host)
-
-    exporter = start_exporter()
 
     # add resource match
     with pexpect.spawn('python -m labgrid.remote.client -p test add-match testhost/Testport/NetworkSerialPort') as spawn:
@@ -433,12 +431,9 @@ def test_resource_acquired_state_on_exporter_restart(monkeypatch, place,start_ex
         assert spawn.exitstatus == 0, spawn.before.strip()
         assert b"Resource 'NetworkSerialPort' (testhost/Testport/NetworkSerialPort[/NetworkSerialPort]):\r\n      {'acquired': 'test'," in spawn.before
 
-    # stop exporter
-    exporter.close()
-    assert not exporter.isalive()
-
-    # start exporter again
-    exporter = start_exporter()
+    # restart exporter
+    exporter.stop()
+    exporter.start()
 
     # make sure matching resource is still found
     with pexpect.spawn('python -m labgrid.remote.client -p test show') as spawn:

@@ -334,7 +334,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             if exporter.name == name:
                 return exporter
 
-    async def _update_acquired_places(self, action, resource, callback=True):
+    async def _update_acquired_places(self, action, resource):
         """Update acquired places when resources are added or removed."""
         if action not in [Action.ADD, Action.DEL]:
             return  # currently nothing needed for Action.UPD
@@ -357,7 +357,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             self._publish_place(place)
         else:
             for place in places:
-                await self._release_resources(place, [resource], callback=callback)
+                # resources only disappear when exporters disconnect, so we
+                # can't call back to the exporter
+                await self._release_resources(place, [resource], callback=False)
                 self._publish_place(place)
 
     def _publish_place(self, place):
@@ -452,7 +454,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             for groupname, group in session.groups.items():
                 for resourcename in group.copy():
                     action, resource = session.set_resource(groupname, resourcename, None)
-                    await self._update_acquired_places(action, resource, callback=False)
+                    await self._update_acquired_places(action, resource)
 
             logging.debug("exporter aborted %s, cancelled: %s", context.peer(), context.cancelled())
 

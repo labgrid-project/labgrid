@@ -599,6 +599,21 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.DeletePlaceMatchResponse()
 
+    async def _acquire_resource(self, place, resource):
+        assert self.lock.locked()
+
+        # this triggers an update from the exporter which is published
+        # to the clients
+        request = labgrid_coordinator_pb2.ExporterSetAcquiredRequest()
+        request.group_name = resource.path[1]
+        request.resource_name = resource.path[3]
+        request.place_name = place.name
+        cmd = ExporterCommand(request)
+        self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
+        await cmd.wait()
+        if not cmd.response.success:
+            raise ExporterError("failed to acquire {resource}")
+
     async def _acquire_resources(self, place, resources):
         assert self.lock.locked()
 
@@ -612,17 +627,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         acquired = []
         try:
             for resource in resources:
-                # this triggers an update from the exporter which is published
-                # to the clients
-                request = labgrid_coordinator_pb2.ExporterSetAcquiredRequest()
-                request.group_name = resource.path[1]
-                request.resource_name = resource.path[3]
-                request.place_name = place.name
-                cmd = ExporterCommand(request)
-                self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
-                await cmd.wait()
-                if not cmd.response.success:
-                    raise ExporterError("failed to acquire {resource}")
+                await self._acquire_resource(place, resource)
                 acquired.append(resource)
         except Exception:
             logging.exception("failed to acquire %s", resource)

@@ -86,7 +86,21 @@ class ClientSession:
         """Actions which are executed if a connection is successfully opened."""
         self.stopping = asyncio.Event()
 
-        self.channel = grpc.aio.insecure_channel(self.address)
+        # It seems since https://github.com/grpc/grpc/pull/34647, the
+        # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
+        # so set it as well.
+        # Use GRPC_VERBOSITY=DEBUG GRPC_TRACE=http_keepalive for debugging.
+        channel_options = [
+            ("grpc.keepalive_time_ms", 7500),  # 7.5 seconds
+            ("grpc.keepalive_timeout_ms", 10000),  # 10 seconds
+            ("grpc.http2.ping_timeout_ms", 10000),  # 10 seconds
+            ("grpc.http2.max_pings_without_data", 0),  # no limit
+        ]
+
+        self.channel = grpc.aio.insecure_channel(
+            target=self.address,
+            options=channel_options,
+        )
         self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
 
         self.out_queue = asyncio.Queue()

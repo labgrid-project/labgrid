@@ -54,7 +54,7 @@ class ExporterSession(RemoteSession):
         """This is called when Exporters update resources or when they disconnect."""
         logging.info("set_resource %s %s %s", groupname, resourcename, resource)
         group = self.groups.setdefault(groupname, {})
-        old = group.get(resourcename)
+        old: ResourceImport = group.get(resourcename)
         if resource is not None:
             new = ResourceImport(
                 data=ResourceImport.data_from_pb2(resource), path=(self.name, groupname, resource.cls, resourcename)
@@ -66,6 +66,8 @@ class ExporterSession(RemoteSession):
                 group[resourcename] = new
         else:
             new = None
+            if old.acquired:
+                old.orphaned = True
             try:
                 del group[resourcename]
             except KeyError:
@@ -150,6 +152,7 @@ class ResourceImport(ResourceEntry):
     """
 
     path = attr.ib(kw_only=True, validator=attr.validators.instance_of(tuple))
+    orphaned = attr.ib(init=False, default=False, validator=attr.validators.instance_of(bool))
 
 
 def locked(func):
@@ -181,7 +184,7 @@ class ExporterError(Exception):
 
 class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     def __init__(self) -> None:
-        self.places = {}
+        self.places: dict[str, Place] = {}
         self.reservations = {}
         self.poll_task = None
         self.save_scheduled = False
@@ -198,6 +201,12 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         try:
             if self.save_scheduled:
                 await self.save()
+        except Exception:  # pylint: disable=broad-except
+            traceback.print_exc()
+        # try to re-acquire orphaned resources
+        try:
+            async with self.lock:
+                await self._reacquire_orphaned_resources()
         except Exception:  # pylint: disable=broad-except
             traceback.print_exc()
         # update reservations
@@ -334,34 +343,6 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             if exporter.name == name:
                 return exporter
 
-    async def _update_acquired_places(self, action, resource):
-        """Update acquired places when resources are added or removed."""
-        if action not in [Action.ADD, Action.DEL]:
-            return  # currently nothing needed for Action.UPD
-
-        # collect affected places
-        places = []
-        for place in self.places.values():
-            if not place.acquired:
-                continue
-            if not place.hasmatch(resource.path):
-                continue
-            places.append(place)
-
-        if action is Action.ADD:
-            # only add if there is no conflict
-            if len(places) != 1:
-                return
-            place = places[0]
-            await self._acquire_resources(place, [resource])
-            self._publish_place(place)
-        else:
-            for place in places:
-                # resources only disappear when exporters disconnect, so we
-                # can't call back to the exporter
-                await self._release_resources(place, [resource], callback=False)
-                self._publish_place(place)
-
     def _publish_place(self, place):
         msg = labgrid_coordinator_pb2.ClientOutMessage()
         msg.updates.add().place.CopyFrom(place.as_pb2())
@@ -411,15 +392,12 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         logging.debug("Received startup from %s with %s", name, version)
                     elif kind == "resource":
                         logging.debug("Received resource from %s with %s", name, in_msg.resource)
-                        action, resource = session.set_resource(
+                        action, _ = session.set_resource(
                             in_msg.resource.path.group_name, in_msg.resource.path.resource_name, in_msg.resource
                         )
                         if action is Action.ADD:
                             async with self.lock:
                                 self._add_default_place(in_msg.resource.path.group_name)
-                        if action in (Action.ADD, Action.DEL):
-                            async with self.lock:
-                                await self._update_acquired_places(action, resource)
                         self.save_later()
                     else:
                         logging.warning("received unknown kind %s from exporter %s (version %s)", kind, name, version)
@@ -453,8 +431,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
             for groupname, group in session.groups.items():
                 for resourcename in group.copy():
-                    action, resource = session.set_resource(groupname, resourcename, None)
-                    await self._update_acquired_places(action, resource)
+                    session.set_resource(groupname, resourcename, None)
 
             logging.debug("exporter aborted %s, cancelled: %s", context.peer(), context.cancelled())
 
@@ -652,6 +629,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 pass
 
         for resource in resources:
+            if resource.orphaned:
+                continue
             try:
                 # this triggers an update from the exporter which is published
                 # to the clients
@@ -673,6 +652,48 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 except:
                     logging.exception("failed to publish released resource %s", resource)
 
+    async def _reacquire_orphaned_resources(self):
+        assert self.lock.locked()
+
+        for place in self.places.values():
+            changed = False
+
+            for idx, resource in enumerate(place.acquired_resources):
+                if not resource.orphaned:
+                    continue
+
+                # is the exporter connected again?
+                exporter = self.get_exporter_by_name(resource.path[0])
+                if not exporter:
+                    continue
+
+                # does the resource exist again?
+                try:
+                    new_resource = exporter.groups[resource.path[1]][resource.path[3]]
+                except KeyError:
+                    continue
+
+                if new_resource.acquired:
+                    # this should only happen when resources become broken
+                    logging.debug("ignoring acquired/broken resource %s for place %s", new_resource, place.name)
+                    continue
+
+                try:
+                    await self._acquire_resource(place, new_resource)
+                    place.acquired_resources[idx] = new_resource
+                except Exception:
+                    logging.exception(
+                        "failed to reacquire orphaned resource %s for place %s", new_resource, place.name
+                    )
+                    break
+
+                logging.info("reacquired orphaned resource %s for place %s", new_resource, place.name)
+                changed = True
+
+            if changed:
+                self._publish_place(place)
+                self.save_later()
+
     @locked
     async def AcquirePlace(self, request, context):
         peer = context.peer()
@@ -693,6 +714,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             res = self.reservations[place.reservation]
             if not res.owner == username:
                 await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Place {name} was not reserved for {username}")
+
+        # First try to reacquire orphaned resources to avoid conflicts.
+        await self._reacquire_orphaned_resources()
+
         # FIXME use the session object instead? or something else which
         # survives disconnecting clients?
         place.acquired = username

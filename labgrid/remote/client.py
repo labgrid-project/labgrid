@@ -472,7 +472,11 @@ class ClientSession:
                 name = resource_name
                 if match.rename:
                     name = match.rename
-                resource = self.resources[exporter][group_name][resource_name]
+                try:
+                    resource = self.resources[exporter][group_name][resource_name]
+                except KeyError:
+                    print(f"Orphaned resource '{name}' ({exporter}/{group_name}/{cls}/{resource_name})")
+                    continue
                 print(f"Acquired resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}):")  # pylint: disable=line-too-long
                 print(indent(pformat(resource.asdict()), prefix="  "))
                 assert resource.cls == cls
@@ -747,7 +751,11 @@ class ClientSession:
             name = resource_name
             if match.rename:
                 name = match.rename
-            resources[(name, cls)] = self.resources[exporter][group_name][resource_name]
+            try:
+                resources[(name, cls)] = self.resources[exporter][group_name][resource_name]
+            except KeyError:
+                raise ServerError(f"place {place} has an orphaned resource (exporter {exporter} disconnected?)")
+
         return resources
 
     def get_target_config(self, place):

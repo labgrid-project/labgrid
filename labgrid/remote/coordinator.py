@@ -195,10 +195,16 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     async def _poll_step(self):
         # save changes
-        if self.save_scheduled:
-            await self.save()
+        try:
+            if self.save_scheduled:
+                await self.save()
+        except Exception:  # pylint: disable=broad-except
+            traceback.print_exc()
         # update reservations
-        self.schedule_reservations()
+        try:
+            self.schedule_reservations()
+        except Exception:  # pylint: disable=broad-except
+            traceback.print_exc()
 
     async def poll(self):
         loop = asyncio.get_event_loop()

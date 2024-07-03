@@ -964,6 +964,7 @@ async def serve(listen, cleanup) -> None:
     # so set it as well.
     # Use GRPC_VERBOSITY=DEBUG GRPC_TRACE=http_keepalive for debugging.
     channel_options = [
+        ("grpc.so_reuseport", 0),  # no load balancing
         ("grpc.keepalive_time_ms", 10000),  # 10 seconds
         ("grpc.keepalive_timeout_ms", 10000),  # 10 seconds
         ("grpc.http2.ping_timeout_ms", 15000),  # 15 seconds

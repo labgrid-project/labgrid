@@ -959,17 +959,20 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
 
 async def serve(listen, cleanup) -> None:
+    # It seems since https://github.com/grpc/grpc/pull/34647, the
+    # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
+    # so set it as well.
+    # Use GRPC_VERBOSITY=DEBUG GRPC_TRACE=http_keepalive for debugging.
+    channel_options = [
+        ("grpc.keepalive_time_ms", 10000),  # 10 seconds
+        ("grpc.keepalive_timeout_ms", 10000),  # 10 seconds
+        ("grpc.http2.ping_timeout_ms", 15000),  # 15 seconds
+        ("grpc.http2.min_ping_interval_without_data_ms", 5000),
+        ("grpc.http2.max_pings_without_data", 0),  # no limit
+        ("grpc.keepalive_permit_without_calls", 1),  # allow keepalive pings even when there are no calls
+    ]
     server = grpc.aio.server(
-        options=[
-            ("grpc.keepalive_time_ms", 30000),  # Send keepalive ping every 30 seconds
-            (
-                "grpc.keepalive_timeout_ms",
-                10000,
-            ),  # Wait 10 seconds for ping ack before considering the connection dead
-            ("grpc.http2.min_time_between_pings_ms", 15000),  # Minimum amount of time between pings
-            ("grpc.http2.max_pings_without_data", 0),  # Allow pings even without active streams
-            ("grpc.keepalive_permit_without_calls", 1),  # Allow keepalive pings even when there are no calls
-        ],
+        options=channel_options,
     )
     coordinator = Coordinator()
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)

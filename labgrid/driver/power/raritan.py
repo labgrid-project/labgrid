@@ -10,12 +10,9 @@ from ...util.snmp import SimpleSNMP
 
 
 OID = ".1.3.6.1.4.1.13742.6.4.1.2.1"
-NUMBER_OF_OUTLETS = 16
 
 
 def power_set(host, port, index, value):
-    assert 1 <= int(index) <= NUMBER_OF_OUTLETS
-
     _snmp = SimpleSNMP(host, 'private', port=port)
     outlet_control_oid = "{}.2.1.{}".format(OID, index)
 
@@ -23,8 +20,6 @@ def power_set(host, port, index, value):
 
 
 def power_get(host, port, index):
-    assert 1 <= int(index) <= NUMBER_OF_OUTLETS
-
     _snmp = SimpleSNMP(host, 'public', port=port)
     output_status_oid = "{}.3.1.{}".format(OID, index)
 

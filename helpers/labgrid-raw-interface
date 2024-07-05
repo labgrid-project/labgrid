@@ -45,7 +45,7 @@ def main(program, options):
     if options.ifname in denylist:
         raise ValueError(f"Interface name '{options.ifname}' is denied in denylist.")
 
-    programs = ["tcpreplay", "tcpdump"]
+    programs = ["tcpreplay", "tcpdump", "ip"]
     if program not in programs:
         raise ValueError(f"Invalid program {program} called with wrapper, valid programs are: {programs}")
 
@@ -57,7 +57,7 @@ def main(program, options):
         args.append(f"--intf1={options.ifname}")
         args.append("-")
 
-    if program == "tcpdump":
+    elif program == "tcpdump":
         args.append("-n")
         args.append(f"--interface={options.ifname}")
         # Write out each packet as it is received
@@ -78,6 +78,13 @@ def main(program, options):
             args.append(str(options.timeout))
             args.append("-W")
             args.append("1")
+
+    elif program == "ip":
+        args.append("link")
+        args.append("set")
+        args.append("dev")
+        args.append(options.ifname)
+        args.append(options.action)
 
     try:
         os.execvp(args[0], args)
@@ -101,6 +108,11 @@ if __name__ == "__main__":
     # tcpreplay
     tcpreplay_parser = subparsers.add_parser("tcpreplay")
     tcpreplay_parser.add_argument("ifname", type=str, help="interface name")
+
+    # ip
+    ip_parser = subparsers.add_parser("ip")
+    ip_parser.add_argument("ifname", type=str, help="interface name")
+    ip_parser.add_argument("action", type=str, choices=["up", "down"], help="action, one of {%(choices)s}")
 
     args = parser.parse_args()
     try:

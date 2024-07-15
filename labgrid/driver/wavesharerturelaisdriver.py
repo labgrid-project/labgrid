@@ -13,6 +13,7 @@ class WaveshareRTURelaisDriver(ModbusRTUDriver, DigitalOutputProtocol):
     bindings = {"resource": {"SerialPort", "NetworkSerialPort"}}
 
     relais = attr.ib(default=0, validator=attr.validators.instance_of(int))
+    no_channel = attr.ib(default=8, validator=attr.validators.instance_of(int))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -32,5 +33,5 @@ class WaveshareRTURelaisDriver(ModbusRTUDriver, DigitalOutputProtocol):
     @Driver.check_active
     @step(result=True)
     def get(self):
-        status = self.read_bits(0x00, number_of_bits=8, functioncode=1)
+        status = self.read_bits(0x00, number_of_bits=self.no_channel, functioncode=1)
         return status[self.relais]

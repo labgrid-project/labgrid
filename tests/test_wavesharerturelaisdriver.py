@@ -10,11 +10,12 @@ def test_wavesharerturelais_driver(target, mocker):
 
     SerialPort(target, name=None, port="/dev/tty0")
     driver = WaveshareRTURelaisDriver(
-        target, address=0x01, relais=3, timeout=0.5, name=None
+        target, address=0x01, relais=3, no_channel=32, timeout=0.5, name=None
     )
 
     assert driver.address == 0x01
     assert driver.relais == 3
+    assert driver.no_channel == 32
 
     target.activate(driver)
 

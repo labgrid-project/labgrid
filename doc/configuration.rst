@@ -2339,11 +2339,13 @@ Implements:
    WaveshareRTURelaisDriver:
      address: 1
      relais: 2
+     no_channel: 8
 
 Arguments:
   - address (int): slave address on the modbus, e.g. 16
   - timeout (float): 0.5
-  - relais (int): the register address/index of the relais that will be controlled
+  - relais (int): the register address/index of the relais channel that will be controlled
+  - no_channel (int, default=8): the total number of channels on this relay
 
 MXSUSBDriver
 ~~~~~~~~~~~~

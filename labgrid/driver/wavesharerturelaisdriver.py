@@ -32,5 +32,5 @@ class WaveshareRTURelaisDriver(ModbusRTUDriver, DigitalOutputProtocol):
     @Driver.check_active
     @step(result=True)
     def get(self):
-        status = self.read_bit(self.relais)
-        return status
+        status = self.read_bits(0x00, number_of_bits=8, functioncode=1)
+        return status[self.relais]

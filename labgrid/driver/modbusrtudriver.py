@@ -63,6 +63,36 @@ class ModbusRTUDriver(Driver):
     def on_deactivate(self):
         self.instrument = None
 
+    def read_bit(self, *args, **kwargs):
+        return self.instrument.read_bit(*args, **kwargs)
+
+    def write_bit(self, *args, **kwargs):
+        return self.instrument.write_bit(*args, **kwargs)
+
+    def read_bits(self, *args, **kwargs):
+        return self.instrument.read_bits(*args, **kwargs)
+
+    def write_bits(self, *args, **kwargs):
+        return self.instrument.write_bits(*args, **kwargs)
+
+    def read_long(self, *args, **kwargs):
+        return self.instrument.read_long(*args, **kwargs)
+
+    def write_long(self, *args, **kwargs):
+        return self.instrument.write_long(*args, **kwargs)
+
+    def read_float(self, *args, **kwargs):
+        return self.instrument.read_float(*args, **kwargs)
+
+    def write_float(self, *args, **kwargs):
+        return self.instrument.write_float(*args, **kwargs)
+
+    def read_string(self, *args, **kwargs):
+        return self.instrument.read_string(*args, **kwargs)
+
+    def write_string(self, *args, **kwargs):
+        return self.instrument.write_string(*args, **kwargs)
+
     def read_register(self, *args, **kwargs):
         return self.instrument.read_register(*args, **kwargs)
 
@@ -74,15 +104,3 @@ class ModbusRTUDriver(Driver):
 
     def write_registers(self, *args, **kwargs):
         return self.instrument.write_registers(*args, **kwargs)
-
-    def read_bit(self, *args, **kwargs):
-        return self.instrument.read_bit(*args, **kwargs)
-
-    def write_bit(self, *args, **kwargs):
-        return self.instrument.write_bit(*args, **kwargs)
-
-    def read_string(self, *args, **kwargs):
-        return self.instrument.read_string(*args, **kwargs)
-
-    def write_string(self, *args, **kwargs):
-        return self.instrument.write_string(*args, **kwargs)

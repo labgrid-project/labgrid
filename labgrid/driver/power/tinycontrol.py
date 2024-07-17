@@ -9,10 +9,10 @@
       index: 3
 """
 
-import requests
 from urllib.parse import urljoin
 import xml.etree.ElementTree as ET
 
+import requests
 
 def power_set(host, port, index, value):
     assert port is None

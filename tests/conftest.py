@@ -11,6 +11,8 @@ from labgrid.driver import SerialDriver
 from labgrid.resource import RawSerialPort, NetworkSerialPort
 from labgrid.driver.fake import FakeConsoleDriver
 
+psutil = pytest.importorskip("psutil")
+
 @pytest.fixture(scope="session")
 def curses_init():
     """ curses only reads the terminfo DB once on the first import, so make
@@ -103,6 +105,18 @@ class LabgridComponent:
     @property
     def pid(self):
         return self.spawn.pid
+
+    def suspend_tree(self):
+        main = psutil.Process(self.pid)
+        main.suspend()
+        for child in main.children(recursive=True):
+            child.suspend()
+
+    def resume_tree(self):
+        main = psutil.Process(self.pid)
+        main.resume()
+        for child in main.children(recursive=True):
+            child.resume()
 
 
 class Exporter(LabgridComponent):

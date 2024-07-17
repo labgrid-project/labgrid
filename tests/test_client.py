@@ -5,20 +5,6 @@ import time
 import pytest
 import pexpect
 
-psutil = pytest.importorskip("psutil")
-
-def suspend_tree(pid):
-    main = psutil.Process(pid)
-    main.suspend()
-    for child in main.children(recursive=True):
-        child.suspend()
-
-def resume_tree(pid):
-    main = psutil.Process(pid)
-    main.resume()
-    for child in main.children(recursive=True):
-        child.resume()
-
 def test_startup(coordinator):
     pass
 
@@ -68,7 +54,7 @@ def test_connect_error():
         assert spawn.exitstatus == 1, spawn.before.strip()
 
 def test_connect_timeout(coordinator):
-    suspend_tree(coordinator.pid)
+    coordinator.suspend_tree()
     try:
         with pexpect.spawn('python -m labgrid.remote.client places') as spawn:
             spawn.expect("connection attempt timed out before receiving SETTINGS frame")
@@ -76,7 +62,7 @@ def test_connect_timeout(coordinator):
             spawn.close()
             assert spawn.exitstatus == 1, spawn.before.strip()
     finally:
-        resume_tree(coordinator.pid)
+        coordinator.resume_tree()
         pass
 
 def test_place_show(place):
@@ -488,7 +474,7 @@ def test_exporter_timeout(place, exporter):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-    suspend_tree(exporter.pid)
+    exporter.suspend_tree()
     try:
         time.sleep(30)
 
@@ -499,7 +485,7 @@ def test_exporter_timeout(place, exporter):
             assert spawn.exitstatus == 0, spawn.before.strip()
             assert b'/Testport/NetworkSerialPort' not in spawn.before
     finally:
-        resume_tree(exporter.pid)
+        exporter.resume_tree()
 
     # the exporter should quit by itself now
     time.sleep(5)

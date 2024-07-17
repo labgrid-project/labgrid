@@ -4,8 +4,6 @@ import grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
 
-psutil = pytest.importorskip("psutil")
-
 @pytest.fixture(scope='function')
 def channel_stub():
     import queue

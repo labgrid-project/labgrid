@@ -231,6 +231,11 @@ Currently available are:
   Controls *TP-Link power strips* via `python-kasa
   <https://github.com/python-kasa/python-kasa>`_.
 
+``tinycontrol``
+  Controls a tinycontrol.eu IP Power Socket via HTTP.
+  It was tested on the *6G10A v2* model.
+  `Manual <https://tinycontrol.pl/media/documents/manual_IP_Power_Socket__6G10A_v2_LANLIS-010-015_En-1.pdf>`__
+
 ``poe_mib``
   Controls PoE switches using the PoE SNMP administration MiBs.
 

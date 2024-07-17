@@ -21,20 +21,6 @@ def curses_init():
     except ModuleNotFoundError:
         logging.warning("curses module not found, not setting up a default terminal – tests may fail")
 
-def keep_reading(spawn):
-    "The output from background processes must be read to avoid blocking them."
-    while spawn.isalive():
-        try:
-            data = spawn.read_nonblocking(size=1024, timeout=0.1)
-            if not data:
-                return
-        except pexpect.TIMEOUT:
-            continue
-        except pexpect.EOF:
-            return
-        except OSError:
-            return
-
 
 class Prefixer:
     def __init__(self, wrapped, prefix):
@@ -60,40 +46,51 @@ class Prefixer:
         return getattr(self.__wrapped, name)
 
 
-class Exporter:
-    def __init__(self, config, cwd):
+class LabgridComponent:
+    def __init__(self, cwd):
         self.cwd = str(cwd)
-        self.config = config
         self.spawn = None
         self.reader = None
 
-    def start(self):
-        assert self.spawn is None
-        assert self.reader is None
+    def stop(self):
+        logging.info("stopping {self.__class__.__name__} pid=%s", self.spawn.pid)
 
-        self.spawn = pexpect.spawn(
-            f'{sys.executable} -m labgrid.remote.exporter --name testhost {self.config}',
-            logfile=Prefixer(sys.stdout.buffer, 'exporter'),
-            cwd=self.cwd)
-        try:
-            self.spawn.expect('exporter name: testhost')
-            self.spawn.expect('connected to exporter')
-        except Exception as e:
-            raise Exception(f"exporter startup failed with {self.spawn.before}") from e
+        # let coverage write its data:
+        # https://coverage.readthedocs.io/en/latest/subprocess.html#process-termination
+        self.spawn.kill(SIGTERM)
+        if not self.spawn.closed:
+            self.spawn.expect(pexpect.EOF)
+            self.spawn.wait()
+        assert not self.spawn.isalive()
 
+        self.spawn = None
+        self.stop_reader()
+
+    @staticmethod
+    def keep_reading(spawn):
+        "The output from background processes must be read to avoid blocking them."
+        while spawn.isalive():
+            try:
+                data = spawn.read_nonblocking(size=1024, timeout=0.1)
+                if not data:
+                    return
+            except pexpect.TIMEOUT:
+                continue
+            except pexpect.EOF:
+                return
+            except OSError:
+                return
+
+    def start_reader(self):
         self.reader = threading.Thread(
-            target=keep_reading,
-            name=f'exporter-reader-{self.pid}',
+            target=LabgridComponent.keep_reading,
+            name=f'{self.__class__.__name__}-reader-{self.pid}',
             args=(self.spawn,), daemon=True)
         self.reader.start()
 
-    def stop(self):
-        logging.info("stopping exporter pid=%s", self.spawn.pid)
-        self.spawn.close(force=True)
-        assert not self.spawn.isalive()
+    def stop_reader(self):
         self.reader.join()
 
-        self.spawn = None
         self.reader = None
 
     def isalive(self):
@@ -106,6 +103,28 @@ class Exporter:
     @property
     def pid(self):
         return self.spawn.pid
+
+
+class Exporter(LabgridComponent):
+    def __init__(self, config, cwd):
+        super().__init__(cwd)
+        self.config = config
+
+    def start(self):
+        assert self.spawn is None
+        assert self.reader is None
+
+        self.spawn = pexpect.spawn(
+            f'labgrid-exporter --name testhost {self.config}',
+            logfile=Prefixer(sys.stdout.buffer, 'exporter'),
+            cwd=self.cwd)
+        try:
+            self.spawn.expect('exporter name: testhost')
+            self.spawn.expect('connected to exporter')
+        except Exception as e:
+            raise Exception(f"exporter startup failed with {self.spawn.before}") from e
+
+        self.start_reader()
 
 
 @pytest.fixture(scope='function')

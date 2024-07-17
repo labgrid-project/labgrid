@@ -236,7 +236,7 @@ Currently available are:
 
 ``ubus``
   Controls *PoE switches* running OpenWrt using the *ubus* interface.
-  Further infromation available at <https://openwrt.org/docs/techref/ubus>
+  Further information available at <https://openwrt.org/docs/techref/ubus>
 
 Used by:
   - `NetworkPowerDriver`_
@@ -515,13 +515,13 @@ expressions.
 
 Arguments:
   - url (str): URL to use for setting a new state
-  - body_asserted (str): Request body to send to assert the output
-  - body_deasserted (str): Request body to send to de-assert the output
+  - body_asserted (str): request body to send to assert the output
+  - body_deasserted (str): request body to send to de-assert the output
   - method (str, default="PUT"): HTTP method to set a new state
 
-  - url_get (str): URL to use instead of ``url`` for getting the state
-  - body_get_asserted (str): Regular Expression that matches an asserted response body
-  - body_get_deasserted (str): Regular Expression that matches a de-asserted response body
+  - url_get (str): optional, URL to use instead of ``url`` for getting the state
+  - body_get_asserted (str): optional, regular expression that matches an asserted response body
+  - body_get_deasserted (str): optional, regular expression that matches a de-asserted response body
 
 Used by:
   - `HttpDigitalOutputDriver`_
@@ -1047,7 +1047,6 @@ A :any:`USBTMC` resource describes an oscilloscope connected via the *USB TMC
 protocol*.
 The low-level communication is handled by the "usbtmc" kernel driver.
 
-
 .. code-block:: yaml
 
    USBTMC:
@@ -1134,7 +1133,6 @@ NetworkUSBFlashableDevice
 A :any:`NetworkUSBFlashableDevice` resource describes a `USBFlashableDevice`_
 resource available on a remote computer
 
-
 DediprogFlasher
 ~~~~~~~~~~~~~~~
 A :any:`DediprogFlasher` resource is used to configure the parameters to a
@@ -1199,7 +1197,7 @@ Arguments:
     ASRL, TCPIP...
   - url (str): device identifier on selected resource, e.g. <ip> for TCPIP
     resource
-  - backend (str): Visa library backend, e.g. '@sim' for pyvisa-sim backend
+  - backend (str): optional, Visa library backend, e.g. '@sim' for pyvisa-sim backend
 
 Used by:
   - `PyVISADriver`_
@@ -1389,7 +1387,7 @@ interrupts or unix kill signals may lead to hanging containers, however;
 therefore auto-cleanup is important.
 
 Arguments:
-  - docker_daemon_url (str): The url of the daemon to use for this target
+  - docker_daemon_url (str): url of the daemon to use for this target
 
 Used by:
   - `DockerDriver`_
@@ -2213,6 +2211,7 @@ Implements:
 
    SerialPortDigitalOutputDriver:
      signal: 'dtr'
+     invert: false
      bindings:
        serial: 'nameOfSerial'
 
@@ -2660,7 +2659,6 @@ Binds to:
      dtb: '../images/mydtb.dtb'
      kernel: '../images/vmlinuz'
 
-
 Implements:
   - :any:`ConsoleProtocol`
   - :any:`PowerProtocol`
@@ -3026,6 +3024,9 @@ The :any:`DediprogFlashDriver` is used to flash an SPI device using DediprogFlas
 
    DediprogFlashDriver:
      image: 'foo'
+
+.. code-block:: yaml
+
    images:
      foo: '../images/image_to_load.raw'
 
@@ -3084,10 +3085,10 @@ Implements:
 
 Arguments:
   - image_uri (str): identifier of the docker image to use (may have a tag suffix)
-  - command (str): command to run in the container (optional, depends on image)
-  - volumes (list): list to configure volumes mounted inside the container (optional)
+  - command (str): optional, command to run in the container (depends on image)
+  - volumes (list): optional, list to configure volumes mounted inside the container
   - container_name (str): name of the container
-  - environment (list): list of environment variables (optional)
+  - environment (list): optional, list of environment variables
   - host_config (dict): dictionary of host configurations
   - network_services (list): dictionaries that describe individual `NetworkService`_
     instances that come alive when the container is created. The "address" argument

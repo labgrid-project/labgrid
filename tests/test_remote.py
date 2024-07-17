@@ -35,3 +35,12 @@ def test_exporter_start_coordinator_unreachable(monkeypatch, tmpdir):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 100, spawn.before
+
+def test_exporter_coordinator_becomes_unreachable(coordinator, exporter):
+    coordinator.suspend_tree()
+
+    exporter.spawn.expect(pexpect.EOF, timeout=30)
+    exporter.spawn.close()
+    assert exporter.exitstatus == 100
+
+    coordinator.resume_tree()

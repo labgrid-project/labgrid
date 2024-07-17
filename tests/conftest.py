@@ -127,6 +127,23 @@ class Exporter(LabgridComponent):
         self.start_reader()
 
 
+class Coordinator(LabgridComponent):
+    def start(self):
+        assert self.spawn is None
+        assert self.reader is None
+
+        self.spawn = pexpect.spawn(
+            'labgrid-coordinator',
+            logfile=Prefixer(sys.stdout.buffer, 'coordinator'),
+            cwd=self.cwd)
+        try:
+            self.spawn.expect('Coordinator ready')
+        except Exception as e:
+            raise Exception(f"coordinator startup failed with {self.spawn.before}") from e
+
+        self.start_reader()
+
+
 @pytest.fixture(scope='function')
 def target():
     return Target('Test')
@@ -166,28 +183,12 @@ def serial_driver_no_name(target, serial_port, mocker):
 
 @pytest.fixture(scope='function')
 def coordinator(tmpdir):
+    coordinator = Coordinator(tmpdir)
+    coordinator.start()
 
-    spawn = pexpect.spawn(
-        'labgrid-coordinator',
-        logfile=Prefixer(sys.stdout.buffer, 'coordinator'),
-        cwd=str(tmpdir))
-    try:
-        spawn.expect('Coordinator ready')
-    except:
-        print(f"coordinator startup failed with {spawn.before}")
-        raise
-    reader = threading.Thread(target=keep_reading, name='coordinator-reader', args=(spawn,), daemon=True)
-    reader.start()
-    yield spawn
+    yield coordinator
 
-    # let coverage write its data:
-    # https://coverage.readthedocs.io/en/latest/subprocess.html#process-termination
-    print("stopping coordinator")
-    spawn.kill(SIGTERM)
-    spawn.expect(pexpect.EOF)
-    spawn.wait()
-
-    reader.join()
+    coordinator.stop()
 
 @pytest.fixture(scope='function')
 def exporter(tmpdir, coordinator):

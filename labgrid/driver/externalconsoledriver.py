@@ -33,7 +33,7 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
             return
         cmd = shlex.split(self.cmd)
         self._child = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None, bufsize=0
         )
 
         # make stdout non-blocking

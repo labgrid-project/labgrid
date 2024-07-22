@@ -47,6 +47,7 @@ jobs:
       run: |
         pip install -e ".[dev]"
     - name: Lint with pylint
+      if: inputs.python-version != '3.8'
       run: |
         pylint --list-msgs-enabled
         pylint labgrid

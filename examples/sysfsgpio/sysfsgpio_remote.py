@@ -1,18 +1,14 @@
-import sys
 import logging
 import time
 
-from labgrid import StepReporter, Environment
+from labgrid import Environment
+from labgrid.logging import basicConfig, StepLogger
 
-# enable debug logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(levelname)7s: %(message)s',
-    stream=sys.stderr,
-)
+# enable info logging
+basicConfig(level=logging.INFO)
 
 # show labgrid steps on the console
-StepReporter.start()
+StepLogger.start()
 
 e = Environment('import-gpio.yaml')
 t = e.get_target()

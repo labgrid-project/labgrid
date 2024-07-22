@@ -1,20 +1,16 @@
-import sys
 import logging
 import time
 
-from labgrid import Target, StepReporter
+from labgrid import Target
+from labgrid.logging import basicConfig, StepLogger
 from labgrid.resource.udev import DeditecRelais8
 from labgrid.driver import DeditecRelaisDriver
 
-# enable debug logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(levelname)7s: %(message)s',
-    stream=sys.stderr,
-)
+# enable info logging
+basicConfig(level=logging.INFO)
 
-# show labgrid steps on the console
-StepReporter.start()
+# log labgrid steps
+StepLogger.start()
 
 t = Target('main')
 r = DeditecRelais8(t, name=None, index=1)

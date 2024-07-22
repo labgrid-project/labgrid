@@ -4,19 +4,16 @@
 import sys
 import logging
 
-from labgrid import Environment, StepReporter
+from labgrid import Environment
+from labgrid.logging import basicConfig, StepLogger
 from labgrid.strategy.bareboxstrategy import Status
 
 
-# enable debug logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(levelname)7s: %(message)s',
-    stream=sys.stderr,
-)
+# enable info logging
+basicConfig(level=logging.INFO)
 
-# show labgrid steps on the console
-StepReporter.start()
+# log labgrid steps
+StepLogger.start()
 
 def run_once(target):
     s = target.get_driver('BareboxStrategy')

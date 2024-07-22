@@ -2,13 +2,12 @@
 import ast
 import argparse
 import logging
-import sys
 import multiprocessing
 import textwrap
 from time import sleep
 
 from .. import Environment, target_factory
-from ..stepreporter import StepReporter
+from ..logging import basicConfig, StepLogger
 from ..exceptions import NoResourceFoundError
 
 
@@ -177,11 +176,7 @@ class Manager:
             handler.join()
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(levelname)7s %(name)-20s %(message)s',
-        stream=sys.stderr,
-    )
+    basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -210,7 +205,7 @@ def main():
 
     env = Environment(config_file=args.config)
 
-    StepReporter.start()
+    StepLogger.start()
 
     manager = Manager(env, args)
     if not manager.configure():

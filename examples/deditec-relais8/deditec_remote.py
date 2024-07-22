@@ -3,9 +3,7 @@ import labgrid
 import logging
 import time
 
-from labgrid import Environment, StepReporter
-from labgrid.strategy.bareboxstrategy import Status
-from labgrid.driver.deditecrelaisdriver import DeditecRelaisDriver
+from labgrid import StepReporter
 
 # enable debug logging
 logging.basicConfig(

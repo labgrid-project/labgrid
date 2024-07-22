@@ -1,7 +1,5 @@
 import pytest
 
-from labgrid.exceptions import NoDriverFoundError
-
 
 @pytest.fixture(scope="function")
 def bootloader(target, strategy, capsys):

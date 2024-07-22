@@ -3,7 +3,7 @@ import labgrid
 import logging
 import time
 
-from labgrid import Environment, StepReporter
+from labgrid import StepReporter
 from labgrid.driver.gpiodriver import GpioDigitalOutputDriver
 
 # enable debug logging

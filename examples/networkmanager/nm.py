@@ -1,7 +1,8 @@
-import logging, sys
+import logging
+import sys
 from pprint import pprint
 
-from labgrid import *
+from labgrid import Environment, StepReporter
 
 
 # enable debug logging

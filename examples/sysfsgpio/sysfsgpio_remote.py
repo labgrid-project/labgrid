@@ -1,9 +1,8 @@
 import sys
-import labgrid
 import logging
 import time
 
-from labgrid import StepReporter
+from labgrid import StepReporter, Environment
 
 # enable debug logging
 logging.basicConfig(
@@ -15,7 +14,7 @@ logging.basicConfig(
 # show labgrid steps on the console
 StepReporter.start()
 
-e = labgrid.Environment('import-gpio.yaml')
+e = Environment('import-gpio.yaml')
 t = e.get_target()
 
 p = t.get_driver("DigitalOutputProtocol")

@@ -1,10 +1,10 @@
 import sys
-import labgrid
 import logging
 import time
 
-from labgrid import StepReporter
-from labgrid.driver.gpiodriver import GpioDigitalOutputDriver
+from labgrid import StepReporter, Target
+from labgrid.driver import GpioDigitalOutputDriver
+from labgrid.resource import SysfsGPIO
 
 # enable debug logging
 logging.basicConfig(
@@ -16,8 +16,8 @@ logging.basicConfig(
 # show labgrid steps on the console
 StepReporter.start()
 
-t = labgrid.Target('main')
-r = labgrid.resource.base.SysfsGPIO(t, name=None, index=60)
+t = Target('main')
+r = SysfsGPIO(t, name=None, index=60)
 d = GpioDigitalOutputDriver(t, name=None)
 
 p = t.get_driver("DigitalOutputProtocol")

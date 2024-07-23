@@ -3434,6 +3434,9 @@ Reporters
 
 StepReporter
 ~~~~~~~~~~~~
+.. warning::
+    The StepReporter is deprecated, use the `StepLogger`_ instead.
+
 The :any:`StepReporter` outputs individual labgrid steps to `STDOUT`.
 
 .. doctest::
@@ -3470,6 +3473,32 @@ The Reporter can be stopped with a call to the stop function:
 
 Stopping the ConsoleLoggingReporter if it has not been started will raise an
 AssertionError, as will starting an already started StepReporter.
+
+Loggers
+-------
+
+StepLogger
+~~~~~~~~~~
+The :any:`StepLogger` logs individual labgrid steps.
+
+Logging can be set up via ``labgrid.logging.basicConfig()``.
+
+.. doctest::
+
+    >>> import logging
+    >>> from labgrid.logging import basicConfig, StepLogger
+    >>> basicConfig(level=logging.INFO)
+    >>> StepLogger.start()
+
+The logger can be stopped with a call to the stop function:
+
+.. doctest::
+
+    >>> from labgrid.logging import StepLogger
+    >>> StepLogger.stop()
+
+Stopping the StepLogger if it has not been started will raise an
+AssertionError, as will starting an already started StepLogger.
 
 Environment Configuration
 -------------------------

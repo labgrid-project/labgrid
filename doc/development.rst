@@ -764,7 +764,7 @@ Step Tracing
 
 The Step infrastructure already collects timing and nesting information on
 executed commands, but is currently only used in the pytest plugin or via the
-standalone StepReporter.
+standalone StepLogger (or deprecated StepReporter).
 By writing these events to a file (or sqlite database) as a trace, we can
 collect data over multiple runs for later analysis.
 This would become more useful by passing recognized events (stack traces,

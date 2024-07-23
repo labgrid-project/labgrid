@@ -719,6 +719,8 @@ class ClientSession:
     async def release_from(self):
         """Release a place, but only if acquired by a specific user"""
         place = self.get_place()
+        if not place.acquired:
+            raise UserError(f"place {place.name} is not acquired")
 
         request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name, fromuser=self.args.acquired)
 
@@ -732,7 +734,7 @@ class ClientSession:
 
     async def allow(self):
         """Allow another use access to a previously acquired place"""
-        place = self.get_place()
+        place = self.get_acquired_place()
         if "/" not in self.args.user:
             raise UserError(f"user {self.args.user} must be in <host>/<username> format")
         request = labgrid_coordinator_pb2.AllowPlaceRequest(placename=place.name, user=self.args.user)

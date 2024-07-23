@@ -2,11 +2,10 @@ import enum
 
 import attr
 
+from labgrid import target_factory, step
 from labgrid.driver import BareboxDriver, ShellDriver
 from labgrid.protocol import PowerProtocol
-from labgrid.factory import target_factory
-from labgrid.step import step
-from labgrid.strategy.common import Strategy
+from labgrid.strategy import Strategy
 
 
 @attr.s(eq=False)

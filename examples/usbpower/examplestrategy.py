@@ -3,9 +3,8 @@ import enum
 import attr
 
 from labgrid.driver import BareboxDriver, ShellDriver, USBSDMuxDriver
-from labgrid.factory import target_factory
+from labgrid import step, target_factory
 from labgrid.protocol import PowerProtocol
-from labgrid.step import step
 from labgrid.strategy import Strategy
 
 

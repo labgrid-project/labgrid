@@ -410,7 +410,7 @@ class ClientSession(ApplicationSession):
         """Add a place to the coordinator"""
         name = self.args.place
         if not name:
-            raise UserError("missing place name. Set with -p <place> or via env var $PLACE")
+            raise UserError("missing place name. Set with -p <place> or via env var LG_PLACE")
         if name in self.places:
             raise UserError(f"{name} already exists")
         res = await self.call("org.labgrid.coordinator.add_place", name)

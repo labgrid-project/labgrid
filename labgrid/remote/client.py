@@ -646,8 +646,6 @@ class ClientSession:
             raise UserError(f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')")
         if "*" in pattern:
             raise UserError(f"invalid pattern '{pattern}' ('*' not allowed for named matches)")
-        if not name:
-            raise UserError(f"invalid name '{name}'")
 
         request = labgrid_coordinator_pb2.AddPlaceMatchRequest(placename=place.name, pattern=pattern, rename=name)
 

@@ -3,6 +3,7 @@ import os
 import pathlib
 import time
 import subprocess
+import shlex
 
 import attr
 
@@ -96,14 +97,14 @@ class USBStorageDriver(Driver):
             # (pathlib.PurePath(...) / "/") == "/", so we turn absolute paths into relative
             # paths with respect to the mount point here
             target_rel = target.relative_to(target.root) if target.root is not None else target
-            target_path = str(pathlib.PurePath(mount_path) / target_rel)
+            target_path = shlex.quote(str(pathlib.PurePath(mount_path) / target_rel))
 
             copied_sources = []
 
             for f in sources:
                 mf = ManagedFile(f, self.storage)
                 mf.sync_to_resource()
-                copied_sources.append(mf.get_remote_path())
+                copied_sources.append(shlex.quote(mf.get_remote_path()))
 
             if target_is_directory:
                 args = ["cp", "-t", target_path] + copied_sources

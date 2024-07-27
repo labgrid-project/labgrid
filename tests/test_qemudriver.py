@@ -3,6 +3,7 @@ import subprocess
 import pytest
 
 from labgrid.driver import QEMUDriver
+from labgrid.driver.exception import ExecutionError
 from labgrid import Environment
 
 @pytest.fixture
@@ -78,6 +79,48 @@ def qemu_qmp_mock(mocker):
 
 def test_qemu_instance(qemu_driver):
     assert (isinstance(qemu_driver, QEMUDriver))
+
+def test_qemu_base_args_optional(qemu_target, qemu_mock):
+    q = QEMUDriver(
+        qemu_target,
+        "qemu_opt",
+        qemu_bin="qemu",
+        machine="pc",
+        cpu="cortex-a15",
+        memory="512M",
+        extra_args="-d guest_errors",
+        kernel="kernel",
+        rootfs="rootfs")
+    args = q.get_qemu_base_args()
+
+    assert args[args.index("-machine") + 1] == "pc"
+    assert args[args.index("-cpu") + 1] == "cortex-a15"
+    assert args[args.index("-d") + 1] == "guest_errors"
+
+def test_qemu_base_args_defaults(qemu_target, qemu_mock):
+    q = QEMUDriver(
+        qemu_target,
+        "qemu_default",
+        qemu_bin="qemu",
+        memory="512M",
+        kernel="kernel",
+        rootfs="rootfs")
+    args = q.get_qemu_base_args()
+
+    assert "-machine" not in args
+    assert "-cpu" not in args
+
+def test_qemu_extra_args_append_rejected(qemu_target, qemu_mock):
+    q = QEMUDriver(
+        qemu_target,
+        "qemu_append",
+        qemu_bin="qemu",
+        memory="512M",
+        extra_args="-append root=/dev/foo",
+        kernel="kernel",
+        rootfs="rootfs")
+    with pytest.raises(ExecutionError):
+        q.get_qemu_base_args()
 
 def test_qemu_activate_deactivate(qemu_target, qemu_driver, qemu_qmp_mock):
     qemu_target.activate(qemu_driver)

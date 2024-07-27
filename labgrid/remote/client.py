@@ -13,7 +13,6 @@ import logging
 import signal
 import sys
 import shlex
-import shutil
 import json
 import itertools
 import ipaddress
@@ -48,7 +47,7 @@ from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout
+from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout, term
 from ..util.proxy import proxymanager
 from ..util.ssh import sshmanager
 from ..util.helper import processwrapper
@@ -1102,54 +1101,16 @@ class ClientSession:
 
         # check for valid resources
         assert port is not None, "Port is not set"
-
-        microcom_bin = shutil.which("microcom")
-
-        if microcom_bin is not None:
-            call = [microcom_bin, "-s", str(resource.speed), "-t", f"{host}:{port}"]
-
-            if listen_only:
-                call.append("--listenonly")
-
-            if logfile:
-                call.append(f"--logfile={logfile}")
-        else:
-            call = ["telnet", host, str(port)]
-
-            self.logger.info("microcom not available, using telnet instead")
-
-            if listen_only:
-                self.logger.warning("--listenonly option not supported by telnet, ignoring")
-
-            if logfile:
-                self.logger.warning("--logfile option not supported by telnet, ignoring")
-
-        print(f"connecting to {resource} calling {' '.join(call)}")
         try:
-            p = await asyncio.create_subprocess_exec(*call)
+            returncode = await term.external(
+                lambda: self.is_allowed(place), host, port, resource, logfile, listen_only
+            )
         except FileNotFoundError as e:
             raise ServerError(f"failed to execute remote console command: {e}")
-        while p.returncode is None:
-            try:
-                await asyncio.wait_for(p.wait(), 1.0)
-            except asyncio.TimeoutError:
-                # subprocess is still running
-                pass
 
-            try:
-                self._check_allowed(place)
-            except UserError:
-                p.terminate()
-                try:
-                    await asyncio.wait_for(p.wait(), 1.0)
-                except asyncio.TimeoutError:
-                    # try harder
-                    p.kill()
-                    await asyncio.wait_for(p.wait(), 1.0)
-                raise
-        if p.returncode:
-            print("connection lost", file=sys.stderr)
-        return p.returncode
+        # Raise an exception if the place was released
+        self._check_allowed(place)
+        return returncode
 
     async def console(self, place, target):
         while True:
@@ -1161,7 +1122,7 @@ class ClientSession:
                 break
             if not self.args.loop:
                 if res:
-                    raise InteractiveCommandError("microcom error", res)
+                    raise InteractiveCommandError("console error", res)
                 break
             await asyncio.sleep(1.0)
 

@@ -105,6 +105,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._tempdir = None
         self._socket = None
         self._clientsocket = None
+        self._bios_fname = None
         self._sockpath = None
         self._forwarded_ports = {}
         atexit.register(self._atexit)
@@ -129,6 +130,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             raise ExecutionError(f"Unable to find QEMU version in: {p.stdout.splitlines()[0]}")
 
         return (int(m.group('major')), int(m.group('minor')), int(m.group('micro')))
+
+    def set_bios(self, bios):
+        """Set the filename of the bios
+
+        This can be used by strategies to set the bios filename, overriding the
+        value provided in the environment.
+
+        Args:
+            bios (str): New bios filename
+        """
+        self._bios_fname = bios
 
     def get_qemu_base_args(self):
         """Returns the base command line used for Qemu without the options
@@ -192,6 +204,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             cmd.append("-bios")
             cmd.append(
                 self.target.env.config.get_image_path(self.bios))
+        elif self._bios_fname:
+            cmd.append("-bios")
+            cmd.append(self._bios_fname)
         if self.extra_args:
             if "-append" in shlex.split(self.extra_args):
                 raise ExecutionError("-append in extra_args not allowed, use boot_args instead")

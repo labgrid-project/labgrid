@@ -1,5 +1,6 @@
 """The QEMUDriver implements a driver to use a QEMU target"""
 import atexit
+import os
 import select
 import shlex
 import shutil
@@ -133,6 +134,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
         return (int(m.group('major')), int(m.group('minor')), int(m.group('micro')))
 
+    def set_bios(self, bios):
+        """Set the filename of the bios
+
+        This can be used by strategies to set the bios filename, overriding the
+        value provided in the environment.
+
+        Args:
+            bios (str): New bios filename
+        """
+        self.bios = bios
+
     def get_qemu_base_args(self):
         """Returns the base command line used for Qemu without the options
         related to QMP. These options can be used to start an interactive
@@ -193,8 +205,10 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 f"if=pflash,format=raw,file={self.target.env.config.get_image_path(self.flash)},id=nor0")  # pylint: disable=line-too-long
         if self.bios is not None:
             cmd.append("-bios")
-            cmd.append(
-                self.target.env.config.get_image_path(self.bios))
+            if os.path.exists(self.bios):
+                cmd.append(self.bios)
+            else:
+                cmd.append(self.target.env.config.get_image_path(self.bios))
         if self.extra_args:
             if "-append" in shlex.split(self.extra_args):
                 raise ExecutionError("-append in extra_args not allowed, use boot_args instead")

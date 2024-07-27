@@ -32,10 +32,11 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
     Args:
         qemu_bin (str): reference to the tools key for the QEMU binary
-        machine (str): QEMU machine type
-        cpu (str): QEMU cpu type
         memory (str): QEMU memory size (ends with M or G)
-        extra_args (str): extra QEMU arguments, they are passed directly to the QEMU binary
+        extra_args (str): optional, extra QEMU arguments, they are passed
+            directly to the QEMU binary
+        cpu (str): optional, QEMU cpu type
+        machine (str): optional, QEMU machine type
         boot_args (str): optional, additional kernel boot argument
         kernel (str): optional, reference to the images key for the kernel
         disk (str): optional, reference to the images key for the disk image
@@ -51,10 +52,16 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         nic (str): optional, configuration string to pass to QEMU to create a network interface
     """
     qemu_bin = attr.ib(validator=attr.validators.instance_of(str))
-    machine = attr.ib(validator=attr.validators.instance_of(str))
-    cpu = attr.ib(validator=attr.validators.instance_of(str))
     memory = attr.ib(validator=attr.validators.instance_of(str))
-    extra_args = attr.ib(validator=attr.validators.instance_of(str))
+    extra_args = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
+    cpu = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
+    machine = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
     boot_args = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
@@ -156,7 +163,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 cmd.append(
                     f"if=sd,format={disk_format},file={disk_path},id=mmc0{disk_opts}")
                 boot_args.append("root=/dev/mmcblk0p1 rootfstype=ext4 rootwait")
-            elif self.machine in ["pc", "q35", "virt"]:
+            elif self.machine in ["pc", "q35", "virt", None]:
                 cmd.append("-drive")
                 cmd.append(
                     f"if=virtio,format={disk_format},file={disk_path}{disk_opts}")
@@ -184,15 +191,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             cmd.append("-bios")
             cmd.append(
                 self.target.env.config.get_image_path(self.bios))
+        if self.extra_args:
+            if "-append" in shlex.split(self.extra_args):
+                raise ExecutionError("-append in extra_args not allowed, use boot_args instead")
 
-        if "-append" in shlex.split(self.extra_args):
-            raise ExecutionError("-append in extra_args not allowed, use boot_args instead")
-
-        cmd.extend(shlex.split(self.extra_args))
-        cmd.append("-machine")
-        cmd.append(self.machine)
-        cmd.append("-cpu")
-        cmd.append(self.cpu)
+            cmd.extend(shlex.split(self.extra_args))
+        if self.machine:
+            cmd.append("-machine")
+            cmd.append(self.machine)
+        if self.cpu:
+            cmd.append("-cpu")
+            cmd.append(self.cpu)
         cmd.append("-m")
         cmd.append(self.memory)
         if self.display == "none":

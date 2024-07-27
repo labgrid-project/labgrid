@@ -433,15 +433,28 @@ class ClientSession:
                     result.add(name)
         return list(result)
 
-    def _check_allowed(self, place):
+    def is_allowed(self, place):
+        """Check if a place is acquired
+
+        Args:
+            place (str): Place name to check
+
+        Returns:
+            str: None if acquired, else error message
+        """
         if not place.acquired:
-            raise UserError(f"place {place.name} is not acquired")
+            return f"place {place.name} is not acquired"
         if f"{self.gethostname()}/{self.getuser()}" not in place.allowed:
             host, user = place.acquired.split("/")
             if user != self.getuser():
-                raise UserError(f"place {place.name} is not acquired by your user, acquired by {user}")
+                return f"place {place.name} is not acquired by your user, acquired by {user}"
             if host != self.gethostname():
-                raise UserError(f"place {place.name} is not acquired on this computer, acquired on {host}")
+                return f"place {place.name} is not acquired on this computer, acquired on {host}"
+
+    def _check_allowed(self, place):
+        err = self.is_allowed(place)
+        if err:
+            raise UserError(msg)
 
     def get_place(self, place=None):
         pattern = place or self.args.place

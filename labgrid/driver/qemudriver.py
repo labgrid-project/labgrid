@@ -108,6 +108,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._tempdir = None
         self._socket = None
         self._clientsocket = None
+        self._sockpath = None
         self._forwarded_ports = {}
         atexit.register(self._atexit)
 
@@ -238,21 +239,10 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
     def on_activate(self):
         self._tempdir = tempfile.mkdtemp(prefix="labgrid-qemu-tmp-")
-        sockpath = f"{self._tempdir}/serialrw"
+        self._sockpath = f"{self._tempdir}/serialrw"
         self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self._socket.bind(sockpath)
+        self._socket.bind(self._sockpath)
         self._socket.listen(0)
-
-        self._cmd = self.get_qemu_base_args()
-
-        self._cmd.append("-S")
-        self._cmd.append("-qmp")
-        self._cmd.append("stdio")
-
-        self._cmd.append("-chardev")
-        self._cmd.append(f"socket,id=serialsocket,path={sockpath}")
-        self._cmd.append("-serial")
-        self._cmd.append("chardev:serialsocket")
 
     def on_deactivate(self):
         if self.status:
@@ -262,6 +252,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self._clientsocket = None
         self._socket.close()
         self._socket = None
+        self._sockpath = None
         shutil.rmtree(self._tempdir)
 
     @step()
@@ -270,6 +261,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         afterwards start the emulator using a QMP Command"""
         if self.status:
             return
+        self._cmd = self.get_qemu_base_args()
+
+        self._cmd.append("-S")
+        self._cmd.append("-qmp")
+        self._cmd.append("stdio")
+
+        self._cmd.append("-chardev")
+        self._cmd.append(f"socket,id=serialsocket,path={self._sockpath}")
+        self._cmd.append("-serial")
+        self._cmd.append("chardev:serialsocket")
+
         self.logger.debug("Starting with: %s", self._cmd)
         self._child = subprocess.Popen(
             self._cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)

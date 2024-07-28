@@ -513,12 +513,8 @@ class ClientSession:
                         print(f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}):")  # pylint: disable=line-too-long
                         print(indent(pformat(resource.asdict()), prefix="  "))
 
-    async def add_place(self):
+    async def run_add_place(self, name):
         """Add a place to the coordinator"""
-        name = self.args.place
-        if not name:
-            raise UserError("missing place name. Set with -p <place> or via env var LG_PLACE")
-
         request = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
         try:
             await self.stub.AddPlace(request)
@@ -526,15 +522,26 @@ class ClientSession:
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
 
-    async def del_place(self):
+    async def add_place(self):
+        """Add a place to the coordinator"""
+        name = self.args.place
+        if not name:
+            raise UserError("missing place name. Set with -p <place> or via env var LG_PLACE")
+        await run_add_place(name)
+
+    async def run_del_place(self, placename):
         """Delete a place from the coordinator"""
-        place = self.get_idle_place()
-        request = labgrid_coordinator_pb2.DeletePlaceRequest(name=place.name)
+        request = labgrid_coordinator_pb2.DeletePlaceRequest(name=placename)
         try:
             await self.stub.DeletePlace(request)
             await self.sync_with_coordinator()
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
+
+    async def del_place(self):
+        """Delete a place from the coordinator"""
+        place = self.get_idle_place()
+        await self.run_del_place(place.name)
 
     async def add_alias(self):
         """Add an alias for a place on the coordinator"""
@@ -575,11 +582,10 @@ class ClientSession:
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
 
-    async def set_tags(self):
+    async def run_set_tags(self, placename, in_tags):
         """Set the tags on a place"""
-        place = self.get_place()
         tags = {}
-        for pair in self.args.tags:
+        for pair in in_tags:
             try:
                 k, v = pair.split("=")
             except ValueError:
@@ -590,7 +596,7 @@ class ClientSession:
                 raise UserError(f"tag value '{v}' needs to match the rexex '{TAG_VAL.pattern}'")
             tags[k] = v
 
-        request = labgrid_coordinator_pb2.SetPlaceTagsRequest(placename=place.name, tags=tags)
+        request = labgrid_coordinator_pb2.SetPlaceTagsRequest(placename=placename, tags=tags)
 
         try:
             await self.stub.SetPlaceTags(request)
@@ -598,47 +604,60 @@ class ClientSession:
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
 
-    async def add_match(self):
+    async def set_tags(self):
+        """Set the tags on a place"""
+        place = self.get_place()
+        await self.run_set_tags(place.name, self.args.tags)
+
+    async def run_add_match(self, placename, pattern, rename=None):
         """Add a match for a place, making fuzzy matching available to the
         client"""
+        if not 2 <= pattern.count("/") <= 3:
+            raise UserError(
+                f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
+            )
+
+        request = labgrid_coordinator_pb2.AddPlaceMatchRequest(
+            placename=placename, pattern=pattern, rename=rename)
+
+        try:
+            await self.stub.AddPlaceMatch(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+
+    async def add_match(self):
         place = self.get_idle_place()
         for pattern in self.args.patterns:
-            if not 2 <= pattern.count("/") <= 3:
-                raise UserError(
-                    f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
-                )
             if place.hasmatch(pattern.split("/")):
                 print(f"pattern '{pattern}' exists, skipping", file=sys.stderr)
                 continue
+            await run_add_match(place.name, pattern)
 
-            request = labgrid_coordinator_pb2.AddPlaceMatchRequest(placename=place.name, pattern=pattern)
+    async def run_del_match(self, placename, pattern, rename):
+        """Delete a match for a place"""
+        if not 2 <= pattern.count("/") <= 3:
+            raise UserError(
+                f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
+            )
+        request = labgrid_coordinator_pb2.DeletePlaceMatchRequest(
+            placename=placename, pattern=pattern
+        )
 
-            try:
-                await self.stub.AddPlaceMatch(request)
-                await self.sync_with_coordinator()
-            except grpc.aio.AioRpcError as e:
-                raise ServerError(e.details())
+        try:
+            await self.stub.DeletePlaceMatch(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
 
     async def del_match(self):
         """Delete a match for a place"""
         place = self.get_idle_place()
         for pattern in self.args.patterns:
-            if not 2 <= pattern.count("/") <= 3:
-                raise UserError(
-                    f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
-                )
             if not place.hasmatch(pattern.split("/")):
                 print(f"pattern '{pattern}' not found, skipping", file=sys.stderr)
 
-            request = labgrid_coordinator_pb2.DeletePlaceMatchRequest(
-                placename=place.name, pattern=pattern
-            )
-
-            try:
-                await self.stub.DeletePlaceMatch(request)
-                await self.sync_with_coordinator()
-            except grpc.aio.AioRpcError as e:
-                raise ServerError(e.details())
+            await self.run_del_match(place.name, self.args.patterns)
 
     async def add_named_match(self):
         """Add a named match for a place.

@@ -192,6 +192,25 @@ Import a local `myfunctions.py` file:
    imports:
      - myfunctions.py
 
+PYTHONPATH
+----------
+The ``pythonpath`` key allows specifying additional directories to be added
+to the Python search path (sys.path). This is particularly useful for
+including directories that contain Python modules and packages which are
+not installed in the standard library or not in the current directory.
+Relative paths are resolved relative to the configuration file's location.
+Specifying this option enables the environment to locate and import modules
+that are not in the default Python path.
+
+PYTHONPATH EXAMPLE
+~~~~~~~~~~~~~~~~~~
+Extend the Python search path to include the `libs` directory:
+
+::
+
+   pythonpath:
+     - libs
+
 EXAMPLES
 --------
 A sample configuration with one `main` target, accessible via SerialPort

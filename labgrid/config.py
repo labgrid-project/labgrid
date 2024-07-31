@@ -3,12 +3,14 @@
 This class encapsulates access functions to the environment configuration
 
 """
+from typing import List
 import os
 from yaml import YAMLError
 import attr
 
 from .exceptions import NoConfigFoundError, InvalidConfigError
 from .util.yaml import load, resolve_templates
+
 
 @attr.s(eq=False)
 class Config:
@@ -257,6 +259,12 @@ class Config:
                 imports.append(user_import)
 
         return imports
+
+    def get_pythonpath(self) -> List[str]:
+        configured_pythonpath = self.data.get('pythonpath', [])
+        if not isinstance(configured_pythonpath, list):
+            raise KeyError("pythonpath needs to be a list")
+        return [self.resolve_path(p) for p in configured_pythonpath]
 
     def get_paths(self):
         """Helper function that returns the subdict of all paths

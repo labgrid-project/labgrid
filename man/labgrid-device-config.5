@@ -204,6 +204,29 @@ imports:
 .fi
 .UNINDENT
 .UNINDENT
+.SH PYTHONPATH
+.sp
+The \fBpythonpath\fP key allows specifying additional directories to be added
+to the Python search path (sys.path). This is particularly useful for
+including directories that contain Python modules and packages which are
+not installed in the standard library or not in the current directory.
+Relative paths are resolved relative to the configuration file\(aqs location.
+Specifying this option enables the environment to locate and import modules
+that are not in the default Python path.
+.SS PYTHONPATH EXAMPLE
+.sp
+Extend the Python search path to include the \fIlibs\fP directory:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+pythonpath:
+  \- libs
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
 .SH EXAMPLES
 .sp
 A sample configuration with one \fImain\fP target, accessible via SerialPort

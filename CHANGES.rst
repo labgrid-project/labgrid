@@ -48,6 +48,9 @@ New Features in 24.0
 - The pyproject.toml gained a config for `ruff <https://github.com/astral-sh/ruff>`_.
 - ``setuptools_scm`` is now used to generate a version file.
 - labgrid-client console will fallback to telnet if microcom is not available.
+- The ``pythonpath`` key allows specifying additional directories for the
+  Python search path (sys.path). This helps include modules/packages not
+  in the standard library or current directory.
 
 
 Bug fixes in 24.0

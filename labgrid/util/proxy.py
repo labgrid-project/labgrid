@@ -95,6 +95,15 @@ class ProxyManager:
 
         return urlunsplit(s)
 
+
+    @classmethod
+    def get_grpc_url(cls, url, *, default_port=None):
+        url = f"//{url}"
+        url = proxymanager.get_url(url, default_port=default_port)
+        url = url.lstrip("/")
+        return url
+
+
     @classmethod
     def get_command(cls, res, host, port, ifname=None):
         """get argument list to start a proxy process connected to the target"""

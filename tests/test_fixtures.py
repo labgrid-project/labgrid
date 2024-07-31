@@ -72,7 +72,7 @@ def test_env_with_junit(short_env, short_test, tmpdir):
 def test_help(short_test):
     with pexpect.spawn(f'pytest --help {short_test}') as spawn:
         spawn.expect(pexpect.EOF)
-        assert b'--lg-coordinator=CROSSBAR_URL' in spawn.before
+        assert b'--lg-coordinator=COORDINATOR_URL' in spawn.before
         spawn.close()
         assert spawn.exitstatus == 0
 

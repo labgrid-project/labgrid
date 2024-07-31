@@ -13,18 +13,17 @@ import logging
 import signal
 import sys
 import shlex
-import shutil
 import json
+import itertools
 from textwrap import indent
 from socket import gethostname
 from getpass import getuser
 from collections import defaultdict, OrderedDict
 from datetime import datetime
 from pprint import pformat
-import txaio
 
-txaio.use_asyncio()
-from autobahn.asyncio.wamp import ApplicationSession
+import attr
+import grpc
 
 from .common import (
     ResourceEntry,
@@ -34,20 +33,18 @@ from .common import (
     ReservationState,
     TAG_KEY,
     TAG_VAL,
-    enable_tcp_nodelay,
-    monkey_patch_max_msg_payload_size_ws_option,
+    queue_as_aiter,
 )
 from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
+from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util import diff_dict, flat_dict, filter_dict, dump, atomic_replace, labgrid_version, Timeout
+from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout, term
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
 from ..driver import Mode, ExecutionError
 from ..logging import basicConfig, StepLogger
-
-txaio.config.loop = asyncio.get_event_loop()  # pylint: disable=no-member
-monkey_patch_max_msg_payload_size_ws_option()
+from ..var_dict import add_var
 
 
 class Error(Exception):
@@ -66,9 +63,19 @@ class InteractiveCommandError(Error):
     pass
 
 
-class ClientSession(ApplicationSession):
+@attr.s(eq=False)
+class ClientSession:
     """The ClientSession encapsulates all the actions a Client can Invoke on
     the coordinator."""
+
+    url = attr.ib(validator=attr.validators.instance_of(str))
+    loop = attr.ib(validator=attr.validators.instance_of(asyncio.BaseEventLoop))
+    env = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(Environment)))
+    role = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    prog = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    args = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(argparse.Namespace)))
+    monitor = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    var_dict = attr.ib(default={}, validator=attr.validators.instance_of(dict))
 
     def gethostname(self):
         return os.environ.get("LG_HOSTNAME", gethostname())
@@ -76,47 +83,134 @@ class ClientSession(ApplicationSession):
     def getuser(self):
         return os.environ.get("LG_USERNAME", getuser())
 
-    def onConnect(self):
+    def __attrs_post_init__(self):
         """Actions which are executed if a connection is successfully opened."""
-        self.loop = self.config.extra["loop"]
-        self.connected = self.config.extra["connected"]
-        self.args = self.config.extra.get("args")
-        self.env = self.config.extra.get("env", None)
-        self.role = self.config.extra.get("role", None)
-        self.prog = self.config.extra.get("prog", os.path.basename(sys.argv[0]))
-        self.monitor = self.config.extra.get("monitor", False)
-        enable_tcp_nodelay(self)
-        self.join(
-            self.config.realm,
-            authmethods=["anonymous", "ticket"],
-            authid=f"client/{self.gethostname()}/{self.getuser()}",
-            authextra={"authid": f"client/{self.gethostname()}/{self.getuser()}"},
+        self.stopping = asyncio.Event()
+
+        # It seems since https://github.com/grpc/grpc/pull/34647, the
+        # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
+        # so set it as well.
+        # Use GRPC_VERBOSITY=DEBUG GRPC_TRACE=http_keepalive for debugging.
+        channel_options = [
+            ("grpc.keepalive_time_ms", 7500),  # 7.5 seconds
+            ("grpc.keepalive_timeout_ms", 10000),  # 10 seconds
+            ("grpc.http2.ping_timeout_ms", 10000),  # 10 seconds
+            ("grpc.http2.max_pings_without_data", 0),  # no limit
+        ]
+
+        self.channel = grpc.aio.insecure_channel(
+            target=self.url,
+            options=channel_options,
         )
+        self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
 
-    def onChallenge(self, challenge):
-        import warnings
+        self.out_queue = asyncio.Queue()
+        self.stream_call = None
+        self.pump_task = None
+        self.sync_id = itertools.count(start=1)
+        self.sync_events = {}
 
-        warnings.warn("Ticket authentication is deprecated. Please update your coordinator.", DeprecationWarning)
-        logging.warning("Ticket authentication is deprecated. Please update your coordinator.")
-        return "dummy-ticket"
-
-    async def onJoin(self, details):
-        # FIXME race condition?
-        resources = await self.call("org.labgrid.coordinator.get_resources")
+    async def start(self):
         self.resources = {}
-        for exporter, groups in resources.items():
-            for group_name, group in sorted(groups.items()):
-                for resource_name, resource in sorted(group.items()):
-                    await self.on_resource_changed(exporter, group_name, resource_name, resource)
-
-        places = await self.call("org.labgrid.coordinator.get_places")
         self.places = {}
-        for placename, config in places.items():
-            await self.on_place_changed(placename, config)
 
-        await self.subscribe(self.on_resource_changed, "org.labgrid.coordinator.resource_changed")
-        await self.subscribe(self.on_place_changed, "org.labgrid.coordinator.place_changed")
-        await self.connected(self)
+        self.pump_task = self.loop.create_task(self.message_pump())
+        msg = labgrid_coordinator_pb2.ClientInMessage()
+        msg.startup.version = labgrid_version()
+        msg.startup.name = f"{self.gethostname()}/{self.getuser()}"
+        self.out_queue.put_nowait(msg)
+        msg = labgrid_coordinator_pb2.ClientInMessage()
+        msg.subscribe.all_places = True
+        self.out_queue.put_nowait(msg)
+        msg = labgrid_coordinator_pb2.ClientInMessage()
+        msg.subscribe.all_resources = True
+        self.out_queue.put_nowait(msg)
+        await self.sync_with_coordinator()
+        if self.stopping.is_set():
+            raise ServerError("Could not connect to coordinator")
+
+    async def stop(self):
+        self.out_queue.put_nowait(None)  # let the sender side exit gracefully
+        if self.stream_call:
+            self.stream_call.cancel()
+        try:
+            await self.pump_task
+        except asyncio.CancelledError:
+            pass
+        self.cancel_pending_syncs()
+
+    async def sync_with_coordinator(self):
+        identifier = next(self.sync_id)
+        event = self.sync_events[identifier] = asyncio.Event()
+        msg = labgrid_coordinator_pb2.ClientInMessage()
+        msg.sync.id = identifier
+        logging.debug("sending sync %s", identifier)
+        self.out_queue.put_nowait(msg)
+        await event.wait()
+        if self.stopping.is_set():
+            logging.debug("sync %s failed", identifier)
+        else:
+            logging.debug("received sync %s", identifier)
+        return not self.stopping.is_set()
+
+    def cancel_pending_syncs(self):
+        assert self.stopping.is_set()  # only call when something has gone wrong
+        while True:
+            try:
+                identifier, event = self.sync_events.popitem()
+                logging.debug("cancelling %s %s", identifier, event)
+                event.set()
+            except KeyError:
+                break
+
+    async def message_pump(self):
+        got_message = False
+        try:
+            self.stream_call = call = self.stub.ClientStream(queue_as_aiter(self.out_queue))
+            async for out_msg in call:
+                out_msg: labgrid_coordinator_pb2.ClientOutMessage
+                got_message = True
+                logging.debug("out_msg from coordinator: %s", out_msg)
+                for update in out_msg.updates:
+                    update_kind = update.WhichOneof("kind")
+                    if update_kind == "resource":
+                        resource: labgrid_coordinator_pb2.Resource = update.resource
+                        await self.on_resource_changed(
+                            resource.path.exporter_name,
+                            resource.path.group_name,
+                            resource.path.resource_name,
+                            ResourceEntry.data_from_pb2(resource),
+                        )
+                    elif update_kind == "del_resource":
+                        resource_path: labgrid_coordinator_pb2.Resource.Path = update.del_resource
+                        await self.on_resource_changed(
+                            resource_path.exporter_name, resource_path.group_name, resource_path.resource_name, {}
+                        )
+                    elif update_kind == "place":
+                        place = update.place
+                        await self.on_place_changed(place)
+                    elif update_kind == "del_place":
+                        place_name = update.del_place
+                        await self.on_place_deleted(place_name)
+                    else:
+                        logging.warning("unknown update from coordinator! %s", update_kind)
+                if out_msg.HasField("sync"):
+                    event = self.sync_events.pop(out_msg.sync.id)
+                    event.set()
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                if got_message:
+                    logging.error("coordinator became unavailable: %s", e.details())
+                else:
+                    logging.error("coordinator is unavailable: %s", e.details())
+            else:
+                logging.exception("unexpected grpc error in coordinator message pump task")
+        except Exception:
+            logging.exception("error in coordinator message pump task")
+        finally:
+            self.stopping.set()
+            self.out_queue.put_nowait(None)  # let the sender side exit gracefully
+            self.cancel_pending_syncs()
 
     async def on_resource_changed(self, exporter, group_name, resource_name, resource):
         group = self.resources.setdefault(exporter, {}).setdefault(group_name, {})
@@ -129,44 +223,40 @@ class ClientSession(ApplicationSession):
             old = group[resource_name].data
             group[resource_name].data = resource
         if self.monitor:
-            if resource and not old:
+            if "cls" in resource and not old:
                 print(f"Resource {exporter}/{group_name}/{resource['cls']}/{resource_name} created: {resource}")
-            elif resource and old:
+            elif "cls" in resource and old:
                 print(f"Resource {exporter}/{group_name}/{resource['cls']}/{resource_name} changed:")
                 for k, v_old, v_new in diff_dict(flat_dict(old), flat_dict(resource)):
                     print(f"  {k}: {v_old} -> {v_new}")
             else:
                 print(f"Resource {exporter}/{group_name}/???/{resource_name} deleted")
 
-    async def on_place_changed(self, name, config):
-        if not config:
-            del self.places[name]
-            if self.monitor:
-                print(f"Place {name} deleted")
-            return
-        config = config.copy()
-        config["name"] = name
-        config["matches"] = [ResourceMatch(**match) for match in config["matches"]]
-        config = filter_dict(config, Place, warn=True)
+    async def on_place_changed(self, place_pb2: labgrid_coordinator_pb2.Place):
+        name = place_pb2.name
+
         if name not in self.places:
-            place = Place(**config)
-            self.places[name] = place
+            self.places[name] = Place.from_pb2(place_pb2)
             if self.monitor:
-                print(f"Place {name} created: {place}")
+                print(f"Place {name} created: {place_pb2}")
         else:
             place = self.places[name]
             old = flat_dict(place.asdict())
-            place.update(config)
+            place.update_from_pb2(place_pb2)
             new = flat_dict(place.asdict())
             if self.monitor:
                 print(f"Place {name} changed:")
                 for k, v_old, v_new in diff_dict(old, new):
                     print(f"  {k}: {v_old} -> {v_new}")
 
+    async def on_place_deleted(self, name: str):
+        del self.places[name]
+        if self.monitor:
+            print(f"Place {name} deleted")
+
     async def do_monitor(self):
         self.monitor = True
-        while True:
-            await asyncio.sleep(3600.0)
+        await self.stopping.wait()
 
     async def complete(self):
         if self.args.type == "resources":
@@ -342,15 +432,28 @@ class ClientSession(ApplicationSession):
                     result.add(name)
         return list(result)
 
-    def _check_allowed(self, place):
+    def is_allowed(self, place):
+        """Check if a place is acquired
+
+        Args:
+            place (str): Place name to check
+
+        Returns:
+            str: None if acquired, else error message
+        """
         if not place.acquired:
-            raise UserError(f"place {place.name} is not acquired")
+            return f"place {place.name} is not acquired"
         if f"{self.gethostname()}/{self.getuser()}" not in place.allowed:
             host, user = place.acquired.split("/")
             if user != self.getuser():
-                raise UserError(f"place {place.name} is not acquired by your user, acquired by {user}")
+                return f"place {place.name} is not acquired by your user, acquired by {user}"
             if host != self.gethostname():
-                raise UserError(f"place {place.name} is not acquired on this computer, acquired on {host}")
+                return f"place {place.name} is not acquired on this computer, acquired on {host}"
+
+    def _check_allowed(self, place):
+        err = self.is_allowed(place)
+        if err:
+            raise UserError(msg)
 
     def get_place(self, place=None):
         pattern = place or self.args.place
@@ -388,7 +491,11 @@ class ClientSession(ApplicationSession):
                 name = resource_name
                 if match.rename:
                     name = match.rename
-                resource = self.resources[exporter][group_name][resource_name]
+                try:
+                    resource = self.resources[exporter][group_name][resource_name]
+                except KeyError:
+                    print(f"Orphaned resource '{name}' ({exporter}/{group_name}/{cls}/{resource_name})")
+                    continue
                 print(f"Acquired resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}):")  # pylint: disable=line-too-long
                 print(indent(pformat(resource.asdict()), prefix="  "))
                 assert resource.cls == cls
@@ -406,72 +513,79 @@ class ClientSession(ApplicationSession):
                         print(f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}):")  # pylint: disable=line-too-long
                         print(indent(pformat(resource.asdict()), prefix="  "))
 
+    async def run_add_place(self, name):
+        """Add a place to the coordinator"""
+        request = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
+        try:
+            await self.stub.AddPlace(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+
     async def add_place(self):
         """Add a place to the coordinator"""
         name = self.args.place
         if not name:
-            raise UserError("missing place name. Set with -p <place> or via env var $PLACE")
-        if name in self.places:
-            raise UserError(f"{name} already exists")
-        res = await self.call("org.labgrid.coordinator.add_place", name)
-        if not res:
-            raise ServerError(f"failed to add place {name}")
-        return res
+            raise UserError("missing place name. Set with -p <place> or via env var LG_PLACE")
+        await run_add_place(name)
+
+    async def run_del_place(self, placename):
+        """Delete a place from the coordinator"""
+        request = labgrid_coordinator_pb2.DeletePlaceRequest(name=placename)
+        try:
+            await self.stub.DeletePlace(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
 
     async def del_place(self):
         """Delete a place from the coordinator"""
-        pattern = self.args.place
-        if pattern not in self.places:
-            raise UserError("deletes require an exact place name")
-        place = self.places[pattern]
-        if place.acquired:
-            raise UserError(f"place {place.name} is not idle (acquired by {place.acquired})")
-        name = place.name
-        if not name:
-            raise UserError("missing place name. Set with -p <place> or via env var $PLACE")
-        if name not in self.places:
-            raise UserError(f"{name} does not exist")
-        res = await self.call("org.labgrid.coordinator.del_place", name)
-        if not res:
-            raise ServerError(f"failed to delete place {name}")
-        return res
+        place = self.get_idle_place()
+        await self.run_del_place(place.name)
 
     async def add_alias(self):
         """Add an alias for a place on the coordinator"""
         place = self.get_idle_place()
         alias = self.args.alias
-        if alias in place.aliases:
-            raise UserError(f"place {place.name} already has alias {alias}")
-        res = await self.call("org.labgrid.coordinator.add_place_alias", place.name, alias)
-        if not res:
-            raise ServerError(f"failed to add alias {alias} for place {place.name}")
-        return res
+
+        request = labgrid_coordinator_pb2.AddPlaceAliasRequest(placename=place.name, alias=alias)
+
+        try:
+            await self.stub.AddPlaceAlias(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
 
     async def del_alias(self):
         """Delete an alias for a place from the coordinator"""
         place = self.get_idle_place()
         alias = self.args.alias
-        if alias not in place.aliases:
-            raise UserError(f"place {place.name} has no alias {alias}")
-        res = await self.call("org.labgrid.coordinator.del_place_alias", place.name, alias)
-        if not res:
-            raise ServerError(f"failed to delete alias {alias} for place {place.name}")
-        return res
+
+        request = labgrid_coordinator_pb2.DeletePlaceAliasRequest(placename=place.name, alias=alias)
+
+        try:
+            await self.stub.DeletePlaceAlias(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
 
     async def set_comment(self):
         """Set the comment on a place"""
         place = self.get_place()
         comment = " ".join(self.args.comment)
-        res = await self.call("org.labgrid.coordinator.set_place_comment", place.name, comment)
-        if not res:
-            raise ServerError(f"failed to set comment {comment} for place {place.name}")
-        return res
 
-    async def set_tags(self):
+        request = labgrid_coordinator_pb2.SetPlaceCommentRequest(placename=place.name, comment=comment)
+
+        try:
+            await self.stub.SetPlaceComment(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+
+    async def run_set_tags(self, placename, in_tags):
         """Set the tags on a place"""
-        place = self.get_place()
         tags = {}
-        for pair in self.args.tags:
+        for pair in in_tags:
             try:
                 k, v = pair.split("=")
             except ValueError:
@@ -481,61 +595,93 @@ class ClientSession(ApplicationSession):
             if not TAG_VAL.match(v):
                 raise UserError(f"tag value '{v}' needs to match the rexex '{TAG_VAL.pattern}'")
             tags[k] = v
-        res = await self.call("org.labgrid.coordinator.set_place_tags", place.name, tags)
-        if not res:
-            raise ServerError(f"failed to set tags {' '.join(self.args.tags)} for place {place.name}")
-        return res
 
-    async def add_match(self):
+        request = labgrid_coordinator_pb2.SetPlaceTagsRequest(placename=placename, tags=tags)
+
+        try:
+            await self.stub.SetPlaceTags(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+
+    async def set_tags(self):
+        """Set the tags on a place"""
+        place = self.get_place()
+        await self.run_set_tags(place.name, self.args.tags)
+
+    async def run_add_match(self, placename, pattern, rename=None):
         """Add a match for a place, making fuzzy matching available to the
         client"""
+        if not 2 <= pattern.count("/") <= 3:
+            raise UserError(
+                f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
+            )
+
+        request = labgrid_coordinator_pb2.AddPlaceMatchRequest(
+            placename=placename, pattern=pattern, rename=rename)
+
+        try:
+            await self.stub.AddPlaceMatch(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+
+    async def add_match(self):
         place = self.get_idle_place()
-        if place.acquired:
-            raise UserError(f"can not change acquired place {place.name}")
         for pattern in self.args.patterns:
-            if not 2 <= pattern.count("/") <= 3:
-                raise UserError(f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')")
             if place.hasmatch(pattern.split("/")):
                 print(f"pattern '{pattern}' exists, skipping", file=sys.stderr)
                 continue
-            res = await self.call("org.labgrid.coordinator.add_place_match", place.name, pattern)
-            if not res:
-                raise ServerError(f"failed to add match {pattern} for place {place.name}")
+            await run_add_match(place.name, pattern)
+
+    async def run_del_match(self, placename, pattern, rename):
+        """Delete a match for a place"""
+        if not 2 <= pattern.count("/") <= 3:
+            raise UserError(
+                f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
+            )
+        request = labgrid_coordinator_pb2.DeletePlaceMatchRequest(
+            placename=placename, pattern=pattern
+        )
+
+        try:
+            await self.stub.DeletePlaceMatch(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
 
     async def del_match(self):
         """Delete a match for a place"""
         place = self.get_idle_place()
-        if place.acquired:
-            raise UserError(f"can not change acquired place {place.name}")
         for pattern in self.args.patterns:
-            if not 2 <= pattern.count("/") <= 3:
-                raise UserError(f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')")
             if not place.hasmatch(pattern.split("/")):
                 print(f"pattern '{pattern}' not found, skipping", file=sys.stderr)
-            res = await self.call("org.labgrid.coordinator.del_place_match", place.name, pattern)
-            if not res:
-                raise ServerError(f"failed to delete match {pattern} for place {place.name}")
+
+            await self.run_del_match(place.name, self.args.patterns)
 
     async def add_named_match(self):
         """Add a named match for a place.
 
         Fuzzy matching is not allowed to avoid accidental names conflicts."""
         place = self.get_idle_place()
-        if place.acquired:
-            raise UserError(f"can not change acquired place {place.name}")
         pattern = self.args.pattern
         name = self.args.name
         if not 2 <= pattern.count("/") <= 3:
-            raise UserError(f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')")
-        if place.hasmatch(pattern.split("/")):
-            raise UserError(f"pattern '{pattern}' exists")
+            raise UserError(
+                f"invalid pattern format '{pattern}' (use 'exporter/group/cls/name')"
+            )
         if "*" in pattern:
-            raise UserError(f"invalid pattern '{pattern}' ('*' not allowed for named matches)")
-        if not name:
-            raise UserError(f"invalid name '{name}'")
-        res = await self.call("org.labgrid.coordinator.add_place_match", place.name, pattern, name)
-        if not res:
-            raise ServerError(f"failed to add match {pattern} for place {place.name}")
+            raise UserError(
+                f"invalid pattern '{pattern}' ('*' not allowed for named matches)"
+            )
+
+        request = labgrid_coordinator_pb2.AddPlaceMatchRequest(placename=place.name, pattern=pattern, rename=name)
+
+        try:
+            await self.stub.AddPlaceMatch(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
 
     def check_matches(self, place):
         resources = []
@@ -551,43 +697,45 @@ class ClientSession(ApplicationSession):
 
     async def acquire(self):
         """Acquire a place, marking it unavailable for other clients"""
-        place = self.get_place()
-        if place.acquired:
-            raise UserError(f"place {place.name} is already acquired by {place.acquired}")
+        place = self.get_idle_place()
 
         if not self.args.allow_unmatched:
             self.check_matches(place)
 
-        res = await self.call("org.labgrid.coordinator.acquire_place", place.name)
+        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name)
 
-        if res:
-            print(f"acquired place {place.name}")
-            return
+        try:
+            await self.stub.AcquirePlace(request)
+            await self.sync_with_coordinator()
+            logging.info(f"acquired place {place.name}")
+        except grpc.aio.AioRpcError as e:
+            # check potential failure causes
+            for exporter, groups in sorted(self.resources.items()):
+                for group_name, group in sorted(groups.items()):
+                    for resource_name, resource in sorted(group.items()):
+                        resource_path = (exporter, group_name, resource.cls, resource_name)
+                        if not resource.acquired:
+                            continue
+                        match = place.getmatch(resource_path)
+                        if match is None:
+                            continue
+                        name = resource_name
+                        if match.rename:
+                            name = match.rename
+                        print(
+                            f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}) already acquired by place '{resource.acquired}'"
+                        )  # pylint: disable=line-too-long
 
-        # check potential failure causes
-        for exporter, groups in sorted(self.resources.items()):
-            for group_name, group in sorted(groups.items()):
-                for resource_name, resource in sorted(group.items()):
-                    resource_path = (exporter, group_name, resource.cls, resource_name)
-                    if resource.acquired is None:
-                        continue
-                    match = place.getmatch(resource_path)
-                    if match is None:
-                        continue
-                    name = resource_name
-                    if match.rename:
-                        name = match.rename
-                    print(
-                        f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}) already acquired by place '{resource.acquired}'"
-                    )  # pylint: disable=line-too-long
-
-        raise ServerError(f"failed to acquire place {place.name}")
+            raise ServerError(e.details())
 
     async def release(self):
         """Release a previously acquired place"""
         place = self.get_place()
         if not place.acquired:
+            if self.args.auto:
+                return
             raise UserError(f"place {place.name} is not acquired")
+        user = self.getuser()
         _, user = place.acquired.split("/")
         if user != self.getuser():
             if not self.args.kick:
@@ -595,38 +743,45 @@ class ClientSession(ApplicationSession):
                     f"place {place.name} is acquired by a different user ({place.acquired}), use --kick if you are sure"
                 )  # pylint: disable=line-too-long
             print(f"warning: kicking user ({place.acquired})")
-        res = await self.call("org.labgrid.coordinator.release_place", place.name)
-        if not res:
-            raise ServerError(f"failed to release place {place.name}")
 
-        print(f"released place {place.name}")
+        request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
+
+        try:
+            await self.stub.ReleasePlace(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+
+        logging.info(f"released place {place.name}")
 
     async def release_from(self):
         """Release a place, but only if acquired by a specific user"""
         place = self.get_place()
-        res = await self.call(
-            "org.labgrid.coordinator.release_place_from",
-            place.name,
-            self.args.acquired,
-        )
-        if not res:
-            raise ServerError(f"failed to release place {place.name}")
+        if not place.acquired:
+            raise UserError(f"place {place.name} is not acquired")
+
+        request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name, fromuser=self.args.acquired)
+
+        try:
+            await self.stub.ReleasePlace(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
 
         print(f"{self.args.acquired} has released place {place.name}")
 
     async def allow(self):
         """Allow another use access to a previously acquired place"""
-        place = self.get_place()
-        if not place.acquired:
-            raise UserError(f"place {place.name} is not acquired")
-        _, user = place.acquired.split("/")
-        if user != self.getuser():
-            raise UserError(f"place {place.name} is acquired by a different user ({place.acquired})")
+        place = self.get_acquired_place()
         if "/" not in self.args.user:
             raise UserError(f"user {self.args.user} must be in <host>/<username> format")
-        res = await self.call("org.labgrid.coordinator.allow_place", place.name, self.args.user)
-        if not res:
-            raise ServerError(f"failed to allow {self.args.user} for place {place.name}")
+        request = labgrid_coordinator_pb2.AllowPlaceRequest(placename=place.name, user=self.args.user)
+
+        try:
+            await self.stub.AllowPlace(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
 
         print(f"allowed {self.args.user} for place {place.name}")
 
@@ -639,7 +794,11 @@ class ClientSession(ApplicationSession):
             name = resource_name
             if match.rename:
                 name = match.rename
-            resources[(name, cls)] = self.resources[exporter][group_name][resource_name]
+            try:
+                resources[(name, cls)] = self.resources[exporter][group_name][resource_name]
+            except KeyError:
+                raise ServerError(f"place {place} has an orphaned resource (exporter {exporter} disconnected?)")
+
         return resources
 
     def get_target_config(self, place):
@@ -663,6 +822,21 @@ class ClientSession(ApplicationSession):
         manager.session = self
         manager.loop = self.loop
 
+    def set_initial_state(self, target):
+        if self.args.state:
+            strategy = target.get_driver("Strategy")
+            if self.args.initial_state:
+                print(f"Setting initial state to {self.args.initial_state}")
+                strategy.force(self.args.initial_state)
+            logging.info(f"Transitioning into state {self.args.state}")
+            strategy.transition(self.args.state)
+
+    def set_end_state(self, target):
+        if self.args.end_state:
+            strategy = target.get_driver("Strategy")
+            logging.info(f"Transitioning into state {self.args.end_state}")
+            strategy.transition(self.args.end_state)
+
     def _get_target(self, place):
         self._prepare_manager()
         target = None
@@ -673,19 +847,7 @@ class ClientSession(ApplicationSession):
                     print(f"Selected role {self.role} from configuration file")
             target = self.env.get_target(self.role)
         if target:
-            if self.args.state:
-                strategy = target.get_driver("Strategy")
-                if self.args.initial_state:
-                    print(f"Setting initial state to {self.args.initial_state}")
-                    strategy.force(self.args.initial_state)
-                print(f"Transitioning into state {self.args.state}")
-                strategy.transition(self.args.state)
-                # deactivate console drivers so we are able to connect with microcom later
-                try:
-                    con = target.get_active_driver("ConsoleProtocol")
-                    target.deactivate(con)
-                except NoDriverFoundError:
-                    pass
+            self.set_initial_state(target)
         else:
             target = Target(place.name, env=self.env)
             RemotePlace(target, name=place.name)
@@ -802,78 +964,53 @@ class ClientSession(ApplicationSession):
             drv.set(False)
 
     async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
+        from ..protocol import ConsoleProtocol
+
         name = self.args.name
-        from ..resource import NetworkSerialPort
-
-        resource = target.get_resource(NetworkSerialPort, name=name, wait_avail=False)
-
-        # async await resources
-        timeout = Timeout(timeout)
-        while True:
-            target.update_resources()
-            if resource.avail or (not loop and timeout.expired):
-                break
-            await asyncio.sleep(0.1)
-
-        # use zero timeout to prevent blocking sleeps
-        target.await_resources([resource], timeout=0.0)
 
         if not place.acquired:
             print("place released")
             return 255
 
-        host, port = proxymanager.get_host_and_port(resource)
-
-        # check for valid resources
-        assert port is not None, "Port is not set"
-
-        microcom_bin = shutil.which("microcom")
-
-        if microcom_bin is not None:
-            call = [microcom_bin, "-s", str(resource.speed), "-t", f"{host}:{port}"]
-
-            if listen_only:
-                call.append("--listenonly")
-
-            if logfile:
-                call.append(f"--logfile={logfile}")
+        if self.args.internal or os.environ.get('LG_CONSOLE') == 'internal':
+            console = target.get_driver(ConsoleProtocol, name=name)
+            returncode = await term.internal(lambda: self.is_allowed(place),
+                                             console, logfile, listen_only)
         else:
-            call = ["telnet", host, str(port)]
+            from ..resource import NetworkSerialPort, SerialPort
 
-            logging.info("microcom not available, using telnet instead")
-
-            if listen_only:
-                logging.warning("--listenonly option not supported by telnet, ignoring")
-
-            if logfile:
-                logging.warning("--logfile option not supported by telnet, ignoring")
-
-        print(f"connecting to {resource} calling {' '.join(call)}")
-        try:
-            p = await asyncio.create_subprocess_exec(*call)
-        except FileNotFoundError as e:
-            raise ServerError(f"failed to execute remote console command: {e}")
-        while p.returncode is None:
+            # deactivate console drivers so we are able to connect with microcom
             try:
-                await asyncio.wait_for(p.wait(), 1.0)
-            except asyncio.TimeoutError:
-                # subprocess is still running
+                con = target.get_active_driver("ConsoleProtocol")
+                target.deactivate(con)
+            except NoDriverFoundError:
                 pass
 
-            try:
-                self._check_allowed(place)
-            except UserError:
-                p.terminate()
-                try:
-                    await asyncio.wait_for(p.wait(), 1.0)
-                except asyncio.TimeoutError:
-                    # try harder
-                    p.kill()
-                    await asyncio.wait_for(p.wait(), 1.0)
-                raise
-        if p.returncode:
-            print("connection lost", file=sys.stderr)
-        return p.returncode
+            resource = target.get_resource(NetworkSerialPort, name=name,
+                                           wait_avail=False)
+
+            # async await resources
+            timeout = Timeout(timeout)
+            while True:
+                target.update_resources()
+                if resource.avail or (not loop and timeout.expired):
+                    break
+                await asyncio.sleep(0.1)
+
+            # use zero timeout to prevent blocking sleeps
+            target.await_resources([resource], timeout=0.0)
+            host, port = proxymanager.get_host_and_port(resource)
+
+            # check for valid resources
+            assert port is not None, "Port is not set"
+            returncode = await term.external(lambda: self.is_allowed(place),
+                                             host, port, resource, logfile,
+                                             listen_only)
+
+        # Raise an exception if the place was released
+        self._check_allowed(place)
+        return returncode
+
 
     async def console(self, place, target):
         while True:
@@ -885,7 +1022,7 @@ class ClientSession(ApplicationSession):
                 break
             if not self.args.loop:
                 if res:
-                    exc = InteractiveCommandError("microcom error")
+                    exc = InteractiveCommandError("console error")
                     exc.exitcode = res
                     raise exc
                 break
@@ -976,6 +1113,10 @@ class ClientSession(ApplicationSession):
                     drv.interface.timeout = self.args.wait
                 elif isinstance(resource, NetworkRKUSBLoader):
                     drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False, name=name)
+                    drv.loader.timeout = self.args.wait
+                elif isinstance(resource, NetworkSunxiUSBLoader):
+                    drv = self._get_driver_or_new(target, "SunxiUSBDriver",
+                                                  activate=False, name=name)
                     drv.loader.timeout = self.args.wait
                 if drv:
                     break
@@ -1292,14 +1433,32 @@ class ClientSession(ApplicationSession):
             raise UserError(e)
 
     async def create_reservation(self):
-        filters = " ".join(self.args.filters)
         prio = self.args.prio
-        res = await self.call("org.labgrid.coordinator.create_reservation", filters, prio=prio)
-        if res is None:
-            raise ServerError("failed to create reservation")
-        ((token, config),) = res.items()  # we get a one-item dict
-        config = filter_dict(config, Reservation, warn=True)
-        res = Reservation(token=token, **config)
+
+        fltr = {}
+        for pair in self.args.filters:
+            try:
+                k, v = pair.split("=")
+            except ValueError:
+                raise UserError(f"'{pair}' is not a valid filter (must contain a '=')")
+            if not TAG_KEY.match(k):
+                raise UserError(f"Key '{k}' in filter '{pair}' is invalid")
+            if not TAG_KEY.match(v):
+                raise UserError(f"Value '{v}' in filter '{pair}' is invalid")
+            fltr[k] = v
+
+        fltrs = {
+            "main": labgrid_coordinator_pb2.Reservation.Filter(filter=fltr),
+        }
+
+        request = labgrid_coordinator_pb2.CreateReservationRequest(filters=fltrs, prio=prio)
+
+        try:
+            response: labgrid_coordinator_pb2.CreateReservationResponse = await self.stub.CreateReservation(request)
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+
+        res = Reservation.from_pb2(response.reservation)
         if self.args.shell:
             print(f"export LG_TOKEN={res.token}")
         else:
@@ -1311,18 +1470,25 @@ class ClientSession(ApplicationSession):
             await self._wait_reservation(res.token, verbose=False)
 
     async def cancel_reservation(self):
-        token = self.args.token
-        res = await self.call("org.labgrid.coordinator.cancel_reservation", token)
-        if not res:
-            raise ServerError(f"failed to cancel reservation {token}")
+        token: str = self.args.token
 
-    async def _wait_reservation(self, token, verbose=True):
+        request = labgrid_coordinator_pb2.CancelReservationRequest(token=token)
+
+        try:
+            await self.stub.CancelReservation(request)
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+
+    async def _wait_reservation(self, token: str, verbose=True):
         while True:
-            config = await self.call("org.labgrid.coordinator.poll_reservation", token)
-            if config is None:
-                raise ServerError("reservation not found")
-            config = filter_dict(config, Reservation, warn=True)
-            res = Reservation(token=token, **config)
+            request = labgrid_coordinator_pb2.PollReservationRequest(token=token)
+
+            try:
+                response: labgrid_coordinator_pb2.PollReservationResponse = await self.stub.PollReservation(request)
+            except grpc.aio.AioRpcError as e:
+                raise ServerError(e.details())
+
+            res = Reservation.from_pb2(response.reservation)
             if verbose:
                 res.show()
             if res.state is ReservationState.waiting:
@@ -1335,10 +1501,15 @@ class ClientSession(ApplicationSession):
         await self._wait_reservation(token)
 
     async def print_reservations(self):
-        reservations = await self.call("org.labgrid.coordinator.get_reservations")
-        for token, config in sorted(reservations.items(), key=lambda x: (-x[1]["prio"], x[1]["created"])):  # pylint: disable=line-too-long
-            config = filter_dict(config, Reservation, warn=True)
-            res = Reservation(token=token, **config)
+        request = labgrid_coordinator_pb2.GetReservationsRequest()
+
+        try:
+            response: labgrid_coordinator_pb2.GetReservationsResponse = await self.stub.GetReservations(request)
+            reservations = [Reservation.from_pb2(x) for x in response.reservations]
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+
+        for res in sorted(reservations, key=lambda x: (-x.prio, x.created)):
             print(f"Reservation '{res.token}':")
             res.show(level=1)
 
@@ -1374,50 +1545,33 @@ class ClientSession(ApplicationSession):
 
     export.needs_target = True
 
-    def print_version(self):
+    async def query(self, place, target):
+        for item in self.args.items:
+            cls_name, names = item.split(':')
+            drv = target.get_driver(cls_name)
+            for name in names.split(','):
+                val = drv.query_info(name)
+                if self.args.show_name:
+                    print(f'{cls_name}:{name} {val}')
+                else:
+                    print(f'{val}')
+    query.needs_target = True
+
+    def print_version(self, target):
         print(labgrid_version())
 
 
-def start_session(url, realm, extra):
-    from autobahn.asyncio.wamp import ApplicationRunner
-
+def start_session(url, extra, debug=False):
     loop = asyncio.get_event_loop()
-    ready = asyncio.Event()
+    if debug:
+        loop.set_debug(True)
+    session = None
 
-    async def connected(session):  # pylint: disable=unused-argument
-        ready.set()
+    url = proxymanager.get_grpc_url(url, default_port=20408)
 
-    if not extra:
-        extra = {}
-    extra["loop"] = loop
-    extra["connected"] = connected
-
-    session = [None]
-
-    def make(*args, **kwargs):
-        nonlocal session
-        session[0] = ClientSession(*args, **kwargs)
-        return session[0]
-
-    url = proxymanager.get_url(url, default_port=20408)
-
-    runner = ApplicationRunner(url, realm=realm, extra=extra)
-    coro = runner.run(make, start_loop=False)
-
-    _, protocol = loop.run_until_complete(coro)
-
-    # there is no other notification when the WAMP connection setup times out,
-    # so we need to wait for one of these protocol futures to resolve
-    done, pending = loop.run_until_complete(
-        asyncio.wait({protocol.is_open, protocol.is_closed}, timeout=30, return_when=asyncio.FIRST_COMPLETED)
-    )
-    if protocol.is_closed in done:
-        raise Error("connection closed during setup")
-    if protocol.is_open in pending:
-        raise Error("connection timed out during setup")
-
-    loop.run_until_complete(ready.wait())
-    return session[0]
+    session = ClientSession(url, loop, **extra)
+    loop.run_until_complete(session.start())
+    return session
 
 
 def find_role_by_place(config, place):
@@ -1429,6 +1583,20 @@ def find_role_by_place(config, place):
             return role
     return None
 
+def find_role(config, role, place):
+    role_config = config.get(role)
+    if not role_config:
+        print(f'Role {role} not found')
+        return None, None
+    resources, _ = target_factory.normalize_config(role_config)
+    remote_places = resources.get('RemotePlace', {})
+    if not place:
+        place = next(iter(remote_places.keys()))
+    elif place not in remote_places:
+        print(f'No place {place} in role {role} (have {remote_places.keys()})')
+        return None, None
+
+    return role, place
 
 def find_any_role_with_place(config):
     for role, role_config in config.items():
@@ -1498,20 +1666,34 @@ def main():
     place = os.environ.get("LG_PLACE", place)
     state = os.environ.get("STATE", None)
     state = os.environ.get("LG_STATE", state)
+    end_state = os.environ.get('LG_END_STATE', state)
     initial_state = os.environ.get("LG_INITIAL_STATE", None)
     token = os.environ.get("LG_TOKEN", None)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-x",
-        "--crossbar",
+        "--coordinator",
         metavar="URL",
         type=str,
-        help="crossbar websocket URL (default: value from env variable LG_CROSSBAR, otherwise ws://127.0.0.1:20408/ws)",
+        help="coordinator URL (default: value from env variable LG_COORDINATOR, otherwise 127.0.0.1:20408)",
+    )
+    parser.add_argument(
+        '-a',
+        '--acquire',
+        action='store_true',
+        default=False,
+        help="acquire place before starting and release after finishing"
     )
     parser.add_argument("-c", "--config", type=str, default=os.environ.get("LG_ENV"), help="config file")
     parser.add_argument("-p", "--place", type=str, default=place, help="place name/alias")
     parser.add_argument("-s", "--state", type=str, default=state, help="strategy state to switch into before command")
+    parser.add_argument(
+        '-r',
+        '--role',
+        type=str,
+        help="role name/alias"
+    )
     parser.add_argument(
         "-i",
         "--initial-state",
@@ -1520,10 +1702,25 @@ def main():
         help="strategy state to force into before switching to desired state",
     )
     parser.add_argument(
+        '-e',
+        '--end-state',
+        type=str,
+        default=state,
+        help="strategy state to switch into after command"
+    )
+    parser.add_argument(
         "-d", "--debug", action="store_true", default=False, help="enable debug mode (show python tracebacks)"
     )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     parser.add_argument("-P", "--proxy", type=str, help="proxy connections via given ssh host")
+    parser.add_argument(
+        '-V',
+        '--variable',
+        type=str,
+        nargs='*',
+        action='append',
+        help="Add a variable value (-V <var> <value>)"
+    )
     subparsers = parser.add_subparsers(
         dest="command",
         title="available subcommands",
@@ -1606,6 +1803,8 @@ def main():
     subparser.set_defaults(func=ClientSession.acquire)
 
     subparser = subparsers.add_parser("release", aliases=("unlock",), help="release a place")
+    subparser.add_argument('-a', '--auto', action='store_true',
+                           help="don't raise an error if the place is not acquired")
     subparser.add_argument(
         "-k", "--kick", action="store_true", help="release a place even if it is acquired by a different user"
     )
@@ -1638,6 +1837,8 @@ def main():
     subparser.set_defaults(func=ClientSession.digital_io)
 
     subparser = subparsers.add_parser("console", aliases=("con",), help="connect to the console")
+    subparser.add_argument('-i', '--internal', action='store_true',
+                           help="use an internal console instead of microcom")
     subparser.add_argument(
         "-l", "--loop", action="store_true", help="keep trying to connect if the console is unavailable"
     )
@@ -1853,6 +2054,13 @@ def main():
     subparser.add_argument("filename", help="output filename")
     subparser.set_defaults(func=ClientSession.export)
 
+    subparser = subparsers.add_parser('query', help="query information")
+    subparser.add_argument("-n", "--show-name", action="store_true",
+                           help="use name:value format")
+    subparser.add_argument('items', type=str, nargs='*',
+                           help='item to query (class:name)')
+    subparser.set_defaults(func=ClientSession.query)
+
     subparser = subparsers.add_parser("version", help="show version")
     subparser.set_defaults(func=ClientSession.print_version)
 
@@ -1886,19 +2094,29 @@ def main():
 
     role = None
     if args.command != "reserve" and env and env.config.get_targets():
-        if args.place:
+        if args.role:
+            role, args.place = find_role(env.config.get_targets(), args.role,
+                                         args.place)
+            if not role:
+                print(f"No role '{args.role}' found in environment")
+                exit(1)
+        elif args.place:
             if not args.place.startswith("+"):
                 role = find_role_by_place(env.config.get_targets(), args.place)
                 if not role:
                     print(f"RemotePlace {args.place} not found in configuration file", file=sys.stderr)
                     exit(1)
-                print(f"Selected role {role} from configuration file")
+                logging.info(f"Selected role {role} from configuration file")
         else:
             role, args.place = find_any_role_with_place(env.config.get_targets())
             if not role:
                 print("No RemotePlace found in configuration file", file=sys.stderr)
                 exit(1)
             print(f"Selected role {role} and place {args.place} from configuration file")
+
+    for arg in args.variable or []:
+        name, value = arg
+        add_var(name, value)
 
     extra = {
         "args": args,
@@ -1913,32 +2131,43 @@ def main():
             signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
 
             try:
-                crossbar_url = args.crossbar or env.config.get_option("crossbar_url")
+                coordinator_url = args.coordinator or env.config.get_option("")
             except (AttributeError, KeyError):
-                # in case of no env or not set, use LG_CROSSBAR env variable or default
-                crossbar_url = os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws")
+                # in case of no env or not set, use LG_COORDINATOR env variable or default
+                coordinator_url = os.environ.get("LG_COORDINATOR", "127.0.0.1:20408")
 
-            try:
-                crossbar_realm = env.config.get_option("crossbar_realm")
-            except (AttributeError, KeyError):
-                # in case of no env, use LG_CROSSBAR_REALM env variable or default
-                crossbar_realm = os.environ.get("LG_CROSSBAR_REALM", "realm1")
+            logging.debug('Starting session with "%s"', coordinator_url)
+            session = start_session(coordinator_url, extra, args.debug)
+            logging.debug("Started session")
 
-            logging.debug('Starting session with "%s", realm: "%s"', crossbar_url, crossbar_realm)
-
-            session = start_session(crossbar_url, crossbar_realm, extra)
             try:
                 if asyncio.iscoroutinefunction(args.func):
+                    auto_release = False
+                    target = None
                     if getattr(args.func, "needs_target", False):
+                        if args.acquire:
+                            place = session.get_place(args.place)
+                            if not place.acquired:
+                                args.allow_unmatched = True
+                                coro = session.acquire()
+                                session.loop.run_until_complete(coro)
+                                auto_release = True
                         place = session.get_acquired_place()
                         target = session._get_target(place)
                         coro = args.func(session, place, target)
                     else:
                         coro = args.func(session)
                     session.loop.run_until_complete(coro)
+                    session.set_end_state(target)
+                    if auto_release:
+                        coro = session.release()
+                        session.loop.run_until_complete(coro)
                 else:
                     args.func(session)
             finally:
+                logging.debug("Stopping session")
+                session.loop.run_until_complete(session.stop())
+                logging.debug("Stopping loop")
                 session.loop.close()
         except (NoResourceFoundError, NoDriverFoundError, InvalidConfigError) as e:
             if args.debug:
@@ -1966,10 +2195,13 @@ def main():
                     "This is likely caused by an error in the environment configuration or invalid\nresource information provided by the coordinator.",
                     file=sys.stderr,
                 )  # pylint: disable=line-too-long
-
+        except subprocess.CalledProcessError as exc:
+            print(f"Command failure: {' '.join(exc.cmd)}")
+            for line in exc.output.splitlines():
+                print(line.decode('utf-8'))
             exitcode = 1
-        except ConnectionError as e:
-            print(f"Could not connect to coordinator: {e}", file=sys.stderr)
+        except ServerError as e:
+            print(f"Server error: {e}", file=sys.stderr)
             exitcode = 1
         except InteractiveCommandError as e:
             if args.debug:

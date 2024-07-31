@@ -3,11 +3,11 @@ services:
   coordinator:
     image: "${IMAGE_PREFIX:-docker.io/labgrid/}coordinator"
     volumes:
-      - "./crossbar:/home/root/crossbar"
+      - "./coordinator:/home/root/coordinator"
     tty: true
     network_mode: "host"
-    command: bash -c "cp /home/root/crossbar/places_example.yaml /opt/crossbar/places.yaml &&
-      /opt/labgrid/crossbar-venv/bin/crossbar start --config /opt/labgrid/.crossbar/config-anonymous.yaml"
+    command: bash -c "cp /home/root/coordinator/places_example.yaml /opt/coordinator/places.yaml &&
+      /usr/local/bin/labgrid-coordinator"
   client:
     image: "${IMAGE_PREFIX:-docker.io/labgrid/}client"
     volumes:

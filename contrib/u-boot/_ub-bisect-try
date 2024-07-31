@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# ** INTERNAL SCRIPT - do not use directly - use ub-bisect instead **
+# Boot U-Boot on a particular target and run the smoke test
+# This is intended to be used by 'git bisect run'
+# The special return codes 129 and 130 are returned when there is an internal
+# failure, unrelated to the target
+
+# Requires variables to eb set up by ub-bisect
+
+mydir=$(dirname $0)
+
+commit="$1"
+
+echo "Revision $(git rev-parse HEAD), target ${target}"
+
+if [ -n "${commit}" ]; then
+	if ! git cherry-pick "${commit}"; then
+		echo "cherry-pick failed"
+		exit 129
+	fi
+fi
+
+cd ${mydir}
+
+if ! labgrid-client -p ${target} acquire; then
+	exit 1
+fi
+
+ret=0
+pytest --lg-env "${LG_ENV}" --lg-coordinator="${LG_CROSSBAR}" \
+	--lg-log --lg-colored-steps --lg-target ${target} \
+	${lg_vars} \
+	 -k test_uboot_smoke || ret=$?
+
+if ! labgrid-client -p ${target} release; then
+	exit $?
+fi
+
+if [ -n "${commit}" ]; then
+	if ! git reset --hard HEAD~; then
+		echo "reset failed"
+		exit 130
+	fi
+fi
+
+exit $ret

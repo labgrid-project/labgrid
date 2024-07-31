@@ -51,14 +51,14 @@ def main():
         for name in remove_places:
             print(f"Removing place {name}")
             if not args.dry_run:
-                await session.call("org.labgrid.coordinator.del_place", name)
+                await session.run_del_place(name)
             changed = True
 
         for name in config["places"]:
             if not name in seen_places:
                 print(f"Adding place {name}")
                 if not args.dry_run:
-                    await session.call("org.labgrid.coordinator.add_place", name)
+                    await session.run_add_place(name)
                 changed = True
 
         for name in config["places"]:
@@ -89,9 +89,7 @@ def main():
                 else:
                     print(f"Deleting match '{match}' for place {name}")
                 if not args.dry_run:
-                    await session.call(
-                        "org.labgrid.coordinator.del_place_match", name, match, rename
-                    )
+                    await session.run_del_match(name, match, rename)
                 changed = True
 
             for m in matches:
@@ -103,9 +101,7 @@ def main():
                         print(f"Adding match '{match}' for place {name}")
 
                     if not args.dry_run:
-                        await session.call(
-                            "org.labgrid.coordinator.add_place_match", name, match, rename
-                        )
+                        await session.run_add_match(name, match, rename)
                     changed = True
 
             tags = config["places"][name].get("tags", {}).copy()
@@ -131,9 +127,7 @@ def main():
                         tags[k] = ""
 
                 if not args.dry_run:
-                    await session.call(
-                        "org.labgrid.coordinator.set_place_tags", name, tags
-                    )
+                    await session.run_set_tags(name, tags)
                 changed = True
 
     async def do_dump(session, args):
@@ -177,7 +171,7 @@ def main():
         "--crossbar",
         "-x",
         metavar="URL",
-        default=os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"),
+        default=os.environ.get("LG_COORDINATOR", "ws://127.0.0.1:20408/ws"),
         help="Crossbar websocket URL (default: %(default)s)",
     )
     parser.add_argument("--proxy", "-P", help="Proxy connections via given ssh host")
@@ -219,8 +213,11 @@ def main():
     if args.proxy:
         proxymanager.force_proxy(args.proxy)
 
+    extra = {
+        'env': None,
+        }
     session = start_session(
-        args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"), {}
+        args.crossbar, extra
     )
 
     return session.loop.run_until_complete(args.func(session, args))

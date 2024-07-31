@@ -4,12 +4,12 @@ After=network.target
 
 [Service]
 Environment="PYTHONUNBUFFERED=1"
-# labgrid's .crossbar/config-anonymous.yaml serves as an example
-ExecStart=/path/to/labgrid-coordinator/venv/bin/crossbar start --logformat=syslogd --cbdir /var/lib/labgrid-coordinator --config /etc/labgrid/coordinator.yaml
-ExecStop=/usr/bin/labgrid-coordinator stop --cbdir /var/lib/labgrid-coordinator
+ExecStart=/path/to/labgrid-coordinator/venv/bin/labgrid-coordinator
 Restart=on-failure
 DynamicUser=yes
 StateDirectory=labgrid-coordinator
+# Set WorkingDirectory to StateDirectory, this works in DynamicUser mode since symlinks are created
+WorkingDirectory=%S/labgrid-coordinator
 
 [Install]
 WantedBy=multi-user.target

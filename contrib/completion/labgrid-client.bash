@@ -2,14 +2,14 @@
 
 # options top level and subcommands support
 _labgrid_shared_options="--help"
-_labgrid_main_opts_with_value="@(-x|--crossbar|-c|--config|-p|--place|-s|--state|-i|--initial-state|-P|--proxy)"
+_labgrid_main_opts_with_value="@(-x|--coordinator|-c|--config|-p|--place|-s|--state|-i|--initial-state|-P|--proxy)"
 
 # Parses labgrid-client arguments
 # Sets arg to subcommand, excluding options and their values.
 # Sets last_arg_opt_with_value to true if the last argument is an option requiring a value, else
 # false.
 # Sets base_cmd to the labgrid-client base command up to subcommand and removes trailing
-# option requiring a value - useful to call 'labgrid-client complete' with place/crossbar/proxy set
+# option requiring a value - useful to call 'labgrid-client complete' with place/coordinator/proxy set
 # Before calling this function, make sure arg, base_cmd and last_arg_opt_with_value are local
 _labgrid_parse_args()
 {
@@ -867,7 +867,7 @@ _labgrid_client()
         case "$cur" in
         --*)
             # top level args completion
-            local options="--crossbar \
+            local options="--coordinator \
                            --config \
                            --place \
                            --state \

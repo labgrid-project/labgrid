@@ -1,0 +1,29 @@
+Working
+-------
+
+- communication from exporter via coordinator to clients
+- labgrid-client create/delete, lock/unlock, aliases, comments, tags
+- labgrid-client monitor
+- RemotePlace
+- coordinator state persistance (places.yaml, resources.yaml)
+- resource cleanup on exporter disconnect
+
+Known Issues
+------------
+
+- reservations do not work
+
+Next Steps
+----------
+
+[ ] add more tests
+[ ] update documentation
+[ ] document migration steps
+[ ] update containers
+[ ] implement reservation handling
+[x] fix exporter shutdown on CTRL-C
+[x] fix exporter restart handling
+[x] fix client shutdown on CTRL-C
+[x] remove additional output on lgc lock
+[ ] set a reasonable name for the client logger
+[ ] create script/mechanism to generate grpc definitions from a defined minimum version

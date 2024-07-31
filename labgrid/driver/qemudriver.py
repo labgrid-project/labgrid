@@ -32,10 +32,11 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
     Args:
         qemu_bin (str): reference to the tools key for the QEMU binary
-        machine (str): QEMU machine type
-        cpu (str): QEMU cpu type
         memory (str): QEMU memory size (ends with M or G)
-        extra_args (str): extra QEMU arguments, they are passed directly to the QEMU binary
+        extra_args (str): optional, extra QEMU arguments, they are passed
+            directly to the QEMU binary
+        cpu (str): optional, QEMU cpu type
+        machine (str): optional, QEMU machine type
         boot_args (str): optional, additional kernel boot argument
         kernel (str): optional, reference to the images key for the kernel
         disk (str): optional, reference to the images key for the disk image
@@ -51,10 +52,16 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         nic (str): optional, configuration string to pass to QEMU to create a network interface
     """
     qemu_bin = attr.ib(validator=attr.validators.instance_of(str))
-    machine = attr.ib(validator=attr.validators.instance_of(str))
-    cpu = attr.ib(validator=attr.validators.instance_of(str))
     memory = attr.ib(validator=attr.validators.instance_of(str))
-    extra_args = attr.ib(validator=attr.validators.instance_of(str))
+    extra_args = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
+    cpu = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
+    machine = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
     boot_args = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
@@ -98,6 +105,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._tempdir = None
         self._socket = None
         self._clientsocket = None
+        self._bios_fname = None
+        self._sockpath = None
         self._forwarded_ports = {}
         atexit.register(self._atexit)
 
@@ -121,6 +130,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             raise ExecutionError(f"Unable to find QEMU version in: {p.stdout.splitlines()[0]}")
 
         return (int(m.group('major')), int(m.group('minor')), int(m.group('micro')))
+
+    def set_bios(self, bios):
+        """Set the filename of the bios
+
+        This can be used by strategies to set the bios filename, overriding the
+        value provided in the environment.
+
+        Args:
+            bios (str): New bios filename
+        """
+        self._bios_fname = bios
 
     def get_qemu_base_args(self):
         """Returns the base command line used for Qemu without the options
@@ -156,7 +176,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 cmd.append(
                     f"if=sd,format={disk_format},file={disk_path},id=mmc0{disk_opts}")
                 boot_args.append("root=/dev/mmcblk0p1 rootfstype=ext4 rootwait")
-            elif self.machine in ["pc", "q35", "virt"]:
+            elif self.machine in ["pc", "q35", "virt", None]:
                 cmd.append("-drive")
                 cmd.append(
                     f"if=virtio,format={disk_format},file={disk_path}{disk_opts}")
@@ -184,15 +204,20 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             cmd.append("-bios")
             cmd.append(
                 self.target.env.config.get_image_path(self.bios))
+        elif self._bios_fname:
+            cmd.append("-bios")
+            cmd.append(self._bios_fname)
+        if self.extra_args:
+            if "-append" in shlex.split(self.extra_args):
+                raise ExecutionError("-append in extra_args not allowed, use boot_args instead")
 
-        if "-append" in shlex.split(self.extra_args):
-            raise ExecutionError("-append in extra_args not allowed, use boot_args instead")
-
-        cmd.extend(shlex.split(self.extra_args))
-        cmd.append("-machine")
-        cmd.append(self.machine)
-        cmd.append("-cpu")
-        cmd.append(self.cpu)
+            cmd.extend(shlex.split(self.extra_args))
+        if self.machine:
+            cmd.append("-machine")
+            cmd.append(self.machine)
+        if self.cpu:
+            cmd.append("-cpu")
+            cmd.append(self.cpu)
         cmd.append("-m")
         cmd.append(self.memory)
         if self.display == "none":
@@ -226,21 +251,10 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
     def on_activate(self):
         self._tempdir = tempfile.mkdtemp(prefix="labgrid-qemu-tmp-")
-        sockpath = f"{self._tempdir}/serialrw"
+        self._sockpath = f"{self._tempdir}/serialrw"
         self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self._socket.bind(sockpath)
+        self._socket.bind(self._sockpath)
         self._socket.listen(0)
-
-        self._cmd = self.get_qemu_base_args()
-
-        self._cmd.append("-S")
-        self._cmd.append("-qmp")
-        self._cmd.append("stdio")
-
-        self._cmd.append("-chardev")
-        self._cmd.append(f"socket,id=serialsocket,path={sockpath}")
-        self._cmd.append("-serial")
-        self._cmd.append("chardev:serialsocket")
 
     def on_deactivate(self):
         if self.status:
@@ -250,6 +264,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self._clientsocket = None
         self._socket.close()
         self._socket = None
+        self._sockpath = None
         shutil.rmtree(self._tempdir)
 
     @step()
@@ -258,6 +273,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         afterwards start the emulator using a QMP Command"""
         if self.status:
             return
+        self._cmd = self.get_qemu_base_args()
+
+        self._cmd.append("-S")
+        self._cmd.append("-qmp")
+        self._cmd.append("stdio")
+
+        self._cmd.append("-chardev")
+        self._cmd.append(f"socket,id=serialsocket,path={self._sockpath}")
+        self._cmd.append("-serial")
+        self._cmd.append("chardev:serialsocket")
+
         self.logger.debug("Starting with: %s", self._cmd)
         self._child = subprocess.Popen(
             self._cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)

@@ -194,7 +194,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.clients: dict[str, ClientSession] = {}
         self.load()
 
-        self.poll_task = asyncio.get_event_loop().create_task(self.poll())
+        self.loop = asyncio.get_event_loop()
+        self.poll_task = self.loop.create_task(self.poll())
 
     async def _poll_step(self):
         # save changes
@@ -216,8 +217,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             traceback.print_exc()
 
     async def poll(self):
-        loop = asyncio.get_event_loop()
-        while not loop.is_closed():
+        while not self.loop.is_closed():
             try:
                 await asyncio.sleep(15.0)
                 await self._poll_step()
@@ -247,11 +247,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         places = yaml.dump(places)
         places = places.encode()
 
-        loop = asyncio.get_event_loop()
         logging.debug("Awaiting resources")
-        await loop.run_in_executor(None, atomic_replace, "resources.yaml", resources)
+        await self.loop.run_in_executor(None, atomic_replace, "resources.yaml", resources)
         logging.debug("Awaiting places")
-        await loop.run_in_executor(None, atomic_replace, "places.yaml", places)
+        await self.loop.run_in_executor(None, atomic_replace, "places.yaml", places)
 
     def load(self):
         try:
@@ -310,7 +309,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except Exception:
                 logging.exception("error in client message handler")
 
-        runnning_request_task = asyncio.get_event_loop().create_task(request_task())
+        runnning_request_task = self.loop.create_task(request_task())
 
         try:
             async for out_msg in queue_as_aiter(out_msg_queue):
@@ -406,7 +405,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except Exception:
                 logging.exception("error in exporter message handler")
 
-        runnning_request_task = asyncio.get_event_loop().create_task(request_task())
+        runnning_request_task = self.loop.create_task(request_task())
 
         try:
             async for cmd in queue_as_aiter(command_queue):

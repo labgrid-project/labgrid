@@ -194,7 +194,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.clients: dict[str, ClientSession] = {}
         self.load()
 
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.get_running_loop()
         self.poll_task = self.loop.create_task(self.poll())
 
     async def _poll_step(self):
@@ -1025,7 +1025,9 @@ def main():
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     cleanup = []
     loop.set_debug(True)
     try:

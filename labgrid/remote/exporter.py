@@ -778,7 +778,7 @@ class Exporter:
         - Setup loop, name, authid and address
         - Join the coordinator as an exporter"""
         self.config = config
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.get_running_loop()
         self.name = config["name"]
         self.hostname = config["hostname"]
         self.isolated = config["isolated"]
@@ -1060,6 +1060,9 @@ def main():
     print(f"exporter name: {config['name']}")
     print(f"exporter hostname: {config['hostname']}")
     print(f"resource config file: {config['resources']}")
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
     asyncio.run(amain(config), debug=bool(args.debug))
 

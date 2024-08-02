@@ -71,7 +71,7 @@ class ClientSession:
 
     address = attr.ib(validator=attr.validators.instance_of(str))
     loop = attr.ib(validator=attr.validators.instance_of(asyncio.BaseEventLoop))
-    env = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(Environment)))
+    env = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(Environment)))
     role = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     prog = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     args = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(argparse.Namespace)))
@@ -1566,8 +1566,11 @@ def ensure_event_loop(external_loop=None):
     return loop
 
 
-def start_session(address, extra, debug=False, loop=None):
+def start_session(address, extra=None, debug=False, loop=None):
     loop = ensure_event_loop(loop)
+
+    if extra is None:
+        extra = {}
 
     if debug:
         loop.set_debug(True)

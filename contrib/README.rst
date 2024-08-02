@@ -13,14 +13,14 @@ Quick Start
    $ source venv/bin/activate
    venv $ pip install -r contrib/requirements-webapp.txt
    venv $ ./contrib/labgrid-webapp --help
-   usage: labgrid-webapp [-h] [--crossbar URL] [--port PORT] [--proxy PROXY]
+   usage: labgrid-webapp [-h] [--coordinator ADDRESS] [--port PORT] [--proxy PROXY]
 
    Labgrid webapp
 
    options:
      -h, --help            show this help message and exit
-     --crossbar URL, -x URL
-                           Crossbar websocket URL (default: ws://127.0.0.1:20408/ws)
+     --coordinator ADDRESS, -x ADDRESS
+                           Coordinator address as HOST[:PORT] (default: 127.0.0.1:20408)
      --port PORT           Port to serve on
      --proxy PROXY, -P PROXY
 

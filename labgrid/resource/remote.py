@@ -22,7 +22,7 @@ class RemotePlaceManager(ResourceManager):
 
         from ..remote.client import start_session
         try:
-            self.session = start_session(self.url, {'env': self.env})
+            self.session = start_session(self.url, extra={'env': self.env})
         except ConnectionRefusedError as e:
             raise ConnectionRefusedError(f"Could not connect to coordinator {self.url}") \
                 from e

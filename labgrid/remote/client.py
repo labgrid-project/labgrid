@@ -23,6 +23,7 @@ from getpass import getuser
 from collections import defaultdict, OrderedDict
 from datetime import datetime
 from pprint import pformat
+from typing import Any, Dict
 
 import attr
 import grpc
@@ -1566,7 +1567,19 @@ def ensure_event_loop(external_loop=None):
     return loop
 
 
-def start_session(address, extra=None, debug=False, loop=None):
+def start_session(
+    address: str, *, extra: Dict[str, Any] = None, debug: bool = False, loop: "asyncio.AbstractEventLoop | None" = None
+):
+    """
+    Starts a ClientSession.
+
+    Args:
+        address: coordinator address as HOST[:PORT], PORT defaults to 20408
+        extra: additional kwargs for ClientSession
+        debug: set debug mode of the event loop
+        loop: explicit event loop to use (otherwise a previously stashed loop,
+              if retrievable the current thread's loop or a new loop is used)
+    """
     loop = ensure_event_loop(loop)
 
     if extra is None:

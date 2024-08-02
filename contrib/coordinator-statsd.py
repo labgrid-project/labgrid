@@ -42,12 +42,14 @@
 
 import sys
 import argparse
-import statsd
 import os
-import labgrid.remote.client
 import time
 import asyncio
-import txaio
+
+from labgrid.remote.client import start_session, Error
+from labgrid.remote.generated import labgrid_coordinator_pb2
+from labgrid.remote.common import Reservation
+import statsd
 
 
 def inc_gauge(gauges, key):
@@ -56,12 +58,13 @@ def inc_gauge(gauges, key):
 
 
 async def report_reservations(session, tags, gauges):
-    reservations = await session.call("org.labgrid.coordinator.get_reservations")
+    request = labgrid_coordinator_pb2.GetReservationsRequest()
 
-    for token, config in reservations.items():
-        state = config["state"]
+    response = await session.stub.GetReservations(request)
+    reservations = [Reservation.from_pb2(x) for x in response.reservations]
 
-        groups = config.get("filters", {})
+    for reservation in reservations:
+        groups = reservation.filters
 
         if not groups:
             groups = {"": {}}
@@ -72,7 +75,7 @@ async def report_reservations(session, tags, gauges):
                 ".".join(
                     ["reservations", group_name]
                     + [group.get(t, "") for t in tags]
-                    + [state]
+                    + [reservation.state.name]
                 ),
             )
 
@@ -94,10 +97,10 @@ def main():
     )
     parser.add_argument(
         "-x",
-        "--crossbar",
-        metavar="URL",
-        help="Crossbar URL for the coordinator",
-        default=os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"),
+        "--coordinator",
+        metavar="ADDRESS",
+        help="Coordinator address as HOST[:PORT]. Default is %(default)s",
+        default=os.environ.get("LG_COORDINATOR", "127.0.0.1:20408"),
     )
     parser.add_argument(
         "--period",
@@ -142,8 +145,8 @@ def main():
 
     args = parser.parse_args()
 
-    txaio.use_asyncio()
-    txaio.config.loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
     statsd_client = None
     gauges = {}
@@ -175,22 +178,18 @@ def main():
 
         next_time = time.monotonic() + args.period
         try:
-            extra = {}
-            session = labgrid.remote.client.start_session(
-                args.crossbar,
-                os.environ.get("LG_CROSSBAR_REALM", "realm1"),
-                extra,
-            )
+            session = start_session(args.coordinator, loop=loop)
             try:
-                session.loop.run_until_complete(
+                loop.run_until_complete(
                     asyncio.gather(
                         report_places(session, args.tags, gauges),
                         report_reservations(session, args.tags, gauges),
                     )
                 )
             finally:
-                session.leave()
-        except labgrid.remote.client.Error as e:
+                loop.run_until_complete(session.stop())
+                loop.run_until_complete(session.close())
+        except Error as e:
             print(f"Error communicating with labgrid: {e}")
             continue
 

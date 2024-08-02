@@ -10,6 +10,7 @@ import os.path
 import traceback
 import shutil
 import subprocess
+from urllib.parse import urlsplit
 import warnings
 from pathlib import Path
 from typing import Dict, Type
@@ -781,6 +782,10 @@ class Exporter:
         self.name = config["name"]
         self.hostname = config["hostname"]
         self.isolated = config["isolated"]
+
+        # default to port 20408 if not specified
+        if urlsplit(f"//{config['coordinator']}").port is None:
+            config["coordinator"] += ":20408"
 
         self.channel = grpc.aio.insecure_channel(config["coordinator"])
         self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)

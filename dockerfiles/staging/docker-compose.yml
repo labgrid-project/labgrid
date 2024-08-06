@@ -1,4 +1,3 @@
-version: '3.3'
 services:
   coordinator:
     image: "${IMAGE_PREFIX:-docker.io/labgrid/}coordinator"

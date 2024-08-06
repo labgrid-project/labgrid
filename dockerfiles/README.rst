@@ -141,10 +141,10 @@ client:
 .. code-block:: bash
 
    $ cd dockerfiles/staging
-   $ CURRENT_UID=$(id -u):$(id -g) docker-compose up -d coordinator exporter dut
+   $ CURRENT_UID=$(id -u):$(id -g) docker compose up -d coordinator exporter dut
 
 To run the smoke test just run the client:
 
 .. code-block:: bash
 
-   $ docker-compose up client
+   $ docker compose up client

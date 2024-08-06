@@ -38,8 +38,8 @@ jobs:
     - name: Build amd64 docker image and validate
       run: |
         ./dockerfiles/build.sh --load
-        docker-compose -f dockerfiles/staging/docker-compose.yml up --exit-code-from client client
-        docker-compose -f dockerfiles/staging/docker-compose.yml down
+        docker compose -f dockerfiles/staging/docker-compose.yml up --exit-code-from client client
+        docker compose -f dockerfiles/staging/docker-compose.yml down
         docker images
     - name: Build, tag and push latest image for all platforms
       run: ./dockerfiles/build.sh --platform ${IMAGE_PLATFORMS} --push

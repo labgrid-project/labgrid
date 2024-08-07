@@ -6,4 +6,4 @@ targets:
     drivers:
       GpioDigitalOutputDriver: {}
 options:
-  crossbar_url: 'ws://labgrid:20408/ws'
+  coordinator_address: 'labgrid:20408'

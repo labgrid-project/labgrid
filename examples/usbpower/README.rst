@@ -40,8 +40,6 @@ on port 3.
 Software Setup
 --------------
 
-The following expects that labgrid is installed in the
-active virtualenv and crossbar is installed into a separate virtualenv.
 The ``uhubctl`` and ``usbsdmux`` tools need to be installed on the system.
 
 Library Example
@@ -116,9 +114,9 @@ Remote Setup
 ------------
 
 To access resources remotely, you first need to start the coordinator::
-  $ crossbar-venv/bin/crossbar start --logformat none --config config-anonymous.yaml
+  $ labgrid-coordinator
   [...]
-  Coordinator ready.
+  Coordinator ready
 
 Then, you need to start the exporter::
   $ labgrid-exporter exports.yaml

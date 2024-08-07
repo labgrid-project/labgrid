@@ -391,7 +391,7 @@ To access the target's console, the correct driver object can be found by using
 
   >>> cp = t.get_driver('ConsoleProtocol')
   >>> cp
-  SerialDriver(target=Target(name='example', env=Environment(config_file='example-env.yaml')), name=None, state=<BindingState.active: 2>, txdelay=0.0, timeout=3.0)
+  SerialDriver(target=Target(name='example', env=Environment(config_file='example-env.yaml')), name=None, state=<BindingState.active: 2>, txdelay=0.0, timeout=3.0, linesep='\n')
   >>> cp.write(b'test')
   4
 

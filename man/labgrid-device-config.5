@@ -52,17 +52,13 @@ For a list of available resources and drivers refer to
 \fI\%https://labgrid.readthedocs.io/en/latest/configuration.html\fP\&.
 .SH OPTIONS
 .sp
-The \fBoptions:\fP top key configures various options such as the crossbar_url.
+The \fBoptions:\fP top key configures various options such as the coordinator_address.
 .SS OPTIONS KEYS
 .INDENT 0.0
 .TP
-.B \fBcrossbar_url\fP
-takes as parameter the URL of the crossbar (coordinator) to connect to.
-Defaults to \(aqws://127.0.0.1:20408\(aq.
-.TP
-.B \fBcrossbar_realm\fP
-takes as parameter the realm of the crossbar (coordinator) to connect to.
-Defaults to \(aqrealm1\(aq.
+.B \fBcoordinator_address\fP
+takes as parameter the coordinator \fBHOST[:PORT]\fP to connect to.
+Defaults to \fB127.0.0.1:20408\fP\&.
 .UNINDENT
 .SH IMAGES
 .sp

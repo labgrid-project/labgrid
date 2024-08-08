@@ -47,18 +47,14 @@ https://labgrid.readthedocs.io/en/latest/configuration.html.
 
 OPTIONS
 -------
-The ``options:`` top key configures various options such as the crossbar_url.
+The ``options:`` top key configures various options such as the coordinator_address.
 
 OPTIONS KEYS
 ~~~~~~~~~~~~
 
-``crossbar_url``
-  takes as parameter the URL of the crossbar (coordinator) to connect to.
-  Defaults to 'ws://127.0.0.1:20408'.
-
-``crossbar_realm``
-  takes as parameter the realm of the crossbar (coordinator) to connect to.
-  Defaults to 'realm1'.
+``coordinator_address``
+  takes as parameter the coordinator ``HOST[:PORT]`` to connect to.
+  Defaults to ``127.0.0.1:20408``.
 
 .. _labgrid-device-config-images:
 

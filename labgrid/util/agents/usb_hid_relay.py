@@ -10,6 +10,7 @@ Supported Functionality:
 
 - Turn digital output on and off
 """
+
 import usb.core
 import usb.util
 
@@ -32,9 +33,9 @@ class USBHIDRelay:
         self._dev.ctrl_transfer(
             usb.util.CTRL_TYPE_CLASS | usb.util.CTRL_RECIPIENT_DEVICE | usb.util.ENDPOINT_OUT,
             SET_REPORT,
-            (REPORT_TYPE_FEATURE << 8) | 0, # no report ID
+            (REPORT_TYPE_FEATURE << 8) | 0,  # no report ID
             0,
-            req, # payload
+            req,  # payload
         )
 
     def get_output(self, number):
@@ -42,11 +43,11 @@ class USBHIDRelay:
         resp = self._dev.ctrl_transfer(
             usb.util.CTRL_TYPE_CLASS | usb.util.CTRL_RECIPIENT_DEVICE | usb.util.ENDPOINT_IN,
             GET_REPORT,
-            (REPORT_TYPE_FEATURE << 8) | 0, # no report ID
+            (REPORT_TYPE_FEATURE << 8) | 0,  # no report ID
             0,
-            8, # size
+            8,  # size
         )
-        return bool(resp[7] & (1 << (number-1)))
+        return bool(resp[7] & (1 << (number - 1)))
 
     def __del__(self):
         usb.util.release_interface(self._dev, 0)
@@ -63,6 +64,6 @@ def handle_get(busnum, devnum, number):
 
 
 methods = {
-    'set': handle_set,
-    'get': handle_get,
+    "set": handle_set,
+    "get": handle_get,
 }

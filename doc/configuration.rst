@@ -196,6 +196,9 @@ Currently available are:
 ``netio_kshell``
   Controls *NETIO 4C PDUs* via a Telnet interface.
 
+``pe6216``
+  Controls an Aten PE6216 PDU via a simple HTTP API.
+
 ``raritan``
   Controls *Raritan PDUs* via SNMP.
 

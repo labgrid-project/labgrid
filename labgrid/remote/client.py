@@ -669,10 +669,7 @@ class ClientSession:
 
     async def acquire(self):
         """Acquire a place, marking it unavailable for other clients"""
-        place = self.get_place()
-        if place.acquired:
-            raise UserError(f"place {place.name} is already acquired by {place.acquired}")
-
+        place = self.get_idle_place()
         if not self.args.allow_unmatched:
             self.check_matches(place)
 

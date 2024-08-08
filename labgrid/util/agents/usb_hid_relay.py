@@ -60,13 +60,22 @@ class USBHIDRelay:
         usb.util.release_interface(self._dev, 0)
 
 
+_relays = {}
+
+
+def _get_relay(busnum, devnum):
+    if (busnum, devnum) not in _relays:
+        _relays[(busnum, devnum)] = USBHIDRelay(bus=busnum, address=devnum)
+    return _relays[(busnum, devnum)]
+
+
 def handle_set(busnum, devnum, number, status):
-    relay = USBHIDRelay(bus=busnum, address=devnum)
+    relay = _get_relay(busnum, devnum)
     relay.set_output(number, status)
 
 
 def handle_get(busnum, devnum, number):
-    relay = USBHIDRelay(bus=busnum, address=devnum)
+    relay = _get_relay(busnum, devnum)
     return relay.get_output(number)
 
 

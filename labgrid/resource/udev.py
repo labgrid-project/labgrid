@@ -675,6 +675,7 @@ class HIDRelay(USBResource):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
         if match not in [("16c0", "05df"),  # dcttech USBRelay2
+                         ("5131", "2007"),  # LC-US8
                          ]:
             return False
 

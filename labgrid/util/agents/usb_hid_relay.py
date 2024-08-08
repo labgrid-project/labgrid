@@ -28,6 +28,9 @@ class USBHIDRelay:
         if self._dev.idVendor == 0x16C0:
             self.set_output = self.set_output_dcttech
             self.get_output = self.get_output_dcttech
+        elif self._dev.idVendor == 0x5131:
+            self.set_output = self.set_output_lcus
+            self.get_output = self.get_output_lcus
         else:
             raise ValueError(f"Unknown vendor/protocol for VID {self._dev.idVendor:x}")
 
@@ -55,6 +58,20 @@ class USBHIDRelay:
             8,  # size
         )
         return bool(resp[7] & (1 << (number - 1)))
+
+    def set_output_lcus(self, number, status):
+        assert 1 <= number <= 8
+        ep_in = self._dev[0][(0, 0)][0]
+        ep_out = self._dev[0][(0, 0)][1]
+        req = [0xA0, number, 0x01 if status else 0x00, 0x00]
+        req[3] = sum(req) & 0xFF
+        ep_out.write(req)
+        ep_in.read(64)
+
+    def get_output_lcus(self, number):
+        assert 1 <= number <= 8
+        # we have no information on how to read the current value
+        return False
 
     def __del__(self):
         usb.util.release_interface(self._dev, 0)

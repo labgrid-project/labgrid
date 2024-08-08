@@ -262,7 +262,7 @@ def test_place_add_no_name(coordinator):
 
 def test_place_del_no_name(coordinator):
     with pexpect.spawn('python -m labgrid.remote.client delete') as spawn:
-        spawn.expect("name was not a string")
+        spawn.expect("place pattern not specified")
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus != 0, spawn.before.strip()

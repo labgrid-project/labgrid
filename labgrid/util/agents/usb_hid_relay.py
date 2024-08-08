@@ -24,10 +24,17 @@ class USBHIDRelay:
         self._dev = usb.core.find(**args)
         if self._dev is None:
             raise ValueError("Device not found")
+
+        if self._dev.idVendor == 0x16C0:
+            self.set_output = self.set_output_dcttech
+            self.get_output = self.get_output_dcttech
+        else:
+            raise ValueError(f"Unknown vendor/protocol for VID {self._dev.idVendor:x}")
+
         if self._dev.is_kernel_driver_active(0):
             self._dev.detach_kernel_driver(0)
 
-    def set_output(self, number, status):
+    def set_output_dcttech(self, number, status):
         assert 1 <= number <= 8
         req = [0xFF if status else 0xFD, number]
         self._dev.ctrl_transfer(
@@ -38,7 +45,7 @@ class USBHIDRelay:
             req,  # payload
         )
 
-    def get_output(self, number):
+    def get_output_dcttech(self, number):
         assert 1 <= number <= 8
         resp = self._dev.ctrl_transfer(
             usb.util.CTRL_TYPE_CLASS | usb.util.CTRL_RECIPIENT_DEVICE | usb.util.ENDPOINT_IN,

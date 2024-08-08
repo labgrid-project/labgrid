@@ -671,10 +671,15 @@ class HIDRelay(USBResource):
     index = attr.ib(default=1, validator=attr.validators.instance_of(int))
     invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
-    def __attrs_post_init__(self):
-        self.match['ID_VENDOR_ID'] = '16c0'
-        self.match['ID_MODEL_ID'] = '05df'
-        super().__attrs_post_init__()
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("16c0", "05df"),  # dcttech USBRelay2
+                         ("5131", "2007"),  # LC-US8
+                         ]:
+            return False
+
+        return super().filter_match(device)
 
 @target_factory.reg_resource
 @attr.s(eq=False)

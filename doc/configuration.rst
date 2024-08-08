@@ -480,7 +480,7 @@ HIDRelay
 ++++++++
 An :any:`HIDRelay` resource describes a single output of an HID protocol based
 USB relays.
-It currently supports the widely used *dcttech USBRelay*.
+It currently supports the widely used *dcttech USBRelay* and *lctech LCUS*
 
 .. code-block:: yaml
 

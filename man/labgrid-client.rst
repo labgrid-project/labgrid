@@ -38,8 +38,8 @@ OPTIONS
     display command line help
 -p PLACE, --place PLACE
     specify the place to operate on
--x URL, --crossbar URL
-    the crossbar url of the coordinator, defaults to ``ws://127.0.0.1:20408/ws``
+-x ADDRESS, --coordinator ADDRESS
+    coordinator ``HOST[:PORT]`` to connect to, defaults to ``127.0.0.1:20408``
 -c CONFIG, --config CONFIG
     set the configuration file
 -s STATE, --state STATE
@@ -91,15 +91,10 @@ LG_ENV
 This variable can be used to specify the configuration file to use without
 using the ``--config`` option, the ``--config`` option overrides it.
 
-LG_CROSSBAR
-~~~~~~~~~~~
-This variable can be used to set the default crossbar URL (instead of using the
-``-x`` option).
-
-LG_CROSSBAR_REALM
-~~~~~~~~~~~~~~~~~
-This variable can be used to set the default crossbar realm to use instead of
-``realm1``.
+LG_COORDINATOR
+~~~~~~~~~~~~~~
+This variable can be used to set the default coordinator in the format
+``HOST[:PORT]`` (instead of using the ``-x`` option).
 
 LG_PROXY
 ~~~~~~~~

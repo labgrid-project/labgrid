@@ -51,8 +51,8 @@ display command line help
 .BI \-p \ PLACE\fR,\fB \ \-\-place \ PLACE
 specify the place to operate on
 .TP
-.BI \-x \ URL\fR,\fB \ \-\-crossbar \ URL
-the crossbar url of the coordinator, defaults to \fBws://127.0.0.1:20408/ws\fP
+.BI \-x \ ADDRESS\fR,\fB \ \-\-coordinator \ ADDRESS
+coordinator \fBHOST[:PORT]\fP to connect to, defaults to \fB127.0.0.1:20408\fP
 .TP
 .BI \-c \ CONFIG\fR,\fB \ \-\-config \ CONFIG
 set the configuration file
@@ -103,14 +103,10 @@ A desired state must be set using \fBLG_STATE\fP or \fB\-s\fP/\fB\-\-state\fP\&.
 .sp
 This variable can be used to specify the configuration file to use without
 using the \fB\-\-config\fP option, the \fB\-\-config\fP option overrides it.
-.SS LG_CROSSBAR
+.SS LG_COORDINATOR
 .sp
-This variable can be used to set the default crossbar URL (instead of using the
-\fB\-x\fP option).
-.SS LG_CROSSBAR_REALM
-.sp
-This variable can be used to set the default crossbar realm to use instead of
-\fBrealm1\fP\&.
+This variable can be used to set the default coordinator in the format
+\fBHOST[:PORT]\fP (instead of using the \fB\-x\fP option).
 .SS LG_PROXY
 .sp
 This variable can be used to specify a SSH proxy hostname which should be used

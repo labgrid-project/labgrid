@@ -62,7 +62,7 @@ Test your installation by running:
 .. code-block:: bash
 
     labgrid-venv $ labgrid-client --help
-    usage: labgrid-client [-h] [-x URL] [-c CONFIG] [-p PLACE] [-d] COMMAND ...
+    usage: labgrid-client [-h] [-x ADDRESS] [-c CONFIG] [-p PLACE] [-d] COMMAND ...
     ...
 
 If the help for labgrid-client does not show up, open an `Issue
@@ -170,58 +170,11 @@ exporter, and learn how to access the exporter via the client.
 Coordinator
 ~~~~~~~~~~~
 
-To start the coordinator, we will download the labgrid repository, create an
-extra virtualenv and install the dependencies:
+We can simply start the coordinator:
 
 .. code-block:: bash
 
-    $ sudo apt install libsnappy-dev
-    $ git clone https://github.com/labgrid-project/labgrid
-    $ cd labgrid
-    $ virtualenv -p python3 crossbar-venv
-    $ crossbar-venv/bin/pip install --upgrade pip
-    $ crossbar-venv/bin/pip install -r crossbar-requirements.txt
-    $ virtualenv -p python3 labgrid-venv
-    $ source labgrid-venv/bin/activate
-    labgrid-venv $ pip install --upgrade pip
-    labgrid-venv $ pip install .
-
-All necessary dependencies should be installed now.
-
-Copy and customize the crossbar config file ``.crossbar/config-anonymous.yaml``
-for your use case:
-
-.. code-block:: bash
-
-    labgrid-venv $ cp .crossbar/config-anonymous.yaml .crossbar/my-config.yaml
-
-.. note:: crossbar is a network messaging framework for building distributed
-          applications, which labgrid plugs into.
-
-The path to the Python interpreter in the labgrid-venv needs to be configured
-in crossbar's config, either manually or with the labgrid-venv being active
-via:
-
-.. code-block:: bash
-
-    labgrid-venv $ sed -i "s#^  executable: .*\$#  executable: ${VIRTUAL_ENV}/bin/python3#" .crossbar/my-config.yaml
-
-.. note:: For long running deployments a different ``workdir`` and port may be
-          used.
-          The crossbar config should reside in a ``.crossbar`` directory in the
-          ``workdir`` in this case.
-          For an example systemd service file, see
-          :ref:`remote-getting-started-systemd-files`.
-
-Now we can finally start the coordinator inside the repository:
-
-.. code-block:: bash
-
-    $ crossbar-venv/bin/crossbar start --config my-config.yaml
-
-.. note:: If --config is specified as a relative path, the config is expected
-          in a .crossbar subdirectory (as is the case in the labgrid
-          repository).
+    labgrid-venv $ labgrid-coordinator
 
 Exporter
 ~~~~~~~~
@@ -375,25 +328,19 @@ Follow these instructions to install the systemd files on your machine(s):
    installation paths of your distribution.
 #. Adapt the ``ExecStart`` paths of the service files to the respective Python
    virtual environments of the coordinator and exporter.
-#. Create the coordinator configuration file referenced in the ``ExecStart``
-   option of the :file:`labgrid-coordinator.service` file by using
-   :file:`.crossbar/config-anonymous.yaml` as a starting point. You most likely
-   want to make sure that the ``workdir`` option matches the path given via the
-   ``--cbdir`` option in the service file; see
-   :ref:`remote-getting-started-coordinator` for further information.
 #. Adjust the ``SupplementaryGroups`` option in the
    :file:`labgrid-exporter.service` file to your distribution so that the
    exporter gains read and write access on TTY devices (for ``ser2net``); most
    often, these groups are called ``dialout``, ``plugdev`` or ``tty``.
    Depending on your udev configuration, you may need multiple groups.
-#. Set the coordinator URL the exporter should connect to by overriding the
+#. Set the coordinator address the exporter should connect to by overriding the
    exporter service file; i.e. execute ``systemctl edit
    labgrid-exporter.service`` and add the following snippet:
 
    .. code-block::
 
       [Service]
-      Environment="LG_CROSSBAR=ws://<your-host>:<your-port>/ws"
+      Environment="LG_COORDINATOR=<your-host>[:<your-port>]"
 
 #. Create the ``labgrid`` user and group:
 

@@ -48,6 +48,11 @@ New Features in 24.0
 - The pyproject.toml gained a config for `ruff <https://github.com/astral-sh/ruff>`_.
 - ``setuptools_scm`` is now used to generate a version file.
 - labgrid-client console will fallback to telnet if microcom is not available.
+- A power backend for tinycontrol.eu IP Power Socket 6G10A v2 was added.
+- Labgrid now publishes arm64 docker images.
+- Labgrid's YAML parser will now warn when mapping keys are duplicated and thus
+  overwritten.
+- LC USB Relais are now supported.
 
 
 Bug fixes in 24.0
@@ -102,6 +107,14 @@ Bug fixes in 24.0
 - The ``ser2net`` version check for YAML configurations in the exporter was
   fixed.
 - The exporter forces ``ser2net`` TCP connections for versions >=4.2.0.
+- The retrieval of the DTR status for ``SerialPortDigitalOutputDriver`` was
+  fixed.
+- The ``SSHDriver`` keepalive is now correctly stopped when using existing
+  connections.
+- The power backend for raritan devices now supports devices with more than 16
+  outlets.
+- The ``ExternalConsoleDriver`` now correctly sets the bufsize to zero to
+  prevent buffering.
 
 Breaking changes in 24.0
 ~~~~~~~~~~~~~~~~~~~~~~~~

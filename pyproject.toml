@@ -256,6 +256,7 @@ exclude = [
   "venv",
   "envs",
   "dist",
+  "labgrid/remote/generated",
 ]
 
 [tool.ruff.lint]

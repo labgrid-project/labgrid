@@ -1,3 +1,54 @@
+Release 24.1 (Unreleased)
+-------------------------
+As announced
+`before <https://github.com/labgrid-project/labgrid/discussions/1467#discussioncomment-10314852>`_,
+this is the first release using gRPC instead of crossbar/autobahn for
+communication between client/exporter and coordinator.
+
+Crossbar/autobahn are unfortunately not very well maintained anymore. The
+crossbar component was moved to its own virtualenv to cope with the high number
+of dependencies leading to conflicts. Support for Python 3.13 is still not
+available in a crossbar release on PyPI.
+
+That's why labgrid moves to gRPC with this release. gRPC is a well maintained
+RPC framework with a lot of users. As a side effect, the message transfer is
+more performant and the import times are shorter.
+
+New Features in 24.1
+~~~~~~~~~~~~~~~~~~~~
+- All components can be installed into the same virtualenv again.
+
+Bug fixes in 24.1
+~~~~~~~~~~~~~~~~~
+
+FIXME
+
+Breaking changes in 24.1
+~~~~~~~~~~~~~~~~~~~~~~~~
+Maintaining support for both crossbar/autobahn as well as gRPC in labgrid would
+be a lot of effort due to the different architectures of those frameworks.
+Therefore, a hard migration to gRPC is deemed the lesser issue.
+
+Due to the migration, 24.1 includes the following breaking changes:
+
+- The labgrid environment config option ``crossbar_url`` was renamed to
+  ``coordinator_address``. The environment variable ``LG_CROSSBAR`` was renamed
+  to ``LG_COORDINATOR``.
+- The labgrid environment config option ``crossbar_realm`` is now obsolete as
+  well as the environment variable ``LG_CROSSBAR_REALM``.
+- The coordinator is available as ``labgrid-coordinator`` (instead of
+  ``crossbar start``). No additional configuration file is required.
+- The systemd services in ``contrib/systemd/`` were updated.
+
+Other breaking changes include:
+
+FIXME
+
+Known issues in 24.1
+~~~~~~~~~~~~~~~~~~~~
+
+FIXME
+
 Release 24.0 (Released Aug 12, 2024)
 ------------------------------------
 

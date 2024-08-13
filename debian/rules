@@ -13,4 +13,4 @@ override_dh_virtualenv:
 		--upgrade-pip \
 		--extras deb \
 		--extra-pip-arg='--no-binary' \
-		--extra-pip-arg='cffi,numpy'
+		--extra-pip-arg='cffi'

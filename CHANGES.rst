@@ -169,6 +169,86 @@ Known issues in 24.0
 - Some client commands return 0 even if the command failed.
 
 
+Release 23.0.6 (Released Apr 16, 2024)
+--------------------------------------
+
+Bug fixes in 23.0.6
+~~~~~~~~~~~~~~~~~~~
+- In `USBVideoDriver`, use the ``playbin3`` element instead of ``playbin`` to
+  fix decoding via VA-API for certain webcams on AMD graphic cards.
+- Let the `SSHDriver` redirect ``/dev/null`` to stdin on ``run()`` to prevent
+  unexpected consumption of stdin of the remotely started process.
+- Cover more failure scenarios in the exporter and coordinator systemd
+  services, fix the service startup order, do not buffer journal logs.
+
+Release 23.0.5 (Released Jan 13, 2024)
+--------------------------------------
+
+Bug fixes in 23.0.5
+~~~~~~~~~~~~~~~~~~~
+- Fix readthedocs build by specifying Python version and OS.
+- Fix several incompatibilities with doc sphinxcontrib-* dependencies having
+  dropped their explicit Sphinx dependencies, which prevented generation of
+  labgrid's docs.
+
+Release 23.0.4 (Released Nov 10, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.4
+~~~~~~~~~~~~~~~~~~~
+- Fix dockerfiles syntax error that became fatal in a recent docker release.
+- Fix ShellDriver's xmodem functionality.
+- Pin pylint to prevent incompatibility with pinned pytest-pylint.
+- Fix ``labgrid-client console --loop`` on disappearing serial ports (such as
+  on-board FTDIs).
+
+Release 23.0.3 (Released Jul 20, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.3
+~~~~~~~~~~~~~~~~~~~
+- Update to PyYAML 6.0.1 to prevent install errors with Cython>=3.0, see:
+  https://github.com/yaml/pyyaml/issues/601
+  https://github.com/yaml/pyyaml/pull/726#issuecomment-1640397938
+
+Release 23.0.2 (Released Jul 04, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.2
+~~~~~~~~~~~~~~~~~~~
+- Move `SSHDriver`'s control socket tmpdir clean up after the the SSH process
+  has terminated. Ignore errors on cleanup since it's best effort.
+- Add missing class name in ``labgrid-client monitor`` resource output.
+- Print USB loader process output if log level does not cover logging it.
+- Fix UnboundLocalError in ``atomic_replace()`` used by the coordinator and
+  ``labgrid-client export`` to write config files.
+- Let Config's ``get_tool()`` return the requested tool if it is not found in
+  the config. Return the resolved path if it exists, otherwise return the value
+  as is. Also drop the now obsolete tool fallbacks from the drivers and add
+  tests.
+- Fix `USBSDMuxDevice`/`USBSDWireDevice` udev race condition leading to
+  outdated control/disk paths.
+- Fix `SSHDriver`'s ``explicit_sftp_mode`` option to allow calls to ``put()``
+  and ``get()`` multiple times. Also make ``scp()`` respect this option.
+- Add compatibility with QEMU >= 6.1.0 to `QEMUDriver`'s ``display`` argument
+  for the ``egl-headless`` option.
+
+Release 23.0.1 (Released Apr 26, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.1
+~~~~~~~~~~~~~~~~~~~
+- The pypi release now uses the labgrid pyserial fork in the form of the
+  pyserial-labgrid package. This fixes installation with newer versions
+  of pip.
+- Several tests have gained an importorskip() call to skip them if the
+  module is not available.
+- The build-and-release workflow supports building wheels.
+- The markers now are restricted to patterns which won't match WARN,
+  ERROR, INFO and similar log notifiers.
+- Fix named SSH lookups in conjunction with an environment file in
+  labgrid-client.
+
 Release 23.0 (Released Apr 24, 2023)
 ------------------------------------
 

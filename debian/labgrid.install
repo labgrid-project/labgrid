@@ -1,6 +1,7 @@
 #!/usr/bin/dh-exec
 debian/labgrid.yaml /etc
 debian/labgrid-client /usr/bin
+debian/labgrid-coordinator /usr/bin
 debian/labgrid-exporter /usr/bin
 debian/labgrid-pytest /usr/bin
 debian/labgrid-suggest /usr/bin

@@ -15,8 +15,10 @@
 # limitations under the License.
 
 import argparse
+import asyncio
 from contextlib import contextmanager
 from labgrid.remote.client import start_session
+from labgrid.remote.generated import labgrid_coordinator_pb2
 from labgrid.util.proxy import proxymanager
 import os
 import sys
@@ -51,14 +53,20 @@ def main():
         for name in remove_places:
             print(f"Removing place {name}")
             if not args.dry_run:
-                await session.call("org.labgrid.coordinator.del_place", name)
+                request = labgrid_coordinator_pb2.DeletePlaceRequest(name=name)
+                await session.stub.DeletePlace(request)
+                await session.sync_with_coordinator()
+
             changed = True
 
         for name in config["places"]:
             if not name in seen_places:
                 print(f"Adding place {name}")
                 if not args.dry_run:
-                    await session.call("org.labgrid.coordinator.add_place", name)
+                    request = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
+                    await session.stub.AddPlace(request)
+                    await session.sync_with_coordinator()
+
                 changed = True
 
         for name in config["places"]:
@@ -89,9 +97,10 @@ def main():
                 else:
                     print(f"Deleting match '{match}' for place {name}")
                 if not args.dry_run:
-                    await session.call(
-                        "org.labgrid.coordinator.del_place_match", name, match, rename
-                    )
+                    request = labgrid_coordinator_pb2.DeletePlaceMatchRequest(placename=name, pattern=match)
+                    await session.stub.DeletePlaceMatch(request)
+                    await session.sync_with_coordinator()
+
                 changed = True
 
             for m in matches:
@@ -103,9 +112,9 @@ def main():
                         print(f"Adding match '{match}' for place {name}")
 
                     if not args.dry_run:
-                        await session.call(
-                            "org.labgrid.coordinator.add_place_match", name, match, rename
-                        )
+                        request = labgrid_coordinator_pb2.AddPlaceMatchRequest(placename=name, pattern=match, rename=rename)
+                        await session.stub.AddPlaceMatch(request)
+                        await session.sync_with_coordinator()
                     changed = True
 
             tags = config["places"][name].get("tags", {}).copy()
@@ -131,9 +140,10 @@ def main():
                         tags[k] = ""
 
                 if not args.dry_run:
-                    await session.call(
-                        "org.labgrid.coordinator.set_place_tags", name, tags
-                    )
+                    request = labgrid_coordinator_pb2.SetPlaceTagsRequest(placename=name, tags=tags)
+                    await session.stub.SetPlaceTags(request)
+                    await session.sync_with_coordinator()
+
                 changed = True
 
     async def do_dump(session, args):
@@ -174,11 +184,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--crossbar",
+        "--coordinator",
         "-x",
-        metavar="URL",
-        default=os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"),
-        help="Crossbar websocket URL (default: %(default)s)",
+        metavar="ADDRESS",
+        default=os.environ.get("LG_COORDINATOR", "127.0.0.1:20408"),
+        help="Coordinator address as HOST[:PORT] (default: %(default)s)",
     )
     parser.add_argument("--proxy", "-P", help="Proxy connections via given ssh host")
 
@@ -219,11 +229,19 @@ def main():
     if args.proxy:
         proxymanager.force_proxy(args.proxy)
 
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     session = start_session(
-        args.crossbar, os.environ.get("LG_CROSSBAR_REALM", "realm1"), {}
+        args.coordinator,
+        loop=loop,
     )
 
-    return session.loop.run_until_complete(args.func(session, args))
+    try:
+        return loop.run_until_complete(args.func(session, args))
+    finally:
+        loop.run_until_complete(session.stop())
+        loop.run_until_complete(session.close())
 
 
 if __name__ == "__main__":

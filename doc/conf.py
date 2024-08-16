@@ -182,17 +182,6 @@ autodoc_default_options = {
         'special-members': True,
 }
 autodoc_mock_imports = ['onewire',
-                        'txaio',
-                        'autobahn',
-                        'autobahn.asyncio',
-                        'autobahn.asyncio.wamp',
-                        'autobahn.asyncio.websocket',
-                        'autobahn.wamp',
-                        'autobahn.wamp.types',
-                        'autobahn.twisted',
-                        'autobahn.twisted.wamp',
-                        'autobahn.wamp.exception',
-                        'twisted.internet.defer',
                         'gi',
                         'gi.repository',]
 

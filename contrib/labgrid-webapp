@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import asyncio
 import logging
 import os
 import sys
@@ -118,11 +119,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        '--crossbar',
+        '--coordinator',
         '-x',
         metavar='URL',
-        default=os.environ.get('LG_CROSSBAR', 'ws://127.0.0.1:20408/ws'),
-        help='Crossbar websocket URL (default: %(default)s)',
+        default=os.environ.get('LG_COORDINATOR', '127.0.0.1:20408'),
+        help='Coordinator address as HOST[:PORT] (default: %(default)s)',
     )
     parser.add_argument('--port', type=int, default=8800, help='Port to serve on')
     parser.add_argument('--proxy', '-P', help='Proxy connections via given ssh host')
@@ -132,16 +133,20 @@ def main():
     if args.proxy:
         proxymanager.force_proxy(args.proxy)
 
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     try:
         session = start_session(
-            args.crossbar, os.environ.get('LG_CROSSBAR_REALM', 'realm1'), {},
+            args.coordinator,
+            loop=loop,
         )
     except ConnectionRefusedError:
-        logger.fatal('Unable to connect to labgrid crossbar')
+        logger.fatal('Unable to connect to labgrid coordinator')
         return
 
     server = uvicorn.Server(config=uvicorn.Config(
-        loop=session.loop,
+        loop=loop,
         host='0.0.0.0',
         port=args.port,
         app=app,
@@ -153,7 +158,11 @@ def main():
         if route.path not in reserved_routes:
             logger.info(f'  - {route.path}')
 
-    session.loop.run_until_complete(server.serve())
+    try:
+        loop.run_until_complete(server.serve())
+    finally:
+        loop.run_until_complete(session.stop())
+        loop.run_until_complete(session.close())
 
 
 if __name__ == '__main__':

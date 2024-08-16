@@ -11,7 +11,6 @@ class RemotePlaceManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.url = None
-        self.realm = None
         self.loop = None
         self.session = None
         self.ready = None
@@ -23,7 +22,7 @@ class RemotePlaceManager(ResourceManager):
 
         from ..remote.client import start_session
         try:
-            self.session = start_session(self.url, self.realm, {'env': self.env})
+            self.session = start_session(self.url, extra={'env': self.env})
         except ConnectionRefusedError as e:
             raise ConnectionRefusedError(f"Could not connect to coordinator {self.url}") \
                 from e
@@ -39,12 +38,10 @@ class RemotePlaceManager(ResourceManager):
         # be the same).
         if not self.session:
             self.env = remote_place.target.env
-            self.url = os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws")
-            self.realm = os.environ.get("LG_CROSSBAR_REALM", "realm1")
+            self.url = os.environ.get("LG_COORDINATOR", "127.0.0.1:20408")
             if self.env:
                 config = self.env.config
-                self.url = config.get_option('crossbar_url', self.url)
-                self.realm = config.get_option('crossbar_realm', self.realm)
+                self.url = config.get_option("coordinator_address", self.url)
             self._start()
         place = self.session.get_place(remote_place.name)  # pylint: disable=no-member
         resource_entries = self.session.get_target_resources(place)  # pylint: disable=no-member

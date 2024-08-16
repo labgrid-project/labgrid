@@ -18,6 +18,6 @@
 /.pytest_cache/
 /htmlcov/
 /labgrid/_version.py
-/dockerfiles/staging/crossbar/*
-!/dockerfiles/staging/crossbar/places_example.yaml
+/dockerfiles/staging/coordinator/*
+!/dockerfiles/staging/coordinator/places_example.yaml
 /.idea

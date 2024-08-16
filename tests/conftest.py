@@ -1,17 +1,17 @@
 import logging
-from pathlib import Path
 from signal import SIGTERM
 import sys
 import threading
 
 import pytest
 import pexpect
-import yaml
 
 from labgrid import Target
 from labgrid.driver import SerialDriver
 from labgrid.resource import RawSerialPort, NetworkSerialPort
 from labgrid.driver.fake import FakeConsoleDriver
+
+psutil = pytest.importorskip("psutil")
 
 @pytest.fixture(scope="session")
 def curses_init():
@@ -22,20 +22,6 @@ def curses_init():
         curses.setupterm("linux")
     except ModuleNotFoundError:
         logging.warning("curses module not found, not setting up a default terminal – tests may fail")
-
-def keep_reading(spawn):
-    "The output from background processes must be read to avoid blocking them."
-    while spawn.isalive():
-        try:
-            data = spawn.read_nonblocking(size=1024, timeout=0.1)
-            if not data:
-                return
-        except pexpect.TIMEOUT:
-            continue
-        except pexpect.EOF:
-            return
-        except OSError:
-            return
 
 
 class Prefixer:
@@ -60,6 +46,116 @@ class Prefixer:
 
     def __getattr__(self, name):
         return getattr(self.__wrapped, name)
+
+
+class LabgridComponent:
+    def __init__(self, cwd):
+        self.cwd = str(cwd)
+        self.spawn = None
+        self.reader = None
+
+    def stop(self):
+        logging.info("stopping {self.__class__.__name__} pid=%s", self.spawn.pid)
+
+        # let coverage write its data:
+        # https://coverage.readthedocs.io/en/latest/subprocess.html#process-termination
+        self.spawn.kill(SIGTERM)
+        if not self.spawn.closed:
+            self.spawn.expect(pexpect.EOF)
+            self.spawn.wait()
+        assert not self.spawn.isalive()
+
+        self.spawn = None
+        self.stop_reader()
+
+    @staticmethod
+    def keep_reading(spawn):
+        "The output from background processes must be read to avoid blocking them."
+        while spawn.isalive():
+            try:
+                data = spawn.read_nonblocking(size=1024, timeout=0.1)
+                if not data:
+                    return
+            except pexpect.TIMEOUT:
+                continue
+            except pexpect.EOF:
+                return
+            except OSError:
+                return
+
+    def start_reader(self):
+        self.reader = threading.Thread(
+            target=LabgridComponent.keep_reading,
+            name=f'{self.__class__.__name__}-reader-{self.pid}',
+            args=(self.spawn,), daemon=True)
+        self.reader.start()
+
+    def stop_reader(self):
+        self.reader.join()
+
+        self.reader = None
+
+    def isalive(self):
+        return self.spawn.isalive()
+
+    @property
+    def exitstatus(self):
+        return self.spawn.exitstatus
+
+    @property
+    def pid(self):
+        return self.spawn.pid
+
+    def suspend_tree(self):
+        main = psutil.Process(self.pid)
+        main.suspend()
+        for child in main.children(recursive=True):
+            child.suspend()
+
+    def resume_tree(self):
+        main = psutil.Process(self.pid)
+        main.resume()
+        for child in main.children(recursive=True):
+            child.resume()
+
+
+class Exporter(LabgridComponent):
+    def __init__(self, config, cwd):
+        super().__init__(cwd)
+        self.config = config
+
+    def start(self):
+        assert self.spawn is None
+        assert self.reader is None
+
+        self.spawn = pexpect.spawn(
+            f'labgrid-exporter --name testhost {self.config}',
+            logfile=Prefixer(sys.stdout.buffer, 'exporter'),
+            cwd=self.cwd)
+        try:
+            self.spawn.expect('exporter name: testhost')
+            self.spawn.expect('connected to exporter')
+        except Exception as e:
+            raise Exception(f"exporter startup failed with {self.spawn.before}") from e
+
+        self.start_reader()
+
+
+class Coordinator(LabgridComponent):
+    def start(self):
+        assert self.spawn is None
+        assert self.reader is None
+
+        self.spawn = pexpect.spawn(
+            'labgrid-coordinator',
+            logfile=Prefixer(sys.stdout.buffer, 'coordinator'),
+            cwd=self.cwd)
+        try:
+            self.spawn.expect('Coordinator ready')
+        except Exception as e:
+            raise Exception(f"coordinator startup failed with {self.spawn.before}") from e
+
+        self.start_reader()
 
 
 @pytest.fixture(scope='function')
@@ -100,65 +196,18 @@ def serial_driver_no_name(target, serial_port, mocker):
     return s
 
 @pytest.fixture(scope='function')
-def crossbar_config(tmpdir, pytestconfig):
-    crossbar_config = '.crossbar/config-anonymous.yaml'
+def coordinator(tmpdir):
+    coordinator = Coordinator(tmpdir)
+    coordinator.start()
 
-    pytestconfig.rootdir.join(crossbar_config).copy(tmpdir.mkdir('.crossbar'))
-    crossbar_config = tmpdir.join(crossbar_config)
+    yield coordinator
 
-    # crossbar runs labgrid's coordinator component as a guest, record its coverage
-    if pytestconfig.pluginmanager.get_plugin('pytest_cov'):
-        with open(crossbar_config, 'r+') as stream:
-            conf = yaml.safe_load(stream)
-
-            for worker in conf['workers']:
-                if worker['type'] == 'guest':
-                    worker['executable'] = 'coverage'
-                    worker['arguments'].insert(0, 'run')
-                    worker['arguments'].insert(1, '--parallel-mode')
-                    # pytest-cov combines coverage files in root dir automatically, so copy it there
-                    coverage_data = pytestconfig.rootdir.join('.coverage')
-                    worker['arguments'].insert(2, f'--data-file={coverage_data}')
-
-            stream.seek(0)
-            yaml.safe_dump(conf, stream)
-
-    return crossbar_config
+    coordinator.stop()
 
 @pytest.fixture(scope='function')
-def crossbar(tmpdir, pytestconfig, crossbar_config):
-    crossbar_venv = Path(pytestconfig.getoption("--crossbar-venv"))
-    if not crossbar_venv.is_absolute():
-        crossbar_venv = pytestconfig.rootdir / crossbar_venv
-    crossbar_bin = crossbar_venv / "bin/crossbar"
-
-    spawn = pexpect.spawn(
-        f'{crossbar_bin} start --color false --logformat none --config {crossbar_config}',
-        logfile=Prefixer(sys.stdout.buffer, 'crossbar'),
-        cwd=str(tmpdir))
-    try:
-        spawn.expect('Realm .* started')
-        spawn.expect('Guest .* started')
-        spawn.expect('Coordinator ready')
-    except:
-        print(f"crossbar startup failed with {spawn.before}")
-        raise
-    reader = threading.Thread(target=keep_reading, name='crossbar-reader', args=(spawn,), daemon=True)
-    reader.start()
-    yield spawn
-
-    # let coverage write its data:
-    # https://coverage.readthedocs.io/en/latest/subprocess.html#process-termination
-    print("stopping crossbar")
-    spawn.kill(SIGTERM)
-    spawn.expect(pexpect.EOF)
-    spawn.wait()
-
-    reader.join()
-
-@pytest.fixture(scope='function')
-def exporter(tmpdir, crossbar):
-    p = tmpdir.join("exports.yaml")
+def exporter(tmpdir, coordinator):
+    config = "exports.yaml"
+    p = tmpdir.join(config)
     p.write(
         """
     Testport:
@@ -177,22 +226,13 @@ def exporter(tmpdir, crossbar):
           username: "root"
     """
     )
-    spawn = pexpect.spawn(
-            f'{sys.executable} -m labgrid.remote.exporter --name testhost exports.yaml',
-            logfile=Prefixer(sys.stdout.buffer, 'exporter'),
-            cwd=str(tmpdir))
-    try:
-        spawn.expect('exporter/testhost')
-    except:
-        print(f"exporter startup failed with {spawn.before}")
-        raise
-    reader = threading.Thread(target=keep_reading, name='exporter-reader', args=(spawn,), daemon=True)
-    reader.start()
-    yield spawn
-    print("stopping exporter")
-    spawn.close(force=True)
-    assert not spawn.isalive()
-    reader.join()
+
+    exporter = Exporter(config, tmpdir)
+    exporter.start()
+
+    yield exporter
+
+    exporter.stop()
 
 def pytest_addoption(parser):
     parser.addoption("--sigrok-usb", action="store_true",
@@ -201,8 +241,6 @@ def pytest_addoption(parser):
                      help="Run SSHManager tests against localhost")
     parser.addoption("--ssh-username", default=None,
                      help="SSH username to use for SSHDriver testing")
-    parser.addoption("--crossbar-venv", default=None,
-                     help="Path to separate virtualenv with crossbar installed")
 
 def pytest_configure(config):
     # register an additional marker
@@ -213,7 +251,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers",
                             "sshusername: test SSHDriver against Localhost")
     config.addinivalue_line("markers",
-                            "crossbar: test against local crossbar")
+                            "coordinator: test against local coordinator")
 
 def pytest_runtest_setup(item):
     envmarker = item.get_closest_marker("sigrokusb")
@@ -228,7 +266,3 @@ def pytest_runtest_setup(item):
     if envmarker is not None:
         if item.config.getoption("--ssh-username") is None:
             pytest.skip("SSHDriver tests against localhost not enabled (enable with --ssh-username <username>)")
-    envmarker = item.get_closest_marker("crossbar")
-    if envmarker is not None:
-        if item.config.getoption("--crossbar-venv") is None:
-            pytest.skip("No path to crossbar virtualenv given (set with --crossbar-venv <path>)")

@@ -47,8 +47,8 @@ USB devices and various other controllers.
 .B  \-h\fP,\fB  \-\-help
 display command line help
 .TP
-.B  \-x\fP,\fB  \-\-crossbar
-the crossbar url of the coordinator
+.B  \-x\fP,\fB  \-\-coordinator
+coordinator \fBHOST[:PORT]\fP to connect to, defaults to \fB127.0.0.1:20408\fP
 .TP
 .B  \-i\fP,\fB  \-\-isolated
 enable isolated mode (always request SSH forwards)
@@ -100,14 +100,10 @@ for more information.
 .SH ENVIRONMENT VARIABLES
 .sp
 The following environment variable can be used to configure labgrid\-exporter.
-.SS LG_CROSSBAR
+.SS LG_COORDINATOR
 .sp
-This variable can be used to set the default crossbar URL (instead of using the
-\fB\-x\fP option).
-.SS LG_CROSSBAR_REALM
-.sp
-This variable can be used to set the default crossbar realm to use instead of
-\fBrealm1\fP\&.
+This variable can be used to set the default coordinator in the format
+\fBHOST[:PORT]\fP (instead of using the \fB\-x\fP option).
 .SH EXAMPLES
 .sp
 Start the exporter with the configuration file \fImy\-config.yaml\fP:

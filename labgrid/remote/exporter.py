@@ -7,25 +7,24 @@ import logging
 import sys
 import os
 import os.path
-import time
 import traceback
 import shutil
 import subprocess
+from urllib.parse import urlsplit
 import warnings
 from pathlib import Path
 from typing import Dict, Type
 from socket import gethostname, getfqdn
+
 import attr
-from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
+import grpc
 
 from .config import ResourceConfig
-from .common import ResourceEntry, enable_tcp_nodelay, monkey_patch_max_msg_payload_size_ws_option
+from .common import ResourceEntry, queue_as_aiter
+from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..util import get_free_port, labgrid_version
 
 
-monkey_patch_max_msg_payload_size_ws_option()
-
-__version__ = labgrid_version()
 exports: Dict[str, Type[ResourceEntry]] = {}
 reexec = False
 
@@ -112,10 +111,10 @@ class ResourceExport(ResourceEntry):
         start_params = self._get_start_params()
         try:
             self._start(start_params)
-        except Exception:
+        except Exception as e:
             self.broken = "start failed"
             self.logger.exception("failed to start with %s", start_params)
-            raise
+            raise BrokenResourceError("Failed to start resource") from e
         self.start_params = start_params
 
     def stop(self):
@@ -773,110 +772,175 @@ class YKUSHPowerPortExport(ResourceExport):
 exports["YKUSHPowerPort"] = YKUSHPowerPortExport
 
 
-class ExporterSession(ApplicationSession):
-    def onConnect(self):
+class Exporter:
+    def __init__(self, config) -> None:
         """Set up internal datastructures on successful connection:
         - Setup loop, name, authid and address
         - Join the coordinator as an exporter"""
-        self.loop = self.config.extra["loop"]
-        self.name = self.config.extra["name"]
-        self.hostname = self.config.extra["hostname"]
-        self.isolated = self.config.extra["isolated"]
-        self.address = self._transport.transport.get_extra_info("sockname")[0]
-        self.checkpoint = time.monotonic()
+        self.config = config
+        self.loop = asyncio.get_running_loop()
+        self.name = config["name"]
+        self.hostname = config["hostname"]
+        self.isolated = config["isolated"]
+
+        # It seems since https://github.com/grpc/grpc/pull/34647, the
+        # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
+        # so set it as well.
+        # Use GRPC_VERBOSITY=DEBUG GRPC_TRACE=http_keepalive for debugging.
+        channel_options = [
+            ("grpc.keepalive_time_ms", 7500),  # 7.5 seconds
+            ("grpc.keepalive_timeout_ms", 10000),  # 10 seconds
+            ("grpc.http2.ping_timeout_ms", 10000),  # 10 seconds
+            ("grpc.http2.max_pings_without_data", 0),  # no limit
+        ]
+
+        # default to port 20408 if not specified
+        if urlsplit(f"//{config['coordinator']}").port is None:
+            config["coordinator"] += ":20408"
+
+        self.channel = grpc.aio.insecure_channel(
+            target=config["coordinator"],
+            options=channel_options,
+        )
+        self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
+        self.out_queue = asyncio.Queue()
+        self.pump_task = None
+
         self.poll_task = None
 
         self.groups = {}
 
-        enable_tcp_nodelay(self)
-        self.join(
-            self.config.realm,
-            authmethods=["anonymous", "ticket"],
-            authid=f"exporter/{self.name}",
-            authextra={"authid": f"exporter/{self.name}"},
-        )
+    async def run(self) -> None:
+        self.pump_task = self.loop.create_task(self.message_pump())
+        self.send_started()
 
-    def onChallenge(self, challenge):
-        """Function invoked on received challege, returns just a dummy ticket
-        at the moment, authentication is not supported yet"""
-        logging.warning("Ticket authentication is deprecated. Please update your coordinator.")
-        return "dummy-ticket"
+        config_template_env = {
+            "env": os.environ,
+            "isolated": self.isolated,
+            "hostname": self.hostname,
+            "name": self.name,
+        }
+        resource_config = ResourceConfig(self.config["resources"], config_template_env)
+        for group_name, group in resource_config.data.items():
+            group_name = str(group_name)
+            for resource_name, params in group.items():
+                resource_name = str(resource_name)
+                if resource_name == "location":
+                    continue
+                if params is None:
+                    continue
+                cls = params.pop("cls", resource_name)
 
-    async def onJoin(self, details):
-        """On successful join:
-        - export available resources
-        - bail out if we are unsuccessful
-        """
-        print(details)
+                # this may call back to acquire the resource immediately
+                await self.add_resource(group_name, resource_name, cls, params)
 
-        prefix = f"org.labgrid.exporter.{self.name}"
-        try:
-            await self.register(self.acquire, f"{prefix}.acquire")
-            await self.register(self.release, f"{prefix}.release")
-            await self.register(self.version, f"{prefix}.version")
+            # flush queued message
+            while not self.pump_task.done():
+                try:
+                    await asyncio.wait_for(self.out_queue.join(), timeout=1)
+                    break
+                except asyncio.TimeoutError:
+                    if self.pump_task.done():
+                        await self.pump_task
+                        logging.debug("pump task exited, shutting down exporter")
+                        return
 
-            config_template_env = {
-                "env": os.environ,
-                "isolated": self.isolated,
-                "hostname": self.hostname,
-                "name": self.name,
-            }
-            resource_config = ResourceConfig(self.config.extra["resources"], config_template_env)
-            for group_name, group in resource_config.data.items():
-                group_name = str(group_name)
-                for resource_name, params in group.items():
-                    resource_name = str(resource_name)
-                    if resource_name == "location":
-                        continue
-                    if params is None:
-                        continue
-                    cls = params.pop("cls", resource_name)
-
-                    # this may call back to acquire the resource immediately
-                    await self.add_resource(group_name, resource_name, cls, params)
-                    self.checkpoint = time.monotonic()
-
-        except Exception:  # pylint: disable=broad-except
-            traceback.print_exc(file=sys.stderr)
-            self.loop.stop()
-            return
-
+        logging.info("creating poll task")
         self.poll_task = self.loop.create_task(self.poll())
 
-    async def onLeave(self, details):
-        """Cleanup after leaving the coordinator connection"""
-        if self.poll_task:
-            self.poll_task.cancel()
-            await asyncio.wait([self.poll_task])
-        super().onLeave(details)
+        (done, pending) = await asyncio.wait((self.pump_task, self.poll_task), return_when=asyncio.FIRST_COMPLETED)
+        logging.debug("task(s) %s exited, shutting down exporter", done)
+        for task in pending:
+            task.cancel()
 
-    async def onDisconnect(self):
-        print("connection lost", file=sys.stderr)
-        global reexec
-        reexec = True
-        if self.poll_task:
-            self.poll_task.cancel()
-            await asyncio.wait([self.poll_task])
-            await asyncio.sleep(0.5)  # give others a chance to clean up
-        self.loop.stop()
+        await self.pump_task
+        await self.poll_task
+
+    def send_started(self):
+        msg = labgrid_coordinator_pb2.ExporterInMessage()
+        msg.startup.version = labgrid_version()
+        msg.startup.name = self.name
+        self.out_queue.put_nowait(msg)
+
+    async def message_pump(self):
+        got_message = False
+        try:
+            async for out_message in self.stub.ExporterStream(queue_as_aiter(self.out_queue)):
+                got_message = True
+                logging.debug("received message %s", out_message)
+                kind = out_message.WhichOneof("kind")
+                if kind == "hello":
+                    logging.info("connected to exporter version %s", out_message.hello.version)
+                elif kind == "set_acquired_request":
+                    logging.debug("acquire request")
+                    success = False
+                    reason = None
+                    try:
+                        if out_message.set_acquired_request.place_name:
+                            await self.acquire(
+                                out_message.set_acquired_request.group_name,
+                                out_message.set_acquired_request.resource_name,
+                                out_message.set_acquired_request.place_name,
+                            )
+                        else:
+                            await self.release(
+                                out_message.set_acquired_request.group_name,
+                                out_message.set_acquired_request.resource_name,
+                            )
+                        success = True
+                    except BrokenResourceError as e:
+                        reason = e.args[0]
+                    finally:
+                        in_message = labgrid_coordinator_pb2.ExporterInMessage()
+                        in_message.response.success = success
+                        if reason:
+                            in_message.response.reason = reason
+                        logging.debug("queuing %s", in_message)
+                        self.out_queue.put_nowait(in_message)
+                        logging.debug("queued %s", in_message)
+                else:
+                    logging.debug("unknown request: %s", kind)
+        except grpc.aio.AioRpcError as e:
+            self.out_queue.put_nowait(None)  # let the sender side exit gracefully
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                if got_message:
+                    logging.error("coordinator became unavailable: %s", e.details())
+                else:
+                    logging.error("coordinator is unavailable: %s", e.details())
+
+                global reexec
+                reexec = True
+            else:
+                logging.exception("unexpected grpc error in coordinator message pump task")
+        except Exception:
+            self.out_queue.put_nowait(None)  # let the sender side exit gracefully
+            logging.exception("error in coordinator message pump")
+
+            # only send command response when the other updates have left the queue
+            # perhaps with queue join/task_done
+            # this should be a command from the coordinator
 
     async def acquire(self, group_name, resource_name, place_name):
-        resource = self.groups[group_name][resource_name]
+        resource = self.groups.get(group_name, {}).get(resource_name)
+        if resource is None:
+            logging.error("acquire request for unknown resource %s/%s by %s", group_name, resource_name, place_name)
+            return
+
         try:
             resource.acquire(place_name)
         finally:
             await self.update_resource(group_name, resource_name)
 
     async def release(self, group_name, resource_name):
-        resource = self.groups[group_name][resource_name]
+        resource = self.groups.get(group_name, {}).get(resource_name)
+        if resource is None:
+            logging.error("release request for unknown resource %s/%s", group_name, resource_name)
+            return
+
         try:
             resource.release()
         finally:
             await self.update_resource(group_name, resource_name)
-
-    async def version(self):
-        self.checkpoint = time.monotonic()
-        return __version__
 
     async def _poll_step(self):
         for group_name, group in self.groups.items():
@@ -904,10 +968,6 @@ class ExporterSession(ApplicationSession):
                 break
             except Exception:  # pylint: disable=broad-except
                 traceback.print_exc(file=sys.stderr)
-            age = time.monotonic() - self.checkpoint
-            if age > 300:
-                print(f"missed checkpoint, exiting (last was {age} seconds ago)", file=sys.stderr)
-                self.disconnect()
 
     async def add_resource(self, group_name, resource_name, cls, params):
         """Add a resource to the exporter and update status on the coordinator"""
@@ -934,20 +994,28 @@ class ExporterSession(ApplicationSession):
     async def update_resource(self, group_name, resource_name):
         """Update status on the coordinator"""
         resource = self.groups[group_name][resource_name]
-        data = resource.asdict()
-        print(data)
-        await self.call("org.labgrid.coordinator.set_resource", group_name, resource_name, data)
+        msg = labgrid_coordinator_pb2.ExporterInMessage()
+        msg.resource.CopyFrom(resource.as_pb2())
+        msg.resource.path.group_name = group_name
+        msg.resource.path.resource_name = resource_name
+        self.out_queue.put_nowait(msg)
+        logging.info("queued update for resource %s/%s", group_name, resource_name)
+
+
+async def amain(config) -> bool:
+    exporter = Exporter(config)
+    await exporter.run()
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-x",
-        "--crossbar",
-        metavar="URL",
+        "-c",
+        "--coordinator",
+        metavar="HOST:PORT",
         type=str,
-        default=os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"),
-        help="crossbar websocket URL",
+        default=os.environ.get("LG_COORDINATOR", "127.0.0.1:20408"),
+        help="coordinator host and port",
     )
     parser.add_argument(
         "-n",
@@ -979,29 +1047,25 @@ def main():
 
     args = parser.parse_args()
 
-    level = "debug" if args.debug else "info"
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
-    extra = {
+    config = {
         "name": args.name or gethostname(),
         "hostname": args.hostname or (getfqdn() if args.fqdn else gethostname()),
         "resources": args.resources,
+        "coordinator": args.coordinator,
         "isolated": args.isolated,
     }
 
-    crossbar_url = args.crossbar
-    crossbar_realm = os.environ.get("LG_CROSSBAR_REALM", "realm1")
+    print(f"exporter name: {config['name']}")
+    print(f"exporter hostname: {config['hostname']}")
+    print(f"resource config file: {config['resources']}")
 
-    print(f"crossbar URL: {crossbar_url}")
-    print(f"crossbar realm: {crossbar_realm}")
-    print(f"exporter name: {extra['name']}")
-    print(f"exporter hostname: {extra['hostname']}")
-    print(f"resource config file: {extra['resources']}")
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
-    extra["loop"] = loop = asyncio.get_event_loop()
-    if args.debug:
-        loop.set_debug(True)
-    runner = ApplicationRunner(url=crossbar_url, realm=crossbar_realm, extra=extra)
-    runner.run(ExporterSession, log_level=level)
+    asyncio.run(amain(config), debug=bool(args.debug))
+
     if reexec:
         exit(100)
 

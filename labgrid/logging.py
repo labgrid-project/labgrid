@@ -22,7 +22,7 @@ assert(CONSOLE > logging.DEBUG)
 logging.addLevelName(CONSOLE, "CONSOLE")
 
 # Use composition instead of inheritance
-class StepFormatter:
+class StepFormatter(logging.Formatter):
     def __init__(self, *args, indent=True, color=None, parent=None, **kwargs):
         self.formatter = parent or logging.Formatter(*args, **kwargs)
         self.indent = indent

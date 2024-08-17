@@ -6,7 +6,7 @@ import pytest
 from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
-from ..logging import StepFormatter, StepLogger
+from ..logging import CONSOLE, StepFormatter, StepLogger
 from ..exceptions import NoStrategyFoundError
 
 LABGRID_ENV_KEY = pytest.StashKey[Environment]()
@@ -38,14 +38,14 @@ def pytest_cmdline_main(config):
     if verbosity > 3: # enable with -vvvv
         set_cli_log_level(logging.DEBUG)
     elif verbosity > 2: # enable with -vvv
-        set_cli_log_level(logging.CONSOLE)
+        set_cli_log_level(CONSOLE)
     elif verbosity > 1: # enable with -vv
         set_cli_log_level(logging.INFO)
 
 
 def configure_pytest_logging(config, plugin):
     if hasattr(plugin.log_cli_handler.formatter, "add_color_level"):
-        plugin.log_cli_handler.formatter.add_color_level(logging.CONSOLE, "blue")
+        plugin.log_cli_handler.formatter.add_color_level(CONSOLE, "blue")
     plugin.log_cli_handler.setFormatter(StepFormatter(
         color=config.option.lg_colored_steps,
         parent=plugin.log_cli_handler.formatter,

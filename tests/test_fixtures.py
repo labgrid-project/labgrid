@@ -1,5 +1,7 @@
 import os
 import pathlib
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 import pexpect
 import pytest
@@ -95,3 +97,157 @@ def test_log_without_capturing(short_env: pathlib.Path, short_test: pathlib.Path
         spawn.close()
         print(spawn.before)
         assert spawn.exitstatus == 0
+
+
+@dataclass
+class Scenario:
+    config: Optional[str]
+    test: str
+    exitcode: pytest.ExitCode
+    lines: List[str] = field(default_factory=list)
+    outcome: Dict[str, int] = field(default_factory=dict)
+
+
+COMPLETE_CONFIG = """
+targets:
+  main:
+    resources:
+      RawSerialPort:
+        port: '/dev/ttyUSB0'
+    drivers:
+      ManualPowerDriver: {}
+      SerialDriver: {}
+      BareboxDriver: {}
+      ShellDriver:
+        prompt: 'root@\\w+:[^ ]+ '
+        login_prompt: ' login: '
+        username: 'root'
+      BareboxStrategy: {}
+  test1:
+    drivers: {}
+  test2:
+    resources: {}
+"""
+
+
+@pytest.mark.parametrize(
+    'scenario',
+    [
+        Scenario(
+            config=COMPLETE_CONFIG,
+            test="""
+import pytest
+from labgrid import Environment, Target
+
+
+def test_env_fixture(env: Environment) -> None:
+    assert (target1 := env.get_target('test1'))
+    assert isinstance(target1, Target)
+    assert env.get_target('test2')
+    assert not env.get_target('test3')
+""",
+            exitcode=pytest.ExitCode.OK,
+            outcome={'passed': 1},
+        ),
+        Scenario(
+            config=COMPLETE_CONFIG,
+            test="""
+import pytest
+from labgrid import Target
+
+
+def test_target_fixture(target: Target) -> None:
+    assert target
+""",
+            exitcode=pytest.ExitCode.OK,
+            outcome={'passed': 1},
+        ),
+        Scenario(
+            config=COMPLETE_CONFIG,
+            test="""
+import pytest
+from labgrid.strategy import Strategy
+
+
+def test_strategy_fixture(strategy: Strategy) -> None:
+    assert strategy
+""",
+            exitcode=pytest.ExitCode.OK,
+            outcome={'passed': 1},
+        ),
+        Scenario(
+            config=None,
+            test="""
+import pytest
+from labgrid import Environment, Target
+from labgrid.strategy import Strategy
+
+
+def test_env_fixture(env: Environment) -> None:
+    del env  # unused
+""",
+            exitcode=pytest.ExitCode.OK,
+            lines=['*SKIPPED*missing environment config*', '*1 skipped*'],
+        ),
+        Scenario(
+            config="""
+targets:
+  test1:
+    drivers: {}
+""",
+            test="""
+import pytest
+from labgrid import Target
+
+
+def test_target_fixture(target: Target) -> None:
+    assert target
+""",
+            exitcode=pytest.ExitCode.TESTS_FAILED,
+            lines=['*UserError*Using target fixture without*', '*ERROR*'],
+        ),
+        Scenario(
+            config="""
+targets:
+  main:
+    drivers: {}
+""",
+            test="""
+import pytest
+from labgrid.strategy import Strategy
+
+
+def test_strategy_fixture(strategy: Strategy) -> None:
+    assert strategy
+""",
+            exitcode=pytest.ExitCode.INTERRUPTED,
+            lines=['*no Strategy driver found in Target*', '*no tests ran*'],
+        ),
+    ],
+)
+def test_fixtures_with_pytester(pytester: pytest.Pytester, scenario: Scenario) -> None:
+    pytester.makefile(
+        '.ini',
+        pytest=f"""[pytest]
+python_files = test_*.py
+python_functions = test_*
+python_classes = Test* *_test
+addopts = --strict-markers
+testpaths = .
+""",
+    )
+
+    if scenario.config:
+        pytester.makefile('.yaml', config=scenario.config)
+
+    pytester.makepyfile(test_sample=scenario.test)
+
+    args = ['-s', '-vvv']
+    if scenario.config:
+        args += ['--lg-env', 'config.yaml']
+    result = pytester.runpytest(*args)
+    assert result.ret == scenario.exitcode
+    if scenario.lines:
+        result.stdout.fnmatch_lines(scenario.lines)
+    if scenario.outcome:
+        result.assert_outcomes(**scenario.outcome)

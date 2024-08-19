@@ -1,3 +1,13 @@
+Release 24.0.1 (Released Aug 19, 2024)
+--------------------------------------
+
+Bug fixes in 24.0.1
+~~~~~~~~~~~~~~~~~~~
+- Add "six" to crossbar-requirements.txt as a stop-gap solution for implicit
+  six usage of txtorcon (a crossbar dependency). Fixes errors such as:
+  ModuleNotFoundError: No module named 'six'
+
+
 Release 24.0 (unreleased)
 -------------------------
 

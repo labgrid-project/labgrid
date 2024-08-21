@@ -312,21 +312,69 @@ class SigrokDriver(SigrokCommon):
 
     def _transfer_tmp_file(self, csv_filename):
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
-            subprocess.call([
-                'scp', f'{self.sigrok.host}:{os.path.join(self._tmpdir, self._basename)}',
-                os.path.abspath(self._filename)
-            ],
-                            stdin=subprocess.DEVNULL,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL)
+            sr_remote_path = os.path.join(self._tmpdir, self._basename)
+            sr_local_path = os.path.abspath(self._filename)
+            csv_remote_path = os.path.join(self._tmpdir, csv_filename)
+            csv_local_path = os.path.join(self._local_tmpdir, csv_filename)
+            self.logger.debug(
+                "Transferring sigrok capture file from remote path '%s' to local path '%s'",
+                sr_remote_path,
+                sr_local_path
+            )
+            # TODO: use NetworkResource ssh base options here too
+            ret = subprocess.run([
+                    'scp',
+                    "-o",
+                    "UserKnownHostsFile=/dev/null",
+                    "-o",
+                    "StrictHostKeyChecking=no",
+                    f'{self.sigrok.host}:{sr_remote_path}',
+                    sr_local_path,
+                ],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
+            )
+            if ret.returncode != 0:
+                self.logger.error(
+                    "Transfer Sigrok capture file failed with return-code '%i : %s'",
+                    ret.returncode,
+                    ret.stdout.decode()
+                )
+                raise ExecutionError(
+                    f"Transfer Sigrok Capture file failed with return-code '{ret.returncode}'",
+                    stdout=ret.stdout.decode().split("\n")
+                )
+
             # get csv from remote host
-            subprocess.call([
-                'scp', f'{self.sigrok.host}:{os.path.join(self._tmpdir, csv_filename)}',
-                os.path.join(self._local_tmpdir, csv_filename)
-            ],
-                            stdin=subprocess.DEVNULL,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL)
+            self.logger.debug(
+                "Transferring CSV file from remote path '%s' to local path '%s'",
+                csv_remote_path,
+                csv_local_path
+            )
+            # TODO: use NetworkResource ssh base options here too
+            ret = subprocess.run([
+                    'scp',
+                    "-o",
+                    "UserKnownHostsFile=/dev/null",
+                    "-o",
+                    "StrictHostKeyChecking=no",
+                    f'{self.sigrok.host}:{csv_remote_path}',
+                    csv_local_path
+                ],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+            if ret.returncode != 0:
+                self.logger.error(
+                    "Transfer Sigrok CSV file failed with return-code '%i : %s'",
+                    ret.returncode,
+                    ret.stdout.decode()
+                )
+                raise ExecutionError(
+                    f"Transfer Sigrok CSV file failed with return-code '{ret.returncode}'",
+                    stdout=ret.stdout.decode().split("\n")
+                )
         else:
             shutil.copyfile(
                 os.path.join(self._tmpdir, self._basename), self._filename

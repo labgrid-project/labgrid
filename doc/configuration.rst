@@ -2712,7 +2712,7 @@ Arguments:
   - machine (str): QEMU machine type
   - cpu (str): QEMU cpu type
   - memory (str): QEMU memory size (ends with M or G)
-  - extra_args (str): extra QEMU arguments, they are passed directly to the QEMU binary
+  - extra_args (str): optional, extra QEMU arguments, they are passed directly to the QEMU binary
   - boot_args (str): optional, additional kernel boot argument
   - kernel (str): optional, reference to the images key for the kernel
   - disk (str): optional, reference to the images key for the disk image

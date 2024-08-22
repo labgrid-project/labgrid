@@ -35,7 +35,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         machine (str): QEMU machine type
         cpu (str): QEMU cpu type
         memory (str): QEMU memory size (ends with M or G)
-        extra_args (str): extra QEMU arguments, they are passed directly to the QEMU binary
+        extra_args (str): optional, extra QEMU arguments passed directly to the QEMU binary
         boot_args (str): optional, additional kernel boot argument
         kernel (str): optional, reference to the images key for the kernel
         disk (str): optional, reference to the images key for the disk image
@@ -54,7 +54,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
     machine = attr.ib(validator=attr.validators.instance_of(str))
     cpu = attr.ib(validator=attr.validators.instance_of(str))
     memory = attr.ib(validator=attr.validators.instance_of(str))
-    extra_args = attr.ib(validator=attr.validators.instance_of(str))
+    extra_args = attr.ib(
+        default='',
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
     boot_args = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))

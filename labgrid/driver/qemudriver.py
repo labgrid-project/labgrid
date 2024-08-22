@@ -273,9 +273,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self.qmp = QMPMonitor(self._child.stdout, self._child.stdin)
         except QMPError as exc:
             if self._child.poll() is not None:
-                self._child.communicate()
+                _, err = self._child.communicate()
                 raise IOError(
-                    f"QEMU process terminated with exit code {self._child.returncode}"
+                    f"QEMU error: {err} (exitcode={self._child.returncode})"
                 ) from exc
             raise
 

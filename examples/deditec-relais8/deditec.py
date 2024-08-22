@@ -1,24 +1,19 @@
-import sys
-import labgrid
 import logging
 import time
 
-from labgrid import Environment, StepReporter
-from labgrid.strategy.bareboxstrategy import Status
-from labgrid.driver.deditecrelaisdriver import DeditecRelaisDriver
+from labgrid import Target
+from labgrid.logging import basicConfig, StepLogger
+from labgrid.resource.udev import DeditecRelais8
+from labgrid.driver import DeditecRelaisDriver
 
-# enable debug logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(levelname)7s: %(message)s',
-    stream=sys.stderr,
-)
+# enable info logging
+basicConfig(level=logging.INFO)
 
-# show labgrid steps on the console
-StepReporter.start()
+# log labgrid steps
+StepLogger.start()
 
-t = labgrid.Target('main')
-r = labgrid.resource.udev.DeditecRelais8(t, name=None, index=1)
+t = Target('main')
+r = DeditecRelais8(t, name=None, index=1)
 d = DeditecRelaisDriver(t, name=None)
 
 p = t.get_driver("DigitalOutputProtocol")

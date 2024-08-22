@@ -437,22 +437,19 @@ Other labgrid-related pytest plugin options are:
   Specify a labgrid environment config file.
   This is equivalent to labgrid-client's ``-c``/``--config``.
 
-``--lg-coordinator=CROSSBAR_URL``
-  Specify labgrid coordinator websocket URL.
-  Defaults to ``ws://127.0.0.1:20408/ws``.
-  This is equivalent to labgrid-client's ``-x``/``--crossbar``.
+``--lg-coordinator=COORDINATOR_ADDRESS``
+  Specify labgrid coordinator gRPC address as ``HOST[:PORT]``.
+  Defaults to ``127.0.0.1:20408``.
+  This is equivalent to labgrid-client's ``-x``/``--coordinator``.
 
 ``--lg-log=[path to logfiles]``
   Path to store console log file.
   If option is specified without path the current working directory is used.
 
 ``--lg-colored-steps``
-  Enables the ColoredStepReporter.
-  Different events have different colors.
-  The more colorful, the more important.
-  In order to make less important output "blend into the background" different
-  color schemes are available.
-  See :ref:`LG_COLOR_SCHEME <usage-lgcolorscheme>`.
+  Previously enabled the ColoredStepReporter, which has been removed with the
+  StepLogger introduction.
+  Kept for compatibility reasons without effect.
 
 ``--lg-initial-state=STATE_NAME``
   Sets the Strategy's initial state.
@@ -469,19 +466,6 @@ Environment Variables
 LG_ENV
 ^^^^^^
 Behaves like ``LG_ENV`` for :doc:`labgrid-client <man/client>`.
-
-.. _usage-lgcolorscheme:
-
-LG_COLOR_SCHEME
-^^^^^^^^^^^^^^^
-Influences the color scheme used for the Colored Step Reporter.
-``dark`` is meant for dark terminal background.
-``light`` is optimized for light terminal background.
-``dark-256color`` and ``light-256color`` are respective variants for terminals
-that support 256 colors.
-By default, ``dark`` or ``dark-256color`` (depending on the terminal) are used.
-
-Takes effect only when used with ``--lg-colored-steps``.
 
 LG_PROXY
 ^^^^^^^^

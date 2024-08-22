@@ -28,8 +28,8 @@ def pytest_addoption(parser):
         '--lg-coordinator',
         action='store',
         dest='lg_coordinator',
-        metavar='CROSSBAR_URL',
-        help='labgrid coordinator websocket URL.')
+        metavar='COORDINATOR_ADDRESS',
+        help='labgrid coordinator HOST[:PORT].')
     group.addoption(
         '--lg-log',
         action='store',

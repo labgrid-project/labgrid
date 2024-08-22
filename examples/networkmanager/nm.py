@@ -1,18 +1,15 @@
-import logging, sys
+import logging
 from pprint import pprint
 
-from labgrid import *
+from labgrid import Environment
+from labgrid.logging import basicConfig, StepLogger
 
 
 # enable debug logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(levelname)7s: %(message)s',
-    stream=sys.stderr,
-)
+basicConfig(level=logging.DEBUG)
 
 # show labgrid steps on the console
-StepReporter.start()
+StepLogger.start()
 
 
 e = Environment('nm.env')

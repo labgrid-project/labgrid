@@ -1,5 +1,56 @@
-Release 24.0 (unreleased)
+Release 24.1 (Unreleased)
 -------------------------
+As announced
+`before <https://github.com/labgrid-project/labgrid/discussions/1467#discussioncomment-10314852>`_,
+this is the first release using gRPC instead of crossbar/autobahn for
+communication between client/exporter and coordinator.
+
+Crossbar/autobahn are unfortunately not very well maintained anymore. The
+crossbar component was moved to its own virtualenv to cope with the high number
+of dependencies leading to conflicts. Support for Python 3.13 is still not
+available in a crossbar release on PyPI.
+
+That's why labgrid moves to gRPC with this release. gRPC is a well maintained
+RPC framework with a lot of users. As a side effect, the message transfer is
+more performant and the import times are shorter.
+
+New Features in 24.1
+~~~~~~~~~~~~~~~~~~~~
+- All components can be installed into the same virtualenv again.
+
+Bug fixes in 24.1
+~~~~~~~~~~~~~~~~~
+
+FIXME
+
+Breaking changes in 24.1
+~~~~~~~~~~~~~~~~~~~~~~~~
+Maintaining support for both crossbar/autobahn as well as gRPC in labgrid would
+be a lot of effort due to the different architectures of those frameworks.
+Therefore, a hard migration to gRPC is deemed the lesser issue.
+
+Due to the migration, 24.1 includes the following breaking changes:
+
+- The labgrid environment config option ``crossbar_url`` was renamed to
+  ``coordinator_address``. The environment variable ``LG_CROSSBAR`` was renamed
+  to ``LG_COORDINATOR``.
+- The labgrid environment config option ``crossbar_realm`` is now obsolete as
+  well as the environment variable ``LG_CROSSBAR_REALM``.
+- The coordinator is available as ``labgrid-coordinator`` (instead of
+  ``crossbar start``). No additional configuration file is required.
+- The systemd services in ``contrib/systemd/`` were updated.
+
+Other breaking changes include:
+
+FIXME
+
+Known issues in 24.1
+~~~~~~~~~~~~~~~~~~~~
+
+FIXME
+
+Release 24.0 (Released Aug 12, 2024)
+------------------------------------
 
 New Features in 24.0
 ~~~~~~~~~~~~~~~~~~~~
@@ -48,6 +99,11 @@ New Features in 24.0
 - The pyproject.toml gained a config for `ruff <https://github.com/astral-sh/ruff>`_.
 - ``setuptools_scm`` is now used to generate a version file.
 - labgrid-client console will fallback to telnet if microcom is not available.
+- A power backend for tinycontrol.eu IP Power Socket 6G10A v2 was added.
+- Labgrid now publishes arm64 docker images.
+- Labgrid's YAML parser will now warn when mapping keys are duplicated and thus
+  overwritten.
+- LC USB Relais are now supported.
 
 
 Bug fixes in 24.0
@@ -102,6 +158,14 @@ Bug fixes in 24.0
 - The ``ser2net`` version check for YAML configurations in the exporter was
   fixed.
 - The exporter forces ``ser2net`` TCP connections for versions >=4.2.0.
+- The retrieval of the DTR status for ``SerialPortDigitalOutputDriver`` was
+  fixed.
+- The ``SSHDriver`` keepalive is now correctly stopped when using existing
+  connections.
+- The power backend for raritan devices now supports devices with more than 16
+  outlets.
+- The ``ExternalConsoleDriver`` now correctly sets the bufsize to zero to
+  prevent buffering.
 
 Breaking changes in 24.0
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -155,6 +219,86 @@ Known issues in 24.0
 ~~~~~~~~~~~~~~~~~~~~
 - Some client commands return 0 even if the command failed.
 
+
+Release 23.0.6 (Released Apr 16, 2024)
+--------------------------------------
+
+Bug fixes in 23.0.6
+~~~~~~~~~~~~~~~~~~~
+- In `USBVideoDriver`, use the ``playbin3`` element instead of ``playbin`` to
+  fix decoding via VA-API for certain webcams on AMD graphic cards.
+- Let the `SSHDriver` redirect ``/dev/null`` to stdin on ``run()`` to prevent
+  unexpected consumption of stdin of the remotely started process.
+- Cover more failure scenarios in the exporter and coordinator systemd
+  services, fix the service startup order, do not buffer journal logs.
+
+Release 23.0.5 (Released Jan 13, 2024)
+--------------------------------------
+
+Bug fixes in 23.0.5
+~~~~~~~~~~~~~~~~~~~
+- Fix readthedocs build by specifying Python version and OS.
+- Fix several incompatibilities with doc sphinxcontrib-* dependencies having
+  dropped their explicit Sphinx dependencies, which prevented generation of
+  labgrid's docs.
+
+Release 23.0.4 (Released Nov 10, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.4
+~~~~~~~~~~~~~~~~~~~
+- Fix dockerfiles syntax error that became fatal in a recent docker release.
+- Fix ShellDriver's xmodem functionality.
+- Pin pylint to prevent incompatibility with pinned pytest-pylint.
+- Fix ``labgrid-client console --loop`` on disappearing serial ports (such as
+  on-board FTDIs).
+
+Release 23.0.3 (Released Jul 20, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.3
+~~~~~~~~~~~~~~~~~~~
+- Update to PyYAML 6.0.1 to prevent install errors with Cython>=3.0, see:
+  https://github.com/yaml/pyyaml/issues/601
+  https://github.com/yaml/pyyaml/pull/726#issuecomment-1640397938
+
+Release 23.0.2 (Released Jul 04, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.2
+~~~~~~~~~~~~~~~~~~~
+- Move `SSHDriver`'s control socket tmpdir clean up after the the SSH process
+  has terminated. Ignore errors on cleanup since it's best effort.
+- Add missing class name in ``labgrid-client monitor`` resource output.
+- Print USB loader process output if log level does not cover logging it.
+- Fix UnboundLocalError in ``atomic_replace()`` used by the coordinator and
+  ``labgrid-client export`` to write config files.
+- Let Config's ``get_tool()`` return the requested tool if it is not found in
+  the config. Return the resolved path if it exists, otherwise return the value
+  as is. Also drop the now obsolete tool fallbacks from the drivers and add
+  tests.
+- Fix `USBSDMuxDevice`/`USBSDWireDevice` udev race condition leading to
+  outdated control/disk paths.
+- Fix `SSHDriver`'s ``explicit_sftp_mode`` option to allow calls to ``put()``
+  and ``get()`` multiple times. Also make ``scp()`` respect this option.
+- Add compatibility with QEMU >= 6.1.0 to `QEMUDriver`'s ``display`` argument
+  for the ``egl-headless`` option.
+
+Release 23.0.1 (Released Apr 26, 2023)
+--------------------------------------
+
+Bug fixes in 23.0.1
+~~~~~~~~~~~~~~~~~~~
+- The pypi release now uses the labgrid pyserial fork in the form of the
+  pyserial-labgrid package. This fixes installation with newer versions
+  of pip.
+- Several tests have gained an importorskip() call to skip them if the
+  module is not available.
+- The build-and-release workflow supports building wheels.
+- The markers now are restricted to patterns which won't match WARN,
+  ERROR, INFO and similar log notifiers.
+- Fix named SSH lookups in conjunction with an environment file in
+  labgrid-client.
 
 Release 23.0 (Released Apr 24, 2023)
 ------------------------------------

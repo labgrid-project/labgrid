@@ -136,7 +136,7 @@ class StepLogger:
         from warnings import warn
 
         warn(
-            "StepLogger should not be instantiated, use StepReporter.start()/.stop() instead.",
+            "StepLogger should not be instantiated, use StepLogger.start()/.stop() instead.",
             DeprecationWarning,
             stacklevel=2,
         )

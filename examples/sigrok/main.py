@@ -6,13 +6,10 @@ import time
 import logging
 
 from labgrid import Environment
+from labgrid.logging import basicConfig
 
-# enable debug logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(levelname)7s: %(message)s',
-    stream=sys.stderr,
-)
+# enable info logging
+basicConfig(level=logging.INFO)
 
 env = Environment(sys.argv[1])
 target = env.get_target('main')

@@ -5,7 +5,7 @@ This folder contains Dockerfile's for building Docker images
 for the 3 different components of a Labgrid distributed infrastructure.
 
 - **labgrid-coordinator**
-  An image for with crossbar which can be used to run
+  An image with the Labgrid coordinator.
   a Labgrid coordinator instance.
 - **labgrid-client**
   An image with the Labgrid client tools and pytest integration.
@@ -64,18 +64,18 @@ No policy or configuration is done.
 labgrid-coordinator usage
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The labgrid-coordinator comes with a preconfigured Crossbar.io server.
+The labgrid-coordinator image can be used to run a coordinator instance.
 
-It listens to port 20408,
+It listens on port 20408,
 so you probably want to publish that so you can talk to the coordinator.
 
-State is written to ``/opt/crossbar``.
+State is written to ``/opt/coordinator``.
 You might want to bind a volume to that
-so you can restart the service without loosing state.
+so you can restart the service without losing state.
 
 .. code-block:: bash
 
-   $ docker run -t -p 20408:20408 -v $HOME/crossbar:/opt/crossbar \
+   $ docker run -t -p 20408:20408 -v $HOME/coordinator:/opt/coordinator \
 	 docker.io/labgrid/coordinator
 
 
@@ -85,18 +85,18 @@ labgrid-client usage
 The labgrid-client image can be used to
 run ``labgrid-client`` and ``pytest`` commands.
 For example listing available places registered at coordinator at
-ws://192.168.1.42:20408/ws
+192.168.1.42:20408
 
 .. code-block:: bash
 
-   $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws docker.io/labgrid/client \
+   $ docker run -e LG_COORDINATOR=192.168.1.42:20408 docker.io/labgrid/client \
 	 labgrid-client places
 
 Or running all pytest/labgrid tests at current directory:
 
 .. code-block:: bash
 
-   $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws docker.io/labgrid/client \
+   $ docker run -e LG_COORDINATOR=192.168.1.42:20408 docker.io/labgrid/client \
 	 pytest
 
 
@@ -113,7 +113,7 @@ Start it with something like:
 
 .. code-block:: bash
 
-   $ docker run -e LG_CROSSBAR=ws://192.168.1.42:20408/ws \
+   $ docker run -e LG_COORDINATOR=192.168.1.42:20408 \
        -v $HOME/exporter-conf:/opt/conf \
 	 docker.io/labgrid/exporter
 
@@ -141,10 +141,10 @@ client:
 .. code-block:: bash
 
    $ cd dockerfiles/staging
-   $ CURRENT_UID=$(id -u):$(id -g) docker-compose up -d coordinator exporter dut
+   $ CURRENT_UID=$(id -u):$(id -g) docker compose up -d coordinator exporter dut
 
 To run the smoke test just run the client:
 
 .. code-block:: bash
 
-   $ docker-compose up client
+   $ docker compose up client

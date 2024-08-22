@@ -38,8 +38,8 @@ OPTIONS
 -------
 -h, --help
     display command line help
--x, --crossbar
-    the crossbar url of the coordinator
+-x, --coordinator
+    coordinator ``HOST[:PORT]`` to connect to, defaults to ``127.0.0.1:20408``
 -i, --isolated
     enable isolated mode (always request SSH forwards)
 -n, --name
@@ -92,15 +92,10 @@ ENVIRONMENT VARIABLES
 ---------------------
 The following environment variable can be used to configure labgrid-exporter.
 
-LG_CROSSBAR
-~~~~~~~~~~~
-This variable can be used to set the default crossbar URL (instead of using the
-``-x`` option).
-
-LG_CROSSBAR_REALM
-~~~~~~~~~~~~~~~~~
-This variable can be used to set the default crossbar realm to use instead of
-``realm1``.
+LG_COORDINATOR
+~~~~~~~~~~~~~~
+This variable can be used to set the default coordinator in the format
+``HOST[:PORT]`` (instead of using the ``-x`` option).
 
 EXAMPLES
 --------

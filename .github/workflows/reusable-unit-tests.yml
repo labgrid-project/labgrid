@@ -30,7 +30,7 @@ jobs:
           ${{ runner.os }}-pip-
     - name: Install system dependencies
       run: |
-        sudo apt-get install -yq libow-dev openssh-server openssh-client libsnappy-dev ncurses-term graphviz openocd
+        sudo apt-get install -yq libow-dev openssh-server openssh-client graphviz openocd
         sudo mkdir -p /var/cache/labgrid/runner && sudo chown runner /var/cache/labgrid/runner
     - name: Prepare local SSH
       run: |
@@ -46,17 +46,14 @@ jobs:
     - name: Install labgrid
       run: |
         pip install -e ".[dev]"
-    - name: Install crossbar in virtualenv
-      run: |
-        virtualenv -p python3 crossbar-venv
-        crossbar-venv/bin/pip install -r crossbar-requirements.txt
     - name: Lint with pylint
+      if: inputs.python-version != '3.8'
       run: |
         pylint --list-msgs-enabled
         pylint labgrid
     - name: Test with pytest
       run: |
-        TERM=xterm pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner --crossbar-venv crossbar-venv -k "not test_docker_with_daemon"
+        pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"
     - name: Build documentation
       run: |
         make -C doc clean

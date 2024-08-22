@@ -2,6 +2,8 @@
 This module contains the custom YAML load and dump functions and associated
 loader and dumper
 """
+
+import warnings
 from collections import OrderedDict, UserString
 from string import Template
 
@@ -16,7 +18,19 @@ class Dumper(yaml.SafeDumper):
     pass
 
 
+def _check_duplicate_dict_keys(loader, node):
+    seen_keys = []
+    for key_node, _ in node.value:
+        key = loader.construct_scalar(key_node)
+        if key in seen_keys:
+            warnings.warn(
+                f"{loader.name}: previous entry with duplicate YAML dictionary key '{key}' overwritten", UserWarning
+            )
+        seen_keys.append(key)
+
+
 def _dict_constructor(loader, node):
+    _check_duplicate_dict_keys(loader, node)
     return OrderedDict(loader.construct_pairs(node))
 
 

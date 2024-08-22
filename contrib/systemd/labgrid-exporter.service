@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Environment="PYTHONUNBUFFERED=1"
-# Should contain LG_CROSSBAR configuration
+# Should contain LG_COORDINATOR configuration
 EnvironmentFile=-/etc/environment
 ExecStart=/path/to/labgrid/venv/bin/labgrid-exporter /etc/labgrid/exporter.yaml
 Restart=on-failure

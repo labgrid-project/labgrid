@@ -63,6 +63,12 @@ class USBVideoDriver(Driver, VideoProtocol):
                 ("mid", "video/x-h264,width=1280,height=720,framerate=25/1"),
                 ("high", "video/x-h264,width=1920,height=1080,framerate=25/1"),
                 ])
+        elif match == (0x0c45, 0x636b): # LogiLink UA0379 / Microdia
+            return ("mid", [
+                ("low", "image/jpeg,width=640,height=480,pixel-aspect-ratio=1/1,framerate=30/1"),
+                ("mid", "image/jpeg,width=1280,height=720,pixel-aspect-ratio=1/1,framerate=30/1"),
+                ("high", "image/jpeg,width=1920,height=1080,pixel-aspect-ratio=1/1,framerate=30/1"),
+                ])
         elif match == (0x0c45, 0x636d): # AUKEY PC-LM1E
             return ("mid", [
                 ("low", "image/jpeg,width=640,height=480,pixel-aspect-ratio=1/1,framerate=30/1"),
@@ -108,6 +114,9 @@ class USBVideoDriver(Driver, VideoProtocol):
         elif match == (0x1d6c, 0x0103):
             controls = controls or "focus_auto=1"
             inner = "h264parse"
+        elif match == (0x0c54, 0x636b):
+            controls = controls or "focus_auto=1"
+            inner = None  # just forward the jpeg frames
         elif match == (0x0c54, 0x636d):
             controls = controls or "focus_auto=1"
             inner = None  # just forward the jpeg frames

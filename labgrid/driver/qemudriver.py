@@ -356,6 +356,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         )
 
     def _read(self, size=1, timeout=10, max_size=None):
+        if not self._clientsocket:
+            raise ExecutionError('QEMU has not been started')
         ready, _, _ = select.select([self._clientsocket], [], [], timeout)
         if ready:
             # Collect some more data

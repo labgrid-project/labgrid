@@ -5,6 +5,7 @@ This class encapsulates access functions to the environment configuration
 """
 import os
 import warnings
+from typing import Dict
 from yaml import YAMLError
 import attr
 
@@ -262,7 +263,7 @@ class Config:
 
         return imports
 
-    def get_paths(self):
+    def get_paths(self) -> Dict[str, str]:
         """Helper function that returns the subdict of all paths
 
         Returns:
@@ -275,7 +276,7 @@ class Config:
 
         return paths
 
-    def get_images(self):
+    def get_images(self) -> Dict[str, str]:
         """Helper function that returns the subdict of all images
 
         Returns:

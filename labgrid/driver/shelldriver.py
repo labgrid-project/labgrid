@@ -567,7 +567,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         regex = r"""default\s+via # leading strings
                 \s+\S+ # IP address
-                \s+dev\s+(\w+) # interface"""
+                \s+dev\s+([\w\.-]+) # interface"""
 
         default_route = self._run_check(f"ip -{version} route list default")
         matches = re.findall(regex, "\n".join(default_route), re.X)

@@ -922,7 +922,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Key {k} is invalid")
                 if not TAG_VAL.match(v):
                     await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Value {v} is invalid")
-            fltr[k] = v
+                fltr[k] = v
 
         owner = self.clients[peer].name
         res = Reservation(owner=owner, prio=request.prio, filters=fltrs)

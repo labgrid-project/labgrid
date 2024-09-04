@@ -174,6 +174,7 @@ class SigrokDriver(SigrokCommon):
 
         self._filename = filename
         self._basename = os.path.basename(self._filename)
+        self._validate_save_dir_exists()
         self.logger.debug(
             "Saving to: %s with basename: %s", self._filename, self._basename
         )
@@ -197,7 +198,7 @@ class SigrokDriver(SigrokCommon):
                     self.logger.debug("sigrok-cli call terminated prematurely with non-zero return-code")
                     self.logger.debug("stdout: %s", stdout)
                     self.logger.debug("stderr: %s", stderr)
-                    raise ExecutionError(f"sigrok-cli call terminated prematurely with return-code '{ret}'.")
+                    raise ExecutionError(f"sigrok-cli call terminated prematurely, return-code '{ret}'.")
             sleep(0.1)
 
         self._running = True
@@ -276,6 +277,7 @@ class SigrokDriver(SigrokCommon):
     def _capture_blocking(self, filename, capture_args, samplerate):
         self._filename = filename
         self._basename = os.path.basename(self._filename)
+        self._validate_save_dir_exists()
         csv_filename = f'{os.path.splitext(self._basename)[0]}.csv'
         self.logger.debug(
             "Saving to: %s with basename: %s", self._filename, self._basename
@@ -309,6 +311,11 @@ class SigrokDriver(SigrokCommon):
         self.logger.debug("stdout: %s", stdout)
         self.logger.debug("stderr: %s", stderr)
 
+    def _validate_save_dir_exists(self):
+        if not os.path.exists(os.path.dirname(self._filename)):
+            raise ExecutionError(
+                f"Won't be able to save capture file to target directory '{os.path.dirname(self._filename)}', does not exist"
+            )
 
     def _transfer_tmp_file(self, csv_filename):
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
@@ -337,12 +344,12 @@ class SigrokDriver(SigrokCommon):
             )
             if ret.returncode != 0:
                 self.logger.error(
-                    "Transfer Sigrok capture file failed with return-code '%i : %s'",
+                    "Transferring Sigrok capture file failed, return-code '%i : %s'",
                     ret.returncode,
                     ret.stdout.decode()
                 )
                 raise ExecutionError(
-                    f"Transfer Sigrok Capture file failed with return-code '{ret.returncode}'",
+                    f"Transferring Sigrok Capture file failed, return-code '{ret.returncode}'",
                     stdout=ret.stdout.decode().split("\n")
                 )
 
@@ -367,12 +374,12 @@ class SigrokDriver(SigrokCommon):
                 stderr=subprocess.STDOUT)
             if ret.returncode != 0:
                 self.logger.error(
-                    "Transfer Sigrok CSV file failed with return-code '%i : %s'",
+                    "Transferring Sigrok CSV file failed, return-code '%i : %s'",
                     ret.returncode,
                     ret.stdout.decode()
                 )
                 raise ExecutionError(
-                    f"Transfer Sigrok CSV file failed with return-code '{ret.returncode}'",
+                    f"Transferring Sigrok CSV file failed, return-code '{ret.returncode}'",
                     stdout=ret.stdout.decode().split("\n")
                 )
         else:

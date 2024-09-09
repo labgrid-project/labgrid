@@ -51,6 +51,9 @@ jobs:
       run: |
         pylint --list-msgs-enabled
         pylint labgrid
+    - name: Format with ruff
+      run: |
+        ruff format --check --diff labgrid/remote/
     - name: Test with pytest
       run: |
         pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"

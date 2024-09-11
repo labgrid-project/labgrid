@@ -131,7 +131,7 @@ class USBVideoDriver(Driver, VideoProtocol):
         tx_cmd = self.video.command_prefix + ["gst-launch-1.0", "-q"]
         tx_cmd += pipeline.split()
         rx_cmd = ["gst-launch-1.0"]
-        rx_cmd += "playbin3 uri=fd://0".split()
+        rx_cmd += "playbin3 buffer-duration=0 uri=fd://0".split()
 
         tx = subprocess.Popen(
             tx_cmd,

@@ -550,6 +550,7 @@ exports["USBSDMuxDevice"] = USBSDMuxExport
 exports["USBSDWireDevice"] = USBSDWireExport
 exports["USBDebugger"] = USBGenericExport
 
+exports["GenericUSBPort"] = USBGenericExport
 exports["USBMassStorage"] = USBGenericExport
 exports["USBVideo"] = USBGenericExport
 exports["USBAudioInput"] = USBAudioInputExport

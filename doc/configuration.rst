@@ -641,6 +641,23 @@ device available on a remote computer.
 The NetworkUSBMassStorage can be used in test cases by calling the
 ``write_files()``, ``write_image()``, and ``get_size()`` functions.
 
+GenericUSBPort
+~~~~~~~~~~~~~~
+A :any:`GenericUSBPort` resource describes a generic USB device, that has no
+specific driver yet. Useful if your DUT creates its own USB endpoint, that you
+want to test.
+
+.. code-block:: yaml
+
+  GenericUSBPort:
+    match:
+      ID_PATH: pci-0000:3c:00.0-usb-0:1.2:1.0
+
+NetworkGenericUSBPort
+~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkGenericUSBPort` describes a `GenericUSBPort`_ available on a remote
+computer.
+
 SigrokDevice
 ~~~~~~~~~~~~
 A :any:`SigrokDevice` resource describes a *Sigrok* device. To select a

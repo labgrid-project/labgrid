@@ -10,6 +10,8 @@ Labgrid is an embedded board control python library with a focus on testing, dev
 and general automation.
 It includes a remote control layer to control boards connected to other hosts.
 
+* `Getting started <#Getting-started>`_
+
 * `Purpose and Features <#purpose-and-features>`_
 
 * `Documentation <#documentation>`_
@@ -23,6 +25,15 @@ It includes a remote control layer to control boards connected to other hosts.
   * `Install Latest Release <#install-latest-release>`_
 
   * `Install Development State <#install-development-state>`_
+
+Getting started
+---------------
+There is a tutorial series on the Pengutronix Youtube channel you can follow to
+get started: `Labgrid Tutorial Playlist
+<https://www.youtube.com/playlist?list=PLPy6BX4pJosCEq7CIU06bt2WM7lFAy1CF>`_.
+
+The other starting point is in the `documentation
+<https://labgrid.readthedocs.io/en/latest/getting_started.html>`__.
 
 Purpose and Features
 --------------------

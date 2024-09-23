@@ -771,6 +771,25 @@ class YKUSHPowerPortExport(ResourceExport):
 
 exports["YKUSHPowerPort"] = YKUSHPowerPortExport
 
+@attr.s(eq=False)
+class SFEmulatorExport(ResourceExport):
+    """ResourceExport for SFEmulator devices"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = f"Network{local_cls_name}"
+        from ..resource import sfemulator
+        local_cls = getattr(sfemulator, local_cls_name)
+        self.local = local_cls(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return {
+            "host": self.host,
+            **self.local_params
+        }
+
+exports["SFEmulator"] = SFEmulatorExport
 
 class Exporter:
     def __init__(self, config) -> None:

@@ -14,6 +14,7 @@ def power_set(host, port, index, value):
     outlet_control_oid = "{}.{}.0.{}".format(OID, cmd_id, index)
 
     _snmp.set(outlet_control_oid, 1)
+    _snmp.cleanup()
 
 
 def power_get(host, port, index):
@@ -24,6 +25,7 @@ def power_get(host, port, index):
 
     value = _snmp.get(output_status_oid)
 
+    _snmp.cleanup()
     if value == 1:  # On
         return True
     if value == 0:  # Off

@@ -66,7 +66,10 @@ pyvisa = [
     "pyvisa>=1.11.3",
     "PyVISA-py>=0.5.2",
 ]
-snmp = ["pysnmp-lextudio>=4.4.12, <6"]
+snmp = [
+    "pysnmp-lextudio>=4.4.12, <6",
+    "pyasn1<0.6.1",
+]
 vxi11 = ["python-vxi11>=0.9"]
 xena = ["xenavalkyrie>=3.0.1"]
 deb = [
@@ -78,6 +81,7 @@ deb = [
 
     # labgrid[snmp]
     "pysnmp-lextudio>=4.4.12, <6",
+    "pyasn1<0.6.1",
 ]
 dev = [
     # references to other optional dependency groups
@@ -112,6 +116,7 @@ dev = [
 
     # labgrid[snmp]
     "pysnmp-lextudio>=4.4.12, <6",
+    "pyasn1<0.6.1",
 
     # labgrid[vxi11]
     "python-vxi11>=0.9",

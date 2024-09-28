@@ -1,3 +1,12 @@
+Release 24.0.2 (Released Sep 28, 2024)
+--------------------------------------
+
+Bug fixes in 24.0.2
+~~~~~~~~~~~~~~~~~~~
+- Limit pysnmp's pyasn1 dependency to <0.6.0 in pyproject.toml to work around
+  `pyasn1.compat.octets ModuleNotFoundError <https://github.com/pyasn1/pyasn1/issues/76>`_.
+
+
 Release 24.0.1 (Released Aug 19, 2024)
 --------------------------------------
 

@@ -92,10 +92,10 @@ class ResourceExport(ResourceEntry):
         self.data["acquired"] = "<broken>"
         self.logger.error("marked as broken: %s", reason)
 
-    def _get_start_params(self):  # pylint: disable=no-self-use
+    def _get_start_params(self):
         return {}
 
-    def _get_params(self):  # pylint: disable=no-self-use
+    def _get_params(self):
         return {}
 
     def _start(self, start_params):

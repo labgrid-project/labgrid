@@ -163,6 +163,14 @@ Currently available are:
   host argument must include the protocol, such as
   ``http://192.168.0.3`` or ``http://admin:pass@192.168.0.4``.
 
+``digitalloggers_restapi``
+  Controls *Digital Loggers PDUs* that use the REST API. Note that
+  host argument must include the protocol, such as
+  ``http://192.168.0.3`` or ``https://admin:pass@192.168.0.4``.
+  By default, only authenticated users may access the REST API.
+  HTTPS queries intentially ignore ssl certificate validation, since
+  the as-shipped certificate is self-signed.
+
 ``eaton``
   Controls *Eaton ePDUs* via SNMP.
 

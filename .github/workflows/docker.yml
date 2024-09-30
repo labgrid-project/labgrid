@@ -21,9 +21,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install system dependencies
       run: |
-        sudo apt install -yq python3-pip
-        pip install --upgrade setuptools
-        pip install setuptools_scm
+        sudo apt install -yq python3-pip python3-setuptools-scm
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
       with:

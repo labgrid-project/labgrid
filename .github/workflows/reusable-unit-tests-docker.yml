@@ -16,9 +16,7 @@ jobs:
         ref: ${{ inputs.branch }}
     - name: Install system dependencies
       run: |
-        sudo apt install -yq python3-pip
-        pip install --upgrade setuptools
-        pip install setuptools_scm
+        sudo apt install -yq python3-pip python3-setuptools-scm
     - name: Build docker images
       run: |
         ./dockerfiles/build.sh

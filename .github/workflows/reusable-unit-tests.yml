@@ -67,4 +67,4 @@ jobs:
         # check README.rst separately
         pip install rstcheck
         rstcheck --ignore-languages=bash --report-level=WARNING README.rst
-    - uses: codecov/codecov-action@v3
+    - uses: codecov/codecov-action@v4

@@ -43,6 +43,10 @@ Due to the migration, 24.1 includes the following breaking changes:
 Other breaking changes include:
 
 - Support for Python 3.8 was dropped.
+- The siglent power backend is deprecated because it uses the no longer
+  maintained vxi11 module which again uses the deprecated (and in Python 3.13
+  removed) xdrlib. See
+  `issue #1507 <https://github.com/labgrid-project/labgrid/issues/1507>`_.
 
 Known issues in 24.1
 ~~~~~~~~~~~~~~~~~~~~

@@ -123,6 +123,10 @@ TOOLS KEYS
     Path to the openocd binary, used by the OpenOCDDriver.
     See: https://openocd.org/
 
+``openfpgaloader``
+    Path to the openFPGALoader binary, used by the OpenFPGALoaderDriver.
+    See: https://github.com/trabucayre/openFPGALoader
+
 ``quartus_hps``
     Path to the quartus_hps binary, used by the QuartusHPSDriver.
     See: https://www.intel.com/content/www/us/en/docs/programmable/683039/22-3/hps-flash-programmer.html

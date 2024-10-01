@@ -1834,6 +1834,7 @@ Arguments:
   - bootstring (regex, default="Linux version \\d"): regex that indicating that the Linux Kernel is
     booting
   - password (str): optional, password to use for access to the shell
+  - boot_command (str, default="boot -v"): optional, boot command to boot target
   - login_timeout (int, default=60): timeout for access to the shell
 
 ExternalConsoleDriver

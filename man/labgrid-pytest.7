@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "LABGRID-PYTEST" 7 "2017-04-15" "0.0.1" "embedded testing"
+.TH "LABGRID-PYTEST" "7" "2017-04-15" "0.0.1" "embedded testing"
 .SH NAME
 labgrid-pytest \- labgrid-pytest labgrid integration for pytest
 .SH SYNOPSIS
@@ -42,18 +42,16 @@ The labgrid plugin parses the supplied configuration yaml file as described in
 \fBlabgrid\-device\-config\fP(5) and allows the usage of the target and environment
 fixtures.
 The complete documentation is available at
-\fI\%https://labgrid.readthedocs.io/en/latest/usage.html#pytest\-plugin\fP\&.
+ <https://labgrid.readthedocs.io/en/latest/usage.html#pytest\-plugin> \&.
 .SH EXAMPLES
 .sp
 Start tests with \fBmyconfig.yaml\fP and directory \fBtests\fP:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ pytest \-\-lg\-env myconfig.yaml tests
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .SH SEE ALSO

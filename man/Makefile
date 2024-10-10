@@ -2,7 +2,7 @@ PAGES := labgrid-client.1 labgrid-coordinator.1 labgrid-exporter.1 labgrid-devic
 COMPRESSED := labgrid-client.1.gz labgrid-coordinator.1.gz labgrid-exporter.1.gz labgrid-device-config.5.gz labgrid-pytest.7.gz labgrid-suggest.1.gz
 
 %.1 %.5 %.7: %.rst
-	rst2man.py $< >$@.tmp
+	rst2man $< >$@.tmp
 	mv -f $@.tmp $@
 
 %.gz : %

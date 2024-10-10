@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "LABGRID-DEVICE-CONFIG" 5 "2017-04-15" "0.0.1" "embedded testing"
+.TH "LABGRID-DEVICE-CONFIG" "5" "2017-04-15" "0.0.1" "embedded testing"
 .SH NAME
 labgrid-device-config \- labgrid test configuration files
 .SH SYNOPSIS
@@ -49,7 +49,7 @@ important, since they are parsed as an ordered dictionary and may depend on a
 previous driver.
 .sp
 For a list of available resources and drivers refer to
-\fI\%https://labgrid.readthedocs.io/en/latest/configuration.html\fP\&.
+ <https://labgrid.readthedocs.io/en/latest/configuration.html> \&.
 .SH OPTIONS
 .sp
 The \fBoptions:\fP top key configures various options such as the coordinator_address.
@@ -75,13 +75,11 @@ Two configured images, one for the root filesystem, one for the bootloader:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 images:
   root: \(dqplatform\-v7a/images/root.img\(dq
   boot: \(dqplatform\-v7a/images/barebox.img\(dq
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .SH TOOLS
@@ -92,91 +90,89 @@ The \fBtools:\fP top key provides paths to binaries such as fastboot.
 .TP
 .B \fBdfu\-util\fP
 Path to the dfu\-util binary, used by the DFUDriver.
-See: \fI\%https://dfu\-util.sourceforge.net/\fP
+See:  <https://dfu\-util.sourceforge.net/> 
 .TP
 .B \fBdpcmd\fP
 Path to the dpcmd binary, used by the DediprogFlashDriver.
-See: \fI\%https://github.com/DediProgSW/SF100Linux\fP
+See:  <https://github.com/DediProgSW/SF100Linux> 
 .TP
 .B \fBfastboot\fP
 Path to the fastboot binary, used by the AndroidFastbootDriver.
-See: \fI\%https://developer.android.com/studio/releases/platform\-tools\fP
+See:  <https://developer.android.com/studio/releases/platform\-tools> 
 .TP
 .B \fBflashrom\fP
 Path to the flashrom binary, used by the FlashromDriver.
-See: \fI\%https://www.flashrom.org/\fP
+See:  <https://www.flashrom.org/> 
 .TP
 .B \fBimx_usb\fP
 Path to the imx_usb binary, used by the BDIMXUSBDriver.
-See: \fI\%https://github.com/boundarydevices/imx_usb_loader\fP
+See:  <https://github.com/boundarydevices/imx_usb_loader> 
 .TP
 .B \fBimx\-usb\-loader\fP
 Path to the imx\-usb\-loader binary, used by the IMXUSBDriver.
-See: \fI\%https://git.pengutronix.de/cgit/barebox/tree/scripts/imx/imx\-usb\-loader.c\fP
+See:  <https://git.pengutronix.de/cgit/barebox/tree/scripts/imx/imx\-usb\-loader.c> 
 .TP
 .B \fBjtagconfig\fP
 Path to the jtagconfig binary, used by the QuartusHPSDriver.
-See: \fI\%https://www.intel.com/content/www/us/en/docs/programmable/683689/current/jtagconfig.html\fP
+See:  <https://www.intel.com/content/www/us/en/docs/programmable/683689/current/jtagconfig.html> 
 .TP
 .B \fBmxs\-usb\-loader\fP
 Path to the mxs\-usb\-loader binary, used by the MXSUSBDriver.
-See: \fI\%https://git.pengutronix.de/cgit/barebox/tree/scripts/mxs\-usb\-loader.c?h=v2017.03.0\fP
+See:  <https://git.pengutronix.de/cgit/barebox/tree/scripts/mxs\-usb\-loader.c?h=v2017.03.0> 
 .TP
 .B \fBopenocd\fP
 Path to the openocd binary, used by the OpenOCDDriver.
-See: \fI\%https://openocd.org/\fP
+See:  <https://openocd.org/> 
 .TP
 .B \fBquartus_hps\fP
 Path to the quartus_hps binary, used by the QuartusHPSDriver.
-See: \fI\%https://www.intel.com/content/www/us/en/docs/programmable/683039/22\-3/hps\-flash\-programmer.html\fP
+See:  <https://www.intel.com/content/www/us/en/docs/programmable/683039/22\-3/hps\-flash\-programmer.html> 
 .TP
 .B \fBrk\-usb\-loader\fP
 Path to the rk\-usb\-loader binary, used by the RKUSBDriver.
-See: \fI\%https://git.pengutronix.de/cgit/barebox/tree/scripts/rk\-usb\-loader.c\fP
+See:  <https://git.pengutronix.de/cgit/barebox/tree/scripts/rk\-usb\-loader.c> 
 .TP
 .B \fBsd\-mux\-ctrl\fP
 Path to the sd\-mux\-ctrl binary, used by the USBSDWireDriver.
-See: \fI\%https://git.tizen.org/cgit/tools/testlab/sd\-mux/\fP
+See:  <https://git.tizen.org/cgit/tools/testlab/sd\-mux/> 
 .TP
 .B \fBsispmctl\fP
 Path to the sispmctl binary, used by the SiSPMPowerDriver.
-See: \fI\%https://sispmctl.sourceforge.net/\fP
+See:  <https://sispmctl.sourceforge.net/> 
 .TP
 .B \fBuhubctl\fP
 Path to the uhubctl binary, used by the USBPowerDriver.
-See: \fI\%https://github.com/mvp/uhubctl\fP
+See:  <https://github.com/mvp/uhubctl> 
 .TP
 .B \fBusbmuxctl\fP
 Path to the usbmuxctl tool, used by the LXAUSBMuxDriver.
-\fI\%https://github.com/linux\-automation/usbmuxctl\fP
+ <https://github.com/linux\-automation/usbmuxctl> 
 .TP
 .B \fBusbsdmux\fP
 Path to the usbsdmux tool, used by the USBSDMuxDriver.
-See: \fI\%https://github.com/linux\-automation/usbsdmux\fP
+See:  <https://github.com/linux\-automation/usbsdmux> 
 .TP
 .B \fBuuu\-loader\fP
 Path to the uuu\-loader binary, used by the UUUDriver.
-See: \fI\%https://github.com/nxp\-imx/mfgtools\fP
+See:  <https://github.com/nxp\-imx/mfgtools> 
 .TP
 .B \fBykushcmd\fP
 Path to the ykushcmd binary, used by the YKUSHPowerDriver.
-See: \fI\%https://github.com/Yepkit/ykush\fP
+See:  <https://github.com/Yepkit/ykush> 
 .UNINDENT
 .sp
 The QEMUDriver expects a custom key set via its \fBqemu_bin\fP argument.
-See \fI\%https://www.qemu.org/\fP
+See  <https://www.qemu.org/> 
 .SS TOOLS EXAMPLE
 .sp
 Configure the tool path for \fBimx\-usb\-loader\fP:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 tools:
   imx\-usb\-loader: \(dq/opt/labgrid\-helper/imx\-usb\-loader\(dq
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .SH IMPORTS
@@ -192,12 +188,10 @@ Import a local \fImyfunctions.py\fP file:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 imports:
   \- myfunctions.py
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .SH EXAMPLES
@@ -207,8 +201,7 @@ A sample configuration with one \fImain\fP target, accessible via SerialPort
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 targets:
   main:
     resources:
@@ -220,8 +213,7 @@ targets:
         prompt: \(aqroot@\ew+:[^ ]+ \(aq
         login_prompt: \(aq login: \(aq
         username: \(aqroot\(aq
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -231,8 +223,7 @@ in the loaded local python file:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 targets:
   main:
     resources:
@@ -250,8 +241,7 @@ tools:
   imx\-usb\-loader: \(dq/opt/lg\-tools/imx\-usb\-loader\(dq
 imports:
   \- mystrategy.py
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .SH SEE ALSO

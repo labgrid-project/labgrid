@@ -42,7 +42,7 @@ Due to the migration, 24.1 includes the following breaking changes:
 
 Other breaking changes include:
 
-FIXME
+- Support for Python 3.8 was dropped.
 
 Known issues in 24.1
 ~~~~~~~~~~~~~~~~~~~~

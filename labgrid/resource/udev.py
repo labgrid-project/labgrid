@@ -710,7 +710,9 @@ class USBDebugger(USBResource):
 
         if match not in [("0403", "6010"),  # FT2232C/D/H Dual UART/FIFO IC
                          ("0403", "6014"),  # FT232HL/Q
+                         ("0483", "3748"),  # STLINK-V2
                          ("0483", "374b"),  # STLINK-V3
+                         ("0483", "374e"),  # STLINK-V3
                          ("0483", "374f"),  # STLINK-V3
                          ("15ba", "0003"),  # Olimex ARM-USB-OCD
                          ("15ba", "002b"),  # Olimex ARM-USB-OCD-H

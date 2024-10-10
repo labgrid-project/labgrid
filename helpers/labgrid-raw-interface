@@ -108,6 +108,15 @@ def main(program, options):
             args.append(options.ifname)
             args.extend(options.ethtool_set_eee_args)
 
+        elif options.subcommand == "pause":
+            for arg in options.ethtool_pause_args:
+                if arg.startswith("-") or not allowed_chars.issuperset(arg):
+                    raise ValueError(f"ethtool --pause arg '{arg}' contains invalid characters")
+
+            args.append("--pause")
+            args.append(options.ifname)
+            args.extend(options.ethtool_pause_args)
+
     try:
         os.execvp(args[0], args)
     except FileNotFoundError as e:
@@ -152,6 +161,13 @@ if __name__ == "__main__":
     ethtool_change_parser.add_argument("ifname", type=str, help="interface name")
     ethtool_change_parser.add_argument(
         "ethtool_set_eee_args", metavar="ARG", nargs=argparse.REMAINDER, help="ethtool --set-eee args"
+    )
+
+    # ethtool: pause
+    ethtool_change_parser = ethtool_subparsers.add_parser("pause")
+    ethtool_change_parser.add_argument("ifname", type=str, help="interface name")
+    ethtool_change_parser.add_argument(
+        "ethtool_pause_args", metavar="ARG", nargs=argparse.REMAINDER, help="ethtool --pause args"
     )
 
     args = parser.parse_args()

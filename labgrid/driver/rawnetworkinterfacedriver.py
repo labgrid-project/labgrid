@@ -143,6 +143,28 @@ class RawNetworkInterfaceDriver(Driver):
         cmd = self._wrap_command(cmd)
         subprocess.check_call(cmd)
 
+    @Driver.check_active
+    def get_ethtool_pause_settings(self):
+        """
+        Returns pause parameters via ethtool of the bound network interface resource.
+        """
+        cmd = self.iface.command_prefix + ["ethtool", "--json", "--show-pause", self.iface.ifname]
+        output = subprocess.check_output(cmd, encoding="utf-8")
+        return json.loads(output)[0]
+
+    @Driver.check_active
+    @step(args=["settings"])
+    def ethtool_configure_pause(self, **settings):
+        """
+        Change pause parameters via ethtool of the bound network interface resource.
+
+        Supported settings are described in ethtool(8) --pause
+        """
+        cmd = ["ethtool", "pause", self.iface.ifname]
+        cmd += [item for pair in settings.items() for item in pair]
+        cmd = self._wrap_command(cmd)
+        subprocess.check_call(cmd)
+
     def _stop(self, proc, *, timeout=None):
         assert proc is not None
 

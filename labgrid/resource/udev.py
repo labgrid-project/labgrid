@@ -60,7 +60,7 @@ class USBResource(ManagedResource):
         self.match.setdefault('SUBSYSTEM', 'usb')
         super().__attrs_post_init__()
 
-    def filter_match(self, device):  # pylint: disable=unused-argument,no-self-use
+    def filter_match(self, device):  # pylint: disable=unused-argument
         return True
 
     def suggest_match(self, device):

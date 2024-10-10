@@ -53,14 +53,15 @@ class RawNetworkInterfaceDriver(Driver):
             )
 
     @Driver.check_active
-    @step(args=["filename", "count"])
-    def start_record(self, filename, *, count=None):
+    @step(args=["filename", "count", "timeout"])
+    def start_record(self, filename, *, count=None, timeout=None):
         """
         Starts tcpdump on bound network interface resource.
 
         Args:
-            filename (str): name of a file to record to
+            filename (str): name of a file to record to, or None to record to stdout
             count (int): optional, exit after receiving this many number of packets
+            timeout (int): optional, number of seconds to capture packets before tcpdump exits
         Returns:
             Popen object of tcpdump process
         """
@@ -69,9 +70,15 @@ class RawNetworkInterfaceDriver(Driver):
         cmd = ["tcpdump", self.iface.ifname]
         if count is not None:
             cmd.append(str(count))
+        if timeout is not None:
+            cmd.append("--timeout")
+            cmd.append(str(timeout))
         cmd = self._wrap_command(cmd)
-        with open(filename, "wb") as outdata:
-            self._record_handle = subprocess.Popen(cmd, stdout=outdata, stderr=subprocess.PIPE)
+        if filename is None:
+            self._record_handle = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        else:
+            with open(filename, "wb") as outdata:
+                self._record_handle = subprocess.Popen(cmd, stdout=outdata, stderr=subprocess.PIPE)
         return self._record_handle
 
     @Driver.check_active
@@ -97,17 +104,26 @@ class RawNetworkInterfaceDriver(Driver):
         Either count or timeout must be specified.
 
         Args:
-            filename (str): name of a file to record to
+            filename (str): name of a file to record to, or None to live stream packets
             count (int): optional, exit after receiving this many number of packets
-            timeout (int): optional, maximum number of seconds to wait for the tcpdump process to
-                           terminate
+            timeout (int): optional, number of seconds to capture packets before tcpdump exits
+        Returns:
+            Popen object of tcpdump process. If filename is None, packets can be read from stdout
         """
         assert count or timeout
 
         try:
-            yield self.start_record(filename, count=count)
+            yield self.start_record(filename, count=count, timeout=timeout)
         finally:
-            self.stop_record(timeout=timeout)
+            # If live streaming packets, there is no reason to wait for tcpdump
+            # to finish, so terminate it as soon as the context is left
+            try:
+                self.stop_record(timeout=0 if filename is None else None)
+            except subprocess.TimeoutExpired:
+                # A timeout is expected if the context is exited early while
+                # piping to stdout
+                if filename is not None:
+                    raise
 
     @Driver.check_active
     @step(args=["filename"])

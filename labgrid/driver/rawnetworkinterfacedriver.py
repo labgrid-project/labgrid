@@ -119,6 +119,30 @@ class RawNetworkInterfaceDriver(Driver):
         cmd = self._wrap_command(cmd)
         subprocess.check_call(cmd)
 
+    @Driver.check_active
+    def get_ethtool_eee_settings(self):
+        """
+        Returns Energy-Efficient Ethernet settings via ethtool of the bound network interface
+        resource.
+        """
+        cmd = self.iface.command_prefix + ["ethtool", "--show-eee", "--json", self.iface.ifname]
+        output = subprocess.check_output(cmd, encoding="utf-8")
+        return json.loads(output)[0]
+
+    @Driver.check_active
+    @step(args=["settings"])
+    def ethtool_configure_eee(self, **settings):
+        """
+        Change Energy-Efficient Ethernet settings via ethtool of the bound network interface
+        resource.
+
+        Supported settings are described in ethtool(8) --set-eee (use "_" instead of "-").
+        """
+        cmd = ["ethtool", "set-eee", self.iface.ifname]
+        cmd += [item.replace("_", "-") for pair in settings.items() for item in pair]
+        cmd = self._wrap_command(cmd)
+        subprocess.check_call(cmd)
+
     def _stop(self, proc, *, timeout=None):
         assert proc is not None
 

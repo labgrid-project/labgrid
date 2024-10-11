@@ -55,13 +55,13 @@ def main(program, ifname, count):
 
     if program == "tcpreplay":
         args.append(f"--intf1={ifname}")
-        args.append('-')
+        args.append("-")
 
     if program == "tcpdump":
         args.append("-n")
         args.append(f"--interface={ifname}")
         args.append("-w")
-        args.append('-')
+        args.append("-")
 
         if count:
             args.append("-c")
@@ -75,22 +75,17 @@ def main(program, ifname, count):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-d',
-        '--debug',
-        action='store_true',
-        default=False,
-        help="enable debug mode"
-    )
-    parser.add_argument('program', type=str, help='program to run, either tcpreplay or tcpdump')
-    parser.add_argument('interface', type=str, help='interface name')
-    parser.add_argument('count', nargs="?", type=int, default=None, help='amount of frames to capture while recording')
+    parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
+    parser.add_argument("program", type=str, help="program to run, either tcpreplay or tcpdump")
+    parser.add_argument("interface", type=str, help="interface name")
+    parser.add_argument("count", nargs="?", type=int, default=None, help="amount of frames to capture while recording")
     args = parser.parse_args()
     try:
         main(args.program, args.interface, args.count)
     except Exception as e:  # pylint: disable=broad-except
         if args.debug:
             import traceback
+
             traceback.print_exc(file=sys.stderr)
         print(f"ERROR: {e}", file=sys.stderr)
         exit(1)

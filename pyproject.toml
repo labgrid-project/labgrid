@@ -206,16 +206,11 @@ commands = pylint -f colorized labgrid
 
 [tool.ruff]
 line-length = 119
-exclude = [
-  "__pycache__",
-  "labgrid.egg-info",
+extend-exclude = [
   ".pybuild",
-  "build",
   "debian",
   "env",
-  "venv",
   "envs",
-  "dist",
   "labgrid/remote/generated",
 ]
 

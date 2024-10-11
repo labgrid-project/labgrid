@@ -58,7 +58,7 @@ class BareboxRebootStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
-    @step(args=['new_status'])
+    @step(args=["new_status"])
     def transition(self, new_status, *, step):
         if not isinstance(new_status, Status):
             new_status = Status[new_status]
@@ -95,8 +95,6 @@ class BareboxRebootStrategy(Strategy):
             self.target.activate(self.barebox)
 
         else:
-            raise StrategyError(
-                f"no transition found from {self.status} to {new_status}"
-            )
+            raise StrategyError(f"no transition found from {self.status} to {new_status}")
 
         self.status = new_status

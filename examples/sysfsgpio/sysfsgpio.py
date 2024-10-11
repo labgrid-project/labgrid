@@ -12,7 +12,7 @@ basicConfig(level=logging.INFO)
 # show labgrid steps on the console
 StepLogger.start()
 
-t = Target('main')
+t = Target("main")
 r = SysfsGPIO(t, name=None, index=60)
 d = GpioDigitalOutputDriver(t, name=None)
 

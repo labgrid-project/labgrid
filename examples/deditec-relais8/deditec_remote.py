@@ -10,7 +10,7 @@ basicConfig(level=logging.INFO)
 # show labgrid steps on the console
 StepLogger.start()
 
-e = Environment('import-dedicontrol.yaml')
+e = Environment("import-dedicontrol.yaml")
 t = e.get_target()
 
 p = t.get_driver("DigitalOutputProtocol")

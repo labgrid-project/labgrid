@@ -170,12 +170,7 @@ class RawNetworkInterfaceDriver(Driver):
         """
         Returns basic interface statistics of bound network interface resource.
         """
-        cmd = self.iface.command_prefix + [
-            "ip",
-            "--json",
-            "-stats", "-stats",
-            "link", "show",
-            self.iface.ifname]
+        cmd = self.iface.command_prefix + ["ip", "--json", "-stats", "-stats", "link", "show", self.iface.ifname]
         output = processwrapper.check_output(cmd)
         return json.loads(output)[0]
 

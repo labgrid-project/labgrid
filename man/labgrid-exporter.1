@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "LABGRID-EXPORTER" 1 "2017-04-15" "0.0.1" "embedded testing"
+.TH "LABGRID-EXPORTER" "1" "2017-04-15" "0.0.1" "embedded testing"
 .SH NAME
 labgrid-exporter \- labgrid-exporter interface to control boards
 .SH SYNOPSIS
@@ -95,7 +95,7 @@ explicitly set.
 .sp
 The exporter uses a YAML configuration file which defines groups of related
 resources.
-See <\fI\%https://labgrid.readthedocs.io/en/latest/configuration.html#exporter\-configuration\fP>
+See < <https://labgrid.readthedocs.io/en/latest/configuration.html#exporter\-configuration> >
 for more information.
 .SH ENVIRONMENT VARIABLES
 .sp
@@ -110,11 +110,9 @@ Start the exporter with the configuration file \fImy\-config.yaml\fP:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ labgrid\-exporter my\-config.yaml
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -122,11 +120,9 @@ Same as above, but with name \fBmyname\fP:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ labgrid\-exporter \-n myname my\-config.yaml
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .SH SEE ALSO

@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "LABGRID-CLIENT" 1 "2017-04-15" "0.0.1" "embedded testing"
+.TH "LABGRID-CLIENT" "1" "2017-04-15" "0.0.1" "embedded testing"
 .SH NAME
 labgrid-client \- labgrid-client interface to control boards
 .SH SYNOPSIS
@@ -247,11 +247,9 @@ To retrieve a list of places run:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ labgrid\-client places
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -260,11 +258,9 @@ the \fBacquire command\fP and passing the placename as a \-p parameter:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ labgrid\-client \-p <placename> acquire
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -272,11 +268,9 @@ Open a console to the acquired place:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ labgrid\-client \-p <placename> console
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -284,11 +278,9 @@ Add all resources with the group \(dqexample\-group\(dq to the place example\-pl
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ labgrid\-client \-p example\-place add\-match */example\-group/*/*
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .SH SEE ALSO

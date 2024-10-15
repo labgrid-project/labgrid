@@ -322,7 +322,8 @@ class SSHConnection:
     @_check_connected
     def put_file(self, local_file, remote_path):
         """Put a file onto the remote host"""
-        complete_cmd = ["rsync", "--compress", "--sparse", "--copy-links", "--verbose", "--progress", "--times", "-e",
+        complete_cmd = ["rsync", "-q", "--compress", "--sparse", "--copy-links",
+                        "--verbose", "--progress", "--times", "-e",
                         " ".join(['ssh'] + self._get_ssh_args())]
         complete_cmd += [
             f"{local_file}",

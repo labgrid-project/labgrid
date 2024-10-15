@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Script to do a bisect to locate a U-Boot failure on a particular target
+# This starts 'git bisect run' with the 'ub-try' script
+# Before using this you must set the 'good' and 'bad' commits with
+# 'git bisect good ...' and 'git bisect bad ...'
+
+usage() {
+	if [ -n "$1" ]; then
+		echo "Failed : $1"
+	else
+		echo "Run a bisect to locate the first bad commit"
+	fi
+	echo
+	echo "Usage: ub-bisect [-cDs] [-d <dir>] [-x <dir>] <target> [<commit>]"
+	echo " -c  Run 'make mrproper' before building"
+	echo " -d  <dir> Set build directory"
+	echo " -D  Enable debugging"
+	echo " -h  Help"
+	echo " -s  Send over USB (instead of writing to boot media)"
+	echo " -v  Verbose mode"
+	echo " -x  <dir> Set extra build directory"
+	exit 1
+}
+
+mydir=$(dirname $0)
+
+. ${mydir}/lg-env
+
+allowed_args="cd:Dhsvx:"
+. ${mydir}/get_args.sh
+
+commit="$1"
+
+# If we will be cherry-picking and using 'git reset', make sure there is no
+# modified code in the directory
+if [ -n "${commit}" ] && [ -n "$(git status --porcelain)" ]; then
+	echo "Working directory must be clean"
+
+	# abort the bisect (values >127 abort)
+	exit 128
+fi
+
+echo "Starting bisect on target ${target} - cherry-pick commit: ${commit}"
+git bisect run _ub-bisect-try ${commit}

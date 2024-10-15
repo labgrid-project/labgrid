@@ -275,7 +275,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             pass
         logging.info("loaded %s place(s)", len(self.places))
 
-    async def ClientStream(self, request_iterator, context):
+    async def ClientStream(self, request_iterator, context): # chen
         peer = context.peer()
         logging.info("client connected: %s", peer)
         assert peer not in self.clients
@@ -694,7 +694,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 self.save_later()
 
     @locked
-    async def AcquirePlace(self, request, context):
+    async def AcquirePlace(self, request, context): # chen
         peer = context.peer()
         name = request.placename
         try:

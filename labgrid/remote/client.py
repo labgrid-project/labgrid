@@ -24,6 +24,7 @@ from collections import defaultdict, OrderedDict
 from datetime import datetime
 from pprint import pformat
 from typing import Any, Dict
+import time
 
 import attr
 import grpc
@@ -663,18 +664,24 @@ class ClientSession:
         if match:
             raise UserError(f"Match {match} has no matching remote resource")
 
-    async def acquire(self):
+    async def acquire(self): # TODO: create another function to acquire and wait - meanwhile I changed this
         """Acquire a place, marking it unavailable for other clients"""
+        print("chen!!! entered acquire!")
         place = self.get_idle_place()
         if not self.args.allow_unmatched:
             self.check_matches(place)
 
-        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name)
+        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name) # possibly create another request to hold the lock, such as labgrid_coordinator_pb2.AcquirePlaceAndHoldRequest
 
         try:
-            await self.stub.AcquirePlace(request)
+            await self.stub.AcquirePlace(request) # TODO: create another function to acquire and wait on coordinator ??? check if coordinator can wait without stuck
             await self.sync_with_coordinator()
             print(f"acquired place {place.name}")
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                await self.release()
         except grpc.aio.AioRpcError as e:
             # check potential failure causes
             for exporter, groups in sorted(self.resources.items()):
@@ -998,7 +1005,7 @@ class ClientSession:
             print("connection lost", file=sys.stderr)
         return p.returncode
 
-    async def console(self, place, target):
+    async def console(self, place, target): # chen: take an example from here ?
         while True:
             res = await self._console(
                 place, target, 10.0, logfile=self.args.logfile, loop=self.args.loop, listen_only=self.args.listenonly

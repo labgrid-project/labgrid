@@ -481,7 +481,7 @@ class Reservation:
         )
 
 
-async def queue_as_aiter(q):
+async def queue_as_aiter(q): # chen
     try:
         while True:
             try:

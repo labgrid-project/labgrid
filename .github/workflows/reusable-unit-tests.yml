@@ -55,7 +55,7 @@ jobs:
         ruff format --check --diff labgrid/remote/
     - name: Test with pytest
       run: |
-        pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"
+        pytest -r a --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"
     - name: Build documentation
       run: |
         make -C doc clean

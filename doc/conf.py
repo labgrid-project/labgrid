@@ -180,7 +180,8 @@ autodoc_default_options = {
 }
 autodoc_mock_imports = ['onewire',
                         'gi',
-                        'gi.repository',]
+                        'gi.repository',
+                        'vxi11']
 
 # -- Options for autosection ----------------------------------------------
 autosectionlabel_prefix_document = True

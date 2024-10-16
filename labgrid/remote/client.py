@@ -681,7 +681,8 @@ class ClientSession:
                 while True:
                     time.sleep(1)
             except KeyboardInterrupt:
-                await self.release()
+                #await self.release()
+                pass
         except grpc.aio.AioRpcError as e:
             # check potential failure causes
             for exporter, groups in sorted(self.resources.items()):

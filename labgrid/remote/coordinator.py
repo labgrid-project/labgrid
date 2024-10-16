@@ -5,6 +5,7 @@ import asyncio
 import traceback
 from enum import Enum
 from functools import wraps
+import time
 
 import attr
 import grpc
@@ -158,6 +159,7 @@ class ResourceImport(ResourceEntry):
 def locked(func):
     @wraps(func)
     async def wrapper(self, *args, **kwargs):
+        print(f"chen - func= {str(func)}")
         async with self.lock:
             return await func(self, *args, **kwargs)
 
@@ -280,6 +282,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         logging.info("client connected: %s", peer)
         assert peer not in self.clients
         out_msg_queue = asyncio.Queue()
+        
 
         async def request_task():
             name = None
@@ -317,6 +320,18 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 logging.debug("client output %s", out_msg)
                 yield out_msg
         finally:
+            # if context.is_active():
+            #     print("chen!!!! active")
+            # else:
+            #     print("chen!!!! not active")
+            # if context.is_cancelled():
+            #     print("chen!!!! cancelled")
+            # else:
+            #     print("chen!!!! not cancelled")
+            #print(f"chen- details - {context.details()}")
+            #print(f"chen- grpc.status_code - {grpc.StatusCode}")
+            
+                
             try:
                 session = self.clients.pop(peer)
             except KeyError:
@@ -694,52 +709,73 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 self.save_later()
 
     @locked
+    async def _release_placee(self) -> None: # chen
+        print("client disconnected or terminated by user")
+
+    #@locked
     async def AcquirePlace(self, request, context): # chen
-        peer = context.peer()
-        name = request.placename
         try:
-            username = self.clients[peer].name
-        except KeyError:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
-        print(request)
+            async with self.lock:
+                peer = context.peer()
+                name = request.placename
+                try:
+                    username = self.clients[peer].name
+                except KeyError:
+                    await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
+                print(request)
 
-        try:
-            place = self.places[name]
-        except KeyError:
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
-        if place.acquired:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {name} is already acquired")
-        if place.reservation:
-            res = self.reservations[place.reservation]
-            if not res.owner == username:
-                await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Place {name} was not reserved for {username}")
+                try:
+                    place = self.places[name]
+                except KeyError:
+                    await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
+                if place.acquired:
+                    await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {name} is already acquired")
+                if place.reservation:
+                    res = self.reservations[place.reservation]
+                    if not res.owner == username:
+                        await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Place {name} was not reserved for {username}")
 
-        # First try to reacquire orphaned resources to avoid conflicts.
-        await self._reacquire_orphaned_resources()
+                # First try to reacquire orphaned resources to avoid conflicts.
+                await self._reacquire_orphaned_resources()
 
-        # FIXME use the session object instead? or something else which
-        # survives disconnecting clients?
-        place.acquired = username
-        resources = []
-        for _, session in sorted(self.exporters.items()):
-            for _, group in sorted(session.groups.items()):
-                for _, resource in sorted(group.items()):
-                    if not place.hasmatch(resource.path):
-                        continue
-                    resources.append(resource)
-        if not await self._acquire_resources(place, resources):
-            # revert earlier change
-            place.acquired = None
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Failed to acquire resources for place {name}")
-        place.touch()
-        self._publish_place(place)
-        self.save_later()
-        self.schedule_reservations()
-        print(f"{place.name}: place acquired by {place.acquired}")
-        return labgrid_coordinator_pb2.AcquirePlaceResponse()
+                # FIXME use the session object instead? or something else which
+                # survives disconnecting clients?
+                place.acquired = username
+                resources = []
+                for _, session in sorted(self.exporters.items()):
+                    for _, group in sorted(session.groups.items()):
+                        for _, resource in sorted(group.items()):
+                            if not place.hasmatch(resource.path):
+                                continue
+                            resources.append(resource)
+                if not await self._acquire_resources(place, resources):
+                    # revert earlier change
+                    place.acquired = None
+                    await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Failed to acquire resources for place {name}")
+                place.touch()
+                self._publish_place(place)
+                self.save_later()
+                self.schedule_reservations()
+                print(f"{place.name}: place acquired by {place.acquired}")
+                
+                #request2 = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
+                #context.add_done_callback(lambda: self.ReleasePlace(request2, context)) # chen - should be able to work with that instead but there is some error
+                
+                while True:
+                    print("sleep")
+                    await asyncio.sleep(5)
+                
+        except asyncio.CancelledError:
+            print("chen! cancelled!")
+            request2 = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
+            await self.ReleasePlace(request2, context)
+            print("released")
+            
+        return labgrid_coordinator_pb2.AcquirePlaceResponse() # chen - TODO - yield it before ?
 
     @locked
     async def ReleasePlace(self, request, context):
+        print("chen - entered ReleasePlace")
         name = request.placename
         print(request)
         fromuser = request.fromuser if request.HasField("fromuser") else None

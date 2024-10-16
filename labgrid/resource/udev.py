@@ -230,6 +230,12 @@ class USBResource(ManagedResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class GenericUSBPort(USBResource):
+    pass
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class USBSerialPort(USBResource, SerialPort):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'tty'

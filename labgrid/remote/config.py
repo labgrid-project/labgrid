@@ -21,9 +21,8 @@ class ResourceConfig:
             line_comment_prefix="##",
         )
         try:
-            with open(self.filename) as file:
-                template = env.from_string(file.read())
-        except FileNotFoundError:
+            template = env.get_template(os.path.basename(self.filename))
+        except jinja2.TemplateNotFound:
             raise NoConfigFoundError(f"{self.filename} could not be found")
         rendered = template.render(self.template_env)
         pprint(("rendered", rendered))

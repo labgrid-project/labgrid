@@ -12,7 +12,7 @@ from labgrid.logging import basicConfig
 basicConfig(level=logging.INFO)
 
 env = Environment(sys.argv[1])
-target = env.get_target('main')
+target = env.get_target("main")
 
 sigrok = target.get_driver("SigrokDriver")
 sigrok.capture("test.cap")

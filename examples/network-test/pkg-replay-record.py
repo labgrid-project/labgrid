@@ -11,6 +11,7 @@ from scapy.all import Ether, Raw, rdpcap, wrpcap, conf
 from labgrid import Environment
 from labgrid.logging import basicConfig, StepLogger
 
+
 def generate_frame():
     frame = Ether(dst="11:22:33:44:55:66", src="66:55:44:33:22:11", type=0x9000)
     padding = "\x00" * (conf.min_pkt_size - len(frame))

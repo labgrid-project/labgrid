@@ -12,7 +12,7 @@ basicConfig(level=logging.INFO)
 # log labgrid steps
 StepLogger.start()
 
-t = Target('main')
+t = Target("main")
 r = DeditecRelais8(t, name=None, index=1)
 d = DeditecRelaisDriver(t, name=None)
 

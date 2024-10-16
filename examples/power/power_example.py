@@ -3,7 +3,7 @@ import pytest
 
 @pytest.fixture()
 def pdu(target):
-    return target.get_driver('NetworkPowerDriver')
+    return target.get_driver("NetworkPowerDriver")
 
 
 def test_something(pdu):

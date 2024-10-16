@@ -23,6 +23,7 @@ class Status(enum.Enum):
 @attr.s(eq=False)
 class ExampleStrategy(Strategy):
     """ExampleStrategy - Strategy to for the usbpower labgrid example"""
+
     bindings = {
         "power": PowerProtocol,
         "sdmux": USBSDMuxDriver,
@@ -35,7 +36,7 @@ class ExampleStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
-    @step(args=['status'])
+    @step(args=["status"])
     def transition(self, status, *, step):
         if not isinstance(status, Status):
             status = Status[status]
@@ -50,7 +51,7 @@ class ExampleStrategy(Strategy):
             # power off
             self.power.off()
             # configure sd-mux
-            self.sdmux.set_mode('dut')
+            self.sdmux.set_mode("dut")
             # cycle power
             self.power.on()
             # interrupt barebox
@@ -62,7 +63,5 @@ class ExampleStrategy(Strategy):
             self.barebox.await_boot()
             self.target.activate(self.shell)
         else:
-            raise StrategyError(
-                f"no transition found from {self.status} to {status}"
-            )
+            raise StrategyError(f"no transition found from {self.status} to {status}")
         self.status = status

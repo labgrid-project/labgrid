@@ -68,3 +68,5 @@ jobs:
         pip install rstcheck
         rstcheck --ignore-languages=bash --report-level=WARNING README.rst
     - uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}

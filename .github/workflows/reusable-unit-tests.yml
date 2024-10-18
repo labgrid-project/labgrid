@@ -9,6 +9,9 @@ on:
       branch:
         type: string
         required: false
+    secrets:
+      CODECOV_TOKEN:
+        required: false
 
 jobs:
   build:

@@ -2174,9 +2174,33 @@ Implements:
 Arguments:
   - delay (float, default=2.0): delay in seconds between off and on
 
+GpioDigitalInputDriver
+~~~~~~~~~~~~~~~~~~~~~~
+The :any:`GpioDigitalInputDriver` reads a digital signal from a GPIO line.
+
+This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`
+as an input.
+
+
+Binds to:
+  gpio:
+    - `SysfsGPIO`_
+    - `MatchedSysfsGPIO`_
+    - NetworkSysfsGPIO
+
+Implements:
+  - :any:`DigitalInputProtocol`
+
+.. code-block:: yaml
+
+   GpioDigitalInputDriver: {}
+
+Arguments:
+  - None
+
 GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
-The :any:`GpioDigitalOutputDriver` writes a digital signal to a GPIO line.
+The :any:`GpioDigitalOutputDriver` reads and writes a digital signal from and to a GPIO line.
 
 This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`.
 While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.

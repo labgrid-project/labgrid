@@ -9,6 +9,9 @@ on:
       branch:
         type: string
         required: false
+    secrets:
+      CODECOV_TOKEN:
+        required: false
 
 jobs:
   build:
@@ -56,6 +59,10 @@ jobs:
     - name: Test with pytest
       run: |
         pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
     - name: Build documentation
       run: |
         make -C doc clean
@@ -67,4 +74,3 @@ jobs:
         # check README.rst separately
         pip install rstcheck
         rstcheck --ignore-languages=bash --report-level=WARNING README.rst
-    - uses: codecov/codecov-action@v4

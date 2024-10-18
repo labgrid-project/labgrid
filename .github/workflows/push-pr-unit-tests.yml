@@ -10,6 +10,8 @@ jobs:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
     uses: ./.github/workflows/reusable-unit-tests.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     with:
       python-version: ${{ matrix.python-version }}
   push-pr-unit-tests-docker:

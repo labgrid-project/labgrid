@@ -63,6 +63,7 @@ jobs:
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+        flags: ${{ inputs.python-version }}
     - name: Build documentation
       run: |
         make -C doc clean

@@ -206,17 +206,24 @@ commands = pylint -f colorized labgrid
 
 [tool.ruff]
 line-length = 119
-exclude = [
-  "__pycache__",
-  "labgrid.egg-info",
+extend-exclude = [
   ".pybuild",
-  "build",
   "debian",
   "env",
-  "venv",
   "envs",
-  "dist",
   "labgrid/remote/generated",
+]
+include = [
+  "**/pyproject.toml",
+  "examples/**/*.py",
+  "labgrid/remote/**/*.py",
+  "labgrid/driver/httpvideodriver.py",
+  "labgrid/driver/manualswitchdriver.py",
+  "labgrid/protocol/**/*.py",
+  "labgrid/resource/httpvideostream.py",
+  "labgrid/resource/provider.py",
+  "labgrid/util/agents/usb_hid_relay.py",
+  "labgrid/util/exceptions.py",
 ]
 
 [tool.ruff.lint]

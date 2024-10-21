@@ -6,14 +6,14 @@ from pytest import approx
 def test_sleep(command):
     # measure the round-trip-time
     timestamp = monotonic()
-    stdout, stderr, returncode = command.run('true')
+    stdout, stderr, returncode = command.run("true")
     elapsed_true = monotonic() - timestamp
     assert returncode == 0
     assert not stdout
     assert not stderr
 
     timestamp = monotonic()
-    stdout, stderr, returncode = command.run('sleep 1')
+    stdout, stderr, returncode = command.run("sleep 1")
     elapsed_sleep = monotonic() - timestamp
     assert returncode == 0
     assert not stdout

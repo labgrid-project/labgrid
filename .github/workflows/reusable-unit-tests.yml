@@ -58,9 +58,15 @@ jobs:
         ruff format --check --diff
     - name: Test with pytest
       run: |
-        pytest -r a --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"
+        pytest -r a --cov-config .coveragerc --cov=labgrid --junitxml=junit.xml -o junit_family=legacy --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: ${{ inputs.python-version }}
+    - name: Upload test results to Codecov
+      if: ${{ !cancelled() }}
+      uses: codecov/test-results-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         flags: ${{ inputs.python-version }}

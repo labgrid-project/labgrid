@@ -3084,12 +3084,23 @@ Implements:
 
    DockerDriver:
      image_uri: 'rastasheep/ubuntu-sshd:16.04'
+     pull: 'always'
      container_name: 'ubuntu-lg-example'
      host_config: {'network_mode': 'bridge'}
      network_services: [{'port': 22, 'username': 'root', 'password': 'root'}]
 
 Arguments:
   - image_uri (str): identifier of the docker image to use (may have a tag suffix)
+  - pull (str): pull policy, supports "always", "missing", "never". Default is
+    "always"
+
+      - always: Always pull the image and throw an error if the pull fails.
+      - missing: Pull the image only when the image is not in the local
+        containers storage. Throw an error if no image is found and the pull
+        fails.
+      - never: Never pull the image but use the one from the local containers
+        storage. Throw a `docker.errors.ImageNotFound` if no image is found.
+
   - command (str): optional, command to run in the container (depends on image)
   - volumes (list): optional, list to configure volumes mounted inside the container
   - container_name (str): name of the container

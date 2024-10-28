@@ -4,6 +4,8 @@ for creating, starting and accessing a docker container.
 """
 
 import pytest
+import docker
+import io
 
 from labgrid import Environment
 from labgrid.driver import DockerDriver
@@ -44,6 +46,34 @@ def docker_env(tmp_path_factory):
             drivers:
             - DockerDriver:
                 image_uri: "rastasheep/ubuntu-sshd:16.04"
+                pull: 'missing'
+                container_name: "ubuntu-lg-example"
+                host_config: {"network_mode": "bridge"}
+                network_services: [
+                  {"port": 22, "username": "root", "password": "root"}]
+            - DockerStrategy: {}
+            - SSHDriver:
+                keyfile: ""
+        """
+    )
+    return Environment(str(p))
+
+
+@pytest.fixture
+def docker_env_for_local_container(tmp_path_factory):
+    """Create Environment instance from the given inline YAML file."""
+    p = tmp_path_factory.mktemp("docker") / "config.yaml"
+    p.write_text(
+        """
+        targets:
+          main:
+            resources:
+            - DockerDaemon:
+                docker_daemon_url: "unix:///var/run/docker.sock"
+            drivers:
+            - DockerDriver:
+                image_uri: "local_rastasheep"
+                pull: "never"
                 container_name: "ubuntu-lg-example"
                 host_config: {"network_mode": "bridge"}
                 network_services: [
@@ -91,6 +121,25 @@ def command(docker_target):
     strategy.transition("gone")
 
 
+@pytest.fixture
+def docker_target_for_local_image(docker_env_for_local_container):
+    """Same as `docker_target` but uses a different image uri"""
+    t = docker_env_for_local_container.get_target()
+    yield t
+
+    from labgrid.resource import ResourceManager
+    ResourceManager.instances = {}
+
+
+@pytest.fixture
+def local_command(docker_target_for_local_image):
+    """Same as `command` but uses a different image uri"""
+    strategy = docker_target_for_local_image.get_driver('DockerStrategy')
+    strategy.transition("accessible")
+    shell = docker_target_for_local_image.get_driver('CommandProtocol')
+    yield shell
+    strategy.transition("gone")
+
 @pytest.mark.skipif(not check_external_progs_present(),
                     reason="No access to a docker daemon")
 def test_docker_with_daemon(command):
@@ -105,6 +154,32 @@ def test_docker_with_daemon(command):
     assert 'Linux' in stdout[0]
 
     stdout, stderr, return_code = command.run('false')
+    assert return_code != 0
+    assert len(stdout) == 0
+    assert len(stderr) == 0
+
+
+@pytest.fixture
+def build_image():
+    client = docker.from_env()
+    dockerfile_content = """
+    FROM rastasheep/ubuntu-sshd:16.04
+    """
+    dockerfile_stream = io.BytesIO(dockerfile_content.encode("utf-8"))
+    image, logs = client.images.build(fileobj=dockerfile_stream, tag="local_rastasheep", rm=True)
+
+
+@pytest.mark.skipif(not check_external_progs_present(),
+                    reason="No access to a docker daemon")
+def test_docker_with_daemon_and_local_image(build_image, local_command):
+    """Build a container locally and connect to it"""
+    stdout, stderr, return_code = local_command.run('cat /proc/version')
+    assert return_code == 0
+    assert len(stdout) > 0
+    assert len(stderr) == 0
+    assert 'Linux' in stdout[0]
+
+    stdout, stderr, return_code = local_command.run('false')
     assert return_code != 0
     assert len(stdout) == 0
     assert len(stderr) == 0
@@ -159,6 +234,8 @@ def test_docker_without_daemon(docker_env, mocker):
           'Id': '1'
           }]
     ]
+    docker_client.images.get.side_effect = docker.errors.ImageNotFound(
+        "Image not found", response=None, explanation="")
 
     # Mock actions on the imported "socket" python module
     socket_create_connection = mocker.patch('socket.create_connection')
@@ -199,7 +276,10 @@ def test_docker_without_daemon(docker_env, mocker):
     # Assert what mock calls transitioning to "shell" must have caused
     #
     # DockerDriver::on_activate():
-    assert docker_client.images.pull.call_count == 1
+    image_uri = t.get_driver('DockerDriver').image_uri
+    docker_client.images.get.assert_called_once_with(image_uri)
+    docker_client.images.pull.assert_called_once_with(image_uri)
+
     assert api_client.create_host_config.call_count == 1
     assert api_client.create_container.call_count == 1
     #

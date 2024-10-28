@@ -73,7 +73,11 @@ class DockerDriver(PowerProtocol, Driver):
         import docker
         self._client = docker.DockerClient(
             base_url=self.docker_daemon.docker_daemon_url)
-        self._client.images.pull(self.image_uri)
+        try:
+            self._client.images.get(self.image_uri)
+        except docker.errors.ImageNotFound:
+            self._client.images.pull(self.image_uri)
+
         self._container = self._client.api.create_container(
             self.image_uri,
             command=self.command,

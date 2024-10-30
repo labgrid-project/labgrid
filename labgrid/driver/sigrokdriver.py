@@ -89,6 +89,8 @@ class SigrokCommon(Driver):
             prefix += ["-d", self.sigrok.driver]
         if self.sigrok.channels:
             prefix += ["-C", self.sigrok.channels]
+        if self.sigrok.channel_group:
+            prefix += ["-g", self.sigrok.channel_group]
         return self.sigrok.command_prefix + prefix
 
     @Driver.check_active
@@ -109,6 +111,8 @@ class SigrokCommon(Driver):
         combined = self.sigrok.command_prefix + [self.tool]
         if self.sigrok.channels:
             combined += ["-C", self.sigrok.channels]
+        if self.sigrok.channel_group:
+            combined += ["-g", self.sigrok.channel_group]
         combined += list(args)
         self.logger.debug("Combined command: %s", combined)
         self._process = subprocess.Popen(

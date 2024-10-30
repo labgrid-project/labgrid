@@ -182,7 +182,7 @@ Currently available are:
   Controls *Gude Expert Power Control 8008 PDUs* via a simple HTTP API.
 
 ``gude8031``
-  Controls *Gude Expert Power Control 8031 PDUs* via a simple HTTP API.
+  Controls *Gude Expert Power Control 8031 PDUs* and *Gude Expert Power Control 87-1210-18 PDUs* via a simple HTTP API.
 
 ``gude8225``
   Controls *Gude Expert Power Control 8225 PDUs* via a simple HTTP API.

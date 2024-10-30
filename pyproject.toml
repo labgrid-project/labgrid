@@ -218,6 +218,8 @@ include = [
   "examples/**/*.py",
   "labgrid/driver/httpvideodriver.py",
   "labgrid/driver/manualswitchdriver.py",
+  "labgrid/driver/power/gude8031.py",
+  "labgrid/driver/rawnetworkinterfacedriver.py",
   "labgrid/protocol/**/*.py",
   "labgrid/remote/**/*.py",
   "labgrid/resource/httpvideostream.py",

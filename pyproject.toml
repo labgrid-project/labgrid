@@ -216,10 +216,12 @@ extend-exclude = [
 include = [
   "**/pyproject.toml",
   "examples/**/*.py",
-  "labgrid/remote/**/*.py",
   "labgrid/driver/httpvideodriver.py",
   "labgrid/driver/manualswitchdriver.py",
+  "labgrid/driver/power/gude8031.py",
+  "labgrid/driver/rawnetworkinterfacedriver.py",
   "labgrid/protocol/**/*.py",
+  "labgrid/remote/**/*.py",
   "labgrid/resource/httpvideostream.py",
   "labgrid/resource/provider.py",
   "labgrid/util/agents/usb_hid_relay.py",

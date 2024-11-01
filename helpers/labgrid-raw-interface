@@ -9,6 +9,7 @@
 
 import argparse
 import os
+import string
 import sys
 
 import yaml
@@ -45,7 +46,7 @@ def main(program, options):
     if options.ifname in denylist:
         raise ValueError(f"Interface name '{options.ifname}' is denied in denylist.")
 
-    programs = ["tcpreplay", "tcpdump"]
+    programs = ["tcpreplay", "tcpdump", "ip", "ethtool"]
     if program not in programs:
         raise ValueError(f"Invalid program {program} called with wrapper, valid programs are: {programs}")
 
@@ -57,7 +58,7 @@ def main(program, options):
         args.append(f"--intf1={options.ifname}")
         args.append("-")
 
-    if program == "tcpdump":
+    elif program == "tcpdump":
         args.append("-n")
         args.append(f"--interface={options.ifname}")
         # Write out each packet as it is received
@@ -78,6 +79,43 @@ def main(program, options):
             args.append(str(options.timeout))
             args.append("-W")
             args.append("1")
+
+    elif program == "ip":
+        args.append("link")
+        args.append("set")
+        args.append("dev")
+        args.append(options.ifname)
+        args.append(options.action)
+
+    elif program == "ethtool":
+        allowed_chars = set(string.ascii_letters + string.digits + "-/:")
+
+        if options.subcommand == "change":
+            for arg in options.ethtool_change_args:
+                if arg.startswith("-") or not allowed_chars.issuperset(arg):
+                    raise ValueError(f"ethtool --change arg '{arg}' contains invalid characters")
+
+            args.append("--change")
+            args.append(options.ifname)
+            args.extend(options.ethtool_change_args)
+
+        elif options.subcommand == "set-eee":
+            for arg in options.ethtool_set_eee_args:
+                if arg.startswith("-") or not allowed_chars.issuperset(arg):
+                    raise ValueError(f"ethtool --set-eee arg '{arg}' contains invalid characters")
+
+            args.append("--set-eee")
+            args.append(options.ifname)
+            args.extend(options.ethtool_set_eee_args)
+
+        elif options.subcommand == "pause":
+            for arg in options.ethtool_pause_args:
+                if arg.startswith("-") or not allowed_chars.issuperset(arg):
+                    raise ValueError(f"ethtool --pause arg '{arg}' contains invalid characters")
+
+            args.append("--pause")
+            args.append(options.ifname)
+            args.extend(options.ethtool_pause_args)
 
     try:
         os.execvp(args[0], args)
@@ -101,6 +139,36 @@ if __name__ == "__main__":
     # tcpreplay
     tcpreplay_parser = subparsers.add_parser("tcpreplay")
     tcpreplay_parser.add_argument("ifname", type=str, help="interface name")
+
+    # ip
+    ip_parser = subparsers.add_parser("ip")
+    ip_parser.add_argument("ifname", type=str, help="interface name")
+    ip_parser.add_argument("action", type=str, choices=["up", "down"], help="action, one of {%(choices)s}")
+
+    # ethtool
+    ethtool_parser = subparsers.add_parser("ethtool")
+    ethtool_subparsers = ethtool_parser.add_subparsers(dest="subcommand")
+
+    # ethtool: change
+    ethtool_change_parser = ethtool_subparsers.add_parser("change")
+    ethtool_change_parser.add_argument("ifname", type=str, help="interface name")
+    ethtool_change_parser.add_argument(
+        "ethtool_change_args", metavar="ARG", nargs=argparse.REMAINDER, help="ethtool --change args"
+    )
+
+    # ethtool: set-eee
+    ethtool_change_parser = ethtool_subparsers.add_parser("set-eee")
+    ethtool_change_parser.add_argument("ifname", type=str, help="interface name")
+    ethtool_change_parser.add_argument(
+        "ethtool_set_eee_args", metavar="ARG", nargs=argparse.REMAINDER, help="ethtool --set-eee args"
+    )
+
+    # ethtool: pause
+    ethtool_change_parser = ethtool_subparsers.add_parser("pause")
+    ethtool_change_parser.add_argument("ifname", type=str, help="interface name")
+    ethtool_change_parser.add_argument(
+        "ethtool_pause_args", metavar="ARG", nargs=argparse.REMAINDER, help="ethtool --pause args"
+    )
 
     args = parser.parse_args()
     try:

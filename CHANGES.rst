@@ -47,6 +47,11 @@ Other breaking changes include:
   maintained vxi11 module which again uses the deprecated (and in Python 3.13
   removed) xdrlib. See
   `issue #1507 <https://github.com/labgrid-project/labgrid/issues/1507>`_.
+- ``RKUSBDriver`` has been renamed to `RKDevelopToolUSBDriver` and its
+  ``rk-usb-loader`` tool key is now called ``rkdeveloptool``.
+  This better reflects what is used under the hood and avoids conflation
+  with the unrelated barebox' ``rk-usb-loader``, which even Labgrid's own
+  docs got wrong.
 
 Known issues in 24.1
 ~~~~~~~~~~~~~~~~~~~~
@@ -524,7 +529,7 @@ New Features in 0.3.0
   allowing custom configuration in the user's ``.ssh/config`` as needed.
   Note that not all drivers have been updated to use the ProxyManager yet.
 - Deditec RELAIS8 devices are now supported by the `DeditecRelaisDriver`.
-- The `RKUSBDriver` was added to support the rockchip serial download mode.
+- The ``RKUSBDriver`` was added to support the rockchip serial download mode.
 - The `USBStorageDriver` gained support for BMAP.
 - Flashrom support added, by hard-wiring e.g. an exporter to the DUT, the ROM
   on the DUT can be written directly. The flashrom driver implements the

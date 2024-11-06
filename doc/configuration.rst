@@ -198,6 +198,10 @@ Currently available are:
 ``gude8316``
   Controls *Gude Expert Power Control 8316 PDUs* via a simple HTTP API.
 
+``mfi_mpower``
+  Controls the *Ubiquity mFi mPower* Power Strip with Ethernet and Wi-Fi connectivity via HTTP.
+  Tested on a mFi mPower Pro EU device.
+
 ``netio``
   Controls *NETIO 4-Port PDUs* via a simple HTTP API.
 

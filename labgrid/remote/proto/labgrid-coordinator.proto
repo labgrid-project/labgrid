@@ -229,6 +229,7 @@ message DeletePlaceMatchResponse {
 
 message AcquirePlaceRequest {
   string placename = 1;
+  optional int32 timeout = 2;
 };
 
 message AcquirePlaceResponse {

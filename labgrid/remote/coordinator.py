@@ -11,7 +11,7 @@ import attr
 import grpc
 from grpc_reflection.v1alpha import reflection
 
-from .common import (
+from labgrid.remote.common import (
     ResourceEntry,
     ResourceMatch,
     Place,
@@ -21,11 +21,11 @@ from .common import (
     TAG_KEY,
     TAG_VAL,
 )
-from .scheduler import TagSet, schedule
-from .generated import labgrid_coordinator_pb2
-from .generated import labgrid_coordinator_pb2_grpc
-from ..util import atomic_replace, labgrid_version, yaml
-
+from labgrid.remote.scheduler import TagSet, schedule
+from labgrid.remote.generated import labgrid_coordinator_pb2
+from labgrid.remote.generated import labgrid_coordinator_pb2_grpc
+from labgrid.util import atomic_replace, labgrid_version, yaml
+import multiprocessing, time
 
 class Action(Enum):
     ADD = 0
@@ -712,10 +712,16 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     async def _release_placee(self) -> None: # chen
         print("client disconnected or terminated by user")
 
-    #@locked
+    def _run_async_in_process(self, request, context, timeout):
+        if timeout > 0:
+            time.sleep(timeout)
+        asyncio.run(self.ReleasePlace(request, context))
+
+    # @locked
     async def AcquirePlace(self, request, context): # chen
         try:
             async with self.lock:
+                timeout = request.timeout
                 peer = context.peer()
                 name = request.placename
                 try:
@@ -757,19 +763,20 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 self.save_later()
                 self.schedule_reservations()
                 print(f"{place.name}: place acquired by {place.acquired}")
-                
-                #request2 = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
-                #context.add_done_callback(lambda: self.ReleasePlace(request2, context)) # chen - should be able to work with that instead but there is some error
-                
-                while True:
-                    print("sleep")
-                    await asyncio.sleep(5)
-                
+                    
         except asyncio.CancelledError:
             print("chen! cancelled!")
             request2 = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
             await self.ReleasePlace(request2, context)
             print("released")
+            
+        if (timeout > 0):
+            request2 = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
+            args = (request2, context, timeout)
+            p = multiprocessing.Process(target=self._run_async_in_process, args=args)
+            p.start()
+            # timer = threading.Timer(timeout, lambda: self.ReleasePlaceCallback(*args))
+            # timer.start()
             
         return labgrid_coordinator_pb2.AcquirePlaceResponse() # chen - TODO - yield it before ?
 

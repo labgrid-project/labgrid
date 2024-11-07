@@ -670,8 +670,8 @@ class ClientSession:
         place = self.get_idle_place()
         if not self.args.allow_unmatched:
             self.check_matches(place)
-
-        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name) # possibly create another request to hold the lock, such as labgrid_coordinator_pb2.AcquirePlaceAndHoldRequest
+        timeout = self.args.timeout
+        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name, timeout=timeout) # possibly create another request to hold the lock, such as labgrid_coordinator_pb2.AcquirePlaceAndHoldRequest
 
         try:
             await self.stub.AcquirePlace(request) # TODO: create another function to acquire and wait on coordinator ??? check if coordinator can wait without stuck
@@ -1786,6 +1786,8 @@ def main():
     subparser.add_argument(
         "--allow-unmatched", action="store_true", help="allow missing resources for matches when locking the place"
     )
+    subparser.add_argument("--timeout", type=int, default=0, help="Unlock resource if timeout is off")
+
     subparser.set_defaults(func=ClientSession.acquire)
 
     subparser = subparsers.add_parser("release", aliases=("unlock",), help="release a place")

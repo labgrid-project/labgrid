@@ -19,6 +19,7 @@ from socket import gethostname, getfqdn
 import attr
 import grpc
 
+from .authentication import SERVER_CERTIFICATE, CustomAuthMetadataPlugin
 from .config import ResourceConfig
 from .common import ResourceEntry, queue_as_aiter
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
@@ -798,10 +799,20 @@ class Exporter:
         if urlsplit(f"//{config['coordinator']}").port is None:
             config["coordinator"] += ":20408"
 
-        self.channel = grpc.aio.insecure_channel(
-            target=config["coordinator"],
-            options=channel_options,
-        )
+        if config["authentication"]:
+            call_credentials = grpc.metadata_call_credentials(CustomAuthMetadataPlugin(), name="auth")
+            channel_credentials = grpc.ssl_channel_credentials(SERVER_CERTIFICATE)
+            composite_credentials = grpc.composite_channel_credentials(channel_credentials, call_credentials)
+
+            self.channel = grpc.aio.secure_channel(
+                target=config["coordinator"],
+                credentials=composite_credentials,
+                options=channel_options,)
+        else:
+            self.channel = grpc.aio.insecure_channel(
+                target=config["coordinator"],
+                options=channel_options,
+            )
         self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
         self.out_queue = asyncio.Queue()
         self.pump_task = None
@@ -1044,6 +1055,7 @@ def main():
         help="enable isolated mode (always request SSH forwards)",
     )
     parser.add_argument("resources", metavar="RESOURCES", type=str, help="resource config file name")
+    parser.add_argument("-A", "--auth", action="store_true", default=False, help="enable gRPC authentication")
 
     args = parser.parse_args()
 
@@ -1055,6 +1067,7 @@ def main():
         "resources": args.resources,
         "coordinator": args.coordinator,
         "isolated": args.isolated,
+        "authentication": args.auth,
     }
 
     print(f"exporter name: {config['name']}")

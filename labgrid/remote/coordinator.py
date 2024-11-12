@@ -20,6 +20,7 @@ from .common import (
     TAG_KEY,
     TAG_VAL,
 )
+from .authentication import SERVER_CERTIFICATE, SERVER_CERTIFICATE_KEY, SignatureValidationInterceptor
 from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
@@ -957,7 +958,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
 
 
-async def serve(listen, cleanup) -> None:
+async def serve(listen, authenticate, cleanup) -> None:
     # It seems since https://github.com/grpc/grpc/pull/34647, the
     # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
     # so set it as well.
@@ -973,6 +974,7 @@ async def serve(listen, cleanup) -> None:
     ]
     server = grpc.aio.server(
         options=channel_options,
+        interceptors= ( (SignatureValidationInterceptor(),) if authenticate else ()),
     )
     coordinator = Coordinator()
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
@@ -993,7 +995,18 @@ async def serve(listen, cleanup) -> None:
     except ImportError:
         logging.info("Module grpcio-channelz not available")
 
-    server.add_insecure_port(listen)
+    if authenticate:
+        server_credentials = grpc.ssl_server_credentials(
+            (
+                (
+                    SERVER_CERTIFICATE_KEY,
+                    SERVER_CERTIFICATE,
+                ),
+            )
+        )
+        server.add_secure_port(listen, server_credentials)
+    else:
+        server.add_insecure_port(listen)
     logging.debug("Starting server")
     await server.start()
 
@@ -1020,6 +1033,7 @@ def main():
         help="coordinator listening host and port",
     )
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
+    parser.add_argument("-A", "--auth", action="store_true", default=False, help="enable gRPC authentication")
 
     args = parser.parse_args()
 
@@ -1031,7 +1045,7 @@ def main():
     cleanup = []
     loop.set_debug(True)
     try:
-        loop.run_until_complete(serve(args.listen, cleanup))
+        loop.run_until_complete(serve(args.listen, args.auth, cleanup))
     finally:
         if cleanup:
             loop.run_until_complete(*cleanup)

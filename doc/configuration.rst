@@ -980,7 +980,7 @@ remote computer.
 USBSDWireDevice
 ~~~~~~~~~~~~~~~
 A :any:`USBSDWireDevice` resource describes a Tizen
-`SD Wire device <https://wiki.tizen.org/SDWire>`_.
+`SD Wire device <https://web.archive.org/web/20240121081917/https://wiki.tizen.org/SDWire>`_.
 
 .. code-block:: yaml
 
@@ -2822,7 +2822,7 @@ Not all combinations can be configured at the same time.
 USBSDWireDriver
 ~~~~~~~~~~~~~~~
 The :any:`USBSDWireDriver` uses a `USBSDWireDevice`_ resource to control a
-USB-SD-Wire device via `sd-mux-ctrl <https://wiki.tizen.org/SD_MUX#Software>`_
+USB-SD-Wire device via `sd-mux-ctrl <https://web.archive.org/web/20220812002642/https://wiki.tizen.org/SD_MUX#Software>`_
 tool.
 
 Binds to:

@@ -229,7 +229,7 @@ message DeletePlaceMatchResponse {
 
 message AcquirePlaceRequest {
   string placename = 1;
-  optional int32 timeout = 2;
+  optional string session = 2;
 };
 
 message AcquirePlaceResponse {
@@ -255,6 +255,7 @@ message AllowPlaceResponse {
 message CreateReservationRequest {
   map<string, Reservation.Filter> filters = 1;
   double prio = 2;
+  optional string session = 3;
 };
 
 message CreateReservationResponse {

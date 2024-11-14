@@ -78,6 +78,7 @@ class ClientSession:
     prog = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     args = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(argparse.Namespace)))
     monitor = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    session = None
 
     def gethostname(self):
         return os.environ.get("LG_HOSTNAME", gethostname())
@@ -137,6 +138,8 @@ class ClientSession:
         self.out_queue.put_nowait(None)  # let the sender side exit gracefully
         if self.stream_call:
             self.stream_call.cancel()
+        if self.pump_task:
+            self.pump_task.cancel()
         try:
             await self.pump_task
         except asyncio.CancelledError:
@@ -265,8 +268,9 @@ class ClientSession:
         if self.monitor:
             print(f"Place {name} deleted")
 
-    async def do_monitor(self):
+    async def do_monitor(self, session):
         self.monitor = True
+        self.session = session
         await self.stopping.wait()
 
     async def complete(self):
@@ -666,23 +670,23 @@ class ClientSession:
 
     async def acquire(self): # TODO: create another function to acquire and wait - meanwhile I changed this
         """Acquire a place, marking it unavailable for other clients"""
-        print("chen!!! entered acquire!")
         place = self.get_idle_place()
         if not self.args.allow_unmatched:
             self.check_matches(place)
-        timeout = self.args.timeout
-        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name, timeout=timeout) # possibly create another request to hold the lock, such as labgrid_coordinator_pb2.AcquirePlaceAndHoldRequest
+        session = self.session = self.args.session
+        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name,
+                                                              session=session) # possibly create another request to hold the lock, such as labgrid_coordinator_pb2.AcquirePlaceAndHoldRequest
 
         try:
-            await self.stub.AcquirePlace(request) # TODO: create another function to acquire and wait on coordinator ??? check if coordinator can wait without stuck
+            await self.stub.AcquirePlace(request)
             await self.sync_with_coordinator()
             print(f"acquired place {place.name}")
-            try:
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                #await self.release()
-                pass
+            # try:
+            #     while True:
+            #         time.sleep(1)
+            # except KeyboardInterrupt:
+            #     #await self.release()
+            #     pass
         except grpc.aio.AioRpcError as e:
             # check potential failure causes
             for exporter, groups in sorted(self.resources.items()):
@@ -715,7 +719,7 @@ class ClientSession:
                     f"place {place.name} is acquired by a different user ({place.acquired}), use --kick if you are sure"
                 )  # pylint: disable=line-too-long
             print(f"warning: kicking user ({place.acquired})")
-
+        session = self.args.session
         request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
 
         try:
@@ -1006,7 +1010,7 @@ class ClientSession:
             print("connection lost", file=sys.stderr)
         return p.returncode
 
-    async def console(self, place, target): # chen: take an example from here ?
+    async def console(self, place, target):
         while True:
             res = await self._console(
                 place, target, 10.0, logfile=self.args.logfile, loop=self.args.loop, listen_only=self.args.listenonly
@@ -1424,7 +1428,7 @@ class ClientSession:
 
     async def create_reservation(self):
         prio = self.args.prio
-
+        session = self.args.session
         fltr = {}
         for pair in self.args.filters:
             try:
@@ -1441,7 +1445,7 @@ class ClientSession:
             "main": labgrid_coordinator_pb2.Reservation.Filter(filter=fltr),
         }
 
-        request = labgrid_coordinator_pb2.CreateReservationRequest(filters=fltrs, prio=prio)
+        request = labgrid_coordinator_pb2.CreateReservationRequest(filters=fltrs, prio=prio, session=session)
 
         try:
             response: labgrid_coordinator_pb2.CreateReservationResponse = await self.stub.CreateReservation(request)
@@ -1461,7 +1465,6 @@ class ClientSession:
 
     async def cancel_reservation(self):
         token: str = self.args.token
-
         request = labgrid_coordinator_pb2.CancelReservationRequest(token=token)
 
         try:
@@ -1720,6 +1723,7 @@ def main():
     subparser.set_defaults(func=ClientSession.complete)
 
     subparser = subparsers.add_parser("monitor", help="monitor events from the coordinator")
+    subparser.add_argument("--session", help="add to identify session to release places and cancel reservations")
     subparser.set_defaults(func=ClientSession.do_monitor)
 
     subparser = subparsers.add_parser("resources", aliases=("r",), help="list available resources")
@@ -1786,7 +1790,7 @@ def main():
     subparser.add_argument(
         "--allow-unmatched", action="store_true", help="allow missing resources for matches when locking the place"
     )
-    subparser.add_argument("--timeout", type=int, default=0, help="Unlock resource if timeout is off")
+    subparser.add_argument("--session", help="add to identify session to release places and cancel reservations")
 
     subparser.set_defaults(func=ClientSession.acquire)
 
@@ -1794,6 +1798,7 @@ def main():
     subparser.add_argument(
         "-k", "--kick", action="store_true", help="release a place even if it is acquired by a different user"
     )
+    subparser.add_argument("--session", help="add to identify session to release places and cancel reservations")
     subparser.set_defaults(func=ClientSession.release)
 
     subparser = subparsers.add_parser(
@@ -2010,11 +2015,13 @@ def main():
     subparser.add_argument(
         "--prio", type=float, default=0.0, help="priority relative to other reservations (default 0)"
     )
+    subparser.add_argument("--session", help="add to identify session to release places and cancel reservations")
     subparser.add_argument("filters", metavar="KEY=VALUE", nargs="+", help="required tags")
     subparser.set_defaults(func=ClientSession.create_reservation)
 
     subparser = subparsers.add_parser("cancel-reservation", help="cancel a reservation")
     subparser.add_argument("token", type=str, default=token, nargs="?" if token else None)
+    subparser.add_argument("--session", help="add to identify session to release places and cancel reservations")
     subparser.set_defaults(func=ClientSession.cancel_reservation)
 
     subparser = subparsers.add_parser("wait", help="wait for a reservation to be allocated")

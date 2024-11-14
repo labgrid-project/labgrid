@@ -4,7 +4,7 @@ import logging
 import asyncio
 import traceback
 from enum import Enum
-from functools import wraps
+from functools import wraps, partial
 import time
 
 import attr
@@ -25,7 +25,7 @@ from labgrid.remote.scheduler import TagSet, schedule
 from labgrid.remote.generated import labgrid_coordinator_pb2
 from labgrid.remote.generated import labgrid_coordinator_pb2_grpc
 from labgrid.util import atomic_replace, labgrid_version, yaml
-import multiprocessing, time
+import time
 
 class Action(Enum):
     ADD = 0
@@ -159,7 +159,6 @@ class ResourceImport(ResourceEntry):
 def locked(func):
     @wraps(func)
     async def wrapper(self, *args, **kwargs):
-        print(f"chen - func= {str(func)}")
         async with self.lock:
             return await func(self, *args, **kwargs)
 
@@ -183,6 +182,11 @@ class ExporterCommand:
 class ExporterError(Exception):
     pass
 
+class UserTiming:
+    def __init__(self, username) -> None:
+        self.username = username
+        self.timing = asyncio.Event()
+        self.timeout = 0
 
 class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     def __init__(self) -> None:
@@ -190,10 +194,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.reservations = {}
         self.poll_task = None
         self.save_scheduled = False
-
         self.lock = asyncio.Lock()
         self.exporters: dict[str, ExporterSession] = {}
         self.clients: dict[str, ClientSession] = {}
+        self.users: dict[str, UserTiming] = {}
         self.load()
 
         self.loop = asyncio.get_running_loop()
@@ -277,7 +281,33 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             pass
         logging.info("loaded %s place(s)", len(self.places))
 
-    async def ClientStream(self, request_iterator, context): # chen
+    async def clean_resources_by_timeout(self, session):
+        '''If session is not recovered, release all places  and cancel all reservations'''
+        if hasattr(self, "session") and self.session is not None:
+            user_timing = self.users[session.name]
+        if not user_timing.timing.is_set():
+            self.users.pop(session.name)
+            return
+        while user_timing.timing.is_set() and user_timing.timeout > 0:
+            await asyncio.sleep(1)
+            async with self.lock:
+                user_timing.timeout -= 1
+                print(f"Timeout: {user_timing.timeout}", end="\r")
+        if not user_timing.timing.is_set():
+            logging.info(f"Session recovered {session.peer}")
+            self.users.pop(session.name)
+            return
+
+        logging.info(f"Session not recovered {session.peer}, cleaning up...")
+        owner = session.name
+        print(f"Releasing places by owner {owner} ...")
+        await self.ReleasePlacesByOwner(owner)
+        print(f"Releasing reservations by owner {owner} ...")
+        await self.CancelReservationsByOwner(owner)
+        print(f"Reservations by owner {owner} are released")
+        self.users.pop(session.name)
+
+    async def ClientStream(self, request_iterator, context):
         peer = context.peer()
         logging.info("client connected: %s", peer)
         assert peer not in self.clients
@@ -300,6 +330,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         version = in_msg.startup.version
                         name = in_msg.startup.name
                         session = self.clients[peer] = ClientSession(self, peer, name, out_msg_queue, version)
+                        if not name in self.users:
+                            self.users[name] = UserTiming(name)
                         logging.debug("Received startup from %s with %s", name, version)
                     elif kind == "subscribe":
                         if in_msg.subscribe.all_places:
@@ -320,20 +352,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 logging.debug("client output %s", out_msg)
                 yield out_msg
         finally:
-            # if context.is_active():
-            #     print("chen!!!! active")
-            # else:
-            #     print("chen!!!! not active")
-            # if context.is_cancelled():
-            #     print("chen!!!! cancelled")
-            # else:
-            #     print("chen!!!! not cancelled")
-            #print(f"chen- details - {context.details()}")
-            #print(f"chen- grpc.status_code - {grpc.StatusCode}")
-            
-                
             try:
                 session = self.clients.pop(peer)
+                await self.clean_resources_by_timeout(session)
             except KeyError:
                 logging.info("Never received startup from peer %s that disconnected", peer)
                 return
@@ -708,28 +729,47 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 self._publish_place(place)
                 self.save_later()
 
-    @locked
-    async def _release_placee(self) -> None: # chen
-        print("client disconnected or terminated by user")
+    async def ReleasePlacesByOwner(self, owner):
+        for place in self.places.values():
+            if (place.acquired == owner):
+                print(f"Releasing place {place.name} acquired by {owner}...")
+                request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
+                request.fromuser = owner
+                await self.ReleasePlace(request)
+                print(f"Place {place.name} is released")
 
-    def _run_async_in_process(self, request, context, timeout):
-        if timeout > 0:
-            time.sleep(timeout)
-        asyncio.run(self.ReleasePlace(request, context))
+    async def CancelReservationsByOwner(self, owner):
+        for token, res in list(self.reservations.items()):
+            if (res.owner == owner) and res.state == ReservationState.waiting:
+                del self.reservations[token]
+        self.schedule_reservations()
 
+    async def set_user_timing(self, request, context):
+        peer = context.peer()
+        try:
+            username = self.clients[peer].name
+            key = username
+            if hasattr(request, "timeout"):
+                session = self.session = request.session
+                key = f"{username}/{session}"
+            if hasattr(request, "timeout") and request.timeout > 0:
+                self.users[key].timeout = request.timeout
+                self.users[key].timing.set()
+            else:
+                self.users[key].timeout = 0
+                self.users[key].timing.clear()
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
+        print(request)
     # @locked
-    async def AcquirePlace(self, request, context): # chen
+    async def AcquirePlace(self, request, context):
+        # Register a callback to handle client disconnection
         try:
             async with self.lock:
-                timeout = request.timeout
-                peer = context.peer()
                 name = request.placename
-                try:
-                    username = self.clients[peer].name
-                except KeyError:
-                    await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
-                print(request)
-
+                await self.set_user_timing(request, context)
+                peer = context.peer()
+                username = self.clients[peer].name
                 try:
                     place = self.places[name]
                 except KeyError:
@@ -763,26 +803,16 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 self.save_later()
                 self.schedule_reservations()
                 print(f"{place.name}: place acquired by {place.acquired}")
-                    
         except asyncio.CancelledError:
-            print("chen! cancelled!")
             request2 = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
             await self.ReleasePlace(request2, context)
             print("released")
             
-        if (timeout > 0):
-            request2 = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
-            args = (request2, context, timeout)
-            p = multiprocessing.Process(target=self._run_async_in_process, args=args)
-            p.start()
-            # timer = threading.Timer(timeout, lambda: self.ReleasePlaceCallback(*args))
-            # timer.start()
-            
-        return labgrid_coordinator_pb2.AcquirePlaceResponse() # chen - TODO - yield it before ?
+        return labgrid_coordinator_pb2.AcquirePlaceResponse()
 
     @locked
     async def ReleasePlace(self, request, context):
-        print("chen - entered ReleasePlace")
+        await self.set_user_timing(request, context)
         name = request.placename
         print(request)
         fromuser = request.fromuser if request.HasField("fromuser") else None
@@ -951,8 +981,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @locked
     async def CreateReservation(self, request: labgrid_coordinator_pb2.CreateReservationRequest, context):
-        peer = context.peer()
-
+        await self.set_user_timing(request, context)
         fltrs = {}
         for name, fltr_pb in request.filters.items():
             if name != "main":
@@ -966,7 +995,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 if not TAG_VAL.match(v):
                     await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Value {v} is invalid")
                 fltr[k] = v
-
+        peer = context.peer()
         owner = self.clients[peer].name
         res = Reservation(owner=owner, prio=request.prio, filters=fltrs)
         self.reservations[res.token] = res
@@ -975,6 +1004,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @locked
     async def CancelReservation(self, request: labgrid_coordinator_pb2.CancelReservationRequest, context):
+        await self.set_user_timing(request, context)
+        print(request)
         token = request.token
         if not isinstance(token, str) or not token:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid token {token}")
@@ -1019,6 +1050,8 @@ async def serve(listen, cleanup) -> None:
     )
     coordinator = Coordinator()
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
+
+
     # enable reflection for use with grpcurl
     reflection.enable_server_reflection(
         (

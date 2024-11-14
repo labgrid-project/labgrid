@@ -192,7 +192,8 @@ class NMDev:
         res["wpa-flags"] = self._flags_to_str(ap.get_wpa_flags())
         res["rsn-flags"] = self._flags_to_str(ap.get_rsn_flags())
         res["bssid"] = ap.get_bssid()
-        res["ssid"] = ap.get_ssid().get_data().decode(errors="surrogateescape")
+        if ap.get_ssid():
+            res["ssid"] = ap.get_ssid().get_data().decode(errors="surrogateescape")
         res["frequency"] = ap.get_frequency()
         res["mode"] = self._flags_to_str(ap.get_mode())
         res["max-bitrate"] = ap.get_max_bitrate()

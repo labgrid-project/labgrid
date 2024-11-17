@@ -29,6 +29,8 @@ service Coordinator {
 
   rpc ReleasePlace(ReleasePlaceRequest) returns (ReleasePlaceResponse) {}
 
+  rpc Monitor(MonitorRequest) returns (MonitorResponse) {}
+
   rpc AllowPlace(AllowPlaceRequest) returns (AllowPlaceResponse) {}
 
   rpc CreateReservation(CreateReservationRequest) returns (CreateReservationResponse) {}
@@ -167,6 +169,7 @@ message Place {
   double created = 9;
   double changed = 10;
   optional string reservation = 11;
+  optional string session = 12;
 };
 
 message ResourceMatch {
@@ -235,6 +238,13 @@ message AcquirePlaceRequest {
 message AcquirePlaceResponse {
 };
 
+message MonitorRequest {
+  string session = 1;
+};
+
+message MonitorResponse {
+};
+
 message ReleasePlaceRequest {
   string placename = 1;
   optional string fromuser = 2;
@@ -274,6 +284,7 @@ message Reservation {
   map<string, string> allocations = 6;
   double created = 7;
   double timeout = 8;
+  optional string session = 9;
 };
 
 message CancelReservationRequest {

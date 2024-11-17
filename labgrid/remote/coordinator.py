@@ -197,7 +197,6 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.lock = asyncio.Lock()
         self.exporters: dict[str, ExporterSession] = {}
         self.clients: dict[str, ClientSession] = {}
-        self.users: dict[str, UserTiming] = {}
         self.load()
 
         self.loop = asyncio.get_running_loop()
@@ -281,31 +280,21 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             pass
         logging.info("loaded %s place(s)", len(self.places))
 
+    @locked
     async def clean_resources_by_timeout(self, session):
         '''If session is not recovered, release all places  and cancel all reservations'''
-        if hasattr(self, "session") and self.session is not None:
-            user_timing = self.users[session.name]
-        if not user_timing.timing.is_set():
-            self.users.pop(session.name)
-            return
-        while user_timing.timing.is_set() and user_timing.timeout > 0:
-            await asyncio.sleep(1)
-            async with self.lock:
-                user_timing.timeout -= 1
-                print(f"Timeout: {user_timing.timeout}", end="\r")
-        if not user_timing.timing.is_set():
-            logging.info(f"Session recovered {session.peer}")
-            self.users.pop(session.name)
-            return
+        if hasattr(session, "session") and \
+            session.session is not None and \
+            hasattr(session, "monitor") and \
+            session.monitor:
+            logging.info(f"Session '{session.peer}' '{session.session}', cleaning up...")
+            owner = session.name
+            logging.info(f"Releasing places by owner '{owner}' and session '{session.session}' ...")
+            await self.ReleasePlacesByOwnerAndSession(owner, session.session)
+            logging.info(f"Releasing reservations by owner {owner} and session {session.session}...")
+            await self.CancelReservationsByOwnerAndSession(owner, session.session)
+            logging.info(f"Reservations by owner {owner} and session {session.session} are released")
 
-        logging.info(f"Session not recovered {session.peer}, cleaning up...")
-        owner = session.name
-        print(f"Releasing places by owner {owner} ...")
-        await self.ReleasePlacesByOwner(owner)
-        print(f"Releasing reservations by owner {owner} ...")
-        await self.CancelReservationsByOwner(owner)
-        print(f"Reservations by owner {owner} are released")
-        self.users.pop(session.name)
 
     async def ClientStream(self, request_iterator, context):
         peer = context.peer()
@@ -330,8 +319,6 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         version = in_msg.startup.version
                         name = in_msg.startup.name
                         session = self.clients[peer] = ClientSession(self, peer, name, out_msg_queue, version)
-                        if not name in self.users:
-                            self.users[name] = UserTiming(name)
                         logging.debug("Received startup from %s with %s", name, version)
                     elif kind == "subscribe":
                         if in_msg.subscribe.all_places:
@@ -341,10 +328,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     else:
                         logging.warning("received unknown kind %s from client %s (version %s)", kind, name, version)
                 logging.debug("client request_task done: %s", context.done())
-            except Exception:
-                logging.exception("error in client message handler")
+            except Exception as e:
+                logging.exception("error in client message handler", e)
 
-        runnning_request_task = self.loop.create_task(request_task())
+        running_request_task = self.loop.create_task(request_task())
 
         try:
             async for out_msg in queue_as_aiter(out_msg_queue):
@@ -359,8 +346,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 logging.info("Never received startup from peer %s that disconnected", peer)
                 return
 
-            runnning_request_task.cancel()
-            await runnning_request_task
+            running_request_task.cancel()
+            await running_request_task
             logging.debug("client aborted %s, cancelled: %s", session, context.cancelled())
 
     def _add_default_place(self, name):
@@ -441,7 +428,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except Exception:
                 logging.exception("error in exporter message handler")
 
-        runnning_request_task = self.loop.create_task(request_task())
+        running_request_task = self.loop.create_task(request_task())
 
         try:
             async for cmd in queue_as_aiter(command_queue):
@@ -455,8 +442,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         except Exception:
             logging.exception("error in exporter command handler")
         finally:
-            runnning_request_task.cancel()
-            await runnning_request_task
+            running_request_task.cancel()
+            await running_request_task
 
             try:
                 session = self.exporters.pop(peer)
@@ -729,49 +716,58 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 self._publish_place(place)
                 self.save_later()
 
-    async def ReleasePlacesByOwner(self, owner):
+    async def ReleasePlacesByOwnerAndSession(self, owner, session):
         for place in self.places.values():
-            if (place.acquired == owner):
-                print(f"Releasing place {place.name} acquired by {owner}...")
-                request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
-                request.fromuser = owner
-                await self.ReleasePlace(request)
-                print(f"Place {place.name} is released")
+            if place.acquired == owner and \
+                place.session == session and \
+                len(place.session) > 0:
+                logging.info(f"Releasing place '{place.name}' acquired by '{owner}' at session '{session}'...")
+                await self._release_resources(place, place.acquired_resources)
+                place.acquired = None
+                place.allowed = set()
+                place.touch()
+                self._publish_place(place)
+                self.save_later()
+                self.schedule_reservations()
+                print(f"Place '{place.name}' is released")
 
-    async def CancelReservationsByOwner(self, owner):
+    async def CancelReservationsByOwnerAndSession(self, owner, session):
         for token, res in list(self.reservations.items()):
-            if (res.owner == owner) and res.state == ReservationState.waiting:
+            if res.session == session and \
+                len(res.session) > 0 and \
+                res.owner == owner and \
+                res.state == ReservationState.waiting:
+                logging.info(f"Cancelling reservation '{res.token}' acquired by '{owner}' at session '{session}'...")
                 del self.reservations[token]
         self.schedule_reservations()
 
-    async def set_user_timing(self, request, context):
-        peer = context.peer()
+    async def set_client_session(self, request, context):
         try:
-            username = self.clients[peer].name
-            key = username
-            if hasattr(request, "timeout"):
-                session = self.session = request.session
-                key = f"{username}/{session}"
-            if hasattr(request, "timeout") and request.timeout > 0:
-                self.users[key].timeout = request.timeout
-                self.users[key].timing.set()
-            else:
-                self.users[key].timeout = 0
-                self.users[key].timing.clear()
+            peer = context.peer()
+            if hasattr(request, "session"):
+                self.clients[peer].session = request.session
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         print(request)
+
+    #@locked
+    async def Monitor(self, request, context):
+        peer = context.peer()
+        self.clients[peer].monitor = True
+        await self.set_client_session(request, context)
+        return labgrid_coordinator_pb2.MonitorResponse()
     # @locked
     async def AcquirePlace(self, request, context):
         # Register a callback to handle client disconnection
         try:
             async with self.lock:
                 name = request.placename
-                await self.set_user_timing(request, context)
+                await self.set_client_session(request, context)
                 peer = context.peer()
                 username = self.clients[peer].name
                 try:
                     place = self.places[name]
+                    place.session = request.session
                 except KeyError:
                     await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
                 if place.acquired:
@@ -812,7 +808,6 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @locked
     async def ReleasePlace(self, request, context):
-        await self.set_user_timing(request, context)
         name = request.placename
         print(request)
         fromuser = request.fromuser if request.HasField("fromuser") else None
@@ -981,7 +976,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @locked
     async def CreateReservation(self, request: labgrid_coordinator_pb2.CreateReservationRequest, context):
-        await self.set_user_timing(request, context)
+        await self.set_client_session(request, context)
         fltrs = {}
         for name, fltr_pb in request.filters.items():
             if name != "main":
@@ -998,13 +993,13 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         peer = context.peer()
         owner = self.clients[peer].name
         res = Reservation(owner=owner, prio=request.prio, filters=fltrs)
+        res.session = request.session
         self.reservations[res.token] = res
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CreateReservationResponse(reservation=res.as_pb2())
 
     @locked
     async def CancelReservation(self, request: labgrid_coordinator_pb2.CancelReservationRequest, context):
-        await self.set_user_timing(request, context)
         print(request)
         token = request.token
         if not isinstance(token, str) or not token:

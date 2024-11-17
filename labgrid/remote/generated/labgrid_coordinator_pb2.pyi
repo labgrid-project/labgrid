@@ -185,7 +185,7 @@ class GetPlacesResponse(_message.Message):
     def __init__(self, places: _Optional[_Iterable[_Union[Place, _Mapping]]] = ...) -> None: ...
 
 class Place(_message.Message):
-    __slots__ = ("name", "aliases", "comment", "tags", "matches", "acquired", "acquired_resources", "allowed", "created", "changed", "reservation")
+    __slots__ = ("name", "aliases", "comment", "tags", "matches", "acquired", "acquired_resources", "allowed", "created", "changed", "reservation", "session")
     class TagsEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -204,6 +204,7 @@ class Place(_message.Message):
     CREATED_FIELD_NUMBER: _ClassVar[int]
     CHANGED_FIELD_NUMBER: _ClassVar[int]
     RESERVATION_FIELD_NUMBER: _ClassVar[int]
+    SESSION_FIELD_NUMBER: _ClassVar[int]
     name: str
     aliases: _containers.RepeatedScalarFieldContainer[str]
     comment: str
@@ -215,7 +216,8 @@ class Place(_message.Message):
     created: float
     changed: float
     reservation: str
-    def __init__(self, name: _Optional[str] = ..., aliases: _Optional[_Iterable[str]] = ..., comment: _Optional[str] = ..., tags: _Optional[_Mapping[str, str]] = ..., matches: _Optional[_Iterable[_Union[ResourceMatch, _Mapping]]] = ..., acquired: _Optional[str] = ..., acquired_resources: _Optional[_Iterable[str]] = ..., allowed: _Optional[_Iterable[str]] = ..., created: _Optional[float] = ..., changed: _Optional[float] = ..., reservation: _Optional[str] = ...) -> None: ...
+    session: str
+    def __init__(self, name: _Optional[str] = ..., aliases: _Optional[_Iterable[str]] = ..., comment: _Optional[str] = ..., tags: _Optional[_Mapping[str, str]] = ..., matches: _Optional[_Iterable[_Union[ResourceMatch, _Mapping]]] = ..., acquired: _Optional[str] = ..., acquired_resources: _Optional[_Iterable[str]] = ..., allowed: _Optional[_Iterable[str]] = ..., created: _Optional[float] = ..., changed: _Optional[float] = ..., reservation: _Optional[str] = ..., session: _Optional[str] = ...) -> None: ...
 
 class ResourceMatch(_message.Message):
     __slots__ = ("exporter", "group", "cls", "name", "rename")
@@ -326,6 +328,16 @@ class AcquirePlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class MonitorRequest(_message.Message):
+    __slots__ = ("session",)
+    SESSION_FIELD_NUMBER: _ClassVar[int]
+    session: str
+    def __init__(self, session: _Optional[str] = ...) -> None: ...
+
+class MonitorResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
 class ReleasePlaceRequest(_message.Message):
     __slots__ = ("placename", "fromuser")
     PLACENAME_FIELD_NUMBER: _ClassVar[int]
@@ -374,7 +386,7 @@ class CreateReservationResponse(_message.Message):
     def __init__(self, reservation: _Optional[_Union[Reservation, _Mapping]] = ...) -> None: ...
 
 class Reservation(_message.Message):
-    __slots__ = ("owner", "token", "state", "prio", "filters", "allocations", "created", "timeout")
+    __slots__ = ("owner", "token", "state", "prio", "filters", "allocations", "created", "timeout", "session")
     class Filter(_message.Message):
         __slots__ = ("filter",)
         class FilterEntry(_message.Message):
@@ -409,6 +421,7 @@ class Reservation(_message.Message):
     ALLOCATIONS_FIELD_NUMBER: _ClassVar[int]
     CREATED_FIELD_NUMBER: _ClassVar[int]
     TIMEOUT_FIELD_NUMBER: _ClassVar[int]
+    SESSION_FIELD_NUMBER: _ClassVar[int]
     owner: str
     token: str
     state: int
@@ -417,15 +430,14 @@ class Reservation(_message.Message):
     allocations: _containers.ScalarMap[str, str]
     created: float
     timeout: float
-    def __init__(self, owner: _Optional[str] = ..., token: _Optional[str] = ..., state: _Optional[int] = ..., prio: _Optional[float] = ..., filters: _Optional[_Mapping[str, Reservation.Filter]] = ..., allocations: _Optional[_Mapping[str, str]] = ..., created: _Optional[float] = ..., timeout: _Optional[float] = ...) -> None: ...
+    session: str
+    def __init__(self, owner: _Optional[str] = ..., token: _Optional[str] = ..., state: _Optional[int] = ..., prio: _Optional[float] = ..., filters: _Optional[_Mapping[str, Reservation.Filter]] = ..., allocations: _Optional[_Mapping[str, str]] = ..., created: _Optional[float] = ..., timeout: _Optional[float] = ..., session: _Optional[str] = ...) -> None: ...
 
 class CancelReservationRequest(_message.Message):
-    __slots__ = ("token", "session")
+    __slots__ = ("token",)
     TOKEN_FIELD_NUMBER: _ClassVar[int]
-    SESSION_FIELD_NUMBER: _ClassVar[int]
     token: str
-    session: str
-    def __init__(self, token: _Optional[str] = ..., session: _Optional[str] = ...) -> None: ...
+    def __init__(self, token: _Optional[str] = ...) -> None: ...
 
 class CancelReservationResponse(_message.Message):
     __slots__ = ()

@@ -230,6 +230,7 @@ class Place:
     created = attr.ib(default=attr.Factory(time.time))
     changed = attr.ib(default=attr.Factory(time.time))
     reservation = attr.ib(default=None)
+    session = attr.ib(default="")
 
     def asdict(self):
         # in the coordinator, we have resource objects, otherwise just a path
@@ -251,6 +252,7 @@ class Place:
             "created": self.created,
             "changed": self.changed,
             "reservation": self.reservation,
+            "session": self.session,
         }
 
     def update_from_pb2(self, place_pb2):
@@ -296,6 +298,7 @@ class Place:
             print(indent + f"allowed: {', '.join(self.allowed)}")
         print(indent + f"created: {datetime.fromtimestamp(self.created)}")
         print(indent + f"changed: {datetime.fromtimestamp(self.changed)}")
+        print(indent + f"session: {self.session}")
         if self.reservation:
             print(indent + f"reservation: {self.reservation}")
 
@@ -348,6 +351,7 @@ class Place:
             place.allowed.extend(self.allowed)
             place.changed = self.changed
             place.created = self.created
+            place.session = self.session
             if self.reservation:
                 place.reservation = self.reservation
             for key, value in self.tags.items():
@@ -377,6 +381,7 @@ class Place:
             created=pb2.created,
             changed=pb2.changed,
             reservation=pb2.reservation if pb2.HasField("reservation") else None,
+            session=pb2.session
         )
 
 
@@ -406,7 +411,7 @@ class Reservation:
     allocations = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
     created = attr.ib(default=attr.Factory(time.time))
     timeout = attr.ib(default=attr.Factory(lambda: time.time() + 60))
-
+    session = attr.ib(default="", validator=attr.validators.instance_of(str))
     def asdict(self):
         return {
             "owner": self.owner,
@@ -416,6 +421,7 @@ class Reservation:
             "allocations": self.allocations,
             "created": self.created,
             "timeout": self.timeout,
+            "session": self.session,
         }
 
     def refresh(self, delta=60):
@@ -441,6 +447,7 @@ class Reservation:
                 print(indent + f"  {name}: {', '.join(allocation)}")
         print(indent + f"created: {datetime.fromtimestamp(self.created)}")
         print(indent + f"timeout: {datetime.fromtimestamp(self.timeout)}")
+        print(indent + f"session: {self.session}")
 
     def as_pb2(self):
         res = labgrid_coordinator_pb2.Reservation()
@@ -459,6 +466,7 @@ class Reservation:
             res.allocations.update({"main": allocation[0]})
         res.created = self.created
         res.timeout = self.timeout
+        res.session = self.session
         return res
 
     @classmethod
@@ -478,6 +486,7 @@ class Reservation:
             allocations=allocations,
             created=pb2.created,
             timeout=pb2.timeout,
+            session = pb2.session
         )
 
 

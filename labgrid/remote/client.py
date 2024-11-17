@@ -268,9 +268,17 @@ class ClientSession:
         if self.monitor:
             print(f"Place {name} deleted")
 
-    async def do_monitor(self, session):
+    async def do_monitor(self):
         self.monitor = True
-        self.session = session
+        session = self.session = self.args.session
+        print(f"Session name: {self.session}")
+        if not session is None and len(session) > 0:
+            request = labgrid_coordinator_pb2.MonitorRequest(session=session)
+            try:
+                await self.stub.Monitor(request)
+                await self.sync_with_coordinator()
+            except grpc.aio.AioRpcError as e:
+                raise ServerError(e.details())
         await self.stopping.wait()
 
     async def complete(self):
@@ -719,7 +727,6 @@ class ClientSession:
                     f"place {place.name} is acquired by a different user ({place.acquired}), use --kick if you are sure"
                 )  # pylint: disable=line-too-long
             print(f"warning: kicking user ({place.acquired})")
-        session = self.args.session
         request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
 
         try:
@@ -1723,7 +1730,7 @@ def main():
     subparser.set_defaults(func=ClientSession.complete)
 
     subparser = subparsers.add_parser("monitor", help="monitor events from the coordinator")
-    subparser.add_argument("--session", help="add to identify session to release places and cancel reservations")
+    subparser.add_argument("--session", default=None, help="add to identify session to release places and cancel reservations")
     subparser.set_defaults(func=ClientSession.do_monitor)
 
     subparser = subparsers.add_parser("resources", aliases=("r",), help="list available resources")

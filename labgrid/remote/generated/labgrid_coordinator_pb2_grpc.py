@@ -99,6 +99,11 @@ class CoordinatorStub(object):
                 request_serializer=labgrid__coordinator__pb2.ReleasePlaceRequest.SerializeToString,
                 response_deserializer=labgrid__coordinator__pb2.ReleasePlaceResponse.FromString,
                 _registered_method=True)
+        self.Monitor = channel.unary_unary(
+                '/labgrid.Coordinator/Monitor',
+                request_serializer=labgrid__coordinator__pb2.MonitorRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.MonitorResponse.FromString,
+                _registered_method=True)
         self.AllowPlace = channel.unary_unary(
                 '/labgrid.Coordinator/AllowPlace',
                 request_serializer=labgrid__coordinator__pb2.AllowPlaceRequest.SerializeToString,
@@ -207,6 +212,12 @@ class CoordinatorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Monitor(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def AllowPlace(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -304,6 +315,11 @@ def add_CoordinatorServicer_to_server(servicer, server):
                     servicer.ReleasePlace,
                     request_deserializer=labgrid__coordinator__pb2.ReleasePlaceRequest.FromString,
                     response_serializer=labgrid__coordinator__pb2.ReleasePlaceResponse.SerializeToString,
+            ),
+            'Monitor': grpc.unary_unary_rpc_method_handler(
+                    servicer.Monitor,
+                    request_deserializer=labgrid__coordinator__pb2.MonitorRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.MonitorResponse.SerializeToString,
             ),
             'AllowPlace': grpc.unary_unary_rpc_method_handler(
                     servicer.AllowPlace,
@@ -682,6 +698,33 @@ class Coordinator(object):
             '/labgrid.Coordinator/ReleasePlace',
             labgrid__coordinator__pb2.ReleasePlaceRequest.SerializeToString,
             labgrid__coordinator__pb2.ReleasePlaceResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Monitor(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/labgrid.Coordinator/Monitor',
+            labgrid__coordinator__pb2.MonitorRequest.SerializeToString,
+            labgrid__coordinator__pb2.MonitorResponse.FromString,
             options,
             channel_credentials,
             insecure,

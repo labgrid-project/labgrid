@@ -24,8 +24,6 @@ from collections import defaultdict, OrderedDict
 from datetime import datetime
 from pprint import pformat
 from typing import Any, Dict
-import time
-
 import attr
 import grpc
 
@@ -676,7 +674,7 @@ class ClientSession:
         if match:
             raise UserError(f"Match {match} has no matching remote resource")
 
-    async def acquire(self): # TODO: create another function to acquire and wait - meanwhile I changed this
+    async def acquire(self):
         """Acquire a place, marking it unavailable for other clients"""
         place = self.get_idle_place()
         if not self.args.allow_unmatched:
@@ -689,12 +687,6 @@ class ClientSession:
             await self.stub.AcquirePlace(request)
             await self.sync_with_coordinator()
             print(f"acquired place {place.name}")
-            # try:
-            #     while True:
-            #         time.sleep(1)
-            # except KeyboardInterrupt:
-            #     #await self.release()
-            #     pass
         except grpc.aio.AioRpcError as e:
             # check potential failure causes
             for exporter, groups in sorted(self.resources.items()):

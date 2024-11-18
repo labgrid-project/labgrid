@@ -182,12 +182,6 @@ class ExporterCommand:
 class ExporterError(Exception):
     pass
 
-class UserTiming:
-    def __init__(self, username) -> None:
-        self.username = username
-        self.timing = asyncio.Event()
-        self.timeout = 0
-
 class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     def __init__(self) -> None:
         self.places: dict[str, Place] = {}

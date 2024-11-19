@@ -224,6 +224,7 @@ include = [
   "labgrid/remote/**/*.py",
   "labgrid/resource/httpvideostream.py",
   "labgrid/resource/provider.py",
+  "labgrid/util/agents/network_interface.py",
   "labgrid/util/agents/usb_hid_relay.py",
   "labgrid/util/exceptions.py",
 ]

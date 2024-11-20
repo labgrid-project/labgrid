@@ -20,7 +20,10 @@ from .common import (
     TAG_KEY,
     TAG_VAL,
 )
-from .authentication import load_certificate_from_file, get_server_interceptor, DEFAULT_CERTIFICATE_PATH, DEFAULT_KEY_PATH
+from .authentication import (load_certificate_from_file,
+                             get_server_interceptor,
+                             DEFAULT_CERTIFICATE_PATH,
+                             DEFAULT_KEY_PATH)
 from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
@@ -1033,10 +1036,13 @@ def main():
         help="coordinator listening host and port",
     )
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
-    parser.add_argument("-A", "--auth", action="store_true", default=False, help="enable gRPC authentication")
-    parser.add_argument("-cp", "--cert-path", default=DEFAULT_CERTIFICATE_PATH, help="path to server SSL certificate file")
+    parser.add_argument("-A", "--auth", action="store_true", default=False,
+                        help="enable gRPC authentication")
+    parser.add_argument("-cp", "--cert-path", default=DEFAULT_CERTIFICATE_PATH,
+                        help="path to server SSL certificate file")
     parser.add_argument("-kp", "--key-path", default=DEFAULT_KEY_PATH, help="path to server SSL key file")
-    parser.add_argument("-si", "--server-interceptor", default="default", help="name of the server interceptor plugin to use")
+    parser.add_argument("-si", "--server-interceptor", default="default",
+                        help="name of the server interceptor plugin to use")
 
     args = parser.parse_args()
 
@@ -1048,7 +1054,8 @@ def main():
     cleanup = []
     loop.set_debug(True)
     try:
-        loop.run_until_complete(serve(args.listen, cleanup, args.auth, args.cert_path, args.key_path, args.server_interceptor))
+        loop.run_until_complete(serve(args.listen, cleanup, args.auth, args.cert_path, args.key_path,
+                                      args.server_interceptor))
     finally:
         if cleanup:
             loop.run_until_complete(*cleanup)

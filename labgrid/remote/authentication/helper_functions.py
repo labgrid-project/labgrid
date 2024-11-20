@@ -1,10 +1,11 @@
-import os
-import pkg_resources
-import grpc
-import attr
 import logging
-from .plugins_interceptors import DefaultAuthMetadataPlugin, DefaultServerInterceptor
+import os
 
+import attr
+import grpc
+import pkg_resources
+
+from .plugins_interceptors import DefaultAuthMetadataPlugin, DefaultServerInterceptor
 
 DEFAULT_CERTIFICATE_PATH = "../certificates/server.crt"
 DEFAULT_KEY_PATH = "../certificates/server.key"
@@ -26,7 +27,7 @@ def load_certificate_from_file(filepath):
     Returns:
         The content of the certificate file as bytes
     '''
-    if (filepath == DEFAULT_CERTIFICATE_PATH) or (filepath == DEFAULT_KEY_PATH):
+    if filepath in (DEFAULT_CERTIFICATE_PATH, DEFAULT_KEY_PATH):
         logging.warn('Using default self-signed certificate or certificate key')
 
     real_path = os.path.join(os.path.dirname(__file__), filepath)
@@ -58,7 +59,7 @@ def get_auth_meta_plugin(plugin_name):
     '''
     instance = None
 
-    if not plugin_name == "default":
+    if plugin_name != "default":
 
         for entry_point in pkg_resources.iter_entry_points('auth_plugin'):
             if entry_point.name == plugin_name:
@@ -73,7 +74,7 @@ def get_auth_meta_plugin(plugin_name):
         raise AuthenticationPluginError(f'Plugin: {plugin_name}'
                                         ' is not of grpc.AuthMetadataPlugin type')
 
-    if not hasattr(instance, '__call__'):
+    if not callable(instance):
         raise AuthenticationPluginError(f'Plugin: {plugin_name}'
                                         ' does not implement __call__ method')
 
@@ -93,7 +94,7 @@ def get_server_interceptor(interceptor_name):
     '''
     instance = None
 
-    if not interceptor_name == "default":
+    if interceptor_name != "default":
 
         for entry_point in pkg_resources.iter_entry_points('server_interceptor'):
             if entry_point.name == interceptor_name:

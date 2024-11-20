@@ -7,7 +7,7 @@ class DefaultAuthMetadataPlugin(grpc.AuthMetadataPlugin):
   Authentication plugin used to add {'authorization', "Bearer <token_value>"} HTTP header
   '''
   def __call__(self, context, callback):
-    callback((("authorization", "Bearer {}".format(token_value)),), None)
+    callback((("authorization", f"Bearer {token_value}"),), None)
 
 
 class DefaultServerInterceptor(grpc.aio.ServerInterceptor):

@@ -19,7 +19,7 @@ from socket import gethostname, getfqdn
 import attr
 import grpc
 
-from .authentication import SERVER_CERTIFICATE, CustomAuthMetadataPlugin
+from .authentication import load_certificate_from_file, get_auth_meta_plugin, DEFAULT_CERTIFICATE_PATH
 from .config import ResourceConfig
 from .common import ResourceEntry, queue_as_aiter
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
@@ -800,8 +800,9 @@ class Exporter:
             config["coordinator"] += ":20408"
 
         if config["authentication"]:
-            call_credentials = grpc.metadata_call_credentials(CustomAuthMetadataPlugin(), name="auth")
-            channel_credentials = grpc.ssl_channel_credentials(SERVER_CERTIFICATE)
+            call_credentials = grpc.metadata_call_credentials(get_auth_meta_plugin(config["auth_plugin"]),
+                                                              name=config["auth_plugin"])
+            channel_credentials = grpc.ssl_channel_credentials(load_certificate_from_file(config["cert_path"]))
             composite_credentials = grpc.composite_channel_credentials(channel_credentials, call_credentials)
 
             self.channel = grpc.aio.secure_channel(
@@ -1045,6 +1046,7 @@ def main():
     )
     parser.add_argument(
         "--fqdn", action="store_true", default=False, help="Use fully qualified domain name as default for hostname"
+
     )
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
     parser.add_argument(
@@ -1056,7 +1058,10 @@ def main():
     )
     parser.add_argument("resources", metavar="RESOURCES", type=str, help="resource config file name")
     parser.add_argument("-A", "--auth", action="store_true", default=False, help="enable gRPC authentication")
-
+    parser.add_argument("-cp", "--cert-path", type=str, default=DEFAULT_CERTIFICATE_PATH,
+                        help="path to file with SSL certificate to secrure gRPC channel")
+    parser.add_argument("-ap", "--auth-plugin", type=str, default="default",
+                        help="name of the plugin used for the authentication purposes")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
@@ -1068,6 +1073,8 @@ def main():
         "coordinator": args.coordinator,
         "isolated": args.isolated,
         "authentication": args.auth,
+        "cert_path": args.cert_path,
+        "auth_plugin": args.auth_plugin,
     }
 
     print(f"exporter name: {config['name']}")

@@ -40,7 +40,7 @@ from .common import (
 )
 from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
-from .authentication import SERVER_CERTIFICATE, CustomAuthMetadataPlugin
+from .authentication import load_certificate_from_file, get_auth_meta_plugin, DEFAULT_CERTIFICATE_PATH
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout
@@ -101,8 +101,9 @@ class ClientSession:
         ]
 
         if self.args.auth:
-            call_credentials = grpc.metadata_call_credentials(CustomAuthMetadataPlugin(), name="auth")
-            channel_credentials = grpc.ssl_channel_credentials(SERVER_CERTIFICATE)
+            call_credentials = grpc.metadata_call_credentials(get_auth_meta_plugin(self.args.auth_plugin),
+                                                              name=self.args.auth_plugin)
+            channel_credentials = grpc.ssl_channel_credentials(load_certificate_from_file(self.args.cert_path))
             composite_credentials = grpc.composite_channel_credentials(channel_credentials, call_credentials)
 
             self.channel = grpc.aio.secure_channel(
@@ -1712,12 +1713,15 @@ def main():
     parser.add_argument("-v", "--verbose", action="count", default=0)
     parser.add_argument("-P", "--proxy", type=str, help="proxy connections via given ssh host")
     parser.add_argument("-A", "--auth", action="store_true", default=False, help="enable gRPC authentication")
+    parser.add_argument("-cp", "--cert-path", type=str, default=DEFAULT_CERTIFICATE_PATH,
+                        help="path to file with SSL certificate to secrure gRPC channel")
+    parser.add_argument("-ap", "--auth-plugin", type=str, default="default",
+                        help="name of the plugin used for the authentication purposes")
     subparsers = parser.add_subparsers(
         dest="command",
         title="available subcommands",
         metavar="COMMAND",
     )
-
     subparser = subparsers.add_parser("help")
 
     subparser = subparsers.add_parser("complete")

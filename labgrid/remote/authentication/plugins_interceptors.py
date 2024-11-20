@@ -1,20 +1,16 @@
 import grpc
-from .helper_functions import generate_jwt_token, is_token_valid
 
+token_value = 'authorized'
 
-JWT_TOKEN = generate_jwt_token()
-
-class CustomAuthMetadataPlugin(grpc.AuthMetadataPlugin):
+class DefaultAuthMetadataPlugin(grpc.AuthMetadataPlugin):
   '''
-  Authentication plugin used to add {'x-signature', JWT_TOKEN} HTTP header
+  Authentication plugin used to add {'authorization', "Bearer <token_value>"} HTTP header
   '''
   def __call__(self, context, callback):
-    signature = context.method_name[::-1]
-    signature = JWT_TOKEN
-    callback((("x-signature", signature),), None)
+    callback((("authorization", "Bearer {}".format(token_value)),), None)
 
 
-class SignatureValidationInterceptor(grpc.aio.ServerInterceptor):
+class DefaultServerInterceptor(grpc.aio.ServerInterceptor):
   '''
   Middleware used to validate the JWT token in the HTTP header
   '''
@@ -28,15 +24,15 @@ class SignatureValidationInterceptor(grpc.aio.ServerInterceptor):
     Extracts the token from the HTTP header and validates it
     '''
     token = ''
-
     for item in  handler_call_details.invocation_metadata:
       dictionary = item._asdict()
-      if dictionary['key'] == 'x-signature':
+      if dictionary['key'] == 'authorization':
         token = dictionary['value']
-        break
+        if "Bearer " in token:
+          token = token.replace("Bearer ", "")
+          break
 
-    if token != '':
-      if is_token_valid(token):
-        return continuation(handler_call_details)
+    if token != '' and token == token_value:
+      return continuation(handler_call_details)
 
     self._abort_handler()

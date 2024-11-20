@@ -872,3 +872,19 @@ like this:
   $ labgrid-client -p example allow sirius/john
 
 To remove the allow it is currently necessary to unlock and lock the place.
+
+Enabling the gRPC connection authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To enable the gRPC connection (with the labgrid coordinator) authentication, we need to run the labgrid-client and
+labgrid-exporter with the -A option.
+The gRPC authentication procedure requires:
+- providing a path to the SSL certificate file to encrypt the gRPC channel
+- providing an instance of the client authentication plugin class (class dervied from grpc.AuthMetadataPlugin)
+By default, the provided ``certificates/server.crt`` SSL certificate file is used to encrypt the gRPC channel and
+``DefaultAuthMetadataPlugin`` plugin is used to update the HTTP/2 headers with authentication information on the client side.
+
+Labgrid coordinator supports the gRPC authentication when the -A command line option is specified.
+The labgrid-coordinator, by default uses the provided ``DefaultServerInterceptor`` plugin to validate the authentication
+information passed using HTTP/2 headers, for the gRPC channel encryption the coordinator, by default used provided SSL
+certificate file: ``certificates/server.crt`` and key file: ``certificates/server.key``.

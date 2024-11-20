@@ -20,7 +20,7 @@ from .common import (
     TAG_KEY,
     TAG_VAL,
 )
-from .authentication import SERVER_CERTIFICATE, SERVER_CERTIFICATE_KEY, SignatureValidationInterceptor
+from .authentication import load_certificate_from_file, get_server_interceptor, DEFAULT_CERTIFICATE_PATH, DEFAULT_KEY_PATH
 from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
@@ -958,7 +958,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
 
 
-async def serve(listen, authenticate, cleanup) -> None:
+async def serve(listen, cleanup, authenticate, cert_path, key_path, server_interceptor_name) -> None:
     # It seems since https://github.com/grpc/grpc/pull/34647, the
     # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
     # so set it as well.
@@ -974,7 +974,7 @@ async def serve(listen, authenticate, cleanup) -> None:
     ]
     server = grpc.aio.server(
         options=channel_options,
-        interceptors= ( (SignatureValidationInterceptor(),) if authenticate else ()),
+        interceptors= ( (get_server_interceptor(server_interceptor_name),) if authenticate else ()),
     )
     coordinator = Coordinator()
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
@@ -999,8 +999,8 @@ async def serve(listen, authenticate, cleanup) -> None:
         server_credentials = grpc.ssl_server_credentials(
             (
                 (
-                    SERVER_CERTIFICATE_KEY,
-                    SERVER_CERTIFICATE,
+                    load_certificate_from_file(key_path),
+                    load_certificate_from_file(cert_path),
                 ),
             )
         )
@@ -1034,6 +1034,9 @@ def main():
     )
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
     parser.add_argument("-A", "--auth", action="store_true", default=False, help="enable gRPC authentication")
+    parser.add_argument("-cp", "--cert-path", default=DEFAULT_CERTIFICATE_PATH, help="path to server SSL certificate file")
+    parser.add_argument("-kp", "--key-path", default=DEFAULT_KEY_PATH, help="path to server SSL key file")
+    parser.add_argument("-si", "--server-interceptor", default="default", help="name of the server interceptor plugin to use")
 
     args = parser.parse_args()
 
@@ -1045,7 +1048,7 @@ def main():
     cleanup = []
     loop.set_debug(True)
     try:
-        loop.run_until_complete(serve(args.listen, args.auth, cleanup))
+        loop.run_until_complete(serve(args.listen, cleanup, args.auth, args.cert_path, args.key_path, args.server_interceptor))
     finally:
         if cleanup:
             loop.run_until_complete(*cleanup)

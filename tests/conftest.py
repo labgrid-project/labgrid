@@ -147,11 +147,11 @@ class Coordinator(LabgridComponent):
         assert self.reader is None
 
         self.spawn = pexpect.spawn(
-            'labgrid-coordinator',
+            'python -m labgrid.remote.coordinator',
             logfile=Prefixer(sys.stdout.buffer, 'coordinator'),
-            cwd=self.cwd)
+            cwd=".")
         try:
-            self.spawn.expect('Coordinator ready')
+            self.spawn.expect('Coordinator GREG ready')
         except Exception as e:
             raise Exception(f"coordinator startup failed with {self.spawn.before}") from e
 
@@ -197,6 +197,7 @@ def serial_driver_no_name(target, serial_port, mocker):
 
 @pytest.fixture(scope='function')
 def coordinator(tmpdir):
+    print(tmpdir)
     coordinator = Coordinator(tmpdir)
     coordinator.start()
 

@@ -276,7 +276,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @locked
     async def clean_resources_by_timeout(self, session):
-        '''If session is not recovered, release all places  and cancel all reservations'''
+        '''Release all places  and cancel all reservations'''
         if hasattr(session, "session") and \
             session.session is not None and \
             hasattr(session, "monitor") and \
@@ -285,7 +285,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             owner = session.name
             logging.info(f"Releasing places by owner '{owner}' and session '{session.session}' ...")
             await self.ReleasePlacesByOwnerAndSession(owner, session.session)
-            logging.info(f"Releasing reservations by owner {owner} and session {session.session}...")
+            logging.info(f"Cancel reservations by owner {owner} and session {session.session}...")
             await self.CancelReservationsByOwnerAndSession(owner, session.session)
             logging.info(f"Reservations by owner {owner} and session {session.session} are released")
 
@@ -1070,7 +1070,7 @@ async def serve(listen, cleanup) -> None:
         await server.stop(5)
 
     cleanup.append(server_graceful_shutdown())
-    logging.info("Coordinator ready")
+    logging.info("Coordinator GREG ready")
     await server.wait_for_termination()
 
 

@@ -10,6 +10,10 @@ def test_startup(coordinator):
 
 @pytest.fixture(scope='function')
 def place(coordinator):
+    with pexpect.spawn('python -m labgrid.remote.client -p test delete') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        
     with pexpect.spawn('python -m labgrid.remote.client -p test create') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
@@ -560,5 +564,151 @@ def test_same_name_resources(place, exporter, tmpdir):
 
     with pexpect.spawn('python -m labgrid.remote.client -p test release') as spawn:
         spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+def test_monitor_with_session(coordinator):
+    # run coordinator?
+    # step 1
+    places = ["placeA", "placeB", "placeC"]
+    ownershell = pexpect.spawn('whoami')
+    ownershell.expect(pexpect.EOF)
+    owner = ownershell.before.decode("utf-8").strip()
+    print(f"owner: {owner}")
+    hostshell = pexpect.spawn('hostname')
+    hostshell.expect(pexpect.EOF)
+    host = hostshell.before.decode("utf-8").strip()
+    print(f"host: {host}")
+    # lets clean from previous runs
+    for place in places:
+        with pexpect.spawn(f"python -m labgrid.remote.client --place {place} delete") as spawn:
+            spawn.expect(pexpect.EOF)
+            spawn.close()
+    
+    # open monitor without session
+    monitor = pexpect.spawn('python -m labgrid.remote.client monitor')
+    # spawn.expect(pexpect.EOF)
+    # spawn.close()
+    # assert spawn.exitstatus == 0, spawn.before.strip()
+    # client - create places A, B and C
+    for place in places:
+        with pexpect.spawn(f"python -m labgrid.remote.client --place {place} create") as spawn:
+            spawn.expect(pexpect.EOF)
+            spawn.close()
+            assert spawn.exitstatus == 0, spawn.before.strip()
+            
+    # client - acquire place A with session
+    with pexpect.spawn('python -m labgrid.remote.client --place placeA acquire --session SESSION') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+    # client - acquire place B with session
+    with pexpect.spawn('python -m labgrid.remote.client --place placeB acquire --session SESSION') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+    # client - acquire place C without session
+    with pexpect.spawn('python -m labgrid.remote.client --place placeC acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+    # client - create reservation of place A with session
+    with pexpect.spawn('python -m labgrid.remote.client reserve place=placeA --session SESSION') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+    # client - create reservation of place B without session
+    with pexpect.spawn('python -m labgrid.remote.client reserve place=placeB') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+    # client - create reservation of place C with session
+    with pexpect.spawn('python -m labgrid.remote.client reserve place=placeC --session SESSION') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+    # kill monitor without session
+    print("Killing monitor without session")
+    # send Ctrl-C to monitor
+    monitor.send('\003')
+    monitor.expect(pexpect.EOF)
+    monitor.close()
+    print("monitor without session killed")
+    with pexpect.spawn('python -m labgrid.remote.client places') as spawn:
+        spawn.expect(pexpect.EOF)
+        output = spawn.before.decode('utf-8').strip()
+        print('---------------------------------------------------------')
+        print(output)
+        print('---------------------------------------------------------')
+        for place in places:
+            assert output.find(f"{place}") > -1
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+    for place in places:
+        with pexpect.spawn(f"python -m labgrid.remote.client --place {place} show") as spawn:
+            spawn.expect(pexpect.EOF)
+            output = spawn.before.decode('utf-8').strip()
+            print('---------------------------------------------------------')
+            print(output)
+            print('---------------------------------------------------------')
+            assert output.find(f"acquired: {host}/{owner}") > -1
+            spawn.close()
+    with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
+        spawn.expect(pexpect.EOF)
+        output = spawn.before.decode('utf-8').strip()
+        for place in places:
+            assert output.find(f"main: place={place}") > -1
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+    # step 2
+    # open monitor with session
+    monitor = pexpect.spawn('python -m labgrid.remote.client monitor --session SESSION')
+    # kill monitor with session
+    print("Killing monitor with session")
+    # send Ctrl-C to monitor
+    monitor.send('\003')
+    #with pexpect.spawn("kill -9 $(ps -aux | grep 'labgrid.remote.client monitor' | awk {'print $2'})") as spawn:
+    #    spawn.expect(pexpect.EOF)
+    #    spawn.close()
+    monitor.expect(pexpect.EOF)
+    # assert monitor.exitstatus == 0, monitor.before.strip()
+    output = monitor.before.decode('utf-8').strip()
+    print(f"monitor output: {output}")
+    monitor.close()
+    
+    time.sleep(5)
+    print("monitor with session killed")
+    # see that place A is released
+    with pexpect.spawn('python -m labgrid.remote.client --place placeA show') as spawn:
+        spawn.expect(pexpect.EOF)
+        output = spawn.before.decode('utf-8').strip()
+        print('---------------------------------------------------------')
+        print(output)
+        print('---------------------------------------------------------')
+        assert output.find("acquired: None") > -1
+        spawn.close()
+    # see that place B is released
+    with pexpect.spawn('python -m labgrid.remote.client --place placeB show') as spawn:
+        spawn.expect(pexpect.EOF)
+        output = spawn.before.decode('utf-8').strip()
+        print('---------------------------------------------------------')
+        print(output)
+        print('---------------------------------------------------------')
+        assert output.find("acquired: None") > -1
+        spawn.close()
+    # see that place C is not released
+    with pexpect.spawn('python -m labgrid.remote.client --place placeC show') as spawn:
+        spawn.expect(pexpect.EOF)
+        output = spawn.before.decode('utf-8').strip()
+        print('---------------------------------------------------------')
+        print(output)
+        print('---------------------------------------------------------')
+        assert output.find("acquired:{host}/{owner}") > -1
+        spawn.close()
+    with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
+        spawn.expect(pexpect.EOF)
+        assert output.find(f"main: place={place[0]}") == 0
+        assert output.find(f"main: place={place[1]}") > -1
+        assert output.find(f"main: place={place[2]}") == 0
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()

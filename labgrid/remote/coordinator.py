@@ -1002,6 +1002,9 @@ async def serve(listen, cleanup) -> None:
     logging.debug("Starting server")
     await server.start()
 
+    if inspect:
+        inspect.coordinator = coordinator
+
     async def server_graceful_shutdown():
         logging.info("Starting graceful shutdown...")
         # Shuts down the server with 0 seconds of grace period. During the
@@ -1025,6 +1028,10 @@ def main():
         help="coordinator listening host and port",
     )
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
+    parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
+    parser.add_argument(
+        "--pystuck-port", metavar="PORT", type=int, default=6666, help="use a different pystuck port than 6666"
+    )
 
     args = parser.parse_args()
 
@@ -1032,6 +1039,19 @@ def main():
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
+
+    global inspect
+    if args.pystuck:
+        from types import SimpleNamespace
+
+        inspect = SimpleNamespace()
+        inspect.loop = loop
+
+        import pystuck
+
+        pystuck.run_server(port=args.pystuck_port)
+    else:
+        inspect = None
 
     cleanup = []
     loop.set_debug(True)

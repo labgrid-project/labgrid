@@ -72,8 +72,8 @@ The value related to this option is considered only when the gRPC connection aut
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 The name of the entry point used to return an instance of the custom server interceptor plugin.
 This plugin is delivered as an independent Python package (not part of the labgrid code base).
-The server interceptor plugin is a class derived from the grpc.ServerInterceptor class.
-By default, the 'DefaultServerInterceptor' is used, this default plugin is a part of the labgrid.
+The server interceptor plugin is a class derived from the ``grpc.aio.ServerInterceptor`` class.
+By default, the ``DefaultServerInterceptor`` is used, this default plugin is a part of the labgrid.
 This parameter is only considered when the gRPC authentication is enabled.
 
 

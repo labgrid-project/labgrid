@@ -102,8 +102,8 @@ The value related to this option is considered only when the gRPC connection aut
 ~~~~~~~~~~~~~~~~~~~
 The name of the entry point used to return an instance of the custom authentication plugin;
 this plugin is delivered as an independent Python package (not part of the labgrid code base);
-the authentication plugin is a class derived from the grpc.AuthMetadataPlugin class;
-by default, the 'DefaultAuthMetadataPlugin' is used, this default plugin is a part of the labgrid;
+the authentication plugin is a class derived from the ``grpc.AuthMetadataPlugin`` class;
+by default, the ``DefaultAuthMetadataPlugin`` is used, this default plugin is a part of the labgrid;
 this parameter is only considered when the gRPC authorization/authentication is enabled
 
 

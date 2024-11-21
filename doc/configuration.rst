@@ -1222,6 +1222,27 @@ Arguments:
 Used by:
   - `HTTPVideoDriver`_
 
+USBHub
+~~~~~~
+
+A :any:`USBHub` resource describes an USB hub.
+There is no corresponding driver, as this resource is only useful to monitor
+whether the expected USB hubs are detected by an exporter.
+To control individual ports, use `USBPowerPort`_.
+
+.. code-block:: yaml
+
+   USBHub:
+     match:
+       ID_PATH: 'pci-0000:02:00.0-usb-0:4:1.0'
+
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - none
+
 Providers
 ~~~~~~~~~
 Providers describe directories that are accessible by the target over a

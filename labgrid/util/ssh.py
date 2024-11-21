@@ -18,6 +18,8 @@ __all__ = ['sshmanager', 'SSHConnection', 'ForwardError']
 def get_ssh_connect_timeout():
     return int(os.environ.get("LG_SSH_CONNECT_TIMEOUT", 30))
 
+def get_ssh_strict_host_key():
+    return os.environ.get("LG_SSH_STRICT_HOST_KEY_CHECKING", "yes").lower()
 
 @attr.s
 class SSHConnectionManager:
@@ -427,9 +429,8 @@ class SSHConnection:
     def _start_own_master(self):
         """Starts a controlmaster connection in a temporary directory."""
         control = os.path.join(self._tmpdir, f'control-{self.host}')
-
         connect_timeout = get_ssh_connect_timeout()
-
+        strict_host_key = get_ssh_strict_host_key()
         self._logger.debug("ControlSocket: %s", control)
         args = ["ssh"] + SSHConnection._get_ssh_base_args()
         args += [
@@ -439,7 +440,7 @@ class SSHConnection:
             "-o", "ControlMaster=yes",
             "-o", f"ControlPath={control}",
             # We don't want to ask the user to confirm host keys here.
-            "-o", "StrictHostKeyChecking=yes",
+            "-o", f"StrictHostKeyChecking={strict_host_key}",
             self.host,
         ]
 

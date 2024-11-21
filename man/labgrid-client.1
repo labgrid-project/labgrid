@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "LABGRID-CLIENT" "1" "2017-04-15" "0.0.1" "embedded testing"
+.TH "LABGRID-CLIENT" 1 "2017-04-15" "0.0.1" "embedded testing"
 .SH NAME
 labgrid-client \- labgrid-client interface to control boards
 .SH SYNOPSIS
@@ -124,6 +124,10 @@ CI pipelines where the username may not be consistent between pipeline stages.
 .sp
 Set the connection timeout when using SSH (The \fBConnectTimeout\fP option). If
 unspecified, defaults to 30 seconds.
+.SS LG_SSH_STRICT_HOST_KEY_CHECKING
+.sp
+Set strict host key checking status for SSH client. (The \fBStrictHostKeyChecking\fP option). If
+unspecified, defaults to \fByes\fP
 .SH MATCHES
 .sp
 Match patterns are used to assign a resource to a specific place. The format is:
@@ -247,9 +251,11 @@ To retrieve a list of places run:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.EX
+.nf
+.ft C
 $ labgrid\-client places
-.EE
+.ft P
+.fi
 .UNINDENT
 .UNINDENT
 .sp
@@ -258,9 +264,11 @@ the \fBacquire command\fP and passing the placename as a \-p parameter:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.EX
+.nf
+.ft C
 $ labgrid\-client \-p <placename> acquire
-.EE
+.ft P
+.fi
 .UNINDENT
 .UNINDENT
 .sp
@@ -268,9 +276,11 @@ Open a console to the acquired place:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.EX
+.nf
+.ft C
 $ labgrid\-client \-p <placename> console
-.EE
+.ft P
+.fi
 .UNINDENT
 .UNINDENT
 .sp
@@ -278,9 +288,11 @@ Add all resources with the group \(dqexample\-group\(dq to the place example\-pl
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.EX
+.nf
+.ft C
 $ labgrid\-client \-p example\-place add\-match */example\-group/*/*
-.EE
+.ft P
+.fi
 .UNINDENT
 .UNINDENT
 .SH SEE ALSO

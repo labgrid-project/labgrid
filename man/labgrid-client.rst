@@ -117,6 +117,11 @@ LG_SSH_CONNECT_TIMEOUT
 Set the connection timeout when using SSH (The ``ConnectTimeout`` option). If
 unspecified, defaults to 30 seconds.
 
+LG_SSH_STRICT_HOST_KEY_CHECKING
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Set strict host key checking status for SSH client. (The ``StrictHostKeyChecking`` option). If
+unspecified, defaults to ``yes``
+
 MATCHES
 -------
 Match patterns are used to assign a resource to a specific place. The format is:

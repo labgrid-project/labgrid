@@ -7,6 +7,7 @@ from enum import Enum
 from functools import wraps
 import time
 from contextlib import contextmanager
+import copy
 
 import attr
 import grpc
@@ -267,19 +268,24 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         logging.debug("Running Save")
         self.save_scheduled = False
 
-        with warn_if_slow("dump resources"):
-            resources = self._get_resources()
-            resources = yaml.dump(resources)
-            resources = resources.encode()
-        with warn_if_slow("dump places"):
-            places = self._get_places()
-            places = yaml.dump(places)
-            places = places.encode()
+        with warn_if_slow("create resources snapshot"):
+            resources = copy.deepcopy(self._get_resources())
+        with warn_if_slow("create places snapshot"):
+            places = copy.deepcopy(self._get_places())
 
-        logging.debug("Awaiting resources")
-        await self.loop.run_in_executor(None, atomic_replace, "resources.yaml", resources)
-        logging.debug("Awaiting places")
-        await self.loop.run_in_executor(None, atomic_replace, "places.yaml", places)
+        def save_sync(resources, places):
+            with warn_if_slow("dump resources"):
+                resources = yaml.dump(resources)
+                resources = resources.encode()
+            with warn_if_slow("dump places"):
+                places = yaml.dump(places)
+                places = places.encode()
+            with warn_if_slow("write resources"):
+                atomic_replace("resources.yaml", resources)
+            with warn_if_slow("write places"):
+                atomic_replace("places.yaml", places)
+
+        await self.loop.run_in_executor(None, save_sync, resources, places)
 
     def load(self):
         try:

@@ -593,6 +593,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         await cmd.wait()
         if not cmd.response.success:
             raise ExporterError("failed to acquire {resource}")
+        if resource.acquired != place.name:
+            logging.warning("resource %s not acquired by this place after acquire request", resource)
 
     async def _acquire_resources(self, place, resources):
         assert self.lock.locked()
@@ -647,6 +649,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     await cmd.wait()
                     if not cmd.response.success:
                         raise ExporterError(f"failed to release {resource}")
+                    if resource.acquired:
+                        logging.warning("resource %s still acquired after release request", resource)
             except (ExporterError, TimeoutError):
                 logging.exception("failed to release %s", resource)
                 # at leaset try to notify the clients

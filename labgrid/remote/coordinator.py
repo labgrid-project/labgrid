@@ -5,6 +5,8 @@ import asyncio
 import traceback
 from enum import Enum
 from functools import wraps
+import time
+from contextlib import contextmanager
 
 import attr
 import grpc
@@ -24,6 +26,19 @@ from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
 from ..util import atomic_replace, labgrid_version, yaml
+
+
+@contextmanager
+def warn_if_slow(prefix, *, limit=0.1):
+    monotonic = time.monotonic()
+    process = time.process_time()
+    thread = time.thread_time()
+    yield
+    monotonic = time.monotonic() - monotonic
+    process = time.process_time() - process
+    thread = time.thread_time() - thread
+    if monotonic > limit:
+        logging.warning("%s: real %.3f>%.3f, process %.3f, thread %.3f", prefix, monotonic, limit, process, thread)
 
 
 class Action(Enum):
@@ -210,18 +225,21 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         # save changes
         try:
             if self.save_scheduled:
-                await self.save()
+                with warn_if_slow("save changes"):
+                    await self.save()
         except Exception:  # pylint: disable=broad-except
             traceback.print_exc()
         # try to re-acquire orphaned resources
         try:
             async with self.lock:
-                await self._reacquire_orphaned_resources()
+                with warn_if_slow("reacquire orphaned resources"):
+                    await self._reacquire_orphaned_resources()
         except Exception:  # pylint: disable=broad-except
             traceback.print_exc()
         # update reservations
         try:
-            self.schedule_reservations()
+            with warn_if_slow("schedule reservations"):
+                self.schedule_reservations()
         except Exception:  # pylint: disable=broad-except
             traceback.print_exc()
 
@@ -249,12 +267,14 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         logging.debug("Running Save")
         self.save_scheduled = False
 
-        resources = self._get_resources()
-        resources = yaml.dump(resources)
-        resources = resources.encode()
-        places = self._get_places()
-        places = yaml.dump(places)
-        places = places.encode()
+        with warn_if_slow("dump resources"):
+            resources = self._get_resources()
+            resources = yaml.dump(resources)
+            resources = resources.encode()
+        with warn_if_slow("dump places"):
+            places = self._get_places()
+            places = yaml.dump(places)
+            places = places.encode()
 
         logging.debug("Awaiting resources")
         await self.loop.run_in_executor(None, atomic_replace, "resources.yaml", resources)

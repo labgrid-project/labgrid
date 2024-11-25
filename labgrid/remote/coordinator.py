@@ -283,10 +283,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             session.monitor:
             logging.info(f"Session '{session.peer}' '{session.session}', cleaning up...")
             owner = session.name
-            logging.info(f"Releasing places by owner '{owner}' and session '{session.session}' ...")
-            await self.ReleasePlacesByOwnerAndSession(owner, session.session)
             logging.info(f"Cancel reservations by owner {owner} and session {session.session}...")
             await self.CancelReservationsByOwnerAndSession(owner, session.session)
+            logging.info(f"Releasing places by owner '{owner}' and session '{session.session}' ...")
+            await self.ReleasePlacesByOwnerAndSession(owner, session.session)
             logging.info(f"Reservations by owner {owner} and session {session.session} are released")
 
 
@@ -718,6 +718,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 logging.info(f"Releasing place '{place.name}' acquired by '{owner}' at session '{session}'...")
                 await self._release_resources(place, place.acquired_resources)
                 place.acquired = None
+                place.session = ''
                 place.allowed = set()
                 place.touch()
                 self._publish_place(place)
@@ -731,6 +732,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 len(res.session) > 0 and \
                 res.owner == owner and \
                 res.state == ReservationState.waiting:
+                res.session = ''
                 logging.info(f"Cancelling reservation '{res.token}' acquired by '{owner}' at session '{session}'...")
                 del self.reservations[token]
         self.schedule_reservations()

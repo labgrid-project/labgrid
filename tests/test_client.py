@@ -4,6 +4,7 @@ import time
 
 import pytest
 import pexpect
+import subprocess
 
 def test_startup(coordinator):
     pass
@@ -568,7 +569,6 @@ def test_same_name_resources(place, exporter, tmpdir):
         assert spawn.exitstatus == 0, spawn.before.strip()
 
 def test_monitor_with_session(coordinator):
-    # run coordinator?
     # step 1
     places = ["placeA", "placeB", "placeC"]
     ownershell = pexpect.spawn('whoami')
@@ -584,13 +584,10 @@ def test_monitor_with_session(coordinator):
         with pexpect.spawn(f"python -m labgrid.remote.client --place {place} delete") as spawn:
             spawn.expect(pexpect.EOF)
             spawn.close()
-    
+
     # open monitor without session
-    monitor = pexpect.spawn('python -m labgrid.remote.client monitor')
-    # spawn.expect(pexpect.EOF)
-    # spawn.close()
-    # assert spawn.exitstatus == 0, spawn.before.strip()
-    # client - create places A, B and C
+    subprocess.Popen('python -m labgrid.remote.client monitor', shell=True)
+    time.sleep(1)
     for place in places:
         with pexpect.spawn(f"python -m labgrid.remote.client --place {place} create") as spawn:
             spawn.expect(pexpect.EOF)
@@ -627,12 +624,10 @@ def test_monitor_with_session(coordinator):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
-    # kill monitor without session
-    print("Killing monitor without session")
-    # send Ctrl-C to monitor
-    monitor.send('\003')
-    monitor.expect(pexpect.EOF)
-    monitor.close()
+
+    subprocess.Popen("kill -9 $(ps -aux | grep 'labgrid.remote.client monitor' | awk {'print $2'})", shell=True)
+    time.sleep(5)
+
     print("monitor without session killed")
     with pexpect.spawn('python -m labgrid.remote.client places') as spawn:
         spawn.expect(pexpect.EOF)
@@ -662,21 +657,11 @@ def test_monitor_with_session(coordinator):
         assert spawn.exitstatus == 0, spawn.before.strip()
     # step 2
     # open monitor with session
-    monitor = pexpect.spawn('python -m labgrid.remote.client monitor --session SESSION')
-    # kill monitor with session
-    print("Killing monitor with session")
-    # send Ctrl-C to monitor
-    monitor.send('\003')
-    #with pexpect.spawn("kill -9 $(ps -aux | grep 'labgrid.remote.client monitor' | awk {'print $2'})") as spawn:
-    #    spawn.expect(pexpect.EOF)
-    #    spawn.close()
-    monitor.expect(pexpect.EOF)
-    # assert monitor.exitstatus == 0, monitor.before.strip()
-    output = monitor.before.decode('utf-8').strip()
-    print(f"monitor output: {output}")
-    monitor.close()
-    
+    subprocess.Popen('python -m labgrid.remote.client monitor --session SESSION', shell=True)
+    time.sleep(1)
+    subprocess.Popen("kill -9 $(ps -aux | grep 'labgrid.remote.client monitor --session SESSION' | awk {'print $2'})", shell=True)
     time.sleep(5)
+
     print("monitor with session killed")
     # see that place A is released
     with pexpect.spawn('python -m labgrid.remote.client --place placeA show') as spawn:
@@ -703,12 +688,16 @@ def test_monitor_with_session(coordinator):
         print('---------------------------------------------------------')
         print(output)
         print('---------------------------------------------------------')
-        assert output.find("acquired:{host}/{owner}") > -1
+        assert output.find(f"acquired: {host}/{owner}") > -1
         spawn.close()
     with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
         spawn.expect(pexpect.EOF)
-        assert output.find(f"main: place={place[0]}") == 0
-        assert output.find(f"main: place={place[1]}") > -1
-        assert output.find(f"main: place={place[2]}") == 0
+        output = spawn.before.decode('utf-8').strip()
+        print('---------------------------------------------------------')
+        print(output)
+        print('---------------------------------------------------------')
+        assert output.find(f"main: place={places[0]}") == -1
+        assert output.find(f"main: place={places[1]}") > -1
+        assert output.find(f"main: place={places[2]}") == -1
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()

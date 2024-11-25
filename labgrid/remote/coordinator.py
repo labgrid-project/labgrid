@@ -1072,7 +1072,7 @@ async def serve(listen, cleanup) -> None:
         await server.stop(5)
 
     cleanup.append(server_graceful_shutdown())
-    logging.info("Coordinator GREG ready")
+    logging.info("Coordinator ready")
     await server.wait_for_termination()
 
 

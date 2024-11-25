@@ -147,11 +147,11 @@ class Coordinator(LabgridComponent):
         assert self.reader is None
 
         self.spawn = pexpect.spawn(
-            'python -m labgrid.remote.coordinator',
+            'labgrid-coordinator',
             logfile=Prefixer(sys.stdout.buffer, 'coordinator'),
-            cwd=".")
+            cwd=self.cwd)
         try:
-            self.spawn.expect('Coordinator GREG ready')
+            self.spawn.expect('Coordinator ready')
         except Exception as e:
             raise Exception(f"coordinator startup failed with {self.spawn.before}") from e
 

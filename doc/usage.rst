@@ -872,3 +872,45 @@ like this:
   $ labgrid-client -p example allow sirius/john
 
 To remove the allow it is currently necessary to unlock and lock the place.
+
+Enabling the gRPC connection authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To enable the gRPC connection (with the labgrid coordinator) authentication, we need to run the labgrid-client and
+labgrid-exporter with the -A option.
+The gRPC authentication procedure requires:
+- providing a path to the SSL certificate file to encrypt the gRPC channel
+- providing an instance of the client authentication plugin class (class dervied from grpc.AuthMetadataPlugin)
+By default, the provided ``certificates/server.crt`` SSL certificate file is used to encrypt the gRPC channel and
+``DefaultAuthMetadataPlugin`` plugin is used to update the HTTP/2 headers with authentication information on the client side.
+
+Labgrid coordinator supports the gRPC authentication when the -A command line option is specified.
+The labgrid-coordinator, by default uses the provided ``DefaultServerInterceptor`` plugin to validate the authentication
+information passed using HTTP/2 headers, for the gRPC channel encryption the coordinator, by default used provided SSL
+certificate file: ``certificates/server.crt`` and key file: ``certificates/server.key``.
+
+Generation of SSL certificates for gRPC authentication purposes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The repository contains certificate file: ``certificates/server.crt``, key file: ``certificates/server.key`` and sample
+configuration file: ``certificates/cert.conf`` that can be used to re-generate the certificate and key.
+
+Please check and modify the configuration file: ``certificates/cert.conf`` according to your needs, and ensure that
+all of your supported addresses, hostnames, and domains are listed in the ``alt_names`` section.
+
+generate certificate and key using the following command run inside the ``certificate`` directory:
+
+.. code-block:: bash
+
+  $ openssl req -config cert.conf -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout server.key -out server.crt
+
+please notice that the certificate is valid for 365 days, consider shortening or extending this period
+
+verify the generated certificate using the following command run inside the ``certificate`` directory:
+
+.. code-block:: bash
+
+  $ openssl x509 -noout -text -in server.crt
+
+ensure that all of your
+supported addresses, hostnames, and domains are present

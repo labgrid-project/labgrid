@@ -42,6 +42,40 @@ OPTIONS
     make coordinator listen on host and port
 -d, --debug
     enable debug mode
+-A, --auth
+    enables gRPC connection authentication/authorization
+-cp RELATIVE_PATH, --cert-path RELATIVE_PATH
+    relative path to the SSL certificate file, defaults to ``certificates/server.crt``
+-kp RELATIVE_PATH, --key-path RELATIVE_PATH
+    relative path to the SSL key file, defaults to ``certificates/server.key``
+-si AUTH_PLUGIN_NAME, --server-interceptor AUTH_PLUGIN_NAME
+    name of the entry point used to return an instance of the custom authentication plugin;
+    by default, the 'DefaultAuthMetadataPlugin' is used
+
+-A / --auth
+~~~~~~~~~~~~
+This option enables gRPC connection authentication/authorization.
+
+-cp / --cert-path
+~~~~~~~~~~~~~~~~~
+The relative path to the SSL certificate file used for the gRPC channel encryption,
+defaults to ``certificates/server.crt``.
+The value related to this option is considered only when the gRPC connection authentication is enabled.
+
+-kp / --key-path
+~~~~~~~~~~~~~~~~~
+The relative path to the SSL key file used for the gRPC channel encryption,
+defaults to ``certificates/server.key``.
+The value related to this option is considered only when the gRPC connection authentication is enabled.
+
+-si / --server-interceptor
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+The name of the entry point used to return an instance of the custom server interceptor plugin.
+This plugin is delivered as an independent Python package (not part of the labgrid code base).
+The server interceptor plugin is a class derived from the ``grpc.aio.ServerInterceptor`` class.
+By default, the ``DefaultServerInterceptor`` is used, this default plugin is a part of the labgrid.
+This parameter is only considered when the gRPC authentication is enabled.
+
 
 SEE ALSO
 --------

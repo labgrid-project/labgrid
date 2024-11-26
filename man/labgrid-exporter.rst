@@ -50,6 +50,13 @@ OPTIONS
     use fully qualified domain name as default for hostname
 -d, --debug
     enable debug mode
+-A, --auth
+    enables gRPC connection authentication/authorization
+-cp RELATIVE_PATH, --cert-path RELATIVE_PATH
+    relative path to the SSL certificate file, defaults to ``certificates/server.crt``
+-ap AUTH_PLUGIN_NAME, --auth-plugin AUTH_PLUGIN_NAME
+    name of the entry point used to return an instance of the custom authentication plugin;
+    by default, the 'DefaultAuthMetadataPlugin' is used
 
 -i / --isolated
 ~~~~~~~~~~~~~~~
@@ -81,6 +88,25 @@ In some networks the fully qualified domain name may be needed to reach resource
 on an exporter. This option changes the default to fqdn when no --hostname is
 explicitly set.
 
+-A / --auth
+~~~~~~~~~~~~
+This option enables gRPC connection authentication/authorization.
+
+-cp / --cert-path
+~~~~~~~~~~~~~~~~~
+The relative path to the SSL certificate file used for the gRPC channel encryption,
+defaults to ``certificates/server.crt``.
+The value related to this option is considered only when the gRPC connection authentication is enabled.
+
+-ap / --auth-plugin
+~~~~~~~~~~~~~~~~~~~
+The name of the entry point used to return an instance of the custom authentication plugin;
+this plugin is delivered as an independent Python package (not part of the labgrid code base);
+the authentication plugin is a class derived from the ``grpc.AuthMetadataPlugin`` class;
+by default, the ``DefaultAuthMetadataPlugin`` is used, this default plugin is a part of the labgrid;
+this parameter is only considered when the gRPC authorization/authentication is enabled
+
+
 CONFIGURATION
 -------------
 The exporter uses a YAML configuration file which defines groups of related
@@ -111,6 +137,12 @@ Same as above, but with name ``myname``:
 .. code-block:: bash
 
    $ labgrid-exporter -n myname my-config.yaml
+
+To enable basic gRPC authentication:
+
+.. code-block:: bash
+
+    $ labgrid-exporter -A my-config.yaml
 
 SEE ALSO
 --------

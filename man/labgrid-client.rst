@@ -54,6 +54,32 @@ OPTIONS
     increase verbosity
 -P PROXY, --proxy PROXY
     proxy connections over ssh
+-A, --auth
+    enables gRPC connection authentication/authorization
+-cp RELATIVE_PATH, --cert-path RELATIVE_PATH
+    relative path to the SSL certificate file, defaults to ``certificates/server.crt``
+-ap AUTH_PLUGIN_NAME, --auth-plugin AUTH_PLUGIN_NAME
+    name of the entry point used to return an instance of the custom authentication plugin;
+    by default, the ``DefaultAuthMetadataPlugin`` is used
+
+-A / --auth
+~~~~~~~~~~~~
+This option enables gRPC connection authentication/authorization.
+
+-cp / --cert-path
+~~~~~~~~~~~~~~~~~
+The relative path to the SSL certificate file used for the gRPC channel encryption,
+defaults to ``certificates/server.crt``.
+The value related to this option is considered only when the gRPC connection authentication is enabled.
+
+-ap / --auth-plugin
+~~~~~~~~~~~~~~~~~~~
+The name of the entry point used to return an instance of the custom authentication plugin;
+this plugin is delivered as an independent Python package (not part of the labgrid code base);
+the authentication plugin is a class derived from the ``grpc.AuthMetadataPlugin`` class;
+by default, the ``DefaultAuthMetadataPlugin`` is used, this default plugin is a part of the labgrid;
+this parameter is only considered when the gRPC authorization/authentication is enabled
+
 
 CONFIGURATION FILE
 ------------------
@@ -261,6 +287,12 @@ Add all resources with the group "example-group" to the place example-place:
 .. code-block:: bash
 
    $ labgrid-client -p example-place add-match */example-group/*/*
+
+To enable the default gRPC connection authentication
+
+.. code-block:: bash
+
+    $labgrid-client -A places
 
 SEE ALSO
 --------

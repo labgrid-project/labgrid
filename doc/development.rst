@@ -778,3 +778,11 @@ processes well.
 An implementation should start a new process,
 return a handle and forbid running other processes in the foreground.
 The handle can be used to retrieve output from a command.
+
+gRPC Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The gRPC authentication procedure is based on the mechanism presented in the
+official gRPC repository. It utilizes:
+- SSL certificates and keys to secure the gRPC channels
+- plugins intended to encode and decode authentication information using HTTP/2 headers

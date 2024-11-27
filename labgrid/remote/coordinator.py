@@ -799,7 +799,6 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             request2 = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
             await self.ReleasePlace(request2, context)
             print("released")
-            
         return labgrid_coordinator_pb2.AcquirePlaceResponse()
 
     @locked

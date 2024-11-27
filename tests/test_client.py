@@ -14,7 +14,6 @@ def place(coordinator):
     with pexpect.spawn('python -m labgrid.remote.client -p test delete') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
-        
     with pexpect.spawn('python -m labgrid.remote.client -p test create') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
@@ -593,7 +592,6 @@ def test_monitor_with_session(coordinator):
             spawn.expect(pexpect.EOF)
             spawn.close()
             assert spawn.exitstatus == 0, spawn.before.strip()
-            
     # client - acquire place A with session
     with pexpect.spawn('python -m labgrid.remote.client --place placeA acquire --session SESSION') as spawn:
         spawn.expect(pexpect.EOF)

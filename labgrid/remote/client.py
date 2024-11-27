@@ -680,8 +680,7 @@ class ClientSession:
         if not self.args.allow_unmatched:
             self.check_matches(place)
         session = self.session = self.args.session
-        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name,
-                                                              session=session) # possibly create another request to hold the lock, such as labgrid_coordinator_pb2.AcquirePlaceAndHoldRequest
+        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name, session=session) 
 
         try:
             await self.stub.AcquirePlace(request)

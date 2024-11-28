@@ -24,7 +24,6 @@ from collections import defaultdict, OrderedDict
 from datetime import datetime
 from pprint import pformat
 from typing import Any, Dict
-
 import attr
 import grpc
 
@@ -77,6 +76,7 @@ class ClientSession:
     prog = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     args = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(argparse.Namespace)))
     monitor = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    session = None
 
     def gethostname(self):
         return os.environ.get("LG_HOSTNAME", gethostname())
@@ -136,6 +136,8 @@ class ClientSession:
         self.out_queue.put_nowait(None)  # let the sender side exit gracefully
         if self.stream_call:
             self.stream_call.cancel()
+        if self.pump_task:
+            self.pump_task.cancel()
         try:
             await self.pump_task
         except asyncio.CancelledError:
@@ -266,6 +268,15 @@ class ClientSession:
 
     async def do_monitor(self):
         self.monitor = True
+        session = self.session = self.args.session
+        print(f"Session name: {self.session}")
+        if not session is None and len(session) > 0:
+            request = labgrid_coordinator_pb2.MonitorRequest(session=session)
+            try:
+                await self.stub.Monitor(request)
+                await self.sync_with_coordinator()
+            except grpc.aio.AioRpcError as e:
+                raise ServerError(e.details())
         await self.stopping.wait()
 
     async def complete(self):
@@ -668,8 +679,8 @@ class ClientSession:
         place = self.get_idle_place()
         if not self.args.allow_unmatched:
             self.check_matches(place)
-
-        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name)
+        session = self.session = self.args.session
+        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name, session=session) 
 
         try:
             await self.stub.AcquirePlace(request)
@@ -707,7 +718,6 @@ class ClientSession:
                     f"place {place.name} is acquired by a different user ({place.acquired}), use --kick if you are sure"
                 )  # pylint: disable=line-too-long
             print(f"warning: kicking user ({place.acquired})")
-
         request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
 
         try:
@@ -1416,7 +1426,7 @@ class ClientSession:
 
     async def create_reservation(self):
         prio = self.args.prio
-
+        session = self.args.session
         fltr = {}
         for pair in self.args.filters:
             try:
@@ -1433,7 +1443,7 @@ class ClientSession:
             "main": labgrid_coordinator_pb2.Reservation.Filter(filter=fltr),
         }
 
-        request = labgrid_coordinator_pb2.CreateReservationRequest(filters=fltrs, prio=prio)
+        request = labgrid_coordinator_pb2.CreateReservationRequest(filters=fltrs, prio=prio, session=session)
 
         try:
             response: labgrid_coordinator_pb2.CreateReservationResponse = await self.stub.CreateReservation(request)
@@ -1453,7 +1463,6 @@ class ClientSession:
 
     async def cancel_reservation(self):
         token: str = self.args.token
-
         request = labgrid_coordinator_pb2.CancelReservationRequest(token=token)
 
         try:
@@ -1712,6 +1721,7 @@ def main():
     subparser.set_defaults(func=ClientSession.complete)
 
     subparser = subparsers.add_parser("monitor", help="monitor events from the coordinator")
+    subparser.add_argument("--session", default=None, help="add to identify session to release places and cancel reservations")
     subparser.set_defaults(func=ClientSession.do_monitor)
 
     subparser = subparsers.add_parser("resources", aliases=("r",), help="list available resources")
@@ -1778,12 +1788,15 @@ def main():
     subparser.add_argument(
         "--allow-unmatched", action="store_true", help="allow missing resources for matches when locking the place"
     )
+    subparser.add_argument("--session", help="add to identify session to release places and cancel reservations")
+
     subparser.set_defaults(func=ClientSession.acquire)
 
     subparser = subparsers.add_parser("release", aliases=("unlock",), help="release a place")
     subparser.add_argument(
         "-k", "--kick", action="store_true", help="release a place even if it is acquired by a different user"
     )
+    subparser.add_argument("--session", help="add to identify session to release places and cancel reservations")
     subparser.set_defaults(func=ClientSession.release)
 
     subparser = subparsers.add_parser(
@@ -2000,11 +2013,13 @@ def main():
     subparser.add_argument(
         "--prio", type=float, default=0.0, help="priority relative to other reservations (default 0)"
     )
+    subparser.add_argument("--session", help="add to identify session to release places and cancel reservations")
     subparser.add_argument("filters", metavar="KEY=VALUE", nargs="+", help="required tags")
     subparser.set_defaults(func=ClientSession.create_reservation)
 
     subparser = subparsers.add_parser("cancel-reservation", help="cancel a reservation")
     subparser.add_argument("token", type=str, default=token, nargs="?" if token else None)
+    subparser.add_argument("--session", help="add to identify session to release places and cancel reservations")
     subparser.set_defaults(func=ClientSession.cancel_reservation)
 
     subparser = subparsers.add_parser("wait", help="wait for a reservation to be allocated")

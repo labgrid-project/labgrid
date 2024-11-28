@@ -197,6 +197,7 @@ def serial_driver_no_name(target, serial_port, mocker):
 
 @pytest.fixture(scope='function')
 def coordinator(tmpdir):
+    print(tmpdir)
     coordinator = Coordinator(tmpdir)
     coordinator.start()
 

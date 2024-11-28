@@ -17,6 +17,17 @@ more performant and the import times are shorter.
 New Features in 24.1
 ~~~~~~~~~~~~~~~~~~~~
 - All components can be installed into the same virtualenv again.
+- Run monitor, acquire and reserve commands with session parameter.
+  From now on you can run client monitor
+    command with parameter 'session' - like in
+    `labgrid-client monitor --session <SESSION_NAME>`
+    Then if commands 'acquire' ('lock') and/or 'reserve' run with same session name as in
+    `labgrid-client --place <PLACE> acquire --session <SESSION_NAME>` or
+    `labgrid-client reserve <FILTER> --session <SESSION_NAME>` those places and reservations
+    will be registered in coordinator with the same <SESSION_NAME> and then in case this
+    monitor will failed or cancelled, this will start procedure of releasing places and
+    cancellation of reservations with the same (as in monitor) SESSION_NAME. Places and
+    reservations with other session will be rest intact.
 
 Bug fixes in 24.1
 ~~~~~~~~~~~~~~~~~

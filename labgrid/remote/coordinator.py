@@ -309,7 +309,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except Exception:
                 logging.exception("error in client message handler")
 
-        runnning_request_task = self.loop.create_task(request_task())
+        running_request_task = self.loop.create_task(request_task())
 
         try:
             async for out_msg in queue_as_aiter(out_msg_queue):
@@ -323,8 +323,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 logging.info("Never received startup from peer %s that disconnected", peer)
                 return
 
-            runnning_request_task.cancel()
-            await runnning_request_task
+            running_request_task.cancel()
+            await running_request_task
             logging.debug("client aborted %s, cancelled: %s", session, context.cancelled())
 
     def _add_default_place(self, name):
@@ -405,7 +405,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except Exception:
                 logging.exception("error in exporter message handler")
 
-        runnning_request_task = self.loop.create_task(request_task())
+        running_request_task = self.loop.create_task(request_task())
 
         try:
             async for cmd in queue_as_aiter(command_queue):
@@ -419,8 +419,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         except Exception:
             logging.exception("error in exporter command handler")
         finally:
-            runnning_request_task.cancel()
-            await runnning_request_task
+            running_request_task.cancel()
+            await running_request_task
 
             try:
                 session = self.exporters.pop(peer)

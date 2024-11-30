@@ -17,6 +17,7 @@ class UBootProviderDriver(Driver):
         board (str): U-Boot board name, e.g. "gurnard"
         bl31 (str): pathname of ARM Trusted Firmware BL31 binary blob
         tee (str): pathname of OP-TEE Trusted Execution Environment blob
+        opensbi (str): pathname of Open Source Supervisor Binary Interface
         binman_indir (str): pathname to a directory containing blobs for Binman
         board_extra (str): U-Boot board name for a second build which uses the
             same source code, e.g. "am62x_beagleplay_r5"
@@ -59,6 +60,7 @@ class UBootProviderDriver(Driver):
     board = attr.ib(validator=attr.validators.instance_of(str))
     bl31 = attr.ib(default='', validator=attr.validators.instance_of(str))
     tee = attr.ib(default='', validator=attr.validators.instance_of(str))
+    opensbi = attr.ib(default='', validator=attr.validators.instance_of(str))
     binman_indir = attr.ib(default='', validator=attr.validators.instance_of(str))
     board_extra = attr.ib(default='', validator=attr.validators.instance_of(str))
 
@@ -187,9 +189,11 @@ class UBootProviderDriver(Driver):
         patch = get_var('patch')
         process_limit = get_var('process-limit')
 
-        env = os.environ
+        env = {}
         if self.bl31:
             env['BL31'] = self.bl31
+        if self.opensbi:
+            env['OPENSBI'] = self.opensbi
         if self.binman_indir:
             env['BINMAN_INDIRS'] = self.binman_indir
         if self.tee:
@@ -200,7 +204,7 @@ class UBootProviderDriver(Driver):
             self.tool,
             '-w',
             '-W',
-            '-ve',
+            '-veu',
         ]
         if config_only:
             cmd.append('--config-only')
@@ -223,8 +227,11 @@ class UBootProviderDriver(Driver):
         if get_var('do-clean', '0') == '1':
             cmd.append('-m')
 
+        full_env = os.environ
+        full_env.update(env)
         for board, build_path in zip(boards, build_paths):
-            self.run_build(board, build_path, do_print, detail, cwd, env, cmd)
+            self.run_build(board, build_path, do_print, detail, cwd, full_env,
+                           cmd)
 
         return build_paths
 

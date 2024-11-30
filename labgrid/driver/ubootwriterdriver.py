@@ -116,6 +116,12 @@ class UBootWriterDriver(Driver):
             dest = pathlib.PurePath('/u-boot.img')
             image = os.path.join(image_dir, 'u-boot.img_unsigned')
             self.storage.write_files([image], dest, 1, False)
+        elif self.method == 'riscv':
+            spl = os.path.join(image_dir, 'spl/u-boot-spl.bin.normal.out')
+            self.storage.write_image(spl, partition=13, block_size=512)
+
+            u_boot = os.path.join(image_dir, 'u-boot.itb')
+            self.storage.write_image(u_boot, partition=2, block_size=512)
         else:
             raise ValueError(f'Unknown writing method {self.method}')
         if self.storage:

@@ -9,7 +9,7 @@
 export LG_COORDINATOR=kea:20408
 
 # Environment file for the lab
-export LG_ENV=/vid/software/devel/ubtest/lab/cfg/env.cfg
+export LG_ENV=/vid/software/devel/ubtest/lab/cfg/kea_env.cfg
 
 # Location of the U-Boot test hooks
 export UB_TEST_HOOKS=/vid/software/devel/ubtest/u-boot-test-hooks
@@ -20,5 +20,5 @@ export BUILDMAN_PROCESS_LIMIT=1
 # Use the internal console since microcom can miss serial input at boot
 export LG_CONSOLE=internal
 
-# Tell u-boot-test-hooks to use the Labgrid integration
-export USE_LABGRID=1
+# Tell u-boot-test-hooks to use the Labgrid-sjg integration
+export USE_LABGRID_SJG=1

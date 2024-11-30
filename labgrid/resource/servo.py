@@ -120,7 +120,7 @@ class ServoComms(object):
         for _ in range(30):
             if self._proc.poll():
                 out = self._proc.communicate(timeout=100)
-                raise ValueError(f"servod died: '{out[1]}'")
+                raise ValueError(f"oh servod died: cmd {' '.join(cmd)} output '{out[1]}'")
             if os.path.exists(self._info_file):
                 done = True
                 break

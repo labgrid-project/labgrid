@@ -68,7 +68,11 @@ class UBootStrategy(Strategy):
             image_dirs = builder.build()
         else:
             image_dirs = builder.get_build_paths()
-        print(f"Bootstrapping U-Boot from dir {' '.join(image_dirs)}")
+        if len(image_dirs) == 1 or image_dirs[1] == 'None':
+            msg = f'dir {image_dirs[0]}'
+        else:
+            msg = f'dirs {image_dirs[0]} and {image_dirs[1]}'
+        print(f"Bootstrapping U-Boot from {msg}")
 
         writer = self.target.get_driver("UBootWriterDriver")
         if self.use_send():

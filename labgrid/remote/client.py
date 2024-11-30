@@ -1535,12 +1535,18 @@ class ClientSession:
                 raise UserError(f"{item}: Expected Driver:name[,name...]")
             cls_name, names = item.split(':')
             drv = target.get_driver(cls_name)
+
+            # Collect all values before we print anything
+            values = OrderedDict()
             for name in names.split(','):
-                val = drv.query_info(name)
+                values[name] = drv.query_info(name)
+
+            for name, val in values.items():
                 if self.args.show_name:
                     print(f'{cls_name}:{name} {val}')
                 else:
                     print(f'{val}')
+
     query.needs_target = True
 
     def print_version(self, target):
@@ -2202,7 +2208,17 @@ def main():
                         coro = session.release()
                         session.loop.run_until_complete(coro)
                 else:
+                    if args.acquire:
+                        place = session.get_place(args.place)
+                        if not place.acquired:
+                            args.allow_unmatched = True
+                            coro = session.acquire()
+                            session.loop.run_until_complete(coro)
+                            auto_release = True
                     args.func(session)
+                    if auto_release:
+                        coro = session.release()
+                        session.loop.run_until_complete(coro)
             finally:
                 logging.debug("Stopping session")
                 session.loop.run_until_complete(session.stop())

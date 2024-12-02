@@ -542,6 +542,20 @@ class USBSDMuxDevice(USBResource):
     def path(self):
         return self.disk_path
 
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class USBHub(USBResource):
+    """The USBHub describes a USB hub.
+
+    This is mainly useful to monitor if all expected hubs are detected.
+    """
+    def __attrs_post_init__(self):
+        self.match['DEVTYPE'] = 'usb_interface'
+        self.match['DRIVER'] = 'hub'
+        super().__attrs_post_init__()
+
+
 @target_factory.reg_resource
 @attr.s(eq=False)
 class USBPowerPort(USBResource):

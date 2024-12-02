@@ -373,6 +373,7 @@ class USBSigrokExport(USBGenericExport):
             "model_id": self.local.model_id,
             "driver": self.local.driver,
             "channels": self.local.channels,
+            "channel_group": self.local.channel_group,
         }
 
 

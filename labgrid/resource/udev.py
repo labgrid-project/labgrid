@@ -396,12 +396,18 @@ class SigrokUSBDevice(USBResource):
     Args:
         driver (str): driver to use with sigrok
         channels (str): a sigrok channel mapping as described in the sigrok-cli man page
+        channel_group (str): a sigrok channel group as described in the sigrok-cli man page
     """
     driver = attr.ib(
         default=None,
         validator=attr.validators.instance_of(str)
     )
     channels = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+
+    channel_group = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
@@ -421,12 +427,17 @@ class SigrokUSBSerialDevice(USBResource):
     Args:
         driver (str): driver to use with sigrok
         channels (str): a sigrok channel mapping as described in the sigrok-cli man page
+        channel_group (str): a sigrok channel group as described in the sigrok-cli man page
     """
     driver = attr.ib(
         default=None,
         validator=attr.validators.instance_of(str)
     )
     channels = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+    channel_group = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )

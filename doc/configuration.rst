@@ -655,8 +655,10 @@ specific device from all connected supported devices use the
 
 Arguments:
   - driver (str): name of the sigrok driver to use
-  - channels (str): optional, channel mapping as described in the sigrok-cli
-    man page
+  - channels (str): optional, channel mapping as described in the
+    ``sigrok-cli`` man page
+  - channel_group (str): optional, channel group as described in the
+    ``sigrok-cli`` man page
 
 Used by:
   - `SigrokDriver`_
@@ -896,8 +898,10 @@ A :any:`SigrokUSBDevice` resource describes a *Sigrok* USB device.
 
 Arguments:
   - driver (str): name of the sigrok driver to use
-  - channels (str): optional, channel mapping as described in the sigrok-cli
-    man page
+  - channels (str): optional, channel mapping as described in the
+    ``sigrok-cli`` man page
+  - channel_group (str): optional, channel group as described in the
+    ``sigrok-cli`` man page
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
 
 Used by:
@@ -925,6 +929,8 @@ communicates over a USB serial port instead of being a USB device itself (see
 Arguments:
   - driver (str): name of the sigrok driver to use
   - channels (str): optional, channel mapping as described in the
+    ``sigrok-cli`` man page
+  - channel_group (str): optional, channel group as described in the
     ``sigrok-cli`` man page
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
 

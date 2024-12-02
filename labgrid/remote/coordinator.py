@@ -195,7 +195,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.load()
 
         self.loop = asyncio.get_running_loop()
-        self.poll_task = self.loop.create_task(self.poll())
+        self.poll_task = self.loop.create_task(self.poll(), name="coordinator-poll")
 
     async def _poll_step(self):
         # save changes
@@ -298,6 +298,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         name = in_msg.startup.name
                         session = self.clients[peer] = ClientSession(self, peer, name, out_msg_queue, version)
                         logging.debug("Received startup from %s with %s", name, version)
+                        asyncio.current_task().set_name(f"client-{peer}-rx/started-{name}")
                     elif kind == "subscribe":
                         if in_msg.subscribe.all_places:
                             session.subscribe_places()
@@ -309,7 +310,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except Exception:
                 logging.exception("error in client message handler")
 
-        running_request_task = self.loop.create_task(request_task())
+        asyncio.current_task().set_name(f"client-{peer}-tx")
+        running_request_task = self.loop.create_task(request_task(), name=f"client-{peer}-rx/init")
 
         try:
             async for out_msg in queue_as_aiter(out_msg_queue):
@@ -389,6 +391,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         session = self.exporters[peer] = ExporterSession(self, peer, name, command_queue, version)
                         logging.debug("Exporters: %s", self.exporters)
                         logging.debug("Received startup from %s with %s", name, version)
+                        asyncio.current_task().set_name(f"exporter-{peer}-rx/started-{name}")
                     elif kind == "resource":
                         logging.debug("Received resource from %s with %s", name, in_msg.resource)
                         action, _ = session.set_resource(
@@ -405,7 +408,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except Exception:
                 logging.exception("error in exporter message handler")
 
-        running_request_task = self.loop.create_task(request_task())
+        asyncio.current_task().set_name(f"exporter-{peer}-tx")
+        running_request_task = self.loop.create_task(request_task(), name=f"exporter-{peer}-rx/init")
 
         try:
             async for cmd in queue_as_aiter(command_queue):
@@ -958,6 +962,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
 
 async def serve(listen, cleanup) -> None:
+    asyncio.current_task().set_name("coordinator-serve")
     # It seems since https://github.com/grpc/grpc/pull/34647, the
     # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
     # so set it as well.

@@ -440,3 +440,51 @@ class PDUDaemonDriver(Driver, PowerResetMixin, PowerProtocol):
     @Driver.check_active
     def get(self):
         raise NotImplementedError("pdudaemon does not support retrieving the port's state")
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class AMTPowerDriver(Driver, PowerResetMixin, PowerProtocol):
+    """AMTPowerDriver - Driver using an Intel AMT PowerPort"""
+    bindings = {"port": "AMTPowerPort", }
+    delay = attr.ib(default=5.0, validator=attr.validators.instance_of(float))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _amt_power(self, cmd):
+        runstr = f"amtctrl -p {self.port.host} {cmd}"
+        p = subprocess.Popen(runstr.split(' '), text=True,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             stdin=subprocess.PIPE)
+        p.stdin.write(self.port.password)
+        p.stdin.close()
+        p.wait(self.port.timeout)
+        out = p.stdout.read() + p.stderr.read()
+        assert p.returncode == 0, "Failed to execute AMT command {cmd}, ret: {p.returncode}, {out}"
+        return out.strip()
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        self._amt_power("on")
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        self._amt_power("off")
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        self._amt_power("reboot")
+
+    @Driver.check_active
+    def get(self):
+        power = self._amt_power("status")
+        if power == "on":
+            return True
+        elif power == "off":
+            return False
+        else:
+            raise ExecutionError(f"got unexpected power status {power}")

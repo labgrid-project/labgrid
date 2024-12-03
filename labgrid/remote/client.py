@@ -853,8 +853,7 @@ class ClientSession:
         target = self._get_target(place)
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
         from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort
-        from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
-
+        from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort, AMTPowerPort
         drv = None
         try:
             drv = target.get_driver("PowerProtocol", name=name)
@@ -874,6 +873,8 @@ class ClientSession:
                     drv = self._get_driver_or_new(target, "TasmotaPowerDriver", name=name)
                 elif isinstance(resource, NetworkYKUSHPowerPort):
                     drv = self._get_driver_or_new(target, "YKUSHPowerDriver", name=name)
+                elif isinstance(resource, AMTPowerPort):
+                    drv = self._get_driver_or_new(target, "AMTPowerDriver", name=name)
                 if drv:
                     break
 

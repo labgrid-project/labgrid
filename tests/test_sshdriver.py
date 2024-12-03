@@ -1,6 +1,7 @@
 import pytest
 import socket
 
+from labgrid import Environment
 from labgrid.driver import SSHDriver, ExecutionError
 from labgrid.exceptions import NoResourceFoundError
 from labgrid.resource import NetworkService
@@ -57,6 +58,27 @@ def test_run_check_raise(target, ssh_driver_mocked_and_activated, mocker):
     res = s.run("test")
     assert res == (['error'], [], 1)
     target.deactivate(s)
+
+def test_default_tools(target):
+    NetworkService(target, "service", "1.2.3.4", "root")
+    s = SSHDriver(target, "ssh")
+    assert [s._ssh, s._scp, s._sshfs, s._rsync] == ["ssh", "scp", "sshfs", "rsync"]
+
+def test_custom_tools(target, tmpdir):
+    p = tmpdir.join("config.yaml")
+    p.write(
+        """
+        tools:
+          ssh: "/path/to/ssh"
+          scp: "/path/to/scp"
+          sshfs: "/path/to/sshfs"
+          rsync: "/path/to/rsync"
+        """
+    )
+    target.env = Environment(str(p))
+    NetworkService(target, "service", "1.2.3.4", "root")
+    s = SSHDriver(target, "ssh")
+    assert [s._ssh, s._scp, s._sshfs, s._rsync] == [f"/path/to/{t}" for t in ("ssh", "scp", "sshfs", "rsync")]
 
 @pytest.fixture(scope='function')
 def ssh_localhost(target, pytestconfig):

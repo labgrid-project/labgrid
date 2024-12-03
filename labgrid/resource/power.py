@@ -33,3 +33,18 @@ class PDUDaemonPort(Resource):
     host = attr.ib(validator=attr.validators.instance_of(str))
     pdu = attr.ib(validator=attr.validators.instance_of(str))
     index = attr.ib(validator=attr.validators.instance_of(int), converter=int)
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class AMTPowerPort(Resource):
+    """The AMTPowerPort describes an Intel AMT power controllable PC with BMC
+
+    Args:
+        host (str): hostname or ip the AMT interface of the PC is reachable
+        password (str): password to use for AMT login
+        timeout (int): timeout to use when polling the resource
+    """
+    host = attr.ib(validator=attr.validators.instance_of(str))
+    password = attr.ib(validator=attr.validators.instance_of(str))
+    timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))

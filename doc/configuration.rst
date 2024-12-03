@@ -723,7 +723,7 @@ Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
 
 Used by:
-  - `RKUSBDriver`_
+  - `RKDevelopToolUSBDriver`_
 
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
@@ -2480,9 +2480,9 @@ Implements:
 Arguments:
   - None
 
-RKUSBDriver
-~~~~~~~~~~~
-An :any:`RKUSBDriver` is used to upload an image into a device in the *Rockchip
+RKDevelopToolUSBDriver
+~~~~~~~~~~~~~~~~~~~~~~
+An :any:`RKDevelopToolUSBDriver` is used to upload an image into a device in the *Rockchip
 USB loader state*.
 This is useful to bootstrap a bootloader onto a device.
 
@@ -2499,7 +2499,7 @@ Implements:
    targets:
      main:
        drivers:
-         RKUSBDriver:
+         RKDevelopToolUSBDriver:
            image: 'mybootloaderkey'
            usb_loader: 'myloaderkey'
 

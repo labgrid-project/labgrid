@@ -108,6 +108,7 @@ class DockerDaemon(ManagedResource):
             nw_service = target_factory.make_resource(
                 self.target, "NetworkService",
                 service_name, network_service)
+            nw_service.parent = self
             if client.container_name not in self._nw_services:
                 self._nw_services[client.container_name] = list()
             self._nw_services[client.container_name].append(nw_service)

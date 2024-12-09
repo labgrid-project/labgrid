@@ -5,7 +5,7 @@ from .modbus import ModbusTCPCoil
 from .modbusrtu import ModbusRTU
 from .networkservice import NetworkService
 from .onewireport import OneWirePIO
-from .power import NetworkPowerPort, PDUDaemonPort, AMTPowerPort
+from .power import NetworkPowerPort, PDUDaemonPort, AMTPowerPort, IPMIPowerPort
 from .remote import RemotePlace
 from .udev import (
     AlteraUSBBlaster,

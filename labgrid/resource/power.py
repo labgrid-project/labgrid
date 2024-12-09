@@ -48,3 +48,20 @@ class AMTPowerPort(Resource):
     host = attr.ib(validator=attr.validators.instance_of(str))
     password = attr.ib(validator=attr.validators.instance_of(str))
     timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class IPMIPowerPort(Resource):
+    """The IPMIPowerPrt describes an IPMI controllable PC with BMC
+
+    Args:
+        host (str): hostname or ip the IPMI interface of the PC is reachable
+        username (str): username to use for IPMI login
+        password (str): password to use for IPMI login
+        timeout (int): timeout to use when polling the resource
+    """
+    host = attr.ib(validator=attr.validators.instance_of(str))
+    username = attr.ib(validator=attr.validators.instance_of(str))
+    password = attr.ib(validator=attr.validators.instance_of(str))
+    timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))

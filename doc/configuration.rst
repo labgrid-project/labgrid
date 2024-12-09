@@ -328,6 +328,27 @@ Arguments:
 Used by:
   - `AMTPowerDriver`_
 
+IPMIPowerPort
++++++++++++++
+A :any:`IPMIPowerPort` describes a IPMI port accessible via `ipmi-power`.
+
+.. code-block:: yaml
+
+   IPMIPowerPort:
+     host: 'ipmi-hostname'
+     username: 'admin'
+     password: 'secret-password'
+
+Arguments:
+ - host (str): hostname or ip the IPMI interface of the PC is reachable
+ - username (str): username to use for IPMI login
+ - password (str): password to use for IPMI login
+ - timeout (int): timeout to use when polling the resource
+ - args (str): extra args to prepend the command with
+
+Used by:
+  - `IPMIPowerDriver`_
+
 USBPowerPort
 ++++++++++++
 A :any:`USBPowerPort` describes a generic switchable USB hub as supported by

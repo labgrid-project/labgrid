@@ -55,6 +55,7 @@ message Sync {
 message StartupDone {
   string version = 1;
   string name = 2;
+  optional string session = 3;
 };
 
 message Subscribe {
@@ -167,6 +168,7 @@ message Place {
   double created = 9;
   double changed = 10;
   optional string reservation = 11;
+  optional string session = 12;
 };
 
 message ResourceMatch {
@@ -229,6 +231,7 @@ message DeletePlaceMatchResponse {
 
 message AcquirePlaceRequest {
   string placename = 1;
+  optional string session = 2;
 };
 
 message AcquirePlaceResponse {
@@ -254,6 +257,7 @@ message AllowPlaceResponse {
 message CreateReservationRequest {
   map<string, Reservation.Filter> filters = 1;
   double prio = 2;
+  optional string session = 3;
 };
 
 message CreateReservationResponse {
@@ -272,6 +276,7 @@ message Reservation {
   map<string, string> allocations = 6;
   double created = 7;
   double timeout = 8;
+  optional string session = 9;
 };
 
 message CancelReservationRequest {

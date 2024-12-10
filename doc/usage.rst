@@ -872,3 +872,20 @@ like this:
   $ labgrid-client -p example allow sirius/john
 
 To remove the allow it is currently necessary to unlock and lock the place.
+
+Using places within a session
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This workflow enables places and reservations to be released when a "session" is killed.
+This is useful when running a session within a CI job, so that if the CI job is killed,
+its places and reservations are freed.
+
+Use the ``labgrid-client monitor --session <session-name>`` command to start a session.
+The ``--session`` option can be used to tie reservations and place acquisitions to a session.
+If the ``monitor`` process is killed then all reservations and place acquisitions will be freed.
+
+Example:
+.. code-block:: bash
+
+  $ labgrid-client monitor --session=my-session &
+  $ labgrid-client reserve --session=my-session tag=my-tag
+  $ labgrid-client -p +<token> acquire --session=my-session

@@ -127,6 +127,7 @@ class ClientSession:
         msg = labgrid_coordinator_pb2.ClientInMessage()
         msg.startup.version = labgrid_version()
         msg.startup.name = f"{self.gethostname()}/{self.getuser()}"
+        msg.startup.session = self.args.monitor_session if hasattr(self.args, "monitor_session") else ""
         self.out_queue.put_nowait(msg)
         msg = labgrid_coordinator_pb2.ClientInMessage()
         msg.subscribe.all_places = True
@@ -685,7 +686,7 @@ class ClientSession:
         if not self.args.allow_unmatched:
             self.check_matches(place)
 
-        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name)
+        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name, session=self.args.session)
 
         try:
             await self.stub.AcquirePlace(request)
@@ -1435,6 +1436,7 @@ class ClientSession:
 
     async def create_reservation(self):
         prio = self.args.prio
+        session = self.args.session
 
         fltr = {}
         for pair in self.args.filters:
@@ -1452,7 +1454,7 @@ class ClientSession:
             "main": labgrid_coordinator_pb2.Reservation.Filter(filter=fltr),
         }
 
-        request = labgrid_coordinator_pb2.CreateReservationRequest(filters=fltrs, prio=prio)
+        request = labgrid_coordinator_pb2.CreateReservationRequest(filters=fltrs, prio=prio, session=session)
 
         try:
             response: labgrid_coordinator_pb2.CreateReservationResponse = await self.stub.CreateReservation(request)
@@ -1731,6 +1733,9 @@ def main():
     subparser.set_defaults(func=ClientSession.complete)
 
     subparser = subparsers.add_parser("monitor", help="monitor events from the coordinator")
+    subparser.add_argument(
+        "--session", default="", dest="monitor_session", help="Create a session to book places and reservations under"
+    )
     subparser.set_defaults(func=ClientSession.do_monitor)
 
     subparser = subparsers.add_parser("resources", aliases=("r",), help="list available resources")
@@ -1798,6 +1803,7 @@ def main():
     subparser.add_argument(
         "--allow-unmatched", action="store_true", help="allow missing resources for matches when locking the place"
     )
+    subparser.add_argument("--session", default="", help="Acquire a place within a given session")
     subparser.set_defaults(func=ClientSession.acquire)
 
     subparser = subparsers.add_parser("release", aliases=("unlock",), help="release a place")
@@ -2021,6 +2027,7 @@ def main():
         "--prio", type=float, default=0.0, help="priority relative to other reservations (default 0)"
     )
     subparser.add_argument("filters", metavar="KEY=VALUE", nargs="+", help="required tags")
+    subparser.add_argument("--session", default="", help="Make a reservation within a given session")
     subparser.set_defaults(func=ClientSession.create_reservation)
 
     subparser = subparsers.add_parser("cancel-reservation", help="cancel a reservation")

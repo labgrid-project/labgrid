@@ -14,7 +14,6 @@ import logging
 import signal
 import sys
 import shlex
-import shutil
 import json
 import itertools
 from textwrap import indent
@@ -42,11 +41,12 @@ from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout
+from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout, term
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
 from ..driver import Mode, ExecutionError
 from ..logging import basicConfig, StepLogger
+from ..var_dict import add_var
 
 
 class Error(Exception):
@@ -77,6 +77,7 @@ class ClientSession:
     prog = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     args = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(argparse.Namespace)))
     monitor = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    var_dict = attr.ib(default={}, validator=attr.validators.instance_of(dict))
 
     def gethostname(self):
         return os.environ.get("LG_HOSTNAME", gethostname())
@@ -442,15 +443,28 @@ class ClientSession:
                     result.add(name)
         return list(result)
 
-    def _check_allowed(self, place):
+    def is_allowed(self, place):
+        """Check if a place is acquired
+
+        Args:
+            place (str): Place name to check
+
+        Returns:
+            str: None if acquired, else error message
+        """
         if not place.acquired:
-            raise UserError(f"place {place.name} is not acquired")
+            return f"place {place.name} is not acquired"
         if f"{self.gethostname()}/{self.getuser()}" not in place.allowed:
             host, user = place.acquired.split("/")
             if user != self.getuser():
-                raise UserError(f"place {place.name} is not acquired by your user, acquired by {user}")
+                return f"place {place.name} is not acquired by your user, acquired by {user}"
             if host != self.gethostname():
-                raise UserError(f"place {place.name} is not acquired on this computer, acquired on {host}")
+                return f"place {place.name} is not acquired on this computer, acquired on {host}"
+
+    def _check_allowed(self, place):
+        err = self.is_allowed(place)
+        if err:
+            raise UserError(err)
 
     def get_place(self, place=None):
         pattern = place or self.args.place
@@ -674,7 +688,7 @@ class ClientSession:
         try:
             await self.stub.AcquirePlace(request)
             await self.sync_with_coordinator()
-            print(f"acquired place {place.name}")
+            logging.info("acquired place %s", place.name)
         except grpc.aio.AioRpcError as e:
             # check potential failure causes
             for exporter, groups in sorted(self.resources.items()):
@@ -699,6 +713,8 @@ class ClientSession:
         """Release a previously acquired place"""
         place = self.get_place()
         if not place.acquired:
+            if self.args.auto:
+                return
             raise UserError(f"place {place.name} is not acquired")
         _, user = place.acquired.split("/")
         if user != self.getuser():
@@ -716,7 +732,7 @@ class ClientSession:
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
 
-        print(f"released place {place.name}")
+        logging.info("released place %s", place.name)
 
     async def release_from(self):
         """Release a place, but only if acquired by a specific user"""
@@ -786,6 +802,21 @@ class ClientSession:
         manager.session = self
         manager.loop = self.loop
 
+    def set_initial_state(self, target):
+        if self.args.state:
+            strategy = target.get_driver("Strategy")
+            if self.args.initial_state:
+                print(f"Setting initial state to {self.args.initial_state}")
+                strategy.force(self.args.initial_state)
+            logging.info("Transitioning into state %s", self.args.state)
+            strategy.transition(self.args.state)
+
+    def set_end_state(self, target):
+        if self.args.end_state:
+            strategy = target.get_driver("Strategy")
+            logging.info("Transitioning into state %s", self.args.end_state)
+            strategy.transition(self.args.end_state)
+
     def _get_target(self, place):
         self._prepare_manager()
         target = None
@@ -796,19 +827,7 @@ class ClientSession:
                     print(f"Selected role {self.role} from configuration file")
             target = self.env.get_target(self.role)
         if target:
-            if self.args.state:
-                strategy = target.get_driver("Strategy")
-                if self.args.initial_state:
-                    print(f"Setting initial state to {self.args.initial_state}")
-                    strategy.force(self.args.initial_state)
-                print(f"Transitioning into state {self.args.state}")
-                strategy.transition(self.args.state)
-                # deactivate console drivers so we are able to connect with microcom later
-                try:
-                    con = target.get_active_driver("ConsoleProtocol")
-                    target.deactivate(con)
-                except NoDriverFoundError:
-                    pass
+            self.set_initial_state(target)
         else:
             target = Target(place.name, env=self.env)
             RemotePlace(target, name=place.name)
@@ -925,78 +944,56 @@ class ClientSession:
             drv.set(False)
 
     async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
+        from ..protocol import ConsoleProtocol
+
         name = self.args.name
-        from ..resource import NetworkSerialPort
-
-        resource = target.get_resource(NetworkSerialPort, name=name, wait_avail=False)
-
-        # async await resources
-        timeout = Timeout(timeout)
-        while True:
-            target.update_resources()
-            if resource.avail or (not loop and timeout.expired):
-                break
-            await asyncio.sleep(0.1)
-
-        # use zero timeout to prevent blocking sleeps
-        target.await_resources([resource], timeout=0.0)
 
         if not place.acquired:
             print("place released")
             return 255
 
-        host, port = proxymanager.get_host_and_port(resource)
-
-        # check for valid resources
-        assert port is not None, "Port is not set"
-
-        microcom_bin = shutil.which("microcom")
-
-        if microcom_bin is not None:
-            call = [microcom_bin, "-s", str(resource.speed), "-t", f"{host}:{port}"]
-
-            if listen_only:
-                call.append("--listenonly")
-
-            if logfile:
-                call.append(f"--logfile={logfile}")
+        if self.args.internal or os.environ.get('LG_CONSOLE') == 'internal':
+            console = target.get_driver(ConsoleProtocol, name=name)
+            returncode = await term.internal(lambda: self.is_allowed(place),
+                                             console, logfile, listen_only)
         else:
-            call = ["telnet", host, str(port)]
+            from ..resource import NetworkSerialPort
 
-            logging.info("microcom not available, using telnet instead")
-
-            if listen_only:
-                logging.warning("--listenonly option not supported by telnet, ignoring")
-
-            if logfile:
-                logging.warning("--logfile option not supported by telnet, ignoring")
-
-        print(f"connecting to {resource} calling {' '.join(call)}")
-        try:
-            p = await asyncio.create_subprocess_exec(*call)
-        except FileNotFoundError as e:
-            raise ServerError(f"failed to execute remote console command: {e}")
-        while p.returncode is None:
+            # deactivate console drivers so we are able to connect with microcom
             try:
-                await asyncio.wait_for(p.wait(), 1.0)
-            except asyncio.TimeoutError:
-                # subprocess is still running
+                con = target.get_active_driver("ConsoleProtocol")
+                target.deactivate(con)
+            except NoDriverFoundError:
                 pass
 
+            resource = target.get_resource(NetworkSerialPort, name=name,
+                                           wait_avail=False)
+
+            # async await resources
+            timeout = Timeout(timeout)
+            while True:
+                target.update_resources()
+                if resource.avail or (not loop and timeout.expired):
+                    break
+                await asyncio.sleep(0.1)
+
+            # use zero timeout to prevent blocking sleeps
+            target.await_resources([resource], timeout=0.0)
+            host, port = proxymanager.get_host_and_port(resource)
+
+            # check for valid resources
+            assert port is not None, "Port is not set"
             try:
-                self._check_allowed(place)
-            except UserError:
-                p.terminate()
-                try:
-                    await asyncio.wait_for(p.wait(), 1.0)
-                except asyncio.TimeoutError:
-                    # try harder
-                    p.kill()
-                    await asyncio.wait_for(p.wait(), 1.0)
-                raise
-        if p.returncode:
-            print("connection lost", file=sys.stderr)
-        return p.returncode
+                returncode = await term.external(lambda: self.is_allowed(place),
+                                                 host, port, resource, logfile,
+                                                 listen_only)
+            except FileNotFoundError as e:
+                raise ServerError(f"failed to execute remote console command: {e}")
+
+        # Raise an exception if the place was released
+        self._check_allowed(place)
+        return returncode
+
 
     async def console(self, place, target):
         while True:
@@ -1008,7 +1005,7 @@ class ClientSession:
                 break
             if not self.args.loop:
                 if res:
-                    exc = InteractiveCommandError("microcom error")
+                    exc = InteractiveCommandError("console error")
                     exc.exitcode = res
                     raise exc
                 break
@@ -1075,6 +1072,7 @@ class ClientSession:
             NetworkMXSUSBLoader,
             NetworkIMXUSBLoader,
             NetworkRKUSBLoader,
+            NetworkSunxiUSBLoader,
             NetworkAlteraUSBBlaster,
         )
         from ..driver import OpenOCDDriver
@@ -1099,6 +1097,10 @@ class ClientSession:
                     drv.interface.timeout = self.args.wait
                 elif isinstance(resource, NetworkRKUSBLoader):
                     drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False, name=name)
+                    drv.loader.timeout = self.args.wait
+                elif isinstance(resource, NetworkSunxiUSBLoader):
+                    drv = self._get_driver_or_new(target, "SunxiUSBDriver",
+                                                  activate=False, name=name)
                     drv.loader.timeout = self.args.wait
                 if drv:
                     break
@@ -1527,7 +1529,27 @@ class ClientSession:
 
     export.needs_target = True
 
-    def print_version(self):
+    async def query(self, place, target):
+        for item in self.args.items:
+            if ':' not in item:
+                raise UserError(f"{item}: Expected Driver:name[,name...]")
+            cls_name, names = item.split(':')
+            drv = target.get_driver(cls_name)
+
+            # Collect all values before we print anything
+            values = OrderedDict()
+            for name in names.split(','):
+                values[name] = drv.query_info(name)
+
+            for name, val in values.items():
+                if self.args.show_name:
+                    print(f'{cls_name}:{name} {val}')
+                else:
+                    print(f'{val}')
+
+    query.needs_target = True
+
+    def print_version(self, target):
         print(labgrid_version())
 
 
@@ -1604,6 +1626,20 @@ def find_role_by_place(config, place):
             return role
     return None
 
+def find_role(config, role, place):
+    role_config = config.get(role)
+    if not role_config:
+        print(f'Role {role} not found')
+        return None, None
+    resources, _ = target_factory.normalize_config(role_config)
+    remote_places = resources.get('RemotePlace', {})
+    if not place:
+        place = next(iter(remote_places.keys()))
+    elif place not in remote_places:
+        print(f'No place {place} in role {role} (have {remote_places.keys()})')
+        return None, None
+
+    return role, place
 
 def find_any_role_with_place(config):
     for role, role_config in config.items():
@@ -1673,6 +1709,7 @@ def main():
     place = os.environ.get("LG_PLACE", place)
     state = os.environ.get("STATE", None)
     state = os.environ.get("LG_STATE", state)
+    end_state = os.environ.get('LG_END_STATE', state)
     initial_state = os.environ.get("LG_INITIAL_STATE", None)
     token = os.environ.get("LG_TOKEN", None)
 
@@ -1684,9 +1721,22 @@ def main():
         type=str,
         help="coordinator HOST[:PORT] (default: value from env variable LG_COORDINATOR, otherwise 127.0.0.1:20408)",
     )
+    parser.add_argument(
+        '-a',
+        '--acquire',
+        action='store_true',
+        default=False,
+        help="acquire place before starting and release after finishing"
+    )
     parser.add_argument("-c", "--config", type=str, default=os.environ.get("LG_ENV"), help="config file")
     parser.add_argument("-p", "--place", type=str, default=place, help="place name/alias")
     parser.add_argument("-s", "--state", type=str, default=state, help="strategy state to switch into before command")
+    parser.add_argument(
+        '-r',
+        '--role',
+        type=str,
+        help="role name/alias"
+    )
     parser.add_argument(
         "-i",
         "--initial-state",
@@ -1695,10 +1745,25 @@ def main():
         help="strategy state to force into before switching to desired state",
     )
     parser.add_argument(
+        '-e',
+        '--end-state',
+        type=str,
+        default=end_state,
+        help="strategy state to switch into after command"
+    )
+    parser.add_argument(
         "-d", "--debug", action="store_true", default=False, help="enable debug mode (show python tracebacks)"
     )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     parser.add_argument("-P", "--proxy", type=str, help="proxy connections via given ssh host")
+    parser.add_argument(
+        '-V',
+        '--variable',
+        type=str,
+        nargs='*',
+        action='append',
+        help="Add a variable value (-V <var> <value>)"
+    )
     subparsers = parser.add_subparsers(
         dest="command",
         title="available subcommands",
@@ -1781,6 +1846,8 @@ def main():
     subparser.set_defaults(func=ClientSession.acquire)
 
     subparser = subparsers.add_parser("release", aliases=("unlock",), help="release a place")
+    subparser.add_argument('-a', '--auto', action='store_true',
+                           help="don't raise an error if the place is not acquired")
     subparser.add_argument(
         "-k", "--kick", action="store_true", help="release a place even if it is acquired by a different user"
     )
@@ -1813,6 +1880,8 @@ def main():
     subparser.set_defaults(func=ClientSession.digital_io)
 
     subparser = subparsers.add_parser("console", aliases=("con",), help="connect to the console")
+    subparser.add_argument('-i', '--internal', action='store_true',
+                           help="use an internal console instead of microcom")
     subparser.add_argument(
         "-l", "--loop", action="store_true", help="keep trying to connect if the console is unavailable"
     )
@@ -2028,6 +2097,13 @@ def main():
     subparser.add_argument("filename", help="output filename")
     subparser.set_defaults(func=ClientSession.export)
 
+    subparser = subparsers.add_parser('query', help="query information")
+    subparser.add_argument("-n", "--show-name", action="store_true",
+                           help="use name:value format")
+    subparser.add_argument('items', type=str, nargs='*',
+                           help='item to query (class:name)')
+    subparser.set_defaults(func=ClientSession.query)
+
     subparser = subparsers.add_parser("version", help="show version")
     subparser.set_defaults(func=ClientSession.print_version)
 
@@ -2061,19 +2137,29 @@ def main():
 
     role = None
     if args.command != "reserve" and env and env.config.get_targets():
-        if args.place:
+        if args.role:
+            role, args.place = find_role(env.config.get_targets(), args.role,
+                                         args.place)
+            if not role:
+                print(f"No role '{args.role}' found in environment")
+                exit(1)
+        elif args.place:
             if not args.place.startswith("+"):
                 role = find_role_by_place(env.config.get_targets(), args.place)
                 if not role:
                     print(f"RemotePlace {args.place} not found in configuration file", file=sys.stderr)
                     exit(1)
-                print(f"Selected role {role} from configuration file")
+                logging.info("Selected role %s from configuration file", role)
         else:
             role, args.place = find_any_role_with_place(env.config.get_targets())
             if not role:
                 print("No RemotePlace found in configuration file", file=sys.stderr)
                 exit(1)
             print(f"Selected role {role} and place {args.place} from configuration file")
+
+    for arg in args.variable or []:
+        name, value = arg
+        add_var(name, value)
 
     extra = {
         "args": args,
@@ -2101,15 +2187,38 @@ def main():
 
             try:
                 if asyncio.iscoroutinefunction(args.func):
+                    auto_release = False
+                    target = None
                     if getattr(args.func, "needs_target", False):
+                        if args.acquire:
+                            place = session.get_place(args.place)
+                            if not place.acquired:
+                                args.allow_unmatched = True
+                                coro = session.acquire()
+                                session.loop.run_until_complete(coro)
+                                auto_release = True
                         place = session.get_acquired_place()
                         target = session._get_target(place)
                         coro = args.func(session, place, target)
                     else:
                         coro = args.func(session)
                     session.loop.run_until_complete(coro)
+                    session.set_end_state(target)
+                    if auto_release:
+                        coro = session.release()
+                        session.loop.run_until_complete(coro)
                 else:
+                    if args.acquire:
+                        place = session.get_place(args.place)
+                        if not place.acquired:
+                            args.allow_unmatched = True
+                            coro = session.acquire()
+                            session.loop.run_until_complete(coro)
+                            auto_release = True
                     args.func(session)
+                    if auto_release:
+                        coro = session.release()
+                        session.loop.run_until_complete(coro)
             finally:
                 logging.debug("Stopping session")
                 session.loop.run_until_complete(session.stop())
@@ -2142,7 +2251,10 @@ def main():
                     "This is likely caused by an error in the environment configuration or invalid\nresource information provided by the coordinator.",
                     file=sys.stderr,
                 )  # pylint: disable=line-too-long
-
+        except subprocess.CalledProcessError as exc:
+            print(f"Command failure: {' '.join(exc.cmd)}")
+            for line in exc.output.splitlines():
+                print(line.decode('utf-8'))
             exitcode = 1
         except ServerError as e:
             print(f"Server error: {e}", file=sys.stderr)

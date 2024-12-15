@@ -126,7 +126,7 @@ and ``password`` of the ShellDriver driver in ``local.yaml``:
             name: "example"
           SerialDriver: {}
           ShellDriver:
-            prompt: 'root@\w+:[^ ]+ '
+            prompt: 'root@[\w-]+:[^ ]+ '
             login_prompt: ' login: '
             username: 'root'
 

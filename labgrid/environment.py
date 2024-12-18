@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Callable, Optional
 import attr
 
 from .target import Target
@@ -9,10 +9,10 @@ from .config import Config
 @attr.s(eq=False)
 class Environment:
     """An environment encapsulates targets."""
-    config_file = attr.ib(
+    config_file: str = attr.ib(
         default="config.yaml", validator=attr.validators.instance_of(str)
     )
-    interact = attr.ib(default=input, repr=False)
+    interact: Callable[[str], str] = attr.ib(default=input, repr=False)
 
     def __attrs_post_init__(self):
         self.targets = {}

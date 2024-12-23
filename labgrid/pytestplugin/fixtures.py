@@ -1,8 +1,12 @@
 import os
 import subprocess
+from typing import Iterator
+
 import pytest
 
+from .. import Environment, Target
 from ..exceptions import NoResourceFoundError, NoDriverFoundError
+from ..strategy import Strategy
 from ..remote.client import UserError
 from ..resource.remote import RemotePlace
 from ..util.ssh import sshmanager
@@ -12,7 +16,9 @@ from .hooks import LABGRID_ENV_KEY
 # pylint: disable=redefined-outer-name
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: pytest.Parser, pluginmanager: pytest.PytestPluginManager) -> None:
+    del pluginmanager  # unused
+
     group = parser.getgroup('labgrid')
     group.addoption(
         '--lg-env',
@@ -52,7 +58,7 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture(scope="session")
-def env(request, record_testsuite_property):
+def env(request: pytest.FixtureRequest, record_testsuite_property) -> Iterator[Environment]:
     """Return the environment configured in the supplied configuration file.
     It contains the targets contained in the configuration file.
     """
@@ -69,7 +75,8 @@ def env(request, record_testsuite_property):
         try:
             target = env.get_target(target_name)
         except UserError as e:
-            pytest.exit(e)
+            pytest.exit(str(e))
+        assert target, "could not get target from environment"
         try:
             remote_place = target.get_resource(RemotePlace, wait_avail=False)
             remote_name = remote_place.name
@@ -112,7 +119,7 @@ def env(request, record_testsuite_property):
 
 
 @pytest.fixture(scope="session")
-def target(env):
+def target(env: Environment) -> Target:
     """Return the default target "main" configured in the supplied
     configuration file."""
     target = env.get_target()
@@ -123,13 +130,13 @@ def target(env):
 
 
 @pytest.fixture(scope="session")
-def strategy(request, target):
+def strategy(request: pytest.FixtureRequest, target: Target) -> Strategy:
     """Return the Strategy of the default target "main" configured in the
     supplied configuration file."""
     try:
-        strategy = target.get_driver("Strategy")
+        strategy: Strategy = target.get_driver("Strategy")
     except NoDriverFoundError as e:
-        pytest.exit(e)
+        pytest.exit(str(e))
 
     state = request.config.option.lg_initial_state
     if state is not None:

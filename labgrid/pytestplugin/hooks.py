@@ -1,6 +1,9 @@
 import os
 import logging
+from typing import List, Optional
+
 import pytest
+from _pytest.logging import LoggingPlugin
 
 from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
@@ -8,12 +11,12 @@ from ..util.helper import processwrapper
 from ..logging import CONSOLE, StepFormatter, StepLogger
 from ..exceptions import NoStrategyFoundError
 
-LABGRID_ENV_KEY = pytest.StashKey[Environment]()
+LABGRID_ENV_KEY = pytest.StashKey[Optional[Environment]]()
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_cmdline_main(config):
-    def set_cli_log_level(level):
+def pytest_cmdline_main(config: pytest.Config) -> None:
+    def set_cli_log_level(level: int) -> None:
         nonlocal config
 
         try:
@@ -27,6 +30,7 @@ def pytest_cmdline_main(config):
                 current_level = int(logging.getLevelName(current_level))
             except ValueError:
                 current_level = None
+        assert current_level is None or isinstance(current_level, int), "unexpected type of current log level"
 
         # If no level was set previously (via ini or cli) or current_level is
         # less verbose than level, set to new level.
@@ -34,6 +38,7 @@ def pytest_cmdline_main(config):
             config.option.log_cli_level = str(level)
 
     verbosity = config.getoption("verbose")
+    assert isinstance(verbosity, int), "unexpected verbosity option type"
     if verbosity > 3: # enable with -vvvv
         set_cli_log_level(logging.DEBUG)
     elif verbosity > 2: # enable with -vvv
@@ -42,7 +47,7 @@ def pytest_cmdline_main(config):
         set_cli_log_level(logging.INFO)
 
 
-def configure_pytest_logging(config, plugin):
+def configure_pytest_logging(config: pytest.Config, plugin: LoggingPlugin) -> None:
     if hasattr(plugin.log_cli_handler.formatter, "add_color_level"):
         plugin.log_cli_handler.formatter.add_color_level(CONSOLE, "blue")
     plugin.log_cli_handler.setFormatter(StepFormatter(
@@ -62,12 +67,13 @@ def configure_pytest_logging(config, plugin):
     plugin.report_handler.setFormatter(StepFormatter(parent=caplog_formatter))
 
 @pytest.hookimpl(trylast=True)
-def pytest_configure(config):
+def pytest_configure(config: pytest.Config) -> None:
     StepLogger.start()
     config.add_cleanup(StepLogger.stop)
 
     logging_plugin = config.pluginmanager.getplugin('logging-plugin')
     if logging_plugin:
+        assert isinstance(logging_plugin, LoggingPlugin), "unexpected type of logging-plugin"
         configure_pytest_logging(config, logging_plugin)
 
     config.addinivalue_line("markers",
@@ -90,9 +96,11 @@ def pytest_configure(config):
     processwrapper.enable_logging()
 
 @pytest.hookimpl()
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config, items: List[pytest.Item]) -> None:
     """This function matches function feature flags with those found in the
     environment and disables the item if no match is found"""
+    del session  # unused
+
     env = config.stash[LABGRID_ENV_KEY]
 
     if not env:
@@ -124,7 +132,7 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip)
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_runtest_setup(item):
+def pytest_runtest_setup(item) -> None:
     """
     Skip test if one of the targets uses a strategy considered broken.
     """

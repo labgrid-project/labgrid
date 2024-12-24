@@ -43,7 +43,8 @@ def pytest_cmdline_main(config):
 
 
 def configure_pytest_logging(config, plugin):
-    plugin.log_cli_handler.formatter.add_color_level(logging.CONSOLE, "blue")
+    if hasattr(plugin.log_cli_handler.formatter, "add_color_level"):
+        plugin.log_cli_handler.formatter.add_color_level(logging.CONSOLE, "blue")
     plugin.log_cli_handler.setFormatter(StepFormatter(
         color=config.option.lg_colored_steps,
         parent=plugin.log_cli_handler.formatter,

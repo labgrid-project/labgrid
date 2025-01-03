@@ -48,6 +48,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             none: Do not create a display device
             fb-headless: Create a headless framebuffer device
             egl-headless: Create a headless GPU-backed graphics card. Requires host support
+            qemu-default: Don't override QEMU default settings
         nic (str): optional, configuration string to pass to QEMU to create a network interface
     """
     qemu_bin = attr.ib(validator=attr.validators.instance_of(str))
@@ -85,7 +86,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         default="none",
         validator=attr.validators.optional(attr.validators.and_(
             attr.validators.instance_of(str),
-            attr.validators.in_(["none", "fb-headless", "egl-headless"]),
+            attr.validators.in_(
+                ["none", "fb-headless", "egl-headless", "qemu-default"]
+            ),
         ))
     )
     nic = attr.ib(
@@ -211,7 +214,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 cmd.append("virtio")
             cmd.append("-display")
             cmd.append("egl-headless")
-        else:
+        elif self.display != "qemu-default":
             raise ExecutionError(f"Unknown display '{self.display}'")
 
         if self.nic:

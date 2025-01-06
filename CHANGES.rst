@@ -17,6 +17,7 @@ more performant and the import times are shorter.
 New Features in 24.1
 ~~~~~~~~~~~~~~~~~~~~
 - All components can be installed into the same virtualenv again.
+- The ``pytest``-specific parts of the labgrid framework now have typing hints.
 
 Bug fixes in 24.1
 ~~~~~~~~~~~~~~~~~

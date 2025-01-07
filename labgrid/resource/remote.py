@@ -186,6 +186,10 @@ class NetworkSigrokUSBDevice(RemoteUSBResource):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
+    channel_group = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()
@@ -200,6 +204,10 @@ class NetworkSigrokUSBSerialDevice(RemoteUSBResource):
         validator=attr.validators.instance_of(str)
     )
     channels = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+    channel_group = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )

@@ -35,7 +35,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         machine (str): QEMU machine type
         cpu (str): QEMU cpu type
         memory (str): QEMU memory size (ends with M or G)
-        extra_args (str): extra QEMU arguments, they are passed directly to the QEMU binary
+        extra_args (str): optional, extra QEMU arguments passed directly to the QEMU binary
         boot_args (str): optional, additional kernel boot argument
         kernel (str): optional, reference to the images key for the kernel
         disk (str): optional, reference to the images key for the disk image
@@ -48,13 +48,16 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             none: Do not create a display device
             fb-headless: Create a headless framebuffer device
             egl-headless: Create a headless GPU-backed graphics card. Requires host support
+            qemu-default: Don't override QEMU default settings
         nic (str): optional, configuration string to pass to QEMU to create a network interface
     """
     qemu_bin = attr.ib(validator=attr.validators.instance_of(str))
     machine = attr.ib(validator=attr.validators.instance_of(str))
     cpu = attr.ib(validator=attr.validators.instance_of(str))
     memory = attr.ib(validator=attr.validators.instance_of(str))
-    extra_args = attr.ib(validator=attr.validators.instance_of(str))
+    extra_args = attr.ib(
+        default='',
+        validator=attr.validators.optional(attr.validators.instance_of(str)))
     boot_args = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
@@ -83,7 +86,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         default="none",
         validator=attr.validators.optional(attr.validators.and_(
             attr.validators.instance_of(str),
-            attr.validators.in_(["none", "fb-headless", "egl-headless"]),
+            attr.validators.in_(
+                ["none", "fb-headless", "egl-headless", "qemu-default"]
+            ),
         ))
     )
     nic = attr.ib(
@@ -209,7 +214,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 cmd.append("virtio")
             cmd.append("-display")
             cmd.append("egl-headless")
-        else:
+        elif self.display != "qemu-default":
             raise ExecutionError(f"Unknown display '{self.display}'")
 
         if self.nic:
@@ -271,9 +276,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self.qmp = QMPMonitor(self._child.stdout, self._child.stdin)
         except QMPError as exc:
             if self._child.poll() is not None:
-                self._child.communicate()
+                _, err = self._child.communicate()
                 raise IOError(
-                    f"QEMU process terminated with exit code {self._child.returncode}"
+                    f"QEMU error: {err} (exitcode={self._child.returncode})"
                 ) from exc
             raise
 

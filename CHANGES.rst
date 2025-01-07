@@ -17,6 +17,9 @@ more performant and the import times are shorter.
 New Features in 24.1
 ~~~~~~~~~~~~~~~~~~~~
 - All components can be installed into the same virtualenv again.
+- The `QEMUDriver` now supports setting the ``display`` option to
+  ``qemu-default``, which will neither set the QEMU ``-display`` option
+  or pass along ``-nographic``.
 
 Bug fixes in 24.1
 ~~~~~~~~~~~~~~~~~

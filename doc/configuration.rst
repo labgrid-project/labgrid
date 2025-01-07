@@ -2712,7 +2712,7 @@ Arguments:
   - machine (str): QEMU machine type
   - cpu (str): QEMU cpu type
   - memory (str): QEMU memory size (ends with M or G)
-  - extra_args (str): extra QEMU arguments, they are passed directly to the QEMU binary
+  - extra_args (str): optional, extra QEMU arguments, they are passed directly to the QEMU binary
   - boot_args (str): optional, additional kernel boot argument
   - kernel (str): optional, reference to the images key for the kernel
   - disk (str): optional, reference to the images key for the disk image
@@ -2726,6 +2726,7 @@ Arguments:
     - none: Do not create a display device
     - fb-headless: Create a headless framebuffer device
     - egl-headless: Create a headless GPU-backed graphics card. Requires host support
+    - qemu-default: Don't override QEMU default settings
 
   - nic (str): optional, configuration string to pass to QEMU to create a network interface
 

@@ -781,6 +781,85 @@ class YKUSHPowerPortExport(ResourceExport):
 exports["YKUSHPowerPort"] = YKUSHPowerPortExport
 
 
+@attr.s(eq=False)
+class ADBExport(ResourceExport):
+    """ResourceExport for Android Debug Bridge Devices."""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data["cls"] = f"Network{local_cls_name}"
+        from ..resource import adb
+
+        local_cls = getattr(adb, local_cls_name)
+        self.local = local_cls(target=None, name=None, **self.local_params)
+        self.child = None
+        self.port = None
+
+    def __del__(self):
+        if self.child is not None:
+            self.stop()
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "port": self.port,
+            "serialno": self.local.serialno,
+        }
+
+    def _start(self, start_params):
+        """Start `adb server` subprocess"""
+        assert self.local.avail
+        self.port = get_free_port()
+
+        # If the exporter is run on the same machine as clients, and the client uses ADB to connect to TCP
+        # clients it will latch onto USB devices. This prevents the exporter from ever starting adb servers
+        # for USB devices.
+        # This will kill the global server to work around this but won't affect the --one-device servers
+        # started by the exporter
+        subprocess.run(["adb", "kill-server"], timeout=10, check=True)
+
+        cmd = [
+            "adb",
+            "server",
+            "nodaemon",
+            "-a",
+            "-P",
+            str(self.port),
+            "--one-device",
+            self.local.serialno,
+        ]
+        self.logger.info("Starting adb server with: %s", " ".join(cmd))
+        self.child = subprocess.Popen(cmd)
+        try:
+            self.child.wait(timeout=0.5)
+            raise ExporterError(f"adb for {self.local.serialno} exited immediately")
+        except subprocess.TimeoutExpired:
+            # good, adb didn't exit immediately
+            pass
+        self.logger.info("started adb for %s on port %s", self.local.serialno, self.port)
+
+    def _stop(self, start_params):
+        assert self.child
+        child = self.child
+        self.child = None
+        port = self.port
+        self.port = None
+        child.terminate()
+        try:
+            child.wait(2.0)  # Give adb a chance to close
+        except subprocess.TimeoutExpired:
+            self.logger.warning("adb for %s still running after SIGTERM", self.local.serialno)
+            log_subprocess_kernel_stack(self.logger, child)
+            child.kill()
+            child.wait(1.0)
+        self.logger.info("stopped adb for %s on port %d", self.local.serialno, port)
+
+
+exports["ADBDevice"] = ADBExport
+
+
 class Exporter:
     def __init__(self, config) -> None:
         """Set up internal datastructures on successful connection:

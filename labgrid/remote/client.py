@@ -18,7 +18,7 @@ import shutil
 import json
 import itertools
 from textwrap import indent
-from socket import gethostname
+from socket import gethostname, gethostbyname
 from getpass import getuser
 from collections import defaultdict, OrderedDict
 from datetime import datetime
@@ -44,6 +44,7 @@ from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout
 from ..util.proxy import proxymanager
+from ..util.ssh import sshmanager
 from ..util.helper import processwrapper
 from ..driver import Mode, ExecutionError
 from ..logging import basicConfig, StepLogger
@@ -1551,6 +1552,100 @@ class ClientSession:
     def print_version(self):
         print(labgrid_version())
 
+    def adb(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        name = self.args.name
+        adb_cmd = ["adb"]
+
+        from ..resource.adb import NetworkADBDevice, RemoteADBDevice
+
+        for resource in target.resources:
+            if name and resource.name != name:
+                continue
+            if isinstance(resource, NetworkADBDevice):
+                host, port = proxymanager.get_host_and_port(resource)
+                adb_cmd = ["adb", "-H", host, "-P", str(port), "-s", resource.serialno]
+                break
+            elif isinstance(resource, RemoteADBDevice):
+                host, port = proxymanager.get_host_and_port(resource)
+                # ADB does not automatically remove a network device from its
+                # devices list when the connection is broken by the remote, so the
+                # adb connection may have gone "stale", resulting in adb blocking
+                # indefinitely when making calls to the device. To avoid this,
+                # always disconnect first.
+                subprocess.run(
+                    ["adb", "disconnect", f"{host}:{str(port)}"], stderr=subprocess.DEVNULL, timeout=10, check=True
+                )
+                subprocess.run(
+                    ["adb", "connect", f"{host}:{str(port)}"], stdout=subprocess.DEVNULL, timeout=10, check=True
+                )  # Connect adb client to TCP adb device
+                adb_cmd = ["adb", "-s", f"{host}:{str(port)}"]
+                break
+
+        adb_cmd += self.args.leftover
+        subprocess.run(adb_cmd, check=True)
+
+    def scrcpy(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        name = self.args.name
+        scrcpy_cmd = ["scrcpy"]
+        env_var = os.environ.copy()
+
+        from ..resource.adb import NetworkADBDevice, RemoteADBDevice
+
+        for resource in target.resources:
+            if name and resource.name != name:
+                continue
+            if isinstance(resource, NetworkADBDevice):
+                host, adb_port = proxymanager.get_host_and_port(resource)
+                ip_addr = gethostbyname(host)
+                env_var["ADB_SERVER_SOCKET"] = f"tcp:{ip_addr}:{adb_port}"
+
+                # Find a free port on the exporter machine
+                scrcpy_port = sshmanager.get(host).run_check(
+                    'python -c "'
+                    "import socket;"
+                    "s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(("
+                    "'', 0));"
+                    "addr = s.getsockname();"
+                    "print(addr[1]);"
+                    's.close()"'
+                )[0]
+
+                scrcpy_cmd = [
+                    "scrcpy",
+                    "--port",
+                    scrcpy_port,
+                    "-s",
+                    resource.serialno,
+                ]
+
+                # If a proxy is required, we need to setup a ssh port forward for the port
+                # (27183) scrcpy will use to send data along side the adb port
+                if resource.extra.get("proxy_required") or self.args.proxy:
+                    proxy = resource.extra.get("proxy")
+                    scrcpy_cmd.append(f"--tunnel-host={ip_addr}")
+                    scrcpy_cmd.append(f"--tunnel-port={sshmanager.request_forward(proxy, host, int(scrcpy_port))}")
+                break
+
+            elif isinstance(resource, RemoteADBDevice):
+                host, port = proxymanager.get_host_and_port(resource)
+                # ADB does not automatically remove a network device from its
+                # devices list when the connection is broken by the remote, so the
+                # adb connection may have gone "stale", resulting in adb blocking
+                # indefinitely when making calls to the device. To avoid this,
+                # always disconnect first.
+                subprocess.run(
+                    ["adb", "disconnect", f"{host}:{str(port)}"], stderr=subprocess.DEVNULL, timeout=10, check=True
+                )
+                scrcpy_cmd = ["scrcpy", f"--tcpip={host}:{str(port)}"]
+                break
+
+        scrcpy_cmd += self.args.leftover
+        subprocess.run(scrcpy_cmd, env=env_var, check=True)
+
 
 _loop: ContextVar["asyncio.AbstractEventLoop | None"] = ContextVar("_loop", default=None)
 
@@ -2058,9 +2153,17 @@ def main():
     subparser = subparsers.add_parser("version", help="show version")
     subparser.set_defaults(func=ClientSession.print_version)
 
+    subparser = subparsers.add_parser("adb", help="Run Android Debug Bridge")
+    subparser.add_argument("--name", "-n", help="optional resource name")
+    subparser.set_defaults(func=ClientSession.adb)
+
+    subparser = subparsers.add_parser("scrcpy", help="Run scrcpy to remote control an android device")
+    subparser.add_argument("--name", "-n", help="optional resource name")
+    subparser.set_defaults(func=ClientSession.scrcpy)
+
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()
-    if args.command not in ["ssh", "rsync", "forward"]:
+    if args.command not in ["ssh", "rsync", "forward", "adb", "scrcpy"]:
         args = parser.parse_args()
     else:
         args.leftover = leftover

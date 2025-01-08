@@ -248,9 +248,9 @@ class _SessionManager:
     def remove_reservation(self, reservation):
         self._assert_session(reservation.session)
         reservations = self._sessions[reservation.session]["reservations"]
-        assert (
-            reservation in reservations
-        ), f"Session {reservation.session} does not contain reservation {reservation.token}"
+        assert reservation in reservations, (
+            f"Session {reservation.session} does not contain reservation {reservation.token}"
+        )
         reservations.remove(reservation)
 
     def _assert_session(self, session):

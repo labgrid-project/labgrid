@@ -221,6 +221,10 @@ LABGRID-CLIENT COMMANDS
 
 ``version``                     Print the labgrid version
 
+``adb``.                                    Run Android Debug Bridge
+
+``scrcpy``                                  Run scrcpy to remote control an android device
+
 ADDING NAMED RESOURCES
 ----------------------
 If a target contains multiple Resources of the same type, named matches need to

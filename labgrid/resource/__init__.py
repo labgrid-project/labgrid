@@ -47,3 +47,4 @@ from .dediprogflasher import DediprogFlasher, NetworkDediprogFlasher
 from .httpdigitalout import HttpDigitalOutput
 from .sigrok import SigrokDevice
 from .fastboot import AndroidNetFastboot
+from .adb import NetworkADBDevice, ADBDevice

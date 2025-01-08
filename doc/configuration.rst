@@ -1261,6 +1261,31 @@ Arguments:
 Used by:
   - none
 
+ADB
+~~~
+
+ADBDevice
++++++++++
+
+:any:`ADBDevice` describes a local adb device connected via USB.
+
+Arguments:
+ - serialno (str): The serial number of the device as shown by adb
+
+NetworkADBDevice
+++++++++++++++++
+
+A :any:`NetworkADBDevice` describes a `AdbDevice`_ available on a remote computer.
+
+RemoteADBDevice
++++++++++++++++
+
+:any:`RemoteADBDevice` describes a adb device available via TCP.
+
+Arguments:
+ - host (str): The address of the TCP ADP device
+ - port (int): The TCP port ADB is exposed on the device
+
 Providers
 ~~~~~~~~~
 Providers describe directories that are accessible by the target over a
@@ -3280,6 +3305,27 @@ Binds to:
 
 Implements:
   - None yet
+
+Arguments:
+  - None
+
+ADBDriver
+~~~~~~~~~
+The :any:`ADBDriver` allows interaction with ADB devices. It allows the 
+execution of commands, transfer of files, and rebooting of the device.
+
+It can interact with both USB and TCP adb devices.
+
+Binds to:
+  iface:
+    - `ADBDevice`_
+    - `NetworkADBDevice`_
+    - `RemoteADBDevice`_
+
+Implements:
+  - :any:`CommandProtocol`
+  - :any:`FileTransferProtocol`
+  - :any:`ResetProtocol`
 
 Arguments:
   - None

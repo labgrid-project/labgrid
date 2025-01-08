@@ -100,6 +100,43 @@ usage: labgrid\-client acquire|lock [\-\-allow\-unmatched]
 .B \-\-allow\-unmatched
 allow missing resources for matches when locking the place
 .UNINDENT
+.SS labgrid\-client adb
+.sp
+Run Android Debug Bridge
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client adb [\-\-name NAME] ... {scrcpy} ...
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B adb_args
+adb command to execute (e.g. \(aqshell\(aq, \(aqdevices\(aq, etc.)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client adb ... scrcpy
+.sp
+Run scrcpy to remote control an android device
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client adb ... scrcpy [\-\-name NAME]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
 .SS labgrid\-client add\-alias
 .sp
 add an alias to a place

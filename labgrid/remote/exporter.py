@@ -249,7 +249,7 @@ class SerialPortExport(ResourceExport):
                 "-Y",
                 f"connection: &con01#  accepter: telnet(rfc2217,mode=server),tcp,{self.port}",
                 "-Y",
-                f'  connector: serialdev(nouucplock=true),{start_params["path"]},{self.local.speed}n81,local',  # pylint: disable=line-too-long
+                f"  connector: serialdev(nouucplock=true),{start_params['path']},{self.local.speed}n81,local",  # pylint: disable=line-too-long
                 "-Y",
                 "  options:",
                 "-Y",
@@ -262,7 +262,7 @@ class SerialPortExport(ResourceExport):
                 "-n",
                 "-u",
                 "-C",
-                f'{self.port}:telnet:0:{start_params["path"]}:{self.local.speed} NONE 8DATABITS 1STOPBIT LOCAL',  # pylint: disable=line-too-long
+                f"{self.port}:telnet:0:{start_params['path']}:{self.local.speed} NONE 8DATABITS 1STOPBIT LOCAL",  # pylint: disable=line-too-long
             ]
         self.logger.info("Starting ser2net with: %s", " ".join(cmd))
         self.child = subprocess.Popen(cmd)

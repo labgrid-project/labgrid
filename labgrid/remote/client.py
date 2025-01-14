@@ -904,7 +904,7 @@ class ClientSession:
         action = self.args.action
         name = self.args.name
         target = self._get_target(place)
-        from ..resource import ModbusTCPCoil, OneWirePIO, HttpDigitalOutput
+        from ..resource import ModbusTCPCoil, OneWirePIO, HttpDigitalOutput, WaveshareModbusTCPCoil
         from ..resource.remote import NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO, NetworkHIDRelay
 
         drv = None
@@ -912,7 +912,9 @@ class ClientSession:
             drv = target.get_driver("DigitalOutputProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
-                if isinstance(resource, ModbusTCPCoil):
+                if isinstance(resource, WaveshareModbusTCPCoil):
+                    drv = self._get_driver_or_new(target, "WaveShareModbusCoilDriver", name=name)
+                elif isinstance(resource, ModbusTCPCoil):
                     drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name)
                 elif isinstance(resource, OneWirePIO):
                     drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name)

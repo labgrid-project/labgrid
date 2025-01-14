@@ -416,6 +416,32 @@ Arguments:
 Used by:
   - `ModbusCoilDriver`_
 
+WaveshareModbusTCPCoil
+++++++++++++++++++++++
+A :any:`WaveshareModbusTCPCoil` describes a Waveshare branded coil accessible via *Modbus TCP*.
+
+.. code-block:: yaml
+
+   WaveshareModbusTCPCoil:
+     host: '192.168.23.42'
+     coil: 1
+     coil_count: 8 
+
+The example describes the coil ``1`` (zero indexed) of ``8`` on the Waveshare Modbus TCP relay
+module ``192.168.23.42``.
+
+Arguments:
+  - host (str): hostname of the Modbus TCP server e.g. ``192.168.23.42:502``
+  - coil (int): index of the coil, e.g. ``3``
+  - invert (bool, default=False): whether the logic level is inverted
+    (active-low)
+  - write_multiple_coils (bool, default=False): whether to perform write
+    using "write multiple coils" method instead of "write single coil"
+
+Used by:
+  - `WaveShareModbusCoilDriver`_
+
+
 DeditecRelais8
 ++++++++++++++
 A :any:`DeditecRelais8` describes a *Deditec USB GPO module* with 8 relays.
@@ -2330,6 +2356,25 @@ Implements:
 .. code-block:: yaml
 
    ModbusCoilDriver: {}
+
+Arguments:
+  - None
+
+WaveShareModbusCoilDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`WaveShareModbusCoilDriver` controls a `WaveshareModbusTCPCoil`_ resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  coil:
+    - `WaveshareModbusTCPCoil`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   WaveShareModbusCoilDriver: {}
 
 Arguments:
   - None

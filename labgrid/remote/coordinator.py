@@ -638,6 +638,14 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             if resource.acquired:
                 return False
 
+            for otherplace in self.places.values():
+                for oldres in otherplace.acquired_resources:
+                    if resource.path == oldres.path:
+                        logging.info(
+                            "Conflicting orphaned resource %s for acquire request for place %s", oldres, place.name
+                        )
+                        return False
+
         # acquire resources
         acquired = []
         try:
@@ -754,9 +762,6 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             res = self.reservations[place.reservation]
             if not res.owner == username:
                 await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Place {name} was not reserved for {username}")
-
-        # First try to reacquire orphaned resources to avoid conflicts.
-        await self._reacquire_orphaned_resources()
 
         # FIXME use the session object instead? or something else which
         # survives disconnecting clients?

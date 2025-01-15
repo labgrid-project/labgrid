@@ -211,7 +211,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     def __init__(self) -> None:
         self.places: dict[str, Place] = {}
         self.reservations = {}
-        self.poll_task = None
+        self.poll_tasks = []
         self.save_scheduled = False
 
         self.lock = asyncio.Lock()
@@ -220,35 +220,33 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.load()
 
         self.loop = asyncio.get_running_loop()
-        self.poll_task = self.loop.create_task(self.poll(), name="coordinator-poll")
+        for name in ["save", "reacquire", "schedule"]:
+            step_func = getattr(self, f"_poll_step_{name}")
+            task = self.loop.create_task(self.poll(step_func), name=f"coordinator-poll-{name}")
+            self.poll_tasks.append(task)
 
-    async def _poll_step(self):
+    async def _poll_step_save(self):
         # save changes
-        try:
-            if self.save_scheduled:
-                with warn_if_slow("save changes"):
-                    await self.save()
-        except Exception:  # pylint: disable=broad-except
-            traceback.print_exc()
-        # try to re-acquire orphaned resources
-        try:
-            async with self.lock:
-                with warn_if_slow("reacquire orphaned resources"):
-                    await self._reacquire_orphaned_resources()
-        except Exception:  # pylint: disable=broad-except
-            traceback.print_exc()
-        # update reservations
-        try:
-            with warn_if_slow("schedule reservations"):
-                self.schedule_reservations()
-        except Exception:  # pylint: disable=broad-except
-            traceback.print_exc()
+        if self.save_scheduled:
+            with warn_if_slow("save changes"):
+                await self.save()
 
-    async def poll(self):
+    async def _poll_step_reacquire(self):
+        # try to re-acquire orphaned resources
+        async with self.lock:
+            with warn_if_slow("reacquire orphaned resources"):
+                await self._reacquire_orphaned_resources()
+
+    async def _poll_step_schedule(self):
+        # update reservations
+        with warn_if_slow("schedule reservations"):
+            self.schedule_reservations()
+
+    async def poll(self, step_func):
         while not self.loop.is_closed():
             try:
                 await asyncio.sleep(15.0)
-                await self._poll_step()
+                await step_func()
             except asyncio.CancelledError:
                 break
             except Exception:  # pylint: disable=broad-except

@@ -1000,7 +1000,10 @@ class Exporter:
         }
         proxy_req = self.isolated
         if issubclass(export_cls, ResourceExport):
-            group[resource_name] = export_cls(config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req)
+            res = group[resource_name] = export_cls(
+                config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req
+            )
+            res.poll()
         else:
             config["params"]["extra"] = {
                 "proxy": getfqdn(),

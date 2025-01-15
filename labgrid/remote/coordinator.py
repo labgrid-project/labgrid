@@ -169,13 +169,22 @@ class ExporterCommand:
         self.request = request
         self.response = None
         self.completed = asyncio.Event()
+        self.expired = False
 
     def complete(self, response) -> None:
         self.response = response
         self.completed.set()
+        if self.expired:
+            logging.warning(
+                "exporter command already expired for request %s -> response %s", self.request, self.response
+            )
 
     async def wait(self):
-        await asyncio.wait_for(self.completed.wait(), 10)
+        try:
+            await asyncio.wait_for(self.completed.wait(), 10)
+        finally:
+            if self.response is None:
+                self.expired = True
 
 
 class ExporterError(Exception):

@@ -37,6 +37,14 @@ class BrokenResourceError(ExporterError):
     pass
 
 
+class UnknownResourceError(ExporterError):
+    pass
+
+
+class InvalidResourceRequestError(ExporterError):
+    pass
+
+
 def log_subprocess_kernel_stack(logger, child):
     if child.poll() is not None:  # nothing to check if no longer running
         return
@@ -889,8 +897,9 @@ class Exporter:
                                 out_message.set_acquired_request.resource_name,
                             )
                         success = True
-                    except BrokenResourceError as e:
+                    except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
                         reason = e.args[0]
+                        logging.warning("set_acquired_request failed: %s", reason)
                     finally:
                         in_message = labgrid_coordinator_pb2.ExporterInMessage()
                         in_message.response.success = success
@@ -924,8 +933,14 @@ class Exporter:
     async def acquire(self, group_name, resource_name, place_name):
         resource = self.groups.get(group_name, {}).get(resource_name)
         if resource is None:
-            logging.error("acquire request for unknown resource %s/%s by %s", group_name, resource_name, place_name)
-            return
+            raise UnknownResourceError(
+                f"acquire request for unknown resource {group_name}/{resource_name} by {place_name}"
+            )
+
+        if resource.acquired:
+            raise InvalidResourceRequestError(
+                f"Resource {group_name}/{resource_name} is already acquired by {resource.acquired}"
+            )
 
         try:
             resource.acquire(place_name)
@@ -935,8 +950,10 @@ class Exporter:
     async def release(self, group_name, resource_name):
         resource = self.groups.get(group_name, {}).get(resource_name)
         if resource is None:
-            logging.error("release request for unknown resource %s/%s", group_name, resource_name)
-            return
+            raise UnknownResourceError(f"release request for unknown resource {group_name}/{resource_name}")
+
+        if not resource.acquired:
+            raise InvalidResourceRequestError(f"Resource {group_name}/{resource_name} is not acquired")
 
         try:
             resource.release()

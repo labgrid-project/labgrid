@@ -708,6 +708,22 @@ class HIDRelay(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class KMTronicRelay(USBResource):
+    index = attr.ib(default=1, validator=attr.validators.instance_of(int))
+
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'tty'
+        super().__attrs_post_init__()
+
+    @property
+    def path(self):
+        if self.device is not None:
+            return self.device.device_node
+
+        return None
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class USBFlashableDevice(USBResource):
     @property
     def devnode(self):

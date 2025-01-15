@@ -30,7 +30,7 @@ from ..util import atomic_replace, labgrid_version, yaml
 
 
 @contextmanager
-def warn_if_slow(prefix, *, limit=0.1):
+def warn_if_slow(prefix, *, level=logging.WARNING, limit=0.1):
     monotonic = time.monotonic()
     process = time.process_time()
     thread = time.thread_time()
@@ -39,7 +39,7 @@ def warn_if_slow(prefix, *, limit=0.1):
     process = time.process_time() - process
     thread = time.thread_time() - thread
     if monotonic > limit:
-        logging.warning("%s: real %.3f>%.3f, process %.3f, thread %.3f", prefix, monotonic, limit, process, thread)
+        logging.log(level, "%s: real %.3f>%.3f, process %.3f, thread %.3f", prefix, monotonic, limit, process, thread)
 
 
 class Action(Enum):
@@ -228,13 +228,13 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     async def _poll_step_save(self):
         # save changes
         if self.save_scheduled:
-            with warn_if_slow("save changes"):
+            with warn_if_slow("save changes", level=logging.DEBUG):
                 await self.save()
 
     async def _poll_step_reacquire(self):
         # try to re-acquire orphaned resources
         async with self.lock:
-            with warn_if_slow("reacquire orphaned resources"):
+            with warn_if_slow("reacquire orphaned resources", limit=3.0):
                 await self._reacquire_orphaned_resources()
 
     async def _poll_step_schedule(self):
@@ -266,21 +266,21 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         logging.debug("Running Save")
         self.save_scheduled = False
 
-        with warn_if_slow("create resources snapshot"):
+        with warn_if_slow("create resources snapshot", level=logging.DEBUG):
             resources = copy.deepcopy(self._get_resources())
-        with warn_if_slow("create places snapshot"):
+        with warn_if_slow("create places snapshot", level=logging.DEBUG):
             places = copy.deepcopy(self._get_places())
 
         def save_sync(resources, places):
-            with warn_if_slow("dump resources"):
+            with warn_if_slow("dump resources", level=logging.DEBUG):
                 resources = yaml.dump(resources)
                 resources = resources.encode()
-            with warn_if_slow("dump places"):
+            with warn_if_slow("dump places", level=logging.DEBUG):
                 places = yaml.dump(places)
                 places = places.encode()
-            with warn_if_slow("write resources"):
+            with warn_if_slow("write resources", level=logging.DEBUG):
                 atomic_replace("resources.yaml", resources)
-            with warn_if_slow("write places"):
+            with warn_if_slow("write places", level=logging.DEBUG):
                 atomic_replace("places.yaml", places)
 
         await self.loop.run_in_executor(None, save_sync, resources, places)

@@ -134,7 +134,7 @@ class Exporter(LabgridComponent):
             cwd=self.cwd)
         try:
             self.spawn.expect('exporter name: testhost')
-            self.spawn.expect('connected to exporter')
+            self.spawn.expect('connected to coordinator')
         except Exception as e:
             raise Exception(f"exporter startup failed with {self.spawn.before}") from e
 

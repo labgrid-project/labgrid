@@ -1,0 +1,6 @@
+main:
+  location: Work Desk
+  KMTronicRelay:
+    index: 3
+    match:
+      ID_SERIAL_SHORT: 'AB0LBF2U'

@@ -37,7 +37,7 @@ class StepFormatter:
                 if hasattr(record, "indent_level"):
                     self.indent_level = record.indent_level
 
-                record.msg = (" " * self.indent_level) + record.msg
+                record.msg = (" " * self.indent_level) + str(record.msg)
 
                 self.indent_level = getattr(
                     record, "next_indent_level", self.indent_level

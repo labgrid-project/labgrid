@@ -610,6 +610,31 @@ exports["SNMPEthernetPort"] = EthernetPortExport
 
 
 @attr.s(eq=False)
+class LibGPIOExport(ResourceExport):
+
+    """ResourceExport for libgpiod based GPIO lines accessed directly from userspace"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.base import LibGPIO
+
+        self.local = LibGPIO(target=None, name=None, **self.local_params)
+        self.data["cls"] = "NetworkLibGPIO"
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "gpiochip": self.local.gpiochip,
+            "line": self.local.line,
+            "active_low": self.local.active_low,
+        }
+
+exports["LibGPIO"] = LibGPIOExport
+exports["MatchedLibGPIO"] = LibGPIOExport
+
+
+@attr.s(eq=False)
 class GPIOSysFSExport(ResourceExport):
     _gpio_sysfs_path_prefix = "/sys/class/gpio"
 
@@ -634,16 +659,19 @@ class GPIOSysFSExport(ResourceExport):
         return {
             "host": self.host,
             "index": self.local.index,
+            "active_low": self.local.active_low,
         }
 
     def _get_start_params(self):
         return {
             "index": self.local.index,
+            "active_low": self.local.active_low,
         }
 
     def _start(self, start_params):
         """Start a GPIO export to userspace"""
         index = start_params["index"]
+        active_low = start_params["active_low"]
 
         if self.export_path.exists():
             self.system_exported = True
@@ -652,6 +680,11 @@ class GPIOSysFSExport(ResourceExport):
         export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, "export")
         with open(export_sysfs_path, mode="wb") as export:
             export.write(str(index).encode("utf-8"))
+
+        #active_low_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix,
+        #                               f'gpio{index}/active_low')
+        #with open(active_low_path, 'wb') as actvie_low_fd:
+        #    active_low_fs.write(active_low)
 
     def _stop(self, start_params):
         """Disable a GPIO export to userspace"""

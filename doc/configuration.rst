@@ -547,25 +547,77 @@ NetworkHIDRelay
 +++++++++++++++
 A :any:`NetworkHIDRelay` describes an `HIDRelay`_ exported over the network.
 
+LibGPIO
++++++++
+
+A :any:`LibGPIO` resouce describes a gpiochip and it's line via `the libgpiod character device kernel interface <https://www.kernel.org/doc/html/latest/driver-api/gpio/>`.
+
+.. code-block:: yaml
+
+   LibGPIO:
+     gpiochip: '/dev/gpiochip0'
+     line: 0
+     active_low: False
+
+Arguments:
+  - gpiochip (str): device name of the gpiochip
+  - line (int): line number on the gpiochip
+  - active_low (bool, default=False): optional, invert the logical line value when True
+
+Used by:
+  - `LibGPIODigitalOutputDriver`_
+
+MatchedLibGPIO
+++++++++++++++
+A :any:`MatchedSysfsGPIO` describes a gpiochip and it's line via `the libgpiod character device kernel interface <https://www.kernel.org/doc/html/latest/driver-api/gpio/>`.
+
+The gpiochip is identified by matching udev properties. This allows
+identification through hot-plugging or rebooting for controllers like
+USB based gpiochips.
+
+.. code-block:: yaml
+
+   MatchedSysfsGPIO:
+     match:
+       '@SUBSYSTEM': 'usb'
+       '@ID_SERIAL_SHORT': 'D38EJ8LF'
+     line: 0
+     active_low: False
+
+The example would search for a USB gpiochip with the key `ID_SERIAL_SHORT`
+and the value `D38EJ8LF` and use line 0 of this device.
+The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+  - line (int): line number on the matched gpiochip.
+  - active_low (bool, default=False): optional, invert the logical line value when True
+
+Used by:
+  - `LibGPIODigitalOutputDriver`_
+
 SysfsGPIO
 +++++++++
 
-A :any:`SysfsGPIO` resource describes a GPIO line.
+A :any:`SysfsGPIO` resource describes a GPIO line via `the sysfs kernel interface <https://www.kernel.org/doc/Documentation/gpio/sysfs.txt>` which has been deprecated. Please use `LibGPIO`_ instead.
 
 .. code-block:: yaml
 
    SysfsGPIO:
      index: 12
+     active_low: False
 
 Arguments:
   - index (int): index of the GPIO line
+  - active_low (bool, default=False): optional, invert the logical line value when True
 
 Used by:
   - `GpioDigitalOutputDriver`_
 
 MatchedSysfsGPIO
 ++++++++++++++++
-A :any:`MatchedSysfsGPIO` describes a GPIO line, like a `SysfsGPIO`_.
+A :any:`MatchedSysfsGPIO` describes a GPIO line, like a `SysfsGPIO`_ via `the sysfs kernel interface <https://www.kernel.org/doc/Documentation/gpio/sysfs.txt>` which has been deprecated. Please use `MatchedLibGPIO`_ instead.
+
 The gpiochip is identified by matching udev properties. This allows
 identification through hot-plugging or rebooting for controllers like
 USB based gpiochips.
@@ -577,6 +629,7 @@ USB based gpiochips.
        '@SUBSYSTEM': 'usb'
        '@ID_SERIAL_SHORT': 'D38EJ8LF'
      pin: 0
+     active_low: False
 
 The example would search for a USB gpiochip with the key `ID_SERIAL_SHORT`
 and the value `D38EJ8LF` and use the pin 0 of this device.
@@ -585,6 +638,7 @@ The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
   - pin (int): gpio pin number within the matched gpiochip.
+  - active_low (bool, default=False): optional, invert the logical line value when True
 
 Used by:
   - `GpioDigitalOutputDriver`_
@@ -2213,11 +2267,103 @@ Implements:
 Arguments:
   - delay (float, default=2.0): delay in seconds between off and on
 
+ManualButtonDriver
+~~~~~~~~~~~~~~~~~~
+A :any:`ManualButtonDriver` requires the user to control the taget button.
+Theis is required if a strategy is used with the target, but no automatic
+button control is available.
+
+The driver's name will be displayed during interaction.
+
+Binds to:
+  - None
+
+Implements:
+  - :any:`ButtonProtocol`
+
+.. code-block:: yaml
+
+   MantualButtonDriver:
+     name: 'example-board'
+
+Arguments:
+  - None
+
+ExternalButtonDriver
+~~~~~~~~~~~~~~~~~~~~
+An :any:`ExternalButtonDriver` is used to control a target button via an
+external command.
+
+Binds to:
+  - None
+
+Implements:
+  - :any:`ButtonProtocol`
+
+.. code-block:: yaml
+
+   ExternalButtonDriver:
+     cmd_press: 'example_command press and hold'
+     cmd_release: 'example_command release'
+     cmd_press_for: 'example_command press_for'
+     delay: 2.0
+
+Arguments:
+  - cmd_press (str): command to press and hold the button on the board
+  - cmd_release (str): command to release the button on the board
+  - cmd_press_for (str): command to press, pause, and release the button on the board
+  - delay (float, default=1.0): delay in seconds when calling press_for
+
+DigitalOutputButtonDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~
+An :any:`DigitalOutputButtonDriver` is used to control a target button via a
+DigitalOutputDriver
+
+Binds to:
+  - :any:`DigitalOutputProtocol`
+
+Implements:
+  - :any:`ButtonProtocol`
+
+.. code-block:: yaml
+
+   DigitalOutputButtonDriver:
+     delay: 2.0
+
+Arguments:
+  - delay (float, default=1.0): delay in seconds when calling press_for
+
+LibGPIODigitalOutputDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+The :any:`LibGPIODigitalOutputDriver` writes a digital signal to a GPIO line.
+
+This driver configures GPIO lines via `the libgpiod character device kernel interface <https://www.kernel.org/doc/html/latest/driver-api/gpio/>`.
+While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.
+
+Binds to:
+  gpio:
+    - `LibGPIO`_
+    - NetworkLibGPIO
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+  - :any:`ResetProtocol`
+  - :any:`PowerProtocol`
+  - :any:`ButtonProtocol`
+
+.. code-block:: yaml
+
+   LibGPIODigitalOutputDriver:
+     delay: 2.0
+
+Arguments:
+  - delay (float, default=1.0): delay in seconds between off and on for a power cycle or between states for button press_for
+
 GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
 The :any:`GpioDigitalOutputDriver` writes a digital signal to a GPIO line.
 
-This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`.
+This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/Documentation/gpio/sysfs.txt>` which has been deprecated. Please use `LibGPIODigitalOutputDriver`_ instead.
 While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.
 
 Binds to:
@@ -2228,13 +2374,17 @@ Binds to:
 
 Implements:
   - :any:`DigitalOutputProtocol`
+  - :any:`ResetProtocol`
+  - :any:`PowerProtocol`
+  - :any:`ButtonProtocol`
 
 .. code-block:: yaml
 
-   GpioDigitalOutputDriver: {}
+   GpioDigitalOutputDriver:
+     delay: 2.0
 
 Arguments:
-  - None
+  - delay (float, default=1.0): delay in seconds between off and on for a power cycle or between states for button press_for
 
 SerialPortDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

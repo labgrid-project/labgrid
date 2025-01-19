@@ -1,4 +1,4 @@
-from .base import SerialPort, NetworkInterface, EthernetPort, SysfsGPIO
+from .base import SerialPort, NetworkInterface, EthernetPort, LibGPIO, SysfsGPIO
 from .ethernetport import SNMPEthernetPort
 from .serialport import RawSerialPort, NetworkSerialPort
 from .modbus import ModbusTCPCoil
@@ -15,6 +15,7 @@ from .udev import (
     HIDRelay,
     IMXUSBLoader,
     LXAUSBMux,
+    MatchedLibGPIO,
     MatchedSysfsGPIO,
     MXSUSBLoader,
     RKUSBLoader,

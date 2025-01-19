@@ -754,12 +754,42 @@ class USBDebugger(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
-class MatchedSysfsGPIO(USBResource):
-    """The MatchedSysfsGPIO described a SysfsGPIO matched by Udev
+class MatchedLibGPIO(USBResource):
+    """The MatchedLibGPIO described a gpiochip matched by Udev.
 
     Args:
-        pin (int): gpio pin number within the matched gpiochip."""
+        line (int): gpio pin number within the matched gpiochip.
+        active_low (bool): set to True if active_low should be used. Defalut False"""
+    line = attr.ib(default=None, validator=attr.validators.instance_of(int))
+    active_low = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'gpio'
+        super().__attrs_post_init__()
+
+    def filter_match(self, device):
+        # Filter out the char device
+        if device.properties.get('DEVNAME') is not None:
+            return False
+        return super().filter_match(device)
+
+    def update(self):
+        super().update()
+        if self.device is not None:
+            if self.line >= int(self.read_attr('ngpio')):
+                raise ValueError("MatchedLibGPIO line out of bound")
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class MatchedSysfsGPIO(USBResource):
+    """The MatchedSysfsGPIO described a SysfsGPIO matched by Udev. SysfsGPIO
+    is deprecated.  Please use MatchedLibGPIO instead.
+
+    Args:
+        pin (int): gpio pin number within the matched gpiochip.
+        active_low (bool): set to True if active_low should be used. Defalut False"""
     pin = attr.ib(default=None, validator=attr.validators.instance_of(int))
+    active_low = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     index = None
 
     def __attrs_post_init__(self):

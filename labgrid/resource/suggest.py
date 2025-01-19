@@ -23,6 +23,7 @@ from .udev import (
     HIDRelay,
     USBDebugger,
     USBPowerPort,
+    MatchedLibGPIO,
     MatchedSysfsGPIO
 )
 from ..util import dump
@@ -57,6 +58,7 @@ class Suggester:
         self.resources.append(HIDRelay(**args))
         self.resources.append(USBDebugger(**args))
         self.resources.append(USBPowerPort(**args, index=0))
+        self.resources.append(MatchedLibGPIO(**args, line=0))
         self.resources.append(MatchedSysfsGPIO(**args, pin=0))
 
     def suggest_callback(self, resource, meta, suggestions):
@@ -86,6 +88,8 @@ class Suggester:
             ))
             if cls == 'USBPowerPort':
                 print('    index: ?')
+            if cls == 'MatchedLibGPIO':
+                print('    line: ?')
             if cls == 'MatchedSysfsGPIO':
                 print('    pin: ?')
         print("  ---")

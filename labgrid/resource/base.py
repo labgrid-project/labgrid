@@ -35,6 +35,21 @@ class EthernetPort(Resource):
     switch = attr.ib(default=None)
     interface = attr.ib(default=None)
 
+@target_factory.reg_resource
+@attr.s(eq=False)
+class LibGPIO(Resource):
+    """The basic LibGPIO describes a gpiochip, it's line and active_low setting
+
+    Args:
+        gpiochip (str): name of the gpiochip device.
+        line (int): line number on the gpiochip.
+        active_low (bool) : set to True if active_low should be used. Default False"""
+    gpiochip = attr.ib(default="/dev/gpiochip0",
+                       validator=attr.validators.instance_of(str))
+    line = attr.ib(default=None,
+                   validator=attr.validators.instance_of(int))
+    active_low = attr.ib(default=False,
+                         validator=attr.validators.instance_of(bool))
 
 @target_factory.reg_resource
 @attr.s(eq=False)
@@ -42,5 +57,8 @@ class SysfsGPIO(Resource):
     """The basic SysfsGPIO contains an index
 
     Args:
-        index (int): index of target gpio line."""
+        index (int): index of target gpio line.
+        active_low (bool) : set to True if active_low should be used. Default False"""
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
+    active_low = attr.ib(default=False,
+                         validator=attr.validators.instance_of(bool))

@@ -16,6 +16,8 @@ from .powerdriver import ManualPowerDriver, ExternalPowerDriver, \
                          DigitalOutputPowerDriver, YKUSHPowerDriver, \
                          USBPowerDriver, SiSPMPowerDriver, NetworkPowerDriver, \
                          PDUDaemonDriver
+from .buttondriver import ManualButtonDriver, ExternalButtonDriver, \
+                          DigitalOutputButtonDriver
 from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, RKUSBDriver, UUUDriver
 from .usbsdmuxdriver import USBSDMuxDriver
 from .usbsdwiredriver import USBSDWireDriver

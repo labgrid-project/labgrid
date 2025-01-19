@@ -1,0 +1,7 @@
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: gpio
+    drivers:
+      LibGPIODigitalOutputDriver: {}

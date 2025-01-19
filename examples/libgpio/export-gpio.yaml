@@ -1,0 +1,5 @@
+desk:
+    LibGPIO:
+        gpiochip: '/dev/gpiochip0'
+        line: 10
+        active_low: False

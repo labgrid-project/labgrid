@@ -46,12 +46,13 @@ class AgentWrapper:
         agent = os.path.join(
             os.path.abspath(os.path.dirname(__file__)),
             'agent.py')
+        agent_prefix = os.environ.get("LG_AGENT_PREFIX", "")
         if host:
             # copy agent.py and run via ssh
             with open(agent, 'rb') as agent_fd:
                 agent_data = agent_fd.read()
             agent_hash = hashlib.sha256(agent_data).hexdigest()
-            agent_remote = f'.labgrid_agent_{agent_hash}.py'
+            agent_remote = os.path.join(agent_prefix, f'.labgrid_agent_{agent_hash}.py')
             connect_timeout = get_ssh_connect_timeout()
             ssh_opts = f'ssh -x -o ConnectTimeout={connect_timeout} -o PasswordAuthentication=no'.split()
             subprocess.check_call(

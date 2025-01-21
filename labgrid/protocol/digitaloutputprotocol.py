@@ -13,3 +13,7 @@ class DigitalOutputProtocol(abc.ABC):
     def set(self, status):
         """Implementations should set the status of the digital output"""
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def invert(self):
+        """Implementations should invert the the status of the digital output"""

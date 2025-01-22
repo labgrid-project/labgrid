@@ -1005,6 +1005,10 @@ class Exporter:
 
 async def amain(config) -> bool:
     exporter = Exporter(config)
+
+    if inspect:
+        inspect.exporter = exporter
+
     await exporter.run()
 
 
@@ -1044,6 +1048,10 @@ def main():
         default=False,
         help="enable isolated mode (always request SSH forwards)",
     )
+    parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
+    parser.add_argument(
+        "--pystuck-port", metavar="PORT", type=int, default=6667, help="use a different pystuck port than 6667"
+    )
     parser.add_argument("resources", metavar="RESOURCES", type=str, help="resource config file name")
 
     args = parser.parse_args()
@@ -1064,6 +1072,19 @@ def main():
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
+
+    global inspect
+    if args.pystuck:
+        from types import SimpleNamespace
+
+        inspect = SimpleNamespace()
+        inspect.loop = loop
+
+        import pystuck
+
+        pystuck.run_server(port=args.pystuck_port)
+    else:
+        inspect = None
 
     asyncio.run(amain(config), debug=bool(args.debug))
 

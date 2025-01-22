@@ -169,13 +169,22 @@ class ExporterCommand:
         self.request = request
         self.response = None
         self.completed = asyncio.Event()
+        self.expired = False
 
     def complete(self, response) -> None:
         self.response = response
         self.completed.set()
+        if self.expired:
+            logging.warning(
+                "exporter command already expired for request %s -> response %s", self.request, self.response
+            )
 
     async def wait(self):
-        await asyncio.wait_for(self.completed.wait(), 10)
+        try:
+            await asyncio.wait_for(self.completed.wait(), 10)
+        finally:
+            if self.response is None:
+                self.expired = True
 
 
 class ExporterError(Exception):
@@ -592,7 +601,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
         await cmd.wait()
         if not cmd.response.success:
-            raise ExporterError("failed to acquire {resource}")
+            raise ExporterError("failed to acquire {resource} ({cmd.response.reason})")
+        if resource.acquired != place.name:
+            logging.warning("resource %s not acquired by this place after acquire request", resource)
 
     async def _acquire_resources(self, place, resources):
         assert self.lock.locked()
@@ -646,7 +657,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
                     await cmd.wait()
                     if not cmd.response.success:
-                        raise ExporterError(f"failed to release {resource}")
+                        raise ExporterError(f"failed to release {resource} ({cmd.response.reason})")
+                    if resource.acquired:
+                        logging.warning("resource %s still acquired after release request", resource)
             except (ExporterError, TimeoutError):
                 logging.exception("failed to release %s", resource)
                 # at leaset try to notify the clients

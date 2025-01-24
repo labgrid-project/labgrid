@@ -5,6 +5,9 @@ import asyncio
 import traceback
 from enum import Enum
 from functools import wraps
+import time
+from contextlib import contextmanager
+import copy
 
 import attr
 import grpc
@@ -24,6 +27,19 @@ from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
 from ..util import atomic_replace, labgrid_version, yaml
+
+
+@contextmanager
+def warn_if_slow(prefix, *, level=logging.WARNING, limit=0.1):
+    monotonic = time.monotonic()
+    process = time.process_time()
+    thread = time.thread_time()
+    yield
+    monotonic = time.monotonic() - monotonic
+    process = time.process_time() - process
+    thread = time.thread_time() - thread
+    if monotonic > limit:
+        logging.log(level, "%s: real %.3f>%.3f, process %.3f, thread %.3f", prefix, monotonic, limit, process, thread)
 
 
 class Action(Enum):
@@ -195,7 +211,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     def __init__(self) -> None:
         self.places: dict[str, Place] = {}
         self.reservations = {}
-        self.poll_task = None
+        self.poll_tasks = []
         self.save_scheduled = False
 
         self.lock = asyncio.Lock()
@@ -204,32 +220,33 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.load()
 
         self.loop = asyncio.get_running_loop()
-        self.poll_task = self.loop.create_task(self.poll(), name="coordinator-poll")
+        for name in ["save", "reacquire", "schedule"]:
+            step_func = getattr(self, f"_poll_step_{name}")
+            task = self.loop.create_task(self.poll(step_func), name=f"coordinator-poll-{name}")
+            self.poll_tasks.append(task)
 
-    async def _poll_step(self):
+    async def _poll_step_save(self):
         # save changes
-        try:
-            if self.save_scheduled:
+        if self.save_scheduled:
+            with warn_if_slow("save changes", level=logging.DEBUG):
                 await self.save()
-        except Exception:  # pylint: disable=broad-except
-            traceback.print_exc()
-        # try to re-acquire orphaned resources
-        try:
-            async with self.lock:
-                await self._reacquire_orphaned_resources()
-        except Exception:  # pylint: disable=broad-except
-            traceback.print_exc()
-        # update reservations
-        try:
-            self.schedule_reservations()
-        except Exception:  # pylint: disable=broad-except
-            traceback.print_exc()
 
-    async def poll(self):
+    async def _poll_step_reacquire(self):
+        # try to re-acquire orphaned resources
+        async with self.lock:
+            with warn_if_slow("reacquire orphaned resources", limit=3.0):
+                await self._reacquire_orphaned_resources()
+
+    async def _poll_step_schedule(self):
+        # update reservations
+        with warn_if_slow("schedule reservations"):
+            self.schedule_reservations()
+
+    async def poll(self, step_func):
         while not self.loop.is_closed():
             try:
                 await asyncio.sleep(15.0)
-                await self._poll_step()
+                await step_func()
             except asyncio.CancelledError:
                 break
             except Exception:  # pylint: disable=broad-except
@@ -249,17 +266,24 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         logging.debug("Running Save")
         self.save_scheduled = False
 
-        resources = self._get_resources()
-        resources = yaml.dump(resources)
-        resources = resources.encode()
-        places = self._get_places()
-        places = yaml.dump(places)
-        places = places.encode()
+        with warn_if_slow("create resources snapshot", level=logging.DEBUG):
+            resources = copy.deepcopy(self._get_resources())
+        with warn_if_slow("create places snapshot", level=logging.DEBUG):
+            places = copy.deepcopy(self._get_places())
 
-        logging.debug("Awaiting resources")
-        await self.loop.run_in_executor(None, atomic_replace, "resources.yaml", resources)
-        logging.debug("Awaiting places")
-        await self.loop.run_in_executor(None, atomic_replace, "places.yaml", places)
+        def save_sync(resources, places):
+            with warn_if_slow("dump resources", level=logging.DEBUG):
+                resources = yaml.dump(resources)
+                resources = resources.encode()
+            with warn_if_slow("dump places", level=logging.DEBUG):
+                places = yaml.dump(places)
+                places = places.encode()
+            with warn_if_slow("write resources", level=logging.DEBUG):
+                atomic_replace("resources.yaml", resources)
+            with warn_if_slow("write places", level=logging.DEBUG):
+                atomic_replace("places.yaml", places)
+
+        await self.loop.run_in_executor(None, save_sync, resources, places)
 
     def load(self):
         try:

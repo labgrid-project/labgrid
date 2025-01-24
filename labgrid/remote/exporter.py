@@ -705,6 +705,27 @@ exports["NetworkService"] = NetworkServiceExport
 
 
 @attr.s
+class IPMIInterfaceExport(ResourceExport):
+    """ResourceExport for a IPMIInterface"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.ipmi import IPMIInterface
+
+        self.data["cls"] = "IPMIInterface"
+        self.local = IPMIInterface(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            **self.local_params,
+        }
+
+
+exports["IPMIInterface"] = IPMIInterfaceExport
+
+
+@attr.s
 class HTTPVideoStreamExport(ResourceExport):
     """ResourceExport for an HTTPVideoStream"""
 

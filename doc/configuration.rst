@@ -2693,6 +2693,15 @@ Binds to:
      dtb: 'dtb'
      nic: 'user'
 
+   QEMUDriver:
+     qemu_bin: qemu-i386
+     machine: pc
+     cpu: core2duo
+     memory: 2G
+     extra_args: "-accel kvm"
+     nic: user,model=virtio-net-pci
+     disk: disk-image
+
 .. code-block:: yaml
 
    tools:
@@ -2709,8 +2718,8 @@ Implements:
 
 Arguments:
   - qemu_bin (str): reference to the tools key for the QEMU binary
-  - machine (str): QEMU machine type
-  - cpu (str): QEMU cpu type
+  - machine (str): optional, QEMU machine type
+  - cpu (str): optional, QEMU cpu type
   - memory (str): QEMU memory size (ends with M or G)
   - extra_args (str): optional, extra QEMU arguments, they are passed directly to the QEMU binary
   - boot_args (str): optional, additional kernel boot argument

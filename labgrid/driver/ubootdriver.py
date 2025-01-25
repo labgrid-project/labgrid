@@ -8,6 +8,7 @@ from ..util import gen_marker, Timeout, re_vt100
 from ..step import step
 from .common import Driver
 from .commandmixin import CommandMixin
+from .exception import ExecutionError
 
 
 @target_factory.reg_driver
@@ -23,8 +24,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         autoboot (str): optional, string to search for to interrupt autoboot
         interrupt (str): optional, character to interrupt autoboot and go to prompt
         password_prompt (str): optional, string to detect the password prompt
-        boot_expression (str): optional, deprecated
-        bootstring (str): optional, string that indicates that the Kernel is booting
+        boot_expression (regex): optional, string to search for on U-Boot start
+        bootstring (regex): optional, string that indicates that the Kernel is booting
         boot_command (str): optional boot command to boot target
         login_timeout (int): optional, timeout for login prompt detection
         boot_timeout (int): optional, timeout for initial Linux Kernel version detection
@@ -37,20 +38,17 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
     init_commands = attr.ib(default=attr.Factory(tuple), converter=tuple)
     password_prompt = attr.ib(default="enter Password:", validator=attr.validators.instance_of(str))
-    boot_expression = attr.ib(default="", validator=attr.validators.instance_of(str))
+    boot_expression = attr.ib(default=r"[\n]U-Boot 20\d+", validator=attr.validators.instance_of(str))
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
     boot_command = attr.ib(default="run bootcmd", validator=attr.validators.instance_of(str))
     boot_commands = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
     login_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
     boot_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
+    boot_detected = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self._status = 0
-
-        if self.boot_expression:
-            import warnings
-            warnings.warn("boot_expression is deprecated and will be ignored", DeprecationWarning)
 
     def on_activate(self):
         """Activate the UBootDriver
@@ -137,6 +135,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         self._status = 0
         self.console.sendline("reset")
         self._await_prompt()
+        if not self.boot_detected:
+            raise ExecutionError(f"No reboot message detected: {self.boot_expression}")
 
     @step()
     def _await_prompt(self):
@@ -151,8 +151,9 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # Because pexpect keeps any read data in it's buffer when a timeout
         # occours, we can't lose any data this way.
         last_before = None
+        self.boot_detected = False
 
-        expectations = [self.prompt, self.autoboot, self.password_prompt, TIMEOUT]
+        expectations = [self.prompt, self.autoboot, self.password_prompt, self.boot_expression, TIMEOUT]
         while True:
             index, before, _, _ = self.console.expect(
                 expectations,
@@ -171,6 +172,10 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 self.console.sendline(self.password)
 
             elif index == 3:
+                # we detect a boot
+                self.boot_detected = True
+
+            elif index == 4:
                 # expect hit a timeout while waiting for a match
                 if before == last_before:
                     # we did not receive anything during the previous expect cycle

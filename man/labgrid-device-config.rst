@@ -127,9 +127,9 @@ TOOLS KEYS
     Path to the quartus_hps binary, used by the QuartusHPSDriver.
     See: https://www.intel.com/content/www/us/en/docs/programmable/683039/22-3/hps-flash-programmer.html
 
-``rk-usb-loader``
-    Path to the rk-usb-loader binary, used by the RKUSBDriver.
-    See: https://git.pengutronix.de/cgit/barebox/tree/scripts/rk-usb-loader.c
+``rkdeveloptool``
+    Path to the ``rkdeveloptool`` binary, used by the RKDevelopToolUSBDriver.
+    See: https://github.com/rockchip-linux/rkdeveloptool
 
 ``sd-mux-ctrl``
     Path to the sd-mux-ctrl binary, used by the USBSDWireDriver.

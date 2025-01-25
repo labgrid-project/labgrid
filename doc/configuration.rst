@@ -1687,7 +1687,7 @@ Implements:
 .. code-block:: yaml
 
    ShellDriver:
-     prompt: 'root@\w+:[^ ]+ '
+     prompt: 'root@[\w-]+:[^ ]+ '
      login_prompt: ' login: '
      username: 'root'
 
@@ -3312,7 +3312,7 @@ Here is an example environment config:
          SerialDriver: {}
          BareboxDriver: {}
          ShellDriver:
-           prompt: 'root@\w+:[^ ]+ '
+           prompt: 'root@[\w-]+:[^ ]+ '
            login_prompt: ' login: '
            username: 'root'
          BareboxStrategy: {}
@@ -3359,7 +3359,7 @@ Here is an example environment config:
          ManualPowerDriver: {}
          SerialDriver: {}
          ShellDriver:
-           prompt: 'root@\w+:[^ ]+ '
+           prompt: 'root@[\w-]+:[^ ]+ '
            login_prompt: ' login: '
            username: 'root'
          ShellStrategy: {}
@@ -3407,7 +3407,7 @@ Here is an example environment config:
          SerialDriver: {}
          UBootDriver: {}
          ShellDriver:
-           prompt: 'root@\w+:[^ ]+ '
+           prompt: 'root@[\w-]+:[^ ]+ '
            login_prompt: ' login: '
            username: 'root'
          UBootStrategy: {}

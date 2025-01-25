@@ -203,7 +203,7 @@ A sample configuration with one `main` target, accessible via SerialPort
        drivers:
          SerialDriver: {}
          ShellDriver:
-           prompt: 'root@\w+:[^ ]+ '
+           prompt: 'root@[\w-]+:[^ ]+ '
            login_prompt: ' login: '
            username: 'root'
 
@@ -221,7 +221,7 @@ in the loaded local python file:
        drivers:
          SerialDriver: {}
          ShellDriver:
-           prompt: 'root@\w+:[^ ]+ '
+           prompt: 'root@[\w-]+:[^ ]+ '
            login_prompt: ' login: '
            username: 'root'
 	 IMXUSBDriver: {}

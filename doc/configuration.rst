@@ -556,9 +556,11 @@ A :any:`SysfsGPIO` resource describes a GPIO line.
 
    SysfsGPIO:
      index: 12
+     invert: False
 
 Arguments:
   - index (int): index of the GPIO line
+  - invert (bool, default=False): optional, whether the logic level is inverted(active-low)
 
 Used by:
   - `GpioDigitalOutputDriver`_
@@ -577,6 +579,7 @@ USB based gpiochips.
        '@SUBSYSTEM': 'usb'
        '@ID_SERIAL_SHORT': 'D38EJ8LF'
      pin: 0
+     invert: False
 
 The example would search for a USB gpiochip with the key `ID_SERIAL_SHORT`
 and the value `D38EJ8LF` and use the pin 0 of this device.
@@ -585,6 +588,7 @@ The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
   - pin (int): gpio pin number within the matched gpiochip.
+  - invert (bool, default=False): optional, whether the logic level is inverted (active-low)
 
 Used by:
   - `GpioDigitalOutputDriver`_
@@ -2213,6 +2217,72 @@ Implements:
 Arguments:
   - delay (float, default=2.0): delay in seconds between off and on
 
+ManualButtonDriver
+~~~~~~~~~~~~~~~~~~
+A :any:`ManualButtonDriver` requires the user to control the taget button.
+This is required if a strategy is used with the target, but no automatic
+button control is available.
+
+The driver's name will be displayed during interaction.
+
+Binds to:
+  - None
+
+Implements:
+  - :any:`ButtonProtocol`
+
+.. code-block:: yaml
+
+   ManualButtonDriver:
+     name: 'example-board'
+
+Arguments:
+  - None
+
+ExternalButtonDriver
+~~~~~~~~~~~~~~~~~~~~
+An :any:`ExternalButtonDriver` is used to control a target button via an
+external command.
+
+Binds to:
+  - None
+
+Implements:
+  - :any:`ButtonProtocol`
+
+.. code-block:: yaml
+
+   ExternalButtonDriver:
+     cmd_press: 'example_command press and hold'
+     cmd_release: 'example_command release'
+     cmd_press_for: 'example_command press_for'
+     delay: 2.0
+
+Arguments:
+  - cmd_press (str): command to press and hold the button on the board
+  - cmd_release (str): command to release the button on the board
+  - cmd_press_for (str): command to press, pause, and release the button on the board
+  - delay (float, default=1.0): delay in seconds when calling press_for
+
+DigitalOutputButtonDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`DigitalOutputButtonDriver` is used to control a target button via a
+DigitalOutputDriver
+
+Binds to:
+  - :any:`DigitalOutputProtocol`
+
+Implements:
+  - :any:`ButtonProtocol`
+
+.. code-block:: yaml
+
+   DigitalOutputButtonDriver:
+     delay: 2.0
+
+Arguments:
+  - delay (float, default=1.0): delay in seconds when calling press_for
+
 GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
 The :any:`GpioDigitalOutputDriver` writes a digital signal to a GPIO line.
@@ -2228,13 +2298,17 @@ Binds to:
 
 Implements:
   - :any:`DigitalOutputProtocol`
+  - :any:`ResetProtocol`
+  - :any:`PowerProtocol`
+  - :any:`ButtonProtocol`
 
 .. code-block:: yaml
 
-   GpioDigitalOutputDriver: {}
+   GpioDigitalOutputDriver:
+     delay: 2.0
 
 Arguments:
-  - None
+  - delay (float, default=1.0): delay in seconds between off and on for a power cycle or between states for button press_for
 
 SerialPortDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

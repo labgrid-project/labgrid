@@ -2,6 +2,7 @@
 This module implements switching GPIOs via sysfs GPIO kernel interface.
 
 Takes an integer property 'index' which refers to the already exported GPIO device.
+Takes a boolean property 'invert' which inverts logical values if set to True (active-low)
 
 """
 import logging
@@ -23,7 +24,7 @@ class GpioDigitalOutput:
         if not os.path.exists(gpio_sysfs_path):
             raise ValueError("Device not found")
 
-    def __init__(self, index):
+    def __init__(self, index, invert):
         self._logger = logging.getLogger("Device: ")
         GpioDigitalOutput._assert_gpio_line_is_exported(index)
         gpio_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix,
@@ -39,6 +40,10 @@ class GpioDigitalOutput:
 
         gpio_sysfs_value_path = os.path.join(gpio_sysfs_path, 'value')
         self.gpio_sysfs_value_fd = os.open(gpio_sysfs_value_path, flags=(os.O_RDWR | os.O_SYNC))
+
+        gpio_sysfs_active_low_path = os.path.join(gpio_sysfs_path, 'active_low')
+        with open(gpio_sysfs_active_low_path, 'w') as active_low_fd:
+            active_low_fd.write(str(int(invert)))
 
     def __del__(self):
         os.close(self.gpio_sysfs_value_fd)
@@ -66,23 +71,21 @@ class GpioDigitalOutput:
 
         os.write(self.gpio_sysfs_value_fd, binary_value)
 
-
 _gpios = {}
 
-def _get_gpio_line(index):
+def _get_gpio_line(index, invert):
     if index not in _gpios:
-        _gpios[index] = GpioDigitalOutput(index=index)
+        _gpios[index] = GpioDigitalOutput(index=index, invert=invert)
     return _gpios[index]
 
-def handle_set(index, status):
-    gpio_line = _get_gpio_line(index)
+def handle_set(index, invert, status):
+    gpio_line = _get_gpio_line(index, invert)
     gpio_line.set(status)
 
 
-def handle_get(index):
-    gpio_line = _get_gpio_line(index)
+def handle_get(index, invert):
+    gpio_line = _get_gpio_line(index, invert)
     return gpio_line.get()
-
 
 methods = {
     'set': handle_set,

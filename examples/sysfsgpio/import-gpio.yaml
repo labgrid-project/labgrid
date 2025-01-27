@@ -5,5 +5,3 @@ targets:
         name: gpio
     drivers:
       GpioDigitalOutputDriver: {}
-options:
-  coordinator_address: 'labgrid:20408'

@@ -340,6 +340,7 @@ class NetworkSysfsGPIO(NetworkResource, ManagedResource):
 
     """The NetworkSysfsGPIO describes a remotely accessible gpio line"""
     index = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
+    invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()

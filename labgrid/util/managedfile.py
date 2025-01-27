@@ -78,6 +78,21 @@ class ManagedFile:
                 # --symbolic --force --no-dereference
                 conn.run_check(f"ln -sfn {self.rpath}{os.path.basename(self.local_path)} {symlink}")
 
+    def cleanup_resource(self, symlink=None):
+        if isinstance(self.resource, NetworkResource):
+            host = self.resource.host
+            conn = sshmanager.open(host)
+
+            if self._on_nfs(conn):
+                pass
+            else:
+                self.rpath = f"{self.get_user_cache_path()}/{self.get_hash()}/"
+                self.logger.info("Removing %s on %s", self.local_path, host)
+                conn.run_check(f"rm -rf {self.rpath}")
+
+            if symlink is not None:
+                self.logger.info("Removing symlink {symlink}")
+                conn.run_check(f"rm -f {symlink}")
 
     def _on_nfs(self, conn):
         if self._on_nfs_cached is not None:

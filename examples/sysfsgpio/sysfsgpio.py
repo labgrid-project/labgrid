@@ -13,11 +13,12 @@ basicConfig(level=logging.INFO)
 StepLogger.start()
 
 t = Target("main")
-r = SysfsGPIO(t, name=None, index=60)
+r = SysfsGPIO(t, name=None, index=60, invert=True)
 d = GpioDigitalOutputDriver(t, name=None)
 
 p = t.get_driver("DigitalOutputProtocol")
 print(t.resources)
+print("Testing IO")
 p.set(True)
 print(p.get())
 time.sleep(2)

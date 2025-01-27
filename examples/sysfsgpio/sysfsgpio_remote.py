@@ -15,6 +15,7 @@ t = e.get_target()
 
 p = t.get_driver("DigitalOutputProtocol")
 print(t.resources)
+print("Testing IO")
 p.set(True)
 print(p.get())
 time.sleep(2)

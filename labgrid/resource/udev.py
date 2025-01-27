@@ -758,8 +758,10 @@ class MatchedSysfsGPIO(USBResource):
     """The MatchedSysfsGPIO described a SysfsGPIO matched by Udev
 
     Args:
-        pin (int): gpio pin number within the matched gpiochip."""
+        pin (int): gpio pin number within the matched gpiochip.
+        active_low (bool): set to True if active_low should be used. Default False"""
     pin = attr.ib(default=None, validator=attr.validators.instance_of(int))
+    active_low = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     index = None
 
     def __attrs_post_init__(self):

@@ -642,16 +642,19 @@ class GPIOSysFSExport(ResourceExport):
         return {
             "host": self.host,
             "index": self.local.index,
+            "active_low": self.local.active_low,
         }
 
     def _get_start_params(self):
         return {
             "index": self.local.index,
+            "active_low": self.local.active_low,
         }
 
     def _start(self, start_params):
         """Start a GPIO export to userspace"""
         index = start_params["index"]
+        active_low = start_params["active_low"]
 
         if self.export_path.exists():
             self.system_exported = True
@@ -671,7 +674,6 @@ class GPIOSysFSExport(ResourceExport):
         export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, "unexport")
         with open(export_sysfs_path, mode="wb") as unexport:
             unexport.write(str(index).encode("utf-8"))
-
 
 exports["SysfsGPIO"] = GPIOSysFSExport
 exports["MatchedSysfsGPIO"] = GPIOSysFSExport

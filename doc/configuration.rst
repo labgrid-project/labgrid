@@ -597,11 +597,13 @@ A :any:`KMTronicRelay` resource describes a single output of an USB Relay Contro
 
    KMTronicRelay:
      index: 2
+     ports: 4
      match:
        ID_SERIAL_SHORT: 'AB0LBF2U'
 
 Arguments:
-  - index (int): number of the relay to use.
+  - index (int): number on the relay to use.
+  - ports: (int): number of ports on the relay.
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
 
 NetworkKMTronicRelay

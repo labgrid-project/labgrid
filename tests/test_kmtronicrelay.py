@@ -13,7 +13,7 @@ def test_kmtronicrelay_driver(target):
 
 
 def test_kmtronicrelay_control(target):
-    r = KMTronicRelay(target, name=None, match={"ID_SERIAL_SHORT": "AB0LBF2U"})
+    r = KMTronicRelay(target, name=None, match={"ID_SERIAL_SHORT": "AB0LBF2U"}, index=2, ports=4)
     d = KMTronicRelayDriver(target, name=None)
     target.activate(d)
     d.set(1)

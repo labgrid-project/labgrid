@@ -3,6 +3,7 @@ targets:
     resources:
       KMTronicRelay:
         index: 3
+        ports: 4
 
     drivers:
       KMTronicRelayDriver: {}

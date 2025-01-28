@@ -2,5 +2,6 @@ main:
   location: Work Desk
   KMTronicRelay:
     index: 3
+    ports: 8
     match:
       ID_SERIAL_SHORT: 'AB0LBF2U'

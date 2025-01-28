@@ -710,6 +710,7 @@ class HIDRelay(USBResource):
 @attr.s(eq=False)
 class KMTronicRelay(USBResource):
     index = attr.ib(default=1, validator=attr.validators.instance_of(int))
+    ports = attr.ib(default=None, validator=attr.validators.instance_of(int))
 
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'tty'

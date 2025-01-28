@@ -9,13 +9,14 @@ class USBKMTronicRelay:
         with serial.Serial(path, 9600) as ser:
             ser.write(cmd)
 
-    def get_output(self, path, index):
+    def get_output(self, path, index, ports):
         # \xFF\x01\x03 will read relay 1 status
-        cmd = bytes([255, index, 3])
+        # \xFF\x09\x00 will read from all relays
+        cmd = bytes([255, 9, 0])
         with serial.Serial(path, 9600) as ser:
             ser.write(cmd)
-            data = ser.read(3)
-        return data[2]
+            data = ser.read(ports)
+        return data[index-1]
 
 _relays = {}
 
@@ -28,9 +29,9 @@ def handle_set(path, index, status):
     relay = _get_relay(path)
     relay.set_output(path, index, status)
 
-def handle_get(path, index):
+def handle_get(path, index, ports):
     relay = _get_relay(path)
-    return relay.get_output(path, index)
+    return relay.get_output(path, index, ports)
 
 methods = {
     "set": handle_set,

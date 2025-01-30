@@ -152,6 +152,14 @@ class RKUSBDriver(Driver, BootstrapProtocol):
 @target_factory.reg_driver
 @attr.s(eq=False)
 class UUUDriver(Driver, BootstrapProtocol):
+    """
+    This is a driver for NXPs uuu tool.
+    https://github.com/nxp-imx/mfgtools
+
+    It uses the -m parameter of uuu to lock in the specific usb device.
+    Everything specified in the script attribute will be executed with '-b'
+    parameter.
+    """
     bindings = {
         "loader": {"IMXUSBLoader", "NetworkIMXUSBLoader", "MXSUSBLoader", "NetworkMXSUSBLoader"},
     }
@@ -163,9 +171,9 @@ class UUUDriver(Driver, BootstrapProtocol):
         super().__attrs_post_init__()
         # FIXME make sure we always have an environment or config
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('uuu-loader')
+            self.tool = self.target.env.config.get_tool('uuu')
         else:
-            self.tool = 'uuu-loader'
+            self.tool = 'uuu'
 
     def on_activate(self):
         pass
@@ -182,9 +190,17 @@ class UUUDriver(Driver, BootstrapProtocol):
         mf.sync_to_resource()
 
         cmd = ['-b', self.script] if self.script else []
+        # Convert usb path to the format the uuu-tool expects
+        # 1-1.2.1 -> 1:121
+        usb_device = ['-m' , str(self.loader.path).replace('.', '').replace('-', ':')]
 
         processwrapper.check_output(
-            self.loader.command_prefix + [self.tool] + cmd + [mf.get_remote_path()],
+            self.loader.command_prefix
+                + [self.tool],
+                + '-v',
+                + usb_device
+                + cmd
+                + [mf.get_remote_path()],
             print_on_silent_log=True
         )
 

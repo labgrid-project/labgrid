@@ -3,12 +3,12 @@ Upstream-Name: labgrid
 Source: https://github.com/labgrid-project/labgrid
 
 Files: *
-Copyright: Copyright (C) 2016-2024 Pengutronix, Jan Luebbe <entwicklung@pengutronix.de>
-           Copyright (C) 2016-2024 Pengutronix, Rouven Czerwinski <entwicklung@pengutronix.de>
+Copyright: Copyright (C) 2016-2025 Pengutronix, Jan Luebbe <entwicklung@pengutronix.de>
+           Copyright (C) 2016-2025 Pengutronix, Rouven Czerwinski <entwicklung@pengutronix.de>
 License: LGPL-2.1+
 
 Files: man/*
-Copyright: Copyright (C) 2016-2024 Pengutronix
+Copyright: Copyright (C) 2016-2025 Pengutronix
 License: LGPL-2.1+
 
 License: LGPL-2.1+

@@ -99,9 +99,9 @@ class USBStorageDriver(Driver):
             target_path = str(pathlib.PurePath(mount_path) / target_rel)
 
             copied_sources = []
+            files = [ManagedFile(f, self.storage) for f in sources]
 
-            for f in sources:
-                mf = ManagedFile(f, self.storage)
+            for mf in files:
                 mf.sync_to_resource()
                 copied_sources.append(mf.get_remote_path())
 
@@ -114,6 +114,10 @@ class USBStorageDriver(Driver):
                 args = ["cp", "-T", copied_sources[0], target_path]
 
             processwrapper.check_output(self.storage.command_prefix + args)
+
+            for mf in files:
+                mf.cleanup_resource()
+
             self.proxy.unmount(self.devpath)
         except:
             # We are going to die with an exception anyway, so no point in waiting
@@ -200,6 +204,8 @@ class USBStorageDriver(Driver):
             self.storage.command_prefix + args,
             print_on_silent_log=True
         )
+
+        mf.cleanup_resource()
 
     def _get_devpath(self, partition):
         partition = "" if partition is None else partition

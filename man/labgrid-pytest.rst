@@ -7,7 +7,6 @@ labgrid-pytest labgrid integration for pytest
 
 :Author: Rouven Czerwinski <r.czerwinski@pengutronix.de>
 :organization: Labgrid-Project
-:Date:   2017-04-15
 :Copyright: Copyright (C) 2016-2024 Pengutronix. This library is free software;
             you can redistribute it and/or modify it under the terms of the GNU
             Lesser General Public License as published by the Free Software

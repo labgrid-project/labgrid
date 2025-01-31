@@ -1,4 +1,4 @@
-Release 24.1 (Unreleased)
+Release 25.0 (Unreleased)
 -------------------------
 As announced
 `before <https://github.com/labgrid-project/labgrid/discussions/1467#discussioncomment-10314852>`_,
@@ -14,25 +14,25 @@ That's why labgrid moves to gRPC with this release. gRPC is a well maintained
 RPC framework with a lot of users. As a side effect, the message transfer is
 more performant and the import times are shorter.
 
-New Features in 24.1
+New Features in 25.0
 ~~~~~~~~~~~~~~~~~~~~
 - All components can be installed into the same virtualenv again.
 - The `QEMUDriver` now supports setting the ``display`` option to
   ``qemu-default``, which will neither set the QEMU ``-display`` option
   or pass along ``-nographic``.
 
-Bug fixes in 24.1
+Bug fixes in 25.0
 ~~~~~~~~~~~~~~~~~
 
 FIXME
 
-Breaking changes in 24.1
+Breaking changes in 25.0
 ~~~~~~~~~~~~~~~~~~~~~~~~
 Maintaining support for both crossbar/autobahn as well as gRPC in labgrid would
 be a lot of effort due to the different architectures of those frameworks.
 Therefore, a hard migration to gRPC is deemed the lesser issue.
 
-Due to the migration, 24.1 includes the following breaking changes:
+Due to the migration, 25.0 includes the following breaking changes:
 
 - The labgrid environment config option ``crossbar_url`` was renamed to
   ``coordinator_address``. The environment variable ``LG_CROSSBAR`` was renamed
@@ -51,7 +51,7 @@ Other breaking changes include:
   removed) xdrlib. See
   `issue #1507 <https://github.com/labgrid-project/labgrid/issues/1507>`_.
 
-Known issues in 24.1
+Known issues in 25.0
 ~~~~~~~~~~~~~~~~~~~~
 
 FIXME

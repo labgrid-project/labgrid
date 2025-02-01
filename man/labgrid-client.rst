@@ -116,6 +116,11 @@ LG_SSH_CONNECT_TIMEOUT
 Set the connection timeout when using SSH (The ``ConnectTimeout`` option). If
 unspecified, defaults to 30 seconds.
 
+LG_AGENT_PREFIX
+~~~~~~~~~~~~~~~~~~~~~~
+Add a prefix to ``.labgrid_agent_{agent_hash}.py`` allowing specification for
+where on the exporter it should be uploaded to. 
+
 MATCHES
 -------
 Match patterns are used to assign a resource to a specific place. The format is:

@@ -42,5 +42,8 @@ class SysfsGPIO(Resource):
     """The basic SysfsGPIO contains an index
 
     Args:
-        index (int): index of target gpio line."""
+        index (int): index of target gpio line.
+        active_low (bool) : set to True if active_low should be used. Default False"""
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
+    active_low = attr.ib(default=False,
+                         validator=attr.validators.instance_of(bool))

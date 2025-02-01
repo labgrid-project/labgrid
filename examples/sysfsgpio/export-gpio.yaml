@@ -1,3 +1,4 @@
 desk:
-    GpioDigitalOutputDriver:
+    SysfsGPIO:
         index: 60
+        active_low: False

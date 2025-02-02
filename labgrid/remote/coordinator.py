@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import argparse
-import logging
 import asyncio
+import logging
 import traceback
+from copy import copy
 from enum import Enum
 from functools import wraps
 import time
@@ -13,20 +14,19 @@ import attr
 import grpc
 from grpc_reflection.v1alpha import reflection
 
+from ..util import atomic_replace, labgrid_version, yaml
 from .common import (
-    ResourceEntry,
-    ResourceMatch,
+    TAG_KEY,
+    TAG_VAL,
     Place,
     Reservation,
     ReservationState,
+    ResourceEntry,
+    ResourceMatch,
     queue_as_aiter,
-    TAG_KEY,
-    TAG_VAL,
 )
+from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from .scheduler import TagSet, schedule
-from .generated import labgrid_coordinator_pb2
-from .generated import labgrid_coordinator_pb2_grpc
-from ..util import atomic_replace, labgrid_version, yaml
 
 
 @contextmanager
@@ -126,6 +126,8 @@ class ExporterSession(RemoteSession):
 
 @attr.s(eq=False)
 class ClientSession(RemoteSession):
+    id = attr.ib()
+
     def subscribe_places(self):
         # send initial places
         out_msg = labgrid_coordinator_pb2.ClientOutMessage()
@@ -207,12 +209,61 @@ class ExporterError(Exception):
     pass
 
 
+class _SessionManager:
+    def __init__(self):
+        self._sessions = {}
+
+    def add_session(self, session):
+        assert session not in self._sessions, f"Session {session} already exists"
+        self._sessions[session] = {
+            "places": set(),
+            "reservations": set(),
+        }
+
+    def remove_session(self, session):
+        self._assert_session(session)
+        del self._sessions[session]
+
+    def get_session(self, session):
+        self._assert_session(session)
+        return (
+            copy(self._sessions[session]["places"]),
+            copy(self._sessions[session]["reservations"]),
+        )
+
+    def add_place(self, place):
+        self._assert_session(place.session)
+        self._sessions[place.session]["places"].add(place)
+
+    def add_reservation(self, reservation):
+        self._assert_session(reservation.session)
+        self._sessions[reservation.session]["reservations"].add(reservation)
+
+    def remove_place(self, place):
+        self._assert_session(place.session)
+        places = self._sessions[place.session]["places"]
+        assert place in places, f"Session {place.session} does not contain place {place.name}"
+
+    def remove_reservation(self, reservation):
+        self._assert_session(reservation.session)
+        reservations = self._sessions[reservation.session]["reservations"]
+        assert (
+            reservation in reservations
+        ), f"Session {reservation.session} does not contain reservation {reservation.token}"
+        reservations.remove(reservation)
+
+    def _assert_session(self, session):
+        assert session in self._sessions, f"Session {session} does not exist"
+
+
 class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     def __init__(self) -> None:
         self.places: dict[str, Place] = {}
         self.reservations = {}
         self.poll_tasks = []
         self.save_scheduled = False
+
+        self.session_manager = _SessionManager()
 
         self.lock = asyncio.Lock()
         self.exporters: dict[str, ExporterSession] = {}
@@ -301,6 +352,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     del config["allowed"]
                 if "reservation" in config:
                     del config["reservation"]
+                if "session" in config:
+                    del config["session"]
                 config["matches"] = [ResourceMatch(**match) for match in config["matches"]]
                 place = Place(**config)
                 self.places[placename] = place
@@ -329,7 +382,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     elif kind == "startup":
                         version = in_msg.startup.version
                         name = in_msg.startup.name
-                        session = self.clients[peer] = ClientSession(self, peer, name, out_msg_queue, version)
+                        id_ = self._session_id(peer, in_msg.startup.session)
+                        session = self.clients[peer] = ClientSession(self, peer, name, out_msg_queue, version, id_)
+                        if id_:
+                            self.session_manager.add_session(id_)
                         logging.debug("Received startup from %s with %s", name, version)
                         asyncio.current_task().set_name(f"client-{peer}-rx/started-{name}")
                     elif kind == "subscribe":
@@ -357,6 +413,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except KeyError:
                 logging.info("Never received startup from peer %s that disconnected", peer)
                 return
+
+            if session.id:
+                await self._release_session(session)
 
             running_request_task.cancel()
             await running_request_task
@@ -754,6 +813,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             res = self.reservations[place.reservation]
             if not res.owner == username:
                 await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Place {name} was not reserved for {username}")
+            if res.session and res.session != self._session_id(peer, request.session):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f'Place session "{request.session}" is not the same as the reservation session "{res.session}"',
+                )
 
         # First try to reacquire orphaned resources to avoid conflicts.
         await self._reacquire_orphaned_resources()
@@ -761,6 +825,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         # FIXME use the session object instead? or something else which
         # survives disconnecting clients?
         place.acquired = username
+        place.session = self._session_id(peer, request.session)
+        if place.session:
+            self.session_manager.add_place(place)
         resources = []
         for _, session in sorted(self.exporters.items()):
             for _, group in sorted(session.groups.items()):
@@ -795,16 +862,23 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         if fromuser and place.acquired != fromuser:
             return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
+        await self._release_place(place)
+        return labgrid_coordinator_pb2.ReleasePlaceResponse()
+
+    async def _release_place(self, place):
         await self._release_resources(place, place.acquired_resources)
 
+        if place.session:
+            self.session_manager.remove_place(place)
+
         place.acquired = None
+        place.session = ""
         place.allowed = set()
         place.touch()
         self._publish_place(place)
         self.save_later()
         self.schedule_reservations()
         print(f"{place.name}: place released")
-        return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
     @locked
     async def AllowPlace(self, request, context):
@@ -966,7 +1040,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 fltr[k] = v
 
         owner = self.clients[peer].name
-        res = Reservation(owner=owner, prio=request.prio, filters=fltrs)
+        res = Reservation(
+            owner=owner, prio=request.prio, filters=fltrs, session=self._session_id(peer, request.session)
+        )
+        if request.session:
+            self.session_manager.add_reservation(res)
         self.reservations[res.token] = res
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CreateReservationResponse(reservation=res.as_pb2())
@@ -978,9 +1056,15 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid token {token}")
         if token not in self.reservations:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {token} does not exist")
+        self._release_reservation(token)
+        return labgrid_coordinator_pb2.CancelReservationResponse()
+
+    def _release_reservation(self, token):
+        reservation = self.reservations[token]
+        if reservation.session:
+            self.session_manager.remove_reservation(reservation)
         del self.reservations[token]
         self.schedule_reservations()
-        return labgrid_coordinator_pb2.CancelReservationResponse()
 
     @locked
     async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context):
@@ -996,6 +1080,23 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     async def GetReservations(self, request: labgrid_coordinator_pb2.GetReservationsRequest, context):
         reservations = [x.as_pb2() for x in self.reservations.values()]
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
+
+    async def _release_session(self, client_session):
+        places, reservations = self.session_manager.get_session(client_session.id)
+        await self.lock.acquire()
+        for place in places:
+            await self._release_place(place)
+        for reservation in reservations:
+            self._release_reservation(reservation.token)
+        self.lock.release()
+
+        self.session_manager.remove_session(client_session.id)
+
+    def _session_id(self, peer, name):
+        if not name:
+            return ""
+        ip = ":".join(peer.split(":")[:2])
+        return f"{ip}/{name}"
 
 
 async def serve(listen, cleanup) -> None:

@@ -110,6 +110,11 @@ def test_all_modules():
     methods = aw.list()
     assert 'usb_hid_relay.set' in methods
     assert 'usb_hid_relay.get' in methods
+    aw.load('kmtronix_relay')
+    methods = aw.list()
+    assert 'kmtronic_relay.set' in methods
+    assert 'kmtronic_relay.get' in methods
+    
 
 def test_import_modules():
     import labgrid.util.agents

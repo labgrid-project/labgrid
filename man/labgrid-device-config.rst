@@ -130,6 +130,14 @@ TOOLS KEYS
     Path to the rk-usb-loader binary, used by the RKUSBDriver.
     See: https://git.pengutronix.de/cgit/barebox/tree/scripts/rk-usb-loader.c
 
+``rsync``
+    Path to the rsync binary, used by the SSHDriver.
+    See: https://github.com/rsyncproject/rsync
+
+``scp``
+    Path to the scp binary, used by the SSHDriver.
+    See: https://github.com/openssh/openssh-portable
+
 ``sd-mux-ctrl``
     Path to the sd-mux-ctrl binary, used by the USBSDWireDriver.
     See: https://git.tizen.org/cgit/tools/testlab/sd-mux/
@@ -137,6 +145,14 @@ TOOLS KEYS
 ``sispmctl``
     Path to the sispmctl binary, used by the SiSPMPowerDriver.
     See: https://sispmctl.sourceforge.net/
+
+``ssh``
+    Path to the ssh binary, used by the SSHDriver.
+    See: https://github.com/openssh/openssh-portable
+
+``sshfs``
+    Path to the sshfs binary, used by the SSHDriver.
+    See: https://github.com/libfuse/sshfs
 
 ``uhubctl``
     Path to the uhubctl binary, used by the USBPowerDriver.

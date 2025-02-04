@@ -448,9 +448,13 @@ class ClientSession:
         if f"{self.gethostname()}/{self.getuser()}" not in place.allowed:
             host, user = place.acquired.split("/")
             if user != self.getuser():
-                raise UserError(f"place {place.name} is not acquired by your user, acquired by {user}")
+                raise UserError(
+                    f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}"
+                )
             if host != self.gethostname():
-                raise UserError(f"place {place.name} is not acquired on this computer, acquired on {host}")
+                raise UserError(
+                    f"place {place.name} is not acquired on this computer, acquired on {host}. To allow this host, use labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()} on the other host"
+                )
 
     def get_place(self, place=None):
         pattern = place or self.args.place
@@ -468,7 +472,10 @@ class ClientSession:
     def get_idle_place(self, place=None):
         place = self.get_place(place)
         if place.acquired:
-            raise UserError(f"place {place.name} is not idle (acquired by {place.acquired})")
+            _, user = place.acquired.split("/")
+            raise UserError(
+                f"place {place.name} is not idle (acquired by {place.acquired}). To work simultaneously, {user} can execute labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}"
+            )
         return place
 
     def get_acquired_place(self, place=None):

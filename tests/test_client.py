@@ -15,7 +15,7 @@ def place(coordinator):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-    with pexpect.spawn('python -m labgrid.remote.client -p test set-tags board=bar') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -p test set-tags board=123board') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
@@ -271,7 +271,7 @@ def test_remoteplace_target(place_acquire, tmpdir):
     t.await_resources(t.resources)
 
     remote_place = t.get_resource("RemotePlace")
-    assert remote_place.tags == {"board": "bar"}
+    assert remote_place.tags == {"board": "123board"}
 
 def test_remoteplace_target_without_env(request, place_acquire):
     from labgrid import Target
@@ -279,7 +279,7 @@ def test_remoteplace_target_without_env(request, place_acquire):
 
     t = Target(request.node.name)
     remote_place = RemotePlace(t, name="test")
-    assert remote_place.tags == {"board": "bar"}
+    assert remote_place.tags == {"board": "123board"}
 
 def test_resource_conflict(place_acquire, tmpdir):
     with pexpect.spawn('python -m labgrid.remote.client -p test2 create') as spawn:
@@ -303,7 +303,7 @@ def test_resource_conflict(place_acquire, tmpdir):
         assert spawn.exitstatus == 0, spawn.before.strip()
 
 def test_reservation(place_acquire, tmpdir):
-    with pexpect.spawn('python -m labgrid.remote.client reserve --shell board=bar name=test') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client reserve --shell board=123board name=test') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
@@ -510,7 +510,7 @@ def test_reservation_custom_config(place, exporter, tmpdir):
             name: test
     """
     )
-    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} reserve --wait --shell board=bar name=test') as spawn:
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} reserve --wait --shell board=123board name=test') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()

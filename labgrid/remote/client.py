@@ -1425,7 +1425,7 @@ class ClientSession:
                 raise UserError(f"'{pair}' is not a valid filter (must contain a '=')")
             if not TAG_KEY.match(k):
                 raise UserError(f"Key '{k}' in filter '{pair}' is invalid")
-            if not TAG_KEY.match(v):
+            if not TAG_VAL.match(v):
                 raise UserError(f"Value '{v}' in filter '{pair}' is invalid")
             fltr[k] = v
 

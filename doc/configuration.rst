@@ -597,12 +597,20 @@ A :any:`KMTronicRelay` resource describes a single output of an USB Relay Contro
 
    KMTronicRelay:
      index: 2
+     ports: 8
      match:
        ID_SERIAL_SHORT: 'AB0LBF2U'
 
 Arguments:
-  - index (int): number of the relay to use.
+  - index (int, default=1): number on the relay to use.
+  - ports: (int, default=1): number of ports on the relay.
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+.. note::
+   IMPORTANT
+   Set ports=8 if you are using a 8 relay controller. if not the default=1 is fine.
+   The reason for this is the 8 relay controller does not read the state of relays the same
+   way as the other controllers.
 
 NetworkKMTronicRelay
 ++++++++++++++++++++

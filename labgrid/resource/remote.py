@@ -337,6 +337,8 @@ class NetworkHIDRelay(RemoteUSBResource):
 class NetworkKMTronicRelay(RemoteUSBResource):
     """The NetworkKMTronicRelay describes a remotely accessible USB relay port"""
     index = attr.ib(default=1, validator=attr.validators.instance_of(int))
+    ports = attr.ib(default=1, validator=attr.validators.instance_of(int))
+
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()

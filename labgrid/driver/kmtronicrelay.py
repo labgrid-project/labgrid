@@ -40,5 +40,5 @@ class KMTronicRelayDriver(Driver, DigitalOutputProtocol):
     @Driver.check_active
     @step(result=True)
     def get(self):
-        status = self.proxy.get(self.relay.path, self.relay.index)
+        status = self.proxy.get(self.relay.path, self.relay.index, self.relay.ports)
         return status

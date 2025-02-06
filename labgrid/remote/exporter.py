@@ -542,6 +542,7 @@ class KMTronicRelayExport(USBGenericExport):
             "vendor_id": self.local.vendor_id,
             "model_id": self.local.model_id,
             "index": self.local.index,
+            "ports": self.local.ports,
         }
 
 @attr.s(eq=False)

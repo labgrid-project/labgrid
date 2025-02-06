@@ -2,7 +2,7 @@ targets:
   main:
     resources:
       KMTronicRelay:
-        index: 3
+        index: 2
 
     drivers:
       KMTronicRelayDriver: {}

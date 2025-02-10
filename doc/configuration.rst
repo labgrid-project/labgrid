@@ -31,6 +31,7 @@ enumeration order.
    RawSerialPort:
      port: '/dev/ttyUSB0'
      speed: 115200
+     xonxoff: False
 
 The example would access the serial port ``/dev/ttyUSB0`` on the local computer
 with a baud rate of ``115200``.
@@ -38,6 +39,7 @@ with a baud rate of ``115200``.
 Arguments:
   - port (str): path to the serial device
   - speed (int, default=115200): desired baud rate
+  - xonxoff (bool, default=False): software flow control
 
 Used by:
   - `SerialDriver`_

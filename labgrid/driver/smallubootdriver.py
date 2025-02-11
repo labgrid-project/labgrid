@@ -96,8 +96,10 @@ class SmallUBootDriver(UBootDriver):
         cmp_command = f"echo{marker}; {cmd}; echo{marker}"
 
         self.console.sendline(cmp_command)
-        _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
-
+        while True:
+            _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
+            if len(before) > 3:
+                break
         data = re_vt100.sub(
             '', before.decode('utf-8'), count=1000000
         ).replace("\r", "").split("\n")

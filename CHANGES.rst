@@ -1,3 +1,14 @@
+Release 24.0.3 (Released Feb 12, 2024)
+--------------------------------------
+
+Bug fixes in 24.0.3
+~~~~~~~~~~~~~~~~~~~
+- Fix support for networks without SSID in the agent used by the
+  NetworkInterfaceDriver.
+- Fix concurrent access to USB HID relays.
+- Fix some actions workflows.
+
+
 Release 24.0.2 (Released Sep 28, 2024)
 --------------------------------------
 

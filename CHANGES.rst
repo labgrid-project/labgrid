@@ -1,4 +1,4 @@
-Release 24.0.3 (Released Feb 12, 2024)
+Release 24.0.3 (Released Feb 12, 2025)
 --------------------------------------
 
 Bug fixes in 24.0.3

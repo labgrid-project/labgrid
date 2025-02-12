@@ -2169,6 +2169,13 @@ def main():
         except Exception:  # pylint: disable=broad-except
             traceback.print_exc(file=sys.stderr)
             exitcode = 2
+        if not args.debug:
+            # This is a workround for the gRPC issue
+            # https://github.com/grpc/grpc/issues/38679.
+            # Since Python 3.12, an empty exception message is printed from gRPC
+            # during shutdown, although nothing seems to go wrong. As this is
+            # confusing for users, suppress the message by closing stderr.
+            os.close(sys.stderr.fileno())
         exit(exitcode)
     else:
         parser.print_help(file=sys.stderr)

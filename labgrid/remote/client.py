@@ -456,13 +456,24 @@ class ClientSession:
                     f"place {place.name} is not acquired on this computer, acquired on {host}. To allow this host, use labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()} on the other host"
                 )
 
-    def get_place(self, place=None):
-        pattern = place or self.args.place
+    def get_place(self, place=None, only_acquired: bool = False):
+        pattern = place or self.args.place or ("" if only_acquired else None)
         if pattern is None:
             raise UserError("place pattern not specified")
         places = self._match_places(pattern)
         if not places:
             raise UserError(f"place pattern {pattern} matches nothing")
+        if only_acquired:
+            acquired_places = []
+            for name in places:
+                try:
+                    self._check_allowed(self.places[name])
+                    acquired_places.append(name)
+                except UserError:  # treat _check_allowed as an if condition, no need to raise error
+                    pass  # nosec try_except_pass
+            if not acquired_places:
+                raise UserError(f"place pattern {pattern} matches no acquired place")
+            places = acquired_places
         if pattern in places:
             return self.places[pattern]
         if len(places) > 1:
@@ -479,9 +490,7 @@ class ClientSession:
         return place
 
     def get_acquired_place(self, place=None):
-        place = self.get_place(place)
-        self._check_allowed(place)
-        return place
+        return self.get_place(place, only_acquired=True)
 
     async def print_place(self):
         """Print out the current place and related resources"""

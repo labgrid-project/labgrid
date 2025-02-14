@@ -1261,6 +1261,28 @@ Arguments:
 Used by:
   - none
 
+IPMIInterface
+~~~~~~~~~~~~~
+:any:`IPMIInterface` describes an IPMI interface of a device.
+
+.. code-block:: yaml
+
+    IPMIInterface:
+        host: 192.168.0.100
+        username: admin
+        password: admin
+
+
+Arguments:
+  - host (str): address for IPMI interface
+  - username (str): IPMI session username
+  - password (str): IPMI session password
+  - port (int): network port for IPMI (Default=623)
+  - interface (str): The IPMI interface type to use (Default=lanplus)
+
+Used by:
+  - `IMPIDriver`_
+
 Providers
 ~~~~~~~~~
 Providers describe directories that are accessible by the target over a
@@ -3277,6 +3299,24 @@ Binds to:
 
 Implements:
   - None yet
+
+Arguments:
+  - None
+
+IMPIDriver
+~~~~~~~~~~~~~~
+A :any:`IMPIDriver` controls a `IPMIInterface`_ using `ipmitool`
+
+Currently it supports:
+ - Power Control
+
+Binds to:
+  hub:
+    - `IPMIInterface`_
+
+Implements:
+  - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 Arguments:
   - None

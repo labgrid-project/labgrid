@@ -9,3 +9,7 @@ class VideoProtocol(abc.ABC):
     @abc.abstractmethod
     def stream(self, quality_hint=None):
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def screenshot(self, filename):
+        raise NotImplementedError

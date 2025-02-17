@@ -182,7 +182,7 @@ class USBVideoDriver(Driver, VideoProtocol):
 
         tx_cmd = self.video.command_prefix + ["gst-launch-1.0", "-q"]
         tx_cmd += pipeline.split()
-        rx_cmd = ["gst-launch-1.0", "fdsrc", " num-buffers=75", "!", "jpegdec", "!", "jpegenc", "!", "filesink", f"location={filepath.absolute()}"]
+        rx_cmd = ["gst-launch-1.0", "fdsrc", "num-buffers=75", "!", "decodebin", "!", "jpegenc", "!", "filesink", f"location={filepath.absolute()}"]
 
         tx = subprocess.Popen(
             tx_cmd,

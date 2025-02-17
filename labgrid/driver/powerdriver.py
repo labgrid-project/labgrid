@@ -1,4 +1,5 @@
 import shlex
+import subprocess
 import time
 import math
 from importlib import import_module
@@ -440,3 +441,101 @@ class PDUDaemonDriver(Driver, PowerResetMixin, PowerProtocol):
     @Driver.check_active
     def get(self):
         raise NotImplementedError("pdudaemon does not support retrieving the port's state")
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class AMTPowerDriver(Driver, PowerResetMixin, PowerProtocol):
+    """AMTPowerDriver - Driver using an Intel AMT PowerPort"""
+    bindings = {"port": "AMTPowerPort", }
+    delay = attr.ib(default=5.0, validator=attr.validators.instance_of(float))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _amt_power(self, cmd):
+        runstr = f"amtctrl -p {self.port.host} {cmd}"
+        p = subprocess.Popen(runstr.split(' '), text=True,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             stdin=subprocess.PIPE)
+        p.stdin.write(self.port.password)
+        p.stdin.close()
+        p.wait(self.port.timeout)
+        out = p.stdout.read() + p.stderr.read()
+        assert p.returncode == 0, "Failed to execute AMT command {cmd}, ret: {p.returncode}, {out}"
+        return out.strip()
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        self._amt_power("on")
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        self._amt_power("off")
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        self._amt_power("reboot")
+
+    @Driver.check_active
+    def get(self):
+        power = self._amt_power("status")
+        if power == "on":
+            return True
+        elif power == "off":
+            return False
+        else:
+            raise ExecutionError(f"got unexpected power status {power}")
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class IPMIPowerDriver(Driver, PowerResetMixin, PowerProtocol):
+    """IPMIPowerDriver - Driver using an IPMI PowerPort"""
+    bindings = {"port": "IPMIPowerPort", }
+    delay = attr.ib(default=5.0, validator=attr.validators.instance_of(float))
+
+    def _ipmi_power(self, cmd):
+        runstr = f"ipmi-power -h {self.port.host} -u {self.port.username} "
+        runstr += f"--session-timeout={self.port.timeout*1000} "
+        runstr += f"-p {self.port.password} {cmd}"
+        runstr = runstr.split(' ')
+        if len(self.port.args) > 0:
+            runstr.append(self.port.args)
+        return subprocess.run(runstr, capture_output=True)
+
+    def _ipmi_cmd(self, cmd):
+        ret = self._ipmi_power(cmd)
+        stdout = ret.stdout.decode('utf-8').split(' ')
+        assert self.port.host == stdout[0][:-1]
+        assert "ok" == stdout[1][:-1]
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        self._ipmi_cmd('--on')
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        self._ipmi_cmd('--off')
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        self._ipmi_cmd('--cycle')
+
+    @Driver.check_active
+    def get(self):
+        ret = self._ipmi_power('--stat')
+        stdout = ret.stdout.decode('utf-8').split(' ')
+        assert self.port.host == stdout[0][:-1]
+        power = stdout[1][:-1]
+        if power == 'off':
+            return False
+        elif power == 'on':
+            return True
+        raise ExecutionError(f"got unexpected power status {power}")

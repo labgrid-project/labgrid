@@ -310,6 +310,44 @@ NetworkYKUSHPowerPort
 A :any:`NetworkYKUSHPowerPort` describes a `YKUSHPowerPort`_ available on a
 remote computer.
 
+AMTPowerPort
+++++++++++++
+A :any:`AMTPowerPort` describes a AMT port accessible via `amtctrl`.
+
+.. code-block:: yaml
+
+   AMTPowerPort:
+     host: 'amt-hostname'
+     password: 'secret-password'
+
+Arguments:
+ - host (str): hostname or ip the AMT interface of the PC is reachable
+ - password (str): password to use for AMT login
+ - timeout (int): timeout to use when polling the resource
+
+Used by:
+  - `AMTPowerDriver`_
+
+IPMIPowerPort
+++++++++++++
+A :any:`IPMIPowerPort` describes a IPMI port accessible via `ipmi-power`.
+
+.. code-block:: yaml
+
+   IPMIPowerPort:
+     host: 'ipmi-hostname'
+     username: 'admin'
+     password: 'secret-password'
+
+Arguments:
+ - host (str): hostname or ip the IPMI interface of the PC is reachable
+ - username (str): username to use for IPMI login
+ - password (str): password to use for IPMI login
+ - timeout (int): timeout to use when polling the resource
+
+Used by:
+  - `IPMIPowerDriver`_
+
 USBPowerPort
 ++++++++++++
 A :any:`USBPowerPort` describes a generic switchable USB hub as supported by

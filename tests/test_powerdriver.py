@@ -289,6 +289,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.digitalloggers_restapi
         import labgrid.driver.power.eth008
         import labgrid.driver.power.gude
+        import labgrid.driver.power.gude8210
         import labgrid.driver.power.gude24
         import labgrid.driver.power.netio
         import labgrid.driver.power.netio_kshell
@@ -316,6 +317,10 @@ class TestNetworkPowerDriver:
     def test_import_backend_poe_mib(self):
         pytest.importorskip("pysnmp")
         import labgrid.driver.power.poe_mib
+
+    def test_import_backend_gude8210(self):
+        pytest.importorskip("pysnmp")
+        import labgrid.driver.power.gude8210
 
 class TestYKUSHPowerDriver:
     YKUSH_FAKE_SERIAL = "YK12345"

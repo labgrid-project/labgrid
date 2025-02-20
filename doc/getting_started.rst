@@ -324,6 +324,42 @@ See :ref:`remote-usage` for some more advanced features.
 For a complete reference have a look at the :doc:`labgrid-client(1) <man/client>`
 man page.
 
+Now, to connect drivers to the resources, you can configure an environment file,
+which we call ``remote.yaml`` in this case:
+
+.. code-block:: yaml
+
+    targets:
+      main:
+        resources:
+          RemotePlace:
+            name: myplace
+        drivers:
+          SerialDriver: {}
+          ShellDriver:
+            prompt: 'root@[\w-]+:[^ ]+ '
+            login_prompt: ' login: '
+            username: 'root'
+
+The ``RemotePlace`` resource makes all resources available that are assigned to
+to the place ``myplace`` on your coordinator.
+
+Now, this environment file can be used interactively with the client:
+
+.. code-block:: bash
+
+    labgrid-venv $ labgrid-client -c remote.yaml acquire
+    labgrid-venv $ labgrid-client -c remote.yaml console
+    labgrid-venv $ labgrid-client -c remote.yaml release
+
+or directly with a test:
+
+.. code-block:: bash
+
+    labgrid-venv $ labgrid-client -c remote.yaml acquire
+    labgrid-venv $ pytest --lg-env remote.yaml test_shell.py
+    labgrid-venv $ labgrid-client -c remote.yaml release
+
 .. _remote-getting-started-systemd-files:
 
 Systemd files

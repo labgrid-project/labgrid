@@ -292,7 +292,7 @@ To show more details on the exported resources, use ``-v`` (or ``-vv``):
            'params': {'host': 'netio1', 'index': 3, 'model': 'netio'}}
     ...
 
-You can now add a place with:
+You can now add a place to the coordinator with:
 
 .. code-block:: bash
 

@@ -130,8 +130,14 @@ and ``password`` of the ShellDriver driver in the environment file ``local.yaml`
             login_prompt: ' login: '
             username: 'root'
 
-More information about the environment configuration file can be found
-:ref:`here <environment-configuration>`.
+For, now it is sufficient to know that labgrid tries to "bind" appropriate drivers
+and resources to each other automatically if possible. The ``ShellDriver`` will use
+the ``SerialDriver`` to connect to the ``RawSerialPort`` resource. If an automatic
+binding is not possible due to ambiguity, the bindings can also be specified
+explicitly.
+
+More information about this and the environment configuration file in general can
+be found :ref:`here <environment-configuration>`.
 
 You can check which device name gets assigned to your USB-Serial converter by
 unplugging the converter, running ``dmesg -w`` and plugging it back in. Boot up

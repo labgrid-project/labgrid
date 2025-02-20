@@ -179,6 +179,10 @@ We can simply start the coordinator:
 Exporter
 ~~~~~~~~
 
+The exporter is responsible for exporting resources to the client. It is noted
+that drivers are not handled by the exporter. In the distributed case, drivers
+are managed by the client.
+
 The exporter needs a configuration file written in YAML syntax, listing
 the resources to be exported from the local machine.
 The config file contains one or more named resource groups.

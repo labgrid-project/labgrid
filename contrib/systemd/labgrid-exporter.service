@@ -8,9 +8,9 @@ Environment="PYTHONUNBUFFERED=1"
 # Should contain LG_COORDINATOR configuration
 EnvironmentFile=-/etc/environment
 ExecStart=/path/to/labgrid/venv/bin/labgrid-exporter /etc/labgrid/exporter.yaml
-Restart=on-failure
-RestartForceExitStatus=100
+Restart=always
 RestartSec=30
+StartLimitIntervalSec=0
 DynamicUser=yes
 # Adjust to your distribution (most often "dialout" or "tty")
 SupplementaryGroups=dialout plugdev

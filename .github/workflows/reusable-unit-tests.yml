@@ -9,10 +9,13 @@ on:
       branch:
         type: string
         required: false
+    secrets:
+      CODECOV_TOKEN:
+        required: false
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: false
     steps:
     - uses: actions/checkout@v4
@@ -30,7 +33,7 @@ jobs:
           ${{ runner.os }}-pip-
     - name: Install system dependencies
       run: |
-        sudo apt-get install -yq libow-dev openssh-server openssh-client libsnappy-dev graphviz openocd
+        sudo apt-get install -yq libow-dev openssh-server openssh-client graphviz openocd
         sudo mkdir -p /var/cache/labgrid/runner && sudo chown runner /var/cache/labgrid/runner
     - name: Prepare local SSH
       run: |
@@ -46,17 +49,27 @@ jobs:
     - name: Install labgrid
       run: |
         pip install -e ".[dev]"
-    - name: Install crossbar in virtualenv
-      run: |
-        virtualenv -p python3 crossbar-venv
-        crossbar-venv/bin/pip install -r crossbar-requirements.txt
     - name: Lint with pylint
       run: |
         pylint --list-msgs-enabled
         pylint labgrid
+    - name: Format with ruff
+      run: |
+        ruff format --check --diff
     - name: Test with pytest
       run: |
-        pytest --cov-config .coveragerc --cov=labgrid --local-sshmanager --ssh-username runner --crossbar-venv crossbar-venv -k "not test_docker_with_daemon"
+        pytest -r a --cov-config .coveragerc --cov=labgrid --junitxml=junit.xml -o junit_family=legacy --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: ${{ inputs.python-version }}
+    - name: Upload test results to Codecov
+      if: ${{ !cancelled() }}
+      uses: codecov/test-results-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: ${{ inputs.python-version }}
     - name: Build documentation
       run: |
         make -C doc clean
@@ -68,4 +81,3 @@ jobs:
         # check README.rst separately
         pip install rstcheck
         rstcheck --ignore-languages=bash --report-level=WARNING README.rst
-    - uses: codecov/codecov-action@v3

@@ -23,7 +23,7 @@ Install required dependencies:
 
 .. code-block:: bash
 
-   sudo apt install python3-dev libow-dev libsnappy-dev
+   sudo apt install python3-dev libow-dev
 
 Install labgrid with development dependencies into the virtualenv in editable
 mode:

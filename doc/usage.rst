@@ -437,10 +437,10 @@ Other labgrid-related pytest plugin options are:
   Specify a labgrid environment config file.
   This is equivalent to labgrid-client's ``-c``/``--config``.
 
-``--lg-coordinator=CROSSBAR_URL``
-  Specify labgrid coordinator websocket URL.
-  Defaults to ``ws://127.0.0.1:20408/ws``.
-  This is equivalent to labgrid-client's ``-x``/``--crossbar``.
+``--lg-coordinator=COORDINATOR_ADDRESS``
+  Specify labgrid coordinator gRPC address as ``HOST[:PORT]``.
+  Defaults to ``127.0.0.1:20408``.
+  This is equivalent to labgrid-client's ``-x``/``--coordinator``.
 
 ``--lg-log=[path to logfiles]``
   Path to store console log file.
@@ -494,7 +494,7 @@ access this board:
       drivers:
         SerialDriver: {}
         ShellDriver:
-          prompt: 'root@\w+:[^ ]+ '
+          prompt: 'root@[\w-]+:[^ ]+ '
           login_prompt: ' login: '
           username: 'root'
 
@@ -665,7 +665,7 @@ setup:
         BareboxDriver:
           prompt: 'barebox@[^:]+:[^ ]+ '
         ShellDriver:
-          prompt: 'root@\w+:[^ ]+ '
+          prompt: 'root@[\w-]+:[^ ]+ '
           login_prompt: ' login: '
           username: 'root'
         BareboxStrategy: {}

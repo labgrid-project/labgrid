@@ -1,3 +1,91 @@
+Release 25.0 (Unreleased)
+-------------------------
+As announced
+`before <https://github.com/labgrid-project/labgrid/discussions/1467#discussioncomment-10314852>`_,
+this is the first release using gRPC instead of crossbar/autobahn for
+communication between client/exporter and coordinator.
+
+Crossbar/autobahn are unfortunately not very well maintained anymore. The
+crossbar component was moved to its own virtualenv to cope with the high number
+of dependencies leading to conflicts. Support for Python 3.13 is still not
+available in a crossbar release on PyPI.
+
+That's why labgrid moves to gRPC with this release. gRPC is a well maintained
+RPC framework with a lot of users. As a side effect, the message transfer is
+more performant and the import times are shorter.
+
+New Features in 25.0
+~~~~~~~~~~~~~~~~~~~~
+- All components can be installed into the same virtualenv again.
+- Add support for Python 3.13.
+- The `QEMUDriver` now supports setting the ``display`` option to
+  ``qemu-default``, which will neither set the QEMU ``-display`` option
+  or pass along ``-nographic``.
+- The amount of buffering in GStreamer video pipelines was reduced to improve
+  latency for ``USBVideoDriver`` network streaming.
+- The ``RawNetworkInterfaceDriver`` now supports live streaming of captured
+  packets, setting/getting various configuration options and reporting
+  statistics.
+- Add support for LogiLink UA0379 / Microdia cameras to the ``USBVideoDriver``.
+- Add more backends to the ``NetworkPowerDriver``:
+  
+  - Gude 87-1210-18
+  - Digital Loggers PDUs via the REST API
+  - Ubiquity mFi mPower power strips
+- Add support for sigrok's channel-group parameter.
+- Make USB hubs exportable for easier monitoring of large bus topologies.
+- Add support for Digital Loggers PDUs via the REST API.
+- Add support for custom paths for ``ssh``, ``scp``, ``sshfs`` and ``rsync`` in
+  the ``SSHDriver``.
+- Make the ``QEMUDriver`` configuration more flexible and improve startup error
+  reporting.
+- Support labgrid-client power via GPIOs.
+
+Bug fixes in 25.0
+~~~~~~~~~~~~~~~~~
+- Fix ShellDriver to correctly match network interfaces names with dots and/or
+  dashes in ``get_default_interface_device_name()``.
+- Fix reservations for multiple matching tags or values starting with a number.
+- Fix concurrent access to USB HID relays.
+- Fix support for networks without SSID in the agent used by the
+  NetworkInterfaceDriver.
+- Add new stlink USB IDs for the ``USBDebugger`` resource.
+- Fix code coverage reporting and submit test results to codecov.
+- Fix waiting for ``NetworkService`` created by the ``DockerDaemon``.
+
+Breaking changes in 25.0
+~~~~~~~~~~~~~~~~~~~~~~~~
+Maintaining support for both crossbar/autobahn as well as gRPC in labgrid would
+be a lot of effort due to the different architectures of those frameworks.
+Therefore, a hard migration to gRPC is deemed the lesser issue.
+
+Due to the migration, 25.0 includes the following breaking changes:
+
+- The labgrid environment config option ``crossbar_url`` was renamed to
+  ``coordinator_address``. The environment variable ``LG_CROSSBAR`` was renamed
+  to ``LG_COORDINATOR``.
+- The labgrid environment config option ``crossbar_realm`` is now obsolete as
+  well as the environment variable ``LG_CROSSBAR_REALM``.
+- The coordinator is available as ``labgrid-coordinator`` (instead of
+  ``crossbar start``). No additional configuration file is required.
+- The systemd services in ``contrib/systemd/`` were updated.
+
+Other breaking changes include:
+
+- Support for Python 3.8 was dropped.
+- The siglent power backend is deprecated because it uses the no longer
+  maintained vxi11 module which again uses the deprecated (and in Python 3.13
+  removed) xdrlib. See
+  `issue #1507 <https://github.com/labgrid-project/labgrid/issues/1507>`_.
+
+Known issues in 25.0
+~~~~~~~~~~~~~~~~~~~~
+
+- gRPC sometimes prints a confusing error message during shutdown.
+  We've worked around this by closing stderr on shutdown.
+  See `issue #1544 <https://github.com/labgrid-project/labgrid/issues/1544>`_
+  and `PR #1605 <https://github.com/labgrid-project/labgrid/pull/1605>`_.
+
 Release 24.0 (Released Aug 12, 2024)
 ------------------------------------
 

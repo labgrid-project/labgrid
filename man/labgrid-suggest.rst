@@ -7,8 +7,7 @@ labgrid-suggest generator for YAML config files
 
 
 :organization: Labgrid-Project
-:Date:   2021-05-20
-:Copyright: Copyright (C) 2016-2024 Pengutronix. This library is free software;
+:Copyright: Copyright (C) 2016-2025 Pengutronix. This library is free software;
             you can redistribute it and/or modify it under the terms of the GNU
             Lesser General Public License as published by the Free Software
             Foundation; either version 2.1 of the License, or (at your option)

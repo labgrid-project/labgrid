@@ -60,7 +60,7 @@ class USBResource(ManagedResource):
         self.match.setdefault('SUBSYSTEM', 'usb')
         super().__attrs_post_init__()
 
-    def filter_match(self, device):  # pylint: disable=unused-argument,no-self-use
+    def filter_match(self, device):  # pylint: disable=unused-argument
         return True
 
     def suggest_match(self, device):
@@ -396,12 +396,18 @@ class SigrokUSBDevice(USBResource):
     Args:
         driver (str): driver to use with sigrok
         channels (str): a sigrok channel mapping as described in the sigrok-cli man page
+        channel_group (str): a sigrok channel group as described in the sigrok-cli man page
     """
     driver = attr.ib(
         default=None,
         validator=attr.validators.instance_of(str)
     )
     channels = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+
+    channel_group = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
@@ -421,12 +427,17 @@ class SigrokUSBSerialDevice(USBResource):
     Args:
         driver (str): driver to use with sigrok
         channels (str): a sigrok channel mapping as described in the sigrok-cli man page
+        channel_group (str): a sigrok channel group as described in the sigrok-cli man page
     """
     driver = attr.ib(
         default=None,
         validator=attr.validators.instance_of(str)
     )
     channels = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+    channel_group = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
@@ -541,6 +552,20 @@ class USBSDMuxDevice(USBResource):
     @property
     def path(self):
         return self.disk_path
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class USBHub(USBResource):
+    """The USBHub describes a USB hub.
+
+    This is mainly useful to monitor if all expected hubs are detected.
+    """
+    def __attrs_post_init__(self):
+        self.match['DEVTYPE'] = 'usb_interface'
+        self.match['DRIVER'] = 'hub'
+        super().__attrs_post_init__()
+
 
 @target_factory.reg_resource
 @attr.s(eq=False)
@@ -710,7 +735,9 @@ class USBDebugger(USBResource):
 
         if match not in [("0403", "6010"),  # FT2232C/D/H Dual UART/FIFO IC
                          ("0403", "6014"),  # FT232HL/Q
+                         ("0483", "3748"),  # STLINK-V2
                          ("0483", "374b"),  # STLINK-V3
+                         ("0483", "374e"),  # STLINK-V3
                          ("0483", "374f"),  # STLINK-V3
                          ("15ba", "0003"),  # Olimex ARM-USB-OCD
                          ("15ba", "002b"),  # Olimex ARM-USB-OCD-H

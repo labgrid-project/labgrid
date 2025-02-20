@@ -1,0 +1,3 @@
+# use ./update-requirements.sh to update requirements.txt
+grpcio-tools==1.62.2
+

@@ -15,15 +15,17 @@ basicConfig(level=logging.INFO)
 # log labgrid steps
 StepLogger.start()
 
+
 def run_once(target):
-    s = target.get_driver('BareboxStrategy')
+    s = target.get_driver("BareboxStrategy")
     s.status = Status.unknown  # force a power-cycle
-    s.transition('barebox')
-    cmd = target['CommandProtocol']
-    cmd.run_check('test -e /dev/nand0')
+    s.transition("barebox")
+    cmd = target["CommandProtocol"]
+    cmd.run_check("test -e /dev/nand0")
     target.deactivate(cmd)
 
+
 env = Environment(sys.argv[1])
-target = env.get_target('main')
+target = env.get_target("main")
 while True:
     run_once(target)

@@ -163,6 +163,14 @@ Currently available are:
   host argument must include the protocol, such as
   ``http://192.168.0.3`` or ``http://admin:pass@192.168.0.4``.
 
+``digitalloggers_restapi``
+  Controls *Digital Loggers PDUs* that use the REST API. Note that
+  host argument must include the protocol, such as
+  ``http://192.168.0.3`` or ``https://admin:pass@192.168.0.4``.
+  By default, only authenticated users may access the REST API.
+  HTTPS queries intentially ignore ssl certificate validation, since
+  the as-shipped certificate is self-signed.
+
 ``eaton``
   Controls *Eaton ePDUs* via SNMP.
 
@@ -182,13 +190,17 @@ Currently available are:
   Controls *Gude Expert Power Control 8008 PDUs* via a simple HTTP API.
 
 ``gude8031``
-  Controls *Gude Expert Power Control 8031 PDUs* via a simple HTTP API.
+  Controls *Gude Expert Power Control 8031 PDUs* and *Gude Expert Power Control 87-1210-18 PDUs* via a simple HTTP API.
 
 ``gude8225``
   Controls *Gude Expert Power Control 8225 PDUs* via a simple HTTP API.
 
 ``gude8316``
   Controls *Gude Expert Power Control 8316 PDUs* via a simple HTTP API.
+
+``mfi_mpower``
+  Controls the *Ubiquity mFi mPower* Power Strip with Ethernet and Wi-Fi connectivity via HTTP.
+  Tested on a mFi mPower Pro EU device.
 
 ``netio``
   Controls *NETIO 4-Port PDUs* via a simple HTTP API.
@@ -655,8 +667,10 @@ specific device from all connected supported devices use the
 
 Arguments:
   - driver (str): name of the sigrok driver to use
-  - channels (str): optional, channel mapping as described in the sigrok-cli
-    man page
+  - channels (str): optional, channel mapping as described in the
+    ``sigrok-cli`` man page
+  - channel_group (str): optional, channel group as described in the
+    ``sigrok-cli`` man page
 
 Used by:
   - `SigrokDriver`_
@@ -896,8 +910,10 @@ A :any:`SigrokUSBDevice` resource describes a *Sigrok* USB device.
 
 Arguments:
   - driver (str): name of the sigrok driver to use
-  - channels (str): optional, channel mapping as described in the sigrok-cli
-    man page
+  - channels (str): optional, channel mapping as described in the
+    ``sigrok-cli`` man page
+  - channel_group (str): optional, channel group as described in the
+    ``sigrok-cli`` man page
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
 
 Used by:
@@ -925,6 +941,8 @@ communicates over a USB serial port instead of being a USB device itself (see
 Arguments:
   - driver (str): name of the sigrok driver to use
   - channels (str): optional, channel mapping as described in the
+    ``sigrok-cli`` man page
+  - channel_group (str): optional, channel group as described in the
     ``sigrok-cli`` man page
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
 
@@ -980,7 +998,7 @@ remote computer.
 USBSDWireDevice
 ~~~~~~~~~~~~~~~
 A :any:`USBSDWireDevice` resource describes a Tizen
-`SD Wire device <https://wiki.tizen.org/SDWire>`_.
+`SD Wire device <https://web.archive.org/web/20240121081917/https://wiki.tizen.org/SDWire>`_.
 
 .. code-block:: yaml
 
@@ -1221,6 +1239,27 @@ Arguments:
 
 Used by:
   - `HTTPVideoDriver`_
+
+USBHub
+~~~~~~
+
+A :any:`USBHub` resource describes an USB hub.
+There is no corresponding driver, as this resource is only useful to monitor
+whether the expected USB hubs are detected by an exporter.
+To control individual ports, use `USBPowerPort`_.
+
+.. code-block:: yaml
+
+   USBHub:
+     match:
+       ID_PATH: 'pci-0000:02:00.0-usb-0:4:1.0'
+
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - none
 
 Providers
 ~~~~~~~~~
@@ -1648,7 +1687,7 @@ Implements:
 .. code-block:: yaml
 
    ShellDriver:
-     prompt: 'root@\w+:[^ ]+ '
+     prompt: 'root@[\w-]+:[^ ]+ '
      login_prompt: ' login: '
      username: 'root'
 
@@ -2673,7 +2712,7 @@ Arguments:
   - machine (str): QEMU machine type
   - cpu (str): QEMU cpu type
   - memory (str): QEMU memory size (ends with M or G)
-  - extra_args (str): extra QEMU arguments, they are passed directly to the QEMU binary
+  - extra_args (str): optional, extra QEMU arguments, they are passed directly to the QEMU binary
   - boot_args (str): optional, additional kernel boot argument
   - kernel (str): optional, reference to the images key for the kernel
   - disk (str): optional, reference to the images key for the disk image
@@ -2687,6 +2726,7 @@ Arguments:
     - none: Do not create a display device
     - fb-headless: Create a headless framebuffer device
     - egl-headless: Create a headless GPU-backed graphics card. Requires host support
+    - qemu-default: Don't override QEMU default settings
 
   - nic (str): optional, configuration string to pass to QEMU to create a network interface
 
@@ -2822,7 +2862,7 @@ Not all combinations can be configured at the same time.
 USBSDWireDriver
 ~~~~~~~~~~~~~~~
 The :any:`USBSDWireDriver` uses a `USBSDWireDevice`_ resource to control a
-USB-SD-Wire device via `sd-mux-ctrl <https://wiki.tizen.org/SD_MUX#Software>`_
+USB-SD-Wire device via `sd-mux-ctrl <https://web.archive.org/web/20220812002642/https://wiki.tizen.org/SD_MUX#Software>`_
 tool.
 
 Binds to:
@@ -3084,12 +3124,23 @@ Implements:
 
    DockerDriver:
      image_uri: 'rastasheep/ubuntu-sshd:16.04'
+     pull: 'always'
      container_name: 'ubuntu-lg-example'
      host_config: {'network_mode': 'bridge'}
      network_services: [{'port': 22, 'username': 'root', 'password': 'root'}]
 
 Arguments:
   - image_uri (str): identifier of the docker image to use (may have a tag suffix)
+  - pull (str): pull policy, supports "always", "missing", "never". Default is
+    "always"
+
+      - always: Always pull the image and throw an error if the pull fails.
+      - missing: Pull the image only when the image is not in the local
+        containers storage. Throw an error if no image is found and the pull
+        fails.
+      - never: Never pull the image but use the one from the local containers
+        storage. Throw a `docker.errors.ImageNotFound` if no image is found.
+
   - command (str): optional, command to run in the container (depends on image)
   - volumes (list): optional, list to configure volumes mounted inside the container
   - container_name (str): name of the container
@@ -3261,7 +3312,7 @@ Here is an example environment config:
          SerialDriver: {}
          BareboxDriver: {}
          ShellDriver:
-           prompt: 'root@\w+:[^ ]+ '
+           prompt: 'root@[\w-]+:[^ ]+ '
            login_prompt: ' login: '
            username: 'root'
          BareboxStrategy: {}
@@ -3308,7 +3359,7 @@ Here is an example environment config:
          ManualPowerDriver: {}
          SerialDriver: {}
          ShellDriver:
-           prompt: 'root@\w+:[^ ]+ '
+           prompt: 'root@[\w-]+:[^ ]+ '
            login_prompt: ' login: '
            username: 'root'
          ShellStrategy: {}
@@ -3356,7 +3407,7 @@ Here is an example environment config:
          SerialDriver: {}
          UBootDriver: {}
          ShellDriver:
-           prompt: 'root@\w+:[^ ]+ '
+           prompt: 'root@[\w-]+:[^ ]+ '
            login_prompt: ' login: '
            username: 'root'
          UBootStrategy: {}

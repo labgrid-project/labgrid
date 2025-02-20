@@ -1,101 +1,65 @@
 Step by step guide to releasing a new labgrid version.
+labgrid follows the `calver <https://calver.org>`_ versioning scheme
+``YY.MINOR[.MICRO]``.
+The ``MINOR`` number starts at 0.
+The ``MICRO`` number for stable releases starts at 1.
 
-0. Preparations
-===============
-Clean the `dist/` directory:
+1. Check for relevant PRs that need a merge
+===========================================
 
-.. code-block:: bash
+- `Milestones <https://github.com/labgrid-project/labgrid/milestones>`_
+- `Fixes <https://github.com/labgrid-project/labgrid/pulls?q=label%3Afix>`_
+- `Fixes for stable <https://github.com/labgrid-project/labgrid/issues?q=label%3A%22fix+for+stable%22>`_
 
-   rm dist/*
-
-Check your commit mail and name:
-
-.. code-block:: bash
-
-   git config --get user.name
-   git config --get user.email
-
-1. Update CHANGES.rst
+2. Update CHANGES.rst
 =====================
 
 Update the `CHANGES.rst` file.
-Ensure that no incompatiblities are unlisted and that all major features are
+Ensure that no incompatibilities are unlisted and that all major features are
 described in a separate section.
 It's best to compare against the git log.
 
-2. Bump Version Number
-======================
+Add new sections including the version number for the release in `CHANGES.rst`
+(if not already done).
+Set the release date.
 
-Bump the version number in `CHANGES.rst`.
+If you are bumping the ``MINOR`` number, import the changes from the latest stable
+branch and add a new (unreleased) section for the next release.
+Also add a new section into ``debian/changelog``.
 
-3. Create a signed Tag
-======================
+3. Create a tag
+===============
 
-Create a signed tag of the new release.
-Your PGP-key has to be available on the computer.
+Wait for the CI to succeed on the commit you are about to tag.
+
+Now create a (signed) tag of the new release.
+If it should be signed (``-s``), your PGP-key has to be available on the
+computer.
+The release tag should start with a lower case ``v``, e.g. ``v24.0`` or
+``v24.0.1``.
 
 .. code-block:: bash
 
-    git tag -s <your-version-number>
+    git tag -s $VERSION
 
-4. Create sdist
-===============
+If you're happy with it, push it:
 
-Run the following command:
+.. code-block:: bash
 
-::
+    git push upstream $VERSION
 
-   pip install build
-   python -m build --sdist
+The CI should take care of the rest.
+Make sure it succeeds and the new release is available on PyPi.
 
-The sdist file will be available in the `dist/` directory.
+4. Draft a release
+==================
 
-5. Test upload to pypi dev
-==========================
+On GitHub, draft a new release, add the changes in Markdown format and create a
+discussion for the release:
+https://github.com/labgrid-project/labgrid/releases/new
 
-Test the upload by using twine to upload to pypi test service
+5. Create new stable branch
+===========================
 
-::
-
-   twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-
-6. Test download from pypi dev
-==============================
-
-Test the upload by using pypi dev as a download source
-
-::
-
-   virtualenv -p python3 labgrid-crossbar-release-<your-version-number>
-   labgrid-crossbar-release-<your-version-number>/bin/pip install --upgrade pip
-   labgrid-crossbar-release-<your-version-number>/bin/pip install -r crossbar-requirements.txt
-
-   virtualenv -p python3 labgrid-release-<your-version-number>
-   source labgrid-release-<your-version-number>/bin/activate
-   pip install --upgrade pip setuptools wheel
-   pip install --index-url https://test.pypi.org/simple/ labgrid
-
-And optionally run the tests:
-
-::
-
-   pip install ".[dev]"
-   pytest tests --crossbar-venv labgrid-crossbar-release-<your-version-number>
-
-7. Upload to pypi
-=================
-
-Upload the tested dist file to pypi.
-
-::
-
-   twine upload dist/*
-
-8. Upload the signed tag
-========================
-
-Upload the signed tag to the upstream repository
-
-::
-
-   git push upstream <your-version-number>
+If you are bumping the ``MINOR`` number, push a new stable branch
+``stable-YY.MINOR`` based on the release tag.

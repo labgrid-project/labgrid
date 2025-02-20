@@ -14,28 +14,28 @@ def in_shell(strategy, capsys):
 
 
 def test_barebox(target, in_bootloader):
-    #command = target['CommandProtocol']
-    command = target['BareboxDriver']
+    # command = target['CommandProtocol']
+    command = target["BareboxDriver"]
 
-    stdout, stderr, returncode = command.run('version')
+    stdout, stderr, returncode = command.run("version")
     assert returncode == 0
     assert stdout
     assert not stderr
-    assert 'barebox' in '\n'.join(stdout)
+    assert "barebox" in "\n".join(stdout)
 
 
 def test_shell(target, in_shell):
-    #command = target['CommandProtocol']
-    command = target['ShellDriver']
-    stdout, stderr, returncode = command.run('cat /proc/version')
+    # command = target['CommandProtocol']
+    command = target["ShellDriver"]
+    stdout, stderr, returncode = command.run("cat /proc/version")
     assert returncode == 0
     assert stdout
     assert not stderr
-    assert 'Linux' in stdout[0]
+    assert "Linux" in stdout[0]
 
 
 def test_barebox_2(target, in_bootloader):
-    #command = target['CommandProtocol']
-    command = target['BareboxDriver']
+    # command = target['CommandProtocol']
+    command = target["BareboxDriver"]
 
-    command.run_check('true')
+    command.run_check("true")

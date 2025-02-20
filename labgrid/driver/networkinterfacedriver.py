@@ -60,7 +60,7 @@ class NetworkInterfaceDriver(Driver):
         self.proxy.configure(self.iface.ifname, settings)
 
     @Driver.check_active
-    @step()
+    @step(args=["expected"])
     def wait_state(self, expected, timeout=60):
         """Wait until the expected state is reached or the timeout expires.
 

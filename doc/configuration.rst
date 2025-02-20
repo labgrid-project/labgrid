@@ -3551,6 +3551,8 @@ The logger can be stopped with a call to the stop function:
 Stopping the StepLogger if it has not been started will raise an
 AssertionError, as will starting an already started StepLogger.
 
+.. _environment-configuration:
+
 Environment Configuration
 -------------------------
 The environment configuration for a test environment consists of a YAML file
@@ -3692,6 +3694,8 @@ environment variable.
 See the :ref:`labgrid-device-config` man page for documentation on the
 top-level ``options``, ``images``, ``tools``, and ``examples`` keys in the
 environment configuration.
+
+.. _exporter-configuration:
 
 Exporter Configuration
 ----------------------

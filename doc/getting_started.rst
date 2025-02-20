@@ -112,7 +112,7 @@ Start by copying the initial example:
 
 Connect your embedded board (raspberry pi, riotboard, …) to your computer and
 adjust the ``port`` parameter of the ``RawSerialPort`` resource and ``username``
-and ``password`` of the ShellDriver driver in ``local.yaml``:
+and ``password`` of the ShellDriver driver in the environment file ``local.yaml``:
 
 .. code-block:: yaml
 
@@ -130,6 +130,8 @@ and ``password`` of the ShellDriver driver in ``local.yaml``:
             login_prompt: ' login: '
             username: 'root'
 
+More information about the environment configuration file can be found
+:ref:`here <environment-configuration>`.
 
 You can check which device name gets assigned to your USB-Serial converter by
 unplugging the converter, running ``dmesg -w`` and plugging it back in. Boot up
@@ -187,7 +189,7 @@ The exporter needs a configuration file written in YAML syntax, listing
 the resources to be exported from the local machine.
 The config file contains one or more named resource groups.
 Each group contains one or more resource declarations and optionally a location
-string (see the :doc:`configuration reference <configuration>` for details).
+string.
 
 For example, to export a ``USBSerialPort`` with ``ID_SERIAL_SHORT`` of
 ``ID23421JLK``, the group name `example-group` and the location
@@ -236,6 +238,9 @@ Additional groups and resources can be added:
      USBSerialPort:
        match:
          ID_SERIAL_SHORT: KSLAH2341J
+
+More information about the exporter configuration file can be found
+:ref:`here <exporter-configuration>`.
 
 Restart the exporter to activate the new configuration.
 

@@ -2245,29 +2245,35 @@ def main():
             logging.debug("Started session")
 
             try:
+                needs_target = getattr(args.func, "needs_target", False)
+                auto_release = False
+                target = None
+                if needs_target:
+                    if args.acquire:
+                        place = session.get_place(args.place)
+                        if not place.acquired:
+                            args.allow_unmatched = True
+                            coro = session.acquire()
+                            session.loop.run_until_complete(coro)
+                            auto_release = True
+                    place = session.get_acquired_place()
+                    target = session._get_target(place)
+
                 if asyncio.iscoroutinefunction(args.func):
-                    auto_release = False
-                    target = None
-                    if getattr(args.func, "needs_target", False):
-                        if args.acquire:
-                            place = session.get_place(args.place)
-                            if not place.acquired:
-                                args.allow_unmatched = True
-                                coro = session.acquire()
-                                session.loop.run_until_complete(coro)
-                                auto_release = True
-                        place = session.get_acquired_place()
-                        target = session._get_target(place)
+                    if needs_target:
                         coro = args.func(session, place, target)
                     else:
                         coro = args.func(session)
                     session.loop.run_until_complete(coro)
                     session.set_end_state(target)
-                    if auto_release:
-                        coro = session.release()
-                        session.loop.run_until_complete(coro)
                 else:
-                    args.func(session)
+                    if needs_target:
+                        args.func(session, place, target)
+                    else:
+                        args.func(session)
+                if auto_release:
+                    coro = session.release()
+                    session.loop.run_until_complete(coro)
             finally:
                 logging.debug("Stopping session")
                 session.loop.run_until_complete(session.stop())

@@ -134,18 +134,17 @@ class UBootStrategy(Strategy):
             if self.recovery_reset:
                 self.target.activate(self.recovery)
                 self.recovery.set_enable(True)
-            if self.reset:
+            if self.reset and self.reset != self.power:
                 self.target.activate(self.reset)
 
                 # Hold in reset across the power cycle, to avoid booting the
                 # board twice
                 self.reset.set_reset_enable(True)
-            if self.reset != self.power:
-                self.power.cycle()
+            self.power.on()
 
             if self.console_needs_power:
                 self.target.activate(self.console)
-            if self.reset:
+            if self.reset and self.reset != self.power:
                 self.reset.set_reset_enable(False)
             if self.recovery_reset:
                 self.recovery.set_enable(False)

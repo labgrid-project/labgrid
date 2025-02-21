@@ -76,6 +76,75 @@ class UBootStrategy(Strategy):
     def use_send(self):
         return self.send_only or get_var('do-send', '0') == '1'
 
+    def _reset_for_flash(self):
+        """Reset / power on a flash-based board ready for use
+
+        This case handles boards which can be booted from internal flash, rather
+        than needing U-Boot sent over USB
+        """
+        if self.recovery_reset:
+            self.target.activate(self.recovery)
+            self.recovery.set_enable(True)
+        if (self.reset and self.reset != self.power and
+                not self.power_on_before_reset):
+            self.target.activate(self.reset)
+
+            # Hold in reset across the power cycle, to avoid booting the
+            # board twice
+            self.reset.set_reset_enable(True)
+        self.target.activate(self.power)
+        self.power.on()
+
+        if self.console_needs_power:
+            self.target.activate(self.console)
+        if self.reset and self.reset != self.power:
+            if self.power_on_before_reset:
+                self.target.activate(self.reset)
+                self.reset.set_reset_enable(True)
+            self.reset.set_reset_enable(False)
+        if self.recovery_reset:
+            self.recovery.set_enable(False)
+        if self.button:
+            self.target.activate(self.button)
+            self.button.set(True)
+            time.sleep(.2)
+            self.button.set(False)
+
+    def _reset_for_send(self):
+        """Reset / power on a non-flash-based board ready for use
+
+        This case handles boards which cannot be booted from internal flash, so
+        U-Boot must be sent over USB
+        """
+        # Hold the board in reset, except for Servo since this prevents the
+        # USB-download mode from working (at least with snow)
+        if (not isinstance(self.reset, ServoResetDriver) and
+                not self.power_on_before_reset):
+            self.reset.set_reset_enable(True, mode='warm')
+
+        if self.power != self.reset:
+            self.power.on()
+
+        if self.recovery:
+            self.target.activate(self.recovery)
+            self.recovery.set_enable(True)
+
+        # Do the Servo reset now
+        if (isinstance(self.reset, ServoResetDriver) or
+                self.power_on_before_reset):
+            self.reset.set_reset_enable(True, mode='warm')
+            time.sleep(1)
+
+        self.target.activate(self.console)
+
+        # Release reset
+        self.reset.set_reset_enable(False, mode='warm')
+
+        # Give the board time to notice
+        time.sleep(.2)
+        if self.recovery:
+            self.recovery.set_enable(False)
+
     def bootstrap(self):
         builder = self.target.get_driver("UBootProviderDriver")
         if get_var('do-build', '0') == '1':
@@ -93,34 +162,7 @@ class UBootStrategy(Strategy):
             self.target.activate(self.power)
             self.target.activate(self.reset)
 
-            # Hold the board in reset, except for Servo since this prevents the
-            # USB-download mode from working (at least with snow)
-            if (not isinstance(self.reset, ServoResetDriver) and
-                    not self.power_on_before_reset):
-                self.reset.set_reset_enable(True, mode='warm')
-
-            if self.power != self.reset:
-                self.power.on()
-
-            if self.recovery:
-                self.target.activate(self.recovery)
-                self.recovery.set_enable(True)
-
-            # Do the Servo reset now
-            if (isinstance(self.reset, ServoResetDriver) or
-                    self.power_on_before_reset):
-                self.reset.set_reset_enable(True, mode='warm')
-                time.sleep(1)
-
-            self.target.activate(self.console)
-
-            # Release reset
-            self.reset.set_reset_enable(False, mode='warm')
-
-            # Give the board time to notice
-            time.sleep(.2)
-            if self.recovery:
-                self.recovery.set_enable(False)
+            self._reset_for_send()
 
             writer.send(image_dirs)
         else:
@@ -142,32 +184,7 @@ class UBootStrategy(Strategy):
         if not self.use_send():
             if not self.console_needs_power:
                 self.target.activate(self.console)
-            if self.recovery_reset:
-                self.target.activate(self.recovery)
-                self.recovery.set_enable(True)
-            if (self.reset and self.reset != self.power and
-                    not self.power_on_before_reset):
-                self.target.activate(self.reset)
-
-                # Hold in reset across the power cycle, to avoid booting the
-                # board twice
-                self.reset.set_reset_enable(True)
-            self.power.on()
-
-            if self.console_needs_power:
-                self.target.activate(self.console)
-            if self.reset and self.reset != self.power:
-                if self.power_on_before_reset:
-                    self.target.activate(self.reset)
-                    self.reset.set_reset_enable(True)
-                self.reset.set_reset_enable(False)
-            if self.recovery_reset:
-                self.recovery.set_enable(False)
-            if self.button:
-                self.target.activate(self.button)
-                self.button.set(True)
-                time.sleep(.2)
-                self.button.set(False)
+            self._reset_for_flash()
 
     def transition(self, status):
         if not isinstance(status, Status):

@@ -21,8 +21,9 @@ class Status(enum.Enum):
         start: Board has started booting
         uboot: Board has stopped at the U-Boot prompt
         shell: Board has stopped at the Linux prompt
+        restart: Board was/is at a prompt but needs to be restarted
     """
-    unknown, off, bootstrap, start, uboot, shell = range(6)
+    unknown, off, bootstrap, start, uboot, shell, restart = range(7)
 
 
 @target_factory.reg_driver
@@ -176,7 +177,18 @@ class UBootStrategy(Strategy):
         if os.getenv('U_BOOT_SOURCE_DIR'):
             print('{lab mode}')
 
-        if not self.bootstrapped and get_var('do-bootstrap', '0') == '1':
+        do_bootstrap = False
+        if not self.bootstrapped:
+            if get_var('do-bootstrap', '0') == '1':
+                do_bootstrap = True
+
+            # If the board is being reset and we are using 'send', we must do a
+            # bootstrap so that the board will actually boot what we want
+            if (not do_bootstrap and get_var('do-reset', '0') == '1' and
+                    self.use_send()):
+                print("Forcing bootstrap for 'send' method")
+                do_bootstrap = True
+        if do_bootstrap:
             self.transition(Status.bootstrap)
         else:
             writer = self.target.get_driver("UBootWriterDriver")
@@ -226,9 +238,43 @@ class UBootStrategy(Strategy):
             self.uboot.await_boot()
             self.target.activate(self.shell)
             self.shell.run("systemctl is-system-running --wait")
+        elif status == Status.restart:
+            if self.status not in [Status.uboot, Status.shell]:
+                raise StrategyError(f"cannot restart unless in uboot/shell state (current {self.status})")
+            self._restart()
+            status = Status.uboot
         else:
             raise StrategyError(f"no transition found from {self.status} to {status}")
         self.status = status
+
+    def _restart(self):
+        """Restart U-Boot ready for use"""
+        # Deactivate the U-Boot driver since it will be starting afresh
+        self.target.deactivate(self.uboot)
+
+        start = time.time()
+        if self.use_send():
+            # The only way to get U-Boot running is to bootstrap the board again
+            self.status = Status.off
+            self.bootstrap()
+        else:
+            # Flash boards can just be reset and should come up with the same
+            # U-Boot
+            self.status = Status.bootstrap
+            if get_var('do-reset', '0') == '1':
+                print('Resetting board')
+                self._reset_for_flash()
+            else:
+                print('Reconnecting to resetted board')
+
+        # Connect back into U-Boot
+        try:
+            # interrupt uboot
+            self.target.activate(self.uboot)
+        except TIMEOUT:
+            output = self.console.read_output(False)
+            sys.stdout.buffer.write(output)
+            raise
 
     def force(self, status):
         if not isinstance(status, Status):

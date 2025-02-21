@@ -214,11 +214,29 @@ class USBStorageDriver(Driver):
         # simple concatenation is sufficient for USB mass storage
         return f"{self.storage.path}{partition}"
 
+    def can_write(self, partition):
+        """Check if writing to a device is possible
+
+        Args:
+            partition (int or None): optional specified partition, or None
+                for root device (defaults to None)
+
+        Returns:
+            True if write access is available, False if not
+        """
+        args = ['test', '-w', self._get_devpath(partition)]
+        try:
+            size = subprocess.check_output(self.storage.command_prefix + args)
+        except subprocess.CalledProcessError:
+            # perhaps udev has not run yet
+            return False
+        return True
+
     @Driver.check_active
     def _wait_for_medium(self, partition):
         timeout = Timeout(self.WAIT_FOR_MEDIUM_TIMEOUT)
         while not timeout.expired:
-            if self.get_size(partition) > 0:
+            if self.get_size(partition) > 0 and self.can_write(partition):
                 break
             time.sleep(self.WAIT_FOR_MEDIUM_SLEEP)
         else:

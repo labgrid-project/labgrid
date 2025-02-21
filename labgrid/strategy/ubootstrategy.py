@@ -41,6 +41,8 @@ class UBootStrategy(Strategy):
             after the board is powered
         power_on_before_reset (bool): True if the board must be powered on with
             reset de-asserted
+        power-on-button (bool): True if a button must be pressed to turn on the
+            power
 
     Variables:
         do-build: Build U-Boot before bootstrapping it
@@ -54,6 +56,7 @@ class UBootStrategy(Strategy):
         "shell": "ShellDriver",
         "reset": {"ResetProtocol", None},
         "recovery": {"RecoveryProtocol", None},
+        "button": {"ButtonDriver", None},
     }
 
     status = attr.ib(default=Status.unknown)
@@ -63,6 +66,8 @@ class UBootStrategy(Strategy):
                                   validator=attr.validators.instance_of(bool))
     power_on_before_reset = attr.ib(default=False,
                                     validator=attr.validators.instance_of(bool))
+    power_on_button = attr.ib(default=False,
+                              validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -158,6 +163,11 @@ class UBootStrategy(Strategy):
                 self.reset.set_reset_enable(False)
             if self.recovery_reset:
                 self.recovery.set_enable(False)
+            if self.button:
+                self.target.activate(self.button)
+                self.button.set(True)
+                time.sleep(.2)
+                self.button.set(False)
 
     def transition(self, status):
         if not isinstance(status, Status):

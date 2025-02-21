@@ -36,6 +36,9 @@ class UBootStrategy(Strategy):
         recovery_reset (bool): True if the board's recovery signal must be
             asserted while resetting (e.g. to make it boot from SD instead of
             internal flash)
+        console_needs_power (bool): True if the board needs power to be applied
+            before the console appears. This delays console-activation until
+            after the board is powered
 
     Variables:
         do-build: Build U-Boot before bootstrapping it
@@ -54,6 +57,8 @@ class UBootStrategy(Strategy):
     status = attr.ib(default=Status.unknown)
     send_only = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     recovery_reset = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    console_needs_power = attr.ib(default=False,
+                                  validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -124,7 +129,8 @@ class UBootStrategy(Strategy):
             writer = self.target.get_driver("UBootWriterDriver")
             writer.prepare_boot()
         if not self.use_send():
-            self.target.activate(self.console)
+            if not self.console_needs_power:
+                self.target.activate(self.console)
             if self.recovery_reset:
                 self.target.activate(self.recovery)
                 self.recovery.set_enable(True)
@@ -137,6 +143,8 @@ class UBootStrategy(Strategy):
             if self.reset != self.power:
                 self.power.cycle()
 
+            if self.console_needs_power:
+                self.target.activate(self.console)
             if self.reset:
                 self.reset.set_reset_enable(False)
             if self.recovery_reset:

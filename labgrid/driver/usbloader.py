@@ -158,6 +158,7 @@ class UUUDriver(Driver, BootstrapProtocol):
 
     image = attr.ib(default=None)
     script = attr.ib(default='', validator=attr.validators.instance_of(str))
+    monitor_path = attr.ib(default='', validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -182,10 +183,12 @@ class UUUDriver(Driver, BootstrapProtocol):
         mf.sync_to_resource()
 
         cmd = ['-b', self.script] if self.script else []
+        if self.monitor_path:
+            cmd += ['-m', self.monitor_path]
 
         processwrapper.check_output(
             self.loader.command_prefix + [self.tool] + cmd + [mf.get_remote_path()],
-            print_on_silent_log=True
+            print_on_silent_log=False
         )
 
 

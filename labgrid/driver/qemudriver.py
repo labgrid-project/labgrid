@@ -100,6 +100,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
     nic = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
+    kvm = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -217,6 +218,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         if self.machine:
             cmd.append("-machine")
             cmd.append(self.machine)
+        if self.kvm:
+            cmd.append("-enable-kvm")
         if self.cpu:
             cmd.append("-cpu")
             cmd.append(self.cpu)

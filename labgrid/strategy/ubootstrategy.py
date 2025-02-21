@@ -39,6 +39,8 @@ class UBootStrategy(Strategy):
         console_needs_power (bool): True if the board needs power to be applied
             before the console appears. This delays console-activation until
             after the board is powered
+        power_on_before_reset (bool): True if the board must be powered on with
+            reset de-asserted
 
     Variables:
         do-build: Build U-Boot before bootstrapping it
@@ -59,6 +61,8 @@ class UBootStrategy(Strategy):
     recovery_reset = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     console_needs_power = attr.ib(default=False,
                                   validator=attr.validators.instance_of(bool))
+    power_on_before_reset = attr.ib(default=False,
+                                    validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -86,7 +90,8 @@ class UBootStrategy(Strategy):
 
             # Hold the board in reset, except for Servo since this prevents the
             # USB-download mode from working (at least with snow)
-            if not isinstance(self.reset, ServoResetDriver):
+            if (not isinstance(self.reset, ServoResetDriver) and
+                    not self.power_on_before_reset):
                 self.reset.set_reset_enable(True, mode='warm')
 
             if self.power != self.reset:
@@ -97,7 +102,8 @@ class UBootStrategy(Strategy):
                 self.recovery.set_enable(True)
 
             # Do the Servo reset now
-            if isinstance(self.reset, ServoResetDriver):
+            if (isinstance(self.reset, ServoResetDriver) or
+                    self.power_on_before_reset):
                 self.reset.set_reset_enable(True, mode='warm')
                 time.sleep(1)
 
@@ -134,7 +140,8 @@ class UBootStrategy(Strategy):
             if self.recovery_reset:
                 self.target.activate(self.recovery)
                 self.recovery.set_enable(True)
-            if self.reset and self.reset != self.power:
+            if (self.reset and self.reset != self.power and
+                    not self.power_on_before_reset):
                 self.target.activate(self.reset)
 
                 # Hold in reset across the power cycle, to avoid booting the
@@ -145,6 +152,9 @@ class UBootStrategy(Strategy):
             if self.console_needs_power:
                 self.target.activate(self.console)
             if self.reset and self.reset != self.power:
+                if self.power_on_before_reset:
+                    self.target.activate(self.reset)
+                    self.reset.set_reset_enable(True)
                 self.reset.set_reset_enable(False)
             if self.recovery_reset:
                 self.recovery.set_enable(False)

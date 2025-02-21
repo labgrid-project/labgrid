@@ -112,7 +112,7 @@ Start by copying the initial example:
 
 Connect your embedded board (raspberry pi, riotboard, …) to your computer and
 adjust the ``port`` parameter of the ``RawSerialPort`` resource and ``username``
-and ``password`` of the ShellDriver driver in ``local.yaml``:
+and ``password`` of the ShellDriver driver in the environment file ``local.yaml``:
 
 .. code-block:: yaml
 
@@ -130,6 +130,14 @@ and ``password`` of the ShellDriver driver in ``local.yaml``:
             login_prompt: ' login: '
             username: 'root'
 
+For, now it is sufficient to know that labgrid tries to "bind" appropriate drivers
+and resources to each other automatically if possible. The ``ShellDriver`` will use
+the ``SerialDriver`` to connect to the ``RawSerialPort`` resource. If an automatic
+binding is not possible due to ambiguity, the bindings can also be specified
+explicitly.
+
+More information about this and the environment configuration file in general can
+be found :ref:`here <environment-configuration>`.
 
 You can check which device name gets assigned to your USB-Serial converter by
 unplugging the converter, running ``dmesg -w`` and plugging it back in. Boot up
@@ -179,11 +187,15 @@ We can simply start the coordinator:
 Exporter
 ~~~~~~~~
 
+The exporter is responsible for exporting resources to the client. It is noted
+that drivers are not handled by the exporter. In the distributed case, drivers
+are managed by the client.
+
 The exporter needs a configuration file written in YAML syntax, listing
 the resources to be exported from the local machine.
 The config file contains one or more named resource groups.
 Each group contains one or more resource declarations and optionally a location
-string (see the :doc:`configuration reference <configuration>` for details).
+string.
 
 For example, to export a ``USBSerialPort`` with ``ID_SERIAL_SHORT`` of
 ``ID23421JLK``, the group name `example-group` and the location
@@ -233,6 +245,9 @@ Additional groups and resources can be added:
        match:
          ID_SERIAL_SHORT: KSLAH2341J
 
+More information about the exporter configuration file can be found
+:ref:`here <exporter-configuration>`.
+
 Restart the exporter to activate the new configuration.
 
 .. Attention::
@@ -277,7 +292,7 @@ To show more details on the exported resources, use ``-v`` (or ``-vv``):
            'params': {'host': 'netio1', 'index': 3, 'model': 'netio'}}
     ...
 
-You can now add a place with:
+You can now add a place to the coordinator with:
 
 .. code-block:: bash
 
@@ -308,6 +323,42 @@ Now we can connect to the serial console:
 See :ref:`remote-usage` for some more advanced features.
 For a complete reference have a look at the :doc:`labgrid-client(1) <man/client>`
 man page.
+
+Now, to connect drivers to the resources, you can configure an environment file,
+which we call ``remote.yaml`` in this case:
+
+.. code-block:: yaml
+
+    targets:
+      main:
+        resources:
+          RemotePlace:
+            name: myplace
+        drivers:
+          SerialDriver: {}
+          ShellDriver:
+            prompt: 'root@[\w-]+:[^ ]+ '
+            login_prompt: ' login: '
+            username: 'root'
+
+The ``RemotePlace`` resource makes all resources available that are assigned to
+to the place ``myplace`` on your coordinator.
+
+Now, this environment file can be used interactively with the client:
+
+.. code-block:: bash
+
+    labgrid-venv $ labgrid-client -c remote.yaml acquire
+    labgrid-venv $ labgrid-client -c remote.yaml console
+    labgrid-venv $ labgrid-client -c remote.yaml release
+
+or directly with a test:
+
+.. code-block:: bash
+
+    labgrid-venv $ labgrid-client -c remote.yaml acquire
+    labgrid-venv $ pytest --lg-env remote.yaml test_shell.py
+    labgrid-venv $ labgrid-client -c remote.yaml release
 
 .. _remote-getting-started-systemd-files:
 

@@ -17,14 +17,41 @@ more performant and the import times are shorter.
 New Features in 25.0
 ~~~~~~~~~~~~~~~~~~~~
 - All components can be installed into the same virtualenv again.
+- Add support for Python 3.13.
 - The `QEMUDriver` now supports setting the ``display`` option to
   ``qemu-default``, which will neither set the QEMU ``-display`` option
   or pass along ``-nographic``.
+- The amount of buffering in GStreamer video pipelines was reduced to improve
+  latency for ``USBVideoDriver`` network streaming.
+- The ``RawNetworkInterfaceDriver`` now supports live streaming of captured
+  packets, setting/getting various configuration options and reporting
+  statistics.
+- Add support for LogiLink UA0379 / Microdia cameras to the ``USBVideoDriver``.
+- Add more backends to the ``NetworkPowerDriver``:
+  
+  - Gude 87-1210-18
+  - Digital Loggers PDUs via the REST API
+  - Ubiquity mFi mPower power strips
+- Add support for sigrok's channel-group parameter.
+- Make USB hubs exportable for easier monitoring of large bus topologies.
+- Add support for Digital Loggers PDUs via the REST API.
+- Add support for custom paths for ``ssh``, ``scp``, ``sshfs`` and ``rsync`` in
+  the ``SSHDriver``.
+- Make the ``QEMUDriver`` configuration more flexible and improve startup error
+  reporting.
+- Support labgrid-client power via GPIOs.
 
 Bug fixes in 25.0
 ~~~~~~~~~~~~~~~~~
-
-FIXME
+- Fix ShellDriver to correctly match network interfaces names with dots and/or
+  dashes in ``get_default_interface_device_name()``.
+- Fix reservations for multiple matching tags or values starting with a number.
+- Fix concurrent access to USB HID relays.
+- Fix support for networks without SSID in the agent used by the
+  NetworkInterfaceDriver.
+- Add new stlink USB IDs for the ``USBDebugger`` resource.
+- Fix code coverage reporting and submit test results to codecov.
+- Fix waiting for ``NetworkService`` created by the ``DockerDaemon``.
 
 Breaking changes in 25.0
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,7 +81,10 @@ Other breaking changes include:
 Known issues in 25.0
 ~~~~~~~~~~~~~~~~~~~~
 
-FIXME
+- gRPC sometimes prints a confusing error message during shutdown.
+  We've worked around this by closing stderr on shutdown.
+  See `issue #1544 <https://github.com/labgrid-project/labgrid/issues/1544>`_
+  and `PR #1605 <https://github.com/labgrid-project/labgrid/pull/1605>`_.
 
 Release 24.0 (Released Aug 12, 2024)
 ------------------------------------

@@ -48,6 +48,13 @@ from ..util.helper import processwrapper
 from ..driver import Mode, ExecutionError
 from ..logging import basicConfig, StepLogger
 
+# This is a workround for the gRPC issue
+# https://github.com/grpc/grpc/issues/38679.
+# Since Python 3.12, an empty exception message is printed from gRPC
+# during shutdown, although nothing seems to go wrong. As this is
+# confusing for users, suppress the message by adding an indirection.
+sys.excepthook = lambda type, value, traceback: sys.__excepthook__(type, value, traceback)
+
 
 class Error(Exception):
     pass
@@ -448,9 +455,13 @@ class ClientSession:
         if f"{self.gethostname()}/{self.getuser()}" not in place.allowed:
             host, user = place.acquired.split("/")
             if user != self.getuser():
-                raise UserError(f"place {place.name} is not acquired by your user, acquired by {user}")
+                raise UserError(
+                    f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}"
+                )
             if host != self.gethostname():
-                raise UserError(f"place {place.name} is not acquired on this computer, acquired on {host}")
+                raise UserError(
+                    f"place {place.name} is not acquired on this computer, acquired on {host}. To allow this host, use labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()} on the other host"
+                )
 
     def get_place(self, place=None):
         pattern = place or self.args.place
@@ -468,7 +479,10 @@ class ClientSession:
     def get_idle_place(self, place=None):
         place = self.get_place(place)
         if place.acquired:
-            raise UserError(f"place {place.name} is not idle (acquired by {place.acquired})")
+            _, user = place.acquired.split("/")
+            raise UserError(
+                f"place {place.name} is not idle (acquired by {place.acquired}). To work simultaneously, {user} can execute labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}"
+            )
         return place
 
     def get_acquired_place(self, place=None):
@@ -852,7 +866,7 @@ class ClientSession:
         name = self.args.name
         target = self._get_target(place)
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
-        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort
+        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
         from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
 
         drv = None
@@ -874,6 +888,9 @@ class ClientSession:
                     drv = self._get_driver_or_new(target, "TasmotaPowerDriver", name=name)
                 elif isinstance(resource, NetworkYKUSHPowerPort):
                     drv = self._get_driver_or_new(target, "YKUSHPowerDriver", name=name)
+                elif isinstance(resource, NetworkSysfsGPIO):
+                    self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
+                    drv = self._get_driver_or_new(target, "DigitalOutputPowerDriver", name=name)
                 if drv:
                     break
 
@@ -1425,7 +1442,7 @@ class ClientSession:
                 raise UserError(f"'{pair}' is not a valid filter (must contain a '=')")
             if not TAG_KEY.match(k):
                 raise UserError(f"Key '{k}' in filter '{pair}' is invalid")
-            if not TAG_KEY.match(v):
+            if not TAG_VAL.match(v):
                 raise UserError(f"Value '{v}' in filter '{pair}' is invalid")
             fltr[k] = v
 

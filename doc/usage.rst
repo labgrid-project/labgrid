@@ -494,7 +494,7 @@ access this board:
       drivers:
         SerialDriver: {}
         ShellDriver:
-          prompt: 'root@\w+:[^ ]+ '
+          prompt: 'root@[\w-]+:[^ ]+ '
           login_prompt: ' login: '
           username: 'root'
 
@@ -665,7 +665,7 @@ setup:
         BareboxDriver:
           prompt: 'barebox@[^:]+:[^ ]+ '
         ShellDriver:
-          prompt: 'root@\w+:[^ ]+ '
+          prompt: 'root@[\w-]+:[^ ]+ '
           login_prompt: ' login: '
           username: 'root'
         BareboxStrategy: {}

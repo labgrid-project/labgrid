@@ -31,7 +31,7 @@ has_buildx() {
     local docker_cmd
     docker_cmd="${1}"
 
-    "${docker_cmd}" buildx --help >/dev/null 2>&1
+    "${docker_cmd}" buildx version >/dev/null 2>&1
 }
 
 get_docker_cmd() {

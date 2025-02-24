@@ -1,3 +1,4 @@
+import pathlib
 import subprocess
 
 import attr
@@ -140,6 +141,48 @@ class USBVideoDriver(Driver, VideoProtocol):
         tx_cmd = self.video.command_prefix + ["gst-launch-1.0", "-q"]
         tx_cmd += pipeline.split()
         rx_cmd = ["gst-launch-1.0", "playbin3", "buffer-duration=0", "uri=fd://0"]
+
+        tx = subprocess.Popen(
+            tx_cmd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+        )
+        rx = subprocess.Popen(
+            rx_cmd,
+            stdin=tx.stdout,
+            stdout=subprocess.DEVNULL,
+        )
+
+        # wait until one subprocess has terminated
+        while True:
+            try:
+                tx.wait(timeout=0.1)
+                break
+            except subprocess.TimeoutExpired:
+                pass
+            try:
+                rx.wait(timeout=0.1)
+                break
+            except subprocess.TimeoutExpired:
+                pass
+
+        rx.terminate()
+        tx.terminate()
+
+        rx.communicate()
+        tx.communicate()
+
+    @Driver.check_active
+    def screenshot(self, filename, caps_hint=None, controls=None):
+        assert isinstance(filename, str)
+
+        filepath = pathlib.Path(filename)
+        caps = self.select_caps(caps_hint)
+        pipeline = self.get_pipeline(self.video.path, caps, controls)
+
+        tx_cmd = self.video.command_prefix + ["gst-launch-1.0", "-q"]
+        tx_cmd += pipeline.split()
+        rx_cmd = ["gst-launch-1.0", "fdsrc", " num-buffers=75", "!", "jpegdec", "!", "jpegenc", "!", "filesink", f"location={filepath.absolute()}"]
 
         tx = subprocess.Popen(
             tx_cmd,

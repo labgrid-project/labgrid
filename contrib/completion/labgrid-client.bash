@@ -161,7 +161,7 @@ _labgrid_client_r()
 
 _labgrid_client_places()
 {
-    _labgrid_client_generic_subcommand "--acquired --sort-last-changed"
+    _labgrid_client_generic_subcommand "--acquired --released --sort-last-changed"
 }
 
 _labgrid_client_p()

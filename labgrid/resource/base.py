@@ -42,5 +42,7 @@ class SysfsGPIO(Resource):
     """The basic SysfsGPIO contains an index
 
     Args:
-        index (int): index of target gpio line."""
+        index (int): index of target gpio line.
+        invert (bool) : optional, whether the logic level is inverted (active-low)"""
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
+    invert = attr.ib(default=False,  validator=attr.validators.instance_of(bool))

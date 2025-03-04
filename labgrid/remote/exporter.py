@@ -135,7 +135,7 @@ class ResourceExport(ResourceEntry):
             raise
         self.start_params = None
 
-    def poll(self):
+    def poll(self, dirty=False):
         # poll and check for updated params/avail
         self.local.poll()
 
@@ -154,7 +154,6 @@ class ResourceExport(ResourceEntry):
                 self.stop()
 
         # check if resulting information has changed
-        dirty = False
         if self.avail != (self.local.avail and not self.broken):
             self.data["avail"] = self.local.avail and not self.broken
             dirty = True
@@ -1003,7 +1002,7 @@ class Exporter:
             res = group[resource_name] = export_cls(
                 config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req
             )
-            res.poll()
+            res.poll(dirty=True)
         else:
             config["params"]["extra"] = {
                 "proxy": getfqdn(),

@@ -589,6 +589,33 @@ Arguments:
 Used by:
   - `GpioDigitalOutputDriver`_
 
+KMTronicRelay
++++++++++++++
+A :any:`KMTronicRelay` resource describes a single output of an USB Relay Controller from KMTronic.
+
+.. code-block:: yaml
+
+   KMTronicRelay:
+     index: 2
+     ports: 8
+     match:
+       ID_SERIAL_SHORT: 'AB0LBF2U'
+
+Arguments:
+  - index (int, default=1): number on the relay to use.
+  - ports: (int, default=1): number of ports on the relay.
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+.. note::
+   IMPORTANT
+   Set ports=8 if you are using a 8 relay controller. if not the default=1 is fine.
+   The reason for this is the 8 relay controller does not read the state of relays the same
+   way as the other controllers.
+
+NetworkKMTronicRelay
+++++++++++++++++++++
+A :any:`NetworkKMTronicRelay` describes an `KMTronicRelay`_ exported over the network.
+
 NetworkService
 ~~~~~~~~~~~~~~
 A :any:`NetworkService` describes a remote SSH connection.
@@ -2353,6 +2380,30 @@ Implements:
 
 Arguments:
   - None
+
+KMTronicRelayDriver
+~~~~~~~~~~~~~~~~~~~
+A :any:`KMTronicRelayDriver` controls an `KMTronicRelay`_ or `NetworkKMTronicRelay`_ resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  relay:
+    - `KMTronicRelay`_
+    - `NetworkKMTronicRelay`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   KMTronicRelayDriver: {}
+
+Arguments:
+  - None
+
+.. note::
+  In order to be able to use this driver pyserial need to be installed on
+  the system the relay is connected to.
 
 ManualSwitchDriver
 ~~~~~~~~~~~~~~~~~~

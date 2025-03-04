@@ -1,0 +1,10 @@
+targets:
+  main:
+    resources:
+      KMTronicRelay:
+        index: 2
+
+    drivers:
+      KMTronicRelayDriver: {}
+      DigitalOutputPowerDriver:
+        delay: 2.0

@@ -192,8 +192,9 @@ class UUUDriver(Driver, BootstrapProtocol):
             file_mf.hash = self.get_hash(filename)
             file_mf.sync_to_resource()
 
-        # Enable verbose mode to avoid messing up the terminal
-        cmd = ["-v"]
+        # Enable verbose mode to avoid messing up the terminal, and pass the usb device path to `uuu`. Notice that
+        # `uuu` specifies paths in <bus>:<port><port>... format.
+        cmd = ["-v", "-m", self.loader.path.replace(".", "").replace("-", ":")]
         cmd += ['-b', self.script] if self.script else []
 
         processwrapper.check_output(

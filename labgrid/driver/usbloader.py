@@ -192,7 +192,9 @@ class UUUDriver(Driver, BootstrapProtocol):
             file_mf.hash = self.get_hash(filename)
             file_mf.sync_to_resource()
 
-        cmd = ['-b', self.script] if self.script else []
+        # Enable verbose mode to avoid messing up the terminal
+        cmd = ["-v"]
+        cmd += ['-b', self.script] if self.script else []
 
         processwrapper.check_output(
             self.loader.command_prefix + [self.tool] + cmd + [mf.get_remote_path()],

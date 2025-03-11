@@ -3242,10 +3242,11 @@ RawNetworkInterfaceDriver
 The :any:`RawNetworkInterfaceDriver` allows "raw" control of a network
 interface (such as Ethernet or WiFi).
 
-The labgrid-raw-interface helper (``helpers/labgrid-raw-interface``) needs to
-be installed in the PATH and usable via sudo without password.
-A configuration file ``/etc/labgrid/helpers.yaml`` must be installed on hosts
-exporting network interfaces for the RawNetworkInterfaceDriver, e.g.:
+The labgrid-raw-interface helper (``labgrid/helpers/raw_interface.py``,
+installed as ``<prefix>/bin/labgrid-raw-interface``) needs to be usable
+via sudo without password.  A configuration file
+``/etc/labgrid/helpers.yaml`` must be installed on hosts exporting network
+interfaces for the RawNetworkInterfaceDriver, e.g.:
 
 .. code-block:: yaml
 

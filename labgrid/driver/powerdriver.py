@@ -5,6 +5,7 @@ from importlib import import_module
 
 import attr
 
+from ..exceptions import InvalidConfigError
 from ..factory import target_factory
 from ..protocol import PowerProtocol, DigitalOutputProtocol, ResetProtocol
 from ..resource import NetworkPowerPort
@@ -283,11 +284,27 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
         else:
             self.tool = 'ykushcmd'
 
+    def on_activate(self):
+        # Search for the model of the YKUSH device
+        for model in ["ykush", "ykushxs", "ykush3"]:
+            cmd = [
+                self.tool,
+                model,
+                "-l"
+            ]
+            output = processwrapper.check_output(cmd)
+            if self.port.serial in output.decode("utf-8"):
+                self.model = model
+                break
+        else:
+            raise InvalidConfigError(f"Could not find YKUSH device with serial {self.port.serial}")
+
     @Driver.check_active
     @step()
     def on(self):
         cmd = [
             self.tool,
+            self.model,
             "-s", f"{self.port.serial}",
             "-u", f"{self.port.index}"
         ]
@@ -298,6 +315,7 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     def off(self):
         cmd = [
             self.tool,
+            self.model,
             "-s", f"{self.port.serial}",
             "-d", f"{self.port.index}"
         ]
@@ -314,6 +332,7 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     def get(self):
         cmd = [
             self.tool,
+            self.model,
             "-s", f"{self.port.serial}",
             "-g", f"{self.port.index}"
         ]

@@ -1645,6 +1645,7 @@ Arguments:
   - txdelay (float, default=0.0): time in seconds to wait before sending each byte
   - timeout (float, default=3.0): time in seconds to wait for a network serial port before
     an error occurs
+  - linesep (str, default="\n"): the separator when sending complete lines
 
 ModbusRTUDriver
 ~~~~~~~~~~~~~~~
@@ -1898,6 +1899,7 @@ Implements:
 Arguments:
   - cmd (str): command to execute and then bind to.
   - txdelay (float, default=0.0): time in seconds to wait before sending each byte
+  - linesep (str, default="\n"): the separator when sending complete lines
 
 AndroidFastbootDriver
 ~~~~~~~~~~~~~~~~~~~~~
@@ -2732,6 +2734,7 @@ Arguments:
     - qemu-default: Don't override QEMU default settings
 
   - nic (str): optional, configuration string to pass to QEMU to create a network interface
+  - linesep (str, default="\n"): the separator when sending complete lines
 
 The QEMUDriver also requires the specification of:
 

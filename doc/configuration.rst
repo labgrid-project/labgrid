@@ -1869,7 +1869,10 @@ Implements:
 Arguments:
   - prompt (regex, default=""): barebox prompt to match
   - autoboot (regex, default="stop autoboot"): autoboot message to match
-  - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-C)
+  - interrupt (str, default="\\n"): string to interrupt autoboot (use "\\x03" for CTRL-c),
+    `CTRL-d <https://git.pengutronix.de/cgit/barebox/commit/?id=ae482477b60e1e308327658a899358746ff2f5b>`_
+    ("\\x04") is recommended to ensure barebox behaves as closely as possible to uninterrupted
+    boots (for barebox >=v2025.03.0).
   - bootstring (regex, default="Linux version \\d"): regex that indicating that the Linux Kernel is
     booting
   - password (str): optional, password to use for access to the shell

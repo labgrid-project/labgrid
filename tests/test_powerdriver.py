@@ -282,6 +282,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.digitalloggers_restapi
         import labgrid.driver.power.eth008
         import labgrid.driver.power.gude
+        import labgrid.driver.power.gude8210
         import labgrid.driver.power.gude24
         import labgrid.driver.power.netio
         import labgrid.driver.power.netio_kshell

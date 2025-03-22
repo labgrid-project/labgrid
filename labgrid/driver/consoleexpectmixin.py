@@ -17,6 +17,12 @@ class ConsoleExpectMixin:
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self._expect = PtxExpect(self)
+        self._output = bytearray()
+
+    def read_output(self):
+        output = self._output
+        self._output = bytearray()
+        return output
 
     @Driver.check_active
     @step(result=True, tag='console')
@@ -28,6 +34,7 @@ class ConsoleExpectMixin:
         else:
             self.logger.debug("Read %i bytes: %s, timeout %.2f, requested size %i",
                               len(res), res, timeout, size)
+        self._output += bytearray(res)
         return res
 
     @Driver.check_active

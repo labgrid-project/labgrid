@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# This is included by all ub-xxx scripts
+
+# Usage
+# . lg-env                    (set lab environment variables)
+
+# Hostname and port for the gRPC coordinator
+export LG_COORDINATOR=kea:20408
+
+# Environment file for the lab
+export LG_ENV=/vid/software/devel/ubtest/lab/cfg/kea_env.cfg
+
+# Location of the U-Boot test hooks
+export UB_TEST_HOOKS=/vid/software/devel/ubtest/u-boot-test-hooks
+
+# Make sure only one buildman can run at a time, since it uses all CPUs
+export BUILDMAN_PROCESS_LIMIT=1
+
+# Use the internal console since microcom can miss serial input at boot
+export LG_CONSOLE=internal
+
+# Tell u-boot-test-hooks to use the Labgrid-sjg integration
+export USE_LABGRID_SJG=1
+
+export HOSTNAME="$(hostname)"

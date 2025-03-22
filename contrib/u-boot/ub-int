@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Boot U-Boot on a particular target and bring up a console. This does not wait
+# for the command prompt to appear - output is shown as soon as it appears.
+
+usage() {
+	if [ -n "$1" ]; then
+		echo "Failed : $1"
+	else
+		echo "Connect to the board console interactively"
+	fi
+	echo "Usage: ub-int [-BcDhLRsTv] [-d <dir>] [-x <dir>] [-e <file> ] [-l <file>] <target>"
+	echo " -B  Don't build U-Boot"
+	echo " -c  Run 'make mrproper' before building"
+	echo " -d  <dir> Set build directory"
+	echo " -D  Enable debugging"
+	echo " -e  <file> Log Dediprog EM100-Pro trace to a file"
+	echo " -h  Help"
+	echo " -l <file> Log console output to file"
+	echo " -L  Listen-only mode (do not send input from stdin)"
+	echo " -R  Don't reset the board, just connect as is"
+	echo " -s  Send over USB (instead of writing to boot media)"
+	echo " -T  Don't bootstrap U-Boot"
+	echo " -v  Verbose mode"
+	echo " -x  <dir> Set extra build directory"
+	exit 1
+}
+
+mydir=$(dirname $0)
+
+. ${mydir}/lg-env
+
+allowed_args="Bcd:De:hl:LRsTvx:"
+. ${mydir}/get_args.sh
+
+ret=0
+labgrid-client ${V} ${debug} ${vars} -r ${target} ${strategy} -a console \
+	${console_log} ${listen_only} || ret=$?
+
+labgrid-client ${V} -r "${target}" release -a
+
+[[ $ret -ne 0 ]] && exit $ret

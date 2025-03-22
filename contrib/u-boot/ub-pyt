@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Boot U-Boot on a particular target and run selected tests
+
+usage() {
+	if [ -n "$1" ]; then
+		echo "Failed : $1"
+	else
+		echo "Run a U-Boot pytest on a board"
+	fi
+	echo "Usage: ub-pyt [-BcehRsT] [-l <file>] <target> <test_spec>"
+	echo " -B  Don't build U-Boot"
+	echo " -c  Run 'make mrproper' before building"
+	echo " -e  <file> Log Dediprog EM100-Pro trace to a file"
+	echo " -h  Help"
+	echo " -l <file> Log console output to file"
+	echo " -R  Don't reset the board, just connect as is"
+	echo " -s  Send over USB (instead of writing to boot media)"
+	echo " -T  Don't bootstrap U-Boot"
+	echo " -v  Verbose mode"
+	echo
+	echo "<test_spec> is the tests to run, e.g. not tpm"
+	exit 1
+}
+
+mydir=$(dirname $0)
+
+. ${mydir}/lg-env
+
+allowed_args="Bcehl:RsTv"
+. ${mydir}/get_args.sh
+
+tmpfile=$(mktemp)
+
+# no_prompt_wait comes from the get_args.sh script. It is either empty, or
+# contains --no-prompt-wait
+
+# Various variables are exported from this script and made available to the
+# u-boot-hooks scripts. For example, 'strategy' and 'console_log' are used in
+# console.labgrid
+
+# Try the --role option if it exists
+if grep -q -- "--role" test/py/conftest.py; then
+	[ -n "${strategy}" ] && strategy="-s uboot -e off"
+	PYTHONPATH="${UB_TEST_HOOKS}/py/${HOSTNAME}" ./test/py/test.py -s \
+		${no_prompt_wait} --role "${target}" -k "$*"
+else
+	# An older U-Boot is being used, which doesn't have the '--role' feature
+	# so find out the board name and path. This case cannot support boards
+	# with multiple builds, like Beagleplay
+	echo "warning: --role option not available"
+	if lg-client -r "${target}" -a query UBootProviderDriver:board,build_dir \
+			> "${tmpfile}"; then
+		readarray -t a < ${tmpfile}
+		rm ${tmpfile}
+		board="${a[0]}"
+		build_path="${a[1]}"
+		if [[ -n "${V}" ]]; then
+			 echo "board '${board}'"
+			 echo "build_path '${build_path}'"
+		 fi
+	else
+		echo "Failed to obtain build information"
+		exit 1
+	fi
+
+	# We have to let pytest detect the banner, etc. so use 'start'
+	[ -n "${strategy}" ] && strategy="-s start -e off"
+
+	# Run the tests, using this information
+	PYTHONPATH="${UB_TEST_HOOKS}/py/${HOSTNAME}" ./test/py/test.py \
+		--bd "${board}" --buildman --build ${no_prompt_wait} \
+		--build-dir "${build_path}" --id "${target}" -k "$*"
+fi

@@ -1,7 +1,7 @@
 #!/usr/bin/python3 
 
 # This is intended to be used via sudo. For example, add via visudo:
-# %developers ALL = NOPASSWD: /usr/local/sbin/labgrid-bound-connect
+# %developers ALL = NOPASSWD: /usr/local/bin/labgrid-bound-connect
 
 import argparse
 import os
@@ -58,7 +58,7 @@ def main(ifname, address, port):
         raise RuntimeError("Missing socat binary") from e
 
 
-if __name__ == "__main__":
+def main_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-d',
@@ -79,3 +79,5 @@ if __name__ == "__main__":
             traceback.print_exc()
         print(f"ERROR: {e}", file=sys.stderr)
 
+if __name__ == "__main__":
+    main_args()

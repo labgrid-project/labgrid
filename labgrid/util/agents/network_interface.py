@@ -98,6 +98,8 @@ class NMDev:
     def __init__(self, interface):
         self._interface = interface
         self._nm_dev = nm.get_device_by_iface(interface)  # pylint: disable=possibly-used-before-assignment
+        if self._nm_dev is None:
+            raise ValueError(f"No device found for interface {interface}")
 
     def _delete_connection(self, con):
         future = Future()

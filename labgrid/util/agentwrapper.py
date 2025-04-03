@@ -7,6 +7,10 @@ import traceback
 import logging
 
 from .ssh import get_ssh_connect_timeout
+from getpass import getuser
+
+def get_user():
+    return os.environ.get("LG_USERNAME", getuser())
 
 def b2s(b):
     return base64.b85encode(b).decode('ascii')
@@ -47,6 +51,7 @@ class AgentWrapper:
             os.path.abspath(os.path.dirname(__file__)),
             'agent.py')
         if host:
+            user = get_user()
             # copy agent.py and run via ssh
             with open(agent, 'rb') as agent_fd:
                 agent_data = agent_fd.read()
@@ -56,10 +61,10 @@ class AgentWrapper:
             ssh_opts = f'ssh -x -o ConnectTimeout={connect_timeout} -o PasswordAuthentication=no'.split()
             subprocess.check_call(
                 ['rsync', '-e', ' '.join(ssh_opts), '-tq', agent,
-                 f'{host}:{agent_remote}'],
+                 f'{user}@{host}:{agent_remote}'],
             )
             self.agent = subprocess.Popen(
-                ssh_opts + [host, '--', 'python3', agent_remote],
+                ssh_opts + [f'{user}@{host}', '--', 'python3', agent_remote],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 start_new_session=True,

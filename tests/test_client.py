@@ -163,7 +163,7 @@ def test_place_acquire_enforce(place):
         spawn.close()
         assert spawn.exitstatus != 0, spawn.before.strip()
 
-    with pexpect.spawn('python -m labgrid.remote.client -p test acquire --allow-unmatched') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -v -p test acquire --allow-unmatched') as spawn:
         spawn.expect("acquired place test")
         spawn.expect(pexpect.EOF)
         spawn.close()
@@ -523,13 +523,13 @@ def test_reservation_custom_config(place, exporter, tmpdir):
     env = os.environ.copy()
     env['LG_TOKEN'] = token.decode('ASCII')
 
-    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} -p + lock', env=env) as spawn:
+    with pexpect.spawn(f'python -m labgrid.remote.client -v -c {p} -p + lock', env=env) as spawn:
         spawn.expect("acquired place test")
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} -p + release', env=env) as spawn:
+    with pexpect.spawn(f'python -m labgrid.remote.client -v -c {p} -p + release', env=env) as spawn:
         spawn.expect("released place test")
         spawn.expect(pexpect.EOF)
         spawn.close()

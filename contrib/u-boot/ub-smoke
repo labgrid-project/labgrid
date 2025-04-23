@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Boot U-Boot on a particular target and check that it starts up OK
+
+usage() {
+	if [ -n "$1" ]; then
+		echo "Failed : $1"
+	else
+		echo "Run a smoke test to see if U-Boot starts OK"
+	fi
+	echo "Usage: ut-smoke [-BcDhRsTv] [-d <dir>] [-x <dir> ] [-e <file> ] [-l <file>] <target>"
+	echo " -B  Don't build U-Boot"
+	echo " -c  Run 'make mrproper' before building"
+	echo " -d  <dir> Set build directory"
+	echo " -D  Enable debugging"
+	echo " -e  <file> Log Dediprog EM100-Pro trace to a file"
+	echo " -h  Help"
+	echo " -l  <file> Log console output to file"
+	echo " -R  Don't reset the board, just connect as is"
+	echo " -s  Send over USB (instead of writing to boot media)"
+	echo " -T  Don't bootstrap U-Boot"
+	echo " -v  Verbose mode"
+	echo " -x  <dir> Set extra build directory"
+	exit 1
+}
+
+mydir=$(dirname $0)
+
+. ${mydir}/lg-env
+
+allowed_args="Bcd:De:hl:RsTvx:"
+. ${mydir}/get_args.sh
+
+cd ${mydir}
+
+if ! labgrid-client -p ${target} acquire --allow-unmatched; then
+	exit 1
+fi
+
+ret=0
+pytest --lg-env "${LG_ENV}" --lg-coordinator="${LG_COORDINATOR}" \
+	--lg-log --lg-colored-steps --lg-target ${target} \
+	${lg_vars} \
+	 -k test_uboot_smoke || ret=$?
+
+if ! labgrid-client -p ${target} release -a; then
+	exit $?
+fi
+exit $ret

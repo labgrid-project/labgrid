@@ -2,7 +2,7 @@ Release 25.0 (Unreleased)
 -------------------------
 As announced
 `before <https://github.com/labgrid-project/labgrid/discussions/1467#discussioncomment-10314852>`_,
-this is the first release using gRPC instead of crossbar/autobahn for
+this is the first release using `gRPC <https://grpc.io/>`_ instead of crossbar/autobahn for
 communication between client/exporter and coordinator.
 
 Crossbar/autobahn are unfortunately not very well maintained anymore. The

@@ -21,7 +21,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-from pkg_resources import get_distribution
+from importlib.metadata import version
 
 # Import read_the_docs theme
 import sphinx_rtd_theme
@@ -65,7 +65,7 @@ author = 'Jan Luebbe, Rouven Czerwinski'
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-release = get_distribution('labgrid').version
+release = version('labgrid')
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])
 

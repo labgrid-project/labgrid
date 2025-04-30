@@ -747,6 +747,7 @@ class USBDebugger(USBResource):
                          ("1366", "0105"),  # SEGGER J-Link
                          ("1366", "1015"),  # SEGGER J-Link
                          ("1366", "1051"),  # SEGGER J-Link
+                         ("1366", "1061"),  # SEGGER J-Link
                          ]:
             return False
 

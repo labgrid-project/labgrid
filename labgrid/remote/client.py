@@ -1703,9 +1703,23 @@ def main():
         type=str,
         help="coordinator HOST[:PORT] (default: value from env variable LG_COORDINATOR, otherwise 127.0.0.1:20408)",
     )
-    parser.add_argument("-c", "--config", type=str, default=os.environ.get("LG_ENV"), help="config file")
-    parser.add_argument("-p", "--place", type=str, default=place, help="place name/alias")
-    parser.add_argument("-s", "--state", type=str, default=state, help="strategy state to switch into before command")
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=str,
+        default=os.environ.get("LG_ENV"),
+        help="env config file (default: value from env variable LG_ENV)",
+    )
+    parser.add_argument(
+        "-p", "--place", type=str, default=place, help="place name/alias (default: value from env variable LG_PLACE)"
+    )
+    parser.add_argument(
+        "-s",
+        "--state",
+        type=str,
+        default=state,
+        help="strategy state to switch into before command (default: value from env varibale LG_STATE)",
+    )
     parser.add_argument(
         "-i",
         "--initial-state",

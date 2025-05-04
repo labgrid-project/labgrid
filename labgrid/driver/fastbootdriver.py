@@ -110,6 +110,11 @@ class AndroidFastbootDriver(Driver):
             self.flash(partition)
 
     @Driver.check_active
+    @step(args=['partition'])
+    def erase(self, partition):
+        self('erase', partition)
+
+    @Driver.check_active
     @step(args=['cmd'])
     def run(self, cmd):
         self("oem", "exec", "--", cmd)

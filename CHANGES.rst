@@ -2,7 +2,7 @@ Release 25.0 (Unreleased)
 -------------------------
 As announced
 `before <https://github.com/labgrid-project/labgrid/discussions/1467#discussioncomment-10314852>`_,
-this is the first release using gRPC instead of crossbar/autobahn for
+this is the first release using `gRPC <https://grpc.io/>`_ instead of crossbar/autobahn for
 communication between client/exporter and coordinator.
 
 Crossbar/autobahn are unfortunately not very well maintained anymore. The
@@ -13,6 +13,11 @@ available in a crossbar release on PyPI.
 That's why labgrid moves to gRPC with this release. gRPC is a well maintained
 RPC framework with a lot of users. As a side effect, the message transfer is
 more performant and the import times are shorter.
+
+This is a **breaking change**. Version 25.0 exporters / coordinators / clients can
+not communicate with Version 24.0 and earlier exporters / coordinators / clients.
+All exporters, coordinators and clients in a deployment have to be updated at
+the same time. See the "Breaking changes in 25.0" section below for more information.
 
 New Features in 25.0
 ~~~~~~~~~~~~~~~~~~~~

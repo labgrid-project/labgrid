@@ -1,5 +1,5 @@
-Release 25.0 (Unreleased)
--------------------------
+Release 25.0 (Released May 7, 2025)
+-----------------------------------
 As announced `before
 <https://github.com/labgrid-project/labgrid/discussions/1467#discussioncomment-10314852>`_,
 this is the first release using `gRPC <https://grpc.io/>`_ instead of

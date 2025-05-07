@@ -43,8 +43,9 @@ class Target:
 
     def update_resources(self):
         """
-        Iterate over all relevant resources and deactivate any active but
-        unavailable resources.
+        Iterate over this target's resources, deactivate any active but
+        unavailable resources and also deactivate any drivers using them.
+        This ensures a consistent binding states for this target.
         """
         if (monotonic() - self.last_update) < 0.1:
             return

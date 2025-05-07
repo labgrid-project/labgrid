@@ -6,9 +6,9 @@ this is the first release using `gRPC <https://grpc.io/>`_ instead of
 crossbar/autobahn for communication between client/exporter and coordinator.
 
 Crossbar/autobahn are unfortunately not very well maintained anymore.
-The crossbar component was moved to its own virtualenv to cope with the high
-number of dependencies leading to conflicts.
-Support for Python 3.13 is still not available in a crossbar release on PyPI.
+In labgrid, the crossbar component was moved to its own virtualenv to cope with
+the high number of conflicts caused by outdated dependencies.
+Also, Python 3.13 is not supported in an official crossbar release.
 
 That's why labgrid moves to gRPC with this release.
 gRPC is a well maintained RPC framework with a lot of users.
@@ -74,19 +74,31 @@ Bug fixes in 25.0
 Breaking changes in 25.0
 ~~~~~~~~~~~~~~~~~~~~~~~~
 Maintaining support for both crossbar/autobahn as well as gRPC in labgrid would
-be a lot of effort due to the different architectures of those frameworks.
-Therefore, a hard migration to gRPC is deemed the lesser issue.
+be a lot of effort due to their different architectures.
+Therefore, hard migration to gRPC is required.
 
-Due to the migration, 25.0 includes the following breaking changes:
+Previously, the coordinator was running as a component started by the crossbar.
+Now, it is a standalone service which exposes a gRPC API directly.
 
-- The labgrid environment config option ``crossbar_url`` was renamed to
-  ``coordinator_address``. The environment variable ``LG_CROSSBAR`` was renamed
-  to ``LG_COORDINATOR``.
+Due to the gRPC migration, 25.0 includes the following breaking changes:
+
+- The labgrid environment config option ``crossbar_url`` was replaced by
+  ``coordinator_address``.
+  The environment variable ``LG_CROSSBAR`` was replaced by ``LG_COORDINATOR``.
 - The labgrid environment config option ``crossbar_realm`` is now obsolete as
   well as the environment variable ``LG_CROSSBAR_REALM``.
 - The coordinator is available as ``labgrid-coordinator`` (instead of
   ``crossbar start``). No additional configuration file is required.
 - The systemd services in ``contrib/systemd/`` were updated.
+
+To update your deployment to 25.0, you'll need to:
+
+- Update the coordinator, all clients and all exporters to the new release.
+- Start ``labgrid-coordinator`` directly (instead of via the crossbar
+  configuration file).
+  If needed, you can set the listening address using the ``--listen`` option.
+- Update any existing client and exporter configuration by replacing the
+  crossbar URL with the coordinator address.
 
 Other breaking changes include:
 

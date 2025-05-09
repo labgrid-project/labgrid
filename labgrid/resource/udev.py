@@ -301,7 +301,12 @@ class RKUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
-        if match not in [("2207", "110a")]:
+        if match not in [("2207", "110a"), ("2207", "301a"),
+                         ("2207", "310c"), ("2207", "320b"),
+                         ("2207", "320a"), ("2207", "320c"),
+                         ("2207", "330a"), ("2207", "330c"),
+                         ("2207", "350a"), ("2207", "350b")
+                         ]:
             return False
 
         return super().filter_match(device)

@@ -129,7 +129,7 @@ class Exporter(LabgridComponent):
         assert self.reader is None
 
         self.spawn = pexpect.spawn(
-            f'labgrid-exporter --name testhost {self.config}',
+            f'python -m labgrid.remote.exporter --name testhost {self.config}',
             logfile=Prefixer(sys.stdout.buffer, 'exporter'),
             cwd=self.cwd)
         try:

@@ -594,7 +594,6 @@ class ProviderGenericExport(ResourceExport):
 
 
 exports["TFTPProvider"] = ProviderGenericExport
-exports["NFSProvider"] = ProviderGenericExport
 exports["HTTPProvider"] = ProviderGenericExport
 
 

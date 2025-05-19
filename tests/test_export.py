@@ -1,8 +1,8 @@
 import pytest
 
-from labgrid.resource import Resource, NetworkSerialPort, TFTPProvider
-from labgrid.resource.remote import RemoteNetworkInterface, RemoteTFTPProvider
-from labgrid.driver import Driver, SerialDriver, NetworkInterfaceDriver, TFTPProviderDriver
+from labgrid.resource import Resource, NetworkSerialPort, TFTPProvider, NFSProvider
+from labgrid.resource.remote import RemoteNetworkInterface, RemoteTFTPProvider, RemoteNFSProvider
+from labgrid.driver import Driver, SerialDriver, NetworkInterfaceDriver, TFTPProviderDriver, NFSProviderDriver
 from labgrid.strategy import Strategy
 from labgrid.binding import StateError
 
@@ -109,4 +109,23 @@ def test_export_remote_tftp_provider(target):
         'LG__TFTP_HOST': 'testhost',
         'LG__TFTP_INTERNAL': '/srv/tftp/testboard/',
         'LG__TFTP_EXTERNAL': 'testboard/',
+    }
+
+def test_export_nfs_provider(target):
+    NFSProvider(target, None)
+    NFSProviderDriver(target, "nfs")
+
+    exported = target.export()
+    assert exported == {
+        'LG__NFS_HOST': 'localhost',
+    }
+
+
+def test_export_remote_nfs_provider(target):
+    RemoteNFSProvider(target, None, host='testhost')
+    NFSProviderDriver(target, "nfs")
+
+    exported = target.export()
+    assert exported == {
+        'LG__NFS_HOST': 'testhost',
     }

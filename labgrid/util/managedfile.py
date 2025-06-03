@@ -67,17 +67,19 @@ class ManagedFile:
                     self.local_path,
                     f"{self.rpath}{os.path.basename(self.local_path)}"
                 )
+        else:
+            conn = sshmanager.open("localhost")
+            self.rpath = os.path.dirname(self.local_path) + "/"
 
-            if symlink is not None:
-                self.logger.info("Linking")
-                try:
-                    conn.run_check(f"test ! -e {symlink} -o -L {symlink}")
-                except ExecutionError:
-                    raise ManagedFileError(f"Path {symlink} exists but is not a symlink.")
-                # use short options to be compatible with busybox
-                # --symbolic --force --no-dereference
-                conn.run_check(f"ln -sfn {self.rpath}{os.path.basename(self.local_path)} {symlink}")
-
+        if symlink is not None:
+            self.logger.info("Linking")
+            try:
+                conn.run_check(f"test ! -e {symlink} -o -L {symlink}")
+            except ExecutionError:
+                raise ManagedFileError(f"Path {symlink} exists but is not a symlink.")
+            # use short options to be compatible with busybox
+            # --symbolic --force --no-dereference
+            conn.run_check(f"ln -sfn {self.rpath}{os.path.basename(self.local_path)} {symlink}")
 
     def _on_nfs(self, conn):
         if self._on_nfs_cached is not None:

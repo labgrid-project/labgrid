@@ -77,6 +77,7 @@ class ManagedFile:
                     conn.run_check(f"test ! -e {symlink} -o -L {symlink}")
                 except ExecutionError:
                     raise ManagedFileError(f"Path {symlink} exists but is not a symlink.")
+                conn.run_check(f"mkdir -p {os.path.dirname(symlink)}")
                 # use short options to be compatible with busybox
                 # --symbolic --force --no-dereference
                 conn.run_check(f"ln -sfn {self.rpath}{os.path.basename(self.local_path)} {symlink}")
@@ -85,6 +86,7 @@ class ManagedFile:
                     os.unlink(symlink)
                 elif os.path.exists(symlink):
                     raise ManagedFileError(f"Path {symlink} exists but is not a symlink.")
+                os.makedirs(os.path.dirname(symlink), exist_ok=False)
                 os.symlink(f"{self.rpath}{os.path.basename(self.local_path)}", symlink)
 
 

@@ -97,13 +97,11 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # connection refused during target startup
         connect_timeout = round(timeout.remaining)
         while True:
-            if connect_timeout == 0:
-                raise Exception("Timeout while waiting for ssh connection")
             try:
                 return self._start_own_master_once(connect_timeout)
             except ExecutionError as e:
                 if timeout.expired:
-                    raise e
+                    raise Exception("Timeout while waiting for ssh connection") from e
                 time.sleep(0.5)
                 connect_timeout = round(timeout.remaining)
 

@@ -10,9 +10,11 @@ class SerialPort(Resource):
 
     Args:
         port (str): port to connect to
-        speed (int): speed of the port, defaults to 115200"""
+        speed (int): speed of the port, defaults to 115200
+        xonxoff (bool): software flow control, defaults to False (=off)"""
     port = attr.ib(default=None)
     speed = attr.ib(default=115200, validator=attr.validators.instance_of(int))
+    xonxoff = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
 
 @target_factory.reg_resource

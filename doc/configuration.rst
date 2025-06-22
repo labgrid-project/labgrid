@@ -208,6 +208,10 @@ Currently available are:
 ``netio_kshell``
   Controls *NETIO 4C PDUs* via a Telnet interface.
 
+``phoenixcontact_fl_2300``
+  Controls a single-pair-ethernet powerswitch via telnet.
+  Tested on a FL SWITCH 2303-8SP1 with FW-version 3.27.01 BETA
+
 ``raritan``
   Controls *Raritan PDUs* via SNMP.
 

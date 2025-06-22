@@ -239,6 +239,13 @@ Currently available are:
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/simplerest.py>`__
   for details.
 
+``tapoplug``
+  Controls *Tapo Smart Plugs* via `python-kasa
+  <https://github.com/python-kasa/python-kasa>`_.
+  Requires *KASA_USERNAME* and *KASA_USERNAME* environment variables to be set.
+  Tested on *Tapo P100* smart plug.
+  See the `list of supported TAPO devices <https://python-kasa.readthedocs.io/en/stable/SUPPORTED.html#tapo-devices>`_.
+
 ``tplink``
   Controls *TP-Link power strips* via `python-kasa
   <https://github.com/python-kasa/python-kasa>`_.

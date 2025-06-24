@@ -1,3 +1,14 @@
+Release 25.1 (Unreleased)
+-------------------------
+
+New Features in 25.1
+~~~~~~~~~~~~~~~~~~~~
+
+- The default interrupt key for the `BareboxDriver` is now CTRL+D (``\x04``)
+  instead of a line feed (``\n``). barebox v2025.03.0 onwards handles
+  CTRL+D specially to halt autoboot countdown without running interactive
+  hooks like bringing up network interfaces automatically.
+
 Release 25.0 (Released May 7, 2025)
 -----------------------------------
 As announced `before

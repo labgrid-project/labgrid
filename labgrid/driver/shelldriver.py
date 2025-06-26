@@ -5,6 +5,7 @@ import io
 import re
 import shlex
 import ipaddress
+from uuid import uuid4
 
 import attr
 from pexpect import TIMEOUT
@@ -371,10 +372,8 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         stream = io.BytesIO(buf)
 
         # We first write to a temp file, which we'll `dd` onto the destination file later
-        tmpfile = self._run_check('mktemp')
-        if not tmpfile:
-            raise ExecutionError('Could not make temporary file on target')
-        tmpfile = tmpfile[0]
+        tmpfile = f'/tmp/tmp-{uuid4()}'
+        self._run_check(f'touch {tmpfile}')
 
         try:
             rx_cmd = self._get_xmodem_rx_cmd(tmpfile)

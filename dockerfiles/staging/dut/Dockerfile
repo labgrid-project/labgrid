@@ -18,7 +18,7 @@ RUN set -e ;\
 COPY --chown=root:root ./authorized_keys /root/.ssh/authorized_keys
 
 # As sshd scrubs ENV variables if they are set by the ENV varibale ensure to put the into /etc/profile as shown below
-ENV NOTVISIBLE "in users profile"
+ENV NOTVISIBLE="in users profile"
 RUN echo "export VISIBLE=now" >> /etc/profile
 
 EXPOSE 2222

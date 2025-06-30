@@ -626,7 +626,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
         await cmd.wait()
         if not cmd.response.success:
-            raise ExporterError("failed to acquire {resource} ({cmd.response.reason})")
+            raise ExporterError(f"failed to acquire {resource} ({cmd.response.reason})")
         if resource.acquired != place.name:
             logging.warning("resource %s not acquired by this place after acquire request", resource)
 

@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim
 
-MAINTAINER "Kasper Revsbech" <mail@krevsbech.dk>
+LABEL org.opencontainers.image.authors="mail@krevsbech.dk"
 
 ENV DEBIAN_FRONTEND=noninteractive
 

@@ -55,7 +55,7 @@ class LabgridComponent:
         self.reader = None
 
     def stop(self):
-        logging.info("stopping {self.__class__.__name__} pid=%s", self.spawn.pid)
+        logging.info("stopping %s pid=%s", self.__class__.__name__, self.spawn.pid)
 
         # let coverage write its data:
         # https://coverage.readthedocs.io/en/latest/subprocess.html#process-termination

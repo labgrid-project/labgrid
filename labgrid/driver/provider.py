@@ -16,6 +16,7 @@ class BaseProviderDriver(Driver):
             "host": self.provider.host,
             "internal": self.provider.internal,
             "external": self.provider.external,
+            "external_ip": self.provider.external_ip,
         }
 
     @Driver.check_active

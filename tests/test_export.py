@@ -97,6 +97,7 @@ def test_export_tftp_provider(target):
         'LG__TFTP_HOST': 'localhost',
         'LG__TFTP_INTERNAL': '/srv/tftp/testboard/',
         'LG__TFTP_EXTERNAL': 'testboard/',
+        'LG__TFTP_EXTERNAL_IP': '',
     }
 
 
@@ -109,4 +110,31 @@ def test_export_remote_tftp_provider(target):
         'LG__TFTP_HOST': 'testhost',
         'LG__TFTP_INTERNAL': '/srv/tftp/testboard/',
         'LG__TFTP_EXTERNAL': 'testboard/',
+        'LG__TFTP_EXTERNAL_IP': '',
+    }
+
+
+def test_export_tftp_provider_with_external_ip(target):
+    TFTPProvider(target, None, internal='/srv/tftp/testboard/', external='testboard/', external_ip='192.168.1.100')
+    TFTPProviderDriver(target, "tftp")
+
+    exported = target.export()
+    assert exported == {
+        'LG__TFTP_HOST': 'localhost',
+        'LG__TFTP_INTERNAL': '/srv/tftp/testboard/',
+        'LG__TFTP_EXTERNAL': 'testboard/',
+        'LG__TFTP_EXTERNAL_IP': '192.168.1.100',
+    }
+
+
+def test_export_remote_tftp_provider_with_external_ip(target):
+    RemoteTFTPProvider(target, None, host='testhost', internal='/srv/tftp/testboard/', external='testboard/', external_ip='10.0.0.50')
+    TFTPProviderDriver(target, "tftp")
+
+    exported = target.export()
+    assert exported == {
+        'LG__TFTP_HOST': 'testhost',
+        'LG__TFTP_INTERNAL': '/srv/tftp/testboard/',
+        'LG__TFTP_EXTERNAL': 'testboard/',
+        'LG__TFTP_EXTERNAL_IP': '10.0.0.50',
     }

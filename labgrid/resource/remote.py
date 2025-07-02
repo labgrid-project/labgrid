@@ -396,6 +396,7 @@ class RemoteNetworkInterface(NetworkResource, ManagedResource):
 class RemoteBaseProvider(NetworkResource):
     internal = attr.ib(validator=attr.validators.instance_of(str))
     external = attr.ib(validator=attr.validators.instance_of(str))
+    external_ip = attr.ib(default="", validator=attr.validators.instance_of(str))
 
 
 @target_factory.reg_resource

@@ -590,6 +590,7 @@ class ProviderGenericExport(ResourceExport):
             "host": self.host,
             "internal": self.local.internal,
             "external": self.local.external,
+            "external_ip": self.local.external_ip,
         }
 
 

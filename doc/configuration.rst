@@ -1289,10 +1289,12 @@ A :any:`TFTPProvider` resource describes a TFTP server.
    TFTPProvider:
      internal: '/srv/tftp/board-23/'
      external: 'board-23/'
+     external_ip: '192.168.1.100'  # optional
 
 Arguments:
   - internal (str): path prefix to the local directory accessible by the target
   - external (str): corresponding path prefix for use by the target
+  - external_ip (str, optional): IP address that the target should use to access the TFTP server. If not specified, defaults to empty string.
 
 Used by:
   - `TFTPProviderDriver`_
@@ -1339,11 +1341,13 @@ a remote computer.
      host: 'tftphost'
      internal: '/srv/tftp/board-23/'
      external: 'board-23/'
+     external_ip: '10.0.0.50'  # optional
 
 Arguments:
   - host (str): hostname of the remote host
   - internal (str): path prefix to the TFTP root directory on ``host``
   - external (str): corresponding path prefix for use by the target
+  - external_ip (str, optional): IP address that the target should use to access the TFTP server. If not specified, defaults to empty string.
 
 Used by:
   - `TFTPProviderDriver`_

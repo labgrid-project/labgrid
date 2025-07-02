@@ -3,7 +3,7 @@ import enum
 import attr
 
 from ..factory import target_factory
-from .common import Strategy, StrategyError
+from .common import Strategy, StrategyError, raise_if_broken
 
 
 class Status(enum.Enum):
@@ -29,6 +29,7 @@ class UBootStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
+    @raise_if_broken
     def transition(self, status):
         if not isinstance(status, Status):
             status = Status[status]
@@ -58,6 +59,7 @@ class UBootStrategy(Strategy):
             raise StrategyError(f"no transition found from {self.status} to {status}")
         self.status = status
 
+    @raise_if_broken
     def force(self, status):
         if not isinstance(status, Status):
             status = Status[status]

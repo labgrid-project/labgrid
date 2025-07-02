@@ -421,6 +421,10 @@ target (session scope)
 
 strategy (session scope)
   Used to access the :any:`Strategy` configured in the 'main' :any:`Target`.
+  If the Strategy enters broken state, all subsequent tests requesting it via
+  this fixture will be skipped.
+  See also :any:`never_retry` for an easy way to mark strategies broken on
+  error.
 
 Command-Line Options
 ~~~~~~~~~~~~~~~~~~~~

@@ -26,6 +26,10 @@ class Strategy(Driver):  # reuse driver handling
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
+
+        # contains exception that broke the strategy or None
+        self.broken = None
+
         if self.target is None:
             raise BindingError(
                 "Strategies can only be created on a valid target"

@@ -308,9 +308,17 @@ def test_docker_without_daemon(docker_env, mocker):
     with pytest.raises(StrategyError):
         strategy.transition("unknown")
 
+    # test and reset broken state
+    assert isinstance(strategy.broken, StrategyError)
+    strategy.broken = None
+
     # Also bonus: How are invalid state names handled?
-    with pytest.raises(KeyError):
+    with pytest.raises(StrategyError):
         strategy.transition("this is not a valid state")
+
+    # test and reset broken state
+    assert isinstance(strategy.broken, KeyError)
+    strategy.broken = None
 
     # Return to "gone" state - to also use that part of the DockerDriver code.
     strategy.transition("gone")

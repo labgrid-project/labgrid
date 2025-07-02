@@ -17,7 +17,7 @@ import enum
 import attr
 
 from labgrid import target_factory, step
-from labgrid.strategy import Strategy, StrategyError
+from labgrid.strategy import Strategy, StrategyError, raise_if_broken
 from labgrid.util import get_free_port
 
 
@@ -77,6 +77,7 @@ class QEMUNetworkStrategy(Strategy):
                 networkservice.address = new_address
                 networkservice.port = self.__remote_port
 
+    @raise_if_broken
     @step(args=["state"])
     def transition(self, state, *, step):
         if not isinstance(state, Status):

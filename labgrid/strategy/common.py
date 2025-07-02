@@ -24,6 +24,12 @@ class Strategy(Driver):  # reuse driver handling
     TODO: This might also be just a driver?
     """
 
+    # contains exception that broke the strategy or None
+    broken = attr.ib(
+        validator=attr.validators.optional(attr.validators.instance_of(Exception)),
+        default=None
+    )
+
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         if self.target is None:

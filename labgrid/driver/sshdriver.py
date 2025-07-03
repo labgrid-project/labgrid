@@ -302,7 +302,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         complete_cmd = ["ssh", "-o", "LogLevel=QUIET", "-x", *self.ssh_prefix,
                         "-p", str(self.networkservice.port), "-l", self.networkservice.username,
-                        self.networkservice.address, "-T", "--", '/bin/sh -c {}'.format(shlex.quote(cmd)),
+                        self.networkservice.address, "-tt", "--", '/bin/sh -c {}'.format(shlex.quote(cmd)),
                         ]
         self.logger.debug("Sending command: %s", complete_cmd)
 

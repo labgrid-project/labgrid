@@ -2,9 +2,10 @@
 import attr
 from pexpect import TIMEOUT
 
+from ..exceptions import CommandProcessBusy
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
-from ..util import gen_marker, Timeout, re_vt100
+from ..util import gen_marker, Timeout, re_vt100, ConsoleMarkerProcess
 from ..step import step
 from .common import Driver
 from .commandmixin import CommandMixin
@@ -47,6 +48,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self._status = 0
+        self._process = None
 
         if self.boot_expression:
             import warnings
@@ -67,26 +69,40 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self._status = 0
 
-    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
+    def _popen(self, cmd: str):
+        if self._process is not None:
+            raise CommandProcessBusy()
+
         # TODO: use codec, decodeerrors
         # TODO: Shell Escaping for the U-Boot Shell
         marker = gen_marker()
-        cmp_command = f"""echo '{marker[:4]}''{marker[4:]}'; {cmd}; echo "$?"; echo '{marker[:4]}''{marker[4:]}';"""  # pylint: disable=line-too-long
-        if self._status == 1:
-            self.console.sendline(cmp_command)
-            _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
-            # Remove VT100 Codes and split by newline
-            data = re_vt100.sub(
-                '', before.decode('utf-8'), count=1000000
-            ).replace("\r", "").split("\n")
-            self.logger.debug("Received Data: %s", data)
-            # Remove first element, the invoked cmd
-            data = data[data.index(marker) + 1:]
-            data = data[:data.index(marker)]
-            exitcode = int(data[-1])
-            del data[-1]
-            return (data, [], exitcode)
+        # NOTE: \c at the end of an echo command prevents it from printing a newline in u-boot.
+        cmp_command = f"""echo '{marker[:4]}''{marker[4:]}'\\\\c; {cmd}; echo '{marker[:4]}''{marker[4:]}' $?;"""  # pylint: disable=line-too-long
+        self.console.sendline(cmp_command)
+        self.console.expect(marker)
 
+        self._process = ConsoleMarkerProcess(
+            self.console,
+            marker,
+            self.prompt,
+            on_exit=self._handle_process_exit
+        )
+        return self._process
+
+    def _handle_process_exit(self, process):
+        if self._process is process:
+            self._process = None
+
+    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
+        if self._status == 1:
+            with self._popen(cmd) as p:
+                output = p.read_to_end(timeout=timeout)
+                # Remove VT100 Codes and split by newline
+                data = re_vt100.sub(
+                    '', output.decode('utf-8'), count=1000000
+                ).replace("\r", "").split("\n")
+                self.logger.debug("Received Data: %s", data)
+                return (data, [], p.exitcode)
         return None
 
     @Driver.check_active
@@ -103,6 +119,11 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             Tuple[List[str],List[str], int]: if successful, None otherwise
         """
         return self._run(cmd, timeout=timeout)
+
+    @Driver.check_active
+    @step(args=['cmd'], result=True)
+    def popen(self, cmd: str):
+        return self._popen(cmd)
 
     def get_status(self):
         """Retrieve status of the UBootDriver.

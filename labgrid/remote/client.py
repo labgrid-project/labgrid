@@ -917,6 +917,8 @@ class ClientSession:
             drv = target.get_driver("DigitalOutputProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
+                if name and resource.name != name:
+                    continue
                 if isinstance(resource, ModbusTCPCoil):
                     drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name)
                 elif isinstance(resource, OneWirePIO):
@@ -1103,6 +1105,8 @@ class ClientSession:
             drv = target.get_driver("BootstrapProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
+                if name and resource.name != name:
+                    continue
                 if isinstance(resource, NetworkIMXUSBLoader):
                     drv = self._get_driver_or_new(target, "IMXUSBDriver", activate=False, name=name)
                     drv.loader.timeout = self.args.wait
@@ -1136,6 +1140,8 @@ class ClientSession:
 
         drv = None
         for resource in target.resources:
+            if name and resource.name != name:
+                continue
             if isinstance(resource, NetworkUSBSDMuxDevice):
                 drv = self._get_driver_or_new(target, "USBSDMuxDriver", name=name)
             elif isinstance(resource, NetworkUSBSDWireDevice):
@@ -1168,6 +1174,8 @@ class ClientSession:
 
         drv = None
         for resource in target.resources:
+            if name and resource.name != name:
+                continue
             if isinstance(resource, NetworkLXAUSBMux):
                 drv = self._get_driver_or_new(target, "LXAUSBMuxDriver", name=name)
                 break
@@ -1300,6 +1308,8 @@ class ClientSession:
             drv = target.get_driver("VideoProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
+                if name and resource.name != name:
+                    continue
                 if isinstance(resource, (USBVideo, NetworkUSBVideo)):
                     drv = self._get_driver_or_new(target, "USBVideoDriver", name=name)
                 elif isinstance(resource, HTTPVideoStream):

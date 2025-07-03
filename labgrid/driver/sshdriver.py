@@ -300,6 +300,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if not self._check_keepalive():
             raise ExecutionError("Keepalive no longer running")
 
+        cmd = f"stty -echo; {cmd}" # Disable input echo from ssh
         complete_cmd = ["ssh", "-o", "LogLevel=QUIET", "-x", *self.ssh_prefix,
                         "-p", str(self.networkservice.port), "-l", self.networkservice.username,
                         self.networkservice.address, "-tt", "--", '/bin/sh -c {}'.format(shlex.quote(cmd)),
@@ -308,6 +309,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         try:
             sub = pexpect.spawn(complete_cmd[0], complete_cmd[1:])
+            sub.setecho(False)  # Disable input echo from pexpect
         except:
             raise ExecutionError(
                 "error executing command: {}".format(complete_cmd)

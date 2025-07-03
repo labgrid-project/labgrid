@@ -252,8 +252,8 @@ def test_start_process_stream(ssh_localhost):
         p.write(b"Hello World\n")
         data = p.read_full(timeout=10.0)
         data = data.decode("utf-8").splitlines()
-        # Two lines are expected; one for the echoed input and one for the output
-        assert data == ["Hello World"] * 2
+        # Only one hello world expected. Input echo is disabled
+        assert data == ["Hello World"]
 
         assert p.poll() is None
         p.sendcontrol('d')
@@ -264,7 +264,6 @@ def test_start_process_stream(ssh_localhost):
     with ssh_localhost.start_process("cat") as p:
         p.write(b"ABCDEF\n")
 
-        p.expect(b"ABCDEF", timeout=10.0)
         p.expect(b"ABCDEF", timeout=10.0)
 
         assert p.poll() is None

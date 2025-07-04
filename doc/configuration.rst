@@ -228,6 +228,13 @@ Currently available are:
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/shelly_gen1.py>`__
   for details.
 
+  ``shelly_gen2``
+  Controls relays of *Shelly* devices using the
+  `Gen2+ API <https://shelly-api-docs.shelly.cloud/gen2/General/RPCProtocol/>`__.
+  See the `docstring in the module
+  <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/shelly_gen2.py>`__
+  for details.
+
 ``siglent``
   Controls *Siglent SPD3000X* series modules via the `vxi11 Python module
   <https://pypi.org/project/python-vxi11/>`_.

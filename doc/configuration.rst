@@ -208,6 +208,9 @@ Currently available are:
 ``netio_kshell``
   Controls *NETIO 4C PDUs* via a Telnet interface.
 
+``poe_mib``
+  Controls PoE switches using the PoE SNMP administration MiBs.
+
 ``raritan``
   Controls *Raritan PDUs* via SNMP.
 
@@ -246,10 +249,6 @@ Currently available are:
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/simplerest.py>`__
   for details.
 
-``tplink``
-  Controls *TP-Link power strips* via `python-kasa
-  <https://github.com/python-kasa/python-kasa>`_.
-
 ``tinycontrol``
   Controls a tinycontrol.eu IP Power Socket via HTTP.
   It was tested on the *6G10A v2* model.
@@ -259,12 +258,13 @@ Currently available are:
   Controls a Tinycontrol tcPDU via HTTP.
   See the `documentation <https://docs.tinycontrol.pl/en/tcpdu/api/commands/>`__
 
-``poe_mib``
-  Controls PoE switches using the PoE SNMP administration MiBs.
+``tplink``
+  Controls *TP-Link power strips* via `python-kasa
+  <https://github.com/python-kasa/python-kasa>`_.
 
 ``ubus``
-  Controls *PoE switches* running OpenWrt using the *ubus* interface.
-  Further information available at <https://openwrt.org/docs/techref/ubus>
+  Controls *PoE switches* running OpenWrt using the
+  `ubus interface <https://openwrt.org/docs/techref/ubus>`__,
 
 Used by:
   - `NetworkPowerDriver`_
@@ -2231,8 +2231,10 @@ GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
 The :any:`GpioDigitalOutputDriver` writes a digital signal to a GPIO line.
 
-This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`.
-While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.
+This driver configures GPIO lines via
+`the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`__.
+While the driver automatically exports the GPIO, it does not configure it in
+any other way than as an output.
 
 Binds to:
   gpio:

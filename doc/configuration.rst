@@ -208,6 +208,9 @@ Currently available are:
 ``netio_kshell``
   Controls *NETIO 4C PDUs* via a Telnet interface.
 
+``poe_mib``
+  Controls PoE switches using the PoE SNMP administration MiBs.
+
 ``raritan``
   Controls *Raritan PDUs* via SNMP.
 
@@ -246,10 +249,6 @@ Currently available are:
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/simplerest.py>`__
   for details.
 
-``tplink``
-  Controls *TP-Link power strips* via `python-kasa
-  <https://github.com/python-kasa/python-kasa>`_.
-
 ``tinycontrol``
   Controls a tinycontrol.eu IP Power Socket via HTTP.
   It was tested on the *6G10A v2* model.
@@ -259,8 +258,9 @@ Currently available are:
   Controls a Tinycontrol tcPDU via HTTP.
   See the `documentation <https://docs.tinycontrol.pl/en/tcpdu/api/commands/>`__
 
-``poe_mib``
-  Controls PoE switches using the PoE SNMP administration MiBs.
+``tplink``
+  Controls *TP-Link power strips* via `python-kasa
+  <https://github.com/python-kasa/python-kasa>`_.
 
 ``ubus``
   Controls *PoE switches* running OpenWrt using the

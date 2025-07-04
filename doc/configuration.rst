@@ -263,8 +263,8 @@ Currently available are:
   Controls PoE switches using the PoE SNMP administration MiBs.
 
 ``ubus``
-  Controls *PoE switches* running OpenWrt using the *ubus* interface.
-  Further information available at <https://openwrt.org/docs/techref/ubus>
+  Controls *PoE switches* running OpenWrt using the
+  `ubus interface <https://openwrt.org/docs/techref/ubus>`__,
 
 Used by:
   - `NetworkPowerDriver`_
@@ -2231,8 +2231,10 @@ GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
 The :any:`GpioDigitalOutputDriver` writes a digital signal to a GPIO line.
 
-This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`.
-While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.
+This driver configures GPIO lines via
+`the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`__.
+While the driver automatically exports the GPIO, it does not configure it in
+any other way than as an output.
 
 Binds to:
   gpio:

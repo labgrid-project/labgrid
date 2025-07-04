@@ -60,3 +60,34 @@ class ModbusCoilDriver(Driver, DigitalOutputProtocol):
         if self.coil.invert:
             status = not status
         return status
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class WaveShareModbusCoilDriver(ModbusCoilDriver):
+    """
+    Waveshare Modbus Relay driver.
+
+    Waveshare only implement the ability to query the status of all relays not just one.
+    https://www.waveshare.com/wiki/Modbus_RTU_Relay#Read_States_of_Relays
+    """
+
+    bindings = {
+        "coil": "WaveshareModbusTCPCoil",
+    }
+
+    @Driver.check_active
+    def get(self):
+        status = self.client.read_coils(0x0000, self.coil.coil_count)
+        if status is None:
+            self._handle_error("read")
+
+        status = status[self.coil.coil]
+        if self.coil.invert:
+            status = not status
+        return status
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        if self.coil.coil >= self.coil.coil_count:
+            raise ValueError("Coil exceeds coil count")

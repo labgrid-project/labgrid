@@ -5,7 +5,7 @@ import attr
 from labgrid.driver import BareboxDriver, ShellDriver, USBSDMuxDriver
 from labgrid import step, target_factory
 from labgrid.protocol import PowerProtocol
-from labgrid.strategy import Strategy
+from labgrid.strategy import Strategy, raise_if_broken
 
 
 @attr.s(eq=False)
@@ -36,6 +36,7 @@ class ExampleStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
+    @raise_if_broken
     @step(args=["status"])
     def transition(self, status, *, step):
         if not isinstance(status, Status):

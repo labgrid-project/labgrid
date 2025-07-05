@@ -8,6 +8,7 @@ from .common import Resource
 class BaseProvider(Resource):
     internal = attr.ib(validator=attr.validators.instance_of(str))
     external = attr.ib(validator=attr.validators.instance_of(str))
+    external_ip = attr.ib(default="", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         self.host = "localhost"

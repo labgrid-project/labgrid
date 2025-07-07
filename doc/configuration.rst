@@ -249,10 +249,6 @@ Currently available are:
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/simplerest.py>`__
   for details.
 
-``tplink``
-  Controls *TP-Link power strips* via `python-kasa
-  <https://github.com/python-kasa/python-kasa>`_.
-
 ``tapo``
   Controls *Tapo power strips and single socket devices* via `python-kasa
   <https://github.com/python-kasa/python-kasa>`_.

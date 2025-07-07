@@ -1,3 +1,26 @@
+Release 25.0.1 (Released Jul 07, 2025)
+--------------------------------------
+
+Bug fixes in 25.0.1
+~~~~~~~~~~~~~~~~~~~
+- Fix losing exceptions in `SSHDriver` control master start while handling
+  timeouts in some cases.
+- Make pytestplugin only set a color for the custom console log level if
+  formatter class supports it.
+- Add missing `MatchedSysfsGPIO` binding to `GpioDigitalOutputDriver`.
+- Fix a couple of unevaluated variables in exception and log messages.
+- Use only non-deprecated directives in Dockerfile.
+- Always use latest stable docker compose release in CI.
+- Create symlinks in `ManagedFile` even when skipping sync for local providers.
+- Use ``importlib`` instead of ``pkg_resources`` to retrieve version, because
+  setuptools (providing ``pkg_resources``) is no longer pre-installed in
+  virtualenvs created with the ``venv`` module.
+- Allow passing non-strings to `StepFormatter`.
+- Properly escape file and directory names in the `USBStorageDriver`.
+- Fix ``labgrid-client`` named resource handling for the ``io``, ``bootstrap``,
+  ``sd-mux`` and ``video`` sub commands.
+
+
 Release 25.0 (Released May 7, 2025)
 -----------------------------------
 As announced `before

@@ -210,6 +210,12 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
         self.console.expect(self.prompt)
 
+    def _write_key(self, keyline, dest):
+        for i in range(0, len(keyline), 100):
+            part = keyline[i:i+100]
+            self._run_check(f'echo -n "{part}" >> {dest}')
+        self._run_check(f'echo "" >> {dest}')
+
     @step(args=['keyfile_path'])
     def _put_ssh_key(self, keyfile_path):
         """Upload an SSH Key to a target"""
@@ -251,7 +257,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         if test_write == 0 and read_keys == 0:
             self.logger.debug("Key not on target and writeable, concatenating...")
-            self._run_check(f'echo "{keyline}" >> ~/.ssh/authorized_keys')
+            self._write_key(keyline, "~/.ssh/authorized_keys")
             self._run_check("rm ~/.test")
             return
 
@@ -263,14 +269,15 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 self._run("mkdir ~/.ssh/")
             self._run_check("chmod 700 ~/.ssh/")
             self.logger.debug("Creating ~/.ssh/authorized_keys")
-            self._run_check(f'echo "{keyline}" > ~/.ssh/authorized_keys')
+            self._run_check("touch ~/.ssh/authorized_keys")
+            self._write_key(keyline, "~/.ssh/authorized_keys")
             self._run_check("rm ~/.test")
             return
 
         self.logger.debug("Key not on target and not writeable, using bind mount...")
         self._run_check('mkdir -m 700 /tmp/labgrid-ssh/')
         self._run("cp -a ~/.ssh/* /tmp/labgrid-ssh/")
-        self._run_check(f'echo "{keyline}" >> /tmp/labgrid-ssh/authorized_keys')
+        self._write_key(keyline, "/tmp/labgrid-ssh/authorized_keys")
         self._run_check('chmod 600 /tmp/labgrid-ssh/authorized_keys')
         out, err, exitcode = self._run('mount --bind /tmp/labgrid-ssh/ ~/.ssh/')
         if exitcode != 0:

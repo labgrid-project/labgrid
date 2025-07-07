@@ -55,7 +55,7 @@ class LabgridComponent:
         self.reader = None
 
     def stop(self):
-        logging.info("stopping {self.__class__.__name__} pid=%s", self.spawn.pid)
+        logging.info("stopping %s pid=%s", self.__class__.__name__, self.spawn.pid)
 
         # let coverage write its data:
         # https://coverage.readthedocs.io/en/latest/subprocess.html#process-termination
@@ -129,7 +129,7 @@ class Exporter(LabgridComponent):
         assert self.reader is None
 
         self.spawn = pexpect.spawn(
-            f'labgrid-exporter --name testhost {self.config}',
+            f'python -m labgrid.remote.exporter --name testhost {self.config}',
             logfile=Prefixer(sys.stdout.buffer, 'exporter'),
             cwd=self.cwd)
         try:
@@ -147,7 +147,7 @@ class Coordinator(LabgridComponent):
         assert self.reader is None
 
         self.spawn = pexpect.spawn(
-            'labgrid-coordinator',
+            'python -m labgrid.remote.coordinator',
             logfile=Prefixer(sys.stdout.buffer, 'coordinator'),
             cwd=self.cwd)
         try:

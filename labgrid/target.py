@@ -41,15 +41,16 @@ class Target:
         else:
             input(msg)
 
-    def update_resources(self, resources=None):
+    def update_resources(self):
         """
-        Iterate over all relevant resources and deactivate any active but
-        unavailable resources.
+        Iterate over this target's resources, deactivate any active but
+        unavailable resources and also deactivate any drivers using them.
+        This ensures a consistent binding states for this target.
         """
         if (monotonic() - self.last_update) < 0.1:
             return
         self.last_update = monotonic()
-        for resource in self.resources if resources is None else resources:
+        for resource in self.resources:
             resource.poll()
             if not resource.avail and resource.state is BindingState.active:
                 deactivated = self.deactivate(resource)
@@ -71,7 +72,7 @@ class Target:
             timeout (float): optional timeout
             avail (bool): optionally wait until the resources are unavailable with avail=False
         """
-        self.update_resources(resources)
+        self.update_resources()
 
         waiting = set(r for r in resources if r.avail != avail)
         static = set(r for r in waiting if r.get_managed_parent() is None)
@@ -102,7 +103,7 @@ class Target:
                 filter=waiting
             )
 
-        self.update_resources(resources)
+        self.update_resources()
 
     def get_resource(self, cls, *, name=None, wait_avail=True):
         """

@@ -116,6 +116,11 @@ LG_SSH_CONNECT_TIMEOUT
 Set the connection timeout when using SSH (The ``ConnectTimeout`` option). If
 unspecified, defaults to 30 seconds.
 
+LG_AGENT_PREFIX
+~~~~~~~~~~~~~~~~~~~~~~
+Add a prefix to ``.labgrid_agent_{agent_hash}.py`` allowing specification for
+where on the exporter it should be uploaded to. 
+
 MATCHES
 -------
 Match patterns are used to assign a resource to a specific place. The format is:
@@ -126,100 +131,100 @@ matches anything.
 
 LABGRID-CLIENT COMMANDS
 -----------------------
-``monitor``                     Monitor events from the coordinator
+``monitor``                                 Monitor events from the coordinator
 
-``resources (r)``               List available resources
+``resources (r)``                           List available resources
 
-``places (p)``                  List available places
+``places (p)``                              List available places
 
-``who``                         List acquired places by user
+``who``                                     List acquired places by user
 
-``show``                        Show a place and related resources
+``show``                                    Show a place and related resources
 
-``create``                      Add a new place (name supplied by -p parameter)
+``create``                                  Add a new place (name supplied by -p parameter)
 
-``delete``                      Delete an existing place
+``delete``                                  Delete an existing place
 
-``add-alias`` alias             Add an alias to a place
+``add-alias`` ``[alias]``                   Add an alias to a place
 
-``del-alias`` alias             Delete an alias from a place
+``del-alias`` ``[alias]``                   Delete an alias from a place
+ 
+``set-comment`` ``[comment]``               Update or set the place comment
 
-``set-comment`` comment         Update or set the place comment
+``set-tags`` ``[key=value]``                Set place tags (key=value)
 
-``set-tags`` key=value          Set place tags (key=value)
+``add-match`` ``[match]``                   Add one (or multiple) match pattern(s) to a place, see MATCHES
 
-``add-match`` match             Add one (or multiple) match pattern(s) to a place, see MATCHES
+``del-match`` ``[match]``                   Delete one (or multiple) match pattern(s) from a place, see MATCHES
 
-``del-match`` match             Delete one (or multiple) match pattern(s) from a place, see MATCHES
+``add-named-match`` ``[match]`` ``[name]``  Add one match pattern with a name to a place
 
-``add-named-match`` match name  Add one match pattern with a name to a place
+``acquire (lock)``                          Acquire a place
 
-``acquire (lock)``              Acquire a place
+``allow`` ``[user]``                        Allow another user to access a place
 
-``allow`` user                  Allow another user to access a place
+``release (unlock)``                        Release a place
 
-``release (unlock)``            Release a place
-
-``release-from`` host/user      Atomically release a place, but only if acquired by a specific user.
+``release-from`` ``[host/user]``            Atomically release a place, but only if acquired by a specific user.
 
                                 Note that this command returns success as long
                                 as the specified user no longer owns the place,
                                 meaning it may be acquired by another user or
                                 not at all.
 
-``env``                         Generate a labgrid environment file for a place
+``env``                                     Generate a labgrid environment file for a place
 
-``power (pw)`` action           Change (or get) a place's power status, where action is one of get, on, off, cycle
+``power (pw)`` ``[action]``                 Change (or get) a place's power status, where action is one of get, on, off, cycle
 
-``io`` action [name]            Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
+``io`` ``[action]`` ``[name]``              Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
 
-``console (con)`` [name]        Connect to the console
+``console (con)`` ``[name]``                Connect to the console
 
-``dfu`` arg                     Run dfu commands
+``dfu`` ``[arg]``                           Run dfu commands
 
-``fastboot`` arg                Run fastboot with argument
+``fastboot`` ``[arg]``                      Run fastboot with argument
 
-``flashscript`` script arg      Run arbitrary script with arguments to flash device
+``flashscript`` ``[script]`` ``[arg]``      Run arbitrary script with arguments to flash device
 
-``bootstrap`` filename          Start a bootloader
+``bootstrap`` ``[filename]``                Start a bootloader
 
-``sd-mux`` action               Switch USB SD Muxer, where action is one of dut (device-under-test), host, off
+``sd-mux`` ``[action]``                     Switch USB SD Muxer, where action is one of dut (device-under-test), host, off
 
-``usb-mux`` action              Switch USB Muxer, where action is one of off, dut-device, host-dut, host-device, host-dut+host-device
+``usb-mux`` ``[action]``                    Switch USB Muxer, where action is one of off, dut-device, host-dut, host-device, host-dut+host-device
 
-``ssh`` [command]               Connect via SSH. Additional arguments are passed to ssh.
+``ssh`` ``[command]``                       Connect via SSH. Additional arguments are passed to ssh.
 
-``scp`` source destination      Transfer file via scp (use ':dir/file' for the remote side)
+``scp`` ``[source]`` ``[destination]``      Transfer file via scp (use ':dir/file' for the remote side)
 
-``rsync`` source destination    Transfer files via rsync (use ':dir/file' for the remote side)
+``rsync`` ``[source]`` ``[destination]``    Transfer files via rsync (use ':dir/file' for the remote side)
 
-``sshfs`` remotepath mountpoint Mount a remote path via sshfs
+``sshfs`` ``[remotepath]`` ``[mountpoint]`` Mount a remote path via sshfs
 
-``forward``                     Forward local port to remote target
+``forward``                                 Forward local port to remote target
 
-``telnet``                      Connect via telnet
+``telnet``                                  Connect via telnet
 
-``video``                       Start a video stream
+``video``                                   Start a video stream
 
-``audio``                       Start an audio stream
+``audio``                                   Start an audio stream
 
-``tmc`` command                 Control a USB TMC device
+``tmc`` ``[command]``                       Control a USB TMC device
 
-``write-files`` filename(s)     Copy files onto mass storage device
+``write-files`` ``[filename(s)]``           Copy files onto mass storage device
 
-``write-image`` filename        Write images onto block devices (USBSDMux, USB Sticks, …)
+``write-image`` ``[filename]``              Write images onto block devices (USBSDMux, USB Sticks, …)
 
-``reserve`` filter              Create a reservation
+``reserve`` ``[filter]``                    Create a reservation
 
-``cancel-reservation`` token    Cancel a pending reservation
+``cancel-reservation`` ``[token]``          Cancel a pending reservation
 
-``wait`` token                  Wait for a reservation to be allocated
+``wait`` ``[token]``                        Wait for a reservation to be allocated
 
-``reservations``                List current reservations
+``reservations``                            List current reservations
 
-``export`` filename             Export driver information to file (needs environment with drivers)
+``export`` ``[filename]``                   Export driver information to file (needs environment with drivers)
 
-``version``                     Print the labgrid version
+``version``                                 Print the labgrid version
 
 ADDING NAMED RESOURCES
 ----------------------

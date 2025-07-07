@@ -290,6 +290,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.eg_pms2_network
         import labgrid.driver.power.shelly_gen1
         import labgrid.driver.power.ubus
+        import labgrid.driver.power.tinycontrol_tcpdu
 
     def test_import_backend_eaton(self):
         pytest.importorskip("pysnmp")

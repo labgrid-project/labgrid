@@ -32,7 +32,6 @@ classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
 ]
 dependencies = [
-    "ansicolors>=1.1.8",
     "attrs>=21.4.0",
     "grpcio>=1.64.1, <2.0.0",
     "grpcio-reflection>=1.64.1, <2.0.0",
@@ -221,6 +220,7 @@ include = [
   "labgrid/driver/httpvideodriver.py",
   "labgrid/driver/manualswitchdriver.py",
   "labgrid/driver/power/gude8031.py",
+  "labgrid/driver/power/shelly_gen2.py",
   "labgrid/driver/rawnetworkinterfacedriver.py",
   "labgrid/protocol/**/*.py",
   "labgrid/remote/**/*.py",

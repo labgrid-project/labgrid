@@ -208,6 +208,9 @@ Currently available are:
 ``netio_kshell``
   Controls *NETIO 4C PDUs* via a Telnet interface.
 
+``poe_mib``
+  Controls PoE switches using the PoE SNMP administration MiBs.
+
 ``raritan``
   Controls *Raritan PDUs* via SNMP.
 
@@ -226,6 +229,13 @@ Currently available are:
   Controls relays of *Shelly* devices using the Gen 1 Device API.
   See the `docstring in the module
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/shelly_gen1.py>`__
+  for details.
+
+  ``shelly_gen2``
+  Controls relays of *Shelly* devices using the
+  `Gen2+ API <https://shelly-api-docs.shelly.cloud/gen2/General/RPCProtocol/>`__.
+  See the `docstring in the module
+  <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/shelly_gen2.py>`__
   for details.
 
 ``siglent``
@@ -256,12 +266,17 @@ Currently available are:
   It was tested on the *6G10A v2* model.
   `Manual <https://tinycontrol.pl/media/documents/manual_IP_Power_Socket__6G10A_v2_LANLIS-010-015_En-1.pdf>`__
 
-``poe_mib``
-  Controls PoE switches using the PoE SNMP administration MiBs.
+``tinycontrol_tcpdu``
+  Controls a Tinycontrol tcPDU via HTTP.
+  See the `documentation <https://docs.tinycontrol.pl/en/tcpdu/api/commands/>`__
+
+``tplink``
+  Controls *TP-Link power strips* via `python-kasa
+  <https://github.com/python-kasa/python-kasa>`_.
 
 ``ubus``
-  Controls *PoE switches* running OpenWrt using the *ubus* interface.
-  Further information available at <https://openwrt.org/docs/techref/ubus>
+  Controls *PoE switches* running OpenWrt using the
+  `ubus interface <https://openwrt.org/docs/techref/ubus>`__,
 
 Used by:
   - `NetworkPowerDriver`_
@@ -423,6 +438,32 @@ Arguments:
 
 Used by:
   - `ModbusCoilDriver`_
+
+WaveshareModbusTCPCoil
+++++++++++++++++++++++
+A :any:`WaveshareModbusTCPCoil` describes a Waveshare branded coil accessible via *Modbus TCP*.
+
+.. code-block:: yaml
+
+   WaveshareModbusTCPCoil:
+     host: '192.168.23.42'
+     coil: 1
+     coil_count: 8 
+
+The example describes the coil ``1`` (zero indexed) of ``8`` on the Waveshare Modbus TCP relay
+module ``192.168.23.42``.
+
+Arguments:
+  - host (str): hostname of the Modbus TCP server e.g. ``192.168.23.42:502``
+  - coil (int): index of the coil, e.g. ``3``
+  - invert (bool, default=False): whether the logic level is inverted
+    (active-low)
+  - write_multiple_coils (bool, default=False): whether to perform write
+    using "write multiple coils" method instead of "write single coil"
+
+Used by:
+  - `WaveShareModbusCoilDriver`_
+
 
 DeditecRelais8
 ++++++++++++++
@@ -2228,8 +2269,10 @@ GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
 The :any:`GpioDigitalOutputDriver` writes a digital signal to a GPIO line.
 
-This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`.
-While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.
+This driver configures GPIO lines via
+`the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`__.
+While the driver automatically exports the GPIO, it does not configure it in
+any other way than as an output.
 
 Binds to:
   gpio:
@@ -2341,6 +2384,25 @@ Implements:
 .. code-block:: yaml
 
    ModbusCoilDriver: {}
+
+Arguments:
+  - None
+
+WaveShareModbusCoilDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`WaveShareModbusCoilDriver` controls a `WaveshareModbusTCPCoil`_ resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  coil:
+    - `WaveshareModbusTCPCoil`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   WaveShareModbusCoilDriver: {}
 
 Arguments:
   - None

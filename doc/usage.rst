@@ -234,8 +234,8 @@ resources it is bound to can be used, and, if necessary, it acquires the
 underlying hardware on the OS level.
 For example, activating a :any:`SerialDriver` makes sure that the hardware
 represented by its bound :any:`RawSerialPort` object (e.g. something like
-``/dev/ttyUSB0``) is available, and that it can only be used labgrid and not by
-other applications while the :any:`SerialDriver` is activated.
+``/dev/ttyUSB0``) is available, and that it can only be used by labgrid and not
+by other applications while the :any:`SerialDriver` is activated.
 
 If we use a car analogy here, binding is the process of screwing the car parts
 together, and activation is igniting the engine.

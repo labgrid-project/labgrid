@@ -271,7 +271,7 @@ Used by:
 
 PDUDaemonPort
 +++++++++++++
-A :any:`PDUDaemonPort` describes a PDU port accessible via `PDUDaemon
+A :any:`PDUDaemonPort` describes a Power Distribution Unit (PDU) port accessible via `PDUDaemon
 <https://github.com/pdudaemon/pdudaemon>`_.
 As one PDUDaemon instance can control many PDUs, the instance name from the
 PDUDaemon configuration file needs to be specified.

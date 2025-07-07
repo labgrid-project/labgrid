@@ -56,6 +56,38 @@ def pytest_addoption(parser):
     parser.addini("log_format", default=DEFAULT_FORMAT, help="Default value for log_format (overwritten by labgrid)")
 
 
+def pytest_generate_tests(metafunc):
+    # Support running all tests from passed pytest files/directories for all
+    # targets by generating a parametrized "target" fixture based on the name
+    # of all targets in the passed lg_env file.
+    if "target" in metafunc.fixturenames:
+        env = metafunc.config.stash[LABGRID_ENV_KEY]
+
+        if not env:
+            pytest.skip("missing environment config (use --lg-env)")
+
+        env_targets = list(env.config.get_targets().keys())
+
+        targets = []
+
+        for target_name in env_targets:
+            target = env.get_target(target_name)
+            if target is None:
+                raise UserError(f"Using target fixture without '{target_name}' target in config")
+
+            targets.append(target)
+
+        metafunc.parametrize("target", targets, scope="session", ids=env_targets)
+
+# This session fixture is programmatically defined within pytest_generate_tests
+# just above.
+#
+# @pytest.fixture(scope="session")
+# def target():
+#     """Return the Target to run the test against
+#     """
+#     pass
+
 @pytest.fixture(scope="session")
 def env(request, record_testsuite_property):
     """Return the environment configured in the supplied configuration file.
@@ -114,17 +146,6 @@ def env(request, record_testsuite_property):
     yield env
     env.cleanup()
     sshmanager.close_all()
-
-
-@pytest.fixture(scope="session")
-def target(env):
-    """Return the default target `main` configured in the supplied
-    configuration file."""
-    target = env.get_target()
-    if target is None:
-        raise UserError("Using target fixture without 'main' target in config")
-
-    return target
 
 
 @pytest.fixture(scope="session")

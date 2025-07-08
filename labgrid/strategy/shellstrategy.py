@@ -4,7 +4,7 @@ import attr
 
 from ..factory import target_factory
 from ..step import step
-from .common import Strategy, StrategyError
+from .common import Strategy, StrategyError, raise_if_broken
 
 
 class Status(enum.Enum):
@@ -28,6 +28,7 @@ class ShellStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
+    @raise_if_broken
     @step(args=['status'])
     def transition(self, status, *, step):  # pylint: disable=redefined-outer-name
         if not isinstance(status, Status):
@@ -53,6 +54,7 @@ class ShellStrategy(Strategy):
             )
         self.status = status
 
+    @raise_if_broken
     @step(args=['status'])
     def force(self, status, *, step):  # pylint: disable=redefined-outer-name
         if not isinstance(status, Status):

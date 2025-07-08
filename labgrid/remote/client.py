@@ -481,10 +481,11 @@ class ClientSession:
     def get_idle_place(self, place=None):
         place = self.get_place(place)
         if place.acquired:
-            _, user = place.acquired.split("/")
-            raise UserError(
-                f"place {place.name} is not idle (acquired by {place.acquired}). To work simultaneously, {user} can execute labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}"
-            )
+            err = "This operation requires the place to be idle."
+            if place.acquired == self.gethostname() + "/" + self.getuser():
+                raise UserError(f"{err} Please release {place.name}.")
+            else:
+                raise UserError(f"{err} Place {place.name} is acquired by {place.acquired}.")
         return place
 
     def get_acquired_place(self, place=None):
@@ -681,7 +682,21 @@ class ClientSession:
 
     async def acquire(self):
         """Acquire a place, marking it unavailable for other clients"""
-        place = self.get_idle_place()
+        place = self.get_place()
+        if place.acquired:
+            host, user = place.acquired.split("/")
+            allowhelp = f"'labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}' on {host}."
+            if self.getuser() == user:
+                if self.gethostname() == host:
+                    raise UserError("You have already acquired this place.")
+                else:
+                    raise UserError(
+                        f"You have already acquired this place on {host}. To work simultaneously, execute {allowhelp}"
+                    )
+            else:
+                raise UserError(
+                    f"Place {place.name} is already acquired by {place.acquired}. To work simultaneously, {user} can execute {allowhelp}"
+                )
         if not self.args.allow_unmatched:
             self.check_matches(place)
 
@@ -917,6 +932,8 @@ class ClientSession:
             drv = target.get_driver("DigitalOutputProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
+                if name and resource.name != name:
+                    continue
                 if isinstance(resource, WaveshareModbusTCPCoil):
                     drv = self._get_driver_or_new(target, "WaveShareModbusCoilDriver", name=name)
                 elif isinstance(resource, ModbusTCPCoil):
@@ -1105,6 +1122,8 @@ class ClientSession:
             drv = target.get_driver("BootstrapProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
+                if name and resource.name != name:
+                    continue
                 if isinstance(resource, NetworkIMXUSBLoader):
                     drv = self._get_driver_or_new(target, "IMXUSBDriver", activate=False, name=name)
                     drv.loader.timeout = self.args.wait
@@ -1138,6 +1157,8 @@ class ClientSession:
 
         drv = None
         for resource in target.resources:
+            if name and resource.name != name:
+                continue
             if isinstance(resource, NetworkUSBSDMuxDevice):
                 drv = self._get_driver_or_new(target, "USBSDMuxDriver", name=name)
             elif isinstance(resource, NetworkUSBSDWireDevice):
@@ -1170,6 +1191,8 @@ class ClientSession:
 
         drv = None
         for resource in target.resources:
+            if name and resource.name != name:
+                continue
             if isinstance(resource, NetworkLXAUSBMux):
                 drv = self._get_driver_or_new(target, "LXAUSBMuxDriver", name=name)
                 break
@@ -1302,6 +1325,8 @@ class ClientSession:
             drv = target.get_driver("VideoProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
+                if name and resource.name != name:
+                    continue
                 if isinstance(resource, (USBVideo, NetworkUSBVideo)):
                     drv = self._get_driver_or_new(target, "USBVideoDriver", name=name)
                 elif isinstance(resource, HTTPVideoStream):

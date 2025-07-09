@@ -185,6 +185,27 @@ class ResourceExport(ResourceEntry):
 
 
 @attr.s(eq=False)
+class TenmaSerialExport(ResourceExport):
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
+        }
+
+
+exports["TenmaSerialPort"] = TenmaSerialExport
+
+
+@attr.s(eq=False)
 class SerialPortExport(ResourceExport):
     """ResourceExport for a USB or Raw SerialPort"""
 
@@ -564,6 +585,7 @@ exports["USBVideo"] = USBGenericExport
 exports["USBAudioInput"] = USBAudioInputExport
 exports["USBTMC"] = USBGenericExport
 exports["SiSPMPowerPort"] = SiSPMPowerPortExport
+exports["TenmaSerialPort"] = TenmaSerialExport
 exports["USBPowerPort"] = USBPowerPortExport
 exports["DeditecRelais8"] = USBDeditecRelaisExport
 exports["HIDRelay"] = USBHIDRelayExport

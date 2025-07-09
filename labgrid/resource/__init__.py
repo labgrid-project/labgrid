@@ -12,6 +12,7 @@ from .udev import (
     AndroidUSBFastboot,
     DFUDevice,
     DeditecRelais8,
+    TenmaSerialPort,
     HIDRelay,
     IMXUSBLoader,
     LXAUSBMux,

@@ -354,9 +354,7 @@ Test
     assert str(t) == mf.get_remote_path()
 
 def test_network_managedfile_no_sync(target, tmpdir):
-    import hashlib
-
-    res = NetworkResource(target, "localhost", "test")
+    res = NetworkResource(target, "test", "localhost")
     t = tmpdir.join("test")
     t.write(
 """
@@ -369,6 +367,33 @@ Test
     with pytest.raises(ManagedFileError, match=expected) as e:
         mf.get_remote_path()
 
+def test_local_managedfile_symlink(target, tmpdir):
+    res = Resource(target, "test")
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+    mf = ManagedFile(t, res, detect_nfs=False)
+    mf.sync_to_resource(symlink=tmpdir.join("link"))
+
+    assert str(t) == mf.get_remote_path()
+    assert os.path.islink(tmpdir.join("link"))
+
+@pytest.mark.localsshmanager
+def test_remote_managedfile_symlink(target, tmpdir):
+    res = NetworkResource(target, "test", "localhost")
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+    mf = ManagedFile(t, res, detect_nfs=False)
+    mf.sync_to_resource(symlink=tmpdir.join("link"))
+
+    assert os.path.islink(tmpdir.join("link"))
 
 def test_find_dict():
     dict_a = {"a": {"a.a": {"a.a.a": "a.a.a_val"}}, "b": "b_val"}

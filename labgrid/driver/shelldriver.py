@@ -275,7 +275,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             return
 
         self.logger.debug("Key not on target and not writeable, using bind mount...")
-        self._run_check('mkdir -m 700 /tmp/labgrid-ssh/')
+        self._run_check('mkdir -p -m 700 /tmp/labgrid-ssh/')
         self._run("cp -a ~/.ssh/* /tmp/labgrid-ssh/")
         self._write_key(keyline, "/tmp/labgrid-ssh/authorized_keys")
         self._run_check('chmod 600 /tmp/labgrid-ssh/authorized_keys')

@@ -131,6 +131,9 @@ class ManagedFile:
             str: path to the file on the remote host
         """
         if isinstance(self.resource, NetworkResource):
+            if self.rpath is None:
+                raise ManagedFileError("sync_to_resource() needs to be called before the remote-path can be retrieved")
+
             return f"{self.rpath}{os.path.basename(self.local_path)}"
 
         return self.local_path

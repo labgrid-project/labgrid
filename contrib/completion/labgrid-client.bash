@@ -382,9 +382,6 @@ _labgrid_client_dfu()
     --wait)
         return
         ;;
-    download|detach|list)
-        _filedir
-        ;;
     -n|--name)
         _labgrid_complete match-names "$cur"
         return
@@ -398,10 +395,14 @@ _labgrid_client_dfu()
     *)
         local args
         _labgrid_count_args "@(--wait|-n|--name)" || return
-        # only complete second argument
-        [ "$args" -ne 2 ] && return
 
-        COMPREPLY=( $(compgen -W "download detach list" -- "$cur") )
+        # complete second argument
+        if [ "$args" -eq 2 ]; then
+            COMPREPLY=( $(compgen -W "download detach list" -- "$cur") )
+            return
+        fi
+
+        _filedir
         ;;
     esac
 }

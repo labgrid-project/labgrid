@@ -706,6 +706,19 @@ class HIDRelay(USBResource):
 
         return super().filter_match(device)
 
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class DenkoviRelay(USBResource):
+    index = attr.ib(default=1, validator=attr.validators.instance_of(int))
+    invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+
+    def __attrs_post_init__(self):
+        self.match['ID_VENDOR'] = 'FTDI'
+        self.match['ID_MODEL'] = 'FT245R_USB_FIFO'
+        super().__attrs_post_init__()
+
+
 @target_factory.reg_resource
 @attr.s(eq=False)
 class USBFlashableDevice(USBResource):

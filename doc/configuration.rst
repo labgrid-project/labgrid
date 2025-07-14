@@ -547,6 +547,26 @@ Arguments:
 Used by:
   - `HIDRelayDriver`_
 
+DenkoviRelay
+++++++++
+An :any:`DenkoviRelay` resource describes a single output of a Denkovi relay board.
+
+.. code-block:: yaml
+
+   DenkoviRelay:
+     index: 2
+     invert: false
+     match:
+       ID_PATH: 'pci-0000:00:14.0-usb-0:2:1.0'
+
+Arguments:
+  - index (int, default=1): number of the relay to use
+  - invert (bool, default=False): whether to invert the relay
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `DenkoviRelayDriver`_
+
 HttpDigitalOutput
 +++++++++++++++++
 An :any:`HttpDigitalOutput` resource describes a generic digital output that
@@ -2411,6 +2431,26 @@ Implements:
 .. code-block:: yaml
 
    HIDRelayDriver: {}
+
+Arguments:
+  - None
+
+DenkoviRelayDriver
+~~~~~~~~~~~~~~
+An :any:`DenkoviRelayDriver` controls an `DenkoviRelay`_ or `NetworkDenkoviRelay`_ resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  relay:
+    - `DenkoviRelay`_
+    - `NetworkDenkoviRelay`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   DenkoviRelayDriver: {}
 
 Arguments:
   - None

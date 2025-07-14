@@ -58,6 +58,7 @@ doc = [
     "Sphinx>=2.0.0",
 ]
 docker = ["docker>=5.0.2"]
+libftdi = ["pylibftdi>=0.23.0"]
 graph = ["graphviz>=0.17.0"]
 kasa = ["python-kasa>=0.7.0"]
 modbus = ["pyModbusTCP>=0.2.0"]

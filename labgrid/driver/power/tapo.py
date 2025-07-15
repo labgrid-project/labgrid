@@ -14,9 +14,16 @@ Requirements:
 
 import asyncio
 import os
-import sys
 
+import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceConnectionParameters, DeviceEncryptionType, DeviceFamily
+from packaging.version import parse
+
+
+def _using_old_kasa_api() -> bool:
+    target_kasa_version = parse("0.10.0")
+    current_kasa_version = parse(kasa.__version__)
+    return current_kasa_version < target_kasa_version
 
 
 def _get_credentials() -> Credentials:
@@ -28,10 +35,8 @@ def _get_credentials() -> Credentials:
 
 
 def _get_connection_type() -> DeviceConnectionParameters:
-    # Somewhere between python-kasa 0.7.7 and 0.10.2 the API changed
-    # Labgrid on Python <= 3.10 uses python-kasa 0.7.7
-    # Labgrid on Python >= 3.11 uses python-kasa 0.10.2
-    if sys.version_info < (3, 11):
+    # API changed between versions 0.9.1 and 0.10.0 of python-kasa
+    if _using_old_kasa_api():
         return DeviceConnectionParameters(
             device_family=DeviceFamily.SmartTapoPlug,
             encryption_type=DeviceEncryptionType.Klap,
@@ -49,10 +54,10 @@ def _get_connection_type() -> DeviceConnectionParameters:
 
 def _get_device_config(host: str) -> DeviceConfig:
     # Same as with `_get_connection_type` - python-kasa API changed
-    if sys.version_info < (3, 11):
+    if _using_old_kasa_api():
         return DeviceConfig(
             host=host, credentials=_get_credentials(), connection_type=_get_connection_type(), uses_http=True
-        )
+        )  # type: ignore[call-arg]
     return DeviceConfig(
         host=host, credentials=_get_credentials(), connection_type=_get_connection_type()
     )

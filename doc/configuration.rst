@@ -155,6 +155,9 @@ Currently available are:
 ``apc``
   Controls *APU PDUs* via SNMP.
 
+``aviosys9850``
+  Controls the *AvioSys* IP Power 9850.
+
 ``digipower``
   Controls *DigiPower PDUs* via a simple HTTP API.
 

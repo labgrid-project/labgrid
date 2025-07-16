@@ -1138,7 +1138,7 @@ class ClientSession:
                         drv = OpenOCDDriver(target, name=name, **args)
                     drv.interface.timeout = self.args.wait
                 elif isinstance(resource, NetworkRKUSBLoader):
-                    drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False, name=name)
+                    drv = self._get_driver_or_new(target, "RKDevelopToolUSBDriver", activate=False, name=name)
                     drv.loader.timeout = self.args.wait
                 if drv:
                     break

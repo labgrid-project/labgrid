@@ -436,7 +436,7 @@ A :any:`WaveshareModbusTCPCoil` describes a Waveshare branded coil accessible vi
    WaveshareModbusTCPCoil:
      host: '192.168.23.42'
      coil: 1
-     coil_count: 8 
+     coil_count: 8
 
 The example describes the coil ``1`` (zero indexed) of ``8`` on the Waveshare Modbus TCP relay
 module ``192.168.23.42``.
@@ -451,7 +451,6 @@ Arguments:
 
 Used by:
   - `WaveShareModbusCoilDriver`_
-
 
 DeditecRelais8
 ++++++++++++++

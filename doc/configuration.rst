@@ -687,9 +687,6 @@ NetworkUSBMassStorage
 A :any:`NetworkUSBMassStorage` resource describes a USB memory stick or similar
 device available on a remote computer.
 
-The NetworkUSBMassStorage can be used in test cases by calling the
-``write_files()``, ``write_image()``, and ``get_size()`` functions.
-
 SigrokDevice
 ~~~~~~~~~~~~
 A :any:`SigrokDevice` resource describes a *Sigrok* device. To select a

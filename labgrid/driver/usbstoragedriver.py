@@ -240,13 +240,3 @@ class USBStorageDriver(Driver):
         except ValueError:
             # when the medium gets ready the sysfs attribute is empty for a short time span
             return 0
-
-
-@target_factory.reg_driver
-@attr.s(eq=False)
-class NetworkUSBStorageDriver(USBStorageDriver):
-    def __attrs_post_init__(self):
-        import warnings
-        warnings.warn("NetworkUSBStorageDriver is deprecated, use USBStorageDriver instead",
-                      DeprecationWarning)
-        super().__attrs_post_init__()

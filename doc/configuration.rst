@@ -318,8 +318,8 @@ Used by:
 
 NetworkYKUSHPowerPort
 +++++++++++++++++++++
-A :any:`NetworkYKUSHPowerPort` describes a `YKUSHPowerPort`_ available on a
-remote computer.
+A :any:`NetworkYKUSHPowerPort` describes a `YKUSHPowerPort`_ resource available
+on a remote computer.
 
 USBPowerPort
 ++++++++++++
@@ -523,7 +523,8 @@ Used by:
 
 NetworkLXAIOBusPIO
 ++++++++++++++++++
-A :any:`NetworkLXAIOBusPIO` describes an `LXAIOBusPIO`_ exported over the network.
+A :any:`NetworkLXAIOBusPIO` describes an `LXAIOBusPIO`_ resource available on a
+remote computer.
 
 HIDRelay
 ++++++++
@@ -582,7 +583,8 @@ Used by:
 
 NetworkHIDRelay
 +++++++++++++++
-A :any:`NetworkHIDRelay` describes an `HIDRelay`_ exported over the network.
+A :any:`NetworkHIDRelay` describes an `HIDRelay`_ resource available on a
+remote computer.
 
 SysfsGPIO
 +++++++++
@@ -684,8 +686,8 @@ Used by:
 
 NetworkUSBMassStorage
 ~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkUSBMassStorage` resource describes a USB memory stick or similar
-device available on a remote computer.
+A :any:`NetworkUSBMassStorage` resource describes `USBMassStorage`_ resource
+available on a remote computer.
 
 SigrokDevice
 ~~~~~~~~~~~~
@@ -765,18 +767,18 @@ Used by:
 
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ available on a remote
-computer.
+A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ resource available on
+a remote computer.
 
 NetworkIMXUSBLoader
 ~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkIMXUSBLoader` describes an `IMXUSBLoader`_ available on a remote
-computer.
+A :any:`NetworkIMXUSBLoader` describes an `IMXUSBLoader`_ resource available on
+a remote computer.
 
 NetworkRKUSBLoader
 ~~~~~~~~~~~~~~~~~~
-A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ available on a remote
-computer.
+A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ resource available on a
+remote computer.
 
 AndroidUSBFastboot
 ~~~~~~~~~~~~~~~~~~
@@ -955,9 +957,8 @@ Used by:
 
 NetworkSigrokUSBDevice
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkSigrokUSBDevice` resource describes a *Sigrok* USB device
-connected to a host which is exported over the network.
-The `SigrokDriver`_ will access it via SSH.
+A :any:`NetworkSigrokUSBDevice` describes a `SigrokUSBDevice`_ resource
+available on a remote computer.
 
 SigrokUSBSerialDevice
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1005,8 +1006,8 @@ Used by:
 
 NetworkUSBSDMuxDevice
 ~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkUSBSDMuxDevice` resource describes a `USBSDMuxDevice`_ available
-on a remote computer.
+A :any:`NetworkUSBSDMuxDevice` resource describes a `USBSDMuxDevice`_ resource
+available on a remote computer.
 
 LXAUSBMux
 ~~~~~~~~~
@@ -1026,8 +1027,8 @@ Used by:
 
 NetworkLXAUSBMux
 ~~~~~~~~~~~~~~~~
-A :any:`NetworkLXAUSBMux` resource describes an `LXAUSBMux`_ available on a
-remote computer.
+A :any:`NetworkLXAUSBMux` resource describes an `LXAUSBMux`_ resource available
+on a remote computer.
 
 USBSDWireDevice
 ~~~~~~~~~~~~~~~
@@ -1049,8 +1050,8 @@ Used by:
 
 NetworkUSBSDWireDevice
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkUSBSDWireDevice` resource describes a `USBSDWireDevice`_ available
-on a remote computer.
+A :any:`NetworkUSBSDWireDevice` resource describes a `USBSDWireDevice`_
+resource available on a remote computer.
 
 USBVideo
 ~~~~~~~~
@@ -1159,7 +1160,8 @@ Used by:
 
 NetworkFlashrom
 ~~~~~~~~~~~~~~~
-A :any:`NetworkFlashrom` describes a `Flashrom`_ available on a remote computer.
+A :any:`NetworkFlashrom` describes a `Flashrom`_ resource available on a remote
+computer.
 
 USBFlashableDevice
 ~~~~~~~~~~~~~~~~~~
@@ -1188,7 +1190,7 @@ Used by:
 NetworkUSBFlashableDevice
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkUSBFlashableDevice` resource describes a `USBFlashableDevice`_
-resource available on a remote computer
+resource available on a remote computer.
 
 DediprogFlasher
 ~~~~~~~~~~~~~~~
@@ -1217,8 +1219,8 @@ Used by:
 
 NetworkDediprogFlasher
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkDediprogFlasher` describes a `DediprogFlasher`_ available on a
-remote computer.
+A :any:`NetworkDediprogFlasher` describes a `DediprogFlasher`_ resource
+available on a remote computer.
 
 XenaManager
 ~~~~~~~~~~~

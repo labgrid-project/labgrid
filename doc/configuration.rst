@@ -351,6 +351,11 @@ Used by:
    looking for, paths without the interface will fail to match since they use
    the ``usb`` driver.
 
+NetworkUSBPowerPort
++++++++++++++++++++
+A :any:`NetworkUSBPowerPort` describes a `USBPowerPort`_ resource available on
+a remote computer.
+
 SiSPMPowerPort
 ++++++++++++++
 A :any:`SiSPMPowerPort` describes a *GEMBIRD SiS-PM* as supported by
@@ -372,6 +377,11 @@ Arguments:
 
 Used by:
   - `SiSPMPowerDriver`_
+
+NetworkSiSPMPowerPort
++++++++++++++++++++++
+A :any:`NetworkSiSPMPowerPort` describes a `SiSPMPowerPort`_ resource available
+on a remote computer.
 
 TasmotaPowerPort
 ++++++++++++++++
@@ -473,6 +483,11 @@ Arguments:
 
 Used by:
   - `DeditecRelaisDriver`_
+
+NetworkDeditecRelais8
++++++++++++++++++++++
+A :any:`NetworkDeditecRelais8` describes a `DeditecRelais8`_ resource available
+on a remote computer.
 
 OneWirePIO
 ++++++++++
@@ -601,6 +616,11 @@ Arguments:
 
 Used by:
   - `GpioDigitalOutputDriver`_
+
+NetworkSysfsGPIO
+++++++++++++++++
+A :any:`NetworkSysfsGPIO` describes a `SysfsGPIO`_ resource available on a
+remote computer.
 
 MatchedSysfsGPIO
 ++++++++++++++++
@@ -803,6 +823,11 @@ Arguments:
 Used by:
   - `AndroidFastbootDriver`_
 
+RemoteAndroidUSBFastboot
+~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`RemoteAndroidUSBFastboot` describes a `AndroidUSBFastboot`_ resource
+available on a remote computer.
+
 AndroidNetFastboot
 ~~~~~~~~~~~~~~~~~~
 An :any:`AndroidNetFastboot` resource describes a network device in *Fastboot
@@ -823,6 +848,11 @@ Arguments:
 Used by:
   - `AndroidFastbootDriver`_
 
+RemoteAndroidNetFastboot
+~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`RemoteAndroidNetFastboot` describes an `AndroidNetFastboot`_ resource
+available on a remote computer.
+
 DFUDevice
 ~~~~~~~~~
 A :any:`DFUDevice` resource describes a USB device in DFU (Device Firmware
@@ -839,6 +869,11 @@ Arguments:
 
 Used by:
   - `DFUDriver`_
+
+NetworkDFUDevice
+~~~~~~~~~~~~~~~~
+A :any:`NetworkDFUDevice` describes a `DFUDevice`_ resource available on a
+remote computer.
 
 NetworkInterface
 ~~~~~~~~~~~~~~~~
@@ -897,6 +932,11 @@ Used by:
   - `OpenOCDDriver`_
   - `QuartusHPSDriver`_
 
+NetworkAlteraUSBBlaster
+~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkAlteraUSBBlaster` describes an `AlteraUSBBlaster`_ resource
+available on a remote computer.
+
 USBDebugger
 ~~~~~~~~~~~
 A :any:`USBDebugger` resource describes a JTAG USB adapter (for example an
@@ -913,6 +953,11 @@ Arguments:
 
 Used by:
   - `OpenOCDDriver`_
+
+NetworkUSBDebugger
+~~~~~~~~~~~~~~~~~~
+A :any:`NetworkUSBDebugger` describes a `USBDebugger`_ resource available on a
+remote computer.
 
 SNMPEthernetPort
 ~~~~~~~~~~~~~~~~
@@ -984,6 +1029,11 @@ Arguments:
 Used by:
   - `SigrokPowerDriver`_
   - `SigrokDmmDriver`_
+
+NetworkSigrokUSBSerialDevice
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkSigrokUSBSerialDevice` describes a `SigrokUSBSerialDevice`_
+resource available on a remote computer.
 
 USBSDMuxDevice
 ~~~~~~~~~~~~~~
@@ -1943,9 +1993,9 @@ USB or network *Fastboot state*.
 Binds to:
   fastboot:
     - `AndroidUSBFastboot`_
-    - RemoteAndroidUSBFastboot
+    - `RemoteAndroidUSBFastboot`_
     - `AndroidNetFastboot`_
-    - RemoteAndroidNetFastboot
+    - `RemoteAndroidNetFastboot`_
 
 Implements:
   - None (yet)
@@ -1973,7 +2023,7 @@ Firmware Upgrade) mode.
 Binds to:
   dfu:
     - `DFUDevice`_
-    - NetworkDFUDevice
+    - `NetworkDFUDevice`_
 
 Implements:
   - None (yet)
@@ -2001,9 +2051,9 @@ Consider updating your OpenOCD version when using multiple USB Blasters.
 Binds to:
   interface:
     - `AlteraUSBBlaster`_
-    - NetworkAlteraUSBBlaster
+    - `NetworkAlteraUSBBlaster`_
     - `USBDebugger`_
-    - NetworkUSBDebugger
+    - `NetworkUSBDebugger`_
 
 Implements:
   - :any:`BootstrapProtocol`
@@ -2036,7 +2086,7 @@ flash a target's QSPI.
 Binds to:
   interface:
     - `AlteraUSBBlaster`_
-    - NetworkAlteraUSBBlaster
+    - `NetworkAlteraUSBBlaster`_
 
 Implements:
   - None
@@ -2196,7 +2246,7 @@ target power state without user interaction.
 Binds to:
   hub:
     - `USBPowerPort`_
-    - NetworkUSBPowerPort
+    - `NetworkUSBPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -2218,7 +2268,7 @@ target power state without user interaction.
 Binds to:
   port:
     - `SiSPMPowerPort`_
-    - NetworkSiSPMPowerPort
+    - `NetworkSiSPMPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -2265,7 +2315,7 @@ Binds to:
   gpio:
     - `SysfsGPIO`_
     - `MatchedSysfsGPIO`_
-    - NetworkSysfsGPIO
+    - `NetworkSysfsGPIO`_
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -2443,7 +2493,7 @@ It can set and get the current state of the resource.
 Binds to:
   relais:
     - `DeditecRelais8`_
-    - NetworkDeditecRelais8
+    - `NetworkDeditecRelais8`_
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -2825,7 +2875,7 @@ control a programmable power supply.
 Binds to:
   sigrok:
     - `SigrokUSBSerialDevice`_
-    - NetworkSigrokUSBSerialDevice
+    - `NetworkSigrokUSBSerialDevice`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -2856,7 +2906,7 @@ Binds to:
     - `SigrokUSBDevice`_
     - `NetworkSigrokUSBDevice`_
     - `SigrokUSBSerialDevice`_
-    - NetworkSigrokUSBSerialDevice
+    - `NetworkSigrokUSBSerialDevice`_
 
 Implements:
   - None yet

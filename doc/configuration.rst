@@ -444,6 +444,7 @@ module ``192.168.23.42``.
 Arguments:
   - host (str): hostname of the Modbus TCP server e.g. ``192.168.23.42:502``
   - coil (int): index of the coil, e.g. ``3``
+  - coil_count (int, default=8): total number of coils on this module
   - invert (bool, default=False): whether the logic level is inverted
     (active-low)
   - write_multiple_coils (bool, default=False): whether to perform write

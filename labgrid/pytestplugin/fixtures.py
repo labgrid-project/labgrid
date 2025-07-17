@@ -15,11 +15,6 @@ from .hooks import LABGRID_ENV_KEY
 def pytest_addoption(parser):
     group = parser.getgroup('labgrid')
     group.addoption(
-        '--env-config',
-        action='store',
-        dest='env_config',
-        help='labgrid environment config file (deprecated).')
-    group.addoption(
         '--lg-env',
         action='store',
         dest='lg_env',

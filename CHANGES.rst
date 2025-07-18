@@ -9,6 +9,11 @@ New Features in 25.1
   CTRL+D specially to halt autoboot countdown without running interactive
   hooks like bringing up network interfaces automatically.
 
+Breaking changes in 25.1
+~~~~~~~~~~~~~~~~~~~~~~~~
+- The deprecated pytest plugin option ``--env-config`` has been removed. Use
+  ``--lg-env`` instead.
+
 Release 25.0 (Released May 7, 2025)
 -----------------------------------
 As announced `before

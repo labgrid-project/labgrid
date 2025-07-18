@@ -47,13 +47,6 @@ def test_env_fixture_no_logging(short_env, short_test):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before
 
-def test_env_old_fixture(short_env, short_test):
-    with pexpect.spawn(f'pytest --env-config {short_env} {short_test}') as spawn:
-        spawn.expect("deprecated option --env-config")
-        spawn.expect(pexpect.EOF)
-        spawn.close()
-        assert spawn.exitstatus == 0
-
 def test_env_env_fixture(short_env, short_test):
     env=os.environ.copy()
     env['LG_ENV'] = short_env

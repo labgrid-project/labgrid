@@ -15,7 +15,7 @@ authors = [
 ]
 description = "embedded systems control library for development, testing and installation"
 readme = "README.rst"
-license = { file="LICENSE" }
+license = "LGPL-2.1+"
 requires-python = ">=3.9"
 classifiers = [
     "Intended Audience :: Developers",
@@ -29,7 +29,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
 ]
 dependencies = [
     "attrs>=21.4.0",

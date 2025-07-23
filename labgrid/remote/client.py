@@ -720,18 +720,20 @@ class ClientSession:
             raise UserError(f"Match {match} has no matching remote resource")
 
     async def acquire(self):
-        errors = []
-        places = self.get_place_names_from_env() if self.env else [self.args.place]
-        for place in places:
-            try:
-                await self._acquire_place(place)
-            except Error as e:
-                errors.append(e)
+        place = self.get_idle_place()
+        if not self.args.allow_unmatched:
+            self.check_matches(place)
+        return await self.acquire_place(place)
 
-        if errors:
-            if len(errors) == 1:
-                raise errors[0]
-            raise ErrorGroup("Multiple errors occurred during acquire", errors)
+    async def acquire_place(self, place):
+        """Acquire a place, marking it unavailable for other clients
+
+        Args:
+            place (Place): Place to acquire
+        """
+        if not self.args.allow_unmatched:
+            self.check_matches(place)
+        return await self._acquire_place(place.name)
 
     async def _acquire_place(self, place):
         """Acquire a place, marking it unavailable for other clients"""
@@ -780,18 +782,17 @@ class ClientSession:
             raise ServerError(e.details())
 
     async def release(self):
-        errors = []
-        places = self.get_place_names_from_env() if self.env else [self.args.place]
-        for place in places:
-            try:
-                await self._release_place(place)
-            except Error as e:
-                errors.append(e)
+        """Release a previously acquired place"""
+        place = self.get_place()
+        return await self.release_place(place)
 
-        if errors:
-            if len(errors) == 1:
-                raise errors[0]
-            raise ErrorGroup("Multiple errors occurred during release", errors)
+    async def release_place(self, place):
+        """Release a place, marking it unavailable for other clients
+
+        Args:
+            place (Place): Place to release
+        """
+        return await self._release_place(place.name)
 
     async def _release_place(self, place):
         """Release a previously acquired place"""

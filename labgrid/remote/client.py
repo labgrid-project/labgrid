@@ -690,9 +690,12 @@ class ClientSession:
         if match:
             raise UserError(f"Match {match} has no matching remote resource")
 
-    async def acquire(self):
-        """Acquire a place, marking it unavailable for other clients"""
-        place = self.get_place()
+    async def acquire_place(self, place):
+        """Acquire a place, marking it unavailable for other clients
+
+        Args:
+            place (Place): Place to acquire
+        """
         if place.acquired:
             host, user = place.acquired.split("/")
             allowhelp = f"'labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}' on {host}."
@@ -736,9 +739,19 @@ class ClientSession:
 
             raise ServerError(e.details())
 
-    async def release(self):
-        """Release a previously acquired place"""
-        place = self.get_place()
+    async def acquire(self):
+        """Acquire a place, marking it unavailable for other clients"""
+        place = self.get_idle_place()
+        if not self.args.allow_unmatched:
+            self.check_matches(place)
+        return await self.acquire_place(place)
+
+    async def release_place(self, place):
+        """Release a place, marking it navailable for other clients
+
+        Args:
+            place (Place): Place to release
+        """
         if not place.acquired:
             if self.args.auto:
                 return
@@ -760,6 +773,11 @@ class ClientSession:
             raise ServerError(e.details())
 
         logging.info("released place %s", place.name)
+
+    async def release(self):
+        """Release a previously acquired place"""
+        place = self.get_place()
+        return await self.release_place(place)
 
     async def release_from(self):
         """Release a place, but only if acquired by a specific user"""

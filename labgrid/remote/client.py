@@ -733,6 +733,16 @@ class ClientSession:
                 raise errors[0]
             raise ErrorGroup("Multiple errors occurred during acquire", errors)
 
+    async def acquire_place(self, place):
+        """Acquire a place, marking it unavailable for other clients
+
+        Args:
+            place (Place): Place to acquire
+        """
+        if not self.args.allow_unmatched:
+            self.check_matches(place)
+        return await self._acquire_place(place.name)
+
     async def _acquire_place(self, place):
         """Acquire a place, marking it unavailable for other clients"""
         place = self.get_place(place)
@@ -792,6 +802,14 @@ class ClientSession:
             if len(errors) == 1:
                 raise errors[0]
             raise ErrorGroup("Multiple errors occurred during release", errors)
+
+    async def release_place(self, place):
+        """Release a place, marking it unavailable for other clients
+
+        Args:
+            place (Place): Place to release
+        """
+        return await self._release_place(place.name)
 
     async def _release_place(self, place):
         """Release a previously acquired place"""

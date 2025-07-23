@@ -1938,6 +1938,13 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     parser.add_argument(
         "-d", "--debug", action="store_true", default=False, help="enable debug mode (show python tracebacks)"
     )
+    parser.add_argument(
+        '-l',
+        '--log-output',
+        type=str,
+        metavar='LOG_FILENAME',
+        help="file to send logging output to, instead of stdout"
+    )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     parser.add_argument("-P", "--proxy", type=str, help="proxy connections via given ssh host")
     parser.add_argument(
@@ -2377,12 +2384,23 @@ def main():
             print("Please provide a token", file=sys.stderr)
             exit(1)
 
+    logger = logging.getLogger()
+    if args.log_output:
+        # Clear all existing handlers from the logger
+        logger.handlers = []
+
+        # Create and add the new file handler
+        file_handler = logging.FileHandler(args.log_output)
+        file_formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+
     if args.verbose:
-        logging.getLogger().setLevel(logging.INFO)
+        logger.setLevel(logging.INFO)
     if args.verbose > 1:
-        logging.getLogger().setLevel(logging.CONSOLE)
+        logger.setLevel(logging.CONSOLE)
     if args.debug or args.verbose > 2:
-        logging.getLogger().setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
 
     if not args.config and (args.state or args.initial_state):
         print("Setting the state requires a configuration file", file=sys.stderr)

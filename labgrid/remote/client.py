@@ -1008,6 +1008,8 @@ class ClientSession:
             console = target.get_driver(ConsoleProtocol, name=name)
             returncode = await term.internal(lambda: self.is_allowed(place),
                                              console, logfile, listen_only)
+            if self.args.show_output:
+                sys.stdout.buffer.write(console.read_output())
         else:
             from ..resource import NetworkSerialPort
 
@@ -1974,6 +1976,7 @@ def main():
     )
     subparser.add_argument("name", help="optional resource name", nargs="?")
     subparser.add_argument("--logfile", metavar="FILE", help="Log output to FILE", default=None)
+    subparser.add_argument("--show-output", help="Show console output even on success", default=None)
     subparser.set_defaults(func=ClientSession.console)
 
     subparser = subparsers.add_parser("dfu", help="communicate with device in DFU mode")

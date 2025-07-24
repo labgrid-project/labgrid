@@ -87,7 +87,7 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
 
 @target_factory.reg_driver
 @attr.s(eq=False)
-class RKUSBDriver(Driver, BootstrapProtocol):
+class RKDevelopToolUSBDriver(Driver, BootstrapProtocol):
     bindings = {
         "loader": {"RKUSBLoader", "NetworkRKUSBLoader"},
     }
@@ -99,9 +99,9 @@ class RKUSBDriver(Driver, BootstrapProtocol):
         super().__attrs_post_init__()
         # FIXME make sure we always have an environment or config
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('rk-usb-loader')
+            self.tool = self.target.env.config.get_tool('rkdeveloptool')
         else:
-            self.tool = 'rk-usb-loader'
+            self.tool = 'rkdeveloptool'
 
     def on_activate(self):
         pass

@@ -1366,6 +1366,17 @@ see below.
 For now, the TFTP/NFS/HTTP server needs to be configured before using it from
 labgrid.
 
+Because labgrid uses absolute paths as targets for symlinks for exposing files
+on the TFTP server and because the target of those symlinks is in
+``/var/cache/labgrid/``, the TFTP server needs to follow symlinks whose target
+path is both absolute and in ``/var/cache/labgrid``. Note that depending on the
+configuration of the TFTP server, ``/var/cache/labgrid`` may not be the root
+directory of your TFTP server.
+
+`atftpd <https://sourceforge.net/projects/atftp/>`_ is known to work whereas
+`tftpd-hpa <https://git.kernel.org/pub/scm/network/tftp/tftp-hpa.git/>`_ doesn't
+seem to be working well with such symlinks.
+
 TFTPProvider
 ++++++++++++
 A :any:`TFTPProvider` resource describes a TFTP server.

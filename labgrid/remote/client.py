@@ -1705,7 +1705,7 @@ class ExportFormat(enum.Enum):
         return self.value
 
 
-def get_parser() -> argparse.ArgumentParser:
+def get_parser(include_undocumented=False) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-x",
@@ -1744,11 +1744,12 @@ def get_parser() -> argparse.ArgumentParser:
         metavar="COMMAND",
     )
 
-    subparser = subparsers.add_parser("help")
+    if include_undocumented:
+        subparser = subparsers.add_parser("help")
 
-    subparser = subparsers.add_parser("complete")
-    subparser.add_argument("type", choices=["resources", "places", "matches", "match-names"])
-    subparser.set_defaults(func=ClientSession.complete)
+        subparser = subparsers.add_parser("complete")
+        subparser.add_argument("type", choices=["resources", "places", "matches", "match-names"])
+        subparser.set_defaults(func=ClientSession.complete)
 
     subparser = subparsers.add_parser("monitor", help="monitor events from the coordinator")
     subparser.set_defaults(func=ClientSession.do_monitor)
@@ -1997,7 +1998,7 @@ def get_parser() -> argparse.ArgumentParser:
         "-p",
         "--partition",
         type=int,
-        choices=range(0, 256),
+        choices=(range(0, 256) if include_undocumented else None),
         metavar="0-255",
         default=1,
         help="partition number to mount or 0 to mount whole disk (default: %(default)s)",
@@ -2091,7 +2092,7 @@ def main():
     initial_state = os.environ.get("LG_INITIAL_STATE", None)
     token = os.environ.get("LG_TOKEN", None)
 
-    parser = get_parser()
+    parser = get_parser(include_undocumented=True)
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()

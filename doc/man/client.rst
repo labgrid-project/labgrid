@@ -3,19 +3,30 @@
 labgrid-client
 ==============
 
+Description
+-----------
+
 Labgrid is a scalable infrastructure and test architecture for embedded (linux) systems.
 
 This is the client to control a boards status and interface with it on remote machines.
+
+Synopsis
+--------
+
+Options
+=======
+
+.. currentmodule:: labgrid.remote.client
+
 
 .. argparse::
    :module: labgrid.remote.client
    :func: get_parser
    :prog: labgrid-client
-   :noepilog:
-   :nodescription:
 
-   help : @skip
-        skip help
+   available subcommands : @skip
+        skip list of commands
+
 
 Configuration File
 ------------------

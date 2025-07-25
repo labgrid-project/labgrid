@@ -1758,8 +1758,58 @@ class ExportFormat(enum.Enum):
         return self.value
 
 
-def get_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser()
+class AutoProgramArgumentParser(argparse.ArgumentParser):
+    """Works around sphinxcontrib.autoprogram shortcomings."""
+
+    class _ActionWrapper:
+        """
+        Wraps argparse's special private action object registered for "parsers", see:
+        https://docs.python.org/3.14/library/argparse.html#argparse.ArgumentParser.add_subparsers
+        https://docs.python.org/3.13/library/argparse.html#argparse.ArgumentParser.register
+        """
+
+        def __init__(self, action):
+            self.action = action
+
+        def add_parser(self, name, **kwargs):
+            # aliases are not supported by autoprogram, they lead to duplicate entries, so
+            # show them as "command subcommand|alias --option" instead
+            aliases = kwargs.pop("aliases", [])
+            if aliases:
+                name = "|".join([name] + list(aliases))
+
+            # "help" text is ignored by autoprogram, move to "description" instead
+            if "description" not in kwargs and "help" in kwargs:
+                kwargs["description"] = kwargs.pop("help")
+
+            # add_parser() is the only part of the action object that's not an implementation detail
+            return self.action.add_parser(name, **kwargs)
+
+    def __init__(self, *args, **kwargs):
+        # print help texts in fixed width
+        os.environ["COLUMNS"] = "80"
+
+        # hide --help, -h
+        kwargs.setdefault("add_help", False)
+
+        super().__init__(*args, **kwargs)
+
+    def add_subparsers(self, **kwargs):
+        action = super().add_subparsers(**kwargs)
+        return self._ActionWrapper(action)
+
+    def add_argument(self, *args, **kwargs):
+        # do not show ranges
+        if isinstance(kwargs.get("choices"), range):
+            del kwargs["choices"]
+
+        return super().add_argument(*args, **kwargs)
+
+
+def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArgumentParser":
+    # use custom parser for sphinxcontrib.autoprogram
+    parser = AutoProgramArgumentParser() if auto_doc_mode else argparse.ArgumentParser()
+
     parser.add_argument(
         "-x",
         "--coordinator",
@@ -1797,11 +1847,13 @@ def get_parser() -> argparse.ArgumentParser:
         metavar="COMMAND",
     )
 
-    subparser = subparsers.add_parser("help")
+    # if the argparse object is to be used for manpage generation, hide some subcommands
+    if not auto_doc_mode:
+        subparser = subparsers.add_parser("help")
 
-    subparser = subparsers.add_parser("complete")
-    subparser.add_argument("type", choices=["resources", "places", "matches", "match-names"])
-    subparser.set_defaults(func=ClientSession.complete)
+        subparser = subparsers.add_parser("complete")
+        subparser.add_argument("type", choices=["resources", "places", "matches", "match-names"])
+        subparser.set_defaults(func=ClientSession.complete)
 
     subparser = subparsers.add_parser("monitor", help="monitor events from the coordinator")
     subparser.set_defaults(func=ClientSession.do_monitor)

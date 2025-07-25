@@ -1,55 +1,36 @@
 .. _labgrid-client:
 
-================
- labgrid-client
-================
+labgrid-client
+==============
 
-labgrid-client interface to control boards
-==========================================
-
-SYNOPSIS
---------
-
-``labgrid-client`` ``--help``
-
-``labgrid-client`` -p <place> <command>
-
-``labgrid-client`` ``places|resources``
-
-DESCRIPTION
------------
 Labgrid is a scalable infrastructure and test architecture for embedded (linux) systems.
 
 This is the client to control a boards status and interface with it on remote machines.
 
-OPTIONS
--------
--h, --help
-    display command line help
--p PLACE, --place PLACE
-    specify the place to operate on
--x ADDRESS, --coordinator ADDRESS
-    coordinator ``HOST[:PORT]`` to connect to, defaults to ``127.0.0.1:20408``
--c CONFIG, --config CONFIG
-    set the configuration file
--s STATE, --state STATE
-    set an initial state before executing a command, requires a configuration
-    file and strategy
--i INITIAL_STATE, --initial-state INITIAL_STATE
-    strategy state to force into before switching to desired state, requires a
-    desired state (``-s``/``--state``/``LG_STATE``)
--d, --debug
-    enable debugging
--v, --verbose
-    increase verbosity
--P PROXY, --proxy PROXY
-    proxy connections over ssh
+.. currentmodule:: labgrid.remote.client
 
-CONFIGURATION FILE
+
+.. argparse::
+   :module: labgrid.remote.client
+   :func: get_parser
+   :prog: labgrid-client
+
+
+   help : @skip
+        skip.
+
+   complete : @skip
+        skip.
+
+   available subcommands : @skip
+        skip.
+
+
+Configuration File
 ------------------
 The configuration file follows the description in ``labgrid-device-config``\(5).
 
-ENVIRONMENT VARIABLES
+Environment Variables
 ---------------------
 Various labgrid-client commands use the following environment variable:
 
@@ -112,7 +93,7 @@ LG_AGENT_PREFIX
 Add a prefix to ``.labgrid_agent_{agent_hash}.py`` allowing specification for
 where on the exporter it should be uploaded to. 
 
-MATCHES
+Matches
 -------
 Match patterns are used to assign a resource to a specific place. The format is:
 exporter/group/cls/name, exporter is the name of the exporting machine, group is
@@ -120,104 +101,7 @@ a name defined within the exporter, cls is the class of the exported resource
 and name is its name. Wild cards in match patterns are explicitly allowed, *
 matches anything.
 
-LABGRID-CLIENT COMMANDS
------------------------
-``monitor``                                 Monitor events from the coordinator
-
-``resources (r)``                           List available resources
-
-``places (p)``                              List available places
-
-``who``                                     List acquired places by user
-
-``show``                                    Show a place and related resources
-
-``create``                                  Add a new place (name supplied by -p parameter)
-
-``delete``                                  Delete an existing place
-
-``add-alias`` ``[alias]``                   Add an alias to a place
-
-``del-alias`` ``[alias]``                   Delete an alias from a place
- 
-``set-comment`` ``[comment]``               Update or set the place comment
-
-``set-tags`` ``[key=value]``                Set place tags (key=value)
-
-``add-match`` ``[match]``                   Add one (or multiple) match pattern(s) to a place, see MATCHES
-
-``del-match`` ``[match]``                   Delete one (or multiple) match pattern(s) from a place, see MATCHES
-
-``add-named-match`` ``[match]`` ``[name]``  Add one match pattern with a name to a place
-
-``acquire (lock)``                          Acquire a place
-
-``allow`` ``[user]``                        Allow another user to access a place
-
-``release (unlock)``                        Release a place
-
-``release-from`` ``[host/user]``            Atomically release a place, but only if acquired by a specific user.
-
-                                Note that this command returns success as long
-                                as the specified user no longer owns the place,
-                                meaning it may be acquired by another user or
-                                not at all.
-
-``env``                                     Generate a labgrid environment file for a place
-
-``power (pw)`` ``[action]``                 Change (or get) a place's power status, where action is one of get, on, off, cycle
-
-``io`` ``[action]`` ``[name]``              Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
-
-``console (con)`` ``[name]``                Connect to the console
-
-``dfu`` ``[arg]``                           Run dfu commands
-
-``fastboot`` ``[arg]``                      Run fastboot with argument
-
-``flashscript`` ``[script]`` ``[arg]``      Run arbitrary script with arguments to flash device
-
-``bootstrap`` ``[filename]``                Start a bootloader
-
-``sd-mux`` ``[action]``                     Switch USB SD Muxer, where action is one of dut (device-under-test), host, off
-
-``usb-mux`` ``[action]``                    Switch USB Muxer, where action is one of off, dut-device, host-dut, host-device, host-dut+host-device
-
-``ssh`` ``[command]``                       Connect via SSH. Additional arguments are passed to ssh.
-
-``scp`` ``[source]`` ``[destination]``      Transfer file via scp (use ':dir/file' for the remote side)
-
-``rsync`` ``[source]`` ``[destination]``    Transfer files via rsync (use ':dir/file' for the remote side)
-
-``sshfs`` ``[remotepath]`` ``[mountpoint]`` Mount a remote path via sshfs
-
-``forward``                                 Forward local port to remote target
-
-``telnet``                                  Connect via telnet
-
-``video``                                   Start a video stream
-
-``audio``                                   Start an audio stream
-
-``tmc`` ``[command]``                       Control a USB TMC device
-
-``write-files`` ``[filename(s)]``           Copy files onto mass storage device
-
-``write-image`` ``[filename]``              Write images onto block devices (USBSDMux, USB Sticks, …)
-
-``reserve`` ``[filter]``                    Create a reservation
-
-``cancel-reservation`` ``[token]``          Cancel a pending reservation
-
-``wait`` ``[token]``                        Wait for a reservation to be allocated
-
-``reservations``                            List current reservations
-
-``export`` ``[filename]``                   Export driver information to file (needs environment with drivers)
-
-``version``                                 Print the labgrid version
-
-ADDING NAMED RESOURCES
+Adding Named Resources
 ----------------------
 If a target contains multiple Resources of the same type, named matches need to
 be used to address the individual resources. In addition to the `match` taken by
@@ -229,7 +113,7 @@ given.
 If one of the resources should be used by default when no resource name is
 explicitly specified, it can be named ``default``.
 
-EXAMPLES
+Examples
 --------
 
 To retrieve a list of places run:
@@ -257,7 +141,7 @@ Add all resources with the group "example-group" to the place example-place:
 
    $ labgrid-client -p example-place add-match */example-group/*/*
 
-SEE ALSO
+See Also
 --------
 
 ``labgrid-exporter``\(1)

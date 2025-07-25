@@ -40,8 +40,13 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.coverage',
               'sphinx.ext.viewcode',
+              'sphinxarg.ext', # sphinx-argparse
               'sphinx.ext.autosectionlabel',
               'sphinx_rtd_theme']
+
+# Required. Otherwise pages using sphinx-argparse will produce many warnings
+# (duplicate labels due to duplicate headings such as "named arguments")
+autosectionlabel_maxdepth = 3
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
@@ -196,7 +201,8 @@ autodoc_mock_imports = ['onewire',
                         'vxi11',
                         'pysnmp',
                         'kasa',
-                        'kasa.iot']
+                        'kasa.iot',
+                        ]
 
 # -- Options for autosection ----------------------------------------------
 autosectionlabel_prefix_document = True

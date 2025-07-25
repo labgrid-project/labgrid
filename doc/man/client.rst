@@ -10,7 +10,7 @@ This is the client to control a boards status and interface with it on remote ma
 .. currentmodule:: labgrid.remote.client
 
 
-.. autoprogram:: labgrid.remote.client:get_parser()
+.. autoprogram:: labgrid.remote.client:get_parser(auto_doc_mode=True)
    :prog: labgrid-client
 
 Configuration File

@@ -30,55 +30,1423 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .TH "LABGRID-CLIENT" "1" "2025" "" "labgrid"
 .SH NAME
 labgrid-client \- labgrid's client interface to control boards
-.SH LABGRID-CLIENT INTERFACE TO CONTROL BOARDS
-.SS SYNOPSIS
-.sp
-\fBlabgrid\-client\fP \fB\-\-help\fP
-.sp
-\fBlabgrid\-client\fP \-p <place> <command>
-.sp
-\fBlabgrid\-client\fP \fBplaces|resources\fP
-.SS DESCRIPTION
 .sp
 Labgrid is a scalable infrastructure and test architecture for embedded (linux) systems.
 .sp
 This is the client to control a boards status and interface with it on remote machines.
-.SS OPTIONS
+.SH LABGRID-CLIENT
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client [\-h] [\-x ADDRESS] [\-c CONFIG] [\-p PLACE] [\-s STATE] [\-i INITIAL_STATE] [\-d] [\-v] [\-P PROXY] COMMAND ...
+.EE
+.UNINDENT
+.UNINDENT
 .INDENT 0.0
 .TP
-.B  \-h\fP,\fB  \-\-help
-display command line help
-.TP
-.BI \-p \ PLACE\fR,\fB \ \-\-place \ PLACE
-specify the place to operate on
-.TP
-.BI \-x \ ADDRESS\fR,\fB \ \-\-coordinator \ ADDRESS
-coordinator \fBHOST[:PORT]\fP to connect to, defaults to \fB127.0.0.1:20408\fP
-.TP
-.BI \-c \ CONFIG\fR,\fB \ \-\-config \ CONFIG
-set the configuration file
-.TP
-.BI \-s \ STATE\fR,\fB \ \-\-state \ STATE
-set an initial state before executing a command, requires a configuration
-file and strategy
-.TP
-.BI \-i \ INITIAL_STATE\fR,\fB \ \-\-initial\-state \ INITIAL_STATE
-strategy state to force into before switching to desired state, requires a
-desired state (\fB\-s\fP/\fB\-\-state\fP/\fBLG_STATE\fP)
-.TP
-.B  \-d\fP,\fB  \-\-debug
-enable debugging
-.TP
-.B  \-v\fP,\fB  \-\-verbose
-increase verbosity
-.TP
-.BI \-P \ PROXY\fR,\fB \ \-\-proxy \ PROXY
-proxy connections over ssh
+.B \-h, \-\-help
+show this help message and exit
 .UNINDENT
-.SS CONFIGURATION FILE
+.INDENT 0.0
+.TP
+.B \-x <address>, \-\-coordinator <address>
+coordinator HOST[:PORT] (default: value from env variable LG_COORDINATOR, otherwise 127.0.0.1:20408)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-c <config>, \-\-config <config>
+env config file (default: value from env variable LG_ENV)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-p <place>, \-\-place <place>
+place name/alias (default: value from env variable LG_PLACE)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-s <state>, \-\-state <state>
+strategy state to switch into before command (default: value from env varibale LG_STATE)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-i <initial_state>, \-\-initial\-state <initial_state>
+strategy state to force into before switching to desired state
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-d, \-\-debug
+enable debug mode (show python tracebacks)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-v, \-\-verbose
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-P <proxy>, \-\-proxy <proxy>
+proxy connections via given ssh host
+.UNINDENT
+.SS labgrid\-client acquire
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client acquire [\-h] [\-\-allow\-unmatched]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-allow\-unmatched
+allow missing resources for matches when locking the place
+.UNINDENT
+.SS labgrid\-client add\-alias
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client add\-alias [\-h] alias
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B alias
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client add\-match
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client add\-match [\-h] PATTERN [PATTERN ...]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B pattern
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client add\-named\-match
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client add\-named\-match [\-h] PATTERN NAME
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B pattern
+.UNINDENT
+.INDENT 0.0
+.TP
+.B name
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client allow
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client allow [\-h] user
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B user
+<host>/<username>
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client audio
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client audio [\-h] [\-\-name NAME]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client bootstrap
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client bootstrap [\-h] [\-w WAIT] [\-\-name NAME] filename ...
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B filename
+filename to boot on the target
+.UNINDENT
+.INDENT 0.0
+.TP
+.B arg
+extra bootstrap arguments
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-w <wait>, \-\-wait <wait>
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client cancel\-reservation
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client cancel\-reservation [\-h] [token]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B token
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client complete
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client complete [\-h] {resources,places,matches,match\-names}
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B type
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client console
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client console [\-h] [\-l] [\-o] [\-\-logfile FILE] [name]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B name
+optional resource name
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-l, \-\-loop
+keep trying to connect if the console is unavailable
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-o, \-\-listenonly
+do not modify local terminal, do not send input from stdin
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-logfile <file>
+Log output to FILE
+.UNINDENT
+.SS labgrid\-client console
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client console [\-h] [\-l] [\-o] [\-\-logfile FILE] [name]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B name
+optional resource name
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-l, \-\-loop
+keep trying to connect if the console is unavailable
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-o, \-\-listenonly
+do not modify local terminal, do not send input from stdin
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-logfile <file>
+Log output to FILE
+.UNINDENT
+.SS labgrid\-client create
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client create [\-h]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client del\-alias
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client del\-alias [\-h] alias
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B alias
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client del\-match
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client del\-match [\-h] PATTERN [PATTERN ...]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B pattern
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client delete
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client delete [\-h]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client dfu
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client dfu [\-h] [\-\-wait WAIT] [\-\-name NAME] {download,detach,list} [altsetting] [filename]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B action
+action
+.UNINDENT
+.INDENT 0.0
+.TP
+.B altsetting
+altsetting name or number (download, detach only)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B filename
+file to write into device (download only)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-wait <wait>
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client env
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client env [\-h]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client export
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client export [\-h] [\-\-format {shell,shell\-export,json}] filename
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B filename
+output filename
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-format {shell,shell\-export,json}
+output format (default: shell\-export)
+.UNINDENT
+.SS labgrid\-client fastboot
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client fastboot [\-h] [\-\-wait WAIT] [\-\-name NAME] ...
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B arg
+fastboot arguments
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-wait <wait>
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client flashscript
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client flashscript [\-h] [\-\-name NAME] script ...
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B script
+Flashing script
+.UNINDENT
+.INDENT 0.0
+.TP
+.B arg
+script arguments
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client forward
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client forward [\-h] [\-\-name NAME] [\-\-local [LOCAL:]REMOTE] [\-\-remote REMOTE:LOCAL]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-local, \-L
+Forward local port LOCAL to remote port REMOTE. If LOCAL is unspecified, an arbitrary port will be chosen
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-remote, \-R
+Forward remote port REMOTE to local port LOCAL
+.UNINDENT
+.SS labgrid\-client help
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client help [\-h]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client io
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client io [\-h] {high,low,get} [name]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B action
+action
+.UNINDENT
+.INDENT 0.0
+.TP
+.B name
+optional resource name
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client acquire
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client acquire [\-h] [\-\-allow\-unmatched]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-allow\-unmatched
+allow missing resources for matches when locking the place
+.UNINDENT
+.SS labgrid\-client monitor
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client monitor [\-h]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client places
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client places [\-h] [\-a] [\-r] [\-\-sort\-last\-changed]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-a, \-\-acquired
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-r, \-\-released
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-sort\-last\-changed
+sort by last changed date (oldest first)
+.UNINDENT
+.SS labgrid\-client places
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client places [\-h] [\-a] [\-r] [\-\-sort\-last\-changed]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-a, \-\-acquired
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-r, \-\-released
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-sort\-last\-changed
+sort by last changed date (oldest first)
+.UNINDENT
+.SS labgrid\-client power
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client power [\-h] [\-t DELAY] [\-\-name NAME] {on,off,cycle,get}
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B action
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-t <delay>, \-\-delay <delay>
+wait time in seconds between off and on during cycle
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client power
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client power [\-h] [\-t DELAY] [\-\-name NAME] {on,off,cycle,get}
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B action
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-t <delay>, \-\-delay <delay>
+wait time in seconds between off and on during cycle
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client resources
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client resources [\-h] [\-a] [\-e EXPORTER] [\-\-sort\-by\-matched\-place\-change] [match]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B match
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-a, \-\-acquired
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-e <exporter>, \-\-exporter <exporter>
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-sort\-by\-matched\-place\-change
+sort by matched place\(aqs changed date (oldest first) and show place and date
+.UNINDENT
+.SS labgrid\-client release
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client release [\-h] [\-k]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-k, \-\-kick
+release a place even if it is acquired by a different user
+.UNINDENT
+.SS labgrid\-client release\-from
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client release\-from [\-h] HOST/USER
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B host/user
+User and host to match against when releasing
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client reservations
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client reservations [\-h]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client reserve
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client reserve [\-h] [\-\-wait] [\-\-shell] [\-\-prio PRIO] KEY=VALUE [KEY=VALUE ...]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B key=value
+required tags
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-wait
+wait until the reservation is allocated
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-shell
+format output as shell variables
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-prio <prio>
+priority relative to other reservations (default 0)
+.UNINDENT
+.SS labgrid\-client resources
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client resources [\-h] [\-a] [\-e EXPORTER] [\-\-sort\-by\-matched\-place\-change] [match]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B match
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-a, \-\-acquired
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-e <exporter>, \-\-exporter <exporter>
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-sort\-by\-matched\-place\-change
+sort by matched place\(aqs changed date (oldest first) and show place and date
+.UNINDENT
+.SS labgrid\-client rsync
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client rsync [\-h] [\-\-name NAME] src dst
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B src
+source path (use :dir/file for remote side)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B dst
+destination path (use :dir/file for remote side)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.sp
+Additional arguments are passed to the rsync subprocess.
+.SS labgrid\-client scp
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client scp [\-h] [\-\-name NAME] src dst
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B src
+source path (use :dir/file for remote side)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B dst
+destination path (use :dir/file for remote side)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client sd\-mux
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client sd\-mux [\-h] [\-\-name NAME] {dut,host,off,client,get}
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B action
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client set\-comment
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client set\-comment [\-h] comment [comment ...]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B comment
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client set\-tags
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client set\-tags [\-h] KEY=VALUE [KEY=VALUE ...]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B key=value
+use an empty value for deletion
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client show
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client show [\-h]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client ssh
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client ssh [\-h] [\-\-name NAME]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.sp
+Additional arguments are passed to the ssh subprocess.
+.SS labgrid\-client sshfs
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client sshfs [\-h] [\-\-name NAME] path mountpoint
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B path
+remote path on the target
+.UNINDENT
+.INDENT 0.0
+.TP
+.B mountpoint
+local path
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client telnet
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client telnet [\-h]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client tmc
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client tmc [\-h] [\-\-name NAME] SUBCOMMAND ...
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client tmc cmd
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client tmc cmd [\-h] command [command ...]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B command
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client tmc channel
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client tmc channel [\-h] channel {info,values}
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B channel
+.UNINDENT
+.INDENT 0.0
+.TP
+.B action
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client tmc cmd
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client tmc cmd [\-h] command [command ...]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B command
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client tmc query
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client tmc query [\-h] query [query ...]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B query
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client tmc query
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client tmc query [\-h] query [query ...]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B query
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client tmc screen
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client tmc screen [\-h] {show,save}
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B action
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client release
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client release [\-h] [\-k]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-k, \-\-kick
+release a place even if it is acquired by a different user
+.UNINDENT
+.SS labgrid\-client usb\-mux
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client usb\-mux [\-h] [\-\-name NAME] {off,dut\-device,host\-dut,host\-device,host\-dut+host\-device}
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B links
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client version
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client version [\-h]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client video
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client video [\-h] [\-q QUALITY] [\-c CONTROLS] [\-\-name NAME]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-q <quality>, \-\-quality <quality>
+select a video quality (use \(aqlist\(aq to show options)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-c <controls>, \-\-controls <controls>
+configure v4l controls (such as \(aqfocus_auto=0,focus_absolute=40\(aq)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client wait
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client wait [\-h] [token]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B token
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.SS labgrid\-client who
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client who [\-h] [\-e]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-e, \-\-show\-exporters
+show exporters currently used by each place
+.UNINDENT
+.SS labgrid\-client write\-files
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client write\-files [OPTION]... \-T SOURCE DEST
+       labgrid\-client write\-files [OPTION]... [\-t DIRECTORY] SOURCE...
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B source
+source file(s) to copy
+.UNINDENT
+.INDENT 0.0
+.TP
+.B dest
+destination file name for SOURCE
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-w <wait>, \-\-wait <wait>
+storage poll timeout in seconds
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-p {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255}, \-\-partition {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255}
+partition number to mount or 0 to mount whole disk (default: 1)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-t <directory>, \-\-target\-directory <directory>
+copy all SOURCE files into DIRECTORY (default: partition root)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-T
+copy SOURCE file and rename to DEST
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SS labgrid\-client write\-image
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client write\-image [\-h] [\-w WAIT] [\-p PARTITION] [\-\-skip SKIP] [\-\-seek SEEK] [\-\-mode {dd,bmaptool}] [\-\-name NAME] filename
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B filename
+filename to boot on the target
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h, \-\-help
+show this help message and exit
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-w <wait>, \-\-wait <wait>
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-p <partition>, \-\-partition <partition>
+partition number to write to
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-skip <skip>
+skip n 512\-sized blocks at start of input
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-seek <seek>
+skip n 512\-sized blocks at start of output
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-mode {dd,bmaptool}
+Choose tool for writing images (default: dd)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.SH CONFIGURATION FILE
 .sp
 The configuration file follows the description in \fBlabgrid\-device\-config\fP(5).
-.SS ENVIRONMENT VARIABLES
+.SH ENVIRONMENT VARIABLES
 .sp
 Various labgrid\-client commands use the following environment variable:
 .SS LG_PLACE
@@ -129,113 +1497,14 @@ unspecified, defaults to 30 seconds.
 .sp
 Add a prefix to \fB\&.labgrid_agent_{agent_hash}.py\fP allowing specification for
 where on the exporter it should be uploaded to.
-.SS MATCHES
+.SH MATCHES
 .sp
 Match patterns are used to assign a resource to a specific place. The format is:
 exporter/group/cls/name, exporter is the name of the exporting machine, group is
 a name defined within the exporter, cls is the class of the exported resource
 and name is its name. Wild cards in match patterns are explicitly allowed, *
 matches anything.
-.SS LABGRID\-CLIENT COMMANDS
-.sp
-\fBmonitor\fP                                 Monitor events from the coordinator
-.sp
-\fBresources (r)\fP                           List available resources
-.sp
-\fBplaces (p)\fP                              List available places
-.sp
-\fBwho\fP                                     List acquired places by user
-.sp
-\fBshow\fP                                    Show a place and related resources
-.sp
-\fBcreate\fP                                  Add a new place (name supplied by \-p parameter)
-.sp
-\fBdelete\fP                                  Delete an existing place
-.sp
-\fBadd\-alias\fP \fB[alias]\fP                   Add an alias to a place
-.sp
-\fBdel\-alias\fP \fB[alias]\fP                   Delete an alias from a place
-.sp
-\fBset\-comment\fP \fB[comment]\fP               Update or set the place comment
-.sp
-\fBset\-tags\fP \fB[key=value]\fP                Set place tags (key=value)
-.sp
-\fBadd\-match\fP \fB[match]\fP                   Add one (or multiple) match pattern(s) to a place, see MATCHES
-.sp
-\fBdel\-match\fP \fB[match]\fP                   Delete one (or multiple) match pattern(s) from a place, see MATCHES
-.sp
-\fBadd\-named\-match\fP \fB[match]\fP \fB[name]\fP  Add one match pattern with a name to a place
-.sp
-\fBacquire (lock)\fP                          Acquire a place
-.sp
-\fBallow\fP \fB[user]\fP                        Allow another user to access a place
-.sp
-\fBrelease (unlock)\fP                        Release a place
-.sp
-\fBrelease\-from\fP \fB[host/user]\fP            Atomically release a place, but only if acquired by a specific user.
-.INDENT 0.0
-.INDENT 3.5
-Note that this command returns success as long
-as the specified user no longer owns the place,
-meaning it may be acquired by another user or
-not at all.
-.UNINDENT
-.UNINDENT
-.sp
-\fBenv\fP                                     Generate a labgrid environment file for a place
-.sp
-\fBpower (pw)\fP \fB[action]\fP                 Change (or get) a place\(aqs power status, where action is one of get, on, off, cycle
-.sp
-\fBio\fP \fB[action]\fP \fB[name]\fP              Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
-.sp
-\fBconsole (con)\fP \fB[name]\fP                Connect to the console
-.sp
-\fBdfu\fP \fB[arg]\fP                           Run dfu commands
-.sp
-\fBfastboot\fP \fB[arg]\fP                      Run fastboot with argument
-.sp
-\fBflashscript\fP \fB[script]\fP \fB[arg]\fP      Run arbitrary script with arguments to flash device
-.sp
-\fBbootstrap\fP \fB[filename]\fP                Start a bootloader
-.sp
-\fBsd\-mux\fP \fB[action]\fP                     Switch USB SD Muxer, where action is one of dut (device\-under\-test), host, off
-.sp
-\fBusb\-mux\fP \fB[action]\fP                    Switch USB Muxer, where action is one of off, dut\-device, host\-dut, host\-device, host\-dut+host\-device
-.sp
-\fBssh\fP \fB[command]\fP                       Connect via SSH. Additional arguments are passed to ssh.
-.sp
-\fBscp\fP \fB[source]\fP \fB[destination]\fP      Transfer file via scp (use \(aq:dir/file\(aq for the remote side)
-.sp
-\fBrsync\fP \fB[source]\fP \fB[destination]\fP    Transfer files via rsync (use \(aq:dir/file\(aq for the remote side)
-.sp
-\fBsshfs\fP \fB[remotepath]\fP \fB[mountpoint]\fP Mount a remote path via sshfs
-.sp
-\fBforward\fP                                 Forward local port to remote target
-.sp
-\fBtelnet\fP                                  Connect via telnet
-.sp
-\fBvideo\fP                                   Start a video stream
-.sp
-\fBaudio\fP                                   Start an audio stream
-.sp
-\fBtmc\fP \fB[command]\fP                       Control a USB TMC device
-.sp
-\fBwrite\-files\fP \fB[filename(s)]\fP           Copy files onto mass storage device
-.sp
-\fBwrite\-image\fP \fB[filename]\fP              Write images onto block devices (USBSDMux, USB Sticks, …)
-.sp
-\fBreserve\fP \fB[filter]\fP                    Create a reservation
-.sp
-\fBcancel\-reservation\fP \fB[token]\fP          Cancel a pending reservation
-.sp
-\fBwait\fP \fB[token]\fP                        Wait for a reservation to be allocated
-.sp
-\fBreservations\fP                            List current reservations
-.sp
-\fBexport\fP \fB[filename]\fP                   Export driver information to file (needs environment with drivers)
-.sp
-\fBversion\fP                                 Print the labgrid version
-.SS ADDING NAMED RESOURCES
+.SH ADDING NAMED RESOURCES
 .sp
 If a target contains multiple Resources of the same type, named matches need to
 be used to address the individual resources. In addition to the \fImatch\fP taken by
@@ -246,7 +1515,7 @@ given.
 .sp
 If one of the resources should be used by default when no resource name is
 explicitly specified, it can be named \fBdefault\fP\&.
-.SS EXAMPLES
+.SH EXAMPLES
 .sp
 To retrieve a list of places run:
 .INDENT 0.0
@@ -288,7 +1557,7 @@ $ labgrid\-client \-p example\-place add\-match */example\-group/*/*
 .EE
 .UNINDENT
 .UNINDENT
-.SS SEE ALSO
+.SH SEE ALSO
 .sp
 \fBlabgrid\-exporter\fP(1)
 .SH AUTHOR

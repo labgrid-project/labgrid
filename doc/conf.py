@@ -40,6 +40,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.coverage',
               'sphinx.ext.viewcode',
+              'sphinxcontrib.autoprogram',
               'sphinx.ext.autosectionlabel',
               'sphinx_rtd_theme']
 
@@ -200,7 +201,8 @@ autodoc_mock_imports = ['onewire',
                         'vxi11',
                         'pysnmp',
                         'kasa',
-                        'kasa.iot']
+                        'kasa.iot',
+                        ]
 
 # -- Options for autosection ----------------------------------------------
 autosectionlabel_prefix_document = True

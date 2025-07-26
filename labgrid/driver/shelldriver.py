@@ -169,6 +169,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 # lets start over again and see if login or prompt will appear
                 # now.
                 self.console.sendline("")
+                did_login = True
 
             last_before = before
 

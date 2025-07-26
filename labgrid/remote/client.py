@@ -925,7 +925,7 @@ class ClientSession:
         name = self.args.name
         target = self._get_target(place)
         from ..resource import ModbusTCPCoil, OneWirePIO, HttpDigitalOutput, WaveshareModbusTCPCoil
-        from ..resource.remote import NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO, NetworkHIDRelay
+        from ..resource.remote import NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO, NetworkHIDRelay, NetworkDenkoviRelay
 
         drv = None
         try:
@@ -950,6 +950,8 @@ class ClientSession:
                     drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name)
                 elif isinstance(resource, NetworkHIDRelay):
                     drv = self._get_driver_or_new(target, "HIDRelayDriver", name=name)
+                elif isinstance(resource, NetworkDenkoviRelay):
+                    drv = self._get_driver_or_new(target, "DenkoviRelayDriver", name=name)
                 if drv:
                     break
 

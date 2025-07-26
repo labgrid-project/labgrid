@@ -285,7 +285,8 @@ class IMXUSBLoader(USBResource):
                          ("15a2", "007d"), ("15a2", "0076"),
                          ("15a2", "0080"), ("15a2", "003a"),
                          ("1fc9", "0128"), ("1fc9", "0126"),
-                         ("1fc9", "012b"), ("1fc9", "0134"),
+                         ("1fc9", "012b"), ("1fc9", "012f"),
+                         ("1fc9", "0134"),
                          ("1fc9", "013e"), ("1fc9", "0146"),
                          ("1fc9", "014e"), ("1fc9", "0129"),
                          ("1b67", "4fff"), ("0525", "b4a4"), # SPL
@@ -330,6 +331,39 @@ class MXSUSBLoader(USBResource):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
         if match not in [("066f", "3780"), ("15a2", "004f")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class SamsungUSBLoader(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("04e8", "1234")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class SunxiUSBLoader(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("1f3a", "efe8")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class TegraUSBLoader(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("0955", "7340"), ("0955", "7140")]:  # or 7740
             return False
 
         return super().filter_match(device)

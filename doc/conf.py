@@ -40,8 +40,11 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.coverage',
               'sphinx.ext.viewcode',
+              'sphinxarg.ext', # sphinx-argparse
               'sphinx.ext.autosectionlabel',
               'sphinx_rtd_theme']
+
+suppress_warnings = ['autosectionlabel.*']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
@@ -156,6 +159,8 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     (master_doc, 'labgrid', 'labgrid Documentation',
+     [author], 1),
+    ('man/client', 'labgrid-client', 'labgrid\'s client interface to control boards',
      [author], 1)
 ]
 
@@ -181,7 +186,14 @@ autodoc_default_options = {
 autodoc_mock_imports = ['onewire',
                         'gi',
                         'gi.repository',
-                        'vxi11']
+                        'vxi11',
+                        'pysnmp',
+                        'kasa',
+                        'labgrid.driver.power.eaton',
+                        'labgrid.driver.power.poe_mib',
+                        'labgrid.driver.power.raritan',
+                        'labgrid.driver.power.tplink',
+                        ]
 
 # -- Options for autosection ----------------------------------------------
 autosectionlabel_prefix_document = True

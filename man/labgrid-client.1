@@ -259,7 +259,7 @@ Log output to FILE
 .UNINDENT
 .SS labgrid\-client create
 .sp
-add a new place
+add a new place with the name specified via \-\-place or the LG_PLACE environment variable
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -404,7 +404,7 @@ optional resource name
 .UNINDENT
 .SS labgrid\-client flashscript
 .sp
-run flash script
+Run arbitrary script with arguments to flash device
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -552,6 +552,8 @@ usage: labgrid\-client release\-from HOST/USER
 .B host/user
 User and host to match against when releasing
 .UNINDENT
+.sp
+Note that this command returns success as long as the specified user no longer owns the place, meaning it may be acquired by another user or not at all.
 .SS labgrid\-client release|unlock
 .sp
 release a place

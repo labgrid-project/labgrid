@@ -1884,7 +1884,10 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser = subparsers.add_parser("show", help="show a place and related resources")
     subparser.set_defaults(func=ClientSession.print_place)
 
-    subparser = subparsers.add_parser("create", help="add a new place")
+    subparser = subparsers.add_parser(
+        "create",
+        help="add a new place with the name specified via --place or the LG_PLACE environment variable",
+    )
     subparser.set_defaults(func=ClientSession.add_place)
 
     subparser = subparsers.add_parser("delete", help="delete an existing place")
@@ -1932,7 +1935,10 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.set_defaults(func=ClientSession.release)
 
     subparser = subparsers.add_parser(
-        "release-from", help="atomically release a place, but only if locked by a specific user"
+        "release-from",
+        help="atomically release a place, but only if locked by a specific user",
+        epilog="Note that this command returns success as long as the specified user no longer owns the place, "
+        "meaning it may be acquired by another user or not at all.",
     )
     subparser.add_argument("acquired", metavar="HOST/USER", help="User and host to match against when releasing")
     subparser.set_defaults(func=ClientSession.release_from)
@@ -1982,7 +1988,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.set_defaults(func=ClientSession.fastboot)
 
-    subparser = subparsers.add_parser("flashscript", help="run flash script")
+    subparser = subparsers.add_parser("flashscript", help="Run arbitrary script with arguments to flash device")
     subparser.add_argument("script", help="Flashing script")
     subparser.add_argument("script_args", metavar="ARG", nargs=argparse.REMAINDER, help="script arguments")
     subparser.add_argument("--name", "-n", help="optional resource name")

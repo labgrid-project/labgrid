@@ -156,7 +156,19 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     (master_doc, 'labgrid', 'labgrid Documentation',
-     [author], 1)
+     [author], 1),
+    ('man/client', 'labgrid-client', 'labgrid\'s client interface to control boards',
+     [author], 1),
+    ('man/coordinator', 'labgrid-coordinator', 'managing labgrid resources and places',
+     [author], 1),
+    ('man/device-config', 'labgrid-device-config', 'test configuration files',
+     [author], 5),
+    ('man/exporter', 'labgrid-exporter', 'interface to control boards',
+     [author], 1),
+    ('man/pytest', 'labgrid-pytest', 'labgrid integration for pytest',
+     [author], 7),
+    ('man/suggest', 'labgrid-suggest', 'generator for YAML config files',
+     [author], 1),
 ]
 
 
@@ -181,7 +193,10 @@ autodoc_default_options = {
 autodoc_mock_imports = ['onewire',
                         'gi',
                         'gi.repository',
-                        'vxi11']
+                        'vxi11',
+                        'pysnmp',
+                        'kasa',
+                        'kasa.iot']
 
 # -- Options for autosection ----------------------------------------------
 autosectionlabel_prefix_document = True

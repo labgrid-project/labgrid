@@ -13,6 +13,7 @@ New Features in 25.1
 
 - The `USBVideoDriver`'s ``stream`` method can now be called with ``fps=True``
   to embed an overlay with FPS statistics into the video stream.
+  This is exposed in ``labgrid-client video`` via the new ``--fps`` option.
 
 Breaking changes in 25.1
 ~~~~~~~~~~~~~~~~~~~~~~~~

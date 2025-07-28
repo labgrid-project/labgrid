@@ -25,6 +25,20 @@ This is the client to control a boards status and interface with it on remote ma
    available subcommands : @skip
         skip.
 
+   create : @replace
+        add a new place with the name specified via ``--place`` or the
+        ``LG_PLACE`` environment variable.
+
+   release-from : @replace
+        Atomically release a place, but only if acquired by a specific user.
+
+        Note that this command returns success as long as the specified user no
+        longer owns the place, meaning it may be acquired by another user or
+        not at all.
+
+   flashscript : @replace
+        Run arbitrary script with arguments to flash device
+
 
 Configuration File
 ------------------

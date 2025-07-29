@@ -14,6 +14,7 @@ This is the client to control a boards status and interface with it on remote ma
    :module: labgrid.remote.client
    :func: get_parser
    :prog: labgrid-client
+   :nodefault:
 
 
    help : @skip

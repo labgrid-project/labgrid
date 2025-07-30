@@ -75,8 +75,14 @@ class USBVideoDriver(Driver, VideoProtocol):
                 ("mid", "image/jpeg,width=864,height=480,pixel-aspect-ratio=1/1,framerate=30/1"),
                 ("high", "image/jpeg,width=1280,height=1024,pixel-aspect-ratio=1/1,framerate=30/1"),
                 ])
+        elif match == (0x345f, 0x2130):  # UltraSemi USB3 Video
+            return ("mid", [
+                ("low", "image/jpeg,width=1024,height=768,pixel-aspect-ratio=1/1,framerate=30/1"),
+                ("mid", "image/jpeg,width=1920,height=1080,pixel-aspect-ratio=1/1,framerate=30/1"),
+                ("high", "image/jpeg,width=3840,height=2160,pixel-aspect-ratio=1/1,framerate=18/1"),
+                ])
         self.logger.warning(
-            "Unkown USB video device {:04x}:{:04x}, using fallback pipeline."
+            "Unknown USB video device {:04x}:{:04x}, using fallback pipeline."
             .format(*match))
         return ("mid", [
             ("low", "image/jpeg,width=640,height=480,framerate=30/1"),

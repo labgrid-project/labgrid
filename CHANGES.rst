@@ -9,6 +9,8 @@ New Features in 25.1
   CTRL+D specially to halt autoboot countdown without running interactive
   hooks like bringing up network interfaces automatically.
 
+- Guermok HDMI to USB 3.0 capture dongle supported
+
 Breaking changes in 25.1
 ~~~~~~~~~~~~~~~~~~~~~~~~
 - The deprecated pytest plugin option ``--env-config`` has been removed. Use

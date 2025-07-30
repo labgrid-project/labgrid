@@ -4,7 +4,6 @@ for creating, starting and accessing a docker container.
 """
 
 import pytest
-import docker
 import io
 
 from labgrid import Environment
@@ -161,6 +160,7 @@ def test_docker_with_daemon(command):
 
 @pytest.fixture
 def build_image():
+    import docker
     client = docker.from_env()
     dockerfile_content = """
     FROM rastasheep/ubuntu-sshd:16.04
@@ -198,6 +198,7 @@ def test_docker_without_daemon(docker_env, mocker):
     DockerManager and DockerStrategy without using an actual
     docker daemon, real sockets or system time"""
 
+    import docker
     # Target::update_resources() and Target::await_resources use
     # time.monotonic() and time.sleep() to control when to search
     # for resources. Avoid time delays and make running from cmd-line

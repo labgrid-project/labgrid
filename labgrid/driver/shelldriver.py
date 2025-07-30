@@ -108,6 +108,35 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def run(self, cmd, timeout=30.0, codec="utf-8", decodeerrors="strict"):
         return self._run(cmd, timeout=timeout, codec=codec, decodeerrors=decodeerrors)
 
+    def _raw_run(self, cmd, timeout=2, codec="utf-8", decodeerrors="strict"):
+        """Runs command without run() wrapper as it's not yet available"""
+        marker = gen_marker()
+        self.console.sendline(f"echo {marker[:4]}; {cmd} ; echo {marker[4:]}")
+        _, _, match, _ = self.console.expect(
+            rf"{marker[:4]}(.*){marker[4:]}\s+{self.prompt}",
+            timeout=timeout
+        )
+        data = self.re_vt100.sub('', match.group(1).decode(codec, decodeerrors)).split('\r\n')
+        if data and not data[-1]:
+            del data[-1]
+            return data
+
+    def _silence_kernel(self, timeout, kernel_log_level=1, codec="utf-8", decodeerrors="strict"):
+        """Tries to set kernel log level to KERN_ALERT log level to make it less chatty."""
+
+        while True:
+            self.console.sendline(f"dmesg -n {kernel_log_level}")
+            try:
+                data = self._raw_run("cat /proc/sys/kernel/printk")
+                if data[2] and data[2].startswith(f'{kernel_log_level}\t'):
+                    return
+
+            except TIMEOUT:
+                pass
+
+            if timeout.expired:
+                raise TIMEOUT(f"Timeout of {self.login_timeout} seconds exceeded during waiting for kernel silencer")  # pylint: disable=line-too-long
+
     @step()
     def _await_login(self):
         """Awaits the login prompt and logs the user in"""
@@ -134,9 +163,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             )
 
             if index == 0:
-                if did_login and not did_silence_kernel:
+                if not did_silence_kernel:
                     # Silence the kernel and wait for another prompt
-                    self.console.sendline("dmesg -n 1")
+                    self._silence_kernel(timeout)
                     did_silence_kernel = True
                 else:
                     # we got a prompt. no need for any further action to
@@ -176,9 +205,10 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             if timeout.expired:
                 raise TIMEOUT(f"Timeout of {self.login_timeout} seconds exceeded during waiting for login")  # pylint: disable=line-too-long
 
+        if self.post_login_settle_time > 0:
+            self.console.settle(self.post_login_settle_time, timeout=timeout.remaining)
+
         if did_login:
-            if self.post_login_settle_time > 0:
-                self.console.settle(self.post_login_settle_time, timeout=timeout.remaining)
             self._check_prompt()
 
     @step()
@@ -205,11 +235,24 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             self._status = 0
             raise
 
-    def _inject_run(self):
-        self.console.sendline(
-            '''run() { echo -n "$MARKER"; sh -c "$@"; echo "$MARKER $?"; }'''
-        )
-        self.console.expect(self.prompt)
+    def _inject_run(self, inject_timeout=10.0):
+        """Tries to inject run() command wrapper into shell on the console."""
+        timeout = Timeout(inject_timeout)
+
+        while True:
+            self.console.sendline(
+                '''run() { echo -n "$MARKER"; sh -c "$@"; echo "$MARKER $?"; }'''
+            )
+            self.console.expect(self.prompt)
+            try:
+                data = self._raw_run("type run")
+                if data[2] and "function" in data[2]:
+                    return
+            except TIMEOUT:
+                pass
+
+            if timeout.expired:
+                raise TIMEOUT(f"Timeout of {inject_timeout} seconds exceeded during waiting for run injection")  # pylint: disable=line-too-long
 
     def _write_key(self, keyline, dest):
         for i in range(0, len(keyline), 100):

@@ -121,3 +121,22 @@ def pytest_collection_modifyitems(config, items):
                     reason=f'Skipping because features "{missing_feature}" are not supported'
                 )
             item.add_marker(skip)
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_setup(item):
+    """
+    Skip test if one of the targets uses a strategy considered broken.
+    """
+    # Before any fixtures run for the test, check if the session-scoped strategy fixture was
+    # requested (might have been executed already for a prior test). If that's the case and the
+    # strategy is broken, skip the test.
+    if "strategy" in item.fixturenames:
+        env = item.config.stash[LABGRID_ENV_KEY]
+        # skip test even if only one of the targets in the env has a broken strategy
+        for target_name in env.config.get_targets():
+            target = env.get_target(target_name)
+            strategy = target.get_driver("Strategy")
+            if strategy and strategy.broken:
+                pytest.skip(f"{strategy.__class__.__name__} is in broken state")
+
+    yield

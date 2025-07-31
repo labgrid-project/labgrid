@@ -54,6 +54,9 @@ specify the place to operate on
 .BI \-x \ ADDRESS\fR,\fB \ \-\-coordinator \ ADDRESS
 coordinator \fBHOST[:PORT]\fP to connect to, defaults to \fB127.0.0.1:20408\fP
 .TP
+.BI \-r \ ROLE\fR,\fB \ \-\-role \ ROLE
+specify the role to operate on
+.TP
 .BI \-c \ CONFIG\fR,\fB \ \-\-config \ CONFIG
 set the configuration file
 .TP
@@ -64,6 +67,9 @@ file and strategy
 .BI \-i \ INITIAL_STATE\fR,\fB \ \-\-initial\-state \ INITIAL_STATE
 strategy state to force into before switching to desired state, requires a
 desired state (\fB\-s\fP/\fB\-\-state\fP/\fBLG_STATE\fP)
+.TP
+.B  \-a\fP,\fB  \-\-acquire
+acquire the place before performing the requested operation
 .TP
 .B  \-d\fP,\fB  \-\-debug
 enable debugging

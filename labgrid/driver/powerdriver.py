@@ -30,6 +30,14 @@ class PowerResetMixin(ResetProtocol):
     def reset(self):
         self.cycle()
 
+    @Driver.check_active
+    @step(title='set_reset_enable', args=['enable', 'mode'])
+    def set_reset_enable(self, enable, mode='cold'):
+        if enable:
+            self.off()
+        else:
+            self.on()
+
 @target_factory.reg_driver
 @attr.s(eq=False)
 class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
@@ -55,6 +63,27 @@ class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
         self.target.interact(
             f"CYCLE the target {self.target.name} and press enter"
         )
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class AlwaysPowerDriver(Driver, PowerProtocol):
+    """AlwaysPowerDriver - Target power is always on"""
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        pass
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        pass
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        pass
 
 
 @target_factory.reg_driver

@@ -123,7 +123,8 @@ class USBStorageDriver(Driver):
 
     @Driver.check_active
     @step(args=['filename'])
-    def write_image(self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0):
+    def write_image(self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0,
+                    block_size="auto", count=None):
         """
         Writes the file specified by filename or if not specified by config image subkey to the
         bound USB storage root device or partition.
@@ -135,6 +136,10 @@ class USBStorageDriver(Driver):
                 to root device (defaults to None)
             skip (int): optional, skip n 512-sized blocks at start of input file (defaults to 0)
             seek (int): optional, skip n 512-sized blocks at start of output (defaults to 0)
+            block_size (int or str): optional, block size for writing (in bytes)
+                "auto": Special value which means to use a block size of 512 if
+                skip or seek are non-zero, else "4M"
+            count (int): optional, number of blocks to write
         """
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
@@ -147,20 +152,22 @@ class USBStorageDriver(Driver):
         target = self._get_devpath(partition)
         remote_path = mf.get_remote_path()
 
+        start = time.time()
         if mode == Mode.DD:
             self.logger.info('Writing %s to %s using dd.', remote_path, target)
-            block_size = '512' if skip or seek else '4M'
+            if block_size == "auto":
+                block_size = "512" if skip or seek else "4M"
             args = [
                 "dd",
                 f"if={remote_path}",
                 f"of={target}",
-                "oflag=direct",
-                "status=progress",
                 f"bs={block_size}",
                 f"skip={skip}",
                 f"seek={seek}",
                 "conv=fdatasync"
             ]
+            if count is not None:
+                args.append(f'count={count}')
         elif mode == Mode.BMAPTOOL:
             if skip or seek:
                 raise ExecutionError("bmaptool does not support skip or seek")
@@ -198,19 +205,38 @@ class USBStorageDriver(Driver):
 
         processwrapper.check_output(
             self.storage.command_prefix + args,
-            print_on_silent_log=True
         )
+        duration = time.time() - start
+        self.logger.info('Image written in {%.1f}', duration)
 
     def _get_devpath(self, partition):
         partition = "" if partition is None else partition
         # simple concatenation is sufficient for USB mass storage
         return f"{self.storage.path}{partition}"
 
+    def can_write(self, partition):
+        """Check if writing to a device is possible
+
+        Args:
+            partition (int or None): optional specified partition, or None
+                for root device (defaults to None)
+
+        Returns:
+            True if write access is available, False if not
+        """
+        args = ['test', '-w', self._get_devpath(partition)]
+        try:
+            size = subprocess.check_output(self.storage.command_prefix + args)
+        except subprocess.CalledProcessError:
+            # perhaps udev has not run yet
+            return False
+        return True
+
     @Driver.check_active
     def _wait_for_medium(self, partition):
         timeout = Timeout(self.WAIT_FOR_MEDIUM_TIMEOUT)
         while not timeout.expired:
-            if self.get_size(partition) > 0:
+            if self.get_size(partition) > 0 and self.can_write(partition):
                 break
             time.sleep(self.WAIT_FOR_MEDIUM_SLEEP)
         else:
@@ -231,7 +257,8 @@ class USBStorageDriver(Driver):
         """
         args = ["cat", f"/sys/class/block/{self._get_devpath(partition)[5:]}/size"]
         try:
-            size = subprocess.check_output(self.storage.wrap_command(args))
+            size = subprocess.check_output(self.storage.wrap_command(args),
+                                           stderr=subprocess.DEVNULL)
         except subprocess.CalledProcessError:
             # while the medium is getting ready, the file does not yet exist
             return 0

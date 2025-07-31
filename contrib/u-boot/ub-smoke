@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Boot U-Boot on a particular target and check that it starts up OK
+
+usage() {
+	if [ -n "$1" ]; then
+		echo "Failed : $1"
+	else
+		echo "Run a smoke test to see if U-Boot starts OK"
+	fi
+	echo "Usage: ut-smoke [-BcDhRsTv] [-a <opt> ] [-d <dir>] [-x <dir> ] [-e <file> ] [-l <file>] <target>"
+	echo " -a  <opt> Adjust build, e.g. -a NET_LWIP -a ~CMD_MEM"
+	echo " -B  Don't build U-Boot"
+	echo " -c  Run 'make mrproper' before building"
+	echo " -d  <dir> Set build directory"
+	echo " -D  Enable debugging"
+	echo " -e  <file> Log Dediprog EM100-Pro trace to a file"
+	echo " -h  Help"
+	echo " -l  <file> Log console output to file"
+	echo " -o  <file> Set labgrid log-output file"
+	echo " -R  Don't reset the board, just connect as is"
+	echo " -s  Send over USB (instead of writing to boot media)"
+	echo " -T  Don't bootstrap U-Boot"
+	echo " -v  Verbose mode"
+	echo " -x  <dir> Set extra build directory"
+	exit 1
+}
+
+mydir=$(dirname $0)
+
+. ${mydir}/lg-env
+
+allowed_args="a:Bcd:De:hl:o:RsTvx:"
+. ${mydir}/get_args.sh
+
+if ! labgrid-client -p ${target} acquire --allow-unmatched; then
+	exit 1
+fi
+
+# use_running_system comes from the get_args.sh script. It is either empty, or
+# contains --use-running-system (lg_use_running_system contains
+# --lg-use-running-system if not empty)
+
+# Various variables are exported from this script and made available to the
+# u-boot-hooks scripts. For example, 'strategy' and 'console_log' are used in
+# console.labgrid
+
+ret=0
+pytest --lg-env "${LG_ENV}" --lg-coordinator="${LG_COORDINATOR}" \
+	--lg-log --lg-colored-steps --lg-target ${target} \
+	${lg_vars} -q ${lg_use_running_system} ${lg_console_log} \
+	${lg_log_output} \
+	-k test_uboot_smoke ${mydir} || ret=$?
+
+if ! labgrid-client -p ${target} release -a; then
+	exit $?
+fi
+exit $ret

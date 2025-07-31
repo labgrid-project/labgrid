@@ -186,7 +186,7 @@ class ResourceExport(ResourceEntry):
 
 @attr.s(eq=False)
 class SerialPortExport(ResourceExport):
-    """ResourceExport for a USB or Raw SerialPort"""
+    """ResourceExport for a USB, Raw or Servo SerialPort"""
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -198,6 +198,11 @@ class SerialPortExport(ResourceExport):
             from ..resource.udev import USBSerialPort
 
             self.local = USBSerialPort(target=None, name=None, **self.local_params)
+        elif self.cls == "ServoSerialPort":
+            from ..resource.servo import ServoSerialPort
+            self.local = ServoSerialPort(target=None, name=None, **self.local_params)
+        else:
+            raise ExporterError(f'Unknown class nane {self.cls} in in SerialPortExport')
         self.data["cls"] = "NetworkSerialPort"
         self.child = None
         self.port = None
@@ -272,7 +277,7 @@ class SerialPortExport(ResourceExport):
                 "-C",
                 f"{self.port}:telnet:0:{start_params['path']}:{self.local.speed} NONE 8DATABITS 1STOPBIT LOCAL",  # pylint: disable=line-too-long
             ]
-        self.logger.info("Starting ser2net with: %s", " ".join(cmd))
+        self.logger.debug("Starting ser2net with: %s", ' '.join(cmd))
         self.child = subprocess.Popen(cmd)
         try:
             self.child.wait(timeout=0.5)
@@ -302,6 +307,48 @@ class SerialPortExport(ResourceExport):
 
 exports["USBSerialPort"] = SerialPortExport
 exports["RawSerialPort"] = SerialPortExport
+exports["ServoSerialPort"] = SerialPortExport
+
+@attr.s(eq=False)
+class ServoResetExport(ResourceExport):
+    """ResourceExport for CPU reset on a Servo board"""
+    servo_name = attr.ib(default='', validator=attr.validators.instance_of(str))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.servo import ServoReset
+        self.local = ServoReset(target=None, name=None, **self.local_params)
+        self.data['cls'] = "NetworkServoReset"
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': self.host,
+            'servo_name': self.local.servo_name,
+        }
+
+exports["ServoReset"] = ServoResetExport
+
+
+@attr.s(eq=False)
+class ServoRecoveryExport(ResourceExport):
+    """ResourceExport for recovery button on a Servo board"""
+    servo_name = attr.ib(default='', validator=attr.validators.instance_of(str))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.servo import ServoRecovery
+        self.local = ServoRecovery(target=None, name=None, **self.local_params)
+        self.data['cls'] = "NetworkServoRecovery"
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': self.host,
+            'servo_name': self.local.servo_name,
+        }
+
+exports["ServoRecovery"] = ServoRecoveryExport
 
 
 @attr.s(eq=False)
@@ -552,6 +599,9 @@ exports["DFUDevice"] = USBGenericExport
 exports["IMXUSBLoader"] = USBGenericExport
 exports["MXSUSBLoader"] = USBGenericExport
 exports["RKUSBLoader"] = USBGenericExport
+exports["SamsungUSBLoader"] = USBGenericExport
+exports["SunxiUSBLoader"] = USBGenericExport
+exports["TegraUSBLoader"] = USBGenericExport
 exports["AlteraUSBBlaster"] = USBGenericExport
 exports["SigrokUSBDevice"] = USBSigrokExport
 exports["SigrokUSBSerialDevice"] = USBSigrokExport
@@ -780,6 +830,45 @@ class YKUSHPowerPortExport(ResourceExport):
 
 exports["YKUSHPowerPort"] = YKUSHPowerPortExport
 
+@attr.s(eq=False)
+class SFEmulatorExport(ResourceExport):
+    """ResourceExport for SFEmulator devices"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = f"Network{local_cls_name}"
+        from ..resource import sfemulator
+        local_cls = getattr(sfemulator, local_cls_name)
+        self.local = local_cls(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return {
+            "host": self.host,
+            **self.local_params
+        }
+
+exports["SFEmulator"] = SFEmulatorExport
+
+@attr.s(eq=False)
+class ServoExport(ResourceExport):
+    """ResourceExport for Servo devices"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = f"Network{local_cls_name}"
+        from ..resource import servo
+        local_cls = getattr(servo, local_cls_name)
+        self.local = local_cls(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return {
+            "host": self.host,
+            **self.local_params
+        }
+
+exports["Servo"] = ServoExport
 
 class Exporter:
     def __init__(self, config) -> None:
@@ -815,7 +904,9 @@ class Exporter:
         self.out_queue = asyncio.Queue()
         self.pump_task = None
 
+        self.verbose = config['verbose']
         self.poll_task = None
+        self.resource_count = 0
 
         self.groups = {}
 
@@ -829,7 +920,9 @@ class Exporter:
             "hostname": self.hostname,
             "name": self.name,
         }
-        resource_config = ResourceConfig(self.config["resources"], config_template_env)
+        resource_config = ResourceConfig(self.config["resources"],
+                                         config_template_env,
+                                         verbose=self.verbose)
         for group_name, group in resource_config.data.items():
             group_name = str(group_name)
             for resource_name, params in group.items():
@@ -856,6 +949,7 @@ class Exporter:
 
         logging.info("creating poll task")
         self.poll_task = self.loop.create_task(self.poll())
+        print(f'Exporting completed ({self.resource_count} resources)')
 
         (done, pending) = await asyncio.wait((self.pump_task, self.poll_task), return_when=asyncio.FIRST_COMPLETED)
         logging.debug("task(s) %s exited, shutting down exporter", done)
@@ -989,7 +1083,8 @@ class Exporter:
 
     async def add_resource(self, group_name, resource_name, cls, params):
         """Add a resource to the exporter and update status on the coordinator"""
-        print(f"add resource {group_name}/{resource_name}: {cls}/{params}")
+        logging.debug("add resource %s/%s: %s/%s", group_name, resource_name,
+                      cls, params)
         group = self.groups.setdefault(group_name, {})
         assert resource_name not in group
         export_cls = exports.get(cls, ResourceEntry)
@@ -1009,18 +1104,24 @@ class Exporter:
                 "proxy": getfqdn(),
                 "proxy_required": proxy_req,
             }
-            group[resource_name] = export_cls(config)
+            resource = export_cls(config)
+            group[resource_name] = resource
+        self.resource_count += 1
         await self.update_resource(group_name, resource_name)
 
     async def update_resource(self, group_name, resource_name):
         """Update status on the coordinator"""
         resource = self.groups[group_name][resource_name]
+        logging.debug(resource)
+        data = resource.asdict()
+        logging.debug(data)
         msg = labgrid_coordinator_pb2.ExporterInMessage()
         msg.resource.CopyFrom(resource.as_pb2())
         msg.resource.path.group_name = group_name
         msg.resource.path.resource_name = resource_name
         self.out_queue.put_nowait(msg)
-        logging.info("queued update for resource %s/%s", group_name, resource_name)
+        logging.debug("queued update for resource %s/%s", group_name,
+                      resource_name)
 
 
 async def amain(config) -> bool:
@@ -1071,6 +1172,13 @@ def main():
     parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
     parser.add_argument(
         "--pystuck-port", metavar="PORT", type=int, default=6667, help="use a different pystuck port than 6667"
+        )
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        action='store_true',
+        default=False,
+        help="enable verbose mode"
     )
     parser.add_argument("resources", metavar="RESOURCES", type=str, help="resource config file name")
 
@@ -1084,6 +1192,7 @@ def main():
         "resources": args.resources,
         "coordinator": args.coordinator,
         "isolated": args.isolated,
+        "verbose": args.debug,
     }
 
     print(f"exporter name: {config['name']}")

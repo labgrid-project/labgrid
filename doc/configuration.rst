@@ -785,6 +785,61 @@ Arguments:
 Used by:
   - `RKUSBDriver`_
 
+SamsungUSBLoader
+~~~~~~~~~~~~~~~~
+A :any:`SamsungUSBLoader` resource describes a USB device in the *Samsung
+loader state*.
+
+.. code-block:: yaml
+
+   SamsungUSBLoader:
+     ## hub d4
+     match:
+       ID_PATH: pci-0000:03:00.2-usb-0:4.2.4
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `SamsungUSBDriver`_
+
+SunxiUSBLoader
+~~~~~~~~~~~~~~
+A :any:`SunxiUSBLoader` resource describes a USB device in the *Allwinner
+loader state*.
+
+.. code-block:: yaml
+
+   SunxiUSBLoader:
+     ## hub a12
+     match:
+       'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.4:1.0'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `SunxiUSBDriver`_
+
+TegraUSBLoader
+~~~~~~~~~~~~~~
+A :any:`TegraUSBLoader` resource describes a USB device in the *Tegra
+loader state*.
+
+.. code-block:: yaml
+
+   TegraUSBLoader:
+     ## hub e9
+     ## 1-5.1.2.2
+     match:
+       'ID_PATH': 'pci-0000:03:00.2-usb-0:3.4.1'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `TegraUSBDriver`_
+
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ resource available on
@@ -798,6 +853,21 @@ a remote computer.
 NetworkRKUSBLoader
 ~~~~~~~~~~~~~~~~~~
 A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ resource available on a
+remote computer.
+
+NetworkSamsungUSBLoader
+~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkSamsungUSBLoader` describes a `SamsungUSBLoader`_ available on a
+remote computer.
+
+NetworkSunxiUSBLoader
+~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkSunxiUSBLoader` describes a `SunxiUSBLoader`_ available on a
+remote computer.
+
+NetworkTegraUSBLoader
+~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkTegraUSBLoader` describes a `TegraUSBLoader`_ available on a
 remote computer.
 
 AndroidUSBFastboot
@@ -958,6 +1028,120 @@ NetworkUSBDebugger
 ~~~~~~~~~~~~~~~~~~
 A :any:`NetworkUSBDebugger` describes a `USBDebugger`_ resource available on a
 remote computer.
+
+Servo
+~~~~~
+A :any:`Servo` resource describes a ChromiumOS
+`servo board <https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/HEAD/docs/servo.md>`_
+used to control a single DUT. The servo board is connected over USB
+and has a unique serial number. A 'servod' daemon takes care of communicating
+with servo. It supports all versions of the servo board.
+
+If servod and dut-control are not on your path, set the ``HDCTOOLS`` environment
+variable to the correct path.
+
+Note: servod must run as root so you should set up password-less sudo access,
+for example by :
+
+.. code-block:: bash
+
+  echo "user ALL=(root) NOPASSWD: /path/to/servod" |sudo tee /etc/sudoers.d/servod
+  echo "user ALL=(root) NOPASSWD: /usr/bin/chmod a+rw	/dev/pts*" |sudo tee -a /etc/sudoers.d/servod
+
+Replace 'user' with the username you use to run the exporter. Set the path to
+servod correctly. The second line allows the /dev/pts files used by servod to
+be accessed by anyone.
+
+To use the Servo resource, install the
+`hcdtools <https://chromium.googlesource.com/chromiumos/platform/standalone-hdctools>`_
+package on each machine that has servo boards attached.
+
+Note: The Servo resource should appear before resource which use it, such as
+`ServoSerialPort`_.
+
+Arguments:
+  - servo_name (str): A name used to refer to this servo board. This can be
+    anything, so long as it is unique among the Servo resources. Since there
+    is one servo for each DUT, it is common to use the target name as the
+    servo name.
+  - serial (str): Serial number of the servo board
+  - port (int): Port number to allocate to the servo board. This is typically
+    something in the 9900-9999 range. The port must be unique to the exporter
+    which has the servo board. It is recommended to use unique port numbers
+    across your entire lab, to avoid confusion
+  - board (str): Name of the board that the servo is connected to. This is a
+    ChromiumOS code name. It provides hints as to any quirks of the particular
+    board. Generally these are not relevant to Labgrid. If the board is
+    unknown or not supported, it is silently ignored.
+
+Used by:
+  - `ServoDriver`_
+
+.. code-block:: yaml
+
+   Servo:
+     servo_name: snow
+     serial: 911416-00558
+     port: 9906
+     board: daisy
+
+NetworkServo
+~~~~~~~~~~~~
+A :any:`NetworkServo` resource describes a `Servo`_ available
+on a remote computer.
+
+ServoSerialPort
+~~~~~~~~~~~~~~~
+A :any:`ServoSerialPort` resource describes a DUT serial port accessible via
+a `Servo`_ board. Only the AP UART is supported.
+
+Arguments:
+  - servo_name (str): A name used to refer to the servo board providing the
+    serial port. It must match the name in a `Servo`_ reousrce.
+
+.. code-block:: yaml
+
+   ServoSerialPort:
+     servo_name: snow
+
+ServoReset
+~~~~~~~~~~
+A :any:`ServoReset` resource describes a reset signal accessible via a `Servo`_
+board. This can be used to reset the DUT.
+
+Arguments:
+  - servo_name (str): A name used to refer to the servo board providing the
+    serial port. It must match the name in a `Servo`_ reousrce.
+
+.. code-block:: yaml
+
+   ServoReset:
+     servo_name: snow
+
+NetworkServoReset
+~~~~~~~~~~~~~~~~~
+A :any:`NetworkServoReset` resource describes a `ServoReset`_ available
+on a remote computer.
+
+ServoRecovery
+~~~~~~~~~~~~~
+A :any:`ServoRecovery` resource describes a reset signal accessible via a
+`Servo`_ board. This can be used to place the DUT in SoC-recovery mode, so that
+the boot ROM can be accessed over USB, for firmware download.
+
+Arguments:
+  - servo_name (str): A name used to refer to the servo board providing the
+    serial port. It must match the name in a `Servo`_ reousrce.
+
+.. code-block:: yaml
+
+   ServoRecovery:
+     servo_name: snow
+
+NetworkServoRecovery
+~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkServoRecovery` resource describes a `ServoRecovery`_ available
+on a remote computer.
 
 SNMPEthernetPort
 ~~~~~~~~~~~~~~~~
@@ -1271,6 +1455,34 @@ NetworkDediprogFlasher
 ~~~~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkDediprogFlasher` describes a `DediprogFlasher`_ resource
 available on a remote computer.
+
+SFEmulator
+~~~~~~~~~~
+A :any:`SFEmulator` resource is used to configure the parameters for a
+SPI-flash emulator. This allows a DUT's SPI flash to be replaced or
+overridden with a USB-connected emulator, which is much faster to load than
+reprogramming the DUT's actual SPI flash.
+
+So far only the Dediprog EM100-PRO is supported, so there is no 'model' property
+defined.
+
+Arguments:
+  - serial (str): Serial number of the device
+  - chip (str): SPI-flash chip to emulate
+
+.. code-block:: yaml
+
+  SFEmulator:
+    serial: DP025143
+    chip: W25Q64CV
+
+Used by:
+  - `SFEmulatorDriver`_
+
+NetworkSFEmulator
+~~~~~~~~~~~~~~~~~
+A :any:`NetworkSFEmulator` describes a `SFEmulator`_ available on a
+remote computer.
 
 XenaManager
 ~~~~~~~~~~~
@@ -1945,6 +2157,153 @@ Arguments:
   - login_timeout (int, default=60): timeout for password/login prompt detection
   - for other arguments, see `UBootDriver`_
 
+.. _UBootProviderInfo:
+
+UBootProviderDriver
+~~~~~~~~~~~~~~~~~~~
+
+The :any:`UBootProviderDriver` provides a way to build U-Boot for a target.
+U-Boot provides a 'buildman' tool which this driver uses, so Labgrid itself does
+not know how to build U-Boot. The buildman tool works automatically provided
+that you have set it up with suitable toolchains. See
+`buildman <https://docs.u-boot.org/en/latest/build/buildman.html>`_ for more
+information.
+
+This driver is most commonly used to build the current U-Boot source (checked
+out in a development directory) to produce an image which Labgrid can write to
+a board for development and testing purposes.
+
+It can also build a source tree as is, a specific commit, or even apply a patch
+to a specific commit.
+
+When using U-Boot's pytest, this driver can use the U_BOOT_SOURCE_DIR and
+U_BOOT_BUILD_DIR environment variables provided by pytest to select the source
+directory. It can then build U-Boot under the control of the pytests, allowing
+U-Boot's tests to be run on any board in your lab.
+
+U-Boot has a
+`Binman <https://docs.u-boot.org/en/latest/develop/package/index.html>`_
+tool which can locate required binary blobs needed to make
+a particular build work. Where these binaries are missing, the driver reports
+the Binman error. The arguments can be used to provide the directory used to
+hold the binaries.
+
+If the build fails, e.g. due to a compile error, the driver raises a
+subprocess.CalledProcessError exception and labgrid-client shows the error
+output.
+
+This driver is automatically used by the UBootStrategy driver, when
+bootstrapping is selected.
+
+Variables:
+  - commit (str): Optional commit to build (branch name, tag or hash)
+  - patch (str): Optional file containing a patch to apply
+  - use-board (str): Optional board to build, instead of the normal one
+    specified in the environment file
+  - do-clean (str): If set to "1" this cleans the build before starting,
+    otherwise it does an incremental build
+  - build-dir (str): If set, this is used as the build directory for U-Boot
+  - process-limit (int): Limits the number of buildman processes which can
+    be running jobs at once. Set this to 1 to avoid over-taxing your
+    CPU. Buildman does its own multithreading, so each process will use
+    all available CPUs anyway.
+
+Environment variables:
+  - U_BOOT_BUILD_DIR (str): If present, this is used as the build directory for
+    U-Boot, otherwise the directory <uboot_build_base>/<board> is used
+  - U_BOOT_SOURCE_DIR (str): If present, this is used as a source directory for
+    U-Boot, otherwise uboot_source is used, unless a commit is provided, in
+    which case a workdir is used (see uboot_workdirs)
+
+Arguments:
+  - board (str): Name of the board to use (U-Boot build target)
+  - bl31 (str): Optional filename of the BL31 binary
+  - binman_indir (str): Optional directory containing required binaries
+
+Paths:
+  - uboot_build_base (str): Base directory to hold the builds, e.g. '/tmp/b'.
+    Each board is built in a subdirectory of this.
+  - uboot_workdirs (str): Base directory to hold the git work directories, e.g.
+    '/tmp/b/workdirs'. Each board's source code is staged in a subdirectory of
+    this. This path is only needed if a commit is provided to be cherry-picked
+    onto the main source tree.
+  - uboot_source (str): Directory of the main git tree containing the U-Boot
+    source, e.g. '/home/fred/u-boot'
+
+Tools:
+  - buildman (str): Path to the buildman tool. The path to this tool within the
+    U-Boot tree is 'tools/buildman/buildman' but it common to use a separate
+    checkout so that the tool does not change when you are building different
+    U-Boot commits. In the example below, a 'buildman.stable' symlink has been
+    created from ~/bin to 'tools/buildman/buildman' in a separate U-Boot tree,
+    which is seldom updated.
+
+.. code-block:: yaml
+
+   UBootProviderDriver:
+     board: chromebook_samus
+     binman_indir: /home/dev/samus/bin
+
+   UBootProviderDriver:
+     board: orangepi_pc2
+     bl31: /home/dev/arm-trusted-firmware/build/sun50i_a64/debug/bl31.bin
+
+.. code-block:: yaml
+
+   paths:
+     uboot_build_base: "/tmp/b"
+     uboot_workdirs: "/tmp/b/workdirs"
+     uboot_source: "/home/dev/u-boot/files"
+
+   tools:
+     buildman: "buildman.stable"
+
+.. _UBootWriterInfo:
+
+UBootWriterDriver
+~~~~~~~~~~~~~~~~~
+
+Writing U-Boot to a board can be complicated, because each SoC uses its own
+means of booting. This driver encapsulates those differences and is able to
+write U-Boot to a wide variety of boards. It works using a U-Boot build
+directory, where U-Boot has been built for a particular board. typically using
+the `UBootProviderDriver`_ driver. It then picks out the necessary files from
+that directory and writes them to the selected boot media, or sends them using
+the SoC-specific bootrom.
+
+This driver is automatically used by the UBootStrategy driver, when
+bootstrapping is selected.  It uses the 'send' method when 'do-send' is set to 1
+and the 'write()' method otherwise. For the 'send' method, the relevant
+SoC-specific, USB-loader driver must be provided.
+
+Binds to:
+  serial:
+    - `USBStorageDriver`_ Storage device, required when writing using a method
+      other than 'em100'
+    - `USBSDWireDriver`_ SDwire device (optional)
+    - `SFEmulatorDriver`_ SPI-flash emulator driver, required when writing
+      using the 'em100' method
+
+Arguments:
+  - method (str): Name of the SoC-specific method to use, e.g. 'sunxi'. See the
+    driver for supported methods
+  - bl1 (str): Optional filename of the BL1 binary
+  - bl2 (str): Optional filename of the BL2 binary
+  - tzsw (str): Optional filename of the Trustzone software binary
+
+.. code-block:: yaml
+
+   UBootWriterDriver:
+     method: em100
+
+.. code-block:: yaml
+
+   UBootWriterDriver:
+     method: samsung
+     bl1: /home/dev/xu3/bl1.bin.hardkernel
+     bl2: /home/dev/xu3/bl2.bin.hardkernel.1mb_uboot
+     tzsw: /home/dev/xu3/tzsw.bin.hardkernel
+
 BareboxDriver
 ~~~~~~~~~~~~~
 A :any:`BareboxDriver` interfaces with a *barebox* bootloader via a
@@ -2156,6 +2515,20 @@ Arguments:
   - cmd_off (str): command to turn power to the board off
   - cmd_cycle (str): optional command to switch the board off and on
   - delay (float, default=2.0): delay in seconds between off and on, if cmd_cycle is not set
+
+AlwaysPowerDriver
+~~~~~~~~~~~~~~~~~
+An :any:`ExternalPowerDriver` can be used for target which have no power
+control but are always on. This allows the strategy to still expect a
+:any:`PowerProtocol` driver and obtain one.
+
+Any attempt to power on or off is ignored.
+
+Binds to:
+  - None
+
+Implements:
+  - :any:`PowerProtocol`
 
 NetworkPowerDriver
 ~~~~~~~~~~~~~~~~~~
@@ -2417,6 +2790,25 @@ Implements:
 Arguments:
   - delay (float, default=1.0): delay in seconds between setting the output 0 and 1.
 
+DigitalOutputRecoveryDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`DigitalOutputRecoveryDriver` uses a DigitalOutput to hold the target in
+reset.
+
+Binds to:
+  output:
+    - :any:`DigitalOutputProtocol`
+
+Implements:
+  - :any:`RecoveryProtocol`
+
+.. code-block:: yaml
+
+   DigitalOutputRecoveryDriver:
+
+Arguments:
+  - delay (float, default=1.0): delay in seconds between setting the output 0 and 1.
+
 ModbusCoilDriver
 ~~~~~~~~~~~~~~~~
 A :any:`ModbusCoilDriver` controls a `ModbusTCPCoil`_ resource.
@@ -2467,6 +2859,7 @@ Binds to:
 
 Implements:
   - :any:`DigitalOutputProtocol`
+  - :any:`RecoveryProtocol`
 
 .. code-block:: yaml
 
@@ -2637,6 +3030,128 @@ Arguments:
     of an image to bootstrap onto the target
   - usb_loader (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of a first-stage bootloader image to write
+
+SunxiUSBDriver
+~~~~~~~~~~~~~~
+A :any:`SunxiUSBDriver` is used to upload an image into a device in the
+*Allwinner loader state*. This is useful to bootstrap a bootloader onto a
+device.
+
+Note that sunxi is the common name for Allwinner SoCs, since they have product
+codes like sun50i, sun7i, etc.
+
+The load happens in two stages, first SPL and then U-Boot proper.
+
+Binds to:
+  loader:
+    - `SunxiUSBLoader`_
+    - `NetworkSunxiUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         SunxiUSBDriver:
+           loadaddr: 0x4a000000
+   tools:
+     sunxi-fel: '/home/dev/bin/sunxi-fel'
+
+Arguments:
+  - loadaddr (int): address to use when loading U-Boot. This depends on the
+    SoC being used. The easiest way to find this value is to check the
+    *CONFIG_TEXT_BASE* value in U-Boot
+  - image (str): Optional image filename
+
+ Tools:
+  - sunxi-fel: Path to the 'sunxi-fel' tool (default is 'sunxi-fel')
+
+SamsungUSBDriver
+~~~~~~~~~~~~~~~~
+A :any:`SamsungUSBDriver` is used to upload an image into a device in the
+*Samsung loader state*. This is useful to bootstrap a bootloader onto a device.
+
+The load happens in three stages: BL1, SPL and U-Boot proper.
+
+Binds to:
+  loader:
+    - `SamsungUSBLoader`_
+    - `NetworkSamsungUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         SamsungUSBDriver:
+           bl1: '/home/dev/exynos/snow/u-boot.bl1.bin'
+           bl1_loadaddr: 0x02021400
+           spl_loadaddr: 0x02023400
+           loadaddr: 0x43e00000
+   tools:
+     smdk-usbdl: '/home/dev/bin/smdk-usbdl'
+
+Arguments:
+  - bl1 (str): Filename of the BL1 file which sets up the SoC
+  - bl1_loadaddr (int): Load address of the BL1 file. This depends on the SoC
+    spl_load_addr (int): Load address of SPL. The easiest way to find this value
+    is to check the *CONFIG_SPL_TEXT_BASE* value in U-Boot
+  - loadaddr (int): address to use when loading U-Boot. This depends on the
+    SoC being used. The easiest way to find this value is to check the
+    *CONFIG_TEXT_BASE* value in U-Boot
+  - image (str): Optional image filename
+
+ Tools:
+  - smdk-usbdl: Path to the 'smdk-usbdl' tool (default is 'smdk-usbdl')
+
+TegraUSBDriver
+~~~~~~~~~~~~~~
+A :any:`TegraUSBDriver` is used to upload an image into a device in the
+*Nvidia Tegra loader state*. This is useful to bootstrap a bootloader onto a
+device.
+
+The load happens in a single stage, with U-Boot proper sent along with a
+*BCT* (Binary Control Tool) configuration file which contains memory timings,
+etc.
+
+Binds to:
+  loader:
+    - `TegraUSBLoader`_
+    - `NetworkTegraUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         TegraUSBDriver:
+           loadaddr: 0x80108000
+           bct: '/home/dev/tegra124/nvidia/norrin/PM370_Hynix_2GB_H5TC4G63AFR_PBA_924MHz_01212014.bct'
+           usb_path: 1-3.4.1
+   tools:
+     tegrarcm: '/home/dev/bin/tegrarcm'
+
+Arguments:
+  - loadaddr (int): address to use when loading U-Boot. This depends on the
+    SoC being used. The easiest way to find this value is to check the
+    *CONFIG_TEXT_BASE* value in U-Boot
+  - bct (str): path to the BCT (configuration file)
+  - usb_path (str): USB device to program. This can be obtained using udevadm
+    with the USB bus and device number. For example
+    `udevadm info /dev/bus/usb/003/042` then look at DEVPATH.
+  - image (str): Optional image filename
+
+ Tools:
+  - tegrarcm: Path to the 'tegrarcm' tool (default is 'tegrarcm')
 
 UUUDriver
 ~~~~~~~~~
@@ -2814,6 +3329,15 @@ Binds to:
      dtb: 'dtb'
      nic: 'user'
 
+   QEMUDriver:
+     qemu_bin: qemu-i386
+     machine: pc
+     cpu: core2duo
+     memory: 2G
+     extra_args: "-accel kvm"
+     nic: user,model=virtio-net-pci
+     disk: disk-image
+
 .. code-block:: yaml
 
    tools:
@@ -2830,8 +3354,8 @@ Implements:
 
 Arguments:
   - qemu_bin (str): reference to the tools key for the QEMU binary
-  - machine (str): QEMU machine type
-  - cpu (str): QEMU cpu type
+  - machine (str): optional, QEMU machine type
+  - cpu (str): optional, QEMU cpu type
   - memory (str): QEMU memory size (ends with M or G)
   - extra_args (str): optional, extra QEMU arguments, they are passed directly to the QEMU binary
   - boot_args (str): optional, additional kernel boot argument
@@ -2857,6 +3381,34 @@ The QEMUDriver also requires the specification of:
 - an image key, the path to the kernel image and optionally the dtb key to
   specify the build device tree
 - a path key, this is the path to the rootfs
+
+ServoDriver
+~~~~~~~~~~~
+The :any:`ServoDriver` uses a `Servo`_ resource to provide access to a servo
+board attached over USB, as used with ChromiumOS. This board can provide an AP
+console as well as signals to reset the DUT.
+
+A ``servod`` daemon must be running for each attached servo board. This is
+handled automatically by the resource.
+
+The ``ServoDriver`` provides a console, with the other features (reset and
+recovery) being provided by other drivers. Note that only the AP console is
+supported at present, so there is no way to use the EC console, for example.
+
+The pathname of the dut-control tool can be set using the 'dut-control'
+tool setting in the environment.
+
+ServoResetDriver
+~~~~~~~~~~~~~~~~
+The :any:`ServoResetDriver` provides control of the AP reset signal on servo.
+This can be used to perform a cold reset on the DUT. See `ServoDriver`_ for more
+details.
+
+ServoRecoveryDriver
+~~~~~~~~~~~~~~~~~~~
+The :any:`ServoRecoveryDriver` provides control of the recovery signal on servo.
+This can be used to control whether the DUT goes into SoC-recovery mode on
+reset or power on. See `ServoDriver`_ for more details.
 
 SigrokDriver
 ~~~~~~~~~~~~
@@ -3213,6 +3765,15 @@ devices. It is assumed that the device flashing is an exporter wired, via a
 *Dediprog SF100 SPI NOR Flash Programmer* for instance, to the device being
 flashed.
 
+SFEmulatorDriver
+~~~~~~~~~~~~~~~~
+The :any:`SFEmulatorDriver` is used to emulate a SPI-flash device on the DUT.
+
+Binds to:
+  flasher:
+    - `SFEmulator`_
+    - `NetworkSFEmulator`_
+
 XenaDriver
 ~~~~~~~~~~
 The :any:`XenaDriver` allows to use Xena networking test equipment.
@@ -3504,14 +4065,18 @@ the "shell" state:
 This command would transition directly into a Linux shell and
 activate the `ShellDriver`_.
 
+.. _UBootStrategyInfo:
+
 UBootStrategy
 ~~~~~~~~~~~~~
-A :any:`UBootStrategy` has four states:
+A :any:`UBootStrategy` has five states:
 
-- unknown
-- off
-- uboot
-- shell
+- unknown: State is not known
+- off: Power is off
+- bootstrap: U-Boot has been written to the board
+- start: Board has started booting
+- uboot: Board has stopped at the U-Boot prompt
+- shell: Board has stopped at the Linux prompt
 
 Here is an example environment config:
 
@@ -3551,7 +4116,33 @@ the "shell" state:
    >>> s.transition("shell")
 
 This command would transition from the bootloader into a Linux shell and
-activate the `ShellDriver`_.
+activate the `ShellDriver`_. Any console output received in booting U-Boot iself
+will be written to the terminal.
+
+To see U-Boot booting you can select the `start` strategy with the
+`labgrid-client -s start console` command. It will boot up and show you the
+console.
+
+This strategy supports writing to the board's boot media using an SD mux such as
+`USBSDWireDevice`_. If you wish to write U-Boot to the board before starting it,
+set the `do-bootstrap` variable and see `UBootWriterDriver`_ for more details:
+
+.. code-block:: bash
+
+   labgrid-client -V do-bootstrap 1 -s start console
+
+To write the board using USB instead of boot media, set `do-send`:
+
+.. code-block:: bash
+
+   labgrid-client -V do-bootstrap 1 -V do-send 1 -s start console
+
+To build U-Boot from source before writing it, set the `do-build` variable and
+see `UBootProviderDriver`_ for more details.
+
+.. code-block:: bash
+
+   labgrid-client -V do-build 1 -V do-bootstrap 1 -V do-send 1 -s start console
 
 DockerStrategy
 ~~~~~~~~~~~~~~
@@ -3946,3 +4537,20 @@ hostname
 
 name
   The name of the exporter.
+
+Strategy variables
+------------------
+Some complex strategies may provide control variables to adjust their operation.
+These can be provided on the labgrid-client command line and passed to the
+strategy implementation.
+
+Variables are not formally declared, but can be accessed using the get_var()
+call in ``labgrid/var_dict.py``.
+
+To provide variables to the strategy, use the -V option when running
+labgrid-client. Multiple options can be used. In each case there is a variable
+name and a value. This example shows telling the U-Boot strategy to build U-Boot
+and write it to the board, before starting up and checking that U-Boot boots
+OK::
+
+   labgrid-client -V do-bootstrap 1 -V do-build 1 -p rpi3 -s uboot -a console

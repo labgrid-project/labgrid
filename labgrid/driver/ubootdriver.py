@@ -1,4 +1,6 @@
 """The U-Boot Module contains the UBootDriver"""
+import re
+
 import attr
 from pexpect import TIMEOUT
 
@@ -9,6 +11,7 @@ from ..step import step
 from .common import Driver
 from .commandmixin import CommandMixin
 
+pattern_u_boot_main_signon = re.compile(b'(U-Boot( Concept)? \\d{4}\\.\\d{2}[^\r\n]*\\))')
 
 @target_factory.reg_driver
 @attr.s(eq=False)
@@ -47,6 +50,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self._status = 0
+        self._output = b''
+        self.version = None
 
         if self.boot_expression:
             import warnings
@@ -66,6 +71,10 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Simply sets the internal status to 0
         """
         self._status = 0
+
+    def assume_active(self):
+        """Tell this driver to U-Boot is at the prompt"""
+        self._status = 1
 
     def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
         # TODO: use codec, decodeerrors
@@ -152,9 +161,10 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # occours, we can't lose any data this way.
         last_before = None
 
-        expectations = [self.prompt, self.autoboot, self.password_prompt, TIMEOUT]
+        expectations = [self.prompt, self.autoboot, self.password_prompt,
+                        pattern_u_boot_main_signon, TIMEOUT]
         while True:
-            index, before, _, _ = self.console.expect(
+            index, before, m, _ = self.console.expect(
                 expectations,
                 timeout=2
             )
@@ -171,6 +181,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 self.console.sendline(self.password)
 
             elif index == 3:
+                self.version = m.group(1).decode('ASCII')
+            elif index == 4:
                 # expect hit a timeout while waiting for a match
                 if before == last_before:
                     # we did not receive anything during the previous expect cycle
@@ -179,11 +191,24 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                     self.console.sendline("")
 
                 if timeout.expired:
+                    output = self.console.read_output(False)
+                    for line in output.splitlines():
+                        print(line.decode('utf-8', errors='replace'))
                     raise TIMEOUT(
                         f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"
                     )
 
             last_before = before
+
+        output = self.console.read_output(False)
+        pos = output.find(self.autoboot.encode('utf-8'))
+        if pos == -1:
+            pos = output.find(self.prompt.encode('utf-8'))
+
+        if pos == -1:
+            self._output = output
+        else:
+            self._output = output[:pos]
 
         if self.prompt:
             self._check_prompt()
@@ -213,3 +238,6 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 raise Exception(f"{name} not found in boot_commands") from e
         else:
             self.console.sendline(self.boot_command)
+
+    def read_output(self):
+        return self._output

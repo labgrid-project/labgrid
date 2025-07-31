@@ -6,6 +6,7 @@ from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
 from ..logging import StepFormatter, StepLogger
+from ..var_dict import add_var
 
 LABGRID_ENV_KEY = pytest.StashKey[Environment]()
 
@@ -62,6 +63,16 @@ def configure_pytest_logging(config, plugin):
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
+    if config.option.lg_log_output:
+        logger = logging.getLogger()
+
+        # Create and add the new file handler
+        file_handler = logging.FileHandler(config.option.lg_log_output)
+        file_formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+        logger.setLevel(logging.INFO)
+
     StepLogger.start()
     config.add_cleanup(StepLogger.stop)
 
@@ -76,6 +87,11 @@ def pytest_configure(config):
         ConsoleLoggingReporter(lg_log)
     lg_env = config.option.lg_env
     lg_coordinator = config.option.lg_coordinator
+    lg_target = config.option.lg_target
+
+    for arg in config.option.lg_var or []:
+        name, value = arg
+        add_var(name, value)
 
     env = None
     if lg_env is None:
@@ -84,6 +100,8 @@ def pytest_configure(config):
         env = Environment(config_file=lg_env)
         if lg_coordinator is not None:
             env.config.set_option('coordinator_address', lg_coordinator)
+        if lg_target is not None:
+            env.config.set_option('target', lg_target)
     config.stash[LABGRID_ENV_KEY] = env
 
     processwrapper.enable_logging()

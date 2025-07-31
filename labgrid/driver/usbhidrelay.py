@@ -12,7 +12,7 @@ from ..util.agentwrapper import AgentWrapper
 @attr.s(eq=False)
 class HIDRelayDriver(Driver, DigitalOutputProtocol):
     bindings = {
-        "relay": {"HIDRelay", NetworkHIDRelay},
+        "relay": {"HIDRelay", "NetworkHIDRelay"},
     }
 
     def __attrs_post_init__(self):
@@ -46,3 +46,8 @@ class HIDRelayDriver(Driver, DigitalOutputProtocol):
         if self.relay.invert:
             status = not status
         return status
+
+    @Driver.check_active
+    @step()
+    def set_enable(self, enable):
+        self.set(enable)

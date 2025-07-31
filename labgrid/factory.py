@@ -141,10 +141,10 @@ class TargetFactory:
                 f"failed to create {driver} for target '{target}' using {args} ") from e
         return d
 
-    def make_target(self, name, config, *, env=None):
+    def make_target(self, name, config, *, env=None, var_dict=None):
         from .target import Target
 
-        target = Target(name, env=env)
+        target = Target(name, env=env, var_dict=var_dict)
         for item in TargetFactory._convert_to_named_list(config.get('resources', {})):
             resource = item.pop('cls')
             name = item.pop('name', None)

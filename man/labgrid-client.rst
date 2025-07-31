@@ -37,6 +37,8 @@ OPTIONS
     display command line help
 -p PLACE, --place PLACE
     specify the place to operate on
+-r ROLE, --role ROLE
+    specify the role to operate on
 -x ADDRESS, --coordinator ADDRESS
     coordinator ``HOST[:PORT]`` to connect to, defaults to ``127.0.0.1:20408``
 -c CONFIG, --config CONFIG
@@ -47,6 +49,8 @@ OPTIONS
 -i INITIAL_STATE, --initial-state INITIAL_STATE
     strategy state to force into before switching to desired state, requires a
     desired state (``-s``/``--state``/``LG_STATE``)
+-a, --acquire
+    acquire the place before performing the requested operation
 -d, --debug
     enable debugging
 -v, --verbose

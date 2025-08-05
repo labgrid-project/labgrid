@@ -23,6 +23,7 @@ from .udev import (
     SigrokUSBSerialDevice,
     USBAudioInput,
     USBDebugger,
+    USBLauterbachDebugger,
     USBFlashableDevice,
     USBMassStorage,
     USBNetworkInterface,
@@ -47,3 +48,4 @@ from .dediprogflasher import DediprogFlasher, NetworkDediprogFlasher
 from .httpdigitalout import HttpDigitalOutput
 from .sigrok import SigrokDevice
 from .fastboot import AndroidNetFastboot
+from .lauterbach import NetworkLauterbachDebugger

@@ -39,6 +39,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         if isinstance(self.port, SerialPort):
             self.serial.port = self.port.port
             self.serial.baudrate = self.port.speed
+            self.serial.xonxoff = self.port.xonxoff
         else:
             host, port = proxymanager.get_host_and_port(self.port)
             if self.port.protocol == "rfc2217":

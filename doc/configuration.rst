@@ -2551,6 +2551,9 @@ An :any:`IMXUSBDriver` is used to upload an image into a device in the *i.MX
 USB loader state*.
 This is useful to bootstrap a bootloader onto a device.
 This driver uses the ``imx-usb-loader`` tool from barebox.
+If your device has the ``SDP_READ_DISABLE`` fuse burnt, then reading back data
+over USB is not possible anymore, which means, that the verification of the
+image is not possible anymore. Set ``verify`` to False in this case.
 
 Binds to:
   loader:
@@ -2569,6 +2572,7 @@ Implements:
        drivers:
          IMXUSBDriver:
            image: 'mybootloaderkey'
+           verify: True
 
    images:
      mybootloaderkey: 'path/to/mybootloader.img'
@@ -2576,6 +2580,7 @@ Implements:
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of an image to bootstrap onto the target
+  - verify (bool, default=True): optional, wether to verify the written image or not
 
 BDIMXUSBDriver
 ~~~~~~~~~~~~~~

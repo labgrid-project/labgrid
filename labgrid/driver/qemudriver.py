@@ -113,6 +113,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._clientsocket = None
         self._sockpath = None
         self._forwarded_ports = {}
+        self.image = None
+        self._writer_args = None
         atexit.register(self._atexit)
 
     def _atexit(self):
@@ -146,6 +148,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             bios (str): New bios filename
         """
         self.bios = bios
+
+    def set_image(self, image):
+        self.image = image
+
+    def set_writer_args(self, args):
+        """Set arguments provided by the firmware writer
+
+        Args:
+            args (list of str): Arguments to add to QEMU
+        """
+        self._writer_args = args
 
     def get_qemu_base_args(self):
         """Returns the base command line used for Qemu without the options
@@ -211,6 +224,11 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 cmd.append(self.bios)
             else:
                 cmd.append(self.target.env.config.get_image_path(self.bios))
+        if self.image:
+            cmd.append('-drive')
+            cmd.append(f'if=virtio,file={self.image},format=raw,id=hd0')
+        if self._writer_args:
+            cmd.extend(self._writer_args)
         if self.extra_args:
             if "-append" in shlex.split(self.extra_args):
                 raise ExecutionError("-append in extra_args not allowed, use boot_args instead")

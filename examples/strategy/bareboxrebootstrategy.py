@@ -5,7 +5,7 @@ import attr
 from labgrid import target_factory, step
 from labgrid.driver import BareboxDriver, ShellDriver
 from labgrid.protocol import PowerProtocol
-from labgrid.strategy import Strategy
+from labgrid.strategy import Strategy, never_retry
 
 
 @attr.s(eq=False)
@@ -58,6 +58,7 @@ class BareboxRebootStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
+    @never_retry
     @step(args=["new_status"])
     def transition(self, new_status, *, step):
         if not isinstance(new_status, Status):

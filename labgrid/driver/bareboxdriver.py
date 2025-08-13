@@ -1,4 +1,3 @@
-import logging
 import shlex
 
 import attr
@@ -33,14 +32,13 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     bindings = {"console": ConsoleProtocol, }
     prompt = attr.ib(default="", validator=attr.validators.instance_of(str))
     autoboot = attr.ib(default="stop autoboot", validator=attr.validators.instance_of(str))
-    interrupt = attr.ib(default="\n", validator=attr.validators.instance_of(str))
+    interrupt = attr.ib(default="\x04", validator=attr.validators.instance_of(str))
     bootstring = attr.ib(default=r"Linux version \d", validator=attr.validators.instance_of(str))
     password = attr.ib(default="", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
         # barebox' default log level, used as fallback if no log level can be saved
         self.saved_log_level = 7
@@ -65,7 +63,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     def run(self, cmd: str, *, timeout: int = 30):
         return self._run(cmd, timeout=timeout)
 
-    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
+    def _run(self, cmd: str, *, timeout: int = 30, adjust_log_level: bool = True, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
         """
         Runs the specified command on the shell and returns the output.
 
@@ -80,7 +78,14 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         marker = gen_marker()
         # hide marker from expect
         hidden_marker = f'"{marker[:4]}""{marker[4:]}"'
-        cmp_command = f'''echo -o /cmd {shlex.quote(cmd)}; echo {hidden_marker}; sh /cmd; echo {hidden_marker} $?;'''  # pylint: disable=line-too-long
+        # generate command with marker and log level adjustment
+        cmp_command = f'echo -o /cmd {shlex.quote(cmd)}; echo {hidden_marker};'
+        if self.saved_log_level and adjust_log_level:
+            cmp_command += f' global.loglevel={self.saved_log_level};'
+        cmp_command += f' sh /cmd; echo {hidden_marker} $?;'
+        if self.saved_log_level and adjust_log_level:
+            cmp_command += ' global.loglevel=0;'
+
         if self._status == 1:
             self.console.sendline(cmp_command)
             _, _, match, _ = self.console.expect(
@@ -191,14 +196,14 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # remember barebox' log level - we don't expect to be interrupted here
         # by pollers because no hardware interaction is triggered by echo, so
         # it should be safe to use the usual shell wrapper via _run()
-        stdout, _, exitcode = self._run("echo $global.loglevel")
+        stdout, _, exitcode = self._run("echo $global.loglevel", adjust_log_level=False)
         [saved_log_level] = stdout
         if exitcode == 0 and saved_log_level.isnumeric():
             self.saved_log_level = saved_log_level
 
         # silence barebox, the driver can get confused by asynchronous messages
         # logged to the console otherwise
-        self._run("global.loglevel=0")
+        self._run("global.loglevel=0", adjust_log_level=False)
 
     @Driver.check_active
     def await_boot(self):
@@ -214,7 +219,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Args:
             name (str): name of the entry to boot"""
         # recover saved log level
-        self._run(f"global.loglevel={self.saved_log_level}")
+        self._run(f"global.loglevel={self.saved_log_level}", adjust_log_level=False)
 
         if name:
             self.console.sendline(f"boot -v {name}")

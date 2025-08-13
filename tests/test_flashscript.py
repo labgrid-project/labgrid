@@ -2,6 +2,7 @@ import pytest
 import subprocess
 import tempfile
 import attr
+import os
 from pathlib import Path
 from labgrid.driver.flashscriptdriver import FlashScriptDriver
 from labgrid.resource.common import ManagedResource
@@ -69,4 +70,4 @@ def test_argument_device_expansion(target, resource, driver):
 
 def test_argument_file_expansion(target, driver):
     value = capture_argument_expansion(driver, "file.local_path")
-    assert value == "/bin/sh"
+    assert os.path.samefile(value, "/bin/sh")

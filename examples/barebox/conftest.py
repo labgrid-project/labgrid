@@ -1,8 +1,8 @@
 import pytest
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def command(target):
-    barebox = target.get_driver('CommandProtocol')
+    barebox = target.get_driver("CommandProtocol")
     target.activate(barebox)
     return barebox

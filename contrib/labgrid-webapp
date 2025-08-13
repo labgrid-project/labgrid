@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+import argparse
+import asyncio
+import logging
+import os
+import sys
+from typing import Dict
+
+import graphviz
+import uvicorn
+from fastapi import FastAPI
+from fastapi.responses import Response
+
+from labgrid.remote.client import ClientSession, start_session
+from labgrid.remote.common import Place
+from labgrid.resource import Resource
+from labgrid.util.proxy import proxymanager
+
+
+async def do_graph(session: ClientSession) -> bytes:
+    '''Generate a graphviz graph of the current configuration.
+
+    Graph displays:
+    - all resources, grouped by groupname and exporter.
+    - all places, with a list of tags
+    - solid edges between places and acquired resources
+    - dotted edges between places and unacquired resources
+    - edges between resources and places carry the match name if any.
+    '''
+    def res_node_attr(name: str, resource: Resource) -> Dict[str, str]:
+        return {
+            'shape': 'plaintext',
+            'label': f'''<
+            <table bgcolor="peru">
+                <tr>
+                    <td border="0" align="left">Resource</td>
+                </tr>
+                <tr>
+                    <td port="cls">{resource.cls}</td>
+                    <td port="name" bgcolor="white">{name}</td>
+                </tr>
+            </table>>''',
+        }
+
+    def place_node_attr(name: str, place: Place) -> Dict[str, str]:
+        acquired = ''
+        bgcolor = 'lightblue'
+        if place.acquired:
+            bgcolor = 'cornflowerblue'
+            acquired = f'<td port="user" border="0" align="right"><b>{place.acquired}</b></td>'
+
+        tags = '<tr><td border="0" align="left">Tags</td></tr>' if place.tags else ''
+        for k, v in place.tags.items():
+            tags += f'<tr><td border="0"></td><td border="0" align="left">{k}={v}</td></tr>'
+
+        return {
+            'shape': 'plaintext',
+            'label': f'''<
+            <table bgcolor="{bgcolor}">
+                <tr>
+                    <td border="0" align="left">Place</td>
+                    {acquired}
+                </tr>
+                <tr>
+                    <td port="name" colspan="2" bgcolor="white">{name}</td>
+                </tr>
+                {tags}
+            </table>>''',
+        }
+
+    g = graphviz.Digraph('G')
+    g.attr(rankdir='LR')
+
+    paths = {}
+    for exporter, groups in session.resources.items():
+        g_exporter = graphviz.Digraph(f'cluster_{exporter}')
+        g_exporter.attr(label=exporter)
+
+        for group, resources in groups.items():
+            g_group = graphviz.Digraph(f'cluster_{group}')
+            g_group.attr(label=group)
+
+            for r_name, entry in resources.items():
+                res_node = f'{exporter}/{group}/{entry.cls}/{r_name}'.replace(':', '_')
+                paths[res_node] = [exporter, group, entry.cls, r_name]
+                g_group.node(res_node, **res_node_attr(r_name, entry))
+
+            g_exporter.subgraph(g_group)
+
+        g.subgraph(g_exporter)
+
+    for p_node, place in session.places.items():
+        g.node(p_node, **place_node_attr(p_node, place))
+
+        for m in place.matches:
+            for node, p in paths.items():
+                if m.ismatch(p):
+                    g.edge(
+                        f'{node}:name', p_node,
+                        style='solid' if place.acquired else 'dotted',
+                        label=m.rename if m.rename else None,
+                    )
+
+    return g.pipe(format='svg')
+
+
+def main():
+    app = FastAPI()
+    logger = logging.getLogger('uvicorn')
+
+    @app.get('/labgrid/graph')
+    async def get_graph() -> str:
+        '''Show a graph of the current infrastructure.'''
+        svg = await do_graph(session)
+        return Response(content=svg, media_type='image/svg+xml')
+
+    parser = argparse.ArgumentParser(
+        description='Labgrid webapp',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        '--coordinator',
+        '-x',
+        metavar='URL',
+        default=os.environ.get('LG_COORDINATOR', '127.0.0.1:20408'),
+        help='Coordinator address as HOST[:PORT] (default: %(default)s)',
+    )
+    parser.add_argument('--port', type=int, default=8800, help='Port to serve on')
+    parser.add_argument('--proxy', '-P', help='Proxy connections via given ssh host')
+
+    args = parser.parse_args()
+
+    if args.proxy:
+        proxymanager.force_proxy(args.proxy)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    try:
+        session = start_session(
+            args.coordinator,
+            loop=loop,
+        )
+    except ConnectionRefusedError:
+        logger.fatal('Unable to connect to labgrid coordinator')
+        return
+
+    server = uvicorn.Server(config=uvicorn.Config(
+        loop=loop,
+        host='0.0.0.0',
+        port=args.port,
+        app=app,
+    ))
+
+    logger.info('Available routes:')
+    for route in app.routes:
+        reserved_routes = ['/openapi.json', '/docs', '/docs/oauth2-redirect', '/redoc']
+        if route.path not in reserved_routes:
+            logger.info(f'  - {route.path}')
+
+    try:
+        loop.run_until_complete(server.serve())
+    finally:
+        loop.run_until_complete(session.stop())
+        loop.run_until_complete(session.close())
+
+
+if __name__ == '__main__':
+    sys.exit(main())

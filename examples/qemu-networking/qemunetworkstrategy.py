@@ -17,7 +17,7 @@ import enum
 import attr
 
 from labgrid import target_factory, step
-from labgrid.strategy import Strategy
+from labgrid.strategy import Strategy, StrategyError
 from labgrid.util import get_free_port
 
 
@@ -75,7 +75,7 @@ class QEMUNetworkStrategy(Strategy):
                 networkservice.port = local_port
             else:
                 networkservice.address = new_address
-                networkserivce.port = self.__remote_port
+                networkservice.port = self.__remote_port
 
     @step(args=["state"])
     def transition(self, state, *, step):
@@ -83,7 +83,7 @@ class QEMUNetworkStrategy(Strategy):
             state = Status[state]
 
         if state == Status.unknown:
-            raise StrategyError(f"can not transition to {new_status}")
+            raise StrategyError(f"can not transition to {state}")
 
         elif self.status == state:
             step.skip("nothing to do")
@@ -99,4 +99,4 @@ class QEMUNetworkStrategy(Strategy):
             self.target.activate(self.shell)
             self.update_network_service()
 
-        self.status = status
+        self.status = state

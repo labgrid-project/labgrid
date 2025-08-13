@@ -1,4 +1,3 @@
-import logging
 import threading
 from time import monotonic
 
@@ -16,13 +15,9 @@ class MQTTManager(ResourceManager):
     _topic_lock = attr.ib(default=threading.Lock())
     _last = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
 
-    def __attrs_post_init__(self):
-        super().__attrs_post_init__()
-        self.log = logging.getLogger('MQTTManager')
-
     def _create_mqtt_connection(self, host):
         import paho.mqtt.client as mqtt
-        client = mqtt.Client()
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         client.connect(host)
         client.on_message = self._on_message
         client.loop_start()

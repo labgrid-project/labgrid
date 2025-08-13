@@ -210,7 +210,7 @@ labgrid contains components for accessing resources which are not directly
 accessible on the local machine.
 The main parts of this are:
 
-labgrid-coordinator (crossbar component)
+labgrid-coordinator
   Clients and exporters connect to the coordinator to publish resources, manage
   place configuration and handle mutual exclusion.
 
@@ -227,9 +227,8 @@ RemotePlace (managed resource)
   When used in a `Target`, the RemotePlace expands to the resources configured
   for the named places.
 
-These components communicate over the `WAMP <http://wamp-proto.org/>`_
-implementation `Autobahn <http://autobahn.ws/>`_ and the `Crossbar
-<http://crossbar.io/>`_ WAMP router.
+These components communicate over `gRPC <https://grpc.io/>`_. The coordinator
+acts as a gRPC server to which client and exporter connect.
 
 The following sections describe the responsibilities of each component. See
 :ref:`remote-usage` for usage information.
@@ -239,8 +238,8 @@ The following sections describe the responsibilities of each component. See
 Coordinator
 ~~~~~~~~~~~
 
-The `Coordinator` is implemented as a Crossbar component and is started by the
-router.
+The `Coordinator` is implemented as a gRPC server and is started as a separate
+process.
 It provides separate RPC methods for the exporters and clients.
 
 The coordinator keeps a list of all resources for clients and
@@ -319,6 +318,12 @@ published as declared in the configuration file.
 This is useful to register externally configured resources such as network
 power switches or serial port servers with a labgrid coordinator.
 
+.. note::
+  Users will require SSH access to the exporter to access services and command
+  line utilities. You also have to ensure that users can access usb devices for
+  i.e. imx-usb-loader. To test a SSH jump to a device over the exporter outside
+  of labgrid, `ssh -J EXPORTER USER@DEVICE` can be used.
+
 .. _overview-client:
 
 Client
@@ -381,7 +386,7 @@ variable needs to be set to the remote host which should tunnel the connection
 to the coordinator. The client then forwards all network traffic -
 client-to-coordinator and client-to-exporter - through SSH, via their
 respective proxies. This means that with :code:`LG_PROXY` and
-:code:`LG_CROSSBAR` labgrid can be used fully remotely with only a SSH
+:code:`LG_COORDINATOR` labgrid can be used fully remotely with only a SSH
 connection as a requirement.
 
 .. note::

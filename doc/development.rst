@@ -23,7 +23,7 @@ Install required dependencies:
 
 .. code-block:: bash
 
-   sudo apt install python3-dev libow-dev libsnappy-dev
+   sudo apt install python3-dev libow-dev
 
 Install labgrid with development dependencies into the virtualenv in editable
 mode:
@@ -303,6 +303,12 @@ Here, the `barebox` state simply cycles the board and activates the driver,
 while the `shell` state uses the barebox state to cycle the board and then boot
 the linux kernel.
 The `off` state switches the power off.
+
+Oftentimes it is also necessary to wait for specific resources to appear before
+a transition can be continued. The `await_resources` function of the target
+implements this functionality, it expects a list of resources to wait for and
+optionally takes a timeout and whether the resource should be available or
+unavailable.
 
 
 Tips for Writing and Debugging Tests
@@ -679,7 +685,7 @@ When contributing to documentation it's practical to be able to build it also lo
 
     git clone https://github.com/labgrid-project/labgrid.git
     cd labgrid
-    pip install -e ".[doc]"
+    pip install -e ".[dev]"
     cd doc
     make html
 
@@ -758,7 +764,7 @@ Step Tracing
 
 The Step infrastructure already collects timing and nesting information on
 executed commands, but is currently only used in the pytest plugin or via the
-standalone StepReporter.
+standalone StepLogger (or deprecated StepReporter).
 By writing these events to a file (or sqlite database) as a trace, we can
 collect data over multiple runs for later analysis.
 This would become more useful by passing recognized events (stack traces,

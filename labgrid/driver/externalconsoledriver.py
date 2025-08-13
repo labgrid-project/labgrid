@@ -1,5 +1,4 @@
 import fcntl
-import logging
 import os
 import select
 import shlex
@@ -25,7 +24,6 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}({self.target})")
         self.status = 0
         self._child = None
 
@@ -35,7 +33,7 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
             return
         cmd = shlex.split(self.cmd)
         self._child = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None, bufsize=0
         )
 
         # make stdout non-blocking

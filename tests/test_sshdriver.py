@@ -1,6 +1,7 @@
 import pytest
 import socket
 
+from labgrid import Environment
 from labgrid.driver import SSHDriver, ExecutionError
 from labgrid.exceptions import NoResourceFoundError
 from labgrid.resource import NetworkService
@@ -17,6 +18,7 @@ def ssh_driver_mocked_and_activated(target, mocker):
     instance_mock = mocker.MagicMock()
     popen.return_value = instance_mock
     instance_mock.wait = mocker.MagicMock(return_value=0)
+    instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
     SSHDriver(target, "ssh")
     s = target.get_driver("SSHDriver")
     return s
@@ -35,24 +37,48 @@ def test_create(target, mocker):
     instance_mock = mocker.MagicMock()
     popen.return_value = instance_mock
     instance_mock.wait = mocker.MagicMock(return_value=0)
+    instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
     s = SSHDriver(target, "ssh")
     assert isinstance(s, SSHDriver)
 
-def test_run_check(ssh_driver_mocked_and_activated, mocker):
+def test_run_check(target, ssh_driver_mocked_and_activated, mocker):
     s = ssh_driver_mocked_and_activated
     s._run = mocker.MagicMock(return_value=(['success'], [], 0))
     res = s.run_check("test")
     assert res == ['success']
     res = s.run("test")
     assert res == (['success'], [], 0)
+    target.deactivate(s)
 
-def test_run_check_raise(ssh_driver_mocked_and_activated, mocker):
+def test_run_check_raise(target, ssh_driver_mocked_and_activated, mocker):
     s = ssh_driver_mocked_and_activated
     s._run = mocker.MagicMock(return_value=(['error'], [], 1))
     with pytest.raises(ExecutionError):
         res = s.run_check("test")
     res = s.run("test")
     assert res == (['error'], [], 1)
+    target.deactivate(s)
+
+def test_default_tools(target):
+    NetworkService(target, "service", "1.2.3.4", "root")
+    s = SSHDriver(target, "ssh")
+    assert [s._ssh, s._scp, s._sshfs, s._rsync] == ["ssh", "scp", "sshfs", "rsync"]
+
+def test_custom_tools(target, tmpdir):
+    p = tmpdir.join("config.yaml")
+    p.write(
+        """
+        tools:
+          ssh: "/path/to/ssh"
+          scp: "/path/to/scp"
+          sshfs: "/path/to/sshfs"
+          rsync: "/path/to/rsync"
+        """
+    )
+    target.env = Environment(str(p))
+    NetworkService(target, "service", "1.2.3.4", "root")
+    s = SSHDriver(target, "ssh")
+    assert [s._ssh, s._scp, s._sshfs, s._rsync] == [f"/path/to/{t}" for t in ("ssh", "scp", "sshfs", "rsync")]
 
 @pytest.fixture(scope='function')
 def ssh_localhost(target, pytestconfig):
@@ -170,5 +196,25 @@ def test_local_remote_forward(ssh_localhost, tmpdir):
 
                 client_socket, address = server_socket.accept()
                 send_socket.send(test_string.encode('utf-8'))
+
+                assert client_socket.recv(16).decode("utf-8") == test_string
+
+
+@pytest.mark.sshusername
+def test_unix_socket_forward(ssh_localhost, tmpdir):
+    p = tmpdir.join("console.sock")
+    test_string = "Hello World"
+
+    with ssh_localhost.forward_unix_socket(str(p)) as localport:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server_socket:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as send_socket:
+                server_socket.bind(str(p))
+                server_socket.listen(1)
+
+                send_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                send_socket.connect(("127.0.0.1", localport))
+
+                client_socket, address = server_socket.accept()
+                send_socket.send(test_string.encode("utf-8"))
 
                 assert client_socket.recv(16).decode("utf-8") == test_string

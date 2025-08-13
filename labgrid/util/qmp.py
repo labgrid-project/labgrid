@@ -9,7 +9,7 @@ class QMPMonitor:
     monitor_in = attr.ib()
 
     def __attrs_post_init__(self):
-        self.logger = logging.getLogger(f"{self}:")
+        self.logger = logging.getLogger(f"{self}")
         self._negotiate_capabilities()
 
     def _negotiate_capabilities(self):

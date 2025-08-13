@@ -14,7 +14,7 @@ from ..util.agentwrapper import AgentWrapper
 class GpioDigitalOutputDriver(Driver, DigitalOutputProtocol):
 
     bindings = {
-        "gpio": {"SysfsGPIO", "NetworkSysfsGPIO"},
+        "gpio": {"SysfsGPIO", "MatchedSysfsGPIO", "NetworkSysfsGPIO"},
     }
 
     def __attrs_post_init__(self):

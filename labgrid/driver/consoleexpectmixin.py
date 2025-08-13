@@ -61,13 +61,14 @@ class ConsoleExpectMixin:
 
     @Driver.check_active
     @step(args=['quiet_time'])
-    def settle(self, quiet_time, timeout=120.0):
+    def settle(self, quiet_time, timeout=120.0) -> bool:
         t = Timeout(timeout)
         while not t.expired:
             try:
                 self.read(timeout=quiet_time)
             except pexpect.TIMEOUT:
-                break
+                return True
+        return False
 
     def resolve_conflicts(self, client):
         for other in self.clients:

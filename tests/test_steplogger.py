@@ -29,7 +29,6 @@ def test(target):
     return t
 
 def test_step_logger(power_env, pw_cycle_test):
-    from colors import strip_color
     # step reporter is called when -vv is given
     # -s is necessary for manual power driver confirmation
     with pexpect.spawn('pytest -vvs --lg-env {env} {test}'
@@ -37,7 +36,7 @@ def test_step_logger(power_env, pw_cycle_test):
 
         # rough match
         spawn.expect("→.*?ManualPowerDriver.*?cycle.*?\r\n".encode("utf-8"))
-        step_line = strip_color(spawn.after.decode("utf-8")).rstrip()
+        step_line = spawn.after.decode("utf-8").rstrip()
         # exact match
         assert step_line.endswith("→ ManualPowerDriver.cycle()"), f"'{step_line}' did not match"
 
@@ -47,7 +46,7 @@ def test_step_logger(power_env, pw_cycle_test):
 
         # rough match
         spawn.expect("←.*?ManualPowerDriver.*?cycle.*?\r\n".encode("utf-8"))
-        step_line = strip_color(spawn.after.decode("utf-8")).rstrip()
+        step_line = spawn.after.decode("utf-8").rstrip()
         # exact match
 
         assert re.match(r"← ManualPowerDriver.cycle\(\) \[[\d.]+s\]$", step_line), f"'{step_line}' did not match"

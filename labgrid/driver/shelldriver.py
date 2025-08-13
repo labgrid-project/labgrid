@@ -2,7 +2,6 @@
 """The ShellDriver provides the CommandProtocol, ConsoleProtocol and
  InfoProtocol on top of a SerialPort."""
 import io
-import logging
 import re
 import shlex
 import ipaddress
@@ -48,7 +47,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     prompt = attr.ib(validator=attr.validators.instance_of(str))
     login_prompt = attr.ib(validator=attr.validators.instance_of(str))
     username = attr.ib(validator=attr.validators.instance_of(str))
-    password = attr.ib(default="", validator=attr.validators.instance_of(str))
+    password = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
     console_ready = attr.ib(default="", validator=attr.validators.instance_of(str))
@@ -58,7 +57,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}:{self.target}")
         self._status = 0
 
         self._xmodem_cached_rx_cmd = ""
@@ -143,7 +141,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 else:
                     # we got a prompt. no need for any further action to
                     # activate this driver.
-                    self.status = 1
+                    self._status = 1
                     break
 
             elif index == 1:
@@ -152,7 +150,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 did_login = True
 
             elif index == 2:
-                if self.password:
+                if self.password is not None:
                     self.console.sendline(self.password)
                 else:
                     raise Exception("Password entry needed but no password set")
@@ -171,6 +169,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 # lets start over again and see if login or prompt will appear
                 # now.
                 self.console.sendline("")
+                did_login = True
 
             last_before = before
 
@@ -211,6 +210,12 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             '''run() { echo -n "$MARKER"; sh -c "$@"; echo "$MARKER $?"; }'''
         )
         self.console.expect(self.prompt)
+
+    def _write_key(self, keyline, dest):
+        for i in range(0, len(keyline), 100):
+            part = keyline[i:i+100]
+            self._run_check(f'echo -n "{part}" >> {dest}')
+        self._run_check(f'echo "" >> {dest}')
 
     @step(args=['keyfile_path'])
     def _put_ssh_key(self, keyfile_path):
@@ -253,7 +258,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         if test_write == 0 and read_keys == 0:
             self.logger.debug("Key not on target and writeable, concatenating...")
-            self._run_check(f'echo "{keyline}" >> ~/.ssh/authorized_keys')
+            self._write_key(keyline, "~/.ssh/authorized_keys")
             self._run_check("rm ~/.test")
             return
 
@@ -265,14 +270,15 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 self._run("mkdir ~/.ssh/")
             self._run_check("chmod 700 ~/.ssh/")
             self.logger.debug("Creating ~/.ssh/authorized_keys")
-            self._run_check(f'echo "{keyline}" > ~/.ssh/authorized_keys')
+            self._run_check("touch ~/.ssh/authorized_keys")
+            self._write_key(keyline, "~/.ssh/authorized_keys")
             self._run_check("rm ~/.test")
             return
 
         self.logger.debug("Key not on target and not writeable, using bind mount...")
-        self._run_check('mkdir -m 700 /tmp/labgrid-ssh/')
+        self._run_check('mkdir -p -m 700 /tmp/labgrid-ssh/')
         self._run("cp -a ~/.ssh/* /tmp/labgrid-ssh/")
-        self._run_check(f'echo "{keyline}" >> /tmp/labgrid-ssh/authorized_keys')
+        self._write_key(keyline, "/tmp/labgrid-ssh/authorized_keys")
         self._run_check('chmod 600 /tmp/labgrid-ssh/authorized_keys')
         out, err, exitcode = self._run('mount --bind /tmp/labgrid-ssh/ ~/.ssh/')
         if exitcode != 0:
@@ -311,7 +317,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         """
 
         marker = gen_marker()
-        marked_cmd = f"echo '{marker[:4]}''{marker[4:]}'; {cmd}"
+        marked_cmd = f"echo -n '{marker[:4]}''{marker[4:]}'; {cmd}"
         self.console.sendline(marked_cmd)
         self.console.expect(marker, timeout=30)
 
@@ -569,7 +575,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         regex = r"""default\s+via # leading strings
                 \s+\S+ # IP address
-                \s+dev\s+(\w+) # interface"""
+                \s+dev\s+([\w\.-]+) # interface"""
 
         default_route = self._run_check(f"ip -{version} route list default")
         matches = re.findall(regex, "\n".join(default_route), re.X)
@@ -598,7 +604,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             device = self.get_default_interface_device_name()
 
         regex = r"""\d+: # leading number
-                \s+\w+ # interface name
+                \s+[\w\.-]+ # interface name
                 \s+inet6?\s+(\S+) # IP address, prefix
                 .*global # global scope, not host scope"""
 

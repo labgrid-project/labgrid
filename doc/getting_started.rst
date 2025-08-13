@@ -62,7 +62,7 @@ Test your installation by running:
 .. code-block:: bash
 
     labgrid-venv $ labgrid-client --help
-    usage: labgrid-client [-h] [-x URL] [-c CONFIG] [-p PLACE] [-d] COMMAND ...
+    usage: labgrid-client [-h] [-x ADDRESS] [-c CONFIG] [-p PLACE] [-d] COMMAND ...
     ...
 
 If the help for labgrid-client does not show up, open an `Issue
@@ -112,7 +112,7 @@ Start by copying the initial example:
 
 Connect your embedded board (raspberry pi, riotboard, …) to your computer and
 adjust the ``port`` parameter of the ``RawSerialPort`` resource and ``username``
-and ``password`` of the ShellDriver driver in ``local.yaml``:
+and ``password`` of the ShellDriver driver in the environment file ``local.yaml``:
 
 .. code-block:: yaml
 
@@ -126,10 +126,18 @@ and ``password`` of the ShellDriver driver in ``local.yaml``:
             name: "example"
           SerialDriver: {}
           ShellDriver:
-            prompt: 'root@\w+:[^ ]+ '
+            prompt: 'root@[\w-]+:[^ ]+ '
             login_prompt: ' login: '
             username: 'root'
 
+For, now it is sufficient to know that labgrid tries to "bind" appropriate drivers
+and resources to each other automatically if possible. The ``ShellDriver`` will use
+the ``SerialDriver`` to connect to the ``RawSerialPort`` resource. If an automatic
+binding is not possible due to ambiguity, the bindings can also be specified
+explicitly.
+
+More information about this and the environment configuration file in general can
+be found :ref:`here <environment-configuration>`.
 
 You can check which device name gets assigned to your USB-Serial converter by
 unplugging the converter, running ``dmesg -w`` and plugging it back in. Boot up
@@ -170,67 +178,24 @@ exporter, and learn how to access the exporter via the client.
 Coordinator
 ~~~~~~~~~~~
 
-To start the coordinator, we will download the labgrid repository, create an
-extra virtualenv and install the dependencies:
+We can simply start the coordinator:
 
 .. code-block:: bash
 
-    $ sudo apt install libsnappy-dev
-    $ git clone https://github.com/labgrid-project/labgrid
-    $ cd labgrid
-    $ virtualenv -p python3 crossbar-venv
-    $ crossbar-venv/bin/pip install --upgrade pip
-    $ crossbar-venv/bin/pip install -r crossbar-requirements.txt
-    $ virtualenv -p python3 labgrid-venv
-    $ source labgrid-venv/bin/activate
-    labgrid-venv $ pip install --upgrade pip
-    labgrid-venv $ pip install .
-
-All necessary dependencies should be installed now.
-
-Copy and customize the crossbar config file ``.crossbar/config-anonymous.yaml``
-for your use case:
-
-.. code-block:: bash
-
-    labgrid-venv $ cp .crossbar/config-anonymous.yaml .crossbar/my-config.yaml
-
-.. note:: crossbar is a network messaging framework for building distributed
-          applications, which labgrid plugs into.
-
-The path to the Python interpreter in the labgrid-venv needs to be configured
-in crossbar's config, either manually or with the labgrid-venv being active
-via:
-
-.. code-block:: bash
-
-    labgrid-venv $ sed -i "s#^  executable: .*\$#  executable: ${VIRTUAL_ENV}/bin/python3#" .crossbar/my-config.yaml
-
-.. note:: For long running deployments a different ``workdir`` and port may be
-          used.
-          The crossbar config should reside in a ``.crossbar`` directory in the
-          ``workdir`` in this case.
-          For an example systemd service file, see
-          :ref:`remote-getting-started-systemd-files`.
-
-Now we can finally start the coordinator inside the repository:
-
-.. code-block:: bash
-
-    $ crossbar-venv/bin/crossbar start --config my-config.yaml
-
-.. note:: If --config is specified as a relative path, the config is expected
-          in a .crossbar subdirectory (as is the case in the labgrid
-          repository).
+    labgrid-venv $ labgrid-coordinator
 
 Exporter
 ~~~~~~~~
+
+The exporter is responsible for exporting resources to the client. It is noted
+that drivers are not handled by the exporter. In the distributed case, drivers
+are managed by the client.
 
 The exporter needs a configuration file written in YAML syntax, listing
 the resources to be exported from the local machine.
 The config file contains one or more named resource groups.
 Each group contains one or more resource declarations and optionally a location
-string (see the :doc:`configuration reference <configuration>` for details).
+string.
 
 For example, to export a ``USBSerialPort`` with ``ID_SERIAL_SHORT`` of
 ``ID23421JLK``, the group name `example-group` and the location
@@ -280,6 +245,9 @@ Additional groups and resources can be added:
        match:
          ID_SERIAL_SHORT: KSLAH2341J
 
+More information about the exporter configuration file can be found
+:ref:`here <exporter-configuration>`.
+
 Restart the exporter to activate the new configuration.
 
 .. Attention::
@@ -324,7 +292,7 @@ To show more details on the exported resources, use ``-v`` (or ``-vv``):
            'params': {'host': 'netio1', 'index': 3, 'model': 'netio'}}
     ...
 
-You can now add a place with:
+You can now add a place to the coordinator with:
 
 .. code-block:: bash
 
@@ -349,12 +317,48 @@ Now we can connect to the serial console:
 
     labgrid-venv $ labgrid-client -p example-place console
 
-.. note:: Using remote connection requires ``microcom`` installed on the host
-   where the labgrid-client is called.
+.. note:: Using remote connection requires ``microcom`` or ``telnet`` installed
+   on the host where the labgrid-client is called.
 
 See :ref:`remote-usage` for some more advanced features.
 For a complete reference have a look at the :doc:`labgrid-client(1) <man/client>`
 man page.
+
+Now, to connect drivers to the resources, you can configure an environment file,
+which we call ``remote.yaml`` in this case:
+
+.. code-block:: yaml
+
+    targets:
+      main:
+        resources:
+          RemotePlace:
+            name: myplace
+        drivers:
+          SerialDriver: {}
+          ShellDriver:
+            prompt: 'root@[\w-]+:[^ ]+ '
+            login_prompt: ' login: '
+            username: 'root'
+
+The ``RemotePlace`` resource makes all resources available that are assigned to
+to the place ``myplace`` on your coordinator.
+
+Now, this environment file can be used interactively with the client:
+
+.. code-block:: bash
+
+    labgrid-venv $ labgrid-client -c remote.yaml acquire
+    labgrid-venv $ labgrid-client -c remote.yaml console
+    labgrid-venv $ labgrid-client -c remote.yaml release
+
+or directly with a test:
+
+.. code-block:: bash
+
+    labgrid-venv $ labgrid-client -c remote.yaml acquire
+    labgrid-venv $ pytest --lg-env remote.yaml test_shell.py
+    labgrid-venv $ labgrid-client -c remote.yaml release
 
 .. _remote-getting-started-systemd-files:
 
@@ -375,25 +379,19 @@ Follow these instructions to install the systemd files on your machine(s):
    installation paths of your distribution.
 #. Adapt the ``ExecStart`` paths of the service files to the respective Python
    virtual environments of the coordinator and exporter.
-#. Create the coordinator configuration file referenced in the ``ExecStart``
-   option of the :file:`labgrid-coordinator.service` file by using
-   :file:`.crossbar/config-anonymous.yaml` as a starting point. You most likely
-   want to make sure that the ``workdir`` option matches the path given via the
-   ``--cbdir`` option in the service file; see
-   :ref:`remote-getting-started-coordinator` for further information.
 #. Adjust the ``SupplementaryGroups`` option in the
    :file:`labgrid-exporter.service` file to your distribution so that the
    exporter gains read and write access on TTY devices (for ``ser2net``); most
    often, these groups are called ``dialout``, ``plugdev`` or ``tty``.
    Depending on your udev configuration, you may need multiple groups.
-#. Set the coordinator URL the exporter should connect to by overriding the
+#. Set the coordinator address the exporter should connect to by overriding the
    exporter service file; i.e. execute ``systemctl edit
    labgrid-exporter.service`` and add the following snippet:
 
    .. code-block::
 
       [Service]
-      Environment="LG_CROSSBAR=ws://<your-host>:<your-port>/ws"
+      Environment="LG_COORDINATOR=<your-host>[:<your-port>]"
 
 #. Create the ``labgrid`` user and group:
 

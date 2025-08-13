@@ -1,5 +1,4 @@
 import os
-import warnings
 import logging
 import pytest
 
@@ -43,7 +42,8 @@ def pytest_cmdline_main(config):
 
 
 def configure_pytest_logging(config, plugin):
-    plugin.log_cli_handler.formatter.add_color_level(logging.CONSOLE, "blue")
+    if hasattr(plugin.log_cli_handler.formatter, "add_color_level"):
+        plugin.log_cli_handler.formatter.add_color_level(logging.CONSOLE, "blue")
     plugin.log_cli_handler.setFormatter(StepFormatter(
         color=config.option.lg_colored_steps,
         parent=plugin.log_cli_handler.formatter,
@@ -74,16 +74,8 @@ def pytest_configure(config):
     lg_log = config.option.lg_log
     if lg_log:
         ConsoleLoggingReporter(lg_log)
-    env_config = config.option.env_config
     lg_env = config.option.lg_env
     lg_coordinator = config.option.lg_coordinator
-
-    if lg_env is None:
-        if env_config is not None:
-            warnings.warn(pytest.PytestWarning(
-                "deprecated option --env-config (use --lg-env instead)",
-                __file__))
-            lg_env = env_config
 
     env = None
     if lg_env is None:
@@ -91,7 +83,7 @@ def pytest_configure(config):
     if lg_env is not None:
         env = Environment(config_file=lg_env)
         if lg_coordinator is not None:
-            env.config.set_option('crossbar_url', lg_coordinator)
+            env.config.set_option('coordinator_address', lg_coordinator)
     config.stash[LABGRID_ENV_KEY] = env
 
     processwrapper.enable_logging()

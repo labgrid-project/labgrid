@@ -27,7 +27,7 @@ class TasmotaPowerDriver(Driver, PowerProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         import paho.mqtt.client as mqtt
-        self._client = mqtt.Client()
+        self._client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 
     def on_activate(self):
         self._client.on_message = self._on_message
@@ -43,9 +43,11 @@ class TasmotaPowerDriver(Driver, PowerProtocol):
             status = True
         elif msg.payload == b'OFF':
             status = False
+        else:
+            raise ValueError(f"Unknown status: {msg.payload}. Must be 'ON' or 'OFF'")
         self._status = status
 
-    def _on_connect(self, client, userdata, flags, rc):
+    def _on_connect(self, client, userdata, flags, reason_code, properties):
         client.subscribe(self.power.status_topic)
 
     def _publish(self, topic, payload):

@@ -1,8 +1,7 @@
 """
 Class for connecting to a docker daemon running on the host machine.
 """
-
-import logging
+from enum import Enum
 
 import attr
 
@@ -10,6 +9,33 @@ from labgrid.factory import target_factory
 from labgrid.driver.common import Driver
 from labgrid.resource.docker import DockerConstants
 from labgrid.protocol.powerprotocol import PowerProtocol
+
+
+class PullPolicy(Enum):
+    """Pull policy for the `DockerDriver`.
+
+    Modelled after `podman run --pull` / `docker run --pull`.
+
+    * always: Always pull the image and throw an error if the pull fails.
+    * missing: Pull the image only when the image is not in the local
+      containers storage. Throw an error if no image is found and the pull
+      fails.
+    * never: Never pull the image but use the one from the local containers
+      storage. Throw an error if no image is found.
+    * newer: **Note** not supported by the driver, and therefore not
+      implemented.
+    """
+    Always = 'always'
+    Missing = 'missing'
+    Never = 'never'
+
+def pull_policy_converter(value):
+    if isinstance(value, PullPolicy):
+        return value
+    try:
+        return PullPolicy(value)
+    except ValueError:
+        raise ValueError(f"Invalid pull policy: {value}")
 
 
 @target_factory.reg_driver
@@ -34,6 +60,8 @@ class DockerDriver(PowerProtocol, Driver):
         bindings (dict): The labgrid bindings
     Args passed to docker.create_container:
         image_uri (str): The uri of the image to fetch
+        pull (str): Pull policy. Default policy is `always` for backward
+        compatibility concerns
         command (str): The command to execute once container has been created
         volumes (list): The volumes to declare
         environment (list): Docker environment variables to set
@@ -45,6 +73,8 @@ class DockerDriver(PowerProtocol, Driver):
     bindings = {"docker_daemon": {"DockerDaemon"}}
     image_uri = attr.ib(default=None, validator=attr.validators.optional(
         attr.validators.instance_of(str)))
+    pull = attr.ib(default=PullPolicy.Always,
+        converter=pull_policy_converter)
     command = attr.ib(default=None, validator=attr.validators.optional(
         attr.validators.instance_of(str)))
     volumes = attr.ib(default=None, validator=attr.validators.optional(
@@ -62,7 +92,6 @@ class DockerDriver(PowerProtocol, Driver):
             attr.validators.instance_of(list)))
 
     def __attrs_post_init__(self):
-        self.logger = logging.getLogger(f"{self}({self.target})")
         super().__attrs_post_init__()
         self._client = None
         self._container = None
@@ -77,7 +106,17 @@ class DockerDriver(PowerProtocol, Driver):
         import docker
         self._client = docker.DockerClient(
             base_url=self.docker_daemon.docker_daemon_url)
-        self._client.images.pull(self.image_uri)
+
+        if self.pull == PullPolicy.Always:
+            self._client.images.pull(self.image_uri)
+        elif self.pull == PullPolicy.Missing:
+            try:
+                self._client.images.get(self.image_uri)
+            except docker.errors.ImageNotFound:
+                self._client.images.pull(self.image_uri)
+        elif self.pull == PullPolicy.Never:
+            self._client.images.get(self.image_uri)
+
         self._container = self._client.api.create_container(
             self.image_uri,
             command=self.command,

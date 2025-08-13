@@ -21,7 +21,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-from pkg_resources import get_distribution
+from importlib.metadata import version
 
 # Import read_the_docs theme
 import sphinx_rtd_theme
@@ -57,7 +57,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'labgrid'
-copyright = '2016-2023 Pengutronix, Jan Luebbe and Rouven Czerwinski'
+copyright = '2016-2025 Pengutronix, Jan Luebbe and Rouven Czerwinski'
 author = 'Jan Luebbe, Rouven Czerwinski'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -65,7 +65,7 @@ author = 'Jan Luebbe, Rouven Czerwinski'
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-release = get_distribution('labgrid').version
+release = version('labgrid')
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])
 
@@ -94,9 +94,6 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
-
-# Set correct html_path for rtd theme:
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -182,18 +179,9 @@ autodoc_default_options = {
         'special-members': True,
 }
 autodoc_mock_imports = ['onewire',
-                        'txaio',
-                        'autobahn',
-                        'autobahn.asyncio',
-                        'autobahn.asyncio.wamp',
-                        'autobahn.wamp',
-                        'autobahn.wamp.types',
-                        'autobahn.twisted',
-                        'autobahn.twisted.wamp',
-                        'autobahn.wamp.exception',
-                        'twisted.internet.defer',
                         'gi',
-                        'gi.repository',]
+                        'gi.repository',
+                        'vxi11']
 
 # -- Options for autosection ----------------------------------------------
 autosectionlabel_prefix_document = True

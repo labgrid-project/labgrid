@@ -234,8 +234,8 @@ resources it is bound to can be used, and, if necessary, it acquires the
 underlying hardware on the OS level.
 For example, activating a :any:`SerialDriver` makes sure that the hardware
 represented by its bound :any:`RawSerialPort` object (e.g. something like
-``/dev/ttyUSB0``) is available, and that it can only be used labgrid and not by
-other applications while the :any:`SerialDriver` is activated.
+``/dev/ttyUSB0``) is available, and that it can only be used by labgrid and not
+by other applications while the :any:`SerialDriver` is activated.
 
 If we use a car analogy here, binding is the process of screwing the car parts
 together, and activation is igniting the engine.
@@ -433,26 +433,23 @@ This allows debugging during the writing of tests and inspection during test run
 
 Other labgrid-related pytest plugin options are:
 
-``--lg-env=LG_ENV`` (was ``--env-config=ENV_CONFIG``)
+``--lg-env=LG_ENV``
   Specify a labgrid environment config file.
   This is equivalent to labgrid-client's ``-c``/``--config``.
 
-``--lg-coordinator=CROSSBAR_URL``
-  Specify labgrid coordinator websocket URL.
-  Defaults to ``ws://127.0.0.1:20408/ws``.
-  This is equivalent to labgrid-client's ``-x``/``--crossbar``.
+``--lg-coordinator=COORDINATOR_ADDRESS``
+  Specify labgrid coordinator gRPC address as ``HOST[:PORT]``.
+  Defaults to ``127.0.0.1:20408``.
+  This is equivalent to labgrid-client's ``-x``/``--coordinator``.
 
 ``--lg-log=[path to logfiles]``
   Path to store console log file.
   If option is specified without path the current working directory is used.
 
 ``--lg-colored-steps``
-  Enables the ColoredStepReporter.
-  Different events have different colors.
-  The more colorful, the more important.
-  In order to make less important output "blend into the background" different
-  color schemes are available.
-  See :ref:`LG_COLOR_SCHEME <usage-lgcolorscheme>`.
+  Previously enabled the ColoredStepReporter, which has been removed with the
+  StepLogger introduction.
+  Kept for compatibility reasons without effect.
 
 ``--lg-initial-state=STATE_NAME``
   Sets the Strategy's initial state.
@@ -469,19 +466,6 @@ Environment Variables
 LG_ENV
 ^^^^^^
 Behaves like ``LG_ENV`` for :doc:`labgrid-client <man/client>`.
-
-.. _usage-lgcolorscheme:
-
-LG_COLOR_SCHEME
-^^^^^^^^^^^^^^^
-Influences the color scheme used for the Colored Step Reporter.
-``dark`` is meant for dark terminal background.
-``light`` is optimized for light terminal background.
-``dark-256color`` and ``light-256color`` are respective variants for terminals
-that support 256 colors.
-By default, ``dark`` or ``dark-256color`` (depending on the terminal) are used.
-
-Takes effect only when used with ``--lg-colored-steps``.
 
 LG_PROXY
 ^^^^^^^^
@@ -510,7 +494,7 @@ access this board:
       drivers:
         SerialDriver: {}
         ShellDriver:
-          prompt: 'root@\w+:[^ ]+ '
+          prompt: 'root@[\w-]+:[^ ]+ '
           login_prompt: ' login: '
           username: 'root'
 
@@ -681,7 +665,7 @@ setup:
         BareboxDriver:
           prompt: 'barebox@[^:]+:[^ ]+ '
         ShellDriver:
-          prompt: 'root@\w+:[^ ]+ '
+          prompt: 'root@[\w-]+:[^ ]+ '
           login_prompt: ' login: '
           username: 'root'
         BareboxStrategy: {}

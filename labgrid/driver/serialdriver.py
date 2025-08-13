@@ -1,5 +1,3 @@
-import logging
-
 import attr
 from pexpect import TIMEOUT
 import serial
@@ -26,7 +24,6 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.logger = logging.getLogger(f"{self}({self.target})")
         if isinstance(self.port, SerialPort):
             self.serial = serial.Serial()
         else:

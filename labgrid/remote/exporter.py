@@ -1,30 +1,33 @@
 """The remote.exporter module exports resources to the coordinator and makes
 them available to other clients on the same coordinator"""
+
 import argparse
 import asyncio
 import logging
 import sys
 import os
 import os.path
-import time
 import traceback
 import shutil
 import subprocess
+from urllib.parse import urlsplit
 import warnings
 from pathlib import Path
 from typing import Dict, Type
 from socket import gethostname, getfqdn
+
 import attr
-from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
+import grpc
 
 from .config import ResourceConfig
-from .common import ResourceEntry, enable_tcp_nodelay
+from .common import ResourceEntry, queue_as_aiter
+from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..util import get_free_port, labgrid_version
 
 
-__version__ = labgrid_version()
 exports: Dict[str, Type[ResourceEntry]] = {}
 reexec = False
+
 
 class ExporterError(Exception):
     pass
@@ -34,16 +37,25 @@ class BrokenResourceError(ExporterError):
     pass
 
 
+class UnknownResourceError(ExporterError):
+    pass
+
+
+class InvalidResourceRequestError(ExporterError):
+    pass
+
+
 def log_subprocess_kernel_stack(logger, child):
     if child.poll() is not None:  # nothing to check if no longer running
         return
     try:
-        with open(f'/proc/{child.pid}/stack', 'r') as f:
+        with open(f"/proc/{child.pid}/stack", "r") as f:
             stack = f.read()
             stack = stack.strip()
     except PermissionError:
         return
     logger.info("current kernel stack of %s is:\n%s", child.args, stack)
+
 
 @attr.s(eq=False)
 class ResourceExport(ResourceEntry):
@@ -51,6 +63,7 @@ class ResourceExport(ResourceEntry):
 
     The ResourceEntry attributes contain the information for the client.
     """
+
     host = attr.ib(default=gethostname(), validator=attr.validators.instance_of(str))
     proxy = attr.ib(default=None)
     proxy_required = attr.ib(default=False)
@@ -84,13 +97,13 @@ class ResourceExport(ResourceEntry):
         # resource. For now, when trying to acquire a place with a match for
         # this resource, we get 'resource is already in used by <broken>',
         # instead of an unspecific error.
-        self.data['acquired'] = '<broken>'
+        self.data["acquired"] = "<broken>"
         self.logger.error("marked as broken: %s", reason)
 
-    def _get_start_params(self):  # pylint: disable=no-self-use
+    def _get_start_params(self):
         return {}
 
-    def _get_params(self):  # pylint: disable=no-self-use
+    def _get_params(self):
         return {}
 
     def _start(self, start_params):
@@ -106,10 +119,10 @@ class ResourceExport(ResourceEntry):
         start_params = self._get_start_params()
         try:
             self._start(start_params)
-        except Exception:
+        except Exception as e:
             self.broken = "start failed"
             self.logger.exception("failed to start with %s", start_params)
-            raise
+            raise BrokenResourceError("Failed to start resource") from e
         self.start_params = start_params
 
     def stop(self):
@@ -143,17 +156,17 @@ class ResourceExport(ResourceEntry):
         # check if resulting information has changed
         dirty = False
         if self.avail != (self.local.avail and not self.broken):
-            self.data['avail'] = self.local.avail and not self.broken
+            self.data["avail"] = self.local.avail and not self.broken
             dirty = True
         params = self._get_params()
-        if not params.get('extra'):
-            params['extra'] = {}
-        params['extra']['proxy_required'] = self.proxy_required
-        params['extra']['proxy'] = self.proxy
+        if not params.get("extra"):
+            params["extra"] = {}
+        params["extra"]["proxy_required"] = self.proxy_required
+        params["extra"]["proxy"] = self.proxy
         if self.broken:
-            params['extra']['broken'] = self.broken
+            params["extra"]["broken"] = self.broken
         if self.params != params:
-            self.data['params'].update(params)
+            self.data["params"].update(params)
             dirty = True
 
         return dirty
@@ -179,11 +192,13 @@ class SerialPortExport(ResourceExport):
         super().__attrs_post_init__()
         if self.cls == "RawSerialPort":
             from ..resource.serialport import RawSerialPort
+
             self.local = RawSerialPort(target=None, name=None, **self.local_params)
         elif self.cls == "USBSerialPort":
             from ..resource.udev import USBSerialPort
+
             self.local = USBSerialPort(target=None, name=None, **self.local_params)
-        self.data['cls'] = "NetworkSerialPort"
+        self.data["cls"] = "NetworkSerialPort"
         self.child = None
         self.port = None
         self.ser2net_bin = shutil.which("ser2net")
@@ -201,48 +216,61 @@ class SerialPortExport(ResourceExport):
 
     def _get_start_params(self):
         return {
-            'path': self.local.port,
+            "path": self.local.port,
         }
 
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'port': self.port,
-            'speed': self.local.speed,
-            'extra': {
-                'path': self.local.port,
-            }
+            "host": self.host,
+            "port": self.port,
+            "speed": self.local.speed,
+            "extra": {
+                "path": self.local.port,
+            },
         }
 
     def _start(self, start_params):
         """Start ``ser2net`` subprocess"""
         assert self.local.avail
         assert self.child is None
-        assert start_params['path'].startswith('/dev/')
+        assert start_params["path"].startswith("/dev/")
         self.port = get_free_port()
 
         # Ser2net has switched to using YAML format at version 4.0.0.
-        _, _, version = str(subprocess.check_output([self.ser2net_bin,'-v'])).split(' ')
-        major_version = version.split('.')[0]
-        if int(major_version) >= 4:
+        result = subprocess.run([self.ser2net_bin, "-v"], capture_output=True, text=True)
+        _, _, version = str(result.stdout).split(" ")
+        version = tuple(map(int, version.strip().split(".")))
+
+        # There is a bug in ser2net between 4.4.0 and 4.6.1 where it
+        # returns 1 on a successful call to 'ser2net -v'. We don't want
+        # a failure because of this, so raise an error only if ser2net
+        # is not one of those versions.
+        if version not in [(4, 4, 0), (4, 5, 0), (4, 5, 1), (4, 6, 0), (4, 6, 1)] and result.returncode == 1:
+            raise ExporterError(f"ser2net {version} returned a nonzero code during version check.")
+
+        if version >= (4, 2, 0):
             cmd = [
                 self.ser2net_bin,
-                '-d',
-                '-n',
-                '-Y', f'connection: &con01#  accepter: telnet(rfc2217,mode=server),{self.port}',
-                '-Y', f'  connector: serialdev(nouucplock=true),{start_params["path"]},{self.local.speed}n81,local',  # pylint: disable=line-too-long
-                '-Y', '  options:',
-                '-Y', '    max-connections: 10',
+                "-d",
+                "-n",
+                "-Y",
+                f"connection: &con01#  accepter: telnet(rfc2217,mode=server),tcp,{self.port}",
+                "-Y",
+                f"  connector: serialdev(nouucplock=true),{start_params['path']},{self.local.speed}n81,local",  # pylint: disable=line-too-long
+                "-Y",
+                "  options:",
+                "-Y",
+                "    max-connections: 10",
             ]
         else:
             cmd = [
                 self.ser2net_bin,
-                '-d',
-                '-n',
-                '-u',
-                '-C',
-                f'{self.port}:telnet:0:{start_params["path"]}:{self.local.speed} NONE 8DATABITS 1STOPBIT LOCAL',  # pylint: disable=line-too-long
+                "-d",
+                "-n",
+                "-u",
+                "-C",
+                f"{self.port}:telnet:0:{start_params['path']}:{self.local.speed} NONE 8DATABITS 1STOPBIT LOCAL",  # pylint: disable=line-too-long
             ]
         self.logger.info("Starting ser2net with: %s", " ".join(cmd))
         self.child = subprocess.Popen(cmd)
@@ -252,7 +280,7 @@ class SerialPortExport(ResourceExport):
         except subprocess.TimeoutExpired:
             # good, ser2net didn't exit immediately
             pass
-        self.logger.info("started ser2net for %s on port %d", start_params['path'], self.port)
+        self.logger.info("started ser2net for %s on port %d", start_params["path"], self.port)
 
     def _stop(self, start_params):
         """Stop ``ser2net`` subprocess"""
@@ -265,15 +293,16 @@ class SerialPortExport(ResourceExport):
         try:
             child.wait(2.0)  # ser2net takes about a second to react
         except subprocess.TimeoutExpired:
-            self.logger.warning("ser2net for %s still running after SIGTERM", start_params['path'])
+            self.logger.warning("ser2net for %s still running after SIGTERM", start_params["path"])
             log_subprocess_kernel_stack(self.logger, child)
             child.kill()
             child.wait(1.0)
-        self.logger.info("stopped ser2net for %s on port %d", start_params['path'], port)
+        self.logger.info("stopped ser2net for %s on port %d", start_params["path"], port)
 
 
 exports["USBSerialPort"] = SerialPortExport
 exports["RawSerialPort"] = SerialPortExport
+
 
 @attr.s(eq=False)
 class NetworkInterfaceExport(ResourceExport):
@@ -283,21 +312,23 @@ class NetworkInterfaceExport(ResourceExport):
         super().__attrs_post_init__()
         if self.cls == "NetworkInterface":
             from ..resource.base import NetworkInterface
+
             self.local = NetworkInterface(target=None, name=None, **self.local_params)
         elif self.cls == "USBNetworkInterface":
             from ..resource.udev import USBNetworkInterface
+
             self.local = USBNetworkInterface(target=None, name=None, **self.local_params)
-        self.data['cls'] = "RemoteNetworkInterface"
+        self.data["cls"] = "RemoteNetworkInterface"
 
     def _get_params(self):
         """Helper function to return parameters"""
         params = {
-            'host': self.host,
-            'ifname': self.local.ifname,
+            "host": self.host,
+            "ifname": self.local.ifname,
         }
         if self.cls == "USBNetworkInterface":
-            params['extra'] = {
-                'state': self.local.if_state,
+            params["extra"] = {
+                "state": self.local.if_state,
             }
 
         return params
@@ -306,6 +337,7 @@ class NetworkInterfaceExport(ResourceExport):
 exports["USBNetworkInterface"] = NetworkInterfaceExport
 exports["NetworkInterface"] = NetworkInterfaceExport
 
+
 @attr.s(eq=False)
 class USBGenericExport(ResourceExport):
     """ResourceExport for USB devices accessed directly from userspace"""
@@ -313,21 +345,23 @@ class USBGenericExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = f"Network{self.cls}"
+        self.data["cls"] = f"Network{self.cls}"
         from ..resource import udev
+
         local_cls = getattr(udev, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
         }
+
 
 @attr.s(eq=False)
 class USBSigrokExport(USBGenericExport):
@@ -339,15 +373,17 @@ class USBSigrokExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'driver': self.local.driver,
-            'channels': self.local.channels
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "driver": self.local.driver,
+            "channels": self.local.channels,
+            "channel_group": self.local.channel_group,
         }
+
 
 @attr.s(eq=False)
 class USBSDMuxExport(USBGenericExport):
@@ -359,14 +395,15 @@ class USBSDMuxExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'control_path': self.local.control_path,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "control_path": self.local.control_path,
         }
+
 
 @attr.s(eq=False)
 class USBSDWireExport(USBGenericExport):
@@ -378,14 +415,15 @@ class USBSDWireExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'control_serial': self.local.control_serial,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "control_serial": self.local.control_serial,
         }
+
 
 @attr.s(eq=False)
 class USBAudioInputExport(USBGenericExport):
@@ -397,15 +435,16 @@ class USBAudioInputExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'index': self.local.index,
-            'alsa_name': self.local.alsa_name,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
+            "alsa_name": self.local.alsa_name,
         }
+
 
 @attr.s(eq=False)
 class SiSPMPowerPortExport(USBGenericExport):
@@ -417,14 +456,15 @@ class SiSPMPowerPortExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'index': self.local.index,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
         }
+
 
 @attr.s(eq=False)
 class USBPowerPortExport(USBGenericExport):
@@ -436,14 +476,15 @@ class USBPowerPortExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'index': self.local.index,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
         }
+
 
 @attr.s(eq=False)
 class USBDeditecRelaisExport(USBGenericExport):
@@ -455,14 +496,15 @@ class USBDeditecRelaisExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'index': self.local.index,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
         }
+
 
 @attr.s(eq=False)
 class USBHIDRelayExport(USBGenericExport):
@@ -474,31 +516,35 @@ class USBHIDRelayExport(USBGenericExport):
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'busnum': self.local.busnum,
-            'devnum': self.local.devnum,
-            'path': self.local.path,
-            'vendor_id': self.local.vendor_id,
-            'model_id': self.local.model_id,
-            'index': self.local.index,
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
         }
+
 
 @attr.s(eq=False)
 class USBFlashableExport(USBGenericExport):
     """ResourceExport for Flashable USB devices"""
+
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
     def _get_params(self):
         p = super()._get_params()
-        p['devnode'] = self.local.devnode
+        p["devnode"] = self.local.devnode
         return p
+
 
 @attr.s(eq=False)
 class USBGenericRemoteExport(USBGenericExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self.data['cls'] = f"Remote{self.cls}".replace("Network", "")
+        self.data["cls"] = f"Remote{self.cls}".replace("Network", "")
+
 
 exports["AndroidFastboot"] = USBGenericExport
 exports["AndroidUSBFastboot"] = USBGenericRemoteExport
@@ -512,7 +558,7 @@ exports["SigrokUSBSerialDevice"] = USBSigrokExport
 exports["USBSDMuxDevice"] = USBSDMuxExport
 exports["USBSDWireDevice"] = USBSDWireExport
 exports["USBDebugger"] = USBGenericExport
-
+exports["USBHub"] = USBGenericRemoteExport
 exports["USBMassStorage"] = USBGenericExport
 exports["USBVideo"] = USBGenericExport
 exports["USBAudioInput"] = USBAudioInputExport
@@ -524,6 +570,7 @@ exports["HIDRelay"] = USBHIDRelayExport
 exports["USBFlashableDevice"] = USBFlashableExport
 exports["LXAUSBMux"] = USBGenericExport
 
+
 @attr.s(eq=False)
 class ProviderGenericExport(ResourceExport):
     """ResourceExport for Resources derived from BaseProvider"""
@@ -531,22 +578,25 @@ class ProviderGenericExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = f"Remote{self.cls}"
+        self.data["cls"] = f"Remote{self.cls}"
         from ..resource import provider
+
         local_cls = getattr(provider, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'internal': self.local.internal,
-            'external': self.local.external,
+            "host": self.host,
+            "internal": self.local.internal,
+            "external": self.local.external,
         }
+
 
 exports["TFTPProvider"] = ProviderGenericExport
 exports["NFSProvider"] = ProviderGenericExport
 exports["HTTPProvider"] = ProviderGenericExport
+
 
 @attr.s
 class EthernetPortExport(ResourceExport):
@@ -555,73 +605,76 @@ class EthernetPortExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         from ..resource.ethernetport import SNMPEthernetPort
-        self.data['cls'] = "EthernetPort"
+
+        self.data["cls"] = "EthernetPort"
         self.local = SNMPEthernetPort(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
-        return {
-            'switch': self.local.switch,
-            'interface': self.local.interface,
-            'extra': self.local.extra
-        }
+        return {"switch": self.local.switch, "interface": self.local.interface, "extra": self.local.extra}
+
 
 exports["SNMPEthernetPort"] = EthernetPortExport
 
 
 @attr.s(eq=False)
 class GPIOSysFSExport(ResourceExport):
-    _gpio_sysfs_path_prefix = '/sys/class/gpio'
+    _gpio_sysfs_path_prefix = "/sys/class/gpio"
 
     """ResourceExport for GPIO lines accessed directly from userspace"""
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        local_cls_name = self.cls
-        self.data['cls'] = f"Network{self.cls}"
-        from ..resource import base
-        local_cls = getattr(base, local_cls_name)
-        self.local = local_cls(target=None, name=None, **self.local_params)
-        self.export_path = Path(GPIOSysFSExport._gpio_sysfs_path_prefix,
-                                f'gpio{self.local.index}')
+        if self.cls == "SysfsGPIO":
+            from ..resource.base import SysfsGPIO
+
+            self.local = SysfsGPIO(target=None, name=None, **self.local_params)
+        elif self.cls == "MatchedSysfsGPIO":
+            from ..resource.udev import MatchedSysfsGPIO
+
+            self.local = MatchedSysfsGPIO(target=None, name=None, **self.local_params)
+        self.data["cls"] = "NetworkSysfsGPIO"
+        self.export_path = Path(GPIOSysFSExport._gpio_sysfs_path_prefix, f"gpio{self.local.index}")
         self.system_exported = False
 
     def _get_params(self):
         """Helper function to return parameters"""
         return {
-            'host': self.host,
-            'index': self.local.index,
+            "host": self.host,
+            "index": self.local.index,
         }
 
     def _get_start_params(self):
         return {
-            'index': self.local.index,
+            "index": self.local.index,
         }
 
     def _start(self, start_params):
         """Start a GPIO export to userspace"""
-        index = start_params['index']
+        index = start_params["index"]
 
         if self.export_path.exists():
             self.system_exported = True
             return
 
-        export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, 'export')
-        with open(export_sysfs_path, mode='wb') as export:
-            export.write(str(index).encode('utf-8'))
+        export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, "export")
+        with open(export_sysfs_path, mode="wb") as export:
+            export.write(str(index).encode("utf-8"))
 
     def _stop(self, start_params):
         """Disable a GPIO export to userspace"""
-        index = start_params['index']
+        index = start_params["index"]
 
         if self.system_exported:
             return
 
-        export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, 'unexport')
-        with open(export_sysfs_path, mode='wb') as unexport:
-            unexport.write(str(index).encode('utf-8'))
+        export_sysfs_path = os.path.join(GPIOSysFSExport._gpio_sysfs_path_prefix, "unexport")
+        with open(export_sysfs_path, mode="wb") as unexport:
+            unexport.write(str(index).encode("utf-8"))
+
 
 exports["SysfsGPIO"] = GPIOSysFSExport
+exports["MatchedSysfsGPIO"] = GPIOSysFSExport
 
 
 @attr.s
@@ -635,9 +688,10 @@ class NetworkServiceExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         from ..resource.networkservice import NetworkService
-        self.data['cls'] = "NetworkService"
+
+        self.data["cls"] = "NetworkService"
         self.local = NetworkService(target=None, name=None, **self.local_params)
-        if '%' in self.local_params['address']:
+        if "%" in self.local_params["address"]:
             self.proxy_required = True
 
     def _get_params(self):
@@ -646,21 +700,27 @@ class NetworkServiceExport(ResourceExport):
             **self.local_params,
         }
 
+
 exports["NetworkService"] = NetworkServiceExport
+
 
 @attr.s
 class HTTPVideoStreamExport(ResourceExport):
     """ResourceExport for an HTTPVideoStream"""
+
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         from ..resource.httpvideostream import HTTPVideoStream
-        self.data['cls'] = "HTTPVideoStream"
+
+        self.data["cls"] = "HTTPVideoStream"
         self.local = HTTPVideoStream(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         return self.local_params
 
+
 exports["HTTPVideoStream"] = HTTPVideoStreamExport
+
 
 @attr.s(eq=False)
 class LXAIOBusNodeExport(ResourceExport):
@@ -669,31 +729,37 @@ class LXAIOBusNodeExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = f"Network{self.cls}"
+        self.data["cls"] = f"Network{self.cls}"
         from ..resource import lxaiobus
+
         local_cls = getattr(lxaiobus, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         return self.local_params
 
+
 exports["LXAIOBusPIO"] = LXAIOBusNodeExport
+
 
 @attr.s(eq=False)
 class AndroidNetFastbootExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = f"Remote{self.cls}"
+        self.data["cls"] = f"Remote{self.cls}"
         from ..resource import fastboot
+
         local_cls = getattr(fastboot, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):
         """Helper function to return parameters"""
-        return {'host' : self.host, **self.local_params}
+        return {"host": self.host, **self.local_params}
+
 
 exports["AndroidNetFastboot"] = AndroidNetFastbootExport
+
 
 @attr.s(eq=False)
 class YKUSHPowerPortExport(ResourceExport):
@@ -702,127 +768,197 @@ class YKUSHPowerPortExport(ResourceExport):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         local_cls_name = self.cls
-        self.data['cls'] = f"Network{local_cls_name}"
+        self.data["cls"] = f"Network{local_cls_name}"
         from ..resource import ykushpowerport
+
         local_cls = getattr(ykushpowerport, local_cls_name)
         self.local = local_cls(target=None, name=None, **self.local_params)
 
     def _get_params(self):
-        return {
-            "host": self.host,
-            **self.local_params
-        }
+        return {"host": self.host, **self.local_params}
+
 
 exports["YKUSHPowerPort"] = YKUSHPowerPortExport
 
-class ExporterSession(ApplicationSession):
-    def onConnect(self):
+
+class Exporter:
+    def __init__(self, config) -> None:
         """Set up internal datastructures on successful connection:
         - Setup loop, name, authid and address
         - Join the coordinator as an exporter"""
-        self.loop = self.config.extra['loop']
-        self.name = self.config.extra['name']
-        self.hostname = self.config.extra['hostname']
-        self.isolated = self.config.extra['isolated']
-        self.address = self._transport.transport.get_extra_info('sockname')[0]
-        self.checkpoint = time.monotonic()
+        self.config = config
+        self.loop = asyncio.get_running_loop()
+        self.name = config["name"]
+        self.hostname = config["hostname"]
+        self.isolated = config["isolated"]
+
+        # It seems since https://github.com/grpc/grpc/pull/34647, the
+        # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
+        # so set it as well.
+        # Use GRPC_VERBOSITY=DEBUG GRPC_TRACE=http_keepalive for debugging.
+        channel_options = [
+            ("grpc.keepalive_time_ms", 7500),  # 7.5 seconds
+            ("grpc.keepalive_timeout_ms", 10000),  # 10 seconds
+            ("grpc.http2.ping_timeout_ms", 10000),  # 10 seconds
+            ("grpc.http2.max_pings_without_data", 0),  # no limit
+        ]
+
+        # default to port 20408 if not specified
+        if urlsplit(f"//{config['coordinator']}").port is None:
+            config["coordinator"] += ":20408"
+
+        self.channel = grpc.aio.insecure_channel(
+            target=config["coordinator"],
+            options=channel_options,
+        )
+        self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
+        self.out_queue = asyncio.Queue()
+        self.pump_task = None
+
         self.poll_task = None
 
         self.groups = {}
 
-        enable_tcp_nodelay(self)
-        self.join(
-            self.config.realm,
-            authmethods=["anonymous", "ticket"],
-            authid=f"exporter/{self.name}",
-            authextra={"authid": f"exporter/{self.name}"},
-        )
+    async def run(self) -> None:
+        self.pump_task = self.loop.create_task(self.message_pump())
+        self.send_started()
 
-    def onChallenge(self, challenge):
-        """Function invoked on received challege, returns just a dummy ticket
-        at the moment, authentication is not supported yet"""
-        logging.warning("Ticket authentication is deprecated. Please update your coordinator.")
-        return "dummy-ticket"
+        config_template_env = {
+            "env": os.environ,
+            "isolated": self.isolated,
+            "hostname": self.hostname,
+            "name": self.name,
+        }
+        resource_config = ResourceConfig(self.config["resources"], config_template_env)
+        for group_name, group in resource_config.data.items():
+            group_name = str(group_name)
+            for resource_name, params in group.items():
+                resource_name = str(resource_name)
+                if resource_name == "location":
+                    continue
+                if params is None:
+                    continue
+                cls = params.pop("cls", resource_name)
 
-    async def onJoin(self, details):
-        """On successful join:
-        - export available resources
-        - bail out if we are unsuccessful
-        """
-        print(details)
+                # this may call back to acquire the resource immediately
+                await self.add_resource(group_name, resource_name, cls, params)
 
-        prefix = f'org.labgrid.exporter.{self.name}'
-        try:
-            await self.register(self.acquire, f'{prefix}.acquire')
-            await self.register(self.release, f'{prefix}.release')
-            await self.register(self.version, f'{prefix}.version')
+            # flush queued message
+            while not self.pump_task.done():
+                try:
+                    await asyncio.wait_for(self.out_queue.join(), timeout=1)
+                    break
+                except asyncio.TimeoutError:
+                    if self.pump_task.done():
+                        await self.pump_task
+                        logging.debug("pump task exited, shutting down exporter")
+                        return
 
-            config_template_env = {
-                'env': os.environ,
-                'isolated': self.isolated,
-                'hostname': self.hostname,
-                'name': self.name,
-            }
-            resource_config = ResourceConfig(
-                self.config.extra['resources'], config_template_env
-            )
-            for group_name, group in resource_config.data.items():
-                group_name = str(group_name)
-                for resource_name, params in group.items():
-                    resource_name = str(resource_name)
-                    if resource_name == 'location':
-                        continue
-                    if params is None:
-                        continue
-                    cls = params.pop('cls', resource_name)
-
-                    # this may call back to acquire the resource immediately
-                    await self.add_resource(
-                        group_name, resource_name, cls, params
-                    )
-                    self.checkpoint = time.monotonic()
-
-        except Exception:  # pylint: disable=broad-except
-            traceback.print_exc(file=sys.stderr)
-            self.loop.stop()
-            return
-
+        logging.info("creating poll task")
         self.poll_task = self.loop.create_task(self.poll())
 
-    async def onLeave(self, details):
-        """Cleanup after leaving the coordinator connection"""
-        if self.poll_task:
-            self.poll_task.cancel()
-            await asyncio.wait([self.poll_task])
-        super().onLeave(details)
+        (done, pending) = await asyncio.wait((self.pump_task, self.poll_task), return_when=asyncio.FIRST_COMPLETED)
+        logging.debug("task(s) %s exited, shutting down exporter", done)
+        for task in pending:
+            task.cancel()
 
-    async def onDisconnect(self):
-        print("connection lost", file=sys.stderr)
-        global reexec
-        reexec = True
-        if self.poll_task:
-            self.poll_task.cancel()
-            await asyncio.wait([self.poll_task])
-            await asyncio.sleep(0.5) # give others a chance to clean up
-        self.loop.stop()
+        await self.pump_task
+        await self.poll_task
+
+    def send_started(self):
+        msg = labgrid_coordinator_pb2.ExporterInMessage()
+        msg.startup.version = labgrid_version()
+        msg.startup.name = self.name
+        self.out_queue.put_nowait(msg)
+
+    async def message_pump(self):
+        got_message = False
+        try:
+            async for out_message in self.stub.ExporterStream(queue_as_aiter(self.out_queue)):
+                got_message = True
+                logging.debug("received message %s", out_message)
+                kind = out_message.WhichOneof("kind")
+                if kind == "hello":
+                    logging.info("connected to coordinator version %s", out_message.hello.version)
+                elif kind == "set_acquired_request":
+                    logging.debug("acquire request")
+                    success = False
+                    reason = None
+                    try:
+                        if out_message.set_acquired_request.place_name:
+                            await self.acquire(
+                                out_message.set_acquired_request.group_name,
+                                out_message.set_acquired_request.resource_name,
+                                out_message.set_acquired_request.place_name,
+                            )
+                        else:
+                            await self.release(
+                                out_message.set_acquired_request.group_name,
+                                out_message.set_acquired_request.resource_name,
+                            )
+                        success = True
+                    except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
+                        reason = e.args[0]
+                        logging.warning("set_acquired_request failed: %s", reason)
+                    finally:
+                        in_message = labgrid_coordinator_pb2.ExporterInMessage()
+                        in_message.response.success = success
+                        if reason:
+                            in_message.response.reason = reason
+                        logging.debug("queuing %s", in_message)
+                        self.out_queue.put_nowait(in_message)
+                        logging.debug("queued %s", in_message)
+                else:
+                    logging.debug("unknown request: %s", kind)
+        except grpc.aio.AioRpcError as e:
+            self.out_queue.put_nowait(None)  # let the sender side exit gracefully
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                if got_message:
+                    logging.error("coordinator became unavailable: %s", e.details())
+                else:
+                    logging.error("coordinator is unavailable: %s", e.details())
+
+                global reexec
+                reexec = True
+            else:
+                logging.exception("unexpected grpc error in coordinator message pump task")
+        except Exception:
+            self.out_queue.put_nowait(None)  # let the sender side exit gracefully
+            logging.exception("error in coordinator message pump")
+
+            # only send command response when the other updates have left the queue
+            # perhaps with queue join/task_done
+            # this should be a command from the coordinator
 
     async def acquire(self, group_name, resource_name, place_name):
-        resource = self.groups[group_name][resource_name]
+        resource = self.groups.get(group_name, {}).get(resource_name)
+        if resource is None:
+            raise UnknownResourceError(
+                f"acquire request for unknown resource {group_name}/{resource_name} by {place_name}"
+            )
+
+        if resource.acquired:
+            raise InvalidResourceRequestError(
+                f"Resource {group_name}/{resource_name} is already acquired by {resource.acquired}"
+            )
+
         try:
             resource.acquire(place_name)
         finally:
             await self.update_resource(group_name, resource_name)
 
     async def release(self, group_name, resource_name):
-        resource = self.groups[group_name][resource_name]
+        resource = self.groups.get(group_name, {}).get(resource_name)
+        if resource is None:
+            raise UnknownResourceError(f"release request for unknown resource {group_name}/{resource_name}")
+
+        if not resource.acquired:
+            raise InvalidResourceRequestError(f"Resource {group_name}/{resource_name} is not acquired")
+
         try:
             resource.release()
         finally:
             await self.update_resource(group_name, resource_name)
-
-    async def version(self):
-        self.checkpoint = time.monotonic()
-        return __version__
 
     async def _poll_step(self):
         for group_name, group in self.groups.items():
@@ -850,32 +986,28 @@ class ExporterSession(ApplicationSession):
                 break
             except Exception:  # pylint: disable=broad-except
                 traceback.print_exc(file=sys.stderr)
-            age = time.monotonic() - self.checkpoint
-            if age > 300:
-                print(f"missed checkpoint, exiting (last was {age} seconds ago)", file=sys.stderr)
-                self.disconnect()
 
     async def add_resource(self, group_name, resource_name, cls, params):
         """Add a resource to the exporter and update status on the coordinator"""
-        print(
-            f"add resource {group_name}/{resource_name}: {cls}/{params}"
-        )
+        print(f"add resource {group_name}/{resource_name}: {cls}/{params}")
         group = self.groups.setdefault(group_name, {})
         assert resource_name not in group
         export_cls = exports.get(cls, ResourceEntry)
         config = {
-            'avail': export_cls is ResourceEntry,
-            'cls': cls,
-            'params': params,
+            "avail": export_cls is ResourceEntry,
+            "cls": cls,
+            "params": params,
         }
         proxy_req = self.isolated
         if issubclass(export_cls, ResourceExport):
-            group[resource_name] = export_cls(config, host=self.hostname, proxy=getfqdn(),
-                                              proxy_required=proxy_req)
+            res = group[resource_name] = export_cls(
+                config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req
+            )
+            res.poll()
         else:
-            config['params']['extra'] = {
-                'proxy': getfqdn(),
-                'proxy_required': proxy_req,
+            config["params"]["extra"] = {
+                "proxy": getfqdn(),
+                "proxy_required": proxy_req,
             }
             group[resource_name] = export_cls(config)
         await self.update_resource(group_name, resource_name)
@@ -883,85 +1015,99 @@ class ExporterSession(ApplicationSession):
     async def update_resource(self, group_name, resource_name):
         """Update status on the coordinator"""
         resource = self.groups[group_name][resource_name]
-        data = resource.asdict()
-        print(data)
-        await self.call(
-            'org.labgrid.coordinator.set_resource', group_name, resource_name,
-            data
-        )
+        msg = labgrid_coordinator_pb2.ExporterInMessage()
+        msg.resource.CopyFrom(resource.as_pb2())
+        msg.resource.path.group_name = group_name
+        msg.resource.path.resource_name = resource_name
+        self.out_queue.put_nowait(msg)
+        logging.info("queued update for resource %s/%s", group_name, resource_name)
+
+
+async def amain(config) -> bool:
+    exporter = Exporter(config)
+
+    if inspect:
+        inspect.exporter = exporter
+
+    await exporter.run()
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-x',
-        '--crossbar',
-        metavar='URL',
+        "-c",
+        "--coordinator",
+        metavar="HOST:PORT",
         type=str,
-        default=os.environ.get("LG_CROSSBAR", "ws://127.0.0.1:20408/ws"),
-        help="crossbar websocket URL"
+        default=os.environ.get("LG_COORDINATOR", "127.0.0.1:20408"),
+        help="coordinator host and port",
     )
     parser.add_argument(
-        '-n',
-        '--name',
-        dest='name',
-        type=str,
-        default=None,
-        help='public name of this exporter (defaults to the system hostname)'
-    )
-    parser.add_argument(
-        '--hostname',
-        dest='hostname',
+        "-n",
+        "--name",
+        dest="name",
         type=str,
         default=None,
-        help='hostname (or IP) published for accessing resources (defaults to the system hostname)'
+        help="public name of this exporter (defaults to the system hostname)",
     )
     parser.add_argument(
-        '-d',
-        '--debug',
-        action='store_true',
-        default=False,
-        help="enable debug mode"
-    )
-    parser.add_argument(
-        '-i',
-        '--isolated',
-        action='store_true',
-        default=False,
-        help="enable isolated mode (always request SSH forwards)"
-    )
-    parser.add_argument(
-        'resources',
-        metavar='RESOURCES',
+        "--hostname",
+        dest="hostname",
         type=str,
-        help='resource config file name'
+        default=None,
+        help="hostname (or IP) published for accessing resources (defaults to the system hostname)",
     )
+    parser.add_argument(
+        "--fqdn", action="store_true", default=False, help="Use fully qualified domain name as default for hostname"
+    )
+    parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
+    parser.add_argument(
+        "-i",
+        "--isolated",
+        action="store_true",
+        default=False,
+        help="enable isolated mode (always request SSH forwards)",
+    )
+    parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
+    parser.add_argument(
+        "--pystuck-port", metavar="PORT", type=int, default=6667, help="use a different pystuck port than 6667"
+    )
+    parser.add_argument("resources", metavar="RESOURCES", type=str, help="resource config file name")
 
     args = parser.parse_args()
 
-    level = 'debug' if args.debug else 'info'
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
-    extra = {
-        'name': args.name or gethostname(),
-        'hostname': args.hostname or gethostname(),
-        'resources': args.resources,
-        'isolated': args.isolated
+    config = {
+        "name": args.name or gethostname(),
+        "hostname": args.hostname or (getfqdn() if args.fqdn else gethostname()),
+        "resources": args.resources,
+        "coordinator": args.coordinator,
+        "isolated": args.isolated,
     }
 
-    crossbar_url = args.crossbar
-    crossbar_realm = os.environ.get("LG_CROSSBAR_REALM", "realm1")
+    print(f"exporter name: {config['name']}")
+    print(f"exporter hostname: {config['hostname']}")
+    print(f"resource config file: {config['resources']}")
 
-    print(f"crossbar URL: {crossbar_url}")
-    print(f"crossbar realm: {crossbar_realm}")
-    print(f"exporter name: {extra['name']}")
-    print(f"exporter hostname: {extra['hostname']}")
-    print(f"resource config file: {extra['resources']}")
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
-    extra['loop'] = loop = asyncio.get_event_loop()
-    if args.debug:
-        loop.set_debug(True)
-    runner = ApplicationRunner(url=crossbar_url, realm=crossbar_realm, extra=extra)
-    runner.run(ExporterSession, log_level=level)
+    global inspect
+    if args.pystuck:
+        from types import SimpleNamespace
+
+        inspect = SimpleNamespace()
+        inspect.loop = loop
+
+        import pystuck
+
+        pystuck.run_server(port=args.pystuck_port)
+    else:
+        inspect = None
+
+    asyncio.run(amain(config), debug=bool(args.debug))
+
     if reexec:
         exit(100)
 

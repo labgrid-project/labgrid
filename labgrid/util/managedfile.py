@@ -31,7 +31,7 @@ class ManagedFile:
     """
     local_path = attr.ib(
         validator=attr.validators.instance_of(str),
-        converter=lambda x: os.path.abspath(str(x))
+        converter=lambda x: os.path.realpath(str(x))
     )
     resource = attr.ib(
         validator=attr.validators.instance_of(Resource),
@@ -60,23 +60,30 @@ class ManagedFile:
                 self.logger.info("File %s is accessible on %s, skipping copy", self.local_path, host)
                 self.rpath = os.path.dirname(self.local_path) + "/"
             else:
-                self.rpath = f"/var/cache/labgrid/{get_user()}/{self.get_hash()}/"
+                self.rpath = f"{self.get_user_cache_path()}/{self.get_hash()}/"
                 self.logger.info("Synchronizing %s to %s", self.local_path, host)
                 conn.run_check(f"mkdir -p {self.rpath}")
                 conn.put_file(
                     self.local_path,
                     f"{self.rpath}{os.path.basename(self.local_path)}"
                 )
+        else:
+            self.rpath = os.path.dirname(self.local_path) + "/"
 
-            if symlink is not None:
-                self.logger.info("Linking")
+        if symlink is not None:
+            self.logger.info("Linking")
+            if isinstance(self.resource, NetworkResource):
                 try:
                     conn.run_check(f"test ! -e {symlink} -o -L {symlink}")
                 except ExecutionError:
                     raise ManagedFileError(f"Path {symlink} exists but is not a symlink.")
-                conn.run_check(
-                    f"ln --symbolic --force --no-dereference {self.rpath}{os.path.basename(self.local_path)} {symlink}"  # pylint: disable=line-too-long
-                )
+                # use short options to be compatible with busybox
+                # --symbolic --force --no-dereference
+                conn.run_check(f"ln -sfn {self.rpath}{os.path.basename(self.local_path)} {symlink}")
+            else:
+                if os.path.exists(symlink) and not os.path.islink(symlink):
+                    raise ManagedFileError(f"Path {symlink} exists but is not a symlink.")
+                os.symlink(f"{self.rpath}{os.path.basename(self.local_path)}", symlink)
 
 
     def _on_nfs(self, conn):
@@ -129,6 +136,9 @@ class ManagedFile:
             str: path to the file on the remote host
         """
         if isinstance(self.resource, NetworkResource):
+            if self.rpath is None:
+                raise ManagedFileError("sync_to_resource() needs to be called before the remote-path can be retrieved")
+
             return f"{self.rpath}{os.path.basename(self.local_path)}"
 
         return self.local_path
@@ -150,3 +160,6 @@ class ManagedFile:
         self.hash = hasher.hexdigest()
 
         return self.hash
+
+    def get_user_cache_path(self):
+        return f"/var/cache/labgrid/{get_user()}"

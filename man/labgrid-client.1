@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "LABGRID-CLIENT" 1 "2017-04-15" "0.0.1" "embedded testing"
+.TH "LABGRID-CLIENT" "1" "" "0.0.1" "embedded testing"
 .SH NAME
 labgrid-client \- labgrid-client interface to control boards
 .SH SYNOPSIS
@@ -51,8 +51,8 @@ display command line help
 .BI \-p \ PLACE\fR,\fB \ \-\-place \ PLACE
 specify the place to operate on
 .TP
-.BI \-x \ URL\fR,\fB \ \-\-crossbar \ URL
-the crossbar url of the coordinator, defaults to \fBws://127.0.0.1:20408/ws\fP
+.BI \-x \ ADDRESS\fR,\fB \ \-\-coordinator \ ADDRESS
+coordinator \fBHOST[:PORT]\fP to connect to, defaults to \fB127.0.0.1:20408\fP
 .TP
 .BI \-c \ CONFIG\fR,\fB \ \-\-config \ CONFIG
 set the configuration file
@@ -103,14 +103,10 @@ A desired state must be set using \fBLG_STATE\fP or \fB\-s\fP/\fB\-\-state\fP\&.
 .sp
 This variable can be used to specify the configuration file to use without
 using the \fB\-\-config\fP option, the \fB\-\-config\fP option overrides it.
-.SS LG_CROSSBAR
+.SS LG_COORDINATOR
 .sp
-This variable can be used to set the default crossbar URL (instead of using the
-\fB\-x\fP option).
-.SS LG_CROSSBAR_REALM
-.sp
-This variable can be used to set the default crossbar realm to use instead of
-\fBrealm1\fP\&.
+This variable can be used to set the default coordinator in the format
+\fBHOST[:PORT]\fP (instead of using the \fB\-x\fP option).
 .SS LG_PROXY
 .sp
 This variable can be used to specify a SSH proxy hostname which should be used
@@ -128,6 +124,10 @@ CI pipelines where the username may not be consistent between pipeline stages.
 .sp
 Set the connection timeout when using SSH (The \fBConnectTimeout\fP option). If
 unspecified, defaults to 30 seconds.
+.SS LG_AGENT_PREFIX
+.sp
+Add a prefix to \fB\&.labgrid_agent_{agent_hash}.py\fP allowing specification for
+where on the exporter it should be uploaded to.
 .SH MATCHES
 .sp
 Match patterns are used to assign a resource to a specific place. The format is:
@@ -137,41 +137,41 @@ and name is its name. Wild cards in match patterns are explicitly allowed, *
 matches anything.
 .SH LABGRID-CLIENT COMMANDS
 .sp
-\fBmonitor\fP                     Monitor events from the coordinator
+\fBmonitor\fP                                 Monitor events from the coordinator
 .sp
-\fBresources (r)\fP               List available resources
+\fBresources (r)\fP                           List available resources
 .sp
-\fBplaces (p)\fP                  List available places
+\fBplaces (p)\fP                              List available places
 .sp
-\fBwho\fP                         List acquired places by user
+\fBwho\fP                                     List acquired places by user
 .sp
-\fBshow\fP                        Show a place and related resources
+\fBshow\fP                                    Show a place and related resources
 .sp
-\fBcreate\fP                      Add a new place (name supplied by \-p parameter)
+\fBcreate\fP                                  Add a new place (name supplied by \-p parameter)
 .sp
-\fBdelete\fP                      Delete an existing place
+\fBdelete\fP                                  Delete an existing place
 .sp
-\fBadd\-alias\fP alias             Add an alias to a place
+\fBadd\-alias\fP \fB[alias]\fP                   Add an alias to a place
 .sp
-\fBdel\-alias\fP alias             Delete an alias from a place
+\fBdel\-alias\fP \fB[alias]\fP                   Delete an alias from a place
 .sp
-\fBset\-comment\fP comment         Update or set the place comment
+\fBset\-comment\fP \fB[comment]\fP               Update or set the place comment
 .sp
-\fBset\-tags\fP comment            Set place tags (key=value)
+\fBset\-tags\fP \fB[key=value]\fP                Set place tags (key=value)
 .sp
-\fBadd\-match\fP match             Add one (or multiple) match pattern(s) to a place, see MATCHES
+\fBadd\-match\fP \fB[match]\fP                   Add one (or multiple) match pattern(s) to a place, see MATCHES
 .sp
-\fBdel\-match\fP match             Delete one (or multiple) match pattern(s) from a place, see MATCHES
+\fBdel\-match\fP \fB[match]\fP                   Delete one (or multiple) match pattern(s) from a place, see MATCHES
 .sp
-\fBadd\-named\-match\fP match name  Add one match pattern with a name to a place
+\fBadd\-named\-match\fP \fB[match]\fP \fB[name]\fP  Add one match pattern with a name to a place
 .sp
-\fBacquire (lock)\fP              Acquire a place
+\fBacquire (lock)\fP                          Acquire a place
 .sp
-\fBallow\fP user                  Allow another user to access a place
+\fBallow\fP \fB[user]\fP                        Allow another user to access a place
 .sp
-\fBrelease (unlock)\fP            Release a place
+\fBrelease (unlock)\fP                        Release a place
 .sp
-\fBrelease\-from\fP host/user      Atomically release a place, but only if acquired by a specific user.
+\fBrelease\-from\fP \fB[host/user]\fP            Atomically release a place, but only if acquired by a specific user.
 .INDENT 0.0
 .INDENT 3.5
 Note that this command returns success as long
@@ -181,57 +181,59 @@ not at all.
 .UNINDENT
 .UNINDENT
 .sp
-\fBenv\fP                         Generate a labgrid environment file for a place
+\fBenv\fP                                     Generate a labgrid environment file for a place
 .sp
-\fBpower (pw)\fP action           Change (or get) a place\(aqs power status, where action is one of get, on, off, status
+\fBpower (pw)\fP \fB[action]\fP                 Change (or get) a place\(aqs power status, where action is one of get, on, off, cycle
 .sp
-\fBio\fP action                   Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
+\fBio\fP \fB[action]\fP \fB[name]\fP              Interact with GPIO (OneWire, relays, ...) devices, where action is one of high, low, get
 .sp
-\fBconsole (con)\fP               Connect to the console
+\fBconsole (con)\fP \fB[name]\fP                Connect to the console
 .sp
-\fBdfu\fP arg                     Run dfu commands
+\fBdfu\fP \fB[arg]\fP                           Run dfu commands
 .sp
-\fBfastboot\fP arg                Run fastboot with argument
+\fBfastboot\fP \fB[arg]\fP                      Run fastboot with argument
 .sp
-\fBflashscript\fP script arg      Run arbitrary script with arguments to flash device
+\fBflashscript\fP \fB[script]\fP \fB[arg]\fP      Run arbitrary script with arguments to flash device
 .sp
-\fBbootstrap\fP filename          Start a bootloader
+\fBbootstrap\fP \fB[filename]\fP                Start a bootloader
 .sp
-\fBsd\-mux\fP action               Switch USB SD Muxer, where action is one of dut (device\-under\-test), host, off
+\fBsd\-mux\fP \fB[action]\fP                     Switch USB SD Muxer, where action is one of dut (device\-under\-test), host, off
 .sp
-\fBusb\-mux\fP action              Switch USB Muxer, where action is one of off, dut\-device, host\-dut, host\-device, host\-dut+host\-device
+\fBusb\-mux\fP \fB[action]\fP                    Switch USB Muxer, where action is one of off, dut\-device, host\-dut, host\-device, host\-dut+host\-device
 .sp
-\fBssh\fP                         Connect via SSH
+\fBssh\fP \fB[command]\fP                       Connect via SSH. Additional arguments are passed to ssh.
 .sp
-\fBscp\fP                         Transfer file via scp (use \(aq:dir/file\(aq for the remote side)
+\fBscp\fP \fB[source]\fP \fB[destination]\fP      Transfer file via scp (use \(aq:dir/file\(aq for the remote side)
 .sp
-\fBrsync\fP                       Transfer files via rsync (use \(aq:dir/file\(aq for the remote side)
+\fBrsync\fP \fB[source]\fP \fB[destination]\fP    Transfer files via rsync (use \(aq:dir/file\(aq for the remote side)
 .sp
-\fBsshfs\fP                       Mount a remote path via sshfs
+\fBsshfs\fP \fB[remotepath]\fP \fB[mountpoint]\fP Mount a remote path via sshfs
 .sp
-\fBforward\fP                     Forward local port to remote target
+\fBforward\fP                                 Forward local port to remote target
 .sp
-\fBtelnet\fP                      Connect via telnet
+\fBtelnet\fP                                  Connect via telnet
 .sp
-\fBvideo\fP                       Start a video stream
+\fBvideo\fP                                   Start a video stream
 .sp
-\fBaudio\fP                       Start an audio stream
+\fBaudio\fP                                   Start an audio stream
 .sp
-\fBtmc\fP command                 Control a USB TMC device
+\fBtmc\fP \fB[command]\fP                       Control a USB TMC device
 .sp
-\fBwrite\-image\fP                 Write images onto block devices (USBSDMux, USB Sticks, …)
+\fBwrite\-files\fP \fB[filename(s)]\fP           Copy files onto mass storage device
 .sp
-\fBreserve\fP filter              Create a reservation
+\fBwrite\-image\fP \fB[filename]\fP              Write images onto block devices (USBSDMux, USB Sticks, …)
 .sp
-\fBcancel\-reservation\fP token    Cancel a pending reservation
+\fBreserve\fP \fB[filter]\fP                    Create a reservation
 .sp
-\fBwait\fP token                  Wait for a reservation to be allocated
+\fBcancel\-reservation\fP \fB[token]\fP          Cancel a pending reservation
 .sp
-\fBreservations\fP                List current reservations
+\fBwait\fP \fB[token]\fP                        Wait for a reservation to be allocated
 .sp
-\fBexport\fP filename             Export driver information to file (needs environment with drivers)
+\fBreservations\fP                            List current reservations
 .sp
-\fBversion\fP                     Print the labgrid version
+\fBexport\fP \fB[filename]\fP                   Export driver information to file (needs environment with drivers)
+.sp
+\fBversion\fP                                 Print the labgrid version
 .SH ADDING NAMED RESOURCES
 .sp
 If a target contains multiple Resources of the same type, named matches need to
@@ -249,11 +251,9 @@ To retrieve a list of places run:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ labgrid\-client places
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -262,11 +262,9 @@ the \fBacquire command\fP and passing the placename as a \-p parameter:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ labgrid\-client \-p <placename> acquire
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -274,11 +272,9 @@ Open a console to the acquired place:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ labgrid\-client \-p <placename> console
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -286,11 +282,9 @@ Add all resources with the group \(dqexample\-group\(dq to the place example\-pl
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ labgrid\-client \-p example\-place add\-match */example\-group/*/*
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .SH SEE ALSO
@@ -301,7 +295,7 @@ Rouven Czerwinski <r.czerwinski@pengutronix.de>
 
 Organization: Labgrid-Project
 .SH COPYRIGHT
-Copyright (C) 2016-2017 Pengutronix. This library is free software;
+Copyright (C) 2016-2025 Pengutronix. This library is free software;
 you can redistribute it and/or modify it under the terms of the GNU
 Lesser General Public License as published by the Free Software
 Foundation; either version 2.1 of the License, or (at your option)

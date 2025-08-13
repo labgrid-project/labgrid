@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def instrument(target):
-    _modbus = target.get_driver('ModbusRTUDriver')
+    _modbus = target.get_driver("ModbusRTUDriver")
     return _modbus

@@ -10,9 +10,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         branch: ['master']
     uses: ./.github/workflows/reusable-unit-tests.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     with:
       python-version: ${{ matrix.python-version }}
       branch: ${{ matrix.branch }}
@@ -21,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: ['master', 'stable-23.0']
+        branch: ['master']
     uses: ./.github/workflows/reusable-unit-tests-docker.yml
     with:
       branch: ${{ matrix.branch }}

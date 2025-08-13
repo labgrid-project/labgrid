@@ -15,11 +15,6 @@ from .hooks import LABGRID_ENV_KEY
 def pytest_addoption(parser):
     group = parser.getgroup('labgrid')
     group.addoption(
-        '--env-config',
-        action='store',
-        dest='env_config',
-        help='labgrid environment config file (deprecated).')
-    group.addoption(
         '--lg-env',
         action='store',
         dest='lg_env',
@@ -28,8 +23,8 @@ def pytest_addoption(parser):
         '--lg-coordinator',
         action='store',
         dest='lg_coordinator',
-        metavar='CROSSBAR_URL',
-        help='labgrid coordinator websocket URL.')
+        metavar='COORDINATOR_ADDRESS',
+        help='labgrid coordinator HOST[:PORT].')
     group.addoption(
         '--lg-log',
         action='store',

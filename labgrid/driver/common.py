@@ -1,3 +1,4 @@
+import logging
 import subprocess
 import attr
 
@@ -24,6 +25,11 @@ class Driver(BindingMixin):
         super().__attrs_post_init__()
         if self.target is None:
             raise BindingError("Drivers can only be created on a valid target")
+
+        logger_name = f"{self.__class__.__name__}({self.target.name})"
+        if self.name:
+            logger_name += f":{self.name}"
+        self.logger = logging.getLogger(logger_name)
 
     def get_priority(self, protocol):
         """Retrieve the priority for a given protocol

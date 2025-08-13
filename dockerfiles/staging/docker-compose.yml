@@ -1,15 +1,14 @@
-version: '3.3'
 services:
   coordinator:
-    image: "labgrid-coordinator"
+    image: "${IMAGE_PREFIX:-docker.io/labgrid/}coordinator"
     volumes:
-      - "./crossbar:/home/root/crossbar"
+      - "./coordinator:/home/root/coordinator"
     tty: true
     network_mode: "host"
-    command: bash -c "cp /home/root/crossbar/places_example.yaml /opt/crossbar/places.yaml &&
-      /opt/labgrid/crossbar-venv/bin/crossbar start --config /opt/labgrid/.crossbar/config-anonymous.yaml"
+    command: bash -c "cp /home/root/coordinator/places_example.yaml /opt/coordinator/places.yaml &&
+      /usr/local/bin/labgrid-coordinator"
   client:
-    image: "labgrid-client"
+    image: "${IMAGE_PREFIX:-docker.io/labgrid/}client"
     volumes:
       - "./client/simple-test:/simple-test"
       - "./client/.ssh:/root/.ssh"
@@ -17,12 +16,12 @@ services:
     stdin_open: true
     network_mode: "host"
     tmpfs: "/tmp"
-    # Use wait-for-it to ensure exporter service is up, as exporter is assuming exporter to
+    # Wait until coordinator is up
     # Use labgrid-client r to ensure the exporter has populated the resource list in the coordinator
     # Use sleep to fix the problem that sometimes the coordinator is not ready even though the service is up
     command: timeout 60 bash -c "set -e &&
       cd /simple-test &&
-      /opt/wait-for-it/wait-for-it.sh 127.0.0.1:20408 &&
+      until echo > /dev/tcp/localhost/20408; do sleep 1; done &&
       sleep 5 &&
       while [ -z $$(/usr/local/bin/labgrid-client r) ]; do echo 'Wait one sec on coordinator' && sleep 1; done &&
       /usr/local/bin/labgrid-client -p example-place lock &&
@@ -33,7 +32,7 @@ services:
       - exporter
       - dut
   exporter:
-    image: "labgrid-exporter"
+    image: "${IMAGE_PREFIX:-docker.io/labgrid/}exporter"
     volumes:
       - "./exporter-conf:/opt/conf"
       - "/run/udev:/run/udev:ro"
@@ -43,7 +42,7 @@ services:
     network_mode: "host"
     stdin_open: true
     command: bash -c "set -e &&
-      /opt/wait-for-it/wait-for-it.sh 127.0.0.1:20408 -- labgrid-exporter /opt/conf/exporter.yaml"
+      until echo > /dev/tcp/localhost/20408; do sleep 1; done && labgrid-exporter /opt/conf/exporter.yaml"
   dut:
     build:
       context: "./dut"

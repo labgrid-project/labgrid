@@ -1,9 +1,7 @@
-import logging
 import os.path
 import re
 import subprocess
 import shutil
-import signal
 import tempfile
 import time
 import uuid
@@ -23,6 +21,7 @@ from ..util.helper import processwrapper
 from .common import Driver, check_file
 from .exception import ExecutionError
 from .powerdriver import PowerResetMixin
+from ..util import Timeout
 
 
 @attr.s(eq=False)
@@ -36,7 +35,6 @@ class SigrokCommon(Driver):
             ) or 'sigrok-cli'
         else:
             self.tool = 'sigrok-cli'
-        self.log = logging.getLogger("SigrokDriver")
         self._running = False
 
     def _create_tmpdir(self):
@@ -45,26 +43,26 @@ class SigrokCommon(Driver):
             command = self.sigrok.command_prefix + [
                 'mkdir', '-p', self._tmpdir
             ]
-            self.log.debug("Tmpdir command: %s", command)
+            self.logger.debug("Tmpdir command: %s", command)
             subprocess.call(
                 command,
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-            self.log.debug("Created tmpdir: %s", self._tmpdir)
+            self.logger.debug("Created tmpdir: %s", self._tmpdir)
             self._local_tmpdir = tempfile.mkdtemp(prefix="labgrid-sigrok-")
-            self.log.debug("Created local tmpdir: %s", self._local_tmpdir)
+            self.logger.debug("Created local tmpdir: %s", self._local_tmpdir)
         else:
             self._tmpdir = tempfile.mkdtemp(prefix="labgrid-sigrok-")
-            self.log.debug("created tmpdir: %s", self._tmpdir)
+            self.logger.debug("created tmpdir: %s", self._tmpdir)
 
     def _delete_tmpdir(self):
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
             command = self.sigrok.command_prefix + [
                 'rm', '-r', self._tmpdir
             ]
-            self.log.debug("Tmpdir command: %s", command)
+            self.logger.debug("Tmpdir command: %s", command)
             subprocess.call(
                 command,
                 stdin=subprocess.DEVNULL,
@@ -91,13 +89,15 @@ class SigrokCommon(Driver):
             prefix += ["-d", self.sigrok.driver]
         if self.sigrok.channels:
             prefix += ["-C", self.sigrok.channels]
+        if self.sigrok.channel_group:
+            prefix += ["-g", self.sigrok.channel_group]
         return self.sigrok.command_prefix + prefix
 
     @Driver.check_active
     @step(title='call', args=['args'])
     def _call_with_driver(self, *args):
         combined = self._get_sigrok_prefix() + list(args)
-        self.log.debug("Combined command: %s", " ".join(combined))
+        self.logger.debug("Combined command: %s", " ".join(combined))
         self._process = subprocess.Popen(
             combined,
             stdout=subprocess.PIPE,
@@ -111,8 +111,10 @@ class SigrokCommon(Driver):
         combined = self.sigrok.command_prefix + [self.tool]
         if self.sigrok.channels:
             combined += ["-C", self.sigrok.channels]
+        if self.sigrok.channel_group:
+            combined += ["-g", self.sigrok.channel_group]
         combined += list(args)
-        self.log.debug("Combined command: %s", combined)
+        self.logger.debug("Combined command: %s", combined)
         self._process = subprocess.Popen(
             combined,
             stdout=subprocess.PIPE,
@@ -137,7 +139,7 @@ class SigrokDriver(SigrokCommon):
     def capture(self, filename, samplerate="200k"):
         self._filename = filename
         self._basename = os.path.basename(self._filename)
-        self.log.debug(
+        self.logger.debug(
             "Saving to: %s with basename: %s", self._filename, self._basename
         )
         cmd = [
@@ -150,6 +152,16 @@ class SigrokDriver(SigrokCommon):
         args = self.sigrok.command_prefix + ['test', '-e', filename]
 
         while subprocess.call(args):
+            # in case the sigrok-cli call fails, this would wait forever.
+            # to avoid this, we also check the spawned sigrok process
+            if self._process.poll() is not None:
+                ret = self._process.returncode
+                if ret != 0:
+                    stdout, stderr = self._process.communicate()
+                    self.logger.debug("sigrok-cli call terminated prematurely with non-zero return-code")
+                    self.logger.debug("stdout: %s", stdout)
+                    self.logger.debug("stderr: %s", stderr)
+                    raise ExecutionError(f"sigrok-cli call terminated prematurely with return-code '{ret}'.")
             sleep(0.1)
 
         self._running = True
@@ -162,25 +174,25 @@ class SigrokDriver(SigrokCommon):
         fnames.extend(self.sigrok.channels.split(','))
         csv_filename = f'{os.path.splitext(self._basename)[0]}.csv'
 
-        self._process.send_signal(signal.SIGINT)
-        stdout, stderr = self._process.communicate()
-        self._process.wait()
-        self.log.debug("stdout:\n %s\n ----- \n stderr:\n %s", stdout, stderr)
+        # sigrok-cli can be quit through any keypress
+        stdout, stderr = self._process.communicate(input="q")
+        self.logger.debug("stdout: %s", stdout)
+        self.logger.debug("stderr: %s", stderr)
 
         # Convert from .sr to .csv
         cmd = [
             '-i',
-            os.path.join(self._tmpdir, self._basename), '-O', 'csv', '-o',
+            os.path.join(self._tmpdir, self._basename), '-O', 'csv:time=true', '-o',
             os.path.join(self._tmpdir, csv_filename)
         ]
         self._call(*cmd)
-        self._process.wait()
         stdout, stderr = self._process.communicate()
-        self.log.debug("stdout:\n %s\n ----- \n stderr:\n %s", stdout, stderr)
+        self.logger.debug("stdout: %s", stdout)
+        self.logger.debug("stderr: %s", stderr)
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
             subprocess.call([
                 'scp', f'{self.sigrok.host}:{os.path.join(self._tmpdir, self._basename)}',
-                os.path.join(self._local_tmpdir, self._filename)
+                os.path.abspath(self._filename)
             ],
                             stdin=subprocess.DEVNULL,
                             stdout=subprocess.DEVNULL,
@@ -213,7 +225,7 @@ class SigrokDriver(SigrokCommon):
     def analyze(self, args, filename=None):
         annotation_regex = re.compile(r'(?P<startnum>\d+)-(?P<endnum>\d+) (?P<decoder>[\w\-]+): (?P<annotation>[\w\-]+): (?P<data>".*)')  # pylint: disable=line-too-long
         if not filename and self._filename:
-            filename = self._filename
+            filename = os.path.join(self._tmpdir, self._basename)
         else:
             filename = os.path.abspath(filename)
         check_file(filename, command_prefix=self.sigrok.command_prefix)
@@ -329,3 +341,115 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
         if len(res) != 2:
             raise ExecutionError(f"Cannot parse --show output {out}")
         return res
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class SigrokDmmDriver(SigrokCommon):
+    """
+    This driver wraps around a single channel DMM controlled by sigrok.
+    It has been tested with Unit-T UT61C and UT61B devices but probably also
+    works with other single chnnel DMMs.
+
+    This driver binds to a SigrokUsbDevice.
+    Make sure to select the correct driver for your DMM there.
+
+    Example usage:
+    > resources:
+    >   - SigrokUSBDevice:
+    >       driver: uni-t-ut61c
+    >       match:
+    >         'ID_PATH': pci-0000:07:00.4-usb-0:2:1.0
+    > drivers:
+    >   - SigrokDmmDriver: {}
+
+    Args:
+        bindings (dict): driver to use with sigrok
+    """
+
+    bindings = {
+        "sigrok": {SigrokUSBSerialDevice, NetworkSigrokUSBSerialDevice, SigrokUSBDevice, NetworkSigrokUSBDevice},
+    }
+
+    @Driver.check_active
+    @step(result=True)
+    def capture(self, samples, timeout=None):
+        """
+        Starts to read samples from the DMM.
+        This method returns once sampling has been started. Sampling continues in the background.
+
+        Note: We use subprocess.PIPE to buffer the samples.
+        When this buffer is too small for the number of samples requested sampling may stall.
+
+        Args:
+            samples: Number of samples to obtain
+            timeout: Timeout after which sampling should be stopped.
+                     If None: timeout[s] = samples * 1s + 5s
+                     If int: Timeout in [s]
+
+        Raises:
+            RuntimeError() if a capture is already running.
+        """
+        if self._running:
+            raise RuntimeError("capture is already running")
+
+        if not timeout:
+            timeout = samples + 5.0
+
+        args = f"-O csv --samples {samples}".split(" ")
+        self._call_with_driver(*args)
+        self._timeout = Timeout(timeout)
+        self._running = True
+
+    @Driver.check_active
+    @step(result=True)
+    def stop(self):
+        """
+        Waits for sigrok to complete and returns all samples obtained afterwards.
+        This function blocks until either sigrok has terminated or the timeout has been reached.
+
+        Returns:
+            (unit_spec, [sample, ...])
+
+        Raises:
+            RuntimeError() if capture has not been started
+        """
+        if not self._running:
+            raise RuntimeError("no capture started yet")
+        while not self._timeout.expired:
+            if self._process.poll() is not None:
+                # process has finished. no need to wait for the timeout
+                break
+            time.sleep(0.1)
+        else:
+            # process did not finish in time
+            self.logger.info("sigrok-cli did not finish in time, increase timeout?")
+            self._process.kill()
+
+        res = []
+        unit = ""
+        for line in self._process.stdout.readlines():
+            line = line.strip()
+            if b";" in line:
+                # discard header information
+                continue
+            if not unit:
+                # the first line after the header contains the unit information
+                unit = line.decode()
+            else:
+                # all other lines are actual values
+                res.append(float(line))
+        _, stderr = self._process.communicate()
+        self.logger.debug("stderr: %s", stderr)
+
+        self._running = False
+        return unit, res
+
+    def on_activate(self):
+        # This driver does not use self._tmpdir from SigrockCommon.
+        # Overriding this function to inhibit the temp-dir creation.
+        pass
+
+    def on_deactivate(self):
+        # This driver does not use self._tmpdir from SigrockCommon.
+        # Overriding this function to inhibit the temp-dir creation.
+        pass

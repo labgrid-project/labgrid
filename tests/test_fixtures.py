@@ -47,13 +47,6 @@ def test_env_fixture_no_logging(short_env, short_test):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before
 
-def test_env_old_fixture(short_env, short_test):
-    with pexpect.spawn(f'pytest --env-config {short_env} {short_test}') as spawn:
-        spawn.expect("deprecated option --env-config")
-        spawn.expect(pexpect.EOF)
-        spawn.close()
-        assert spawn.exitstatus == 0
-
 def test_env_env_fixture(short_env, short_test):
     env=os.environ.copy()
     env['LG_ENV'] = short_env
@@ -72,12 +65,12 @@ def test_env_with_junit(short_env, short_test, tmpdir):
 def test_help(short_test):
     with pexpect.spawn(f'pytest --help {short_test}') as spawn:
         spawn.expect(pexpect.EOF)
-        assert b'--lg-coordinator=CROSSBAR_URL' in spawn.before
+        assert b'--lg-coordinator=COORDINATOR_ADDRESS' in spawn.before
         spawn.close()
         assert spawn.exitstatus == 0
 
 def test_help_coordinator(short_test):
-    with pexpect.spawn(f'pytest --lg-coordinator=ws://127.0.0.1:20408/ws --help {short_test}') as spawn:
+    with pexpect.spawn(f'pytest --lg-coordinator=127.0.0.1:20408 --help {short_test}') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0

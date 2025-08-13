@@ -37,7 +37,7 @@ class StepFormatter:
                 if hasattr(record, "indent_level"):
                     self.indent_level = record.indent_level
 
-                record.msg = (" " * self.indent_level) + record.msg
+                record.msg = (" " * self.indent_level) + str(record.msg)
 
                 self.indent_level = getattr(
                     record, "next_indent_level", self.indent_level
@@ -136,7 +136,7 @@ class StepLogger:
         from warnings import warn
 
         warn(
-            "StepLogger should not be instantiated, use StepReporter.start()/.stop() instead.",
+            "StepLogger should not be instantiated, use StepLogger.start()/.stop() instead.",
             DeprecationWarning,
             stacklevel=2,
         )

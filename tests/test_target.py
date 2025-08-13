@@ -41,6 +41,23 @@ def test_get_resource_multiple_no_default(target):
     with pytest.raises(NoResourceFoundError) as excinfo:
         target.get_resource(A, name="nosuchresource")
 
+def test_get_resource_multiple_with_default(target):
+    class A(Resource):
+        pass
+
+    class B(Resource):
+        pass
+
+    a = A(target, "aresource")
+    adef = A(target, "default")
+    b = B(target, "bresource")
+    bdef = B(target, "default")
+
+    assert target.get_resource(A) is adef
+    assert target.get_resource(B) is bdef
+    assert target.get_resource(A, name="aresource") is a
+    assert target.get_resource(B, name="bresource") is b
+
 def test_get_driver(target):
     class A(Driver):
         pass

@@ -5,33 +5,17 @@ import time
 import pytest
 import pexpect
 
-psutil = pytest.importorskip("psutil")
-
-pytestmark = pytest.mark.crossbar
-
-def suspend_tree(pid):
-    main = psutil.Process(pid)
-    main.suspend()
-    for child in main.children(recursive=True):
-        child.suspend()
-
-def resume_tree(pid):
-    main = psutil.Process(pid)
-    main.resume()
-    for child in main.children(recursive=True):
-        child.resume()
-
-def test_startup(crossbar):
+def test_startup(coordinator):
     pass
 
 @pytest.fixture(scope='function')
-def place(crossbar):
+def place(coordinator):
     with pexpect.spawn('python -m labgrid.remote.client -p test create') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-    with pexpect.spawn('python -m labgrid.remote.client -p test set-tags board=bar') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -p test set-tags board=123board') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
@@ -63,22 +47,22 @@ def place_acquire(place, exporter):
         assert spawn.exitstatus == 0, spawn.before.strip()
 
 def test_connect_error():
-    with pexpect.spawn('python -m labgrid.remote.client -x ws://127.0.0.1:20409/ws places') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client -x 127.0.0.1:20409 places') as spawn:
         spawn.expect("Could not connect to coordinator")
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 1, spawn.before.strip()
 
-def test_connect_timeout(crossbar):
-    suspend_tree(crossbar.pid)
+def test_connect_timeout(coordinator):
+    coordinator.suspend_tree()
     try:
         with pexpect.spawn('python -m labgrid.remote.client places') as spawn:
-            spawn.expect("connection closed during setup")
+            spawn.expect("connection attempt timed out before receiving SETTINGS frame")
             spawn.expect(pexpect.EOF)
             spawn.close()
             assert spawn.exitstatus == 1, spawn.before.strip()
     finally:
-        resume_tree(crossbar.pid)
+        coordinator.resume_tree()
         pass
 
 def test_place_show(place):
@@ -197,7 +181,7 @@ def test_place_acquire_broken(place, exporter):
         assert spawn.exitstatus == 0, spawn.before.strip()
 
     with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
-        spawn.expect('failed to acquire place test')
+        spawn.expect('Failed to acquire resources for place test')
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 1, spawn.before.strip()
@@ -255,16 +239,16 @@ def test_place_release_from(monkeypatch, place, exporter):
         before = spawn.before.decode("utf-8").strip()
         assert user not in before and not host in before, before
 
-def test_place_add_no_name(crossbar):
+def test_place_add_no_name(coordinator):
     with pexpect.spawn('python -m labgrid.remote.client create') as spawn:
         spawn.expect("missing place name")
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus != 0, spawn.before.strip()
 
-def test_place_del_no_name(crossbar):
+def test_place_del_no_name(coordinator):
     with pexpect.spawn('python -m labgrid.remote.client delete') as spawn:
-        spawn.expect("deletes require an exact place name")
+        spawn.expect("place pattern not specified")
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus != 0, spawn.before.strip()
@@ -287,7 +271,7 @@ def test_remoteplace_target(place_acquire, tmpdir):
     t.await_resources(t.resources)
 
     remote_place = t.get_resource("RemotePlace")
-    assert remote_place.tags == {"board": "bar"}
+    assert remote_place.tags == {"board": "123board"}
 
 def test_remoteplace_target_without_env(request, place_acquire):
     from labgrid import Target
@@ -295,7 +279,7 @@ def test_remoteplace_target_without_env(request, place_acquire):
 
     t = Target(request.node.name)
     remote_place = RemotePlace(t, name="test")
-    assert remote_place.tags == {"board": "bar"}
+    assert remote_place.tags == {"board": "123board"}
 
 def test_resource_conflict(place_acquire, tmpdir):
     with pexpect.spawn('python -m labgrid.remote.client -p test2 create') as spawn:
@@ -319,7 +303,7 @@ def test_resource_conflict(place_acquire, tmpdir):
         assert spawn.exitstatus == 0, spawn.before.strip()
 
 def test_reservation(place_acquire, tmpdir):
-    with pexpect.spawn('python -m labgrid.remote.client reserve --shell board=bar name=test') as spawn:
+    with pexpect.spawn('python -m labgrid.remote.client reserve --shell board=123board name=test') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
@@ -395,6 +379,88 @@ def test_reservation(place_acquire, tmpdir):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
+def test_resource_acquired_state_on_exporter_restart(monkeypatch, place, exporter):
+    user = "test-user"
+    host = "test-host"
+    monkeypatch.setenv("LG_USERNAME", user)
+    monkeypatch.setenv("LG_HOSTNAME", host)
+
+    # add resource match
+    with pexpect.spawn('python -m labgrid.remote.client -p test add-match testhost/Testport/NetworkSerialPort') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # make sure matching resource is found
+    with pexpect.spawn('python -m labgrid.remote.client -p test show') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert b"acquired: None" in spawn.before
+        assert b"Matching resource 'NetworkSerialPort' (testhost/Testport/NetworkSerialPort/NetworkSerialPort)" in spawn.before
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test -v resources') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert b"Resource 'NetworkSerialPort' (testhost/Testport/NetworkSerialPort[/NetworkSerialPort]):\r\n      {'acquired': None," in spawn.before
+
+    # lock place (and its resources)
+    with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test -v resources') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert b"Resource 'NetworkSerialPort' (testhost/Testport/NetworkSerialPort[/NetworkSerialPort]):\r\n      {'acquired': 'test'," in spawn.before
+
+    # restart exporter
+    exporter.stop()
+    exporter.start()
+
+    # make sure matching resource is still found
+    with pexpect.spawn('python -m labgrid.remote.client -p test show') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert f"acquired: {host}/{user}" in spawn.before.decode("utf-8")
+        assert b"Acquired resource 'NetworkSerialPort' (testhost/Testport/NetworkSerialPort/NetworkSerialPort)" in spawn.before
+
+    # release place
+    with pexpect.spawn('python -m labgrid.remote.client -p test release') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test -v resources') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert b"Resource 'NetworkSerialPort' (testhost/Testport/NetworkSerialPort[/NetworkSerialPort]):\r\n      {'acquired': None," in spawn.before
+
+    # make sure matching resource is still found
+    with pexpect.spawn('python -m labgrid.remote.client -p test show') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert b"acquired: None" in spawn.before
+        assert b"Matching resource 'NetworkSerialPort' (testhost/Testport/NetworkSerialPort/NetworkSerialPort)" in spawn.before
+
+    # place should now be acquirable again
+    with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test release') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+
 def test_exporter_timeout(place, exporter):
     with pexpect.spawn('python -m labgrid.remote.client resources') as spawn:
         spawn.expect(pexpect.EOF)
@@ -408,7 +474,7 @@ def test_exporter_timeout(place, exporter):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-    suspend_tree(exporter.pid)
+    exporter.suspend_tree()
     try:
         time.sleep(30)
 
@@ -419,7 +485,7 @@ def test_exporter_timeout(place, exporter):
             assert spawn.exitstatus == 0, spawn.before.strip()
             assert b'/Testport/NetworkSerialPort' not in spawn.before
     finally:
-        resume_tree(exporter.pid)
+        exporter.resume_tree()
 
     # the exporter should quit by itself now
     time.sleep(5)
@@ -444,7 +510,7 @@ def test_reservation_custom_config(place, exporter, tmpdir):
             name: test
     """
     )
-    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} reserve --wait --shell board=bar name=test') as spawn:
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} reserve --wait --shell board=123board name=test') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()

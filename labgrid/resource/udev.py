@@ -1,4 +1,3 @@
-import logging
 import os
 import queue
 import warnings
@@ -19,7 +18,6 @@ class UdevManager(ResourceManager):
         super().__attrs_post_init__()
         self.queue = queue.Queue()
 
-        self.log = logging.getLogger('UdevManager')
         self._pyudev = import_module('pyudev')
         self._context = self._pyudev.Context()
         self._monitor = self._pyudev.Monitor.from_netlink(self._context)
@@ -32,7 +30,7 @@ class UdevManager(ResourceManager):
         devices.match_subsystem(resource.match['SUBSYSTEM'])
         for device in devices:
             if resource.try_match(device):
-                self.log.debug(" matched successfully against %s", resource.device)
+                self.logger.debug(" matched successfully against %s", resource.device)
 
     def _insert_into_queue(self, device):
         self.queue.put(device)
@@ -44,10 +42,10 @@ class UdevManager(ResourceManager):
                 device = self.queue.get(False)
             except queue.Empty:
                 break
-            self.log.debug("%s: %s", device.action, device)
+            self.logger.debug("%s: %s", device.action, device)
             for resource in self.resources:
                 if resource.try_match(device):
-                    self.log.debug(" matched successfully")
+                    self.logger.debug(" matched successfully")
 
 @attr.s(eq=False)
 class USBResource(ManagedResource):
@@ -59,11 +57,10 @@ class USBResource(ManagedResource):
 
     def __attrs_post_init__(self):
         self.timeout = 5.0
-        self.log = logging.getLogger('USBResource')
         self.match.setdefault('SUBSYSTEM', 'usb')
         super().__attrs_post_init__()
 
-    def filter_match(self, device):  # pylint: disable=unused-argument,no-self-use
+    def filter_match(self, device):  # pylint: disable=unused-argument
         return True
 
     def suggest_match(self, device):
@@ -94,12 +91,22 @@ class USBResource(ManagedResource):
                 suggestions.append({'@ID_PATH': path})
 
         serial = self.device.properties.get('ID_SERIAL_SHORT')
+        interface_num = self.device.properties.get('ID_USB_INTERFACE_NUM')
         if serial:
-            suggestions.append({'ID_SERIAL_SHORT': serial})
+            if interface_num is not None:
+                suggestions.append({'ID_SERIAL_SHORT': serial,
+                                    'ID_USB_INTERFACE_NUM': interface_num})
+            else:
+                suggestions.append({'ID_SERIAL_SHORT': serial})
         elif self.match.get('@SUBSYSTEM', None) == 'usb':
             serial = self._get_usb_device().properties.get('ID_SERIAL_SHORT')
+            interface_num = self._get_usb_device().properties.get('ID_USB_INTERFACE_NUM')
             if serial:
-                suggestions.append({'@ID_SERIAL_SHORT': serial})
+                if interface_num is not None:
+                    suggestions.append({'@ID_SERIAL_SHORT': serial,
+                                        '@ID_USB_INTERFACE_NUM': interface_num})
+                else:
+                    suggestions.append({'@ID_SERIAL_SHORT': serial})
 
         return meta, suggestions
 
@@ -134,7 +141,7 @@ class USBResource(ManagedResource):
             if self.device.sys_path != device.sys_path:
                 return False
 
-        self.log.debug(" found match: %s", self)
+        self.logger.debug(" found match: %s", self)
 
         if self.suggest and device.action in [None, 'add']:
             self.device = device
@@ -280,6 +287,7 @@ class IMXUSBLoader(USBResource):
                          ("1fc9", "0128"), ("1fc9", "0126"),
                          ("1fc9", "012b"), ("1fc9", "0134"),
                          ("1fc9", "013e"), ("1fc9", "0146"),
+                         ("1fc9", "014e"), ("1fc9", "0129"),
                          ("1b67", "4fff"), ("0525", "b4a4"), # SPL
                          ("3016", "1001"),
                          ]:
@@ -293,7 +301,24 @@ class RKUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
-        if match not in [("2207", "110a")]:
+        if match not in [("2207", "110a"),  # RV1108
+                         ("2207", "110b"),  # RV1126
+                         ("2207", "300a"),  # RK3066
+                         ("2207", "301a"),  # RK3036
+                         ("2207", "310b"),  # RK3188
+                         ("2207", "310c"),  # RK3128
+                         ("2207", "320a"),  # RK3288
+                         ("2207", "320b"),  # RK322X
+                         ("2207", "320c"),  # RK3328
+                         ("2207", "330a"),  # RK3368
+                         ("2207", "330c"),  # RK3399
+                         ("2207", "330d"),  # PX30
+                         ("2207", "330e"),  # RK3308
+                         ("2207", "350a"),  # RK3568
+                         ("2207", "350b"),  # RK3588
+                         ("2207", "350c"),  # RK3528
+                         ("2207", "350e"),  # RK3576
+                         ]:
             return False
 
         return super().filter_match(device)
@@ -346,6 +371,11 @@ class USBNetworkInterface(USBResource, NetworkInterface):
     def __attrs_post_init__(self):
         self.match['SUBSYSTEM'] = 'net'
         self.match['@SUBSYSTEM'] = 'usb'
+        if self.ifname:
+            warnings.warn(
+                "USBNetworkInterface: The ifname attribute will be overwritten by udev.\n"
+                "Please use udev matching as described in http://labgrid.readthedocs.io/en/latest/configuration.html#udev-matching"  # pylint: disable=line-too-long
+            )
         super().__attrs_post_init__()
 
     def update(self):
@@ -383,12 +413,18 @@ class SigrokUSBDevice(USBResource):
     Args:
         driver (str): driver to use with sigrok
         channels (str): a sigrok channel mapping as described in the sigrok-cli man page
+        channel_group (str): a sigrok channel group as described in the sigrok-cli man page
     """
     driver = attr.ib(
         default=None,
         validator=attr.validators.instance_of(str)
     )
     channels = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+
+    channel_group = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
@@ -408,12 +444,17 @@ class SigrokUSBSerialDevice(USBResource):
     Args:
         driver (str): driver to use with sigrok
         channels (str): a sigrok channel mapping as described in the sigrok-cli man page
+        channel_group (str): a sigrok channel group as described in the sigrok-cli man page
     """
     driver = attr.ib(
         default=None,
         validator=attr.validators.instance_of(str)
     )
     channels = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+    channel_group = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
@@ -528,6 +569,20 @@ class USBSDMuxDevice(USBResource):
     @property
     def path(self):
         return self.disk_path
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class USBHub(USBResource):
+    """The USBHub describes a USB hub.
+
+    This is mainly useful to monitor if all expected hubs are detected.
+    """
+    def __attrs_post_init__(self):
+        self.match['DEVTYPE'] = 'usb_interface'
+        self.match['DRIVER'] = 'hub'
+        super().__attrs_post_init__()
+
 
 @target_factory.reg_resource
 @attr.s(eq=False)
@@ -658,10 +713,15 @@ class HIDRelay(USBResource):
     index = attr.ib(default=1, validator=attr.validators.instance_of(int))
     invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
-    def __attrs_post_init__(self):
-        self.match['ID_VENDOR_ID'] = '16c0'
-        self.match['ID_MODEL_ID'] = '05df'
-        super().__attrs_post_init__()
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("16c0", "05df"),  # dcttech USBRelay2
+                         ("5131", "2007"),  # LC-US8
+                         ]:
+            return False
+
+        return super().filter_match(device)
 
 @target_factory.reg_resource
 @attr.s(eq=False)
@@ -691,15 +751,50 @@ class USBDebugger(USBResource):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
         if match not in [("0403", "6010"),  # FT2232C/D/H Dual UART/FIFO IC
+                         ("0403", "6014"),  # FT232HL/Q
+                         ("0483", "3748"),  # STLINK-V2
                          ("0483", "374b"),  # STLINK-V3
+                         ("0483", "374e"),  # STLINK-V3
                          ("0483", "374f"),  # STLINK-V3
                          ("15ba", "0003"),  # Olimex ARM-USB-OCD
                          ("15ba", "002b"),  # Olimex ARM-USB-OCD-H
                          ("15ba", "0004"),  # Olimex ARM-USB-TINY
                          ("15ba", "002a"),  # Olimex ARM-USB-TINY-H
                          ("1366", "0101"),  # SEGGER J-Link PLUS
+                         ("1366", "0105"),  # SEGGER J-Link
                          ("1366", "1015"),  # SEGGER J-Link
+                         ("1366", "1051"),  # SEGGER J-Link
+                         ("1366", "1061"),  # SEGGER J-Link
                          ]:
             return False
 
         return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class MatchedSysfsGPIO(USBResource):
+    """The MatchedSysfsGPIO described a SysfsGPIO matched by Udev
+
+    Args:
+        pin (int): gpio pin number within the matched gpiochip."""
+    pin = attr.ib(default=None, validator=attr.validators.instance_of(int))
+    index = None
+
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'gpio'
+        super().__attrs_post_init__()
+
+    def filter_match(self, device):
+        # Filter out the char device
+        if device.properties.get('DEVNAME') is not None:
+            return False
+        return super().filter_match(device)
+
+    def update(self):
+        super().update()
+        if self.device is not None:
+            if self.pin >= int(self.read_attr('ngpio')):
+                raise ValueError("MatchedSysfsGPIO pin out of bound")
+            self.index = int(self.read_attr('base')) + self.pin
+        else:
+            self.index = None

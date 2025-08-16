@@ -5,7 +5,7 @@ import attr
 from labgrid import target_factory, step
 from labgrid.driver import QuartusHPSDriver, SerialDriver
 from labgrid.protocol import PowerProtocol
-from labgrid.strategy import Strategy
+from labgrid.strategy import Strategy, never_retry
 
 
 @attr.s(eq=False)
@@ -37,6 +37,7 @@ class QuartusHPSStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
+    @never_retry
     @step(args=["status"])
     def transition(self, status, *, step):
         if not isinstance(status, Status):

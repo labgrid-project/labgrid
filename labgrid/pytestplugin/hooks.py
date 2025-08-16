@@ -1,5 +1,4 @@
 import os
-import warnings
 import logging
 import pytest
 
@@ -7,6 +6,7 @@ from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
 from ..logging import StepFormatter, StepLogger
+from ..exceptions import NoStrategyFoundError
 
 LABGRID_ENV_KEY = pytest.StashKey[Environment]()
 
@@ -75,16 +75,8 @@ def pytest_configure(config):
     lg_log = config.option.lg_log
     if lg_log:
         ConsoleLoggingReporter(lg_log)
-    env_config = config.option.env_config
     lg_env = config.option.lg_env
     lg_coordinator = config.option.lg_coordinator
-
-    if lg_env is None:
-        if env_config is not None:
-            warnings.warn(pytest.PytestWarning(
-                "deprecated option --env-config (use --lg-env instead)",
-                __file__))
-            lg_env = env_config
 
     env = None
     if lg_env is None:
@@ -130,3 +122,23 @@ def pytest_collection_modifyitems(config, items):
                     reason=f'Skipping because features "{missing_feature}" are not supported'
                 )
             item.add_marker(skip)
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_setup(item):
+    """
+    Skip test if one of the targets uses a strategy considered broken.
+    """
+    # Before any fixtures run for the test, check if the session-scoped strategy fixture was
+    # requested (might have been executed already for a prior test). If that's the case and the
+    # strategy is broken, skip the test.
+    if "strategy" in item.fixturenames:
+        env = item.config.stash[LABGRID_ENV_KEY]
+        # skip test even if only one of the targets in the env has a broken strategy
+        for target_name in env.config.get_targets():
+            target = env.get_target(target_name)
+            try:
+                strategy = target.get_strategy()
+                if strategy.broken:
+                    pytest.skip(f"{strategy.__class__.__name__} is in broken state")
+            except NoStrategyFoundError:
+                pass

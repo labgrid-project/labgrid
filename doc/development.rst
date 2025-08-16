@@ -226,7 +226,7 @@ Start by creating a strategy skeleton:
     import attr
 
     from labgrid.step import step
-    from labgrid.strategy import Strategy, StrategyError
+    from labgrid.strategy import Strategy, StrategyError, never_retry
     from labgrid.factory import target_factory
 
     class Status(enum.Enum):
@@ -239,6 +239,7 @@ Start by creating a strategy skeleton:
 
         status = attr.ib(default=Status.unknown)
 
+        @never_retry
         @step()
         def transition(self, status, *, step):
             if not isinstance(status, Status):
@@ -262,8 +263,20 @@ It is possible to reference drivers via their protocol, e.g.
 Note that drivers which implement multiple protocols must not be referenced
 multiple times via different protocols.
 The ``Status`` class needs to be extended to cover the states of your strategy,
-then for each state an ``elif`` entry in the transition function needs to be
+then for each state an ``elif`` entry in the ``transition()`` method needs to be
 added.
+
+.. note::
+  Since infrastructure failures or broken strategies typically cannot recover,
+  it makes little sense to continue operating with such a strategy after an
+  error has occurred.
+  To clearly mark a strategy as unusable after failure (and to avoid cascading
+  errors in subsequent calls) the strategy's ``transition()`` method (and
+  optionally its ``force()`` method) can be decorated with the
+  ``@never_retry`` decorator.
+  This decorator causes the strategy to store the encountered exception in its
+  ``broken`` attribute and raise a ``StrategyError`` for the original and all
+  subsequent calls to the decorated methods.
 
 Lets take a look at the builtin `BareboxStrategy`.
 The Status enum for the BareboxStrategy:

@@ -24,6 +24,7 @@ class GpioDigitalOutput:
             raise ValueError("Device not found")
 
     def __init__(self, index):
+        self.gpio_sysfs_value_fd = None
         self._logger = logging.getLogger("Device: ")
         GpioDigitalOutput._assert_gpio_line_is_exported(index)
         gpio_sysfs_path = os.path.join(GpioDigitalOutput._gpio_sysfs_path_prefix,
@@ -41,7 +42,8 @@ class GpioDigitalOutput:
         self.gpio_sysfs_value_fd = os.open(gpio_sysfs_value_path, flags=(os.O_RDWR | os.O_SYNC))
 
     def __del__(self):
-        os.close(self.gpio_sysfs_value_fd)
+        if self.gpio_sysfs_value_fd:
+            os.close(self.gpio_sysfs_value_fd)
         self.gpio_sysfs_value_fd = None
 
     def get(self):

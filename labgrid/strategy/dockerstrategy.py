@@ -3,7 +3,7 @@ import enum
 import attr
 
 from ..factory import target_factory
-from .common import Strategy, StrategyError
+from .common import Strategy, StrategyError, never_retry
 from ..driver.dockerdriver import DockerDriver
 from ..step import step
 
@@ -33,6 +33,7 @@ class DockerStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
+    @never_retry
     @step(args=['status'])
     def transition(self, status):
         if not isinstance(status, Status):

@@ -326,8 +326,8 @@ Used by:
 
 NetworkYKUSHPowerPort
 +++++++++++++++++++++
-A :any:`NetworkYKUSHPowerPort` describes a `YKUSHPowerPort`_ available on a
-remote computer.
+A :any:`NetworkYKUSHPowerPort` describes a `YKUSHPowerPort`_ resource available
+on a remote computer.
 
 USBPowerPort
 ++++++++++++
@@ -359,6 +359,11 @@ Used by:
    looking for, paths without the interface will fail to match since they use
    the ``usb`` driver.
 
+NetworkUSBPowerPort
++++++++++++++++++++
+A :any:`NetworkUSBPowerPort` describes a `USBPowerPort`_ resource available on
+a remote computer.
+
 SiSPMPowerPort
 ++++++++++++++
 A :any:`SiSPMPowerPort` describes a *GEMBIRD SiS-PM* as supported by
@@ -380,6 +385,11 @@ Arguments:
 
 Used by:
   - `SiSPMPowerDriver`_
+
+NetworkSiSPMPowerPort
++++++++++++++++++++++
+A :any:`NetworkSiSPMPowerPort` describes a `SiSPMPowerPort`_ resource available
+on a remote computer.
 
 TasmotaPowerPort
 ++++++++++++++++
@@ -444,7 +454,7 @@ A :any:`WaveshareModbusTCPCoil` describes a Waveshare branded coil accessible vi
    WaveshareModbusTCPCoil:
      host: '192.168.23.42'
      coil: 1
-     coil_count: 8 
+     coil_count: 8
 
 The example describes the coil ``1`` (zero indexed) of ``8`` on the Waveshare Modbus TCP relay
 module ``192.168.23.42``.
@@ -452,6 +462,7 @@ module ``192.168.23.42``.
 Arguments:
   - host (str): hostname of the Modbus TCP server e.g. ``192.168.23.42:502``
   - coil (int): index of the coil, e.g. ``3``
+  - coil_count (int, default=8): total number of coils on this module
   - invert (bool, default=False): whether the logic level is inverted
     (active-low)
   - write_multiple_coils (bool, default=False): whether to perform write
@@ -459,7 +470,6 @@ Arguments:
 
 Used by:
   - `WaveShareModbusCoilDriver`_
-
 
 DeditecRelais8
 ++++++++++++++
@@ -481,6 +491,11 @@ Arguments:
 
 Used by:
   - `DeditecRelaisDriver`_
+
+NetworkDeditecRelais8
++++++++++++++++++++++
+A :any:`NetworkDeditecRelais8` describes a `DeditecRelais8`_ resource available
+on a remote computer.
 
 OneWirePIO
 ++++++++++
@@ -531,7 +546,8 @@ Used by:
 
 NetworkLXAIOBusPIO
 ++++++++++++++++++
-A :any:`NetworkLXAIOBusPIO` describes an `LXAIOBusPIO`_ exported over the network.
+A :any:`NetworkLXAIOBusPIO` describes an `LXAIOBusPIO`_ resource available on a
+remote computer.
 
 HIDRelay
 ++++++++
@@ -590,7 +606,8 @@ Used by:
 
 NetworkHIDRelay
 +++++++++++++++
-A :any:`NetworkHIDRelay` describes an `HIDRelay`_ exported over the network.
+A :any:`NetworkHIDRelay` describes an `HIDRelay`_ resource available on a
+remote computer.
 
 SysfsGPIO
 +++++++++
@@ -607,6 +624,11 @@ Arguments:
 
 Used by:
   - `GpioDigitalOutputDriver`_
+
+NetworkSysfsGPIO
+++++++++++++++++
+A :any:`NetworkSysfsGPIO` describes a `SysfsGPIO`_ resource available on a
+remote computer.
 
 MatchedSysfsGPIO
 ++++++++++++++++
@@ -692,11 +714,8 @@ Used by:
 
 NetworkUSBMassStorage
 ~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkUSBMassStorage` resource describes a USB memory stick or similar
-device available on a remote computer.
-
-The NetworkUSBMassStorage can be used in test cases by calling the
-``write_files()``, ``write_image()``, and ``get_size()`` functions.
+A :any:`NetworkUSBMassStorage` resource describes `USBMassStorage`_ resource
+available on a remote computer.
 
 SigrokDevice
 ~~~~~~~~~~~~
@@ -776,18 +795,18 @@ Used by:
 
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ available on a remote
-computer.
+A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ resource available on
+a remote computer.
 
 NetworkIMXUSBLoader
 ~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkIMXUSBLoader` describes an `IMXUSBLoader`_ available on a remote
-computer.
+A :any:`NetworkIMXUSBLoader` describes an `IMXUSBLoader`_ resource available on
+a remote computer.
 
 NetworkRKUSBLoader
 ~~~~~~~~~~~~~~~~~~
-A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ available on a remote
-computer.
+A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ resource available on a
+remote computer.
 
 AndroidUSBFastboot
 ~~~~~~~~~~~~~~~~~~
@@ -812,6 +831,11 @@ Arguments:
 Used by:
   - `AndroidFastbootDriver`_
 
+RemoteAndroidUSBFastboot
+~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`RemoteAndroidUSBFastboot` describes a `AndroidUSBFastboot`_ resource
+available on a remote computer.
+
 AndroidNetFastboot
 ~~~~~~~~~~~~~~~~~~
 An :any:`AndroidNetFastboot` resource describes a network device in *Fastboot
@@ -832,6 +856,11 @@ Arguments:
 Used by:
   - `AndroidFastbootDriver`_
 
+RemoteAndroidNetFastboot
+~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`RemoteAndroidNetFastboot` describes an `AndroidNetFastboot`_ resource
+available on a remote computer.
+
 DFUDevice
 ~~~~~~~~~
 A :any:`DFUDevice` resource describes a USB device in DFU (Device Firmware
@@ -848,6 +877,11 @@ Arguments:
 
 Used by:
   - `DFUDriver`_
+
+NetworkDFUDevice
+~~~~~~~~~~~~~~~~
+A :any:`NetworkDFUDevice` describes a `DFUDevice`_ resource available on a
+remote computer.
 
 NetworkInterface
 ~~~~~~~~~~~~~~~~
@@ -906,6 +940,11 @@ Used by:
   - `OpenOCDDriver`_
   - `QuartusHPSDriver`_
 
+NetworkAlteraUSBBlaster
+~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkAlteraUSBBlaster` describes an `AlteraUSBBlaster`_ resource
+available on a remote computer.
+
 USBDebugger
 ~~~~~~~~~~~
 A :any:`USBDebugger` resource describes a JTAG USB adapter (for example an
@@ -922,6 +961,11 @@ Arguments:
 
 Used by:
   - `OpenOCDDriver`_
+
+NetworkUSBDebugger
+~~~~~~~~~~~~~~~~~~
+A :any:`NetworkUSBDebugger` describes a `USBDebugger`_ resource available on a
+remote computer.
 
 SNMPEthernetPort
 ~~~~~~~~~~~~~~~~
@@ -966,9 +1010,8 @@ Used by:
 
 NetworkSigrokUSBDevice
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkSigrokUSBDevice` resource describes a *Sigrok* USB device
-connected to a host which is exported over the network.
-The `SigrokDriver`_ will access it via SSH.
+A :any:`NetworkSigrokUSBDevice` describes a `SigrokUSBDevice`_ resource
+available on a remote computer.
 
 SigrokUSBSerialDevice
 ~~~~~~~~~~~~~~~~~~~~~
@@ -995,6 +1038,11 @@ Used by:
   - `SigrokPowerDriver`_
   - `SigrokDmmDriver`_
 
+NetworkSigrokUSBSerialDevice
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkSigrokUSBSerialDevice` describes a `SigrokUSBSerialDevice`_
+resource available on a remote computer.
+
 USBSDMuxDevice
 ~~~~~~~~~~~~~~
 A :any:`USBSDMuxDevice` resource describes a Pengutronix
@@ -1016,8 +1064,8 @@ Used by:
 
 NetworkUSBSDMuxDevice
 ~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkUSBSDMuxDevice` resource describes a `USBSDMuxDevice`_ available
-on a remote computer.
+A :any:`NetworkUSBSDMuxDevice` resource describes a `USBSDMuxDevice`_ resource
+available on a remote computer.
 
 LXAUSBMux
 ~~~~~~~~~
@@ -1037,8 +1085,8 @@ Used by:
 
 NetworkLXAUSBMux
 ~~~~~~~~~~~~~~~~
-A :any:`NetworkLXAUSBMux` resource describes an `LXAUSBMux`_ available on a
-remote computer.
+A :any:`NetworkLXAUSBMux` resource describes an `LXAUSBMux`_ resource available
+on a remote computer.
 
 USBSDWireDevice
 ~~~~~~~~~~~~~~~
@@ -1060,8 +1108,8 @@ Used by:
 
 NetworkUSBSDWireDevice
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkUSBSDWireDevice` resource describes a `USBSDWireDevice`_ available
-on a remote computer.
+A :any:`NetworkUSBSDWireDevice` resource describes a `USBSDWireDevice`_
+resource available on a remote computer.
 
 USBVideo
 ~~~~~~~~
@@ -1170,7 +1218,8 @@ Used by:
 
 NetworkFlashrom
 ~~~~~~~~~~~~~~~
-A :any:`NetworkFlashrom` describes a `Flashrom`_ available on a remote computer.
+A :any:`NetworkFlashrom` describes a `Flashrom`_ resource available on a remote
+computer.
 
 USBFlashableDevice
 ~~~~~~~~~~~~~~~~~~
@@ -1199,7 +1248,7 @@ Used by:
 NetworkUSBFlashableDevice
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkUSBFlashableDevice` resource describes a `USBFlashableDevice`_
-resource available on a remote computer
+resource available on a remote computer.
 
 DediprogFlasher
 ~~~~~~~~~~~~~~~
@@ -1228,8 +1277,8 @@ Used by:
 
 NetworkDediprogFlasher
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkDediprogFlasher` describes a `DediprogFlasher`_ available on a
-remote computer.
+A :any:`NetworkDediprogFlasher` describes a `DediprogFlasher`_ resource
+available on a remote computer.
 
 XenaManager
 ~~~~~~~~~~~
@@ -1324,6 +1373,17 @@ see below.
 
 For now, the TFTP/NFS/HTTP server needs to be configured before using it from
 labgrid.
+
+Because labgrid uses absolute paths as targets for symlinks for exposing files
+on the TFTP server and because the target of those symlinks is in
+``/var/cache/labgrid/``, the TFTP server needs to follow symlinks whose target
+path is both absolute and in ``/var/cache/labgrid``. Note that depending on the
+configuration of the TFTP server, ``/var/cache/labgrid`` may not be the root
+directory of your TFTP server.
+
+`atftpd <https://sourceforge.net/projects/atftp/>`_ is known to work whereas
+`tftpd-hpa <https://git.kernel.org/pub/scm/network/tftp/tftp-hpa.git/>`_ doesn't
+seem to be working well with such symlinks.
 
 TFTPProvider
 ++++++++++++
@@ -1952,9 +2012,9 @@ USB or network *Fastboot state*.
 Binds to:
   fastboot:
     - `AndroidUSBFastboot`_
-    - RemoteAndroidUSBFastboot
+    - `RemoteAndroidUSBFastboot`_
     - `AndroidNetFastboot`_
-    - RemoteAndroidNetFastboot
+    - `RemoteAndroidNetFastboot`_
 
 Implements:
   - None (yet)
@@ -1982,7 +2042,7 @@ Firmware Upgrade) mode.
 Binds to:
   dfu:
     - `DFUDevice`_
-    - NetworkDFUDevice
+    - `NetworkDFUDevice`_
 
 Implements:
   - None (yet)
@@ -2010,9 +2070,9 @@ Consider updating your OpenOCD version when using multiple USB Blasters.
 Binds to:
   interface:
     - `AlteraUSBBlaster`_
-    - NetworkAlteraUSBBlaster
+    - `NetworkAlteraUSBBlaster`_
     - `USBDebugger`_
-    - NetworkUSBDebugger
+    - `NetworkUSBDebugger`_
 
 Implements:
   - :any:`BootstrapProtocol`
@@ -2045,7 +2105,7 @@ flash a target's QSPI.
 Binds to:
   interface:
     - `AlteraUSBBlaster`_
-    - NetworkAlteraUSBBlaster
+    - `NetworkAlteraUSBBlaster`_
 
 Implements:
   - None
@@ -2205,7 +2265,7 @@ target power state without user interaction.
 Binds to:
   hub:
     - `USBPowerPort`_
-    - NetworkUSBPowerPort
+    - `NetworkUSBPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -2227,7 +2287,7 @@ target power state without user interaction.
 Binds to:
   port:
     - `SiSPMPowerPort`_
-    - NetworkSiSPMPowerPort
+    - `NetworkSiSPMPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -2274,7 +2334,7 @@ Binds to:
   gpio:
     - `SysfsGPIO`_
     - `MatchedSysfsGPIO`_
-    - NetworkSysfsGPIO
+    - `NetworkSysfsGPIO`_
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -2452,7 +2512,7 @@ It can set and get the current state of the resource.
 Binds to:
   relais:
     - `DeditecRelais8`_
-    - NetworkDeditecRelais8
+    - `NetworkDeditecRelais8`_
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -2834,7 +2894,7 @@ control a programmable power supply.
 Binds to:
   sigrok:
     - `SigrokUSBSerialDevice`_
-    - NetworkSigrokUSBSerialDevice
+    - `NetworkSigrokUSBSerialDevice`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -2865,7 +2925,7 @@ Binds to:
     - `SigrokUSBDevice`_
     - `NetworkSigrokUSBDevice`_
     - `SigrokUSBSerialDevice`_
-    - NetworkSigrokUSBSerialDevice
+    - `NetworkSigrokUSBSerialDevice`_
 
 Implements:
   - None yet

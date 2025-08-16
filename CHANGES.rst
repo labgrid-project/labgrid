@@ -9,6 +9,15 @@ New Features in 25.1
   CTRL+D specially to halt autoboot countdown without running interactive
   hooks like bringing up network interfaces automatically.
 
+- Guermok HDMI to USB 3.0 capture dongle supported
+
+Breaking changes in 25.1
+~~~~~~~~~~~~~~~~~~~~~~~~
+- The deprecated pytest plugin option ``--env-config`` has been removed. Use
+  ``--lg-env`` instead.
+- The deprecated ``NetworkUSBStorageDriver`` has been removed. Use the
+  `USBStorageDriver` instead.
+
 Release 25.0 (Released May 7, 2025)
 -----------------------------------
 As announced `before
@@ -688,7 +697,7 @@ Breaking changes in 0.3.0
 - The ``HawkbitTestClient`` and ``USBStick`` classes have been removed
 - The original USBStorageDriver was removed, ``NetworkUSBStorageDriver`` was
   renamed to `USBStorageDriver`.
-  A deprecated `NetworkUSBStorageDriver` exists temporarily for compatibility
+  A deprecated ``NetworkUSBStorageDriver`` exists temporarily for compatibility
   reasons.
 
 Known issues in 0.3.0

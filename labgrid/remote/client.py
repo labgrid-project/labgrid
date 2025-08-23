@@ -1705,23 +1705,7 @@ class ExportFormat(enum.Enum):
         return self.value
 
 
-def main():
-    basicConfig(
-        level=logging.WARNING,
-        stream=sys.stderr,
-    )
-
-    StepLogger.start()
-    processwrapper.enable_logging()
-
-    # Support both legacy variables and properly namespaced ones
-    place = os.environ.get("PLACE", None)
-    place = os.environ.get("LG_PLACE", place)
-    state = os.environ.get("STATE", None)
-    state = os.environ.get("LG_STATE", state)
-    initial_state = os.environ.get("LG_INITIAL_STATE", None)
-    token = os.environ.get("LG_TOKEN", None)
-
+def get_parser(include_undocumented=False) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-x",
@@ -1734,24 +1718,19 @@ def main():
         "-c",
         "--config",
         type=str,
-        default=os.environ.get("LG_ENV"),
         help="env config file (default: value from env variable LG_ENV)",
     )
-    parser.add_argument(
-        "-p", "--place", type=str, default=place, help="place name/alias (default: value from env variable LG_PLACE)"
-    )
+    parser.add_argument("-p", "--place", type=str, help="place name/alias (default: value from env variable LG_PLACE)")
     parser.add_argument(
         "-s",
         "--state",
         type=str,
-        default=state,
         help="strategy state to switch into before command (default: value from env varibale LG_STATE)",
     )
     parser.add_argument(
         "-i",
         "--initial-state",
         type=str,
-        default=initial_state,
         help="strategy state to force into before switching to desired state",
     )
     parser.add_argument(
@@ -1765,11 +1744,12 @@ def main():
         metavar="COMMAND",
     )
 
-    subparser = subparsers.add_parser("help")
+    if include_undocumented:
+        subparser = subparsers.add_parser("help")
 
-    subparser = subparsers.add_parser("complete")
-    subparser.add_argument("type", choices=["resources", "places", "matches", "match-names"])
-    subparser.set_defaults(func=ClientSession.complete)
+        subparser = subparsers.add_parser("complete")
+        subparser.add_argument("type", choices=["resources", "places", "matches", "match-names"])
+        subparser.set_defaults(func=ClientSession.complete)
 
     subparser = subparsers.add_parser("monitor", help="monitor events from the coordinator")
     subparser.set_defaults(func=ClientSession.do_monitor)
@@ -2018,7 +1998,7 @@ def main():
         "-p",
         "--partition",
         type=int,
-        choices=range(0, 256),
+        choices=(range(0, 256) if include_undocumented else None),
         metavar="0-255",
         default=1,
         help="partition number to mount or 0 to mount whole disk (default: %(default)s)",
@@ -2065,11 +2045,11 @@ def main():
     subparser.set_defaults(func=ClientSession.create_reservation)
 
     subparser = subparsers.add_parser("cancel-reservation", help="cancel a reservation")
-    subparser.add_argument("token", type=str, default=token, nargs="?" if token else None)
+    subparser.add_argument("token", type=str, nargs="?")
     subparser.set_defaults(func=ClientSession.cancel_reservation)
 
     subparser = subparsers.add_parser("wait", help="wait for a reservation to be allocated")
-    subparser.add_argument("token", type=str, default=token, nargs="?" if token else None)
+    subparser.add_argument("token", type=str, nargs="?")
     subparser.set_defaults(func=ClientSession.wait_reservation)
 
     subparser = subparsers.add_parser("reservations", help="list current reservations")
@@ -2092,12 +2072,54 @@ def main():
     subparser = subparsers.add_parser("version", help="show version")
     subparser.set_defaults(func=ClientSession.print_version)
 
+    return parser
+
+
+def main():
+    basicConfig(
+        level=logging.WARNING,
+        stream=sys.stderr,
+    )
+
+    StepLogger.start()
+    processwrapper.enable_logging()
+
+    # Support both legacy variables and properly namespaced ones
+    place = os.environ.get("PLACE", None)
+    place = os.environ.get("LG_PLACE", place)
+    state = os.environ.get("STATE", None)
+    state = os.environ.get("LG_STATE", state)
+    initial_state = os.environ.get("LG_INITIAL_STATE", None)
+    token = os.environ.get("LG_TOKEN", None)
+
+    parser = get_parser(include_undocumented=True)
+
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()
     if args.command not in ["ssh", "rsync", "forward"]:
         args = parser.parse_args()
     else:
         args.leftover = leftover
+
+    # handle dynamic defaults
+    if args.config is None:
+        args.config = os.environ.get("LG_ENV")
+
+    if args.place is None:
+        args.place = place
+
+    if args.state is None:
+        args.state = state
+
+    if args.initial_state is None:
+        args.initial_state = initial_state
+
+    if args.command in ["cancel-reservation", "wait"] and args.token is None:
+        if token:
+            args.token = token
+        else:
+            print("Please provide a token", file=sys.stderr)
+            exit(1)
 
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)

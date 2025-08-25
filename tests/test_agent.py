@@ -96,20 +96,21 @@ def test_local():
     dummy = aw.load('dummy')
     assert dummy.neg(1) == -1
 
-@pytest.mark.parametrize('module_name', [
-    'deditec_relais8',
-    'sysfsgpio',
-    'usb_hid_relay'
+@pytest.mark.parametrize('module_name,methods', [
+    ('deditec_relais8', ['set', 'get']),
+    ('rkusbmaskrom', ['load']),
+    ('sysfsgpio', ['set', 'get']),
+    ('usb_hid_relay', ['set', 'get']),
 ])
-def test_all_modules(module_name: str) -> None:
+def test_all_modules(module_name, methods) -> None:
     aw = AgentWrapper(None)
 
     aw.load(module_name)
-    methods = aw.list()
-    assert f'{module_name}.set' in methods
-    assert f'{module_name}.get' in methods
+    exports = aw.list()
+    for method in methods:
+        assert f'{module_name}.{method}' in exports
 
 def test_import_modules():
     import labgrid.util.agents
     import labgrid.util.agents.dummy
-    from labgrid.util.agents import deditec_relais8, sysfsgpio
+    from labgrid.util.agents import deditec_relais8, rkusbmaskrom, sysfsgpio

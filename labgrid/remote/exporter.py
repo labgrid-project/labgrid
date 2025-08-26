@@ -23,6 +23,7 @@ from .config import ResourceConfig
 from .common import ResourceEntry, queue_as_aiter
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..util import get_free_port, labgrid_version
+from ..util.helper import processwrapper
 
 
 exports: Dict[str, Type[ResourceEntry]] = {}
@@ -302,6 +303,103 @@ class SerialPortExport(ResourceExport):
 
 exports["USBSerialPort"] = SerialPortExport
 exports["RawSerialPort"] = SerialPortExport
+
+
+@attr.s(eq=False)
+class CANPortExport(ResourceExport):
+    """ResourceExport for a USB and Raw CANPort"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        if self.cls == "RawCANPort":
+            from ..resource.canport import RawCANPort
+
+            self.local = RawCANPort(target=None, name=None, **self.local_params)
+        elif self.cls == "USBCANPort":
+            from ..resource.udev import USBCANPort
+
+            self.local = USBCANPort(target=None, name=None, **self.local_params)
+        self.data["cls"] = "NetworkCANPort"
+        self.child = None
+        self.port = None
+        self.can_helper = shutil.which("labgrid-can-interface")
+        if self.can_helper is None:
+            self.can_helper = "/usr/sbin/labgrid-can-interface"
+            warnings.warn(f"labgrid-can-interface helper not found, falling back to {self.can_helper}")
+        self.helper_wrapper = ["sudo", self.can_helper]
+        self.cannelloni_bin = shutil.which("cannelloni")
+        if self.cannelloni_bin is None:
+            self.cannelloni_bin = "/usr/bin/cannelloni"
+            warnings.warn(f"cannelloni binary not found, falling back to {self.cannelloni_bin}")
+
+    def __del__(self):
+        if self.child is not None:
+            self.stop()
+
+    def _get_start_params(self):
+        return {
+            "ifname": self.local.ifname,
+        }
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "port": self.port,
+            "speed": self.local.speed,
+            "extra": {
+                "ifname": self.local.ifname,
+            },
+        }
+
+    def _start(self, start_params):
+        """Start ``cannelloni`` subprocess"""
+        assert self.local.avail
+        assert self.child is None
+        self.port = get_free_port()
+
+        processwrapper.check_output(self.helper_wrapper + ["ip", self.local.ifname, "down"])
+        processwrapper.check_output(self.helper_wrapper + ["ip", self.local.ifname, "set-bitrate", str(self.local.speed)])
+        processwrapper.check_output(self.helper_wrapper + ["ip", self.local.ifname, "up"])
+
+        cmd_cannelloni = [
+            self.cannelloni_bin,
+            "-C", "s",
+            # XXX Set "no peer checking" mode. Is it ok? It seems so for serial...
+            "-p",
+            "-I", f"{self.local.ifname}",
+            "-l", f"{self.port}",
+            ]
+        self.logger.info("Starting cannelloni with: %s", " ".join(cmd_cannelloni))
+        self.child = subprocess.Popen(cmd_cannelloni)
+        try:
+            self.child.wait(timeout=2)
+            raise ExporterError(f"cannelloni for {start_params['ifname']} exited immediately")
+        except subprocess.TimeoutExpired:
+            # good, cannelloni didn't exit immediately
+            pass
+        self.logger.info("cannelloni started for %s on port %d", start_params["ifname"], self.port)
+
+    def _stop(self, start_params):
+        """Stop ``cannelloni`` subprocess and disable the interface"""
+        assert self.child
+        child = self.child
+        self.child = None
+        port = self.port
+        self.port = None
+        child.terminate()
+        try:
+            child.wait(3.0)
+        except subprocess.TimeoutExpired:
+            self.logger.warning("cannelloni for %s still running after SIGTERM", start_params["ifname"])
+            log_subprocess_kernel_stack(self.logger, child)
+            child.kill()
+            child.wait(1.0)
+        self.logger.info("cannelloni stopped for %s on port %d", start_params["ifname"], port)
+        processwrapper.check_output(self.helper_wrapper + ["ip", start_params["ifname"], "down"])
+
+exports["USBCANPort"] = CANPortExport
+exports["RawCANPort"] = CANPortExport
 
 
 @attr.s(eq=False)

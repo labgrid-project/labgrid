@@ -2,6 +2,8 @@ from importlib import import_module
 import attr
 
 from ..factory import target_factory
+from ..resource.pyvisa import NetworkPyVISADevice
+from ..util.agentwrapper import AgentWrapper
 from .common import Driver
 
 
@@ -13,22 +15,38 @@ class PyVISADriver(Driver):
     Args:
         bindings (dict): driver to use with PyVISA
     """
-
-    bindings = {"pyvisa_resource": "PyVISADevice"}
+    bindings = {"pyvisa_resource": {"PyVISADevice", "NetworkPyVISADevice"}}
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        _py_pyvisa_module = import_module("pyvisa")
-        self._pyvisa_resource_manager = _py_pyvisa_module.ResourceManager(self.pyvisa_resource.backend)
-        self.pyvisa_device = None
+        self.wrapper = None
 
     def on_activate(self):
-        device_identifier = f"{self.pyvisa_resource.type}::{self.pyvisa_resource.url}::INSTR"
-        self.pyvisa_device = self._pyvisa_resource_manager.open_resource(device_identifier)
+        url = "" if self.pyvisa_resource.url == "" else f"::{self.pyvisa_resource.url}"
+        self.device_identifier = f"{self.pyvisa_resource.type}{url}::INSTR"
+        if isinstance(self.pyvisa_resource, NetworkPyVISADevice):
+            host = self.pyvisa_resource.host
+        else:
+            host = None
+        self.wrapper = AgentWrapper(host)
+        self.proxy = self.wrapper.load("visa_instrument")
 
     def on_deactivate(self):
-        self.pyvisa_device = None
+        self.wrapper.close()
+        self.wrapper = None
 
     @Driver.check_active
     def get_session(self):
-        return self.pyvisa_device
+        raise NotImplementedError('Deprecated, use command or query instead')
+
+    @Driver.check_active
+    def command(self, cmd):
+        self.proxy.write(self.device_identifier, self.pyvisa_resource.backend, cmd)
+
+    @Driver.check_active
+    def query(self, cmd):
+        return self.proxy.query(self.device_identifier, self.pyvisa_resource.backend, cmd)
+
+    @Driver.check_active
+    def identify(self):
+        return self.query("*IDN?")

@@ -1,4 +1,5 @@
 from .bareboxdriver import BareboxDriver
+from .candriver import CANDriver
 from .ubootdriver import UBootDriver
 from .smallubootdriver import SmallUBootDriver
 from .serialdriver import SerialDriver

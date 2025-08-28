@@ -3,7 +3,7 @@ import pytest
 
 @pytest.fixture()
 def signal_generator(target):
-    return target.get_driver("PyVISADriver").get_session()
+    return target.get_driver("PyVISADriver")
 
 
 def test_with_signal_generator_example(signal_generator):

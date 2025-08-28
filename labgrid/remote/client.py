@@ -974,6 +974,36 @@ class ClientSession:
         if action == "get":
             print(f"power{' ' + name if name else ''} for place {place.name} is {'on' if res else 'off'}")
 
+    def instrument(self):
+        place = self.get_acquired_place()
+        action = self.args.action
+        name = self.args.name
+        value = self.args.value
+        args = self.args.args
+        target = self._get_target(place)
+
+        drv = None
+        try:
+            drv = target.get_driver("TMInstrument", name=name)
+        except NoDriverFoundError:
+            raise UserError("target has no compatible resource available")
+
+        if action in ['query', 'command', 'query_iterable'] and value is None:
+            raise UserError(f"Action '{action}' requires a paramter value!")
+
+        if hasattr(drv, action):
+            method = getattr(drv, action)
+            if value is not None:
+                res = method(value) if not args else method(value, args)
+            else:
+                res = method()
+
+        if not isinstance(res, list):
+            res = [res]
+        for r in res:
+            print(r)
+
+
     def digital_io(self):
         place = self.get_acquired_place()
         action = self.args.action
@@ -1947,6 +1977,14 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     )
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.set_defaults(func=ClientSession.power)
+
+    subparser = subparsers.add_parser("instrument", aliases=("inst",), help="control a SCPI instrument via selected driver.")
+    subparser.add_argument("action", choices=["query", "query_iterable", "command", "identify", "clear_status", "reset", "operation_complete", "is_operation_complete", "wait_to_continue", "backend"])
+    subparser.add_argument("value", nargs="?", help="target command for set actions (query <scpi cmd>, command <scpi cmd>, backend <function> [args]).", type=str)
+    subparser.add_argument("args", nargs="*", help="optional arguments for backend command, type 'backend' for list of backend functions if available.")
+
+    subparser.add_argument("--name", "-n", help="optional resource name")
+    subparser.set_defaults(func=ClientSession.instrument)
 
     subparser = subparsers.add_parser("io", help="change (or get) a digital IO status")
     subparser.add_argument("action", choices=["high", "low", "get"], help="action")

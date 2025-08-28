@@ -661,7 +661,7 @@ _labgrid_client_video()
 
     case "$cur" in
     -*)
-        COMPREPLY=( $(compgen -W "--quality --controls --name $_labgrid_shared_options" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--quality --controls --fps --name $_labgrid_shared_options" -- "$cur") )
         ;;
     esac
 }

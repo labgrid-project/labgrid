@@ -12,6 +12,7 @@ from .udev import (
     IMXUSBLoader,
     AndroidUSBFastboot,
     DFUDevice,
+    TenmaSerialPort,
     USBSDMuxDevice,
     USBSDWireDevice,
     AlteraUSBBlaster,
@@ -45,6 +46,7 @@ class Suggester:
         self.resources.append(IMXUSBLoader(**args))
         self.resources.append(AndroidUSBFastboot(**args))
         self.resources.append(DFUDevice(**args))
+        self.resources.append(TenmaSerialPort(**args))
         self.resources.append(USBMassStorage(**args))
         self.resources.append(USBSDMuxDevice(**args))
         self.resources.append(USBSDWireDevice(**args))

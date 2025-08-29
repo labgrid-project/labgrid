@@ -1,11 +1,9 @@
-from importlib import import_module
 import attr
 
 from ..factory import target_factory
 from ..resource.pyvisa import NetworkPyVISADevice
 from ..util.agentwrapper import AgentWrapper
 from .common import Driver
-
 
 @target_factory.reg_driver
 @attr.s(eq=False)
@@ -40,13 +38,36 @@ class PyVISADriver(Driver):
         raise NotImplementedError('Deprecated, use command or query instead')
 
     @Driver.check_active
-    def command(self, cmd):
-        self.proxy.write(self.device_identifier, self.pyvisa_resource.backend, cmd)
+    def command(self, cmd, timeout=2000):
+        """
+        Sent the specified command to the instrument.
+
+        Args:
+            cmd (str): command to be executed
+            timeout (int): optional, I/O operation timeout in ms, default is 2000ms
+        """
+        self.proxy.write(self.device_identifier, self.pyvisa_resource.backend, cmd, timeout)
 
     @Driver.check_active
-    def query(self, cmd):
-        return self.proxy.query(self.device_identifier, self.pyvisa_resource.backend, cmd)
+    def query(self, cmd, timeout=2000):
+        """
+        Sent the specified command to the instrument and read the response.
+
+        Args:
+            cmd (str): command to be executed
+            timeout (int): optional, I/O operation timeout in ms, default is 2000ms
+
+        Returns:
+            str: response from the instrument, with possible termination removed.
+        """
+        return self.proxy.query(self.device_identifier, self.pyvisa_resource.backend, cmd, timeout).rstrip()
 
     @Driver.check_active
     def identify(self):
+        """
+        Sent the identify command to the instrument and read the response.
+
+        Returns:
+            str: returns a comma-separated string with the information about the instrument (manufacturer, model, serial number, firmware version).
+        """
         return self.query("*IDN?")

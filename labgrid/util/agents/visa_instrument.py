@@ -14,7 +14,7 @@ from importlib import import_module
 
 
 class VISAInstrument:
-    def __init__(self, device_identifier, backend):
+    def __init__(self, device_identifier, backend, timeout):
         try:
             _py_pyvisa_module = import_module('pyvisa')
         except ModuleNotFoundError as e:
@@ -26,6 +26,7 @@ class VISAInstrument:
             self._pyvisa_device = _pyvisa_resource_manager.open_resource(device_identifier)
             if self._pyvisa_device is None:
                 raise ValueError("pyVISA device not found")
+            self._pyvisa_device.timeout = timeout
 
     def write(self, cmd):
         self._pyvisa_device.write(cmd)
@@ -39,12 +40,12 @@ class VISAInstrument:
             self._pyvisa_device = None
 
 
-def handle_write(device_identifier, backend, cmd):
-    visa_inst = VISAInstrument(device_identifier, backend)
+def handle_write(device_identifier, backend, cmd, timeout):
+    visa_inst = VISAInstrument(device_identifier, backend, timeout)
     visa_inst.write(cmd)
 
-def handle_query(device_identifier, backend, cmd):
-    visa_inst = VISAInstrument(device_identifier, backend)
+def handle_query(device_identifier, backend, cmd, timeout):
+    visa_inst = VISAInstrument(device_identifier, backend, timeout)
     return visa_inst.query(cmd)
 
 methods = {

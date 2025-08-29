@@ -1,4 +1,3 @@
-from importlib import import_module
 import attr
 
 from ..factory import target_factory
@@ -6,6 +5,7 @@ from ..resource.pyvisa import NetworkPyVISADevice
 from ..util.agentwrapper import AgentWrapper
 from .common import Driver
 
+TIMEOUT_DEFAULT = 2000  # Default timeout for visa operations in ms
 
 @target_factory.reg_driver
 @attr.s(eq=False)
@@ -40,12 +40,12 @@ class PyVISADriver(Driver):
         raise NotImplementedError('Deprecated, use command or query instead')
 
     @Driver.check_active
-    def command(self, cmd):
-        self.proxy.write(self.device_identifier, self.pyvisa_resource.backend, cmd)
+    def command(self, cmd, timeout=TIMEOUT_DEFAULT):
+        self.proxy.write(self.device_identifier, self.pyvisa_resource.backend, cmd, timeout)
 
     @Driver.check_active
-    def query(self, cmd):
-        return self.proxy.query(self.device_identifier, self.pyvisa_resource.backend, cmd)
+    def query(self, cmd, timeout=TIMEOUT_DEFAULT):
+        return self.proxy.query(self.device_identifier, self.pyvisa_resource.backend, cmd, timeout).rstrip()
 
     @Driver.check_active
     def identify(self):

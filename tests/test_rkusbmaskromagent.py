@@ -1,10 +1,15 @@
-from labgrid.util.agents.rkusbmaskrom import (crc16_ccitt_false, rc4_ksa,
-                                              rc4_prga)
+from labgrid.util.agents.rkusbmaskrom import (crc16_ccitt_false, crc32_rkboot,
+                                              rc4_ksa, rc4_prga)
 
 
 def test_crc16_ccitt_false():
     crc = crc16_ccitt_false("123456789".encode())
     assert crc == 0x29b1
+
+
+def test_crc32_rkboot():
+    crc = crc32_rkboot("123456789".encode())
+    assert crc == 0x889a9615
 
 
 def test_rc4_keystream():

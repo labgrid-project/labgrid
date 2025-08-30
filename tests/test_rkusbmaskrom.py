@@ -5,7 +5,7 @@ from labgrid.driver import RKUSBMaskromDriver
 from labgrid.protocol import BootstrapProtocol
 from labgrid.resource import RKUSBLoader
 from labgrid.resource.remote import NetworkRKUSBLoader
-from labgrid.util.agents.rkusbmaskrom import crc16_ccitt_false, methods, rc4_ksa, rc4_prga
+from labgrid.util.agents.rkusbmaskrom import crc16_ccitt_false, crc32_rkboot, methods, rc4_ksa, rc4_prga
 from labgrid.util.agentwrapper import AgentWrapper
 
 
@@ -76,6 +76,11 @@ class TestRKUSBMaskromDriver:
 def test_crc16_ccitt_false():
     crc = crc16_ccitt_false("123456789".encode())
     assert crc == 0x29b1
+
+
+def test_crc32_rkboot():
+    crc = crc32_rkboot("123456789".encode())
+    assert crc == 0x889a9615
 
 
 def test_rc4_keystream():

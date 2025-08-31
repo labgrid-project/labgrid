@@ -21,8 +21,8 @@ class USBTMCDriver(Driver):
         self.backend = None
 
         assert self.tmc.path.startswith("/dev/usbtmc")
-        self.index = int(self.tmc.path[11:], 10)
-        assert self.tmc.path == "/dev/usbtmc" + str(self.index)
+        self.dev_index = int(self.tmc.path[11:], 10)
+        assert self.tmc.path == "/dev/usbtmc" + str(self.dev_index)
 
     def on_activate(self):
         assert self.wrapper is None
@@ -49,13 +49,13 @@ class USBTMCDriver(Driver):
     def command(self, cmd):
         assert isinstance(cmd, str)
         cmd = b2s(cmd.encode("ASCII") + b"\n")
-        self.wrapper.usbtmc(self.index, cmd, read=False)
+        self.wrapper.usbtmc(self.dev_index, cmd, read=False)
 
     @Driver.check_active
     def query(self, cmd, binary=False, raw=False):
         assert isinstance(cmd, str)
         cmd = b2s(cmd.encode("ASCII") + b"\n")
-        res = s2b(self.wrapper.usbtmc(self.index, cmd, read=True))
+        res = s2b(self.wrapper.usbtmc(self.dev_index, cmd, read=True))
 
         if raw:
             return res

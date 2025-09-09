@@ -123,6 +123,7 @@ def test_local_fdpass():
 
 @pytest.mark.parametrize('module_name', [
     'deditec_relais8',
+    'linkpismarthub',
     'sysfsgpio',
     'usb_hid_relay'
 ])
@@ -137,4 +138,4 @@ def test_all_modules(module_name: str) -> None:
 def test_import_modules():
     import labgrid.util.agents
     import labgrid.util.agents.dummy
-    from labgrid.util.agents import deditec_relais8, sysfsgpio
+    from labgrid.util.agents import deditec_relais8, linkpismarthub, sysfsgpio

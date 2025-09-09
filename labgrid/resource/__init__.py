@@ -14,6 +14,7 @@ from .udev import (
     DeditecRelais8,
     HIDRelay,
     IMXUSBLoader,
+    LinkPiSmartHUBPowerPort,
     LXAUSBMux,
     MatchedSysfsGPIO,
     MXSUSBLoader,

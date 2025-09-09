@@ -102,6 +102,10 @@ def test_all_modules():
     methods = aw.list()
     assert 'deditec_relais8.set' in methods
     assert 'deditec_relais8.get' in methods
+    aw.load('linkpismarthub')
+    methods = aw.list()
+    assert 'linkpismarthub.set' in methods
+    assert 'linkpismarthub.get' in methods
     aw.load('sysfsgpio')
     methods = aw.list()
     assert 'sysfsgpio.set' in methods
@@ -114,4 +118,4 @@ def test_all_modules():
 def test_import_modules():
     import labgrid.util.agents
     import labgrid.util.agents.dummy
-    from labgrid.util.agents import deditec_relais8, sysfsgpio
+    from labgrid.util.agents import deditec_relais8, linkpismarthub, sysfsgpio

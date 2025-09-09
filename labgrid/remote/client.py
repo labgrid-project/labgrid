@@ -1014,7 +1014,12 @@ class ClientSession:
         name = self.args.name
         target = self._get_target(place)
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
-        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
+        from ..resource.remote import (
+            NetworkUSBPowerPort,
+            NetworkLinkPiSmartHUBPowerPort,
+            NetworkSiSPMPowerPort,
+            NetworkSysfsGPIO,
+        )
         from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
 
         drv = None
@@ -1028,6 +1033,8 @@ class ClientSession:
                     drv = self._get_driver_or_new(target, "NetworkPowerDriver", name=name)
                 elif isinstance(resource, NetworkUSBPowerPort):
                     drv = self._get_driver_or_new(target, "USBPowerDriver", name=name)
+                elif isinstance(resource, NetworkLinkPiSmartHUBPowerPort):
+                    drv = self._get_driver_or_new(target, "LinkPiSmartHUBPowerDriver", name=name)
                 elif isinstance(resource, NetworkSiSPMPowerPort):
                     drv = self._get_driver_or_new(target, "SiSPMPowerDriver", name=name)
                 elif isinstance(resource, PDUDaemonPort):

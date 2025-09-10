@@ -35,6 +35,7 @@ from .lxaiobusdriver import LXAIOBusPIODriver
 from .lxausbmuxdriver import LXAUSBMuxDriver
 from .pyvisadriver import PyVISADriver
 from .usbhidrelay import HIDRelayDriver
+from .denkovirelay import DenkoviRelayDriver
 from .flashscriptdriver import FlashScriptDriver
 from .usbaudiodriver import USBAudioInputDriver
 from .usbvideodriver import USBVideoDriver

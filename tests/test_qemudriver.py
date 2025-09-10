@@ -13,7 +13,8 @@ def qemu_env(tmpdir):
             role: foo
         images:
           kernel: "test.zImage"
-          dtb: test.dtb"
+          disk: "test.qcow2"
+          dtb: "test.dtb"
         tools:
           qemu: "qemu-system-arm"
         paths:
@@ -68,6 +69,15 @@ def qemu_version_mock(mocker):
 
 def test_qemu_instance(qemu_target, qemu_driver):
     assert (isinstance(qemu_driver, QEMUDriver))
+
+def test_qemu_get_qemu_base_args_disk(qemu_target, qemu_driver):
+    qemu_driver.disk = 'disk'
+    supported_machines = ['vexpress-a9', 'pc', 'q35', 'virt']
+    for machine in supported_machines:
+        qemu_driver.machine = machine
+        qemu_driver.get_qemu_base_args()
+        qemu_driver.machine = machine + ',option=value'
+        qemu_driver.get_qemu_base_args()
 
 def test_qemu_activate_deactivate(qemu_target, qemu_driver, qemu_version_mock):
     qemu_target.activate(qemu_driver)

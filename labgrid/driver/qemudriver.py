@@ -156,19 +156,20 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             disk_opts = ""
             if self.disk_opts:
                 disk_opts = f",{self.disk_opts}"
-            if self.machine == "vexpress-a9":
+            machine_base = self.machine.split(',')[0]
+            if machine_base == "vexpress-a9":
                 cmd.append("-drive")
                 cmd.append(
                     f"if=sd,format={disk_format},file={disk_path},id=mmc0{disk_opts}")
                 boot_args.append("root=/dev/mmcblk0p1 rootfstype=ext4 rootwait")
-            elif self.machine in ["pc", "q35", "virt"]:
+            elif machine_base in ["pc", "q35", "virt"]:
                 cmd.append("-drive")
                 cmd.append(
                     f"if=virtio,format={disk_format},file={disk_path}{disk_opts}")
                 boot_args.append("root=/dev/vda rootwait")
             else:
                 raise NotImplementedError(
-                    f"QEMU disk image support not implemented for machine '{self.machine}'"
+                    f"QEMU disk image support not implemented for machine '{machine_base}'"
                 )
         if self.rootfs is not None:
             cmd.append("-fsdev")

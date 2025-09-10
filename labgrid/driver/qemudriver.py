@@ -259,9 +259,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         shutil.rmtree(self._tempdir)
 
     @step()
-    def on(self):
-        """Start the QEMU subprocess, accept the unix socket connection and
-        afterwards start the emulator using a QMP Command"""
+    def prepare(self):
+        """Start the QEMU subprocess and accept the unix socket connection
+        if not already prepared."""
         if self.status:
             return
         self.logger.debug("Starting with: %s", self._cmd)
@@ -287,7 +287,14 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
         # Restore port forwards
         for v in self._forwarded_ports.values():
-            self._add_port_forward(*v)
+            self._add_port_forward(*v) 
+
+    @step()
+    def on(self):
+        """Prepare the instance (only if not done already) and start the emulator
+        using a QMP Command"""
+        if not self._child:
+            self.prepare()
 
         self.monitor_command("cont")
 

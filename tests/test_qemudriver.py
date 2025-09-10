@@ -1,6 +1,7 @@
 import pytest
 
 from labgrid.driver import QEMUDriver
+from labgrid.driver.exception import ExecutionError
 from labgrid import Environment
 
 @pytest.fixture
@@ -62,6 +63,12 @@ def qemu_mock(mocker):
     socket_mock.return_value.accept.return_value = mocker.MagicMock(), ''
 
 @pytest.fixture
+def qemu_qmp_mock(mocker):
+    monitor_mock = mocker.patch('labgrid.driver.qemudriver.QMPMonitor')
+    monitor_mock.return_value.execute.return_value = {'return': {}}
+    return monitor_mock
+
+@pytest.fixture
 def qemu_version_mock(mocker):
     run_mock = mocker.patch('subprocess.run')
     run_mock.return_value.returncode = 0
@@ -90,6 +97,27 @@ def test_qemu_on_off(qemu_target, qemu_driver, qemu_mock, qemu_version_mock):
     qemu_driver.off()
 
     qemu_target.deactivate(qemu_driver)
+
+def test_qemu_prepare(qemu_target, qemu_driver, qemu_mock, qemu_version_mock):
+    qemu_target.activate(qemu_driver)
+
+    qemu_driver.prepare()
+    qemu_driver.on()
+
+def test_qemu_monitor_command_without_prepare(qemu_target, qemu_driver, qemu_mock, qemu_version_mock, qemu_qmp_mock):
+    qemu_target.activate(qemu_driver)
+
+    with pytest.raises(ExecutionError):
+        qemu_driver.monitor_command("info")
+        qemu_qmp_mock.assert_not_called()
+
+def test_qemu_prepare_with_monitor_command(qemu_target, qemu_driver, qemu_mock, qemu_version_mock, qemu_qmp_mock):
+    qemu_target.activate(qemu_driver)
+
+    qemu_driver.prepare()
+    qemu_driver.monitor_command("info")
+    qemu_qmp_mock.assert_called_once()
+    qemu_qmp_mock.return_value.execute.assert_called_with("info", {})
 
 def test_qemu_read_write(qemu_target, qemu_driver, qemu_mock, qemu_version_mock):
     qemu_target.activate(qemu_driver)

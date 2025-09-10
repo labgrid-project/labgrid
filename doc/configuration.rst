@@ -2867,6 +2867,10 @@ The QEMUDriver also requires the specification of:
   specify the build device tree
 - a path key, this is the path to the rootfs
 
+To allow interactions with a prepared, not yet started QEMU instance, the ``prepare()`` method
+can be explicitly called, after which ``monitor_command(...)`` can be run before eventually
+releasing the CPU(s) via ``on()``.
+
 SigrokDriver
 ~~~~~~~~~~~~
 The :any:`SigrokDriver` uses a `SigrokDevice`_ resource to record samples and provides

@@ -724,10 +724,10 @@ class ClientSession:
             allowhelp = f"'labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}' on {host}."
             if self.getuser() == user:
                 if self.gethostname() == host:
-                    raise UserError("You have already acquired this place.")
+                    raise UserError(f"You have already acquired place {place.name}.")
                 else:
                     raise UserError(
-                        f"You have already acquired this place on {host}. To work simultaneously, execute {allowhelp}"
+                        f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {allowhelp}"
                     )
             else:
                 raise UserError(

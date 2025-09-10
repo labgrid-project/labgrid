@@ -126,7 +126,7 @@ if __name__ == "__main__":
     # tcpdump
     tcpdump_parser = subparsers.add_parser("tcpdump")
     tcpdump_parser.add_argument("ifname", type=str, help="interface name")
-    tcpdump_parser.add_argument("count", type=int, default=None, help="amount of frames to capture while recording")
+    tcpdump_parser.add_argument("count", type=int, nargs="?", default=None, help="amount of frames to capture while recording")
     tcpdump_parser.add_argument(
         "--timeout", type=int, default=None, help="Amount of time to capture while recording. 0 means capture forever"
     )

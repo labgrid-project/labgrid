@@ -64,11 +64,22 @@ def qemu_mock(mocker):
     version_mock.return_value.returncode = 0
     version_mock.return_value.stdout = "QEMU emulator version 4.2.1"
 
+@pytest.fixture
+def qemu_qmp_mock(mocker):
+    monitor_mock = mocker.patch('labgrid.driver.qemudriver.QMPMonitor')
+    monitor_mock.return_value.execute.return_value = {'return': {}}
+    return monitor_mock
+
 def test_qemu_instance(qemu_driver):
     assert (isinstance(qemu_driver, QEMUDriver))
 
-def test_qemu_activate_deactivate(qemu_target, qemu_driver):
+def test_qemu_activate_deactivate(qemu_target, qemu_driver, qemu_qmp_mock):
     qemu_target.activate(qemu_driver)
+
+    qemu_driver.monitor_command("info")
+    qemu_qmp_mock.assert_called_once()
+    qemu_qmp_mock.return_value.execute.assert_called_with("info", {})
+
     qemu_target.deactivate(qemu_driver)
 
 def test_qemu_on_off(qemu_target, qemu_driver):

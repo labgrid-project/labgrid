@@ -91,6 +91,18 @@ def test_qemu_on_off(qemu_target, qemu_driver, qemu_mock, qemu_version_mock):
 
     qemu_target.deactivate(qemu_driver)
 
+def test_qemu_on_pre_start_hook(qemu_target, qemu_driver, qemu_mock, qemu_version_mock):
+    qemu_target.activate(qemu_driver)
+    
+    called = False
+    def _hook():
+        nonlocal called
+        qemu_driver.monitor_command("info")
+        called = True
+
+    qemu_driver.on(pre_start_hook=_hook)
+    assert called
+
 def test_qemu_read_write(qemu_target, qemu_driver, qemu_mock, qemu_version_mock):
     qemu_target.activate(qemu_driver)
 

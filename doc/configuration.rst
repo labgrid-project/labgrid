@@ -1796,6 +1796,8 @@ Arguments:
     Can be an empty string.
   - keyfile (str): optional, keyfile to upload after login, making the
     `SSHDriver`_ usable
+  - dest_authorized_keys (str): optional, default="~/.ssh/authorized_keys", 
+    filename of the authorized_keys file
   - login_timeout (int, default=60): timeout for login prompt detection in
     seconds
   - await_login_timeout (int, default=2): time in seconds of silence that needs

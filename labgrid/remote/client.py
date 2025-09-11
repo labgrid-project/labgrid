@@ -489,6 +489,17 @@ class ClientSession:
             raise UserError(f"pattern {pattern} matches multiple places ({', '.join(places)})")
         return self.places[places[0]]
 
+    def get_place_names_from_env(self):
+        """Returns a list of RemotePlace names found in the environment config."""
+        places = []
+        for role_config in self.env.config.get_targets().values():
+            resources, _ = target_factory.normalize_config(role_config)
+            remote_places = resources.get("RemotePlace", [])
+            for place in remote_places:
+                places.append(place)
+
+        return places
+
     def get_idle_place(self, place=None):
         place = self.get_place(place)
         if place.acquired:
@@ -692,8 +703,22 @@ class ClientSession:
             raise UserError(f"Match {match} has no matching remote resource")
 
     async def acquire(self):
+        errors = []
+        places = self.get_place_names_from_env() if self.env else [self.args.place]
+        for place in places:
+            try:
+                await self._acquire_place(place)
+            except Error as e:
+                errors.append(e)
+
+        if errors:
+            if len(errors) == 1:
+                raise errors[0]
+            raise ErrorGroup("Multiple errors occurred during acquire", errors)
+
+    async def _acquire_place(self, place):
         """Acquire a place, marking it unavailable for other clients"""
-        place = self.get_place()
+        place = self.get_place(place)
         if place.acquired:
             host, user = place.acquired.split("/")
             allowhelp = f"'labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}' on {host}."
@@ -738,8 +763,22 @@ class ClientSession:
             raise ServerError(e.details())
 
     async def release(self):
+        errors = []
+        places = self.get_place_names_from_env() if self.env else [self.args.place]
+        for place in places:
+            try:
+                await self._release_place(place)
+            except Error as e:
+                errors.append(e)
+
+        if errors:
+            if len(errors) == 1:
+                raise errors[0]
+            raise ErrorGroup("Multiple errors occurred during release", errors)
+
+    async def _release_place(self, place):
         """Release a previously acquired place"""
-        place = self.get_place()
+        place = self.get_place(place)
         if not place.acquired:
             raise UserError(f"place {place.name} is not acquired")
         _, user = place.acquired.split("/")

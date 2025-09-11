@@ -162,6 +162,49 @@ def test_place_acquire(place):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
+def test_place_acquire_multiple(create_place, tmpdir):
+    # create multiple places
+    place_names = ['test1', 'test2']
+    for place_name in place_names:
+        create_place(place_name)
+
+    # create env config with multiple RemotePlaces
+    p = tmpdir.join('config.yaml')
+    p.write('targets:')
+    for place_name in place_names:
+        p.write(
+            f"""
+        {place_name}:
+          resources:
+            RemotePlace:
+              name: {place_name}
+        """,
+            mode='a',
+        )
+
+    # acquire all places in env config
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+    assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # check 'who'
+    with pexpect.spawn('python -m labgrid.remote.client who') as spawn:
+        spawn.expect(pexpect.EOF)
+        for place_name in place_names:
+            assert place_name.encode('utf-8') in spawn.before
+
+    assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # release all places in env config
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {p} release') as spawn:
+        spawn.expect(pexpect.EOF)
+    assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # check 'who' again
+    with pexpect.spawn('python -m labgrid.remote.client who') as spawn:
+        spawn.expect('User.*Host.*Place.*Changed\r\n')
+    assert not spawn.before, spawn.before
+
 def test_place_acquire_enforce(place):
     with pexpect.spawn('python -m labgrid.remote.client -p test add-match does/not/exist') as spawn:
         spawn.expect(pexpect.EOF)

@@ -28,6 +28,9 @@ from typing import Any, Dict
 import attr
 import grpc
 
+# TODO: drop if Python >= 3.11 guaranteed
+from exceptiongroup import ExceptionGroup  # pylint: disable=redefined-builtin
+
 from .common import (
     ResourceEntry,
     ResourceMatch,
@@ -57,7 +60,8 @@ sys.excepthook = lambda type, value, traceback: sys.__excepthook__(type, value, 
 
 
 class Error(Exception):
-    pass
+    def __str__(self):
+        return f"Error: {' '.join(self.args)}"
 
 
 class UserError(Error):
@@ -70,6 +74,13 @@ class ServerError(Error):
 
 class InteractiveCommandError(Error):
     pass
+
+
+class ErrorGroup(ExceptionGroup):
+    def __str__(self):
+        # TODO: drop pylint disable once https://github.com/pylint-dev/pylint/issues/8985 is fixed
+        errors_combined = "\n".join(f"- {' '.join(e.args)}" for e in self.exceptions)  # pylint: disable=not-an-iterable
+        return f"{self.message}:\n{errors_combined}"
 
 
 @attr.s(eq=False)
@@ -2212,11 +2223,11 @@ def main():
             if args.debug:
                 traceback.print_exc(file=sys.stderr)
             exitcode = e.exitcode
-        except Error as e:
+        except (Error, ErrorGroup) as e:
             if args.debug:
                 traceback.print_exc(file=sys.stderr)
             else:
-                print(f"{parser.prog}: error: {e}", file=sys.stderr)
+                print(f"{parser.prog}: {e}", file=sys.stderr)
             exitcode = 1
         except KeyboardInterrupt:
             exitcode = 1

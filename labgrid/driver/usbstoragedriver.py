@@ -39,15 +39,22 @@ class USBStorageDriver(Driver):
             "NetworkUSBSDWireDevice",
         },
     }
+
     image = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
-    WAIT_FOR_MEDIUM_TIMEOUT = 10.0 # s
+    timeout = attr.ib(
+        default=10.0,
+        validator=attr.validators.instance_of(float)
+    )
+
     WAIT_FOR_MEDIUM_SLEEP = 0.5 # s
     MOUNT_RETRIES = 5
 
     def __attrs_post_init__(self):
+        if self.timeout < 0.0:
+            raise ValueError("timeout must be positive")
         super().__attrs_post_init__()
         self.wrapper = None
         self.proxy = None
@@ -208,7 +215,7 @@ class USBStorageDriver(Driver):
 
     @Driver.check_active
     def _wait_for_medium(self, partition):
-        timeout = Timeout(self.WAIT_FOR_MEDIUM_TIMEOUT)
+        timeout = Timeout(self.timeout)
         while not timeout.expired:
             if self.get_size(partition) > 0:
                 break

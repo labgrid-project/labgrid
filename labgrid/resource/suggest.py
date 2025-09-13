@@ -17,6 +17,7 @@ from .udev import (
     AlteraUSBBlaster,
     RKUSBLoader,
     USBNetworkInterface,
+    LinkPiSmartHUBPowerPort,
     SiSPMPowerPort,
     USBAudioInput,
     LXAUSBMux,
@@ -51,6 +52,7 @@ class Suggester:
         self.resources.append(AlteraUSBBlaster(**args))
         self.resources.append(RKUSBLoader(**args))
         self.resources.append(USBNetworkInterface(**args))
+        self.resources.append(LinkPiSmartHUBPowerPort(**args))
         self.resources.append(SiSPMPowerPort(**args))
         self.resources.append(USBAudioInput(**args))
         self.resources.append(LXAUSBMux(**args))

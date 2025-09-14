@@ -3,6 +3,7 @@ This module implements the communication protocol to load an image to SRAM,
 that typically initializes DRAM, followed by optionally loading a secondary
 image to start of DRAM, when a Rockchip device is in MASKROM mode.
 """
+import hashlib
 from collections import namedtuple
 from struct import unpack
 from time import sleep
@@ -124,7 +125,7 @@ def rc4_prga(S):
         yield K
 
 
-def get_rkboot_entries(data, header):
+def get_rkboot_entries(data, header, _):
     RKBootEntry = namedtuple('RKBootEntry', [
         'size', 'type', 'dataOffset', 'dataSize', 'dataDelay',
     ])
@@ -139,7 +140,28 @@ def get_rkboot_entries(data, header):
             offset += size
 
 
-def parse_rkboot_header(data):
+def get_newidblock_entries(data, header, delay):
+    RKImageEntry = namedtuple('RKImageEntry', [
+        'offset', 'size', 'address', 'flag', 'counter', 'digest'
+    ])
+    offset, size = 120, 88
+    for _ in range(header.num_images):
+        entry = RKImageEntry._make(unpack('<HHLLL8x64s', data[offset:offset + size]))
+        entry_data = data[entry.offset * 512:(entry.offset + entry.size) * 512]
+        if (header.boot_flag & 0xf) == 1:
+            digest = hashlib.sha256(entry_data).digest()
+        elif (header.boot_flag & 0xf) == 2:
+            digest = hashlib.sha512(entry_data).digest()
+        else:
+            digest = None
+        if digest is not None and digest != entry.digest[:len(digest)]:
+            raise ValueError(f"Digest mismatch for image {entry.counter}")
+        code = 0x472 if entry.counter == header.num_images else 0x471
+        yield code, entry_data, delay if code == 0x471 else 0
+        offset += size
+
+
+def parse_image_header(data):
     tag = int.from_bytes(data[:4], 'little')
     RKBootHeader = namedtuple('RKBootHeader', [
         'tag', 'size', 'version', 'mergerVersion',
@@ -150,8 +172,24 @@ def parse_rkboot_header(data):
        crc32_rkboot(data[:-4]) == int.from_bytes(data[-4:], 'little'):
         header = RKBootHeader._make(unpack('<LHLL11xBLBBLB65x', data[:102]))
         if header.size == 102 and header.code471Num + header.code472Num > 0:
-            return header
-    return None
+            return header, get_rkboot_entries
+    RKNewIDBlockHeader = namedtuple('RKNewIDBlockHeader', [
+        'tag', 'size', 'num_images', 'boot_flag',
+    ])
+    if tag in (0x534e4b52, 0x53534b52):
+        header = RKNewIDBlockHeader._make(unpack('<L4xHHL', data[:16]))
+        if header.size == 384 and header.num_images > 0:
+            if (header.boot_flag & 0xf) == 1:
+                digest = hashlib.sha256(data[:1536]).digest()
+            elif (header.boot_flag & 0xf) == 2:
+                digest = hashlib.sha512(data[:1536]).digest()
+            else:
+                digest = None
+            if (header.boot_flag & 0xf0) == 0 and digest is not None and \
+               digest != data[1536:1536 + len(digest)]:
+                raise ValueError("Digest mismatch for header")
+            return header, get_newidblock_entries
+    return None, None
 
 
 class RKUSBMaskrom:
@@ -209,14 +247,14 @@ class RKUSBMaskrom:
 def handle_load(busnum, devnum, initial, secondary=None, delay=None):
     with open(initial, 'rb') as f:
         data = f.read()
-    header = parse_rkboot_header(data)
+    header, get_image_entries = parse_image_header(data)
     if header is None and secondary is not None:
         with open(secondary, 'rb') as f:
             data = f.read()
-        header = parse_rkboot_header(data)
+        header, get_image_entries = parse_image_header(data)
     with RKUSBMaskrom(bus=busnum, address=devnum) as maskrom:
         if header is not None:
-            for code, entry_data, entry_delay in get_rkboot_entries(data, header):
+            for code, entry_data, entry_delay in get_image_entries(data, header, delay):
                 maskrom.load(code, entry_data)
                 if entry_delay:
                     sleep(entry_delay)

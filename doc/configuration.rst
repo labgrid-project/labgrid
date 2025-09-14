@@ -2720,7 +2720,8 @@ Arguments:
     of an image that typically initializes DRAM of the target
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of a bootloader image to load to start of DRAM, or to SRAM when an initial image is unused, or
-    the path to a vendor loader image typically created using the vendor boot_merger tool
+    the path to a vendor loader image typically created using the vendor boot_merger tool, or the
+    path to an idblock image typically created using the U-Boot mkimage or Barebox rkimage tools
   - delay (float, default=0.001): delay in seconds between loading initial and secondary image
 
 UUUDriver

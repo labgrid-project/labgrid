@@ -803,3 +803,28 @@ class MatchedSysfsGPIO(USBResource):
             self.index = int(self.read_attr('base')) + self.pin
         else:
             self.index = None
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class RpibootDevice(USBResource):
+    """The RpibootDevice describes an attached raspberry pi device in boot mode,
+    it is identified via USB using udev.
+    """
+
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("0a5c", "2711"),  # rpi4
+                         ("0a5c", "2712"),  # rpi5
+                         ]:
+            return False
+
+        return super().filter_match(device)
+
+    @property
+    def serial_id(self):
+        device = self._get_usb_device()
+        if device:
+            return str(device.properties.get('ID_SERIAL_SHORT'))
+
+        return None

@@ -414,3 +414,14 @@ class RemoteNFSProvider(NetworkResource):
 @attr.s(eq=False)
 class RemoteHTTPProvider(RemoteBaseProvider):
     pass
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkRpibootDevice(RemoteUSBResource):
+    """The NetworkRpibootDevice describes a remotely accessible raspberry pi ready for rpiboot"""
+
+    serial_id = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
+
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()

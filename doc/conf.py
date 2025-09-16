@@ -40,8 +40,13 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.coverage',
               'sphinx.ext.viewcode',
+              'sphinxarg.ext', # sphinx-argparse
               'sphinx.ext.autosectionlabel',
               'sphinx_rtd_theme']
+
+# Required. Otherwise pages using sphinx-argparse will produce many warnings
+# (duplicate labels due to duplicate headings such as "named arguments")
+autosectionlabel_maxdepth = 3
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
@@ -156,7 +161,19 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     (master_doc, 'labgrid', 'labgrid Documentation',
-     [author], 1)
+     [author], 1),
+    ('man/client', 'labgrid-client', 'labgrid\'s client interface to control boards',
+     [author], 1),
+    ('man/coordinator', 'labgrid-coordinator', 'managing labgrid resources and places',
+     [author], 1),
+    ('man/device-config', 'labgrid-device-config', 'test configuration files',
+     [author], 5),
+    ('man/exporter', 'labgrid-exporter', 'interface to control boards',
+     [author], 1),
+    ('man/pytest', 'labgrid-pytest', 'labgrid integration for pytest',
+     [author], 7),
+    ('man/suggest', 'labgrid-suggest', 'generator for YAML config files',
+     [author], 1),
 ]
 
 
@@ -181,7 +198,11 @@ autodoc_default_options = {
 autodoc_mock_imports = ['onewire',
                         'gi',
                         'gi.repository',
-                        'vxi11']
+                        'vxi11',
+                        'pysnmp',
+                        'kasa',
+                        'kasa.iot',
+                        ]
 
 # -- Options for autosection ----------------------------------------------
 autosectionlabel_prefix_document = True

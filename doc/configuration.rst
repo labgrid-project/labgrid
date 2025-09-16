@@ -3270,7 +3270,9 @@ network interface to the user, including:
   Address Autoconfiguration) and Neighbor Discovery
 - disabling Generic Receive Offload (GRO)
 
-This might change in the future.
+This might change in the future. If you do not want the driver to automatically
+manage the interface (e.g. you are managing it externally), set
+``manage_interface`` to ``False``.
 
 Binds to:
   iface:
@@ -3282,7 +3284,9 @@ Implements:
   - None yet
 
 Arguments:
-  - None
+  - manage_interface (bool, default=True): if ``True`` this driver will
+    setup/teardown the interface on activate/deactivate. Set this to ``False``
+    if you are managing the interface externally.
 
 .. _conf-strategies:
 

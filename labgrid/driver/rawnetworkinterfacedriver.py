@@ -18,9 +18,18 @@ from ..resource.common import NetworkResource
 @target_factory.reg_driver
 @attr.s(eq=False)
 class RawNetworkInterfaceDriver(Driver):
+    """RawNetworkInterface - Manage a network interface and interact with it at a low level
+
+    Args:
+        manage_interface (bool, default=True): if True this driver will
+        setup/teardown the interface on activate/deactivate. Set this to False
+        if you are managing the interface externally.
+    """
+
     bindings = {
         "iface": {"NetworkInterface", "RemoteNetworkInterface", "USBNetworkInterface"},
     }
+    manage_interface = attr.ib(default=True, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -28,12 +37,14 @@ class RawNetworkInterfaceDriver(Driver):
         self._replay_handle = None
 
     def on_activate(self):
-        self._set_interface("up")
-        self._wait_state("up")
+        if self.manage_inteface:
+            self._set_interface("up")
+            self._wait_state("up")
 
     def on_deactivate(self):
-        self._set_interface("down")
-        self._wait_state("down")
+        if self.manage_interface:
+            self._set_interface("down")
+            self._wait_state("down")
 
     def _wrap_command(self, args):
         wrapper = ["sudo", "labgrid-raw-interface"]

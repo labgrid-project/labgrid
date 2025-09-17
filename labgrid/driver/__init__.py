@@ -21,10 +21,10 @@ from .usbsdmuxdriver import USBSDMuxDriver
 from .usbsdwiredriver import USBSDWireDriver
 from .common import Driver
 from .qemudriver import QEMUDriver
-from .modbusdriver import ModbusCoilDriver
+from .modbusdriver import ModbusCoilDriver, WaveShareModbusCoilDriver
 from .modbusrtudriver import ModbusRTUDriver
 from .sigrokdriver import SigrokDriver, SigrokPowerDriver, SigrokDmmDriver
-from .usbstoragedriver import USBStorageDriver, NetworkUSBStorageDriver, Mode
+from .usbstoragedriver import USBStorageDriver, Mode
 from .resetdriver import DigitalOutputResetDriver
 from .gpiodriver import GpioDigitalOutputDriver
 from .filedigitaloutput import FileDigitalOutputDriver

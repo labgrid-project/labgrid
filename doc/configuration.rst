@@ -449,7 +449,7 @@ A :any:`WaveshareModbusTCPCoil` describes a Waveshare branded coil accessible vi
    WaveshareModbusTCPCoil:
      host: '192.168.23.42'
      coil: 1
-     coil_count: 8 
+     coil_count: 8
 
 The example describes the coil ``1`` (zero indexed) of ``8`` on the Waveshare Modbus TCP relay
 module ``192.168.23.42``.
@@ -457,6 +457,7 @@ module ``192.168.23.42``.
 Arguments:
   - host (str): hostname of the Modbus TCP server e.g. ``192.168.23.42:502``
   - coil (int): index of the coil, e.g. ``3``
+  - coil_count (int, default=8): total number of coils on this module
   - invert (bool, default=False): whether the logic level is inverted
     (active-low)
   - write_multiple_coils (bool, default=False): whether to perform write
@@ -464,7 +465,6 @@ Arguments:
 
 Used by:
   - `WaveShareModbusCoilDriver`_
-
 
 DeditecRelais8
 ++++++++++++++
@@ -2554,6 +2554,9 @@ An :any:`IMXUSBDriver` is used to upload an image into a device in the *i.MX
 USB loader state*.
 This is useful to bootstrap a bootloader onto a device.
 This driver uses the ``imx-usb-loader`` tool from barebox.
+If your device has the ``SDP_READ_DISABLE`` fuse burnt, then reading back data
+over USB is not possible anymore, which means, that the verification of the
+image is not possible anymore. Set ``verify`` to False in this case.
 
 Binds to:
   loader:
@@ -2572,6 +2575,7 @@ Implements:
        drivers:
          IMXUSBDriver:
            image: 'mybootloaderkey'
+           verify: True
 
    images:
      mybootloaderkey: 'path/to/mybootloader.img'
@@ -2579,6 +2583,7 @@ Implements:
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of an image to bootstrap onto the target
+  - verify (bool, default=True): optional, wether to verify the written image or not
 
 BDIMXUSBDriver
 ~~~~~~~~~~~~~~

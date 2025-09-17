@@ -4,7 +4,7 @@ import attr
 
 from ..factory import target_factory
 from ..step import step
-from .common import Strategy, StrategyError
+from .common import Strategy, StrategyError, never_retry
 
 
 class Status(enum.Enum):
@@ -30,6 +30,7 @@ class BareboxStrategy(Strategy):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
+    @never_retry
     @step(args=['status'])
     def transition(self, status, *, step):  # pylint: disable=redefined-outer-name
         if not isinstance(status, Status):
@@ -63,6 +64,7 @@ class BareboxStrategy(Strategy):
             )
         self.status = status
 
+    @never_retry
     @step(args=['status'])
     def force(self, status):
         if not isinstance(status, Status):

@@ -12,9 +12,9 @@ from labgrid.protocol.powerprotocol import PowerProtocol
 
 
 class PullPolicy(Enum):
-    """Pull policy for the `DockerDriver`.
+    """Pull policy for the DockerDriver.
 
-    Modelled after `podman run --pull` / `docker run --pull`.
+    Modelled after ``podman run --pull`` / ``docker run --pull``.
 
     * always: Always pull the image and throw an error if the pull fails.
     * missing: Pull the image only when the image is not in the local
@@ -60,7 +60,7 @@ class DockerDriver(PowerProtocol, Driver):
         bindings (dict): The labgrid bindings
     Args passed to docker.create_container:
         image_uri (str): The uri of the image to fetch
-        pull (str): Pull policy. Default policy is `always` for backward
+        pull (str): Pull policy. Default policy is ``always`` for backward
         compatibility concerns
         command (str): The command to execute once container has been created
         volumes (list): The volumes to declare

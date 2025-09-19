@@ -3,7 +3,7 @@ Getting Started
 
 This section of the manual contains introductory tutorials for installing
 labgrid, running your first test and setting up the distributed infrastructure.
-For an overview about the basic design and components of `labgrid`, read the
+For an overview about the basic design and components of *labgrid*, read the
 :ref:`overview` first.
 
 Installation
@@ -80,24 +80,24 @@ installation. An example for snmp support is:
 
 Onewire
 +++++++
-Onewire support requires the `libow` library with headers, installable on debian
-via the `libow-dev` package. Use the `onewire` extra to install the correct
+Onewire support requires the ``libow`` library with headers, installable on debian
+via the ``libow-dev`` package. Use the ``onewire`` extra to install the correct
 onewire library version in addition to the normal installation.
 
 SNMP
 ++++
-SNMP support requires to additional packages, `pysnmp` and `pysnmpmibs`. They
-are included in the `snmp` extra.
+SNMP support requires to additional packages, ``pysnmp`` and ``pysnmpmibs``. They
+are included in the ``snmp`` extra.
 
 Modbus
 ++++++
-Modbus support requires an additional package `pyModbusTCP`. It is included in
-the `modbus` extra.
+Modbus support requires an additional package ``pyModbusTCP``. It is included in
+the ``modbus`` extra.
 
 ModbusRTU
 +++++++++
-Modbus support requires an additional package `minimalmodbus`. It is included in
-the `modbusrtu` extra.
+Modbus support requires an additional package ``minimalmodbus``. It is included in
+the ``modbusrtu`` extra.
 
 Running Your First Test
 -----------------------
@@ -198,8 +198,8 @@ Each group contains one or more resource declarations and optionally a location
 string.
 
 For example, to export a ``USBSerialPort`` with ``ID_SERIAL_SHORT`` of
-``ID23421JLK``, the group name `example-group` and the location
-`example-location`:
+``ID23421JLK``, the group name ``example-group`` and the location
+``example-location``:
 
 .. code-block:: yaml
 
@@ -251,7 +251,7 @@ More information about the exporter configuration file can be found
 Restart the exporter to activate the new configuration.
 
 .. Attention::
-   The `ManagedFile` will create temporary uploads in the exporters
+   The :any:`ManagedFile` will create temporary uploads in the exporters
    ``/var/cache/labgrid`` directory. This directory needs to be created manually
    and should allow write access for users. The ``/contrib`` directory in the
    labgrid-project contains a tmpfiles configuration example to automatically
@@ -276,7 +276,7 @@ Finally we can test the client functionality, run:
     kiwi/example-group-2/NetworkSerialPort
 
 You can see the available resources listed by the coordinator. The groups
-`example-group` and `example-group-2` should be available there.
+``example-group`` and ``example-group-2`` should be available there.
 
 To show more details on the exported resources, use ``-v`` (or ``-vv``):
 
@@ -420,7 +420,7 @@ Follow these instructions to install the systemd files on your machine(s):
       # systemctl start labgrid-exporter
 
 #. Optionally, for users being able to upload files to the exporter, add them
-   to the `labgrid` group on the exporter machine:
+   to the ``labgrid`` group on the exporter machine:
 
    .. code-block:: console
 
@@ -450,4 +450,4 @@ retrieve it in your test and call the ``transition(status)`` function.
 See the section about the various :ref:`shipped strategies <conf-strategies>`
 for examples on this.
 
-An example using the pytest plugin is provided under `examples/strategy`.
+An example using the pytest plugin is provided under ``examples/strategy``.

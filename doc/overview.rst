@@ -14,58 +14,62 @@ labgrid can be used in several ways:
 - as a python library in other programs
 
 In the labgrid library, a controllable embedded system is represented as a
-:any:`Target`.
-`Targets` normally have several :any:`Resource` and :any:`Driver` objects,
-which are used to store the board-specific information and to implement actions
-on different abstraction levels.
+:ref:`Target <usage-target>`.
+Targets normally have several :ref:`Resource <overview-resources>` and
+:any:`Driver <overview-drivers-protocols>` objects, which are used to store the
+board-specific information and to implement actions on different abstraction
+levels.
 For cases where a board needs to be transitioned to specific states (such as
-`off`, `in bootloader`, `in Linux shell`), a :any:`Strategy` (a special kind of
-`Driver`) can be added to the `Target`.
+off, in bootloader, in Linux shell), a :ref:`Strategy <overview-strategies>` (a
+special kind of Driver) can be added to the Target.
 
 While labgrid comes with implementations for some resources, drivers and
 strategies, custom implementations for these can be registered at runtime.
 It is expected that for complex use-cases, the user would implement and
-register a custom `Strategy` and possibly some higher-level `Drivers`.
+register a custom Strategy and possibly some higher-level Drivers.
 
 .. _overview-resources:
 
 Resources
 ~~~~~~~~~
 
-`Resources` are passive and only store the information to access the
-corresponding part of the `Target`.
+*Resources* are passive and only store the information to access the
+corresponding part of the :ref:`Target <usage-target>`.
 Typical examples of resources are :any:`RawSerialPort`, :any:`NetworkPowerPort`
 and :any:`AndroidUSBFastboot`.
 
-An important type of `Resources` are :any:`ManagedResources <ManagedResource>`.
-While normal `Resources` are always considered available for use and have fixed
+An important type of :any:`Resources <Resource>` are :any:`ManagedResources <ManagedResource>`.
+While normal Resources are always considered available for use and have fixed
 properties (such as the ``/dev/ttyUSB0`` device name for a
-:any:`RawSerialPort`), the `ManagedResources` are used to represent interfaces
+:any:`RawSerialPort`), the ManagedResources are used to represent interfaces
 which are discoverable in some way.
 They can appear/disappear at runtime and have different properties each time
 they are discovered.
-The most common examples of `ManagedResources` are the various USB resources
+The most common examples of ManagedResources are the various USB resources
 discovered using udev, such as :any:`USBSerialPort`, :any:`IMXUSBLoader` or
 :any:`AndroidUSBFastboot` (see the :ref:`udev matching section <udev-matching>`).
+
+.. _overview-drivers-protocols:
 
 Drivers and Protocols
 ~~~~~~~~~~~~~~~~~~~~~
 
-A labgrid :any:`Driver` uses one (or more) `Resources` and/or other, lower-level
-`Drivers` to perform a set of actions on a `Target`.
+A labgrid *Driver* uses one (or more) :any:`Resources <overview-resources>`
+and/or other, lower-level Drivers to perform a set of actions on a
+:ref:`Target <usage-target>`.
 For example, the :any:`NetworkPowerDriver` uses a :any:`NetworkPowerPort`
-resource to control the `Target's` power supply.
+resource to control the Target's power supply.
 In this case, the actions are "on", "off", "cycle" and "get".
 
 As another example, the :any:`ShellDriver` uses any driver implementing the
 :any:`ConsoleProtocol` (such as a :any:`SerialDriver`, see below).
-The `ConsoleProtocol` allows the `ShellDriver` to work with any specific method
+The ConsoleProtocol allows the ShellDriver to work with any specific method
 of accessing the board's console (locally via USB, over the network using a
 console server or even an external program).
-At the `ConsoleProtocol` level, characters are sent to and received from the
+At the ConsoleProtocol level, characters are sent to and received from the
 target, but they are not yet interpreted as specific commands or their output.
 
-The `ShellDriver` implements the higher-level :any:`CommandProtocol`, providing
+The ShellDriver implements the higher-level :any:`CommandProtocol`, providing
 actions such as "run" or "run_check".
 Internally, it interacts with the Linux shell on the target board.
 For example, it:
@@ -77,36 +81,36 @@ For example, it:
 - retrieves the exit status
 
 Other drivers, such as the :any:`SSHDriver`, also implement the
-`CommandProtocol`.
+CommandProtocol.
 This way, higher-level code (such as a test suite), can be independent of the
 concrete control method on a given board.
 
 Binding and Activation
 ~~~~~~~~~~~~~~~~~~~~~~
 
-When a `Target` is configured, each driver is "bound" to the resources (or
-other drivers) required by it.
-Each `Driver` class has a "bindings" attribute, which declares which
-`Resources` or `Protocols` it needs and under which name they should be
-available to the `Driver` instance.
-The binding resolution is handled by the `Target` during the initial
+When a :ref:`Target <usage-target>` is configured, each driver is "bound" to
+the resources (or other drivers) required by it.
+Each :any:`Driver` class has a "bindings" attribute, which declares which
+:any:`Resources <Resource>` or Protocols it needs and under which name they should be
+available to the Driver instance.
+The binding resolution is handled by the Target during the initial
 configuration and results in a directed, acyclic graph of resources and
 drivers.
-During the lifetime of a `Target`, the bindings are considered static.
+During the lifetime of a Target, the bindings are considered static.
 
 In most non-trivial target configurations, some drivers are mutually exclusive.
-For example, a `Target` may have both a :any:`ShellDriver` and a :any:`BareboxDriver`.
-Both bind to a driver implementing the `ConsoleProtocol` and provide the
-`CommandProtocol`.
+For example, a Target may have both a :any:`ShellDriver` and a :any:`BareboxDriver`.
+Both bind to a driver implementing the :any:`ConsoleProtocol` and provide the
+:any:`CommandProtocol`.
 Obviously, the board cannot be in the bootloader and in Linux at the same time,
-which is represented in labgrid via the :any:`BindingState` (`bound`/`active`).
+which is represented in labgrid via the :any:`BindingState` (``bound``/``active``).
 If, during activation of a driver, any other driver in its bindings is not
 active, they will be activated as well.
 
-Activating and deactivating `Drivers` is also used to handle `ManagedResources`
+Activating and deactivating Drivers is also used to handle :any:`ManagedResources <ManagedResource>`
 becoming available/unavailable at runtime.
 If some resources bound to by the activating drivers are currently unavailable,
-the `Target` will wait for them to appear (with a per resource timeout).
+the Target will wait for them to appear (with a per resource timeout).
 A realistic sequence of activation might look like this:
 
 - enable power (:any:`PowerProtocol.on`)
@@ -119,7 +123,7 @@ A realistic sequence of activation might look like this:
 - activate the :any:`ShellDriver` driver on the target (this will wait for the
   :any:`USBSerialPort` resource to be available and log in)
 
-Any `ManagedResources` which become unavailable at runtime will automatically
+Any ManagedResources which become unavailable at runtime will automatically
 deactivate the dependent drivers.
 
 Multiple Drivers and Names
@@ -152,8 +156,8 @@ Priorities
 Each driver supports a priorities class variable.
 This allows drivers which implement the same protocol to add a priority option
 to each of their protocols.
-This way a `NetworkPowerDriver` can implement the `ResetProtocol`, but if another
-`ResetProtocol` driver with a higher protocol is available, it will be selected
+This way a :any:`NetworkPowerDriver` can implement the :any:`ResetProtocol`, but if another
+ResetProtocol driver with a higher priority is available, it will be selected
 instead.
 
 .. note::
@@ -163,12 +167,12 @@ instead.
 
 The target resolves the driver priority via the Method Resolution Order (MRO)
 of the driver's base classes.
-If a base class has a `priorities` dictionary which contains the requested
+If a base class has a ``priorities`` dictionary which contains the requested
 Protocol as a key, that priority is used.
-Otherwise, `0` is returned as the default priority.
+Otherwise, ``0`` is returned as the default priority.
 
 To set the priority of a protocol for a driver, add a class variable with the
-name `priorities`, e.g.
+name ``priorities``, e.g.
 
 .. testcode::
 
@@ -179,6 +183,8 @@ name `priorities`, e.g.
    @attr.s
    class NetworkPowerDriver(Driver, PowerProtocol, ResetProtocol):
        priorities = {PowerProtocol: -10}
+
+.. _overview-strategies:
 
 Strategies
 ~~~~~~~~~~
@@ -191,7 +197,7 @@ labgrid includes the :any:`BareboxStrategy` and the :any:`UBootStrategy`, which
 can be used as-is for simple cases or serve as an example for implementing a
 custom strategy.
 
-`Strategies` themselves are not activated/deactivated.
+Strategies themselves are not activated/deactivated.
 Instead, they control the states of the other drivers explicitly and execute
 actions to bring the target into the requested state.
 
@@ -224,8 +230,8 @@ labgrid-coordinator
   console).
 
 RemotePlace (managed resource)
-  When used in a `Target`, the RemotePlace expands to the resources configured
-  for the named places.
+  When used in a :ref:`Target <usage-target>`, the RemotePlace expands to the
+  resources configured for the named places.
 
 These components communicate over `gRPC <https://grpc.io/>`_. The coordinator
 acts as a gRPC server to which client and exporter connect.
@@ -238,7 +244,7 @@ The following sections describe the responsibilities of each component. See
 Coordinator
 ~~~~~~~~~~~
 
-The `Coordinator` is implemented as a gRPC server and is started as a separate
+The *Coordinator* is implemented as a gRPC server and is started as a separate
 process.
 It provides separate RPC methods for the exporters and clients.
 
@@ -251,11 +257,11 @@ interfaces for each resource type.
 The coordinator also manages the registry of "places".
 These are used to configure which resources belong together from the user's
 point of view.
-A `place` can be a generic rack location, where different boards are connected
+A *place* can be a generic rack location, where different boards are connected
 to a static set of interfaces (resources such as power, network, serial
 console, …).
 
-Alternatively, a `place` can also be created for a specific board, for example
+Alternatively, a place can also be created for a specific board, for example
 when special interfaces such as GPIO buttons need to be controlled and they are
 not available in the generic locations.
 
@@ -268,7 +274,7 @@ To support selecting a specific place from a group containing similar or
 identical hardware, key-value tags can be added to places and used for
 scheduling.
 
-Finally, a place is configured with one or more `resource matches`.
+Finally, a place is configured with one or more *resource matches*.
 A resource match pattern has the format ``<exporter>/<group>/<class>/<name>``,
 where each component may be replaced with the wildcard ``*``.
 The ``/<name>`` part is optional and can be left out to match all resources of a class.
@@ -291,22 +297,22 @@ exporter1/hub1-port1/\*
   (such as a USB ROM-Loader interface, Android fastboot and a USB serial gadget
   in Linux).
 
-To avoid conflicting access to the same resources, a place must be `acquired`
+To avoid conflicting access to the same resources, a place must be *acquired*
 before it is used and the coordinator also keeps track of which user on which
 client host has currently acquired the place.
 The resource matches are only evaluated while a place is being acquired and cannot be
-changed until it is `released` again.
+changed until it is *released* again.
 
 .. _overview-exporter:
 
 Exporter
 ~~~~~~~~
 An exporter registers all its configured resources when it connects to the
-`Coordinator` and updates the resource parameters when they change (such as
+:any:`Coordinator` and updates the resource parameters when they change (such as
 (dis-)connection of USB devices).
 Internally, the exporter uses the normal :any:`Resource` (and
 :any:`ManagedResource`) classes as the rest of labgrid.
-By using `ManagedResources`, availability and parameters for resources such as
+By using ManagedResources, availability and parameters for resources such as
 USB serial ports are tracked and sent to the coordinator.
 
 For some specific resources (such as :any:`USBSerialPorts <USBSerialPort>`),
@@ -322,7 +328,7 @@ power switches or serial port servers with a labgrid coordinator.
   Users will require SSH access to the exporter to access services and command
   line utilities. You also have to ensure that users can access usb devices for
   i.e. imx-usb-loader. To test a SSH jump to a device over the exporter outside
-  of labgrid, `ssh -J EXPORTER USER@DEVICE` can be used.
+  of labgrid, ``ssh -J EXPORTER USER@DEVICE`` can be used.
 
 .. _overview-client:
 
@@ -330,20 +336,22 @@ Client
 ~~~~~~
 The client requests the current lists of resources and places from the
 coordinator when it connects to it and then registers for change events.
-Most of its functionality is exposed via the `labgrid-client` CLI tool.
-It is also used by the :any:`RemotePlace` resource (see below).
+Most of its functionality is exposed via the ``labgrid-client`` CLI tool.
+It is also used by the :ref:`RemotePlace <overview-remoteplace>` resource (see below).
 
-Besides viewing the list of `resources`, the client is used to configure and
-access `places` on the coordinator.
+Besides viewing the list of :ref:`Resources <overview-resources>`, the client is used to configure and
+access :any:`places <Place>` on the coordinator.
 For more information on using the CLI, see the manual page for
 :ref:`labgrid-client`.
 
+.. _overview-remoteplace:
+
 RemotePlace
 ~~~~~~~~~~~
-To use the resources configured for a `place` to control the corresponding
+To use the resources configured for a :any:`Place` to control the corresponding
 board (whether in pytest or directly with the labgrid library), the
 :any:`RemotePlace` resource should be used.
-When a `RemotePlace` is configured for a `Target`, it will create a client
+When a RemotePlace is configured for a :any:`Target`, it will create a client
 connection to the coordinator, create additional resource objects for those
 configured for that place and keep them updated at runtime.
 
@@ -363,7 +371,7 @@ file names refer to a shared filesystem (such as NFS or SMB).
 
 .. note::
   Using SSH's session sharing (``ControlMaster auto``, ``ControlPersist``, …)
-  makes `RemotePlaces` easy to use even for exporters with require passwords or
+  makes RemotePlaces easy to use even for exporters with require passwords or
   more complex login procedures.
 
   For exporters which are not directly accessible via SSH, add the host to your

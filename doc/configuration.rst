@@ -1571,6 +1571,10 @@ Finally ``sys_name`` allows matching against the name of the directory in
 sysfs.
 All match entries must succeed for the device to be accepted.
 
+Note that all udev property values are strings and are therefore case sensitive.
+Hex values such as ``ID_MODEL_ID`` must match the exact case reported by udev
+(e.g., ``"04d8"`` will not match ``"04D8"``).
+
 labgrid provides a small utility called ``labgrid-suggest`` which will
 output the proper YAML formatted snippets for you.
 These snippets can be added under the resource key in an environment

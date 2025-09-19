@@ -229,8 +229,8 @@ LABGRID-CLIENT COMMANDS
 ADDING NAMED RESOURCES
 ----------------------
 If a target contains multiple Resources of the same type, named matches need to
-be used to address the individual resources. In addition to the `match` taken by
-`add-match`, `add-named-match` also takes a name for the resource. The other
+be used to address the individual resources. In addition to the *match* taken by
+``add-match``, ``add-named-match`` also takes a name for the resource. The other
 client commands support the name as an optional parameter and will inform the
 user that a name is required if multiple resources are found, but no name is
 given.

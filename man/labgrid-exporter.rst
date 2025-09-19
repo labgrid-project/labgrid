@@ -99,7 +99,7 @@ This variable can be used to set the default coordinator in the format
 EXAMPLES
 --------
 
-Start the exporter with the configuration file `my-config.yaml`:
+Start the exporter with the configuration file ``my-config.yaml``:
 
 .. code-block:: bash
 

@@ -3,6 +3,7 @@ from contextvars import ContextVar
 
 
 _loop: ContextVar["asyncio.AbstractEventLoop | None"] = ContextVar("_loop", default=None)
+_last_created_loop: ContextVar["asyncio.AbstractEventLoop | None"] = ContextVar("_last_created_loop:", default=None)
 
 def ensure_event_loop(external_loop=None):
     """Get the event loop for this thread, or create a new event loop."""
@@ -32,6 +33,13 @@ def ensure_event_loop(external_loop=None):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-    # stash it
+        # stash new loop
+        _last_created_loop.set(loop)
+
+    # stash loop
     _loop.set(loop)
     return loop
+
+def is_new_loop(loop):
+    """Check whether the given loop was created in ensure_event_loop() before."""
+    return loop is _last_created_loop.get()

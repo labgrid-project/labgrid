@@ -46,11 +46,13 @@ class ADBDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Res
             subprocess.run(
                 [self.tool, "disconnect", f"{self._host}:{str(self._port)}"],
                 stderr=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
                 timeout=ADB_TIMEOUT,
                 check=False,
             )
             subprocess.run(
                 [self.tool, "connect", f"{self._host}:{str(self._port)}"],
+                stderr=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 timeout=ADB_TIMEOUT,
                 check=True,
@@ -63,6 +65,7 @@ class ADBDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Res
             subprocess.run(
                 [self.tool, "disconnect", f"{self._host}:{str(self._port)}"],
                 stderr=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
                 timeout=ADB_TIMEOUT,
                 check=True,
             )
@@ -97,12 +100,24 @@ class ADBDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Res
     @Driver.check_active
     @step(args=["filename", "remotepath", "timeout"])
     def put(self, filename: str, remotepath: str, timeout: float = ADB_TIMEOUT):
-        subprocess.run([*self._base_command, "push", filename, remotepath], timeout=timeout, check=True)
+        subprocess.run(
+            [*self._base_command, "push", filename, remotepath],
+            timeout=timeout,
+            check=True,
+            stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+        )
 
     @Driver.check_active
     @step(args=["filename", "destination", "timeout"])
     def get(self, filename: str, destination: str, timeout: float = ADB_TIMEOUT):
-        subprocess.run([*self._base_command, "pull", filename, destination], timeout=timeout, check=True)
+        subprocess.run(
+            [*self._base_command, "pull", filename, destination],
+            timeout=timeout,
+            check=True,
+            stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+        )
 
     # Reset Protocol
 
@@ -117,4 +132,10 @@ class ADBDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Res
                 raise ValueError(f"{mode} must be one of: {', '.join(valid_modes)}")
             cmd.append(mode)
 
-        subprocess.run(cmd, timeout=ADB_TIMEOUT, check=True)
+        subprocess.run(
+            cmd,
+            timeout=ADB_TIMEOUT,
+            check=True,
+            stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+        )

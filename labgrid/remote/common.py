@@ -155,7 +155,7 @@ class ResourceMatch:
     exporter = attr.ib()
     group = attr.ib()
     cls = attr.ib()
-    name = attr.ib(default=None)
+    name = attr.ib(default=None, order=False)
     # rename is just metadata, so don't use it for comparing matches
     rename = attr.ib(default=None, eq=False)
 

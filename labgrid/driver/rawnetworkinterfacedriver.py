@@ -37,7 +37,7 @@ class RawNetworkInterfaceDriver(Driver):
         self._replay_handle = None
 
     def on_activate(self):
-        if self.manage_inteface:
+        if self.manage_interface:
             self._set_interface("up")
             self._wait_state("up")
 

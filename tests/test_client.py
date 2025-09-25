@@ -9,22 +9,33 @@ def test_startup(coordinator):
     pass
 
 @pytest.fixture(scope='function')
-def place(coordinator):
-    with pexpect.spawn('python -m labgrid.remote.client -p test create') as spawn:
-        spawn.expect(pexpect.EOF)
-        spawn.close()
+def place(create_place):
+    create_place('test')
+
+@pytest.fixture(scope='function')
+def create_place(coordinator):
+    place_names = []
+
+    def _create_place(place_name):
+        with pexpect.spawn(f'python -m labgrid.remote.client -p {place_name} create') as spawn:
+            spawn.expect(pexpect.EOF)
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-    with pexpect.spawn('python -m labgrid.remote.client -p test set-tags board=123board') as spawn:
-        spawn.expect(pexpect.EOF)
-        spawn.close()
+        place_names.append(place_name)
+
+        with pexpect.spawn(f'python -m labgrid.remote.client -p {place_name} set-tags board=123board') as spawn:
+            spawn.expect(pexpect.EOF)
         assert spawn.exitstatus == 0, spawn.before.strip()
 
-    yield
+    yield _create_place
 
-    with pexpect.spawn('python -m labgrid.remote.client -p test delete') as spawn:
-        spawn.expect(pexpect.EOF)
-        spawn.close()
+    for place_name in place_names:
+        # clean up
+        with pexpect.spawn(f'python -m labgrid.remote.client -p {place_name} release') as spawn:
+            spawn.expect(pexpect.EOF)
+
+        with pexpect.spawn(f'python -m labgrid.remote.client -p {place_name} delete') as spawn:
+            spawn.expect(pexpect.EOF)
         assert spawn.exitstatus == 0, spawn.before.strip()
 
 @pytest.fixture(scope='function')

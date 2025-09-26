@@ -235,7 +235,7 @@ class SerialPortExport(ResourceExport):
         assert self.local.avail
         assert self.child is None
         assert start_params["path"].startswith("/dev/")
-        self.port = get_free_port()
+        self.port = get_free_port(os.environ.get("LG_PREFERRED_NETWORKSERIAL_PORT", None))
 
         # Ser2net has switched to using YAML format at version 4.0.0.
         result = subprocess.run([self.ser2net_bin, "-v"], capture_output=True, text=True)

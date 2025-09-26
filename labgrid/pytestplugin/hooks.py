@@ -71,7 +71,7 @@ def pytest_configure(config):
         configure_pytest_logging(config, logging_plugin)
 
     config.addinivalue_line("markers",
-                            "lg_feature: marker for labgrid feature flags")
+                            "lg_feature: skip tests on envs/targets without given labgrid feature flags")
     lg_log = config.option.lg_log
     if lg_log:
         ConsoleLoggingReporter(lg_log)
@@ -101,27 +101,24 @@ def pytest_collection_modifyitems(config, items):
     have_feature = env.get_features() | env.get_target_features()
 
     for item in items:
+        # pytest.mark.lg_feature
+        lg_feature_signature = "pytest.mark.lg_feature(features: str | list[str])"
         want_feature = set()
 
         for marker in item.iter_markers("lg_feature"):
-            arg = marker.args[0]
-            if isinstance(arg, str):
-                want_feature.add(arg)
-            elif isinstance(arg, list):
-                want_feature.update(arg)
+            if len(marker.args) != 1 or marker.kwargs:
+                raise pytest.UsageError(f"Unexpected number of args/kwargs for {lg_feature_signature}")
+            elif isinstance(marker.args[0], str):
+                want_feature.add(marker.args[0])
+            elif isinstance(marker.args[0], list):
+                want_feature.update(marker.args[0])
             else:
-                raise Exception("Unsupported feature argument type")
+                raise pytest.UsageError(f"Unsupported 'features' argument type ({type(marker.args[0])}) for {lg_feature_signature}")
+
         missing_feature = want_feature - have_feature
         if missing_feature:
-            if len(missing_feature) == 1:
-                skip = pytest.mark.skip(
-                    reason=f'Skipping because feature "{missing_feature}" is not supported'
-                )
-            else:
-                skip = pytest.mark.skip(
-                    reason=f'Skipping because features "{missing_feature}" are not supported'
-                )
-            item.add_marker(skip)
+            reason = f'unsupported feature(s): {", ".join(missing_feature)}'
+            item.add_marker(pytest.mark.skip(reason=reason))
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item):

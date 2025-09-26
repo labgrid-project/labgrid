@@ -730,6 +730,44 @@ Tests requiring multiple features are also possible:
    def test_camera(target):
       pass
 
+@pytest.mark.lg_xfail_feature()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+labgrid supports :ref:`environment-configuration-feature-flags` in the
+:ref:`environment-configuration`.
+pytest supports the ``xfail`` marker, see
+`pytest.mark.xfail() <https://docs.pytest.org/en/stable/reference/reference.html#pytest-mark-xfail>`_.
+
+When having more specific features, tests can be marked as ``xfail`` for a
+particular feature.
+
+Imagine two targets have ``camera`` feature flags.
+One of them has the additional ``special-camera-2000`` feature flag.
+The other has the additional ``special-camera-3000`` feature flag.
+Due to a known bug on ``special-camera-3000``, the test is expected to
+fail.
+The test can be marked as ``xfail`` for that feature:
+
+.. code-block:: python
+
+   import pytest
+
+   @pytest.mark.lg_feature("camera"])
+   @pytest.mark.lg_xfail_feature(
+       "special-camera-3000",
+       reason="known bug xy on special-camera-3000",
+       raises=AssertionError,
+       strict=True,
+   )
+   def test_camera(target):
+      pass
+
+Features under the target and global ``features:`` keys are considered.
+
+``@pytest.mark.lg_xfail_feature(feature, **kwargs)``:
+  - ``feature`` (str) - Feature that should mark the test as ``xfail``, passed
+    as boolean ``condition=`` to ``pytest.mark.xfail()``.
+  - ``**kwargs`` - All kw-only args are passed to ``pytest.mark.xfail()``.
+
 Test Reports
 ~~~~~~~~~~~~
 

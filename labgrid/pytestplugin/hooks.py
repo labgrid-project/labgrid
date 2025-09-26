@@ -1,4 +1,5 @@
 import os
+import copy
 import logging
 import pytest
 
@@ -72,6 +73,9 @@ def pytest_configure(config):
 
     config.addinivalue_line("markers",
                             "lg_feature: skip tests on envs/targets without given labgrid feature flags")
+    config.addinivalue_line("markers",
+                            "lg_xfail_feature: mark tests xfail on envs/targets with given labgrid feature flag")
+
     lg_log = config.option.lg_log
     if lg_log:
         ConsoleLoggingReporter(lg_log)
@@ -119,6 +123,26 @@ def pytest_collection_modifyitems(config, items):
         if missing_feature:
             reason = f'unsupported feature(s): {", ".join(missing_feature)}'
             item.add_marker(pytest.mark.skip(reason=reason))
+
+        # pytest.mark.lg_xfail_feature
+        lg_xfail_feature_signature = "pytest.mark.lg_xfail_feature(feature: str, *, **xfail_kwargs), xfail_kwargs as pytest.mark.xfail expects them"
+        for marker in item.iter_markers("lg_xfail_feature"):
+            if len(marker.args) != 1:
+                raise pytest.UsageError(f"Unexpected number of arguments for {lg_xfail_feature_signature}")
+            elif not isinstance(marker.args[0], str):
+                raise pytest.UsageError(f"Unsupported 'feature' argument type {type(marker.args[0])} for {lg_xfail_feature_signature}")
+            if "condition" in marker.kwargs:
+                raise pytest.UsageError(f"Unsupported 'condition' argument for {lg_xfail_feature_signature}")
+
+            kwargs = copy.copy(marker.kwargs)
+            reason = kwargs.pop("reason", marker.args[0])
+            item.add_marker(
+                pytest.mark.xfail(
+                    condition=marker.args[0] in have_feature,
+                    reason=reason,
+                    **kwargs,
+                )
+            )
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item):

@@ -172,3 +172,70 @@ def test(self, env):
         spawn.close()
         # pytest command line usage error leads to exit code 4
         assert spawn.exitstatus == 4
+
+def test_xfail_feature(tmpdir, env_feature_config):
+    conf = env_feature_config(["test"])
+    test = tmpdir.join("test.py")
+    test.write(
+"""
+import pytest
+
+@pytest.mark.lg_xfail_feature("test")
+def test(env):
+    assert False
+"""
+    )
+
+    with pexpect.spawn(f'pytest --lg-env {conf} {test}') as spawn:
+        spawn.expect("1 xfailed")
+        spawn.expect(pexpect.EOF)
+    assert spawn.exitstatus == 0
+
+def test_no_xfail_feature(tmpdir, env_feature_config):
+    conf = env_feature_config([])
+    test = tmpdir.join("test.py")
+    test.write(
+"""
+import pytest
+
+@pytest.mark.lg_xfail_feature("test")
+def test(env):
+    assert False
+"""
+    )
+
+    with pexpect.spawn(f'pytest --lg-env {conf} {test}') as spawn:
+        spawn.expect("1 failed")
+        spawn.expect(pexpect.EOF)
+    assert spawn.exitstatus == 1
+
+@pytest.mark.parametrize(
+    "marker_args_str,error",
+    [
+        ("", "Unexpected number of arguments"),
+        ("'too', 'many'", "Unexpected number of arguments"),
+        ("{'foo': 'bar'}", "Unsupported 'feature' argument type"),
+        ("'feature', condition='mycondition'", "Unsupported 'condition' argument"),
+    ],
+    ids=["no args", "too many args", "unsupported arg type", "unsupported condition"]
+)
+def test_lg_xfail_feature_unexpected_args(tmpdir, env_feature_config, marker_args_str, error):
+    # features do not matter here, simply generate a valid env config
+    conf = env_feature_config([])
+    test = tmpdir.join("test.py")
+    test.write(
+f"""
+import pytest
+
+@pytest.mark.lg_xfail_feature({marker_args_str})
+def test(self, env):
+    assert True
+"""
+    )
+
+    with pexpect.spawn(f'pytest --lg-env {conf} {test}') as spawn:
+        spawn.expect(error)
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        # pytest command line usage error leads to exit code 4
+        assert spawn.exitstatus == 4

@@ -41,3 +41,12 @@ class NoStrategyFoundError(NoSupplierFoundError):
 @attr.s(eq=False)
 class RegistrationError(Exception):
     msg = attr.ib(validator=attr.validators.instance_of(str))
+
+
+@attr.s(eq=False)
+class CommandProcessBusy(Exception):
+    """
+    This exception is raised if it is not possible to execute multiple
+    CommandProcessProtocol at the same time.
+    """
+    pass

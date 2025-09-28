@@ -161,6 +161,24 @@ def get_newidblock_entries(data, header, delay):
         offset += size
 
 
+def get_idblock_entries(data, header, delay):
+    offset, size = header.init_offset * 512, header.init_size * 512
+    entry_data = data[offset:offset + size]
+    if header.disable_rc4:
+        keystream = rc4_prga(rc4_ksa(RK_RC4_KEY))
+        entry_data = bytes([byte ^ next(keystream) for byte in entry_data])
+    yield 0x471, entry_data, delay
+    if header.init_boot_size > header.init_size:
+        offset = (header.init_offset + header.init_size) * 512
+        size = (header.init_boot_size - header.init_size) * 512
+        if size != 524288:
+            entry_data = data[offset:offset + size]
+            if header.disable_rc4:
+                keystream = rc4_prga(rc4_ksa(RK_RC4_KEY))
+                entry_data = bytes([byte ^ next(keystream) for byte in entry_data])
+            yield 0x472, entry_data, 0
+
+
 def parse_image_header(data):
     tag = int.from_bytes(data[:4], 'little')
     RKBootHeader = namedtuple('RKBootHeader', [
@@ -189,6 +207,15 @@ def parse_image_header(data):
                digest != data[1536:1536 + len(digest)]:
                 raise ValueError("Digest mismatch for header")
             return header, get_newidblock_entries
+    RKIDBlockHeader0 = namedtuple('RKIDBlockHeader0', [
+        'tag', 'disable_rc4', 'init_offset', 'init_size', 'init_boot_size',
+    ])
+    if tag == 0xfcdc8c3b:
+        keystream = rc4_prga(rc4_ksa(RK_RC4_KEY))
+        data = bytes(byte ^ next(keystream) for byte in data[:512])
+        header = RKIDBlockHeader0._make(unpack('<L4xLH492xHH2x', data[:512]))
+        if header.tag == 0x0ff0aa55 and header.init_size > 0:
+            return header, get_idblock_entries
     return None, None
 
 

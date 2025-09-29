@@ -699,14 +699,17 @@ For this example, you should get a report similar to this:
 
   ========================== 3 passed in 29.77 seconds ===========================
 
-Feature Flags
-~~~~~~~~~~~~~
-labgrid includes support for feature flags on a global and target scope.
-Adding a ``@pytest.mark.lg_feature`` decorator to a test ensures it is only
-executed if the desired feature is available:
+.. _usage_pytestplugin_mark_lg_feature:
+
+@pytest.mark.lg_feature()
+~~~~~~~~~~~~~~~~~~~~~~~~~
+labgrid supports :ref:`environment-configuration-feature-flags` in the
+:ref:`environment-configuration`.
+Adding a ``@pytest.mark.lg_feature()`` decorator to a test ensures it is only
+executed if the desired feature is set, either under the target or global
+``features:`` keys.
 
 .. code-block:: python
-   :name: test_feature_flags.py
 
    import pytest
 
@@ -714,101 +717,18 @@ executed if the desired feature is available:
    def test_camera(target):
       pass
 
-Here's an example environment configuration:
+In case the feature is unavailable, pytest will record the missing feature
+as the skip reason.
 
-.. code-block:: yaml
-  :name: feature-flag-env.yaml
-
-  targets:
-    main:
-      features:
-        - camera
-      resources: {}
-      drivers: {}
-
-.. testcode:: pytest-example
-  :hide:
-
-  import pytest
-
-  plugins = ['labgrid.pytestplugin']
-  pytest.main(['--lg-env', 'feature-flag-env.yaml', 'test_feature_flags.py'], plugins)
-
-.. testoutput:: pytest-example
-  :hide:
-
-  ... 1 passed...
-
-This would run the above test, however the following configuration would skip the
-test because of the missing feature:
-
-.. code-block:: yaml
-  :name: feature-flag-skip-env.yaml
-
-  targets:
-    main:
-      features:
-        - console
-      resources: {}
-      drivers: {}
-
-.. testcode:: pytest-example
-  :hide:
-
-  import pytest
-
-  plugins = ['labgrid.pytestplugin']
-  pytest.main(['--lg-env', 'feature-flag-skip-env.yaml', 'test_feature_flags.py'], plugins)
-
-.. testoutput:: pytest-example
-  :hide:
-
-  ... 1 skipped...
-
-pytest will record the missing feature as the skip reason.
-
-For tests with multiple required features, pass them as a list to pytest:
+Tests requiring multiple features are also possible:
 
 .. code-block:: python
-   :name: test_feature_flags_global.py
 
    import pytest
 
    @pytest.mark.lg_feature(["camera", "console"])
    def test_camera(target):
       pass
-
-Features do not have to be set per target, they can also be set via the global
-features key:
-
-.. code-block:: yaml
-  :name: feature-flag-global-env.yaml
-
-  features:
-    - camera
-  targets:
-    main:
-      features:
-        - console
-      resources: {}
-      drivers: {}
-
-.. testcode:: pytest-example
-  :hide:
-
-  import pytest
-
-  plugins = ['labgrid.pytestplugin']
-  pytest.main(['--lg-env', 'feature-flag-global-env.yaml', 'test_feature_flags_global.py'],
-              plugins)
-
-.. testoutput:: pytest-example
-  :hide:
-
-  ... 1 passed...
-
-This YAML configuration would combine both the global and the target features.
-
 
 Test Reports
 ~~~~~~~~~~~~

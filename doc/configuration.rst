@@ -3756,6 +3756,45 @@ See the :ref:`labgrid-device-config` man page for documentation on the
 top-level ``options``, ``images``, ``tools``, and ``imports`` keys in the
 environment configuration.
 
+.. _environment-configuration-feature-flags:
+
+Feature Flags
+~~~~~~~~~~~~~
+Similar targets or multi target environments may differ from each other in
+certain small aspects, e.g. one device has a camera or screen connected, but
+another one has not.
+In labgrid's environment configs, such variations are described as feature flags.
+
+Here's an example environment configuration for a target-scoped feature
+``camera``:
+
+.. code-block:: yaml
+  :name: feature-flag-env.yaml
+
+  targets:
+    main:
+      features:
+        - camera
+      resources: {}
+      drivers: {}
+
+Features can not only be set per target, but also globally:
+
+.. code-block:: yaml
+  :name: feature-flag-global-env.yaml
+
+  features:
+    - camera
+  targets:
+    main:
+      features:
+        - console
+      resources: {}
+      drivers: {}
+
+See :ref:`usage_pytestplugin_mark_lg_feature` for how to make use of feature
+flags in tests.
+
 Multiple Drivers of the Same Type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If you want to use multiple drivers of the same type, the resources and drivers

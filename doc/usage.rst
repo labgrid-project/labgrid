@@ -481,9 +481,12 @@ own proxy, and only fallback to LG_PROXY.
 
 See also :ref:`overview-proxy-mechanism`.
 
-Simple Example
-~~~~~~~~~~~~~~
 
+Writing and Running Tests
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Getting Started: A Minimal Test
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 As a minimal example, we have a target connected via a USB serial converter
 ('/dev/ttyUSB0') and booted to the Linux shell.
 The following environment config file (``shell-example.yaml``) describes how to
@@ -559,8 +562,8 @@ environment config:
 
 pytest has automatically found the test case and executed it on the target.
 
-Custom Fixture Example
-~~~~~~~~~~~~~~~~~~~~~~
+Reusing Setup Code with Custom Fixtures
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When writing many test cases which use the same driver, we can get rid of some
 common code by wrapping the :any:`CommandProtocol` in a fixture.
 As pytest always executes the ``conftest.py`` file in the test suite directory,
@@ -597,8 +600,8 @@ With this fixture, we can simplify the ``test_example.py`` file to:
 
   ... 1 passed...
 
-Strategy Fixture Example
-~~~~~~~~~~~~~~~~~~~~~~~~
+Managing Target States with Strategy Fixtures
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When using a :any:`Strategy` to transition the target between states, it is
 useful to define a function scope fixture per state in ``conftest.py``:
 

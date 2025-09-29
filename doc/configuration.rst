@@ -3750,6 +3750,12 @@ All the resources and drivers in this chapter have a YAML example snippet which
 can simply be added (at the correct indentation level, one level deeper) to the
 environment configuration.
 
+See the :ref:`labgrid-device-config` man page for documentation on the
+top-level ``options``, ``images``, ``tools``, and ``imports`` keys in the
+environment configuration.
+
+Multiple Drivers of the Same Type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If you want to use multiple drivers of the same type, the resources and drivers
 need to be lists, e.g:
 
@@ -3802,6 +3808,8 @@ To bind the correct driver to the correct resource, explicit ``name`` and
 The property name for the binding (e.g. ``port`` in the example above) is
 documented for each individual driver in this chapter.
 
+Templating the Environment Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The YAML configuration file also supports templating for some substitutions,
 these are:
 
@@ -3824,10 +3832,6 @@ As an example:
 would resolve the ``qemu_bin`` path relative to the ``BASE`` dir of the YAML
 file and try to use the `RemotePlace`_ with the name set in the ``LG_PLACE``
 environment variable.
-
-See the :ref:`labgrid-device-config` man page for documentation on the
-top-level ``options``, ``images``, ``tools``, and ``examples`` keys in the
-environment configuration.
 
 .. _exporter-configuration:
 
@@ -3910,8 +3914,8 @@ to achieve the same effect:
        match:
          '@ID_PATH': 'pci-0000:05:00.0-usb-3-1.4'
 
-Templating
-~~~~~~~~~~
+Templating the Exporter Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To reduce the amount of repeated declarations when many similar resources
 need to be exported, the `Jinja2 template engine <http://jinja.pocoo.org/>`_
 is used as a preprocessor for the configuration file:

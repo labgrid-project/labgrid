@@ -222,7 +222,7 @@ to the resource object created above:
 .. doctest::
 
   >>> sd.port
-  RawSerialPort(target=Target(name='example', env=None), name=None, state=<BindingState.bound: 1>, avail=True, port='/dev/ttyUSB0', speed=115200)
+  RawSerialPort(target=Target(name='example', env=None), name=None, state=<BindingState.bound: 1>, avail=True, port='/dev/ttyUSB0', speed=115200, xonxoff=False)
   >>> sd.port is rsp
   True
 

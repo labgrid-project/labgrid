@@ -232,6 +232,7 @@ class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     def get(self):
         return self.backend.power_get(self._host, self._port, self.port.index)
 
+
 @target_factory.reg_driver
 @attr.s(eq=False)
 class DigitalOutputPowerDriver(Driver, PowerResetMixin, PowerProtocol):

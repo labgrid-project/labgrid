@@ -1,16 +1,28 @@
+import pytest
 import pexpect
 
-def test_with_feature(tmpdir):
-    conf = tmpdir.join("config.yaml")
-    conf.write(
+@pytest.fixture
+def env_feature_config(tmpdir):
+    def _env_feature_config(features):
+        conf = tmpdir.join("config.yaml")
+        conf.write(
 """
-targets:
-  test1:
-    features:
-      - test
-    drivers: {}
+    targets:
+      test1:
+        features:
 """
-    )
+        )
+        for feature in features:
+            conf.write(f"          - {feature}\n", "a")
+        if not features:
+            conf.write("          {}\n", "a")
+
+        return conf
+
+    yield _env_feature_config
+
+def test_with_feature(tmpdir, env_feature_config):
+    conf = env_feature_config(["test"])
     test = tmpdir.join("test.py")
     test.write(
 """
@@ -28,17 +40,8 @@ def test(env):
         spawn.close()
         assert spawn.exitstatus == 0
 
-def test_skip_feature(tmpdir):
-    conf = tmpdir.join("config.yaml")
-    conf.write(
-"""
-targets:
-  test1:
-    features:
-      - test
-    drivers: {}
-"""
-    )
+def test_skip_feature(tmpdir, env_feature_config):
+    conf = env_feature_config(["test"])
     test = tmpdir.join("test2.py")
     test.write(
 """
@@ -56,17 +59,8 @@ def test(env):
         spawn.close()
         assert spawn.exitstatus == 0
 
-def test_skip_feature_list(tmpdir):
-    conf = tmpdir.join("config.yaml")
-    conf.write(
-"""
-targets:
-  test1:
-    features:
-      - test
-    drivers: {}
-"""
-    )
+def test_skip_feature_list(tmpdir, env_feature_config):
+    conf = env_feature_config(["test"])
     test = tmpdir.join("test2.py")
     test.write(
 """
@@ -84,18 +78,8 @@ def test(env):
         spawn.close()
         assert spawn.exitstatus == 0
 
-def test_match_feature_list(tmpdir):
-    conf = tmpdir.join("config.yaml")
-    conf.write(
-"""
-targets:
-  test1:
-    features:
-      - test1
-      - test2
-    drivers: {}
-"""
-    )
+def test_match_feature_list(tmpdir, env_feature_config):
+    conf = env_feature_config(["test1", "test2"])
     test = tmpdir.join("test2.py")
     test.write(
 """
@@ -113,19 +97,8 @@ def test(env):
         spawn.close()
         assert spawn.exitstatus == 0
 
-def test_match_multi_feature_source(tmpdir):
-    conf = tmpdir.join("config.yaml")
-    conf.write(
-"""
-targets:
-  test1:
-    features:
-      - test1
-      - test2
-      - test3
-    drivers: {}
-"""
-    )
+def test_match_multi_feature_source(tmpdir, env_feature_config):
+    conf = env_feature_config(["test1", "test2", "test3"])
     test = tmpdir.join("test.py")
     test.write(
 """
@@ -147,18 +120,8 @@ class TestMulti:
         spawn.close()
         assert spawn.exitstatus == 0
 
-def test_skip_multi_feature_source(tmpdir):
-    conf = tmpdir.join("config.yaml")
-    conf.write(
-"""
-targets:
-  test1:
-    features:
-      - test1
-      - test3
-    drivers: {}
-"""
-    )
+def test_skip_multi_feature_source(tmpdir, env_feature_config):
+    conf = env_feature_config(["test1", "test3"])
     test = tmpdir.join("test.py")
     test.write(
 """

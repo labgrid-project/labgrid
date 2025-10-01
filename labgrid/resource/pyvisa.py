@@ -12,11 +12,13 @@ class PyVISADevice(Resource):
     Args:
         type (str): device resource type following the pyVISA resource syntax, e.g. ASRL, TCPIP...
         url (str, default=''): optional device identifier on selected resource, e.g. <ip> for TCPIP resource
+        resource (str, default='INSTR'): resource type, e.g. INSTR, SOCKET...
         backend (str, default=''): Visa library backend, e.g. '@sim' for pyvisa-sim backend
     """
 
     type = attr.ib(validator=attr.validators.instance_of(str))
     url = attr.ib(default="", validator=attr.validators.instance_of(str))
+    resource = attr.ib(default="INSTR", validator=attr.validators.instance_of(str))
     backend = attr.ib(default="", validator=attr.validators.instance_of(str))
 
 @target_factory.reg_resource
@@ -27,8 +29,10 @@ class NetworkPyVISADevice(NetworkResource):
     Args:
         type (str): device resource type following the pyVISA resource syntax, e.g. ASRL, TCPIP...
         url (str, default=''): optional device identifier on selected resource, e.g. <ip> for TCPIP resource
+        resource (str, default='INSTR'): resource type, e.g. INSTR, SOCKET...
         backend (str, default=''): Visa library backend, e.g. '@sim' for pyvisa-sim backend
     """
     type = attr.ib(validator=attr.validators.instance_of(str))
     url = attr.ib(default="", validator=attr.validators.instance_of(str))
+    resource = attr.ib(default="INSTR", validator=attr.validators.instance_of(str))
     backend = attr.ib(default="", validator=attr.validators.instance_of(str))

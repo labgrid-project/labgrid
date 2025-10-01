@@ -21,7 +21,7 @@ class PyVISADriver(Driver):
 
     def on_activate(self):
         url = "" if self.pyvisa_resource.url == "" else f"::{self.pyvisa_resource.url}"
-        self.device_identifier = f"{self.pyvisa_resource.type}{url}::INSTR"
+        self.device_identifier = f"{self.pyvisa_resource.type}{url}::{self.pyvisa_resource.resource}"
         if isinstance(self.pyvisa_resource, NetworkPyVISADevice):
             host = self.pyvisa_resource.host
         else:

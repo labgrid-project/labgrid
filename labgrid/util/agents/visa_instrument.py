@@ -24,8 +24,19 @@ class VISAInstrument:
             if _pyvisa_resource_manager is None:
                 raise ValueError("pyVISA backend not found")
             self._pyvisa_device = _pyvisa_resource_manager.open_resource(device_identifier)
+            if 'SOCKET' in device_identifier:
+                self._pyvisa_device.read_termination = '\n'
+                self._pyvisa_device.write_termination = '\n'
             if self._pyvisa_device is None:
                 raise ValueError("pyVISA device not found")
+            try:
+                self._pyvisa_device.clear()
+            except _py_pyvisa_module.errors.VisaIOError as e:
+                if 'VI_ERROR_NSUP_OPER' in e.abbreviation:
+                    # Unsupported, just skip it.
+                    pass
+                else:
+                    raise e
             self._pyvisa_device.timeout = timeout
 
     def write(self, cmd):

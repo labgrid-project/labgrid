@@ -142,3 +142,33 @@ class TestMulti:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0
+
+@pytest.mark.parametrize(
+    "marker_args_str,error",
+    [
+        ("", "Unexpected number of args/kwargs"),
+        ("'too', 'many'", "Unexpected number of args/kwargs"),
+        ("{'foo': 'bar'}", "Unsupported 'features' argument type"),
+    ],
+    ids=["no args", "too many args", "unsupported arg type"]
+)
+def test_lg_feature_unexpected_args(tmpdir, env_feature_config, marker_args_str, error):
+    # features do not matter here, simply generate a valid env config
+    conf = env_feature_config([])
+    test = tmpdir.join("test.py")
+    test.write(
+f"""
+import pytest
+
+@pytest.mark.lg_feature({marker_args_str})
+def test(self, env):
+    assert True
+"""
+    )
+
+    with pexpect.spawn(f'pytest --lg-env {conf} {test}') as spawn:
+        spawn.expect(error)
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        # pytest command line usage error leads to exit code 4
+        assert spawn.exitstatus == 4

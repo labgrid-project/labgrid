@@ -930,6 +930,7 @@ Arguments:
 
 Used by:
   - `OpenOCDDriver`_
+  - `OpenFPGALoaderDriver`_
   - `QuartusHPSDriver`_
 
 NetworkAlteraUSBBlaster
@@ -953,6 +954,7 @@ Arguments:
 
 Used by:
   - `OpenOCDDriver`_
+  - `OpenFPGALoaderDriver`_
 
 NetworkUSBDebugger
 ~~~~~~~~~~~~~~~~~~
@@ -2092,6 +2094,40 @@ Arguments:
   - interface_config (str): optional, interface config in the ``openocd/scripts/interface/`` directory
   - board_config (str): optional, board config in the ``openocd/scripts/board/`` directory
   - load_commands (list of str): optional, load commands to use instead of ``init``, ``bootstrap {filename}``, ``shutdown``
+
+OpenFPGALoaderDriver
+~~~~~~~~~~~~~~~~~~~~
+
+An :any:`OpenFPGALoaderDriver` controls the openFPGALoader tool to bootstrap an FPGA chip with a
+bitstream.
+
+A list of supported FPGA chips, boards and programming cables can be found on the project's page:
+  - https://trabucayre.github.io/openFPGALoader/compatibility/fpga.html
+  - https://trabucayre.github.io/openFPGALoader/compatibility/board.html
+  - https://trabucayre.github.io/openFPGALoader/compatibility/cable.html
+
+Binds to:
+  interface:
+    - `AlteraUSBBlaster`_
+    - NetworkAlteraUSBBlaster
+    - `USBDebugger`_
+    - NetworkUSBDebugger
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+  OpenFPGALoaderDriver:
+    board: 'vcu118'
+    image: 'bitstreamkey'
+    frequency: 20000000
+
+Arguments:
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of the bitstream, if not specified when calling `load()`
+  - board (str): optional, the FPGA board identifier
+  - frequency (int): optional, force a non-default programmer frequency in Hz
 
 QuartusHPSDriver
 ~~~~~~~~~~~~~~~~

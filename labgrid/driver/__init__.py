@@ -9,6 +9,7 @@ from .exception import CleanUpError, ExecutionError
 from .fastbootdriver import AndroidFastbootDriver
 from .dfudriver import DFUDriver
 from .openocddriver import OpenOCDDriver
+from .openfpgaloaderdriver import OpenFPGALoaderDriver
 from .quartushpsdriver import QuartusHPSDriver
 from .flashromdriver import FlashromDriver
 from .onewiredriver import OneWirePIODriver

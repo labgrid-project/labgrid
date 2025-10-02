@@ -785,6 +785,58 @@ Arguments:
 Used by:
   - `RKUSBDriver`_
 
+SamsungUSBLoader
+~~~~~~~~~~~~~~~~
+A :any:`SamsungUSBLoader` resource describes a USB device in the *Samsung
+loader state*.
+
+.. code-block:: yaml
+
+   SamsungUSBLoader:
+     match:
+       ID_PATH: pci-0000:03:00.2-usb-0:4.2.4
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `SamsungUSBDriver`_
+
+SunxiUSBLoader
+~~~~~~~~~~~~~~
+A :any:`SunxiUSBLoader` resource describes a USB device in the *Allwinner
+loader state*.
+
+.. code-block:: yaml
+
+   SunxiUSBLoader:
+     ## hub a12
+     match:
+       'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.4:1.0'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `SunxiUSBDriver`_
+
+TegraUSBLoader
+~~~~~~~~~~~~~~
+A :any:`TegraUSBLoader` resource describes a USB device in the *Tegra
+loader state*.
+
+.. code-block:: yaml
+
+   TegraUSBLoader:
+     match:
+       'ID_PATH': 'pci-0000:03:00.2-usb-0:3.4.1'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `TegraUSBDriver`_
+
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ resource available on
@@ -798,6 +850,21 @@ a remote computer.
 NetworkRKUSBLoader
 ~~~~~~~~~~~~~~~~~~
 A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ resource available on a
+remote computer.
+
+NetworkSamsungUSBLoader
+~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkSamsungUSBLoader` describes a `SamsungUSBLoader`_ available on a
+remote computer.
+
+NetworkSunxiUSBLoader
+~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkSunxiUSBLoader` describes a `SunxiUSBLoader`_ available on a
+remote computer.
+
+NetworkTegraUSBLoader
+~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkTegraUSBLoader` describes a `TegraUSBLoader`_ available on a
 remote computer.
 
 AndroidUSBFastboot
@@ -2646,6 +2713,128 @@ Arguments:
     of an image to bootstrap onto the target
   - usb_loader (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of a first-stage bootloader image to write
+
+SunxiUSBDriver
+~~~~~~~~~~~~~~
+A :any:`SunxiUSBDriver` is used to upload an image into a device in the
+*Allwinner loader state*. This is useful to bootstrap a bootloader onto a
+device.
+
+Note that sunxi is the common name for Allwinner SoCs, since they have product
+codes like sun50i, sun7i, etc.
+
+The load happens in two stages, first SPL and then U-Boot proper.
+
+Binds to:
+  loader:
+    - `SunxiUSBLoader`_
+    - `NetworkSunxiUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         SunxiUSBDriver:
+           loadaddr: 0x4a000000
+   tools:
+     sunxi-fel: '/home/dev/bin/sunxi-fel'
+
+Arguments:
+  - loadaddr (int): address to use when loading U-Boot. This depends on the
+    SoC being used. The easiest way to find this value is to check the
+    *CONFIG_TEXT_BASE* value in U-Boot
+  - image (str): Optional image filename
+
+ Tools:
+  - sunxi-fel: Path to the 'sunxi-fel' tool (default is 'sunxi-fel')
+
+SamsungUSBDriver
+~~~~~~~~~~~~~~~~
+A :any:`SamsungUSBDriver` is used to upload an image into a device in the
+*Samsung loader state*. This is useful to bootstrap a bootloader onto a device.
+
+The load happens in three stages: BL1, SPL and U-Boot proper.
+
+Binds to:
+  loader:
+    - `SamsungUSBLoader`_
+    - `NetworkSamsungUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         SamsungUSBDriver:
+           bl1: '/home/dev/exynos/snow/u-boot.bl1.bin'
+           bl1_loadaddr: 0x02021400
+           spl_loadaddr: 0x02023400
+           loadaddr: 0x43e00000
+   tools:
+     smdk-usbdl: '/home/dev/bin/smdk-usbdl'
+
+Arguments:
+  - bl1 (str): Filename of the BL1 file which sets up the SoC
+  - bl1_loadaddr (int): Load address of the BL1 file. This depends on the SoC
+    spl_load_addr (int): Load address of SPL. The easiest way to find this value
+    is to check the *CONFIG_SPL_TEXT_BASE* value in U-Boot
+  - loadaddr (int): address to use when loading U-Boot. This depends on the
+    SoC being used. The easiest way to find this value is to check the
+    *CONFIG_TEXT_BASE* value in U-Boot
+  - image (str): Optional image filename
+
+ Tools:
+  - smdk-usbdl: Path to the 'smdk-usbdl' tool (default is 'smdk-usbdl')
+
+TegraUSBDriver
+~~~~~~~~~~~~~~
+A :any:`TegraUSBDriver` is used to upload an image into a device in the
+*Nvidia Tegra loader state*. This is useful to bootstrap a bootloader onto a
+device.
+
+The load happens in a single stage, with U-Boot proper sent along with a
+*BCT* (Binary Control Tool) configuration file which contains memory timings,
+etc.
+
+Binds to:
+  loader:
+    - `TegraUSBLoader`_
+    - `NetworkTegraUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         TegraUSBDriver:
+           loadaddr: 0x80108000
+           bct: '/home/dev/tegra124/nvidia/norrin/PM370_Hynix_2GB_H5TC4G63AFR_PBA_924MHz_01212014.bct'
+           usb_path: 1-3.4.1
+   tools:
+     tegrarcm: '/home/dev/bin/tegrarcm'
+
+Arguments:
+  - loadaddr (int): address to use when loading the firmware. This depends on
+    the SoC being used. For U-Boot the easiest way to find this value is to
+    check the *CONFIG_TEXT_BASE* value
+  - bct (str): path to the BCT (configuration file)
+  - usb_path (str): USB device to program. This can be obtained using udevadm
+    with the USB bus and device number. For example
+    `udevadm info /dev/bus/usb/003/042` then look at DEVPATH.
+  - image (str): Optional image filename
+
+ Tools:
+  - tegrarcm: Path to the 'tegrarcm' tool (default is 'tegrarcm')
 
 UUUDriver
 ~~~~~~~~~

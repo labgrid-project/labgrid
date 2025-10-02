@@ -10,10 +10,11 @@ import attr
 from pexpect import TIMEOUT
 import xmodem
 
+from ..exceptions import CommandProcessBusy
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, FileTransferProtocol
 from ..step import step
-from ..util import gen_marker, Timeout, re_vt100
+from ..util import gen_marker, Timeout, re_vt100, ConsoleMarkerProcess
 from .commandmixin import CommandMixin
 from .common import Driver
 from .exception import ExecutionError
@@ -61,6 +62,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         self._xmodem_cached_rx_cmd = ""
         self._xmodem_cached_sx_cmd = ""
+        self._process = None
 
     def on_activate(self):
         if self._status == 0:
@@ -77,6 +79,30 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def on_deactivate(self):
         self._status = 0
 
+    def _popen(self, cmd: str):
+        if self._process is not None:
+            raise CommandProcessBusy()
+
+        # FIXME: Handle pexpect Timeout
+        self._check_prompt()
+        marker = gen_marker()
+
+        # hide marker from expect
+        cmp_command = f'''MARKER='{marker[:4]}''{marker[4:]}' run {shlex.quote(cmd)}'''
+        self.console.sendline(cmp_command)
+        self.console.expect(marker)
+        self._process = ConsoleMarkerProcess(
+            self.console,
+            marker,
+            self.prompt,
+            on_exit=self._handle_process_exit
+        )
+        return self._process
+
+    def _handle_process_exit(self, process):
+        if self._process is process:
+            self._process = None
+
     def _run(self, cmd, *, timeout=30.0, codec="utf-8", decodeerrors="strict"):
         """
         Runs the specified cmd on the shell and returns the output.
@@ -84,29 +110,26 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         Arguments:
         cmd - cmd to run on the shell
         """
-        # FIXME: Handle pexpect Timeout
-        self._check_prompt()
-        marker = gen_marker()
-        # hide marker from expect
-        cmp_command = f'''MARKER='{marker[:4]}''{marker[4:]}' run {shlex.quote(cmd)}'''
-        self.console.sendline(cmp_command)
-        _, _, match, _ = self.console.expect(
-            rf'{marker}(.*){marker}\s+(\d+)\s+{self.prompt}',
-            timeout=timeout
-        )
-        # Remove VT100 Codes, split by newline and remove surrounding newline
-        data = re_vt100.sub('', match.group(1).decode(codec, decodeerrors)).split('\r\n')
-        if data and not data[-1]:
-            del data[-1]
-        self.logger.debug("Received Data: %s", data)
-        # Get exit code
-        exitcode = int(match.group(2))
-        return (data, [], exitcode)
+        with self._popen(cmd) as p:
+            output = p.read_to_end(timeout=timeout)
+
+            # Remove VT100 Codes, split by newline and remove surrounding newline
+            data = re_vt100.sub('', output.decode(codec, decodeerrors)).split('\r\n')
+            if data and not data[-1]:
+                del data[-1]
+
+            self.logger.debug("Received Data: %s", data)
+            return (data, [], p.exitcode)
 
     @Driver.check_active
     @step(args=['cmd'], result=True)
     def run(self, cmd, timeout=30.0, codec="utf-8", decodeerrors="strict"):
         return self._run(cmd, timeout=timeout, codec=codec, decodeerrors=decodeerrors)
+
+    @Driver.check_active
+    @step(args=['cmd'], result=True)
+    def popen(self, cmd: str):
+        return self._popen(cmd)
 
     @step()
     def _await_login(self):

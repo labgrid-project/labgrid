@@ -590,6 +590,8 @@ New Features in 0.4.0
   a jumper.
 - AndroidFastbootDriver now supports booting/flashing images preconfigured in
   the environment configuration.
+- CommandProtocol now supports a popen() method to run a process on the target
+  asynchronously.
 
 Bug fixes in 0.4.0
 ~~~~~~~~~~~~~~~~~~

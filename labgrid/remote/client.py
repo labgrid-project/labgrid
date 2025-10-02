@@ -1105,6 +1105,13 @@ class ClientSession:
         drv = self._get_driver_or_new(target, "FlashScriptDriver", name=name)
         drv.flash(script=self.args.script, args=self.args.script_args)
 
+    def debugger(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        name = self.args.name
+        drv = self._get_driver_or_new(target, "LauterbachDriver", name=name)
+        drv.start()
+
     def bootstrap(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
@@ -1910,6 +1917,10 @@ def main():
     subparser.add_argument("bootstrap_args", metavar="ARG", nargs=argparse.REMAINDER, help="extra bootstrap arguments")
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.set_defaults(func=ClientSession.bootstrap)
+
+    subparser = subparsers.add_parser('debugger', help="start a debugger")
+    subparser.add_argument('--name', '-n', help="optional resource name")
+    subparser.set_defaults(func=ClientSession.debugger)
 
     subparser = subparsers.add_parser("sd-mux", help="switch USB SD Muxer or get current mode")
     subparser.add_argument("action", choices=["dut", "host", "off", "client", "get"])

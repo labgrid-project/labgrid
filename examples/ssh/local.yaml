@@ -1,0 +1,10 @@
+targets:
+  main:
+    resources:
+      NetworkService:
+        address: dut.address
+        username: root
+        password: pass
+    drivers:
+      SSHDriver:
+        keyfile: ""

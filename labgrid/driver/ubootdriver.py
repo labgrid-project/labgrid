@@ -163,7 +163,13 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                 break
 
             elif index == 1:
-                self.console.write(self.interrupt.encode('ASCII'))
+                interrupt = self.interrupt.encode('ASCII')
+                if self.interrupt.startswith('\\x'):
+                    try:
+                        interrupt = bytearray.fromhex(self.interrupt[2:])
+                    except ValueError:
+                        pass
+                self.console.write(interrupt)
 
             elif index == 2:
                 if not self.password:

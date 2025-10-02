@@ -96,6 +96,13 @@ LG_COORDINATOR
 This variable can be used to set the default coordinator in the format
 ``HOST[:PORT]`` (instead of using the ``-x`` option).
 
+LG_PREFERRED_NETWORKSERIAL_PORT
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Set a preferred port to be used with NetworkSerialPort resources.
+Specify a port and a optional range counting up using the format ``PORT[:RANGE]``
+
+
+
 EXAMPLES
 --------
 

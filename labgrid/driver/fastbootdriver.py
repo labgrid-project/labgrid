@@ -59,7 +59,7 @@ class AndroidFastbootDriver(Driver):
         Splits output by '\n' and returns only elements starting with prefix. The prefix is
         removed.
         """
-        return [line[len(prefix):] for line in output.split('\n') if line.startswith(prefix)]
+        return [line[len(prefix):] for line in output.decode().split('\n') if line.startswith(prefix)]
 
     def on_activate(self):
         pass

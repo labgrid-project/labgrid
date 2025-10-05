@@ -27,15 +27,23 @@ def pytest_cmdline_main(config: pytest.Config) -> None:
         print(f"current_level: {current_level}")
 
         if isinstance(current_level, str):
+            s = current_level.strip()
             try:
-                current_level = int(logging.getLevelName(current_level))
+                current_level_val: Optional[int] = int(s)
             except ValueError:
-                current_level = None
-        assert current_level is None or isinstance(current_level, int), "unexpected type of current log level"
+                v = logging.getLevelName(s.upper())
+                current_level_val = v if isinstance(v, int) else None
+        elif isinstance(current_level, int):
+            current_level_val = current_level
+        else:
+            current_level_val = None
+
+        assert current_level_val is None or isinstance(current_level_val, int), \
+            "unexpected type of current log level"
 
         # If no level was set previously (via ini or cli) or current_level is
         # less verbose than level, set to new level.
-        if current_level is None or level < current_level:
+        if current_level_val is None or level < current_level_val:
             config.option.log_cli_level = str(level)
 
     verbosity = config.getoption("verbose")

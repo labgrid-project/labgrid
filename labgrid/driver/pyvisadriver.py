@@ -48,5 +48,17 @@ class PyVISADriver(Driver):
         return self.proxy.query(self.device_identifier, self.pyvisa_resource.backend, cmd, timeout).rstrip()
 
     @Driver.check_active
+    def query_iterable(self, cmd, timeout=TIMEOUT_DEFAULT, **kwargs):
+        return self.proxy.query(
+            self.device_identifier,
+            self.pyvisa_resource.backend,
+            cmd,
+            timeout,
+            iterable=True,
+            is_ascii=True,
+            **kwargs
+        )
+
+    @Driver.check_active
     def identify(self):
         return self.query("*IDN?")

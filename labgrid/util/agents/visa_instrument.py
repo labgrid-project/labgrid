@@ -45,6 +45,13 @@ class VISAInstrument:
     def query(self, cmd):
         return self._pyvisa_device.query(cmd)
 
+    def query_iterable(self, cmd, is_ascii=True, **kwargs):
+        return (
+            self._pyvisa_device.query_ascii_values(cmd, **kwargs)
+            if is_ascii
+            else self._pyvisa_device.query_binary_values(cmd, **kwargs)
+        )
+
     def __del__(self):
         if hasattr(self, '_pyvisa_device') and self._pyvisa_device is not None:
             self._pyvisa_device.close()
@@ -55,9 +62,9 @@ def handle_write(device_identifier, backend, cmd, timeout):
     visa_inst = VISAInstrument(device_identifier, backend, timeout)
     visa_inst.write(cmd)
 
-def handle_query(device_identifier, backend, cmd, timeout):
+def handle_query(device_identifier, backend, cmd, timeout, iterable=False, is_ascii=True, **kwargs):
     visa_inst = VISAInstrument(device_identifier, backend, timeout)
-    return visa_inst.query(cmd)
+    return visa_inst.query(cmd) if not iterable else visa_inst.query_iterable(cmd, is_ascii, **kwargs)
 
 methods = {
     "write": handle_write,

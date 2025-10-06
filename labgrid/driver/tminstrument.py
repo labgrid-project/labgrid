@@ -42,6 +42,13 @@ class TMInstrument(Driver):
         return self.inst.query(cmd)
 
     @Driver.check_active
+    def query_iterable(self, cmd, **kwargs):
+        if hasattr(self.inst, "query_iterable"):
+            return self.inst.query_iterable(cmd, **kwargs)
+        else:
+            raise NotImplementedError("query_iterable not implemented in underlying driver")
+
+    @Driver.check_active
     def identify(self):
         return self.inst.identify()
 

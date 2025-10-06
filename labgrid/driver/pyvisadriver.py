@@ -63,6 +63,28 @@ class PyVISADriver(Driver):
         return self.proxy.query(self.device_identifier, self.pyvisa_resource.backend, cmd, timeout).rstrip()
 
     @Driver.check_active
+    def query_iterable(self, cmd, timeout=2000, **kwargs):
+        """
+        Sent the specified command to the instrument and read the response.
+
+        Args:
+            cmd (str): command to be executed
+            timeout (int): optional, I/O operation timeout in ms, default is 2000ms
+
+        Returns:
+            List[float]: response from the instrument, retunring list of float values (readings).
+        """
+        return self.proxy.query(
+            self.device_identifier,
+            self.pyvisa_resource.backend,
+            cmd,
+            timeout,
+            iterable=True,
+            is_ascii=True,
+            **kwargs
+        )
+
+    @Driver.check_active
     def identify(self):
         """
         Sent the identify command to the instrument and read the response.

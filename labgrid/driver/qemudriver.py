@@ -8,6 +8,7 @@ import subprocess
 import re
 import tempfile
 import time
+from typing import List, Optional, Dict, Tuple, Any
 
 import attr
 from pexpect import TIMEOUT
@@ -95,18 +96,18 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
-        self.status = 0
-        self.txdelay = None
-        self._child = None
-        self._tempdir = None
-        self._socket = None
-        self._clientsocket = None
-        self._forwarded_ports = {}
+        self.status: int = 0
+        self.txdelay: Optional[float] = None
+        self._child: Optional[subprocess.Popen] = None
+        self._tempdir: Optional[str] = None
+        self._socket: Optional[socket.socket] = None
+        self._clientsocket: Optional[socket.socket] = None
+        self._forwarded_ports: Dict[Tuple[str, str, int], Tuple[str, str, int, str, int]] = {}
         atexit.register(self._atexit)
 
-    def _atexit(self):
+    def _atexit(self) -> None:
         if not self._child:
             return
         self._child.terminate()
@@ -116,7 +117,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self._child.kill()
             self._child.communicate(timeout=1)
 
-    def get_qemu_version(self, qemu_bin):
+    def get_qemu_version(self, qemu_bin: str) -> Tuple[int, int, int]:
         p = subprocess.run([qemu_bin, "-version"], stdout=subprocess.PIPE, encoding="utf-8")
         if p.returncode != 0:
             raise ExecutionError(f"Unable to get QEMU version. QEMU exited with: {p.returncode}")
@@ -127,7 +128,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
         return (int(m.group('major')), int(m.group('minor')), int(m.group('micro')))
 
-    def get_qemu_base_args(self):
+    def get_qemu_base_args(self) -> List[str]:
         """Returns the base command line used for Qemu without the options
         related to QMP. These options can be used to start an interactive
         Qemu manually for debugging tests
@@ -230,7 +231,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
         return cmd
 
-    def on_activate(self):
+    def on_activate(self) -> None:
         self._tempdir = tempfile.mkdtemp(prefix="labgrid-qemu-tmp-")
         sockpath = f"{self._tempdir}/serialrw"
         self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -248,7 +249,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._cmd.append("-serial")
         self._cmd.append("chardev:serialsocket")
 
-    def on_deactivate(self):
+    def on_deactivate(self) -> None:
         if self.status:
             self.off()
         if self._clientsocket:
@@ -259,7 +260,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         shutil.rmtree(self._tempdir)
 
     @step()
-    def prepare(self):
+    def prepare(self) -> None:
         """Start the QEMU subprocess and accept the unix socket connection
         if not already prepared."""
         if self.status:
@@ -290,7 +291,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self._add_port_forward(*v) 
 
     @step()
-    def on(self):
+    def on(self) -> None:
         """Prepare the instance (only if not done already) and start the emulator
         using a QMP Command"""
         if not self._child:
@@ -299,7 +300,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self.monitor_command("cont")
 
     @step()
-    def off(self):
+    def off(self) -> None:
         """Stop the emulator using a monitor command and await the exitcode"""
         if not self.status:
             return
@@ -310,37 +311,38 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._child = None
         self.status = 0
 
-    def cycle(self):
+    def cycle(self) -> None:
         """Cycle the emulator by restarting it"""
         self.off()
         self.on()
 
     @step(result=True, args=['command', 'arguments'])
-    def monitor_command(self, command, arguments={}):
+    def monitor_command(self, command: str, arguments: Dict[str, Any] = {}) -> Any:
         """Execute a monitor_command via the QMP"""
         if not self.status:
             raise ExecutionError(
                 "Can't use monitor command on non-running target")
         return self.qmp.execute(command, arguments)
 
-    def _add_port_forward(self, proto, local_address, local_port, remote_address, remote_port):
+    def _add_port_forward(self, proto: str, local_address: str, local_port: int, remote_address: str, remote_port: int) -> None:
         self.monitor_command(
             "human-monitor-command",
             {"command-line": f"hostfwd_add {proto}:{local_address}:{local_port}-{remote_address}:{remote_port}"},
         )
 
-    def add_port_forward(self, proto, local_address, local_port, remote_address, remote_port):
+    def add_port_forward(self, proto: str, local_address: str, local_port: int, remote_address: str, remote_port: int) -> None:
         self._add_port_forward(proto, local_address, local_port, remote_address, remote_port)
-        self._forwarded_ports[(proto, local_address, local_port)] = (proto, local_address, local_port, remote_address, remote_port)
+        self._forwarded_ports[(proto, local_address, local_port)] = (
+            proto, local_address, local_port, remote_address, remote_port)
 
-    def remove_port_forward(self, proto, local_address, local_port):
+    def remove_port_forward(self, proto: str, local_address: str, local_port: int) -> None:
         del self._forwarded_ports[(proto, local_address, local_port)]
         self.monitor_command(
             "human-monitor-command",
             {"command-line": f"hostfwd_remove {proto}:{local_address}:{local_port}"},
         )
 
-    def _read(self, size=1, timeout=10, max_size=None):
+    def _read(self, size: int = 1, timeout: float = 10, max_size: Optional[int] = None) -> bytes:
         ready, _, _ = select.select([self._clientsocket], [], [], timeout)
         if ready:
             # Collect some more data
@@ -353,8 +355,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             raise TIMEOUT(f"Timeout of {timeout:.2f} seconds exceeded")
         return res
 
-    def _write(self, data):
+    def _write(self, data: bytes) -> int:
         return self._clientsocket.send(data)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"QemuDriver({self.target.name})"

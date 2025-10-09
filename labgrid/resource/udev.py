@@ -461,16 +461,13 @@ class USBSDWireDevice(USBResource):
     it is identified via USB using udev
     """
 
-    control_path = attr.ib(
-        default=None,
-        validator=attr.validators.optional(str)
-    )
     disk_path = attr.ib(
         default=None,
         validator=attr.validators.optional(str)
     )
 
     def __attrs_post_init__(self):
+        self.control_serial = None
         self.match['ID_VENDOR_ID'] = '04e8'
         self.match['ID_MODEL_ID'] = '6001'
         self.match['@ID_VENDOR_ID'] = '0424'
@@ -488,7 +485,7 @@ class USBSDWireDevice(USBResource):
         pass
 
     # Overwrite the poll function. Only mark the SDWire as available if both
-    # paths are available.
+    # control_serial and disk_path are available.
     def poll(self):
         super().poll()
         if self.device is not None and not self.avail:

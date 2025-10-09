@@ -196,7 +196,7 @@ testsuite, since the import is done before instantiating the targets.
 
 IMPORTS EXAMPLE
 ~~~~~~~~~~~~~~~
-Import a local `myfunctions.py` file:
+Import a local ``myfunctions.py`` file:
 
 ::
 
@@ -205,8 +205,8 @@ Import a local `myfunctions.py` file:
 
 EXAMPLES
 --------
-A sample configuration with one `main` target, accessible via SerialPort
-`/dev/ttyUSB0`, allowing usage of the ShellDriver:
+A sample configuration with one ``main`` target, accessible via SerialPort
+``/dev/ttyUSB0``, allowing usage of the ShellDriver:
 
 ::
 
@@ -222,8 +222,8 @@ A sample configuration with one `main` target, accessible via SerialPort
            login_prompt: ' login: '
            username: 'root'
 
-A sample configuration with `RemotePlace`, using the tools configuration and
-importing the local `mystrategy.py` file. The `MyStrategy` strategy is contained
+A sample configuration with ``RemotePlace``, using the tools configuration and
+importing the local ``mystrategy.py`` file. The ``MyStrategy`` strategy is contained
 in the loaded local python file:
 
 ::

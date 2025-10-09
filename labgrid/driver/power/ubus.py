@@ -3,7 +3,7 @@
   handy if devices are connected to a PoE switch running OpenWrt.
 
   The URL given in hosts in exporter.yaml must accept unauthenticated UBUS
-  calls for the two `poe` calls `info` and `manage`.
+  calls for the two ``poe`` calls ``info`` and ``manage``.
 
   Further information is availbe at https://openwrt.org/docs/techref/ubus#acls
 

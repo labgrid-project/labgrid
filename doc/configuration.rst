@@ -645,9 +645,9 @@ USB based gpiochips.
        '@ID_SERIAL_SHORT': 'D38EJ8LF'
      pin: 0
 
-The example would search for a USB gpiochip with the key `ID_SERIAL_SHORT`
-and the value `D38EJ8LF` and use the pin 0 of this device.
-The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
+The example would search for a USB gpiochip with the key ``ID_SERIAL_SHORT``
+and the value ``D38EJ8LF`` and use the pin 0 of this device.
+The ``ID_SERIAL_SHORT`` property is set by the usb_id builtin helper program.
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -703,7 +703,7 @@ Writing images to disk requires installation of ``dd`` or optionally
 
 For mounting the file system and writing into it,
 `PyGObject <https://pygobject.readthedocs.io/>`_ must be installed.
-For Debian, the necessary packages are `python3-gi` and `gir1.2-udisks-2.0`.
+For Debian, the necessary packages are ``python3-gi`` and ``gir1.2-udisks-2.0``.
 This is not required for writing images to disks.
 
 Arguments:
@@ -1558,15 +1558,15 @@ This manager is automatically created when a resource derived from
 :any:`USBResource` (such as :any:`USBSerialPort`, :any:`IMXUSBLoader` or
 :any:`AndroidUSBFastboot`) is instantiated.
 
-To identify the kernel device which corresponds to a configured `USBResource`,
+To identify the kernel device which corresponds to a configured :any:`USBResource`,
 each existing (and subsequently added) kernel device is matched against the
 configured resources.
-This is based on a list of `match entries` which must all be tested
+This is based on a list of *match entries* which must all be tested
 successfully against the potential kernel device.
 Match entries starting with an ``@`` are checked against the device's parents
 instead of itself; here one matching parent causes the check to be successful.
 
-A given `USBResource` class has builtin match entries that are checked first,
+A given :any:`USBResource` class has builtin match entries that are checked first,
 for example that the ``SUBSYSTEM`` is ``tty`` as in the case of the
 :any:`USBSerialPort`.
 Only if these succeed, match entries provided by the user for the resource
@@ -2985,7 +2985,7 @@ tool.
 Binds to:
   mux:
     - `LXAUSBMux`_
-    - `NetworkLXAUSBMux`
+    - `NetworkLXAUSBMux`_
 
 Implements:
   - None yet
@@ -3006,7 +3006,7 @@ tool.
 Binds to:
   mux:
     - `USBSDWireDevice`_
-    - `NetworkUSBSDWireDevice`
+    - `NetworkUSBSDWireDevice`_
 
 Implements:
   - None yet
@@ -3038,7 +3038,7 @@ Arguments:
 Although the driver can be used from Python code by calling the ``stream()``
 method, it is currently mainly useful for the ``video`` subcommand of
 ``labgrid-client``.
-It supports the `Logitech HD Pro Webcam C920` with the USB ID 046d:082d and a
+It supports the *Logitech HD Pro Webcam C920* with the USB ID ``046d:082d`` and a
 few others.
 More cameras can be added to ``get_qualities()`` and ``get_pipeline()`` in
 ``labgrid/driver/usbvideodriver.py``.
@@ -3086,7 +3086,7 @@ Arguments:
 Currently, it can be used by the ``labgrid-client`` ``tmc`` subcommands to show
 (and save) a screenshot, to show per channel measurements and to execute raw
 TMC commands.
-It only supports the `Keysight DSO-X 2000` series (with the USB ID 0957:1798),
+It only supports the *Keysight DSO-X 2000* series (with the USB ID ``0957:1798``),
 but more devices can be added by extending ``on_activate()`` in
 ``labgrid/driver/usbtmcdriver.py`` and writing a corresponding backend in
 ``labgrid/driver/usbtmc/``.
@@ -3233,14 +3233,14 @@ flashed.
 XenaDriver
 ~~~~~~~~~~
 The :any:`XenaDriver` allows to use Xena networking test equipment.
-Using the `xenavalkyrie` library a full API to control the tester is available.
+Using the ``xenavalkyrie`` library a full API to control the tester is available.
 
 Binds to:
   xena_manager:
     - `XenaManager`_
 
 The driver is supposed to work with all Xena products from the "Valkyrie Layer 2-3 Test platform"
-Currently tested on a `XenaCompact` chassis equipped with a `1 GE test module`.
+Currently tested on a *XenaCompact* chassis equipped with a *1 GE test module*.
 
 DockerDriver
 ~~~~~~~~~~~~
@@ -3277,7 +3277,7 @@ Arguments:
         containers storage. Throw an error if no image is found and the pull
         fails.
       - never: Never pull the image but use the one from the local containers
-        storage. Throw a `docker.errors.ImageNotFound` if no image is found.
+        storage. Throw a ``docker.errors.ImageNotFound`` if no image is found.
 
   - command (str): optional, command to run in the container (depends on image)
   - volumes (list): optional, list to configure volumes mounted inside the container
@@ -3429,6 +3429,8 @@ Strategies
 ----------
 Strategies are used to ensure that the device is in a certain state during a test.
 Such a state could be the bootloader or a booted Linux kernel with shell.
+
+.. _conf-bareboxstrategy:
 
 BareboxStrategy
 ~~~~~~~~~~~~~~~
@@ -3630,7 +3632,7 @@ StepReporter
 .. warning::
     The StepReporter is deprecated, use the `StepLogger`_ instead.
 
-The :any:`StepReporter` outputs individual labgrid steps to `STDOUT`.
+The :any:`StepReporter` outputs individual labgrid steps to ``STDOUT``.
 
 .. doctest::
 
@@ -3844,8 +3846,8 @@ Exporter Configuration
 The exporter is configured by using a YAML file (with a syntax similar to the
 environment configs used for pytest) or by instantiating the :any:`Environment`
 object.
-To configure the exporter, you need to define one or more `resource groups`,
-each containing one or more `resources`.
+To configure the exporter, you need to define one or more *resource groups*,
+each containing one or more *resources*.
 The syntax for exported resource names is ``<exporter>/<group>/<class>/<name>``,
 which allows the exporter to group resources for various usage scenarios, e.g.
 all resources of a specific place or for a specific test setup.
@@ -3869,7 +3871,7 @@ The basic structure of an exporter configuration file is:
        <params>
 
 By default, the class name is inferred from the resource name,
-and `<params>` will be passed to its constructor.
+and ``<params>`` will be passed to its constructor.
 For USB resources, you will most likely want to use :ref:`udev-matching` here.
 
 As a simple example, here is one group called ``usb-hub-in-rack12`` containing

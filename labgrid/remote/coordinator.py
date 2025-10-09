@@ -355,13 +355,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         finally:
             try:
                 session = self.clients.pop(peer)
+                running_request_task.cancel()
+                await running_request_task
+                logging.debug("client aborted %s, cancelled: %s", session, context.cancelled())
             except KeyError:
                 logging.info("Never received startup from peer %s that disconnected", peer)
-                return
-
-            running_request_task.cancel()
-            await running_request_task
-            logging.debug("client aborted %s, cancelled: %s", session, context.cancelled())
 
     def _add_default_place(self, name):
         if name in self.places:
@@ -462,15 +460,13 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
             try:
                 session = self.exporters.pop(peer)
+                for groupname, group in session.groups.items():
+                    for resourcename in group.copy():
+                        session.set_resource(groupname, resourcename, None)
+
+                logging.debug("exporter aborted %s, cancelled: %s", context.peer(), context.cancelled())
             except KeyError:
                 logging.info("Never received startup from peer %s that disconnected", peer)
-                return
-
-            for groupname, group in session.groups.items():
-                for resourcename in group.copy():
-                    session.set_resource(groupname, resourcename, None)
-
-            logging.debug("exporter aborted %s, cancelled: %s", context.peer(), context.cancelled())
 
     @locked
     async def AddPlace(self, request, context):

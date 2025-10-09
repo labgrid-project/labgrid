@@ -179,6 +179,8 @@ load a configuration file.
    On exit of your script/application, labgrid will call ``cleanup()`` on the
    targets using the python atexit module.
 
+.. _usage-target:
+
 Targets
 ~~~~~~~
 
@@ -341,7 +343,7 @@ the advantage that exceptions can be handled by your application:
 
 Environments
 ~~~~~~~~~~~~
-In practice, it is often useful to separate the `Target` configuration from the
+In practice, it is often useful to separate the :ref:`Target <usage-target>` configuration from the
 code which needs to control the board (such as a test case or installation
 script).
 For this use-case, labgrid can construct targets from a configuration file in
@@ -365,9 +367,9 @@ To parse this configuration file, use the :any:`Environment` class:
   >>> from labgrid import Environment
   >>> env = Environment('example-env.yaml')
 
-Using :any:`Environment.get_target`, the configured `Targets` can be retrieved
+Using :any:`Environment.get_target`, the configured targets can be retrieved
 by name.
-Without an argument, `get_target` would default to 'main':
+Without an argument, ``get_target()`` would default to 'main':
 
 .. doctest::
 
@@ -560,7 +562,7 @@ pytest has automatically found the test case and executed it on the target.
 Custom Fixture Example
 ~~~~~~~~~~~~~~~~~~~~~~
 When writing many test cases which use the same driver, we can get rid of some
-common code by wrapping the `CommandProtocol` in a fixture.
+common code by wrapping the :any:`CommandProtocol` in a fixture.
 As pytest always executes the ``conftest.py`` file in the test suite directory,
 we can define additional fixtures there:
 
@@ -645,13 +647,13 @@ is easy:
       bootloader_command.run_check('true')
 
 .. note::
-  The `bootloader_command` and `shell_command` fixtures use
-  :any:`Target.get_active_driver` to get the currently active `CommandProtocol`
+  The ``bootloader_command`` and ``shell_command`` fixtures use
+  :any:`Target.get_active_driver` to get the currently active :any:`CommandProtocol`
   driver (either :any:`BareboxDriver` or :any:`ShellDriver`).
   Activation and deactivation of drivers is handled by the
-  :any:`BareboxStrategy` in this example.
+  :ref:`BareboxStrategy <conf-bareboxstrategy>` in this example.
 
-The `Strategy` needs additional drivers to control the target.
+The :ref:`Strategy <overview-strategies>` needs additional drivers to control the target.
 Adapt the following environment config file (``strategy-example.yaml``) to your
 setup:
 

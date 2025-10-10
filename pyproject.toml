@@ -29,6 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
 ]
 dependencies = [
@@ -188,7 +189,7 @@ signature-mutators = ["labgrid.step.step"]
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py39, py310, py311, py312, py313
+envlist = py39, py310, py311, py312, py313, py314
 isolated_build = true
 
 [testenv]

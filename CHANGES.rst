@@ -46,6 +46,7 @@ New Features in 25.0
 ~~~~~~~~~~~~~~~~~~~~
 - All components can be installed into the same virtualenv again.
 - Add support for Python 3.13.
+- The ``pytest``-specific parts of the labgrid framework now have typing hints.
 - The `QEMUDriver` now supports setting the ``display`` option to
   ``qemu-default``, which will neither set the QEMU ``-display`` option
   or pass along ``-nographic``.
@@ -56,7 +57,6 @@ New Features in 25.0
   statistics.
 - Add support for LogiLink UA0379 / Microdia cameras to the ``USBVideoDriver``.
 - Add more backends to the ``NetworkPowerDriver``:
-
   - Gude 87-1210-18
   - Digital Loggers PDUs via the REST API
   - Ubiquity mFi mPower power strips

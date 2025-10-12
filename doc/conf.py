@@ -175,8 +175,12 @@ texinfo_documents = [
 # -- Options for autodoc --------------------------------------------------
 
 autodoc_member_order = 'bysource'
+# TODO: __annotate_func__ can be dropped once
+# https://github.com/sphinx-doc/sphinx/commit/78148440556d3e5962771c1025c85b253ccd73c8
+# is part of a sphinx release
 autodoc_default_options = {
         'special-members': True,
+        'exclude-members': '__annotate_func__',
 }
 autodoc_mock_imports = ['onewire',
                         'gi',

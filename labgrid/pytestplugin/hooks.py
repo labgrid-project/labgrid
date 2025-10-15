@@ -1,4 +1,5 @@
 import os
+import copy
 import logging
 import pytest
 
@@ -71,7 +72,10 @@ def pytest_configure(config):
         configure_pytest_logging(config, logging_plugin)
 
     config.addinivalue_line("markers",
-                            "lg_feature: marker for labgrid feature flags")
+                            "lg_feature: skip tests on envs/targets without given labgrid feature flags")
+    config.addinivalue_line("markers",
+                            "lg_xfail_feature: mark tests xfail on envs/targets with given labgrid feature flag")
+
     lg_log = config.option.lg_log
     if lg_log:
         ConsoleLoggingReporter(lg_log)
@@ -101,27 +105,44 @@ def pytest_collection_modifyitems(config, items):
     have_feature = env.get_features() | env.get_target_features()
 
     for item in items:
+        # pytest.mark.lg_feature
+        lg_feature_signature = "pytest.mark.lg_feature(features: str | list[str])"
         want_feature = set()
 
         for marker in item.iter_markers("lg_feature"):
-            arg = marker.args[0]
-            if isinstance(arg, str):
-                want_feature.add(arg)
-            elif isinstance(arg, list):
-                want_feature.update(arg)
+            if len(marker.args) != 1 or marker.kwargs:
+                raise pytest.UsageError(f"Unexpected number of args/kwargs for {lg_feature_signature}")
+            elif isinstance(marker.args[0], str):
+                want_feature.add(marker.args[0])
+            elif isinstance(marker.args[0], list):
+                want_feature.update(marker.args[0])
             else:
-                raise Exception("Unsupported feature argument type")
+                raise pytest.UsageError(f"Unsupported 'features' argument type ({type(marker.args[0])}) for {lg_feature_signature}")
+
         missing_feature = want_feature - have_feature
         if missing_feature:
-            if len(missing_feature) == 1:
-                skip = pytest.mark.skip(
-                    reason=f'Skipping because feature "{missing_feature}" is not supported'
+            reason = f'unsupported feature(s): {", ".join(missing_feature)}'
+            item.add_marker(pytest.mark.skip(reason=reason))
+
+        # pytest.mark.lg_xfail_feature
+        lg_xfail_feature_signature = "pytest.mark.lg_xfail_feature(feature: str, *, **xfail_kwargs), xfail_kwargs as pytest.mark.xfail expects them"
+        for marker in item.iter_markers("lg_xfail_feature"):
+            if len(marker.args) != 1:
+                raise pytest.UsageError(f"Unexpected number of arguments for {lg_xfail_feature_signature}")
+            elif not isinstance(marker.args[0], str):
+                raise pytest.UsageError(f"Unsupported 'feature' argument type {type(marker.args[0])} for {lg_xfail_feature_signature}")
+            if "condition" in marker.kwargs:
+                raise pytest.UsageError(f"Unsupported 'condition' argument for {lg_xfail_feature_signature}")
+
+            kwargs = copy.copy(marker.kwargs)
+            reason = kwargs.pop("reason", marker.args[0])
+            item.add_marker(
+                pytest.mark.xfail(
+                    condition=marker.args[0] in have_feature,
+                    reason=reason,
+                    **kwargs,
                 )
-            else:
-                skip = pytest.mark.skip(
-                    reason=f'Skipping because features "{missing_feature}" are not supported'
-                )
-            item.add_marker(skip)
+            )
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item):

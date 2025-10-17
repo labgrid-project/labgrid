@@ -141,15 +141,15 @@ specific driver set a binding mapping before creating the driver:
   >>>
   >>> t = Target("Test")
   >>> SerialPort(t, "First")
-  SerialPort(target=Target(name='Test', env=None), name='First', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
+  SerialPort(target=Target(name='Test', env=None), name='First', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200, xonxoff=False)
   >>> SerialPort(t, "Second")
-  SerialPort(target=Target(name='Test', env=None), name='Second', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
+  SerialPort(target=Target(name='Test', env=None), name='Second', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200, xonxoff=False)
   >>> t.set_binding_map({"port": "Second"})
   >>> sd = SerialDriver(t, "Driver")
   >>> sd
   SerialDriver(target=Target(name='Test', env=None), name='Driver', state=<BindingState.bound: 1>, txdelay=0.0, timeout=3.0)
   >>> sd.port
-  SerialPort(target=Target(name='Test', env=None), name='Second', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
+  SerialPort(target=Target(name='Test', env=None), name='Second', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200, xonxoff=False)
 
 Priorities
 ~~~~~~~~~~

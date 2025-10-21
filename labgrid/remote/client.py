@@ -302,7 +302,10 @@ class ClientSession:
 
     async def print_resources(self):
         """Print out the resources"""
-        match = ResourceMatch.fromstr(self.args.match) if self.args.match else None
+        try:
+            match = ResourceMatch.fromstr(self.args.match) if self.args.match else None
+        except ValueError as e:
+            raise UserError(str(e)) from e
 
         # filter self.resources according to the arguments
         nested = lambda: defaultdict(nested)

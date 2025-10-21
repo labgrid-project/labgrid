@@ -3,6 +3,7 @@ name: scheduled unit tests
 on:
   schedule:
     - cron: '10 8 * * *'
+  workflow_dispatch:
 
 jobs:
   scheduled-unit-tests:

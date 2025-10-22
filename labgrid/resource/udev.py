@@ -777,6 +777,25 @@ class USBDebugger(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class USBLauterbachDebugger(USBResource):
+    """The USBLauterbachDebugger describes an attached Lauterbach Debugger connected via USB.
+    """
+    def filter_match(self, device):
+        # udevadm info --attribute-walk /dev/lauterbach/trace32/*
+        # udevadm info --attribute-walk /dev/lauterbach/by-id/*
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("0897", "0002"),  # PowerDebug USB1.0/USB2.0/Ethernet/II + PowerTrace
+                         ("0897", "0004"),  # PowerDebug USB3.0 + MicroTrace
+                         ("0897", "0005"),  # PowerDebug PRO/E40
+                         ("0897", "0006")   # PowerDebug X50/X51
+                         ]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class MatchedSysfsGPIO(USBResource):
     """The MatchedSysfsGPIO described a SysfsGPIO matched by Udev
 

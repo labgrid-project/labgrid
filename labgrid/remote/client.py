@@ -28,6 +28,9 @@ from typing import Any, Dict
 import attr
 import grpc
 
+# TODO: drop if Python >= 3.11 guaranteed
+from exceptiongroup import ExceptionGroup  # pylint: disable=redefined-builtin
+
 from .common import (
     ResourceEntry,
     ResourceMatch,
@@ -57,7 +60,8 @@ sys.excepthook = lambda type, value, traceback: sys.__excepthook__(type, value, 
 
 
 class Error(Exception):
-    pass
+    def __str__(self):
+        return f"Error: {' '.join(self.args)}"
 
 
 class UserError(Error):
@@ -70,6 +74,13 @@ class ServerError(Error):
 
 class InteractiveCommandError(Error):
     pass
+
+
+class ErrorGroup(ExceptionGroup):
+    def __str__(self):
+        # TODO: drop pylint disable once https://github.com/pylint-dev/pylint/issues/8985 is fixed
+        errors_combined = "\n".join(f"- {' '.join(e.args)}" for e in self.exceptions)  # pylint: disable=not-an-iterable
+        return f"{self.message}:\n{errors_combined}"
 
 
 @attr.s(eq=False)
@@ -481,6 +492,17 @@ class ClientSession:
             raise UserError(f"pattern {pattern} matches multiple places ({', '.join(places)})")
         return self.places[places[0]]
 
+    def get_place_names_from_env(self):
+        """Returns a list of RemotePlace names found in the environment config."""
+        places = []
+        for role_config in self.env.config.get_targets().values():
+            resources, _ = target_factory.normalize_config(role_config)
+            remote_places = resources.get("RemotePlace", [])
+            for place in remote_places:
+                places.append(place)
+
+        return places
+
     def get_idle_place(self, place=None):
         place = self.get_place(place)
         if place.acquired:
@@ -684,17 +706,31 @@ class ClientSession:
             raise UserError(f"Match {match} has no matching remote resource")
 
     async def acquire(self):
+        errors = []
+        places = self.get_place_names_from_env() if self.env else [self.args.place]
+        for place in places:
+            try:
+                await self._acquire_place(place)
+            except Error as e:
+                errors.append(e)
+
+        if errors:
+            if len(errors) == 1:
+                raise errors[0]
+            raise ErrorGroup("Multiple errors occurred during acquire", errors)
+
+    async def _acquire_place(self, place):
         """Acquire a place, marking it unavailable for other clients"""
-        place = self.get_place()
+        place = self.get_place(place)
         if place.acquired:
             host, user = place.acquired.split("/")
             allowhelp = f"'labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}' on {host}."
             if self.getuser() == user:
                 if self.gethostname() == host:
-                    raise UserError("You have already acquired this place.")
+                    raise UserError(f"You have already acquired place {place.name}.")
                 else:
                     raise UserError(
-                        f"You have already acquired this place on {host}. To work simultaneously, execute {allowhelp}"
+                        f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {allowhelp}"
                     )
             else:
                 raise UserError(
@@ -730,8 +766,22 @@ class ClientSession:
             raise ServerError(e.details())
 
     async def release(self):
+        errors = []
+        places = self.get_place_names_from_env() if self.env else [self.args.place]
+        for place in places:
+            try:
+                await self._release_place(place)
+            except Error as e:
+                errors.append(e)
+
+        if errors:
+            if len(errors) == 1:
+                raise errors[0]
+            raise ErrorGroup("Multiple errors occurred during release", errors)
+
+    async def _release_place(self, place):
         """Release a previously acquired place"""
-        place = self.get_place()
+        place = self.get_place(place)
         if not place.acquired:
             raise UserError(f"place {place.name} is not acquired")
         _, user = place.acquired.split("/")
@@ -2215,11 +2265,11 @@ def main():
             if args.debug:
                 traceback.print_exc(file=sys.stderr)
             exitcode = e.exitcode
-        except Error as e:
+        except (Error, ErrorGroup) as e:
             if args.debug:
                 traceback.print_exc(file=sys.stderr)
             else:
-                print(f"{parser.prog}: error: {e}", file=sys.stderr)
+                print(f"{parser.prog}: {e}", file=sys.stderr)
             exitcode = 1
         except KeyboardInterrupt:
             exitcode = 1

@@ -31,6 +31,10 @@ class TMInstrument(Driver):
         self._backend = None
         # Mapping of known instruments to their backend module
         self.instruments_backend = {
+            "ITECH Electronics,IT-M3632": ".tminstr.it_m3632",
+            "RIGOL TECHNOLOGIES,DP832": ".tminstr.rigol_dp832",
+            "RND 320-KD3305P": ".tminstr.rnd320kd3305P",
+            "Siglent Technologies,SDM3065X-SC": ".tminstr.sdm3065x",
         }
 
     @Driver.check_active

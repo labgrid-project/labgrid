@@ -15,10 +15,23 @@ from ..step import step
 
 re_vt100 = re.compile(r"(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]")
 
-def get_free_port():
+def get_free_port(prefered_port=None):
     """Helper function to always return an unused port."""
     with closing(socket(AF_INET, SOCK_STREAM)) as s:
-        s.bind(('', 0))
+        if prefered_port is not None:
+            port_range = [int(i) for i in prefered_port.split(':')]
+            port = port_range[0]
+            max_range = port_range[1] if len(port_range) > 1 else 10
+            max_no_of_ports = port + max_range
+            while port <= max_no_of_ports:
+                try:
+                    s.bind(('', port))
+                except:
+                    port += 1
+                else:
+                    break
+        else:
+            s.bind(('', 0))
         return s.getsockname()[1]
 
 

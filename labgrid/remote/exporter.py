@@ -546,6 +546,26 @@ class USBGenericRemoteExport(USBGenericExport):
         self.data["cls"] = f"Remote{self.cls}".replace("Network", "")
 
 
+@attr.s(eq=False)
+class RpibootExport(USBGenericExport):
+    """ResourceExport for raspberry pi in boot mode"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "serial_id": self.local.serial_id,
+        }
+
+
 exports["AndroidFastboot"] = USBGenericExport
 exports["AndroidUSBFastboot"] = USBGenericRemoteExport
 exports["DFUDevice"] = USBGenericExport
@@ -569,6 +589,7 @@ exports["DeditecRelais8"] = USBDeditecRelaisExport
 exports["HIDRelay"] = USBHIDRelayExport
 exports["USBFlashableDevice"] = USBFlashableExport
 exports["LXAUSBMux"] = USBGenericExport
+exports["RpibootDevice"] = RpibootExport
 
 
 @attr.s(eq=False)

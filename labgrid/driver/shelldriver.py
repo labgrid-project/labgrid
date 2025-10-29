@@ -197,8 +197,12 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self.console.sendline(f"echo '{marker[:4]}''{marker[4:]}'")
         try:
             self.console.expect(
-                rf"{marker}\s+{self.prompt}",
+                rf"{marker}\s+",
                 timeout=30
+            )
+            self.console.expect(
+                rf"{self.prompt}",
+                timeout=1
             )
             self._status = 1
         except TIMEOUT:

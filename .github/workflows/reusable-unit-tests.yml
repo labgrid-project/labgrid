@@ -33,7 +33,7 @@ jobs:
           ${{ runner.os }}-pip-
     - name: Install system dependencies
       run: |
-        sudo apt-get install -yq libow-dev openssh-server openssh-client graphviz openocd
+        sudo apt-get install -yq libow-dev openssh-server openssh-client graphviz openocd qemu-system-arm
         sudo mkdir -p /var/cache/labgrid/runner && sudo chown runner /var/cache/labgrid/runner
     - name: Prepare local SSH
       run: |

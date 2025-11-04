@@ -124,7 +124,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # Because pexpect keeps any read data in it's buffer when a timeout
         # occours, we can't lose any data this way.
         last_before = b''
-        did_login = False
         did_silence_kernel = False
 
         while True:
@@ -134,7 +133,7 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             )
 
             if index == 0:
-                if did_login and not did_silence_kernel:
+                if not did_silence_kernel:
                     # Silence the kernel and wait for another prompt
                     self.console.sendline("dmesg -n 1")
                     did_silence_kernel = True
@@ -147,7 +146,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             elif index == 1:
                 # we need to login
                 self.console.sendline(self.username)
-                did_login = True
 
             elif index == 2:
                 if self.password is not None:
@@ -176,10 +174,9 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             if timeout.expired:
                 raise TIMEOUT(f"Timeout of {self.login_timeout} seconds exceeded during waiting for login")  # pylint: disable=line-too-long
 
-        if did_login:
-            if self.post_login_settle_time > 0:
-                self.console.settle(self.post_login_settle_time, timeout=timeout.remaining)
-            self._check_prompt()
+        if self.post_login_settle_time > 0:
+            self.console.settle(self.post_login_settle_time, timeout=timeout.remaining)
+        self._check_prompt()
 
     @step()
     def get_status(self):

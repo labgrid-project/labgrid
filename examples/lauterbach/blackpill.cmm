@@ -1,0 +1,114 @@
+; --------------------------------------------------------------------------------
+; Get input parameters
+; --------------------------------------------------------------------------------
+PRIVATE &param
+ENTRY %LINE &param
+PRIVATE &labgrid &elf &term &workdir
+
+&labgrid=STRing.SCANAndExtract("&param","LABGRID_COMMAND=","")
+&elf=STRing.SCANAndExtract("&param","FILE=","")
+&term=STRing.SCANAndExtract("&param","TERM=","OFF")
+&workdir=STRing.SCANAndExtract("&param","WORKDIR=","~/workspace/zephyrproject")
+
+PRIVATE &bootstrap
+IF "&labgrid"=="BOOTSTRAP"
+(
+  &bootstrap=TRUE()
+  ON ERROR CONTinue
+
+  PRINT "Bootstrap mode detected..."
+)
+ELSE
+(
+  &bootstrap=FALSE()
+)
+
+IF "&labgrid"=="DEBUGGER"
+(
+  PRINT "Debug mode detected..."
+)
+
+; ------------------------------------------------------------------------------
+; Configure debug connection
+; ------------------------------------------------------------------------------
+RESet
+SYStem.RESet
+
+SYStem.CPU STM32F411CE
+SYStem.CONFIG.DEBUGPORTTYPE SWD
+SYStem.MemAccess DAP
+SYStem.JtagClock 10.MHz
+
+SYStem.Mode Up
+
+; ------------------------------------------------------------------------------
+; Program flash
+; ------------------------------------------------------------------------------
+IF !&bootstrap
+(
+  &elf="&workdir/zephyr/build/zephyr/zephyr.elf"
+)
+DO ~~/demo/arm/flash/stm32f4xx.cmm PREPAREONLY
+
+FLASH.ReProgram ALL
+Data.LOAD.Elf "&elf"
+FLASH.ReProgram OFF
+
+if &bootstrap
+(
+  PRINT "Bootstrapping completed. Exiting..."
+  QUIT
+)
+
+; ------------------------------------------------------------------------------
+; Load OS awareness
+; ------------------------------------------------------------------------------
+sYmbol.SourcePATH.Translate "/workdir" "&workdir"
+SYStem.Mode Up
+
+TASK.CONFIG ~~/demo/arm/kernel/zephyr/v3.x/zephyr
+MENU.ReProgram ~~/demo/arm/kernel/zephyr/v3.x/zephyr.men
+
+; ------------------------------------------------------------------------------
+; Set up stack coverage
+; ------------------------------------------------------------------------------
+TASK.STacK.PATtern 0xAA
+
+IF ("&term"!="")&&("&term"!="OFF")
+(
+  ; ------------------------------------------------------------------------------
+  ; Set up terminal
+  ; ------------------------------------------------------------------------------
+  TERM.RESet
+  TERM.METHOD COM /dev/ttyUSB0 115200. 8 NONE 1STOP NONE
+  TERM.MODE VT100
+  TERM.SCROLL ON
+  TERM.SIZE 80. 1000.
+  WinPOS 0. 31. 80. 15. ,,, TermWin
+  SCREEN.ALWAYS
+
+  TERM.view
+
+  ; ------------------------------------------------------------------------------
+  ; Wait until boot
+  ; ------------------------------------------------------------------------------
+  Term.TRIGGER #1 "*** Booting Zephyr OS"
+  Go
+  SCREEN.WAIT TERM.TRIGGERED(#1) 10.s
+  IF TIMEOUT()
+  (
+    PRINT %ERROR "No boot message detected. Is the serial port connected?"
+    ENDDO FALSE()
+  )
+  ELSE
+  (
+    PRINT "BlackPill Board has booted..."
+  )
+  Break
+)
+ELSE
+(
+  Go
+)
+
+ENDDO TRUE()

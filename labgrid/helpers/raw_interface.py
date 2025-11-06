@@ -5,7 +5,7 @@
 # can deny access to network interfaces. See below.
 #
 # This is intended to be used via sudo. For example, add via visudo:
-# %developers ALL = NOPASSWD: /usr/sbin/labgrid-raw-interface
+# %developers ALL = NOPASSWD: /usr/local/bin/labgrid-raw-interface
 
 import argparse
 import os
@@ -123,7 +123,7 @@ def main(program, options):
         raise RuntimeError(f"Missing {program} binary") from e
 
 
-if __name__ == "__main__":
+def main_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
     subparsers = parser.add_subparsers(dest="program", help="program to run")
@@ -180,3 +180,7 @@ if __name__ == "__main__":
             traceback.print_exc(file=sys.stderr)
         print(f"ERROR: {e}", file=sys.stderr)
         exit(1)
+
+
+if __name__ == "__main__":
+    main_args()

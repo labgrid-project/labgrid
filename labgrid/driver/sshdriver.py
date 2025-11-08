@@ -356,24 +356,31 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             yield localport
 
     @Driver.check_active
-    @step(args=['src', 'dst'])
-    def scp(self, *, src, dst):
+    @step(args=['src', 'dst', 'recursive'])
+    def scp(self, *, src, dst, recursive=False):
         if not self._check_keepalive():
             raise ExecutionError("Keepalive no longer running")
 
-        if src.startswith(':') == dst.startswith(':'):
-            raise ValueError("Either source or destination must be remote (start with :)")
-        if src.startswith(':'):
-            src = '_' + src
-        if dst.startswith(':'):
+        if all([f.startswith(':') for f in src]):
+            if dst.startswith(':'):
+                raise ValueError("Either source or destination must be remote (start with :)")
+            src = ['_' + f for f in src]
+        else:
+            if not dst.startswith(':'):
+                raise ValueError("Either source or destination must be remote (start with :)")
             dst = '_' + dst
 
         complete_cmd = [self._scp,
                 "-S", self._ssh,
                 "-F", "none",
                 "-o", f"ControlPath={self.control.replace('%', '%%')}",
-                src, dst,
+                dst,
         ]
+        for f in src:
+            complete_cmd.insert(-1, f)
+
+        if recursive:
+            complete_cmd.insert(1, "-r")
         
         if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
             complete_cmd.insert(1, "-s")

@@ -23,6 +23,7 @@ def get_denylist():
     except (PermissionError, FileNotFoundError, AttributeError) as e:
         raise Exception(f"No configuration file ({denylist_file}), inaccessable or invalid yaml") from e
 
+    # FIXME: don't default to empty list for the check below
     denylist = data.get("raw-interface", {}).get("denied-interfaces", [])
 
     if not isinstance(denylist, list):
@@ -46,7 +47,7 @@ def main(program, options):
     if options.ifname in denylist:
         raise ValueError(f"Interface name '{options.ifname}' is denied in denylist.")
 
-    programs = ["tcpreplay", "tcpdump", "ip", "ethtool"]
+    programs = ["tcpreplay", "tcpdump", "ip", "ethtool", "ns-macvlan", "ns-macvtap"]
     if program not in programs:
         raise ValueError(f"Invalid program {program} called with wrapper, valid programs are: {programs}")
 
@@ -117,6 +118,20 @@ def main(program, options):
             args.append(options.ifname)
             args.extend(options.ethtool_pause_args)
 
+    elif program == "ns-macvlan":
+        # TODO: check if the PID belongs to the expected user?
+        # erst: ip -j -echo link add link enp1s0f0 name enp1s0f0-lg type macvlan
+        # dann: ip link set enp1s0f0-lg name enp1s0f0 netns 83356
+        # damit ist verschwindet es dann mit dem NS
+        args = ["ip", "link", "add", "link", options.ifname, "netns", str(options.pid), "type", "macvlan"]
+
+    elif program == "ns-macvtap":
+        # vorher prüfen, ob limits erreicht sind?
+        # erst: ip -j -echo link add link enp1s0f0 name enp1s0f0-tap type macvtap
+        # dann: ip link set enp1s0f0-tap netns 83356
+        # damit ist verschwindet es dann mit dem NS
+        args = ["ip", "link", "add", "link", options.ifname, "netns", str(options.pid), "type", "macvtap"]
+
     try:
         os.execvp(args[0], args)
     except FileNotFoundError as e:
@@ -169,6 +184,16 @@ if __name__ == "__main__":
     ethtool_change_parser.add_argument(
         "ethtool_pause_args", metavar="ARG", nargs=argparse.REMAINDER, help="ethtool --pause args"
     )
+
+    # ns-macvlan
+    ns_macvlan_parser = subparsers.add_parser("ns-macvlan")
+    ns_macvlan_parser.add_argument("ifname", type=str, help="interface name")
+    ns_macvlan_parser.add_argument("pid", type=int, help="pid of namespace agent")
+
+    # ns-macvtap
+    ns_mactap_parser = subparsers.add_parser("ns-macvtap")
+    ns_mactap_parser.add_argument("ifname", type=str, help="interface name")
+    ns_mactap_parser.add_argument("pid", type=int, help="pid of namespace agent")
 
     args = parser.parse_args()
     try:

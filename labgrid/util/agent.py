@@ -6,6 +6,8 @@ import signal
 import sys
 import base64
 import types
+import array
+import socket
 
 def b2s(b):
     return base64.b85encode(b).decode('ascii')
@@ -26,9 +28,22 @@ class Agent:
         # use stderr for normal prints
         sys.stdout = sys.stderr
 
+        self.fdpass = None
+        if fdpass_env := os.environ.get("LG_FDPASS"):
+            self.fdpass = socket.fromfd(
+                int(fdpass_env),
+                socket.AF_UNIX,
+                socket.SOCK_STREAM
+            )
+
     def send(self, data):
         self.stdout.write(json.dumps(data)+'\n')
         self.stdout.flush()
+
+    def fdpass_send(self, fd: int):
+        fds = array.array("i", [fd])
+        anc = [(socket.SOL_SOCKET, socket.SCM_RIGHTS, fds)]
+        self.fdpass.sendmsg([b"\0"], anc)  # send one byte + the fd
 
     def register(self, name, func):
         assert name not in self.methods
@@ -62,7 +77,15 @@ class Agent:
             kwargs = request['kwargs']
             try:
                 response = self.methods[name](*args, **kwargs)
-                self.send({'result': response})
+                # check if the method returned a file descriptor
+                if isinstance(response, tuple) and len(response) == 2 and hasattr(response[1], 'fileno'):
+                    if self.fdpass is None:
+                        self.send({'error': f'cannot pass returned FD without LG_FDPASS'})
+                        break
+                    self.fdpass_send(response[1].fileno())
+                    self.send({'result': response[0], 'fdpass': True})
+                else:
+                    self.send({'result': response})
             except Exception as e:  # pylint: disable=broad-except
                 import traceback
                 try:
@@ -73,6 +96,10 @@ class Agent:
 
 def handle_test(*args, **kwargs):  # pylint: disable=unused-argument
     return args[::-1]
+
+def handle_test_fd():
+    fd = os.fdopen(os.memfd_create("test_fd"))
+    return ("dummy", fd)
 
 def handle_error(message):
     raise ValueError(message)
@@ -98,6 +125,7 @@ def main():
 
     a = Agent()
     a.register('test', handle_test)
+    a.register('test_fd', handle_test_fd)
     a.register('error', handle_error)
     a.register('usbtmc', handle_usbtmc)
     a.run()

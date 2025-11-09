@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from py.path import local
 
@@ -95,6 +97,19 @@ def test_local():
 
     dummy = aw.load('dummy')
     assert dummy.neg(1) == -1
+
+
+def test_local_fdpass():
+    aw = AgentWrapper(None)
+
+    result = aw.test_fd()
+    assert isinstance(result, tuple)
+    assert result[0] == "dummy"
+    assert hasattr(result[1], "fileno")
+
+    fdpath = os.readlink(f"/proc/self/fd/{result[1].fileno()}")
+    assert fdpath.startswith("/memfd:test_fd")
+
 
 def test_all_modules():
     aw = AgentWrapper(None)

@@ -2,9 +2,11 @@ import base64
 import hashlib
 import json
 import os.path
+import socket
 import subprocess
 import traceback
 import logging
+import array
 
 from .ssh import get_ssh_connect_timeout
 
@@ -37,11 +39,11 @@ class ModuleProxy:
         return MethodProxy(self.wrapper, f'{self.name}.{name}')
 
 class AgentWrapper:
-
     def __init__(self, host=None):
         self.agent = None
         self.loaded = {}
         self.logger = logging.getLogger(f"ResourceExport({host})")
+        self.fdpass = None
 
         agent = os.path.join(
             os.path.abspath(os.path.dirname(__file__)),
@@ -67,11 +69,16 @@ class AgentWrapper:
             )
         else:
             # run locally
+            self.fdpass, remote_fdpass = socket.socketpair()
+            env = os.environ.copy()
+            env["LG_FDPASS"] = str(remote_fdpass.fileno())
             self.agent = subprocess.Popen(
                 ['python3', agent],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
+                env=env,
                 start_new_session=True,
+                pass_fds=(remote_fdpass.fileno(),),
             )
 
     def __del__(self):
@@ -79,6 +86,22 @@ class AgentWrapper:
 
     def __getattr__(self, name):
         return MethodProxy(self, name)
+
+    def fdpass_recv(self):
+        int_size = array.array("i").itemsize
+        ancbufsize = socket.CMSG_LEN(int_size)
+
+        # Receive the message
+        msg, ancdata, flags, addr = self.fdpass.recvmsg(1, ancbufsize)
+
+        # Find and extract the file descriptor
+        for cmsg_level, cmsg_type, cmsg_data in ancdata:
+            if cmsg_level == socket.SOL_SOCKET and cmsg_type == socket.SCM_RIGHTS:
+                # Parse the bytestring into an integer
+                fd_array = array.array("i")
+                fd_array.frombytes(cmsg_data)
+                fd = fd_array[0]
+                return os.fdopen(fd)
 
     def call(self, method, *args, **kwargs):
         request = {
@@ -94,7 +117,10 @@ class AgentWrapper:
         response = response.decode('ASCII')
         response = json.loads(response)
         if 'result' in response:
-            return response['result']
+            if response.get('fdpass'):
+                return (response['result'], self.fdpass_recv())
+            else:
+                return response['result']
         elif 'exception' in response:
             e = response['exception']
             # work around BaseException repr change

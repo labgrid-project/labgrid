@@ -130,3 +130,18 @@ def test_import_modules():
     import labgrid.util.agents
     import labgrid.util.agents.dummy
     from labgrid.util.agents import deditec_relais8, sysfsgpio
+
+
+def test_network_namespace():
+    aw = AgentWrapper(None)
+    netns = aw.load('netns')
+
+    ns_pid = netns.unshare()
+    assert ns_pid > 0
+
+    tun_name, tun_fd = netns.create_tun(address="be:df:8f:7a:12:db")
+
+    links = netns.get_links()
+    link_names = [link["ifname"] for link in links]
+    assert "tap0" in link_names
+

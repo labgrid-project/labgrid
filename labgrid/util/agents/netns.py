@@ -4,6 +4,7 @@ import os
 import time
 import fcntl
 import struct
+import subprocess
 from pathlib import Path
 
 from pyroute2 import IPRoute
@@ -57,6 +58,11 @@ def handle_unshare():
     gidmap = Path("/proc/self/gid_map")
     gidmap.write_text(f"0 {gid} 1")
 
+    # mount again from inside the netns, so that the correct devices are visible
+    subprocess.check_call(['mount', '-t', 'sysfs', 'sysfs', '/sys'])
+    #subprocess.check_call(['mount', '-t', 'devtmpfs', 'devtmpfs', '/dev'])
+    #subprocess.check_call(['mount', '-t', 'proc', 'proc', '/proc'])
+
     unshared = True
     
     return os.getpid()
@@ -78,7 +84,6 @@ def handle_create_tun(*, address=None):
 
 def handle_get_links():
     # TODO: switch to IPRoute
-    import subprocess
     import json
     output = subprocess.check_output(['ip', '-j', 'link'])
     return json.loads(output)

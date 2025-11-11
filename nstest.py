@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
-from labgrid.util.agentwrapper import AgentWrapper
 import subprocess
+import threading
+import os
+
+from labgrid.util.agentwrapper import AgentWrapper
 
 PHYS_DEV = "enp1s0f0"
 
@@ -37,12 +40,23 @@ def local():
     nsenter_shell(ns_pid)
 
 def pump_d2p(dev, pipe):
-    # TODO
-    pass
+    while True:
+        buf = os.read(dev.fileno(), 1522)
+        print('Got tap data with length {}'.format(len(buf)))
+        pipe.write(len(buf).to_bytes(2))
+        pipe.write(buf)
+        pipe.flush()
 
-def pump_p2d(dev, pipe):
-    # TODO
-    pass
+def pump_p2d(pipe, dev):
+    while True:
+        length = int.from_bytes(pipe.read(2))
+        buf = pipe.read(length)
+        print('Got vtap data with length {}'.format(len(buf)))
+        os.write(dev.fileno(), buf)
+
+def start_pumps(dev, stdin, stdout):
+    threading.Thread(target=pump_d2p, args=(dev, stdin)).start()
+    threading.Thread(target=pump_p2d, args=(stdout, dev)).start()
 
 
 def remote():
@@ -72,11 +86,17 @@ def remote():
     link_names = [link["ifname"] for link in links]
     assert "macvtap0" in link_names
 
-    # TODO: start mapvtap helper in r_ns
-    # TODO: start pump threads between mapvtap helper and tun_fd in l_netns
+    # start mapvtap helper in r_ns
+    helper = subprocess.Popen(
+        ["nsenter", "-t", str(r_ns_pid), "-U", "-n", "-m", "--preserve-credentials",
+         '/usr/bin/python3', '/home/jluebbe/ptx/labgrid-namespaces/proxyhelper.py', 'macvtap0'],
+         stdout = subprocess.PIPE, stdin = subprocess.PIPE,
+    )
 
-    nsenter_shell(r_ns_pid)
+    # start pump threads between mapvtap helper and tun_fd in l_netns
+    start_pumps(tun_fd, helper.stdin, helper.stdout)
 
+    nsenter_shell(l_ns_pid)
 
 
 if __name__=="__main__":

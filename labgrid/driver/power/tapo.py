@@ -43,6 +43,8 @@ def _get_connection_type() -> DeviceConnectionParameters:
             https=False,
             login_version=2,
         )
+    # http_port parameter exists in new kasa (>= 0.10.0) API but not in old versions (<= 0.9.1)
+    # pylint: disable-next=unexpected-keyword-arg
     return DeviceConnectionParameters(
         device_family=DeviceFamily.SmartTapoPlug,
         encryption_type=DeviceEncryptionType.Klap,
@@ -55,12 +57,12 @@ def _get_connection_type() -> DeviceConnectionParameters:
 def _get_device_config(host: str) -> DeviceConfig:
     # Same as with `_get_connection_type` - python-kasa API changed
     if _using_old_kasa_api():
+        # uses_http parameter exists in old kasa (<= 0.9.1) API but not in new versions (>= 0.10.0)
+        # pylint: disable-next=unexpected-keyword-arg
         return DeviceConfig(
             host=host, credentials=_get_credentials(), connection_type=_get_connection_type(), uses_http=True
         )  # type: ignore[call-arg]
-    return DeviceConfig(
-        host=host, credentials=_get_credentials(), connection_type=_get_connection_type()
-    )
+    return DeviceConfig(host=host, credentials=_get_credentials(), connection_type=_get_connection_type())
 
 
 async def _power_set(host: str, port: str, index: str, value: bool) -> None:

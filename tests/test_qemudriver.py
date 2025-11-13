@@ -77,7 +77,7 @@ def qemu_version_mock(mocker):
 def test_qemu_instance(qemu_target, qemu_driver):
     assert (isinstance(qemu_driver, QEMUDriver))
 
-def test_qemu_get_qemu_base_args_disk(qemu_target, qemu_driver):
+def test_qemu_get_qemu_base_args_disk(qemu_target, qemu_driver, qemu_version_mock):
     qemu_driver.disk = 'disk'
     supported_machines = ['vexpress-a9', 'pc', 'q35', 'virt']
     for machine in supported_machines:

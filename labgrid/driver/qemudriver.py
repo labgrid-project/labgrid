@@ -224,19 +224,19 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._socket.bind(sockpath)
         self._socket.listen(0)
 
-        self._cmd = self.get_qemu_base_args()
+        qemu_cmd = self.get_qemu_base_args()
 
-        self._cmd.append("-S")
-        self._cmd.append("-qmp")
-        self._cmd.append("stdio")
+        qemu_cmd.append("-S")
+        qemu_cmd.append("-qmp")
+        qemu_cmd.append("stdio")
 
-        self._cmd.append("-chardev")
-        self._cmd.append(f"socket,id=serialsocket,path={sockpath}")
-        self._cmd.append("-serial")
-        self._cmd.append("chardev:serialsocket")
+        qemu_cmd.append("-chardev")
+        qemu_cmd.append(f"socket,id=serialsocket,path={sockpath}")
+        qemu_cmd.append("-serial")
+        qemu_cmd.append("chardev:serialsocket")
 
-        self.logger.debug("Starting with: %s", self._cmd)
-        self._child = subprocess.Popen(self._cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        self.logger.debug("Starting with: %s", qemu_cmd)
+        self._child = subprocess.Popen(qemu_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
         # prepare for timeout handing
         self._clientsocket, address = self._socket.accept()

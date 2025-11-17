@@ -1759,6 +1759,8 @@ class ExportFormat(enum.Enum):
 
 
 def main():
+    import inspect
+
     basicConfig(
         level=logging.WARNING,
         stream=sys.stderr,
@@ -2214,7 +2216,7 @@ def main():
             logging.debug("Started session")
 
             try:
-                if asyncio.iscoroutinefunction(args.func):
+                if inspect.iscoroutinefunction(args.func):
                     if getattr(args.func, "needs_target", False):
                         place = session.get_acquired_place()
                         target = session._get_target(place)

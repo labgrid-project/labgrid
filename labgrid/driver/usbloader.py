@@ -1,3 +1,4 @@
+import hashlib
 import subprocess
 import attr
 
@@ -163,6 +164,7 @@ class UUUDriver(Driver, BootstrapProtocol):
 
     image = attr.ib(default=None)
     script = attr.ib(default='', validator=attr.validators.instance_of(str))
+    extra_files = attr.ib(default=[], validator=attr.validators.instance_of(list))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -171,6 +173,8 @@ class UUUDriver(Driver, BootstrapProtocol):
             self.tool = self.target.env.config.get_tool('uuu-loader')
         else:
             self.tool = 'uuu-loader'
+
+        self.hash = None
 
     def on_activate(self):
         pass
@@ -183,15 +187,48 @@ class UUUDriver(Driver, BootstrapProtocol):
     def load(self, filename=None):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
+
         mf = ManagedFile(filename, self.loader)
+        mf.hash = self.get_hash(filename)
         mf.sync_to_resource()
 
-        cmd = ['-b', self.script] if self.script else []
+        for file in self.extra_files or []:
+            file_mf = ManagedFile(file, self.loader)
+            file_mf.hash = self.get_hash(filename)
+            file_mf.sync_to_resource()
+
+        # Enable verbose mode to avoid messing up the terminal, and pass the usb device path to `uuu`. Notice that
+        # `uuu` specifies paths in <bus>:<port><port>... format.
+        cmd = ["-v", "-m", self.loader.path.replace(".", "").replace("-", ":")]
+        cmd += ['-b', self.script] if self.script else []
 
         processwrapper.check_output(
             self.loader.command_prefix + [self.tool] + cmd + [mf.get_remote_path()],
             print_on_silent_log=True
         )
+
+    def get_hash(self, image):
+        """Create a hash of all input files combined to use when synchronizing managed files."""
+        if self.hash is not None:
+            return self.hash
+
+        hasher = hashlib.sha256()
+
+        # Inspired by the implementation of hashlib.file_digest() from CPython, but adapted to read
+        # multiple files instead of a single one.
+        buf = bytearray(2**18)  # Reusable buffer to reduce allocations.
+        view = memoryview(buf)
+
+        for file in [image] + self.extra_files:
+            with open(file, 'rb') as fileobj:
+                while True:
+                    size = fileobj.readinto(buf)
+                    if size == 0:
+                        break  # EOF
+                    hasher.update(view[:size])
+
+        self.hash = hasher.hexdigest()
+        return self.hash
 
 
 @target_factory.reg_driver

@@ -73,7 +73,9 @@ class ServerError(Error):
 
 
 class InteractiveCommandError(Error):
-    pass
+    def __init__(self: Error, msg: str, exitcode: int):
+        super(InteractiveCommandError, self).__init__(msg)
+        self.exitcode = exitcode
 
 
 class ErrorGroup(ExceptionGroup):
@@ -1099,9 +1101,7 @@ class ClientSession:
                 break
             if not self.args.loop:
                 if res:
-                    exc = InteractiveCommandError("microcom error")
-                    exc.exitcode = res
-                    raise exc
+                    raise InteractiveCommandError("microcom error", res)
                 break
             await asyncio.sleep(1.0)
 
@@ -1301,27 +1301,21 @@ class ClientSession:
 
         res = drv.interact(self.args.leftover)
         if res:
-            exc = InteractiveCommandError("ssh error")
-            exc.exitcode = res
-            raise exc
+            raise InteractiveCommandError("ssh error", res)
 
     def scp(self):
         drv = self._get_ssh()
 
-        res = drv.scp(src=self.args.src, dst=self.args.dst)
+        res = drv.scp(src=self.args.files[:-1], dst=self.args.files[-1], recursive=self.args.recursive)
         if res:
-            exc = InteractiveCommandError("scp error")
-            exc.exitcode = res
-            raise exc
+            raise InteractiveCommandError("scp error", res)
 
     def rsync(self):
         drv = self._get_ssh()
 
         res = drv.rsync(src=self.args.src, dst=self.args.dst, extra=self.args.leftover)
         if res:
-            exc = InteractiveCommandError("rsync error")
-            exc.exitcode = res
-            raise exc
+            raise InteractiveCommandError("rsync error", res)
 
     def sshfs(self):
         drv = self._get_ssh()
@@ -1359,9 +1353,7 @@ class ClientSession:
         args = ["telnet", str(ip)]
         res = subprocess.call(args)
         if res:
-            exc = InteractiveCommandError("telnet error")
-            exc.exitcode = res
-            raise exc
+            raise InteractiveCommandError("telnet error", res)
 
     def video(self):
         place = self.get_acquired_place()
@@ -1397,9 +1389,7 @@ class ClientSession:
         else:
             res = drv.stream(quality, controls=controls)
             if res:
-                exc = InteractiveCommandError("gst-launch-1.0 error")
-                exc.exitcode = res
-                raise exc
+                raise InteractiveCommandError("gst-launch-1.0 error", res)
 
     def audio(self):
         place = self.get_acquired_place()
@@ -1408,9 +1398,7 @@ class ClientSession:
         drv = self._get_driver_or_new(target, "USBAudioInputDriver", name=name)
         res = drv.play()
         if res:
-            exc = InteractiveCommandError("gst-launch-1.0 error")
-            exc.exitcode = res
-            raise exc
+            raise InteractiveCommandError("gst-launch-1.0 error", res)
 
     def _get_tmc(self):
         place = self.get_acquired_place()
@@ -1986,8 +1974,10 @@ def main():
 
     subparser = subparsers.add_parser("scp", help="transfer file via scp")
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.add_argument("src", help="source path (use :dir/file for remote side)")
-    subparser.add_argument("dst", help="destination path (use :dir/file for remote side)")
+    subparser.add_argument("--recursive", "-r", action="store_true", help="copy recursive")
+    subparser.add_argument(
+        "files", nargs="+", metavar="SRC/DST", help="source and destination path (use :dir/file for remote side)"
+    )
     subparser.set_defaults(func=ClientSession.scp)
 
     subparser = subparsers.add_parser(

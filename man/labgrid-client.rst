@@ -194,7 +194,7 @@ LABGRID-CLIENT COMMANDS
 
 ``ssh`` ``[command]``                       Connect via SSH. Additional arguments are passed to ssh.
 
-``scp`` ``[source]`` ``[destination]``      Transfer file via scp (use ':dir/file' for the remote side)
+``scp`` ``[sources...]`` ``[destination]``  Transfer file via scp (use ':dir/file' for the remote side)
 
 ``rsync`` ``[source]`` ``[destination]``    Transfer files via rsync (use ':dir/file' for the remote side)
 

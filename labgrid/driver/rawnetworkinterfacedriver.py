@@ -216,10 +216,30 @@ class RawNetworkInterfaceDriver(Driver):
             cmd.append(str(timeout))
         cmd = self._wrap_command(cmd)
         if filename is None:
-            self._record_handle = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+            self._record_handle = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         else:
             with open(filename, "wb") as outdata:
                 self._record_handle = subprocess.Popen(cmd, stdout=outdata, stderr=subprocess.PIPE)
+
+        # wait for capture start
+        stderr = b""
+        while True:
+            line = self._record_handle.stderr.readline()
+            if not line:  # process ended prematurely
+                try:
+                    self._stop(self._record_handle)
+                except subprocess.CalledProcessError as e:
+                    # readd consumed stderr to exception
+                    e.stderr = stderr
+                    raise
+
+            if line.startswith(b"tcpdump: listening on"):
+                break
+
+            # collect and log other lines in stderr before capturing has started
+            stderr += line
+            self.logger.warning(line.decode().rstrip())
+
         return self._record_handle
 
     @Driver.check_active

@@ -29,6 +29,7 @@ from .udev import (
     USBPowerPort,
     USBSDMuxDevice,
     USBSDWireDevice,
+    USBSDWire3Device,
     USBSerialPort,
     USBTMC,
     USBVideo,

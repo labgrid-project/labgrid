@@ -522,6 +522,59 @@ class USBSDWireDevice(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class USBSDWire3Device(USBResource):
+    """The USBSDWire3Device describes an attached SDWire3 device,
+    it is identified via USB using udev
+    """
+
+    control_serial = attr.ib(
+        default=None,
+        validator=attr.validators.optional(str)
+    )
+    disk_path = attr.ib(
+        default=None,
+        validator=attr.validators.optional(str)
+    )
+
+    def __attrs_post_init__(self):
+        self.match['ID_VENDOR_ID'] = '0bda'
+        self.match['ID_MODEL_ID'] = '0316'
+        self.match['@ID_VENDOR_ID'] = '1d6b'
+        self.match['@ID_MODEL_ID'] = '0002'        
+        super().__attrs_post_init__()
+
+    # Overwrite the avail attribute with our internal property
+    @property
+    def avail(self):
+        return bool(self.control_serial)
+
+    # Forbid the USBResource super class to set the avail property
+    @avail.setter
+    def avail(self, prop):
+        pass
+
+    # Overwrite the poll function. Only mark the SDWire3 as available if both
+    # paths are available.
+    def poll(self):
+        super().poll()
+        if self.device is not None and not self.avail:
+            for child in self.device.parent.children:
+                if child.subsystem == 'block' and child.device_type == 'disk':
+                    self.disk_path = child.device_node
+            self.control_serial = self.device.properties.get('ID_SERIAL_SHORT')
+
+    def update(self):
+        super().update()
+        if self.device is None:
+            self.disk_path = None
+            self.control_serial = None
+
+    @property
+    def path(self):
+        return self.disk_path
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class USBSDMuxDevice(USBResource):
     """The USBSDMuxDevice describes an attached USBSDMux device,
     it is identified via USB using udev

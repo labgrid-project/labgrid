@@ -252,6 +252,18 @@ class NetworkUSBSDWireDevice(RemoteUSBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class NetworkUSBSDWire3Device(RemoteUSBResource):
+    """The NetworkUSBSDWire3Device describes a remotely accessible USBSDWire3 device"""
+    control_serial = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class NetworkSiSPMPowerPort(RemoteUSBResource):
     """The NetworkSiSPMPowerPort describes a remotely accessible SiS-PM power port"""
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))

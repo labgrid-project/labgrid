@@ -14,6 +14,7 @@ from .udev import (
     DFUDevice,
     USBSDMuxDevice,
     USBSDWireDevice,
+    USBSDWire3Device,
     AlteraUSBBlaster,
     RKUSBLoader,
     USBNetworkInterface,
@@ -48,6 +49,7 @@ class Suggester:
         self.resources.append(USBMassStorage(**args))
         self.resources.append(USBSDMuxDevice(**args))
         self.resources.append(USBSDWireDevice(**args))
+        self.resources.append(USBSDWire3Device(**args))
         self.resources.append(AlteraUSBBlaster(**args))
         self.resources.append(RKUSBLoader(**args))
         self.resources.append(USBNetworkInterface(**args))

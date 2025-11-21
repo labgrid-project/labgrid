@@ -22,6 +22,7 @@ from .udev import (
     LXAUSBMux,
     HIDRelay,
     USBDebugger,
+    USBLauterbachDebugger,
     USBPowerPort,
     MatchedSysfsGPIO
 )
@@ -56,6 +57,7 @@ class Suggester:
         self.resources.append(LXAUSBMux(**args))
         self.resources.append(HIDRelay(**args))
         self.resources.append(USBDebugger(**args))
+        self.resources.append(USBLauterbachDebugger(**args))
         self.resources.append(USBPowerPort(**args, index=0))
         self.resources.append(MatchedSysfsGPIO(**args, pin=0))
 

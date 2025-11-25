@@ -135,6 +135,11 @@ Tests can now run via:
 
    venv $ python -m pytest --lg-env <config>
 
+To install sphinx and the dependencies needed for generating man pages and documentation run:
+
+.. code-block:: bash
+
+   venv $ pip install '.[doc]'
 
 .. |license| image:: https://img.shields.io/badge/license-LGPLv2.1-blue.svg
     :alt: LGPLv2.1

@@ -1758,26 +1758,58 @@ class ExportFormat(enum.Enum):
         return self.value
 
 
-def main():
-    import inspect
+class AutoProgramArgumentParser(argparse.ArgumentParser):
+    """Works around sphinxcontrib.autoprogram shortcomings."""
 
-    basicConfig(
-        level=logging.WARNING,
-        stream=sys.stderr,
-    )
+    class _ActionWrapper:
+        """
+        Wraps argparse's special private action object registered for "parsers", see:
+        https://docs.python.org/3.14/library/argparse.html#argparse.ArgumentParser.add_subparsers
+        https://docs.python.org/3.13/library/argparse.html#argparse.ArgumentParser.register
+        """
 
-    StepLogger.start()
-    processwrapper.enable_logging()
+        def __init__(self, action):
+            self.action = action
 
-    # Support both legacy variables and properly namespaced ones
-    place = os.environ.get("PLACE", None)
-    place = os.environ.get("LG_PLACE", place)
-    state = os.environ.get("STATE", None)
-    state = os.environ.get("LG_STATE", state)
-    initial_state = os.environ.get("LG_INITIAL_STATE", None)
-    token = os.environ.get("LG_TOKEN", None)
+        def add_parser(self, name, **kwargs):
+            # aliases are not supported by autoprogram, they lead to duplicate entries, so
+            # show them as "command subcommand|alias --option" instead
+            aliases = kwargs.pop("aliases", [])
+            if aliases:
+                name = "|".join([name] + list(aliases))
 
-    parser = argparse.ArgumentParser()
+            # "help" text is ignored by autoprogram, move to "description" instead
+            if "description" not in kwargs and "help" in kwargs:
+                kwargs["description"] = kwargs.pop("help")
+
+            # add_parser() is the only part of the action object that's not an implementation detail
+            return self.action.add_parser(name, **kwargs)
+
+    def __init__(self, *args, **kwargs):
+        # print help texts in fixed width
+        os.environ["COLUMNS"] = "80"
+
+        # hide --help, -h
+        kwargs.setdefault("add_help", False)
+
+        super().__init__(*args, **kwargs)
+
+    def add_subparsers(self, **kwargs):
+        action = super().add_subparsers(**kwargs)
+        return self._ActionWrapper(action)
+
+    def add_argument(self, *args, **kwargs):
+        # do not show ranges
+        if isinstance(kwargs.get("choices"), range):
+            del kwargs["choices"]
+
+        return super().add_argument(*args, **kwargs)
+
+
+def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArgumentParser":
+    # use custom parser for sphinxcontrib.autoprogram
+    parser = AutoProgramArgumentParser() if auto_doc_mode else argparse.ArgumentParser()
+
     parser.add_argument(
         "-x",
         "--coordinator",
@@ -1789,24 +1821,19 @@ def main():
         "-c",
         "--config",
         type=str,
-        default=os.environ.get("LG_ENV"),
         help="env config file (default: value from env variable LG_ENV)",
     )
-    parser.add_argument(
-        "-p", "--place", type=str, default=place, help="place name/alias (default: value from env variable LG_PLACE)"
-    )
+    parser.add_argument("-p", "--place", type=str, help="place name/alias (default: value from env variable LG_PLACE)")
     parser.add_argument(
         "-s",
         "--state",
         type=str,
-        default=state,
         help="strategy state to switch into before command (default: value from env varibale LG_STATE)",
     )
     parser.add_argument(
         "-i",
         "--initial-state",
         type=str,
-        default=initial_state,
         help="strategy state to force into before switching to desired state",
     )
     parser.add_argument(
@@ -1820,11 +1847,13 @@ def main():
         metavar="COMMAND",
     )
 
-    subparser = subparsers.add_parser("help")
+    # if the argparse object is to be used for manpage generation, hide some subcommands
+    if not auto_doc_mode:
+        subparser = subparsers.add_parser("help")
 
-    subparser = subparsers.add_parser("complete")
-    subparser.add_argument("type", choices=["resources", "places", "matches", "match-names"])
-    subparser.set_defaults(func=ClientSession.complete)
+        subparser = subparsers.add_parser("complete")
+        subparser.add_argument("type", choices=["resources", "places", "matches", "match-names"])
+        subparser.set_defaults(func=ClientSession.complete)
 
     subparser = subparsers.add_parser("monitor", help="monitor events from the coordinator")
     subparser.set_defaults(func=ClientSession.do_monitor)
@@ -1855,7 +1884,10 @@ def main():
     subparser = subparsers.add_parser("show", help="show a place and related resources")
     subparser.set_defaults(func=ClientSession.print_place)
 
-    subparser = subparsers.add_parser("create", help="add a new place")
+    subparser = subparsers.add_parser(
+        "create",
+        help="add a new place with the name specified via --place or the LG_PLACE environment variable",
+    )
     subparser.set_defaults(func=ClientSession.add_place)
 
     subparser = subparsers.add_parser("delete", help="delete an existing place")
@@ -1903,7 +1935,10 @@ def main():
     subparser.set_defaults(func=ClientSession.release)
 
     subparser = subparsers.add_parser(
-        "release-from", help="atomically release a place, but only if locked by a specific user"
+        "release-from",
+        help="atomically release a place, but only if locked by a specific user",
+        epilog="Note that this command returns success as long as the specified user no longer owns the place, "
+        "meaning it may be acquired by another user or not at all.",
     )
     subparser.add_argument("acquired", metavar="HOST/USER", help="User and host to match against when releasing")
     subparser.set_defaults(func=ClientSession.release_from)
@@ -1953,7 +1988,7 @@ def main():
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.set_defaults(func=ClientSession.fastboot)
 
-    subparser = subparsers.add_parser("flashscript", help="run flash script")
+    subparser = subparsers.add_parser("flashscript", help="Run arbitrary script with arguments to flash device")
     subparser.add_argument("script", help="Flashing script")
     subparser.add_argument("script_args", metavar="ARG", nargs=argparse.REMAINDER, help="script arguments")
     subparser.add_argument("--name", "-n", help="optional resource name")
@@ -2120,11 +2155,11 @@ def main():
     subparser.set_defaults(func=ClientSession.create_reservation)
 
     subparser = subparsers.add_parser("cancel-reservation", help="cancel a reservation")
-    subparser.add_argument("token", type=str, default=token, nargs="?" if token else None)
+    subparser.add_argument("token", type=str, nargs="?")
     subparser.set_defaults(func=ClientSession.cancel_reservation)
 
     subparser = subparsers.add_parser("wait", help="wait for a reservation to be allocated")
-    subparser.add_argument("token", type=str, default=token, nargs="?" if token else None)
+    subparser.add_argument("token", type=str, nargs="?")
     subparser.set_defaults(func=ClientSession.wait_reservation)
 
     subparser = subparsers.add_parser("reservations", help="list current reservations")
@@ -2147,12 +2182,56 @@ def main():
     subparser = subparsers.add_parser("version", help="show version")
     subparser.set_defaults(func=ClientSession.print_version)
 
+    return parser
+
+
+def main():
+    import inspect
+
+    basicConfig(
+        level=logging.WARNING,
+        stream=sys.stderr,
+    )
+
+    StepLogger.start()
+    processwrapper.enable_logging()
+
+    # Support both legacy variables and properly namespaced ones
+    place = os.environ.get("PLACE", None)
+    place = os.environ.get("LG_PLACE", place)
+    state = os.environ.get("STATE", None)
+    state = os.environ.get("LG_STATE", state)
+    initial_state = os.environ.get("LG_INITIAL_STATE", None)
+    token = os.environ.get("LG_TOKEN", None)
+
+    parser = get_parser()
+
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()
     if args.command not in ["ssh", "rsync", "forward"]:
         args = parser.parse_args()
     else:
         args.leftover = leftover
+
+    # handle dynamic defaults
+    if args.config is None:
+        args.config = os.environ.get("LG_ENV")
+
+    if args.place is None:
+        args.place = place
+
+    if args.state is None:
+        args.state = state
+
+    if args.initial_state is None:
+        args.initial_state = initial_state
+
+    if args.command in ["cancel-reservation", "wait"] and args.token is None:
+        if token:
+            args.token = token
+        else:
+            print("Please provide a token", file=sys.stderr)
+            exit(1)
 
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)

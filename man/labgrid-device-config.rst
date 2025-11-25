@@ -154,6 +154,10 @@ TOOLS KEYS
     Path to the sshfs binary, used by the SSHDriver.
     See: https://github.com/libfuse/sshfs
 
+``tenma-serial``
+    Path to the tenma-control binary, used by the TenmaSerialDriver.
+    See: https://github.com/kxtells/tenma-serial
+
 ``uhubctl``
     Path to the uhubctl binary, used by the USBPowerDriver.
     See: https://github.com/mvp/uhubctl
@@ -250,4 +254,3 @@ SEE ALSO
 --------
 
 ``labgrid-client``\(1), ``labgrid-exporter``\(1)
- 

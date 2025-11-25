@@ -1,6 +1,7 @@
 import shlex
 import time
 import math
+import ast
 from importlib import import_module
 
 import attr
@@ -109,6 +110,81 @@ class SiSPMPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             return False
         raise ExecutionError(f"Did not find port status in sispmctl output ({repr(output)})")
 
+@target_factory.reg_driver
+@attr.s(eq=False)
+class TenmaSerialDriver(Driver, PowerResetMixin, PowerProtocol):
+    """TenmaSerialDriver - Driver using a Single Output Programmable to control a
+       target's power using the tenma-serial tool https://github.com/kxtells/tenma-serial/"""
+
+    bindings = {"port": {"TenmaSerialPort", "NetworkTenmaSerialPort"}, }
+    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
+    ovp = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    ocp = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    voltage = attr.ib(default=12000, validator=attr.validators.instance_of(int))
+    current = attr.ib(default=2000, validator=attr.validators.instance_of(int))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('tenma-control')
+        else:
+            self.tool = 'tenma-control'
+
+    def _get_tenmaserial_prefix(self):
+        options = []
+
+        # overvoltage protection (bool)
+        if self.ovp:
+            options.append('--ovp-enable')
+        else:
+            options.append('--ovp-disable')
+
+        # overcurrent protection (bool)
+        if self.ocp:
+            options.append('--ocp-enable')
+        else:
+            options.append('--ocp-disable')
+
+        # set mV (int)
+        options.append(f'-v {self.voltage}')
+
+        # set mA (int)
+        options.append(f'-c {self.current}')
+
+        return self.port.command_prefix + [
+            self.tool,
+            str(self.port.path),
+        ] + options
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        cmd = ['--on']
+        processwrapper.check_output(self._get_tenmaserial_prefix() + cmd)
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        cmd = ['--off']
+        processwrapper.check_output(self._get_tenmaserial_prefix() + cmd)
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        self.off()
+        time.sleep(self.delay)
+        self.on()
+
+    @Driver.check_active
+    @step()
+    def get(self):
+        cmd = ['-S']
+        output = processwrapper.check_output(self._get_tenmaserial_prefix() + cmd)
+        status = ast.literal_eval(output.decode('utf-8').strip().splitlines()[1])
+        if status['outEnabled']:
+            return True
+        else:
+            return False
 
 @target_factory.reg_driver
 @attr.s(eq=False)

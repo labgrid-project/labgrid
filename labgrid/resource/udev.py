@@ -708,6 +708,21 @@ class DeditecRelais8(USBResource):
         self.match['ID_MODEL'] = 'DEDITEC_USB-OPT_REL-8'
         super().__attrs_post_init__()
 
+@target_factory.reg_resource
+@attr.s(eq=False)
+class TenmaSerialPort(USBResource):
+    """This resource describes a tenma-serial power port"""
+
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'tty'
+        super().__attrs_post_init__()
+
+    @property
+    def path(self):
+        if self.device is not None:
+            return self.device.device_node
+
+        return None
 
 @target_factory.reg_resource
 @attr.s(eq=False)

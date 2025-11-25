@@ -410,6 +410,28 @@ Arguments:
 Used by:
   - `TasmotaPowerDriver`_
 
+TenmaSerialPort
+++++++++++++++++
+A :any:`TenmaSerialPort` describes a *Tenma* as supported by
+`tenma-serial <https://github.com/kxtells/tenma-serial>`_.
+
+.. code-block:: yaml
+
+     TenmaSerialPort:
+        match:
+          ID_PATH: pci-0000:00:15.0-usb-0:3.2:1.0
+        index: 1
+
+
+The example describes port 1 on the hub with the ID_PATH
+``pci-0000:00:15.0-usb-0:3.2:1.0``.
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `TenmaSerialDriver`_
+
 Digital Outputs
 ~~~~~~~~~~~~~~~
 
@@ -2296,6 +2318,36 @@ Implements:
 
 Arguments:
   - delay (float, default=2.0): delay in seconds between off and on
+
+TenmaSerialDriver
+~~~~~~~~~~~~~~~~~~
+A :any:`TenmaSerialDriver` controls a `TenmaSerialPort`_, allowing control of the
+target power state without user interaction.
+
+Binds to:
+  port:
+    - `TenmaSerialPort`_
+    - NetworkTenmaSerialPort
+
+Implements:
+  - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
+
+.. code-block:: yaml
+
+   TenmaSerialDriver:
+     delay: 10.0
+     ovp: true
+     ocp: true
+     voltage: 12000
+     current: 2000
+
+Arguments:
+  - delay (float, default=2.0): delay in seconds between off and on
+  - ovp (bool, default=False): overvoltage protection
+  - ocp (bool, default=False): overcurrent protection
+  - voltage (int, default=12000): set mV
+  - current (int, default=2000): set mA
 
 TasmotaPowerDriver
 ~~~~~~~~~~~~~~~~~~

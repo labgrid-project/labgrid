@@ -100,7 +100,7 @@ class USBHIDRelay:
 
     def get_output(self, number):
         with self._claimed():
-            self._get_output(number)
+            return self._get_output(number)
 
 
 _relays = {}

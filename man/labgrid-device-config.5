@@ -27,19 +27,20 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "LABGRID-DEVICE-CONFIG" "5" "" "0.0.1" "embedded testing"
+.TH "LABGRID-DEVICE-CONFIG" "5" "2025" "" "labgrid"
 .SH NAME
-labgrid-device-config \- labgrid test configuration files
-.SH SYNOPSIS
+labgrid-device-config \- test configuration files
+.SH LABGRID TEST CONFIGURATION FILES
+.SS SYNOPSIS
 .sp
 \fB*.yaml\fP
-.SH DESCRIPTION
+.SS DESCRIPTION
 .sp
 To integrate a device into a labgrid test, labgrid needs to have a description
 of the device and how to access it.
 .sp
 This manual page is divided into section, each describing one top\-level yaml key.
-.SH TARGETS
+.SS TARGETS
 .sp
 The \fBtargets:\fP top key configures a \fBtarget\fP, it\(aqs \fBdrivers\fP and \fBresources\fP\&.
 .sp
@@ -49,8 +50,8 @@ important, since they are parsed as an ordered dictionary and may depend on a
 previous driver.
 .sp
 For a list of available resources and drivers refer to
- <https://labgrid.readthedocs.io/en/latest/configuration.html> \&.
-.SH OPTIONS
+\X'tty: link https://labgrid.readthedocs.io/en/latest/configuration.html'\fI\%https://labgrid.readthedocs.io/en/latest/configuration.html\fP\X'tty: link'\&.
+.SS OPTIONS
 .sp
 The \fBoptions:\fP top key configures various options such as the coordinator_address.
 .SS OPTIONS KEYS
@@ -60,7 +61,7 @@ The \fBoptions:\fP top key configures various options such as the coordinator_ad
 takes as parameter the coordinator \fBHOST[:PORT]\fP to connect to.
 Defaults to \fB127.0.0.1:20408\fP\&.
 .UNINDENT
-.SH IMAGES
+.SS IMAGES
 .sp
 The \fBimages:\fP top key provides paths to access preconfigured images to flash
 onto the board. The image paths can be either relative to the YAML file or
@@ -82,7 +83,7 @@ images:
 .EE
 .UNINDENT
 .UNINDENT
-.SH TOOLS
+.SS TOOLS
 .sp
 The \fBtools:\fP top key provides paths to binaries such as fastboot.
 .SS TOOLS KEYS
@@ -90,95 +91,95 @@ The \fBtools:\fP top key provides paths to binaries such as fastboot.
 .TP
 .B \fBdfu\-util\fP
 Path to the dfu\-util binary, used by the DFUDriver.
-See:  <https://dfu\-util.sourceforge.net/> 
+See: \X'tty: link https://dfu-util.sourceforge.net/'\fI\%https://dfu\-util.sourceforge.net/\fP\X'tty: link'
 .TP
 .B \fBdpcmd\fP
 Path to the dpcmd binary, used by the DediprogFlashDriver.
-See:  <https://github.com/DediProgSW/SF100Linux> 
+See: \X'tty: link https://github.com/DediProgSW/SF100Linux'\fI\%https://github.com/DediProgSW/SF100Linux\fP\X'tty: link'
 .TP
 .B \fBfastboot\fP
 Path to the fastboot binary, used by the AndroidFastbootDriver.
-See:  <https://developer.android.com/studio/releases/platform\-tools> 
+See: \X'tty: link https://developer.android.com/studio/releases/platform-tools'\fI\%https://developer.android.com/studio/releases/platform\-tools\fP\X'tty: link'
 .TP
 .B \fBflashrom\fP
 Path to the flashrom binary, used by the FlashromDriver.
-See:  <https://www.flashrom.org/> 
+See: \X'tty: link https://www.flashrom.org/'\fI\%https://www.flashrom.org/\fP\X'tty: link'
 .TP
 .B \fBimx_usb\fP
 Path to the imx_usb binary, used by the BDIMXUSBDriver.
-See:  <https://github.com/boundarydevices/imx_usb_loader> 
+See: \X'tty: link https://github.com/boundarydevices/imx_usb_loader'\fI\%https://github.com/boundarydevices/imx_usb_loader\fP\X'tty: link'
 .TP
 .B \fBimx\-usb\-loader\fP
 Path to the imx\-usb\-loader binary, used by the IMXUSBDriver.
-See:  <https://git.pengutronix.de/cgit/barebox/tree/scripts/imx/imx\-usb\-loader.c> 
+See: \X'tty: link https://git.pengutronix.de/cgit/barebox/tree/scripts/imx/imx-usb-loader.c'\fI\%https://git.pengutronix.de/cgit/barebox/tree/scripts/imx/imx\-usb\-loader.c\fP\X'tty: link'
 .TP
 .B \fBjtagconfig\fP
 Path to the jtagconfig binary, used by the QuartusHPSDriver.
-See:  <https://www.intel.com/content/www/us/en/docs/programmable/683689/current/jtagconfig.html> 
+See: \X'tty: link https://www.intel.com/content/www/us/en/docs/programmable/683689/current/jtagconfig.html'\fI\%https://www.intel.com/content/www/us/en/docs/programmable/683689/current/jtagconfig.html\fP\X'tty: link'
 .TP
 .B \fBmxs\-usb\-loader\fP
 Path to the mxs\-usb\-loader binary, used by the MXSUSBDriver.
-See:  <https://git.pengutronix.de/cgit/barebox/tree/scripts/mxs\-usb\-loader.c?h=v2017.03.0> 
+See: \X'tty: link https://git.pengutronix.de/cgit/barebox/tree/scripts/mxs-usb-loader.c?h=v2017.03.0'\fI\%https://git.pengutronix.de/cgit/barebox/tree/scripts/mxs\-usb\-loader.c?h=v2017.03.0\fP\X'tty: link'
 .TP
 .B \fBopenocd\fP
 Path to the openocd binary, used by the OpenOCDDriver.
-See:  <https://openocd.org/> 
+See: \X'tty: link https://openocd.org/'\fI\%https://openocd.org/\fP\X'tty: link'
 .TP
 .B \fBquartus_hps\fP
 Path to the quartus_hps binary, used by the QuartusHPSDriver.
-See:  <https://www.intel.com/content/www/us/en/docs/programmable/683039/22\-3/hps\-flash\-programmer.html> 
+See: \X'tty: link https://www.intel.com/content/www/us/en/docs/programmable/683039/22-3/hps-flash-programmer.html'\fI\%https://www.intel.com/content/www/us/en/docs/programmable/683039/22\-3/hps\-flash\-programmer.html\fP\X'tty: link'
 .TP
 .B \fBrk\-usb\-loader\fP
 Path to the rk\-usb\-loader binary, used by the RKUSBDriver.
-See:  <https://git.pengutronix.de/cgit/barebox/tree/scripts/rk\-usb\-loader.c> 
+See: \X'tty: link https://git.pengutronix.de/cgit/barebox/tree/scripts/rk-usb-loader.c'\fI\%https://git.pengutronix.de/cgit/barebox/tree/scripts/rk\-usb\-loader.c\fP\X'tty: link'
 .TP
 .B \fBrsync\fP
 Path to the rsync binary, used by the SSHDriver.
-See:  <https://github.com/rsyncproject/rsync> 
+See: \X'tty: link https://github.com/rsyncproject/rsync'\fI\%https://github.com/rsyncproject/rsync\fP\X'tty: link'
 .TP
 .B \fBscp\fP
 Path to the scp binary, used by the SSHDriver.
-See:  <https://github.com/openssh/openssh\-portable> 
+See: \X'tty: link https://github.com/openssh/openssh-portable'\fI\%https://github.com/openssh/openssh\-portable\fP\X'tty: link'
 .TP
 .B \fBsd\-mux\-ctrl\fP
 Path to the sd\-mux\-ctrl binary, used by the USBSDWireDriver.
-See:  <https://git.tizen.org/cgit/tools/testlab/sd\-mux/> 
+See: \X'tty: link https://git.tizen.org/cgit/tools/testlab/sd-mux/'\fI\%https://git.tizen.org/cgit/tools/testlab/sd\-mux/\fP\X'tty: link'
 .TP
 .B \fBsispmctl\fP
 Path to the sispmctl binary, used by the SiSPMPowerDriver.
-See:  <https://sispmctl.sourceforge.net/> 
+See: \X'tty: link https://sispmctl.sourceforge.net/'\fI\%https://sispmctl.sourceforge.net/\fP\X'tty: link'
 .TP
 .B \fBssh\fP
 Path to the ssh binary, used by the SSHDriver.
-See:  <https://github.com/openssh/openssh\-portable> 
+See: \X'tty: link https://github.com/openssh/openssh-portable'\fI\%https://github.com/openssh/openssh\-portable\fP\X'tty: link'
 .TP
 .B \fBsshfs\fP
 Path to the sshfs binary, used by the SSHDriver.
-See:  <https://github.com/libfuse/sshfs> 
+See: \X'tty: link https://github.com/libfuse/sshfs'\fI\%https://github.com/libfuse/sshfs\fP\X'tty: link'
 .TP
 .B \fBuhubctl\fP
 Path to the uhubctl binary, used by the USBPowerDriver.
-See:  <https://github.com/mvp/uhubctl> 
+See: \X'tty: link https://github.com/mvp/uhubctl'\fI\%https://github.com/mvp/uhubctl\fP\X'tty: link'
 .TP
 .B \fBusbmuxctl\fP
 Path to the usbmuxctl tool, used by the LXAUSBMuxDriver.
- <https://github.com/linux\-automation/usbmuxctl> 
+\X'tty: link https://github.com/linux-automation/usbmuxctl'\fI\%https://github.com/linux\-automation/usbmuxctl\fP\X'tty: link'
 .TP
 .B \fBusbsdmux\fP
 Path to the usbsdmux tool, used by the USBSDMuxDriver.
-See:  <https://github.com/linux\-automation/usbsdmux> 
+See: \X'tty: link https://github.com/linux-automation/usbsdmux'\fI\%https://github.com/linux\-automation/usbsdmux\fP\X'tty: link'
 .TP
 .B \fBuuu\-loader\fP
 Path to the uuu\-loader binary, used by the UUUDriver.
-See:  <https://github.com/nxp\-imx/mfgtools> 
+See: \X'tty: link https://github.com/nxp-imx/mfgtools'\fI\%https://github.com/nxp\-imx/mfgtools\fP\X'tty: link'
 .TP
 .B \fBykushcmd\fP
 Path to the ykushcmd binary, used by the YKUSHPowerDriver.
-See:  <https://github.com/Yepkit/ykush> 
+See: \X'tty: link https://github.com/Yepkit/ykush'\fI\%https://github.com/Yepkit/ykush\fP\X'tty: link'
 .UNINDENT
 .sp
 The QEMUDriver expects a custom key set via its \fBqemu_bin\fP argument.
-See  <https://www.qemu.org/> 
+See \X'tty: link https://www.qemu.org/'\fI\%https://www.qemu.org/\fP\X'tty: link'
 .SS TOOLS EXAMPLE
 .sp
 Configure the tool path for \fBimx\-usb\-loader\fP:
@@ -191,7 +192,7 @@ tools:
 .EE
 .UNINDENT
 .UNINDENT
-.SH IMPORTS
+.SS IMPORTS
 .sp
 The \fBimports\fP key is a list of files or python modules which
 are imported by the environment after loading the configuration.
@@ -210,7 +211,7 @@ imports:
 .EE
 .UNINDENT
 .UNINDENT
-.SH EXAMPLES
+.SS EXAMPLES
 .sp
 A sample configuration with one \fBmain\fP target, accessible via SerialPort
 \fB/dev/ttyUSB0\fP, allowing usage of the ShellDriver:
@@ -260,18 +261,12 @@ imports:
 .EE
 .UNINDENT
 .UNINDENT
-.SH SEE ALSO
+.SS SEE ALSO
 .sp
 \fBlabgrid\-client\fP(1), \fBlabgrid\-exporter\fP(1)
 .SH AUTHOR
-Rouven Czerwinski <r.czerwinski@pengutronix.de>
-
-Organization: Labgrid-Project
+Jan Luebbe, Rouven Czerwinski
 .SH COPYRIGHT
-Copyright (C) 2016-2025 Pengutronix. This library is free software;
-you can redistribute it and/or modify it under the terms of the GNU
-Lesser General Public License as published by the Free Software
-Foundation; either version 2.1 of the License, or (at your option)
-any later version.
+2016-2025 Pengutronix, Jan Luebbe and Rouven Czerwinski
 .\" Generated by docutils manpage writer.
 .

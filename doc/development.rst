@@ -278,7 +278,7 @@ added.
   ``broken`` attribute and raise a ``StrategyError`` for the original and all
   subsequent calls to the decorated methods.
 
-Lets take a look at the builtin `BareboxStrategy`.
+Lets take a look at the builtin :ref:`BareboxStrategy <conf-bareboxstrategy>`.
 The Status enum for the BareboxStrategy:
 
 ::
@@ -289,7 +289,7 @@ The Status enum for the BareboxStrategy:
        barebox = 2
        shell = 3
 
-defines three custom states and the `unknown` state as the start point.
+defines three custom states and the ``unknown`` state as the start point.
 These three states are handled in the transition function:
 
 ::
@@ -312,13 +312,13 @@ These three states are handled in the transition function:
         self.barebox.await_boot()
         self.target.activate(self.shell)
 
-Here, the `barebox` state simply cycles the board and activates the driver,
-while the `shell` state uses the barebox state to cycle the board and then boot
+Here, the ``barebox`` state simply cycles the board and activates the driver,
+while the ``shell`` state uses the barebox state to cycle the board and then boot
 the linux kernel.
-The `off` state switches the power off.
+The ``off`` state switches the power off.
 
 Oftentimes it is also necessary to wait for specific resources to appear before
-a transition can be continued. The `await_resources` function of the target
+a transition can be continued. The ``await_resources()`` function of the target
 implements this functionality, it expects a list of resources to wait for and
 optionally takes a timeout and whether the resource should be available or
 unavailable.
@@ -514,32 +514,33 @@ A transition describes a path, or a part of a path, through a GraphStrategy
 graph.
 Every State in the graph has a auto generated default path starting from the
 root state.
-So using the given example, the GraphStrategy would call the states `unknown`,
-`boot_via_nand`, `barebox`, and `linux_shell` in this order if
+So using the given example, the GraphStrategy would call the states ``unknown``,
+``boot_via_nand``, ``barebox``, and ``linux_shell`` in this order if
 ``transition('linux_shell')`` would be called.
-The GraphStrategy would prefer `boot_via_nand` over `boot_via_nfs` because
-`boot_via_nand` is mentioned before `boot_via_nfs` in the dependencies of
-`barebox`. If you want to reach via `boot_via_nfs` the call would look like
+The GraphStrategy would prefer ``boot_via_nand`` over ``boot_via_nfs`` because
+``boot_via_nand`` is mentioned before ``boot_via_nfs`` in the dependencies of
+``barebox``. If you want to reach via ``boot_via_nfs`` the call would look like
 this: ``transition('linux_shell', via='boot_via_nfs')``.
 
 A transition can be incremental. If we trigger a transition with
-``transition('barebox')`` first, the states `unknown`, `boot_via_nand` and
-`barebox` will be called in this order. If we trigger a transition
-``transition('linux_shell')`` afterwards only `linux_shell` gets called. This
-happens because `linux_shell` is reachable from `barebox` and the Strategy
+``transition('barebox')`` first, the states ``unknown``, ``boot_via_nand`` and
+``barebox`` will be called in this order. If we trigger a transition
+``transition('linux_shell')`` afterwards only ``linux_shell`` gets called. This
+happens because ``linux_shell`` is reachable from ``barebox`` and the Strategy
 holds state of the last walked path.
 But there is a catch! The second, incremental path must be *fully* incremental
 to the previous path!
-For example: Lets say we reached `barebox` via `boot_via_nfs`,
+For example: Lets say we reached ``barebox`` via ``boot_via_nfs``,
 (``transition('barebox', via='boot_via_nfs')``). If we trigger
 ``transition('linux_shell')`` afterwards the GraphStrategy would compare the last
-path `'unknown', 'boot_via_nfs', 'barebox'` with the default path to
-`linux_shell` which would be
-`'unknown', 'boot_via_nand', 'barebox', 'linux_shell'`, and decides the path
+path ``'unknown', 'boot_via_nfs', 'barebox'`` with the default path to
+``linux_shell`` which would be
+``'unknown', 'boot_via_nand', 'barebox', 'linux_shell'``, and decides the path
 is not fully incremental and starts over by the root state. If we had given
-the second transition `boot_via_nfs` like in the first transition the paths
+the second transition ``boot_via_nfs`` like in the first transition the paths
 had been incremental.
 
+.. _sshmanager:
 
 SSHManager
 ----------
@@ -577,7 +578,7 @@ or get and put files:
 
 ManagedFile
 -----------
-While the `SSHManager` exposes a lower level interface to use SSH Connections,
+While the :ref:`SSHManager <sshmanager>` exposes a lower level interface to use SSH Connections,
 the ManagedFile provides a higher level interface for file upload to another
 host. It is meant to be used in conjunction with a remote resource, and store
 the file on the remote host with the following pattern:
@@ -586,9 +587,9 @@ the file on the remote host with the following pattern:
 
    /tmp/labgrid-<username>/<sha256sum>/<filename>
 
-Additionally it provides `get_remote_path()` to retrieve the complete file path,
+Additionally it provides ``get_remote_path()`` to retrieve the complete file path,
 to easily employ it for driver implementations.
-To use it in conjunction with a `Resource` and a file:
+To use it in conjunction with a *Resource* and a file:
 
 .. testsetup:: managed-file
 
@@ -607,7 +608,7 @@ To use it in conjunction with a `Resource` and a file:
    >>> mf.sync_to_resource()
    >>> path = mf.get_remote_path()
 
-Unless constructed with `ManagedFile(..., detect_nfs=False)`, ManagedFile
+Unless constructed with ``ManagedFile(..., detect_nfs=False)``, ManagedFile
 employs the following heuristic to check if a file is stored on a NFS share
 available both locally and remotely via the same path:
 
@@ -624,7 +625,7 @@ ProxyManager
 The proxymanager is used to open connections across proxies via an attribute in
 the resource. This allows gated testing networks by always using the exporter as
 an SSH gateway to proxy the connections using SSH Forwarding. Currently this is
-used in the `SerialDriver` for proxy connections.
+used in the :any:`SerialDriver` for proxy connections.
 
 Usage:
 
@@ -662,8 +663,8 @@ Workflow
 - Changes should be submitted via a `GitHub pull request
   <https://github.com/labgrid-project/labgrid/pulls>`_.
 - Try to limit each commit to a single conceptual change.
-- Add a signed-of-by line to your commits according to the `Developer's
-  Certificate of Origin` (see below).
+- Add a signed-of-by line to your commits according to the *Developer's
+  Certificate of Origin* (see below).
 - Check that the tests still work before submitting the pull request. Also
   check the CI's feedback on the pull request after submission.
 - When adding new drivers or resources, please also add the corresponding

@@ -3,6 +3,7 @@ name: scheduled unit tests
 on:
   schedule:
     - cron: '10 8 * * *'
+  workflow_dispatch:
 
 jobs:
   scheduled-unit-tests:
@@ -10,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
         branch: ['master']
     uses: ./.github/workflows/reusable-unit-tests.yml
     secrets:

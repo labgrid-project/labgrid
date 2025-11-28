@@ -179,6 +179,8 @@ load a configuration file.
    On exit of your script/application, labgrid will call ``cleanup()`` on the
    targets using the python atexit module.
 
+.. _usage-target:
+
 Targets
 ~~~~~~~
 
@@ -341,7 +343,7 @@ the advantage that exceptions can be handled by your application:
 
 Environments
 ~~~~~~~~~~~~
-In practice, it is often useful to separate the `Target` configuration from the
+In practice, it is often useful to separate the :ref:`Target <usage-target>` configuration from the
 code which needs to control the board (such as a test case or installation
 script).
 For this use-case, labgrid can construct targets from a configuration file in
@@ -365,9 +367,9 @@ To parse this configuration file, use the :any:`Environment` class:
   >>> from labgrid import Environment
   >>> env = Environment('example-env.yaml')
 
-Using :any:`Environment.get_target`, the configured `Targets` can be retrieved
+Using :any:`Environment.get_target`, the configured targets can be retrieved
 by name.
-Without an argument, `get_target` would default to 'main':
+Without an argument, ``get_target()`` would default to 'main':
 
 .. doctest::
 
@@ -479,9 +481,12 @@ own proxy, and only fallback to LG_PROXY.
 
 See also :ref:`overview-proxy-mechanism`.
 
-Simple Example
-~~~~~~~~~~~~~~
 
+Writing and Running Tests
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Getting Started: A Minimal Test
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 As a minimal example, we have a target connected via a USB serial converter
 ('/dev/ttyUSB0') and booted to the Linux shell.
 The following environment config file (``shell-example.yaml``) describes how to
@@ -557,10 +562,10 @@ environment config:
 
 pytest has automatically found the test case and executed it on the target.
 
-Custom Fixture Example
-~~~~~~~~~~~~~~~~~~~~~~
+Reusing Setup Code with Custom Fixtures
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When writing many test cases which use the same driver, we can get rid of some
-common code by wrapping the `CommandProtocol` in a fixture.
+common code by wrapping the :any:`CommandProtocol` in a fixture.
 As pytest always executes the ``conftest.py`` file in the test suite directory,
 we can define additional fixtures there:
 
@@ -595,8 +600,8 @@ With this fixture, we can simplify the ``test_example.py`` file to:
 
   ... 1 passed...
 
-Strategy Fixture Example
-~~~~~~~~~~~~~~~~~~~~~~~~
+Managing Target States with Strategy Fixtures
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When using a :any:`Strategy` to transition the target between states, it is
 useful to define a function scope fixture per state in ``conftest.py``:
 
@@ -645,13 +650,13 @@ is easy:
       bootloader_command.run_check('true')
 
 .. note::
-  The `bootloader_command` and `shell_command` fixtures use
-  :any:`Target.get_active_driver` to get the currently active `CommandProtocol`
+  The ``bootloader_command`` and ``shell_command`` fixtures use
+  :any:`Target.get_active_driver` to get the currently active :any:`CommandProtocol`
   driver (either :any:`BareboxDriver` or :any:`ShellDriver`).
   Activation and deactivation of drivers is handled by the
-  :any:`BareboxStrategy` in this example.
+  :ref:`BareboxStrategy <conf-bareboxstrategy>` in this example.
 
-The `Strategy` needs additional drivers to control the target.
+The :ref:`Strategy <overview-strategies>` needs additional drivers to control the target.
 Adapt the following environment config file (``strategy-example.yaml``) to your
 setup:
 
@@ -694,14 +699,17 @@ For this example, you should get a report similar to this:
 
   ========================== 3 passed in 29.77 seconds ===========================
 
-Feature Flags
-~~~~~~~~~~~~~
-labgrid includes support for feature flags on a global and target scope.
-Adding a ``@pytest.mark.lg_feature`` decorator to a test ensures it is only
-executed if the desired feature is available:
+.. _usage_pytestplugin_mark_lg_feature:
+
+@pytest.mark.lg_feature()
+~~~~~~~~~~~~~~~~~~~~~~~~~
+labgrid supports :ref:`environment-configuration-feature-flags` in the
+:ref:`environment-configuration`.
+Adding a ``@pytest.mark.lg_feature()`` decorator to a test ensures it is only
+executed if the desired feature is set, either under the target or global
+``features:`` keys.
 
 .. code-block:: python
-   :name: test_feature_flags.py
 
    import pytest
 
@@ -709,63 +717,12 @@ executed if the desired feature is available:
    def test_camera(target):
       pass
 
-Here's an example environment configuration:
+In case the feature is unavailable, pytest will record the missing feature
+as the skip reason.
 
-.. code-block:: yaml
-  :name: feature-flag-env.yaml
-
-  targets:
-    main:
-      features:
-        - camera
-      resources: {}
-      drivers: {}
-
-.. testcode:: pytest-example
-  :hide:
-
-  import pytest
-
-  plugins = ['labgrid.pytestplugin']
-  pytest.main(['--lg-env', 'feature-flag-env.yaml', 'test_feature_flags.py'], plugins)
-
-.. testoutput:: pytest-example
-  :hide:
-
-  ... 1 passed...
-
-This would run the above test, however the following configuration would skip the
-test because of the missing feature:
-
-.. code-block:: yaml
-  :name: feature-flag-skip-env.yaml
-
-  targets:
-    main:
-      features:
-        - console
-      resources: {}
-      drivers: {}
-
-.. testcode:: pytest-example
-  :hide:
-
-  import pytest
-
-  plugins = ['labgrid.pytestplugin']
-  pytest.main(['--lg-env', 'feature-flag-skip-env.yaml', 'test_feature_flags.py'], plugins)
-
-.. testoutput:: pytest-example
-  :hide:
-
-  ... 1 skipped...
-
-pytest will record the missing feature as the skip reason.
-
-For tests with multiple required features, pass them as a list to pytest:
+Tests requiring multiple features are also possible:
 
 .. code-block:: python
-   :name: test_feature_flags_global.py
 
    import pytest
 
@@ -773,37 +730,43 @@ For tests with multiple required features, pass them as a list to pytest:
    def test_camera(target):
       pass
 
-Features do not have to be set per target, they can also be set via the global
-features key:
+@pytest.mark.lg_xfail_feature()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+labgrid supports :ref:`environment-configuration-feature-flags` in the
+:ref:`environment-configuration`.
+pytest supports the ``xfail`` marker, see
+`pytest.mark.xfail() <https://docs.pytest.org/en/stable/reference/reference.html#pytest-mark-xfail>`_.
 
-.. code-block:: yaml
-  :name: feature-flag-global-env.yaml
+When having more specific features, tests can be marked as ``xfail`` for a
+particular feature.
 
-  features:
-    - camera
-  targets:
-    main:
-      features:
-        - console
-      resources: {}
-      drivers: {}
+Imagine two targets have ``camera`` feature flags.
+One of them has the additional ``special-camera-2000`` feature flag.
+The other has the additional ``special-camera-3000`` feature flag.
+Due to a known bug on ``special-camera-3000``, the test is expected to
+fail.
+The test can be marked as ``xfail`` for that feature:
 
-.. testcode:: pytest-example
-  :hide:
+.. code-block:: python
 
-  import pytest
+   import pytest
 
-  plugins = ['labgrid.pytestplugin']
-  pytest.main(['--lg-env', 'feature-flag-global-env.yaml', 'test_feature_flags_global.py'],
-              plugins)
+   @pytest.mark.lg_feature("camera"])
+   @pytest.mark.lg_xfail_feature(
+       "special-camera-3000",
+       reason="known bug xy on special-camera-3000",
+       raises=AssertionError,
+       strict=True,
+   )
+   def test_camera(target):
+      pass
 
-.. testoutput:: pytest-example
-  :hide:
+Features under the target and global ``features:`` keys are considered.
 
-  ... 1 passed...
-
-This YAML configuration would combine both the global and the target features.
-
+``@pytest.mark.lg_xfail_feature(feature, **kwargs)``:
+  - ``feature`` (str) - Feature that should mark the test as ``xfail``, passed
+    as boolean ``condition=`` to ``pytest.mark.xfail()``.
+  - ``**kwargs`` - All kw-only args are passed to ``pytest.mark.xfail()``.
 
 Test Reports
 ~~~~~~~~~~~~

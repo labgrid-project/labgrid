@@ -113,7 +113,7 @@ def env(request, record_testsuite_property):
 
 @pytest.fixture(scope="session")
 def target(env):
-    """Return the default target `main` configured in the supplied
+    """Return the default target "main" configured in the supplied
     configuration file."""
     target = env.get_target()
     if target is None:
@@ -124,7 +124,7 @@ def target(env):
 
 @pytest.fixture(scope="session")
 def strategy(request, target):
-    """Return the Strategy of the default target `main` configured in the
+    """Return the Strategy of the default target "main" configured in the
     supplied configuration file."""
     try:
         strategy = target.get_driver("Strategy")

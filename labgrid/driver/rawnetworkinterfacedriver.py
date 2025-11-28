@@ -18,9 +18,18 @@ from ..resource.common import NetworkResource
 @target_factory.reg_driver
 @attr.s(eq=False)
 class RawNetworkInterfaceDriver(Driver):
+    """RawNetworkInterface - Manage a network interface and interact with it at a low level
+
+    Args:
+        manage_interface (bool, default=True): if True this driver will
+        setup/teardown the interface on activate/deactivate. Set this to False
+        if you are managing the interface externally.
+    """
+
     bindings = {
         "iface": {"NetworkInterface", "RemoteNetworkInterface", "USBNetworkInterface"},
     }
+    manage_interface = attr.ib(default=True, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -28,12 +37,14 @@ class RawNetworkInterfaceDriver(Driver):
         self._replay_handle = None
 
     def on_activate(self):
-        self._set_interface("up")
-        self._wait_state("up")
+        if self.manage_interface:
+            self._set_interface("up")
+            self._wait_state("up")
 
     def on_deactivate(self):
-        self._set_interface("down")
-        self._wait_state("down")
+        if self.manage_interface:
+            self._set_interface("down")
+            self._wait_state("down")
 
     def _wrap_command(self, args):
         wrapper = ["sudo", "labgrid-raw-interface"]
@@ -205,10 +216,30 @@ class RawNetworkInterfaceDriver(Driver):
             cmd.append(str(timeout))
         cmd = self._wrap_command(cmd)
         if filename is None:
-            self._record_handle = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+            self._record_handle = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         else:
             with open(filename, "wb") as outdata:
                 self._record_handle = subprocess.Popen(cmd, stdout=outdata, stderr=subprocess.PIPE)
+
+        # wait for capture start
+        stderr = b""
+        while True:
+            line = self._record_handle.stderr.readline()
+            if not line:  # process ended prematurely
+                try:
+                    self._stop(self._record_handle)
+                except subprocess.CalledProcessError as e:
+                    # readd consumed stderr to exception
+                    e.stderr = stderr
+                    raise
+
+            if line.startswith(b"tcpdump: listening on"):
+                break
+
+            # collect and log other lines in stderr before capturing has started
+            stderr += line
+            self.logger.warning(line.decode().rstrip())
+
         return self._record_handle
 
     @Driver.check_active

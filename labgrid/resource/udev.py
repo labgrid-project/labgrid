@@ -483,16 +483,13 @@ class USBSDWireDevice(USBResource):
     it is identified via USB using udev
     """
 
-    control_path = attr.ib(
-        default=None,
-        validator=attr.validators.optional(str)
-    )
     disk_path = attr.ib(
         default=None,
         validator=attr.validators.optional(str)
     )
 
     def __attrs_post_init__(self):
+        self.control_serial = None
         self.match['ID_VENDOR_ID'] = '04e8'
         self.match['ID_MODEL_ID'] = '6001'
         self.match['@ID_VENDOR_ID'] = '0424'
@@ -510,7 +507,7 @@ class USBSDWireDevice(USBResource):
         pass
 
     # Overwrite the poll function. Only mark the SDWire as available if both
-    # paths are available.
+    # control_serial and disk_path are available.
     def poll(self):
         super().poll()
         if self.device is not None and not self.avail:
@@ -761,6 +758,8 @@ class USBDebugger(USBResource):
                          ("0483", "374b"),  # STLINK-V3
                          ("0483", "374e"),  # STLINK-V3
                          ("0483", "374f"),  # STLINK-V3
+                         ("0483", "3754"),  # STLINK-V3
+                         ("04b4", "f155"),  # KitProg3 CMSIS-DAP
                          ("15ba", "0003"),  # Olimex ARM-USB-OCD
                          ("15ba", "002b"),  # Olimex ARM-USB-OCD-H
                          ("15ba", "0004"),  # Olimex ARM-USB-TINY
@@ -768,6 +767,7 @@ class USBDebugger(USBResource):
                          ("1366", "0101"),  # SEGGER J-Link PLUS
                          ("1366", "0105"),  # SEGGER J-Link
                          ("1366", "1015"),  # SEGGER J-Link
+                         ("1366", "1024"),  # SEGGER J-Link
                          ("1366", "1051"),  # SEGGER J-Link
                          ("1366", "1061"),  # SEGGER J-Link
                          ]:

@@ -503,6 +503,7 @@ class USBDeditecRelaisExport(USBGenericExport):
             "vendor_id": self.local.vendor_id,
             "model_id": self.local.model_id,
             "index": self.local.index,
+            "invert": self.local.invert,
         }
 
 
@@ -523,6 +524,7 @@ class USBHIDRelayExport(USBGenericExport):
             "vendor_id": self.local.vendor_id,
             "model_id": self.local.model_id,
             "index": self.local.index,
+            "invert": self.local.invert,
         }
 
 

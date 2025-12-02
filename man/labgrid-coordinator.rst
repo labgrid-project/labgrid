@@ -39,6 +39,12 @@ OPTIONS
     display command line help
 -l ADDRESS, --listen ADDRESS
     make coordinator listen on host and port
+--secure
+    enable TLS gRPC channel
+--cert
+    path to TLS certificate (in PEM format)
+--key
+    path to TLS key (in PEM format)
 -d, --debug
     enable debug mode
 

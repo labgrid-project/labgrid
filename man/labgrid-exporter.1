@@ -50,6 +50,12 @@ display command line help
 .B  \-x\fP,\fB  \-\-coordinator
 coordinator \fBHOST[:PORT]\fP to connect to, defaults to \fB127.0.0.1:20408\fP
 .TP
+.B  \-\-secure
+enable TLS gRPC channel
+.TP
+.B  \-\-cert
+path to TLS certificate (in PEM format)
+.TP
 .B  \-i\fP,\fB  \-\-isolated
 enable isolated mode (always request SSH forwards)
 .TP
@@ -122,6 +128,16 @@ Same as above, but with name \fBmyname\fP:
 .sp
 .EX
 $ labgrid\-exporter \-n myname my\-config.yaml
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+Same as above, but connecting to a \fBlabgrid\-coordinator\fP that uses secure gRPC channels:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+$ labgrid\-exporter \-\-secure [\-\-cert PATH] \-n myname my\-config.yaml
 .EE
 .UNINDENT
 .UNINDENT

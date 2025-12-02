@@ -54,6 +54,12 @@ specify the place to operate on
 .BI \-x \ ADDRESS\fR,\fB \ \-\-coordinator \ ADDRESS
 coordinator \fBHOST[:PORT]\fP to connect to, defaults to \fB127.0.0.1:20408\fP
 .TP
+.B  \-\-secure
+enable TLS gRPC channel
+.TP
+.B  \-\-cert
+path to TLS certificate (in PEM format)
+.TP
 .BI \-c \ CONFIG\fR,\fB \ \-\-config \ CONFIG
 set the configuration file
 .TP
@@ -288,6 +294,16 @@ Add all resources with the group \(dqexample\-group\(dq to the place example\-pl
 .sp
 .EX
 $ labgrid\-client \-p example\-place add\-match */example\-group/*/*
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+Retrieve a list of places on a \fBlabgrid\-coordinator\fP that uses secure gRPC channels:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+$ labgrid\-client \-\-secure [\-\-cert PATH] places
 .EE
 .UNINDENT
 .UNINDENT

@@ -9,6 +9,8 @@ import time
 from contextlib import contextmanager
 import copy
 import random
+import pathlib
+from typing import Optional
 
 import attr
 import grpc
@@ -1077,7 +1079,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
 
 
-async def serve(listen, cleanup) -> None:
+async def serve(listen, cleanup, server_credentials=None) -> None:
     asyncio.current_task().set_name("coordinator-serve")
     # It seems since https://github.com/grpc/grpc/pull/34647, the
     # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
@@ -1114,7 +1116,11 @@ async def serve(listen, cleanup) -> None:
     except ImportError:
         logging.info("Module grpcio-channelz not available")
 
-    server.add_insecure_port(listen)
+    if server_credentials:
+        server.add_secure_port(listen, server_credentials)
+    else:
+        server.add_insecure_port(listen)
+
     logging.debug("Starting server")
     await server.start()
 
@@ -1133,6 +1139,18 @@ async def serve(listen, cleanup) -> None:
     await server.wait_for_termination()
 
 
+def get_server_credentials(args: argparse.Namespace) -> Optional[grpc.ServerCredentials]:
+    if not args.secure:
+        return None
+    
+    if not args.cert or not args.key:
+        raise RuntimeError("--cert and --key must be provided when --secure is provided")
+        
+    with open(args.key, 'rb') as fk:
+        with open(args.cert, 'rb') as fc:
+            return grpc.ssl_server_credentials([(fk.read(), fc.read())])
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -1143,6 +1161,9 @@ def main():
         default="[::]:20408",
         help="coordinator listening host and port",
     )
+    parser.add_argument("--secure", action="store_true", default=False, help="enable TLS to secure the gRPC channel")
+    parser.add_argument("--cert", type=pathlib.PurePath, help="path to TLS certificate (in PEM format)")
+    parser.add_argument("--key", type=pathlib.PurePath, help="path to TLS key (in PEM format)")
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
     parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
     parser.add_argument(
@@ -1172,7 +1193,8 @@ def main():
     cleanup = []
     loop.set_debug(True)
     try:
-        loop.run_until_complete(serve(args.listen, cleanup))
+        server_credentials = get_server_credentials(args)
+        loop.run_until_complete(serve(args.listen, cleanup, server_credentials))
     finally:
         if cleanup:
             loop.run_until_complete(*cleanup)

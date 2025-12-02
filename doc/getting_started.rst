@@ -426,6 +426,21 @@ Follow these instructions to install the systemd files on your machine(s):
 
       # usermod -a -G labgrid <user>
 
+Enabling gRPC connection security
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is encouraged to secure gRPC channels in a production environment.
+
+This can be enabled on the ``labgrid-coordinator`` by adding the ``--secure``,
+``--cert`` and ``--key`` options.
+Refer to the ``labgrid-coordinator`` man page for details.
+
+When you are connecting with ``labgrid-client`` or ``labgrid-exporter`` to a
+``labgrid-coordinator``that has secure gRPC channels enabled you need to pass
+the ``--secure`` (and ``--cert`` if the certificate is not trusted by the host
+machine) option.
+Refer to the ``labgrid-client`` and ``labgrid-exporter`` man pages for details.
+
 Using a Strategy
 ----------------
 

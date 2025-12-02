@@ -50,6 +50,15 @@ display command line help
 .BI \-l \ ADDRESS\fR,\fB \ \-\-listen \ ADDRESS
 make coordinator listen on host and port
 .TP
+.B  \-\-secure
+enable TLS gRPC channel
+.TP
+.B  \-\-cert
+path to TLS certificate (in PEM format)
+.TP
+.B  \-\-key
+path to TLS key (in PEM format)
+.TP
 .B  \-d\fP,\fB  \-\-debug
 enable debug mode
 .UNINDENT

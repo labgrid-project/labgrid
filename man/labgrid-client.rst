@@ -39,6 +39,10 @@ OPTIONS
     specify the place to operate on
 -x ADDRESS, --coordinator ADDRESS
     coordinator ``HOST[:PORT]`` to connect to, defaults to ``127.0.0.1:20408``
+--secure
+    enable TLS gRPC channel
+--cert
+    path to TLS certificate (in PEM format)
 -c CONFIG, --config CONFIG
     set the configuration file
 -s STATE, --state STATE
@@ -269,6 +273,12 @@ Add all resources with the group "example-group" to the place example-place:
 .. code-block:: bash
 
    $ labgrid-client -p example-place add-match */example-group/*/*
+
+Retrieve a list of places on a ``labgrid-coordinator`` that uses secure gRPC channels:
+
+.. code-block:: bash
+
+    $ labgrid-client --secure [--cert PATH] places
 
 SEE ALSO
 --------

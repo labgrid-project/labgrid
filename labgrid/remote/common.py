@@ -5,10 +5,13 @@ import random
 import re
 import string
 import logging
+from argparse import Namespace
 from datetime import datetime
 from fnmatch import fnmatchcase
+from typing import Optional
 
 import attr
+import grpc
 
 from .generated import labgrid_coordinator_pb2
 
@@ -56,6 +59,17 @@ def build_dict_from_map(m):
         else:
             d[k] = getattr(v, kind)
     return d
+
+
+def get_client_credentials(args: Namespace) -> Optional[grpc.ChannelCredentials]:
+    if not args.secure:
+        return None
+    
+    if not args.cert:
+        return grpc.ssl_channel_credentials()
+
+    with open(args.cert, 'rb') as fc:
+        return grpc.ssl_channel_credentials(fc.read())
 
 
 @attr.s(eq=False)

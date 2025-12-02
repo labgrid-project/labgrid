@@ -15,12 +15,13 @@ import warnings
 from pathlib import Path
 from typing import Dict, Type
 from socket import gethostname, getfqdn
+import pathlib
 
 import attr
 import grpc
 
 from .config import ResourceConfig
-from .common import ResourceEntry, queue_as_aiter
+from .common import ResourceEntry, get_client_credentials, queue_as_aiter
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..util import get_free_port, labgrid_version
 
@@ -886,10 +887,17 @@ class Exporter:
         if urlsplit(f"//{config['coordinator']}").port is None:
             config["coordinator"] += ":20408"
 
-        self.channel = grpc.aio.insecure_channel(
-            target=config["coordinator"],
-            options=channel_options,
-        )
+        if config["credentials"]:
+            self.channel = grpc.aio.secure_channel(
+                target=config["coordinator"],
+                credentials=config["credentials"],
+                options=channel_options,
+            )
+        else:
+            self.channel = grpc.aio.insecure_channel(
+                target=config["coordinator"],
+                options=channel_options,
+            )
         self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
         self.out_queue = asyncio.Queue()
         self.pump_task = None
@@ -1121,6 +1129,8 @@ def main():
         default=os.environ.get("LG_COORDINATOR", "127.0.0.1:20408"),
         help="coordinator host and port",
     )
+    parser.add_argument("--secure", action="store_true", default=False, help="enable TLS to secure the gRPC channel")
+    parser.add_argument("--cert", type=pathlib.PurePath, help="path to TLS certificate (in PEM format)")
     parser.add_argument(
         "-n",
         "--name",
@@ -1162,6 +1172,7 @@ def main():
         "hostname": args.hostname or (getfqdn() if args.fqdn else gethostname()),
         "resources": args.resources,
         "coordinator": args.coordinator,
+        "credentials": get_client_credentials(args),
         "isolated": args.isolated,
     }
 

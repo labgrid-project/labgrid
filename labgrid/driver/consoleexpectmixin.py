@@ -1,4 +1,5 @@
 import time
+import attr
 import pexpect
 
 from ..util import PtxExpect, Timeout
@@ -6,6 +7,7 @@ from ..step import step
 from .common import Driver
 
 
+@attr.s(eq=False)
 class ConsoleExpectMixin:
     """
     Console driver mixin to implement the read, write, expect and sendline methods. It uses
@@ -14,9 +16,11 @@ class ConsoleExpectMixin:
     The class using the ConsoleExpectMixin must provide a logger and a txdelay attribute.
     """
 
+    linesep = attr.ib(default="\n", validator=attr.validators.instance_of(str), kw_only=True)
+
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self._expect = PtxExpect(self)
+        self._expect = PtxExpect(self, self.linesep.encode("ASCII"))
 
     @Driver.check_active
     @step(result=True, tag='console')

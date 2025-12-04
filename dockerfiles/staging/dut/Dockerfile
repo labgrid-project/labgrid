@@ -1,17 +1,14 @@
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 LABEL org.opencontainers.image.authors="mail@krevsbech.dk"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN set -e ;\
-    apt update -q=2 ;\
-    apt install -q=2 --yes --no-install-recommends openssh-server;\
-    apt clean ;\
-    rm -rf /var/lib/apt/lists/* ;\
-    mkdir /var/run/sshd ;\
-    echo 'root:PASSWORD' | chpasswd ;\
-    echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config ;\
+RUN apt update -q=2 && \
+    apt install -q=2 --yes --no-install-recommends openssh-server && \
+    rm -rf /var/lib/apt/lists/* && \
+    echo 'root:PASSWORD' | chpasswd && \
+    echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config && \
     sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
     # SSH login fix. Otherwise user is kicked off after login
 

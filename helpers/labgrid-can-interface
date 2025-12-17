@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+#
+# Wrapper script to be deployed on machines that should allow controlled
+# manipulation of CAN network interfaces. A /etc/labgrid/helpers.yaml
+# can deny access to CAN interfaces. See below.
+#
+# This is intended to be used via sudo. For example, add via visudo:
+# %developers ALL = NOPASSWD: /usr/sbin/labgrid-can-interface
+
+import argparse
+import os
+import sys
+
+import yaml
+
+# Linux CAN interface type
+ARPHRD_CAN = 280
+
+def get_denylist():
+    denylist_file = "/etc/labgrid/helpers.yaml"
+    try:
+        with open(denylist_file) as stream:
+            data = yaml.load(stream, Loader=yaml.SafeLoader)
+    except (PermissionError, FileNotFoundError, AttributeError) as e:
+        raise Exception(f"No configuration file ({denylist_file}), inaccessable or invalid yaml") from e
+
+    denylist = data.get("can-interface", {}).get("denied-interfaces", [])
+
+    if not isinstance(denylist, list):
+        raise Exception("No explicit denied-interfaces or not a list, please check your configuration")
+
+    return denylist
+
+
+def is_can_interface(ifname: str) -> bool:
+    """Check if the given interface is a CAN interface. It may throw exceptions if the
+    interface does not exist or is inaccessible.
+
+    Args:
+        ifname (str): name of the interface
+
+    Returns:
+        bool: True if the interface is a CAN, False otherwise.
+    """
+    type_path = f"/sys/class/net/{ifname}/type"
+
+    with open(type_path, "r") as f:
+        if_type = int(f.read().strip())
+    return if_type == ARPHRD_CAN
+
+
+def main(program, options):
+    if not options.ifname:
+        raise ValueError("Empty interface name.")
+    if any((c == "/" or c.isspace()) for c in options.ifname):
+        raise ValueError(f"Interface name '{options.ifname}' contains invalid characters.")
+    if len(options.ifname) > 15:
+        raise ValueError(f"Interface name '{options.ifname}' is too long.")
+
+    denylist = get_denylist()
+
+    if options.ifname in denylist:
+        raise ValueError(f"Interface name '{options.ifname}' is denied in denylist.")
+
+    programs = ["ip", "tc"]
+    if program not in programs:
+        raise ValueError(f"Invalid program {program} called with wrapper, valid programs are: {programs}")
+
+    if not (program == "ip" and options.action == "add"):
+        if not is_can_interface(options.ifname):
+            raise ValueError(f"Interface '{options.ifname}' is not a CAN interface.")
+
+    args = [program]
+
+    if program == "ip":
+        if options.action == "add":
+            args.extend(["link", "add", "name", options.ifname, "type", "vcan"])
+        elif options.action == "del":
+            args.extend(["link", "del", "name", options.ifname])
+        elif options.action in ("up", "down"):
+            args.extend(["link", "set", "dev", options.ifname, options.action])
+        elif options.action == "set-bitrate":
+            if options.bitrate is None:
+                raise ValueError("Missing bitrate for set-bitrate action")
+            try:
+                bitrate = int(options.bitrate)
+            except ValueError:
+                raise ValueError("Bitrate must be an integer")
+            if bitrate <= 0:
+                raise ValueError("Bitrate must be higher than 0")
+            args.extend(["link", "set", options.ifname, "type", "can", "bitrate", str(bitrate)])
+        else:
+            raise ValueError(f"Invalid ip subcommand '{options.action}'")
+    elif program == "tc":
+        if options.action == "set-bitrate":
+            try:
+                bitrate = int(options.bitrate)
+            except ValueError:
+                raise ValueError("Bitrate must be an integer")
+            if bitrate <= 0:
+                raise ValueError("Bitrate must be higher than 0")
+
+            # Only the bitrate parameter is configured, the rest is hardcoded per cannelloni example
+            args.extend(["qdisc", "add", "dev", options.ifname, "root", "tbf", "rate", f"{bitrate}bit", "latency", "100ms", "burst", "1000"])
+        else:
+            raise ValueError(f"Invalid tc subcommand '{options.action}'")
+
+    try:
+        os.execvp(args[0], args)
+    except FileNotFoundError as e:
+        raise RuntimeError(f"Missing {program} binary") from e
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
+    subparsers = parser.add_subparsers(dest="program", help="program to run")
+
+    # ip
+    ip_parser = subparsers.add_parser("ip")
+    ip_parser.add_argument("ifname", type=str, help="interface name")
+    ip_parser.add_argument(
+        "action",
+        type=str,
+        choices=["add", "del", "up", "down", "set-bitrate"],
+        help="action, one of {%(choices)s}",
+    )
+    ip_parser.add_argument("bitrate", nargs="?", type=int,
+                           help="bitrate in bits per second, mandatory for set-bitrate action")
+
+    # tc
+    tc_parser = subparsers.add_parser("tc")
+    tc_parser.add_argument("ifname", type=str, help="interface name")
+    tc_parser.add_argument("action", type=str, choices=["set-bitrate"], help="action, one of {%(choices)s}")
+    tc_parser.add_argument("bitrate", type=int, help="bitrate in bits per second for set-bitrate")
+
+    args = parser.parse_args()
+    try:
+        main(args.program, args)
+    except Exception as e:  # pylint: disable=broad-except
+        if args.debug:
+            import traceback
+
+            traceback.print_exc(file=sys.stderr)
+        print(f"ERROR: {e}", file=sys.stderr)
+        exit(1)

@@ -4003,12 +4003,32 @@ something like ``{{ env['FOOBAR'] }}`` to insert the content of environment
 variable ``FOOBAR``.
 In addition to ``env`` the template also has access to the following variables:
 
-isolated
-  ``True`` or ``False``, depending on the :code:`--isolated` command line option.
+drop_ins
+  An alphabetically sorted list of files in a directory named after the
+  currently processed template with ".d" appended. For example if the template
+  is named ``/etc/labgrid/configuration.yaml`` the list will contain files
+  matching ``/etc/labgrid/configuration.yaml.d/*.yaml`` pattern. The paths are
+  relative to the directory containing the template (i.e. ``/etc/labgrid``
+  in our example). These files can be included using the ``include`` directive.
+  A template loading all its drop-ins at would look like this
+
+.. code-block::
+
+   # for f in drop_ins
+   {% include f %}
+   # endfor
+
+.. warning::
+   Use the ``{% include f %}`` form instead of ``# include f``, otherwise
+   Jinja2 would strip newline characters before concatenation, and thus break
+   the YAML formatting.
 
 hostname
   The hostname of the exporter host. Can be used to e.g. construct URLs to the
   current host (``http://{{ hostname }}/``).
+
+isolated
+  ``True`` or ``False``, depending on the :code:`--isolated` command line option.
 
 name
   The name of the exporter.

@@ -1,5 +1,6 @@
 from pprint import pprint
 
+import glob
 import os
 
 import attr
@@ -15,8 +16,9 @@ class ResourceConfig:
     template_env = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
 
     def __attrs_post_init__(self):
+        _dirname = os.path.dirname(self.filename)
         env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(os.path.dirname(self.filename)),
+            loader=jinja2.FileSystemLoader(_dirname),
             line_statement_prefix="#",
             line_comment_prefix="##",
         )
@@ -24,6 +26,11 @@ class ResourceConfig:
             template = env.get_template(os.path.basename(self.filename))
         except jinja2.TemplateNotFound:
             raise NoConfigFoundError(f"{self.filename} could not be found")
+        drop_ins = [
+            os.path.relpath(p, _dirname) for p in sorted(glob.glob(os.path.join(self.filename + ".d", "*.yaml")))
+        ]
+
+        self.template_env["drop_ins"] = drop_ins
         rendered = template.render(self.template_env)
         pprint(("rendered", rendered))
         self.data = load(rendered)

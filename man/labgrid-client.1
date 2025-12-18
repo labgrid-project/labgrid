@@ -678,7 +678,7 @@ transfer file via scp
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client scp [\-\-name NAME] src dst
+usage: labgrid\-client scp [\-\-name NAME] [\-\-recursive] src [src ...] dst
 .EE
 .UNINDENT
 .UNINDENT
@@ -696,6 +696,11 @@ destination path (use :dir/file for remote side)
 .TP
 .B \-\-name <name>, \-n <name>
 optional resource name
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-recursive, \-r
+copy recursive
 .UNINDENT
 .SS labgrid\-client sd\-mux
 .sp

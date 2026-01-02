@@ -1132,6 +1132,11 @@ unspecified, defaults to 30 seconds.
 .sp
 Add a prefix to \fB\&.labgrid_agent_{agent_hash}.py\fP allowing specification for
 where on the exporter it should be uploaded to.
+.SS LG_AGENT_PYTHON
+.sp
+Specify python executable other the the default \fBpython3\fP\&. By pointing
+to an executable in a particular virtual environment, use this environment
+and its packages to run the agent and any agent\-wrapped code.
 .SH MATCHES
 .sp
 Match patterns are used to assign a resource to a specific place. The format is:

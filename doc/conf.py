@@ -223,7 +223,7 @@ def setup(app):
     # Make version and date stable when generating manpages as they will be tracked in git
     if app.outdir.parts[-1] == "man":
         app.config.version = ""
-        app.config.today_fmt = "%Y"
+        app.config.today = "2025"
     app.connect('builder-inited', run_apidoc)
     app.connect('doctree-read', write_literal_blocks)
 

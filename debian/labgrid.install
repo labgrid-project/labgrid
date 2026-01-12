@@ -7,4 +7,6 @@ debian/labgrid-pytest /usr/bin
 debian/labgrid-suggest /usr/bin
 helpers/labgrid-bound-connect /usr/sbin
 helpers/labgrid-raw-interface /usr/sbin
+helpers/labgrid-vpn-helper /usr/sbin
+labgrid/taptunnel.py /usr/bin/labgrid-taptunnel
 contrib/completion/labgrid-client.bash => /usr/share/bash-completion/completions/labgrid-client

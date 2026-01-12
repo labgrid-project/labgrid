@@ -3,6 +3,11 @@ import contextlib
 import json
 import subprocess
 import time
+import os
+import os.path
+import random
+import logging
+from contextlib import ExitStack
 
 import attr
 
@@ -13,6 +18,50 @@ from ..util.helper import processwrapper
 from ..util.managedfile import ManagedFile
 from ..util.timeout import Timeout
 from ..resource.common import NetworkResource
+from .exception import ExecutionError
+
+
+def random_mac_address():
+    mac = [
+        0x00,
+        0x24,
+        0x81,
+        random.randint(0x00, 0x7F),
+        random.randint(0x00, 0xFF),
+        random.randint(0x00, 0xFF),
+    ]
+    return ":".join(map(lambda x: "%02x" % x, mac))
+
+
+class VPNNamespace(object):
+    def __init__(self, ns_pid, intf):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.pid = ns_pid
+        self.prefix = [
+            "nsenter",
+            "--user",
+            "--net",
+            "--target",
+            str(self.pid),
+            "--preserve-credentials",
+            "--",
+        ]
+        self.intf = intf
+
+    def _get_cmd(self, command):
+        if isinstance(command, str):
+            return self.prefix + self.prefix + ["/bin/sh", "-c", command]
+        return self.prefix + command
+
+    def run(self, command, **kwargs):
+        cmd = self._get_cmd(command)
+        self.logger.info("Running %s", cmd)
+        return subprocess.run(cmd, **kwargs)
+
+    def Popen(self, command, **kwargs):
+        cmd = self._get_cmd(command)
+        self.logger.info("Popen %s", cmd)
+        return subprocess.Popen(cmd, **kwargs)
 
 
 @target_factory.reg_driver
@@ -337,6 +386,110 @@ class RawNetworkInterfaceDriver(Driver):
             yield self.start_replay(filename)
         finally:
             self.stop_replay(timeout=timeout)
+
+    @Driver.check_active
+    @contextlib.contextmanager
+    def vpn_ns(self, *, address=None, tap_interface="tap0", mac_address=None):
+        """
+        Create a separate network namespace that has a VPN connection to the
+        network interface.
+
+        Args:
+            address (str): IP address to assign to the network interface in the
+                           namespace, in CIDR notation. If None, no address is
+                           assigned
+            tap_interface (str): Name of the TAP interface in the namespace
+            mac_address (str): MAC address to assign to the network interface in
+                               the network namespace. If unspecified, a random MAC
+                               address will be assigned. It can be useful to assign
+                               a consistent MAC address to prevent ARP table
+                               flushes
+        """
+        mac_address = mac_address or random_mac_address()
+
+        def check_process(p):
+            if p.poll() is not None:
+                raise ExecutionError(f"Child {p.pid} has exited with {p.returncode}")
+
+        with ExitStack() as ctx:
+            vpn_helper = ctx.enter_context(
+                subprocess.Popen(
+                    self.iface.wrap_command(
+                        [
+                            "sudo",
+                            "labgrid-vpn-helper",
+                            "--interface",
+                            self.iface.ifname,
+                            "--mac-address",
+                            mac_address,
+                        ]
+                    ),
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                )
+            )
+            ctx.callback(lambda: vpn_helper.terminate())
+
+            ns = ctx.enter_context(
+                subprocess.Popen(
+                    [
+                        "unshare",
+                        "--user",
+                        "--net",
+                        "--map-root-user",
+                        "--",
+                        "/bin/sh",
+                        "-c",
+                        "while /bin/true; do sleep 1000; done",
+                    ]
+                )
+            )
+            ctx.callback(lambda: ns.terminate())
+
+            cmd = VPNNamespace(ns.pid, tap_interface)
+
+            self.logger.info("Waiting for namespace to be ready")
+            while cmd.run(["true"], stderr=subprocess.DEVNULL).returncode != 0:
+                check_process(vpn_helper)
+                check_process(ns)
+                time.sleep(0.1)
+
+            self.logger.info("Namespace pid is %d", ns.pid)
+
+            self.logger.info("Creating tap tunnel")
+            ready = ctx.enter_context(os.fdopen(os.memfd_create("ready"), "r+"))
+            tap_tunnel = ctx.enter_context(
+                cmd.Popen(
+                    [
+                        "labgrid-taptunnel",
+                        "--tap-name",
+                        tap_interface,
+                        "--ready-fd",
+                        str(ready.fileno()),
+                    ],
+                    stdin=vpn_helper.stdout,
+                    stdout=vpn_helper.stdin,
+                    pass_fds=(ready.fileno(),),
+                )
+            )
+            ctx.callback(lambda: tap_tunnel.terminate())
+
+            while ready.read().strip() != "1":
+                ready.seek(0)
+                check_process(vpn_helper)
+                check_process(ns)
+                check_process(tap_tunnel)
+                time.sleep(0.1)
+
+            cmd.run(["ip", "link", "set", tap_interface, "address", mac_address], check=True)
+            cmd.run(["ip", "link", "set", "up", tap_interface], check=True)
+            if address:
+                cmd.run(
+                    ["ip", "addr", "add", str(address), "dev", tap_interface],
+                    check=True,
+                )
+
+            yield cmd
 
     @Driver.check_active
     @step()

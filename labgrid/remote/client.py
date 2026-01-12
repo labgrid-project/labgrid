@@ -17,6 +17,7 @@ import shlex
 import shutil
 import json
 import itertools
+import ipaddress
 from textwrap import indent
 from socket import gethostname
 from getpass import getuser
@@ -1400,6 +1401,16 @@ class ClientSession:
         if res:
             raise InteractiveCommandError("gst-launch-1.0 error", res)
 
+    def vpn(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        name = self.args.name
+        drv = self._get_driver_or_new(target, "RawNetworkInterfaceDriver", name=name, activate=False)
+        drv.manage_interface = False
+        target.activate(drv)
+        with drv.vpn_ns(address=self.args.address) as cmd:
+            cmd.run(self.args.command)
+
     def _get_tmc(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
@@ -2059,6 +2070,18 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser = subparsers.add_parser("audio", help="start a audio stream")
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.set_defaults(func=ClientSession.audio)
+
+    subparser = subparsers.add_parser(
+        "vpn", help="Run command in new network namespace with a VPN connected to a network interface"
+    )
+    subparser.add_argument("--name", "-n", help="optional resource name")
+    subparser.add_argument(
+        "--address",
+        type=ipaddress.ip_interface,
+        help="assign address to VPN interface (CIDR notation)",
+    )
+    subparser.add_argument("command", nargs="+", help="command to execute")
+    subparser.set_defaults(func=ClientSession.vpn)
 
     tmc_parser = subparsers.add_parser("tmc", help="control a USB TMC device")
     tmc_parser.add_argument("--name", "-n", help="optional resource name")

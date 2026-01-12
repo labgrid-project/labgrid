@@ -952,6 +952,33 @@ configure v4l controls (such as \(aqfocus_auto=0,focus_absolute=40\(aq)
 .B \-\-name <name>, \-n <name>
 optional resource name
 .UNINDENT
+.SS labgrid\-client vpn
+.sp
+Run command in new network namespace with a VPN connected to a network interface
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client vpn [\-\-name NAME] [\-\-address ADDRESS]
+                          command [command ...]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B command
+command to execute
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-address <address>
+assign address to VPN interface (CIDR notation)
+.UNINDENT
 .SS labgrid\-client wait
 .sp
 wait for a reservation to be allocated

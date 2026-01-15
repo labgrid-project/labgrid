@@ -6,7 +6,7 @@ all: $(PAGES)
 compressed: $(COMPRESSED)
 
 $(PAGES): %: ../doc/.build/man/%
-	cp $< $@
+	sed 's/by the Docutils [^ ]* manpage writer\./by the Docutils manpage writer./' $< > $@
 
 ../doc/.build/man/%:
 	$(MAKE) -C ../doc man

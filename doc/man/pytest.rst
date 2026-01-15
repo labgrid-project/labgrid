@@ -15,7 +15,7 @@ SYNOPSIS
 DESCRIPTION
 -----------
 Labgrid ships a pytest plugin to integrate with the pytest infrastructure. It is
-activated if the `--lg-env` parameter is supplied to the pytest command.
+activated if the ``--lg-env`` parameter is supplied to the pytest command.
 
 The labgrid plugin parses the supplied configuration yaml file as described in
 ``labgrid-device-config``\(5) and allows the usage of the target and environment

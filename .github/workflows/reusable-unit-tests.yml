@@ -71,6 +71,7 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         flags: ${{ inputs.python-version }}
     - name: Build documentation
+      if: ${{ inputs.python-version != '3.9' && inputs.python-version != '3.10'}}
       run: |
         make -C doc clean
         make -C doc doctest SPHINXOPTS=-W

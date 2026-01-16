@@ -1,4 +1,4 @@
-#!/usr/bin/python3 
+#!/usr/bin/python3
 
 # This is intended to be used via sudo. For example, add via visudo:
 # %developers ALL = NOPASSWD: /usr/local/sbin/labgrid-bound-connect
@@ -15,7 +15,7 @@ def main(ifname, address, port):
         raise ValueError("Empty interface name.")
     if any((c == "/" or c.isspace()) for c in ifname):
         raise ValueError(f"Interface name '{ifname}' contains invalid characters.")
-    if len(ifname) > 16:
+    if len(ifname) > 15:
         raise ValueError(f"Interface name '{ifname}' is too long.")
 
     address = ipaddress.ip_address(address)
@@ -36,7 +36,7 @@ def main(ifname, address, port):
         raise RuntimeError(f"Invalid IP version '{address.version}'")
 
     # Delete the IP lookup cache for the address in case it is stale
-    subprocess.run(["ip", "neigh", "del", str(address), "dev", ifname], 
+    subprocess.run(["ip", "neigh", "del", str(address), "dev", ifname],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL
     )
@@ -78,4 +78,3 @@ if __name__ == "__main__":
             import traceback
             traceback.print_exc()
         print(f"ERROR: {e}", file=sys.stderr)
-

@@ -11,6 +11,7 @@ EnvironmentFile=-/etc/environment
 ExecStart=/path/to/labgrid/venv/bin/labgrid-exporter /etc/labgrid/exporter.yaml
 Restart=always
 RestartSec=30
+# Replace 'DynamicUser=yes' with 'User=labgrid' and 'Group=labgrid' when using labgrid helpers with sudo.
 DynamicUser=yes
 # Adjust to your distribution (most often "dialout" or "tty")
 SupplementaryGroups=dialout plugdev

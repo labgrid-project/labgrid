@@ -1,4 +1,3 @@
-import os
 import queue
 import warnings
 from collections import OrderedDict
@@ -214,16 +213,10 @@ class USBResource(ManagedResource):
         return None
 
     def read_attr(self, attribute):
-        """read uncached attribute value from sysfs
-
-        pyudev currently supports only cached access to attributes, so we read
-        directly from sysfs.
-        """
-        # FIXME update pyudev to support udev_device_set_sysattr_value(dev,
-        # attr, None) to clear the cache
+        """read uncached attribute value"""
         if self.device is not None:
-            with open(os.path.join(self.device.sys_path, attribute), 'rb') as f:
-                return f.read().rstrip(b'\n') # drop trailing newlines
+            self.device.attributes.unset(attribute)
+            return self.device.attributes.get(attribute)
 
         return None
 

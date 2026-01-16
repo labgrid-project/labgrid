@@ -379,6 +379,15 @@ Follow these instructions to install the systemd files on your machine(s):
    installation paths of your distribution.
 #. Adapt the ``ExecStart`` paths of the service files to the respective Python
    virtual environments of the coordinator and exporter.
+#. If you use labgrid helpers (see :file:`helpers/`) with sudo on exporter,
+   replace ``DynamicUser`` with ``User`` and ``Group`` in the
+   :file:`labgrid-exporter.service`:
+
+   .. code-block::
+
+      User=labgrid
+      Group=labgrid
+
 #. Adjust the ``SupplementaryGroups`` option in the
    :file:`labgrid-exporter.service` file to your distribution so that the
    exporter gains read and write access on TTY devices (for ``ser2net``); most

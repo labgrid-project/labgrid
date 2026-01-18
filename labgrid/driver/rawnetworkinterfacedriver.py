@@ -3,16 +3,23 @@ import contextlib
 import json
 import subprocess
 import time
+import os
+import threading
 
 import attr
 
 from .common import Driver
 from ..factory import target_factory
 from ..step import step
+from ..util.agentwrapper import AgentWrapper
 from ..util.helper import processwrapper
 from ..util.managedfile import ManagedFile
 from ..util.timeout import Timeout
 from ..resource.common import NetworkResource
+
+
+def _get_nsenter_prefix(ns_pid):
+    return ["nsenter", "-t", str(ns_pid), "-U", "-n", "-m", "--preserve-credentials"]
 
 
 @target_factory.reg_driver
@@ -35,6 +42,14 @@ class RawNetworkInterfaceDriver(Driver):
         super().__attrs_post_init__()
         self._record_handle = None
         self._replay_handle = None
+        self._remote_wrapper = None
+        self._remote_netns = None
+        self._remote_netns_pid = None
+        self._remote_netns_prefix = None
+        self._local_wrapper = None
+        self._local_netns = None
+        self._local_netns_pid = None
+        self._local_netns_prefix = None
 
     def on_activate(self):
         if self.manage_interface:
@@ -334,3 +349,97 @@ class RawNetworkInterfaceDriver(Driver):
         Returns the MAC address of the bound network interface resource.
         """
         return self.get_statistics()["address"]
+
+    @Driver.check_active
+    def _start_remote_netns(self):
+        if self._remote_wrapper is not None:
+            return
+
+        self._remote_wrapper = AgentWrapper(self.iface.host)
+        self._remote_netns = self._remote_wrapper.load('netns')
+        self._remote_netns_pid = self._remote_netns.unshare()
+        assert self._remote_netns_pid > 0
+
+        self._remote_netns_prefix = self.iface.command_prefix + _get_nsenter_prefix(self._remote_netns_pid)
+
+    @Driver.check_active
+    def _start_local_netns(self):
+        if self._local_wrapper is not None:
+            return
+
+        self._local_wrapper = AgentWrapper(None)
+        self._local_netns = self._local_wrapper.load('netns')
+        self._local_netns_pid = self._local_netns.unshare()
+        assert self._local_netns_pid > 0
+
+        self._local_netns_prefix = _get_nsenter_prefix(self._local_netns_pid)
+
+    def _pump_d2p(self, dev, pipe):
+        while True:
+            buf = os.read(dev.fileno(), 1522)
+            #print('Got tap data with length {}'.format(len(buf)))
+            pipe.write(len(buf).to_bytes(2))
+            pipe.write(buf)
+            pipe.flush()
+
+    def _pump_p2d(self, pipe, dev):
+        while True:
+            length = int.from_bytes(pipe.read(2))
+            buf = pipe.read(length)
+            #print('Got vtap data with length {}'.format(len(buf)))
+            os.write(dev.fileno(), buf)
+
+    def _start_pumps(self, dev, stdin, stdout):
+        threading.Thread(target=self._pump_d2p, args=(dev, stdin), daemon=True).start()
+        threading.Thread(target=self._pump_p2d, args=(stdout, dev), daemon=True).start()
+
+    def setup_netns(self):
+        self._start_remote_netns()
+        self._start_local_netns()
+
+        subprocess.check_call([
+          "sudo",
+          "/home/jluebbe/ptx/labgrid/helpers/labgrid-raw-interface",
+          "ns-macvtap", self.iface.ifname, str(self._remote_netns_pid),
+        ])
+
+        links = self._remote_netns.get_links()
+        r_macaddr = None
+        for link in links:
+            if link["ifname"] == "macvtap0":
+                r_macaddr = link["address"]
+        assert r_macaddr is not None
+
+        # start mapvtap helper in r_ns
+        helper = subprocess.Popen(
+          [*self._remote_netns_prefix, 'labgrid-macvtap-fwd', 'macvtap0'],
+           stdout = subprocess.PIPE, stdin = subprocess.PIPE,
+        )
+
+        tun_name, tun_fd = self._local_netns.create_tun(address=r_macaddr)
+
+        links = self._local_netns.get_links()
+        link_names = [link["ifname"] for link in links]
+        assert "tap0" in link_names
+
+        # start pump threads between mapvtap helper and tun_fd in self._local_netns
+        self._start_pumps(tun_fd, helper.stdin, helper.stdout)
+
+        with open("lg-remote-ns", "w") as f:
+            prefix = self._remote_netns_prefix
+            assert prefix[0] == "ssh"
+            prefix = ["ssh", "-t"] + prefix[1:]
+            f.write("\n".join([
+                "#!/usr/bin/sh",
+                " ".join(prefix),
+                "",
+            ]))
+            os.fchmod(f.fileno(), 0o755)
+
+        with open("lg-local-ns", "w") as f:
+            f.write("\n".join([
+                "#!/usr/bin/sh",
+                " ".join(self._local_netns_prefix),
+                "",
+            ]))
+            os.fchmod(f.fileno(), 0o755)

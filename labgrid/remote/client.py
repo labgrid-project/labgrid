@@ -1362,6 +1362,14 @@ class ClientSession:
             exc.exitcode = res
             raise exc
 
+    def netns(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        name = self.args.name
+        drv = self._get_driver_or_new(target, "RawNetworkInterfaceDriver", name=name)
+        drv.setup_netns()
+        subprocess.call(drv._local_netns_prefix)
+
     def _get_tmc(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
@@ -1984,6 +1992,10 @@ def main():
     subparser = subparsers.add_parser("audio", help="start a audio stream")
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.set_defaults(func=ClientSession.audio)
+
+    subparser = subparsers.add_parser("netns", help="start a network namespace with access to NetworkInterface")
+    subparser.add_argument("--name", "-n", help="optional resource name")
+    subparser.set_defaults(func=ClientSession.netns)
 
     tmc_parser = subparsers.add_parser("tmc", help="control a USB TMC device")
     tmc_parser.add_argument("--name", "-n", help="optional resource name")

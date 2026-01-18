@@ -11,8 +11,16 @@ import argparse
 import os
 import string
 import sys
+import subprocess
+import json
 
 import yaml
+
+
+def get_sudo_uid() -> int:
+    uid = os.environ["SUDO_UID"]
+    if uid is not None:
+        return int(uid)
 
 
 def get_denylist():
@@ -32,6 +40,37 @@ def get_denylist():
     denylist.append("lo")
 
     return denylist
+
+
+def handle_ns_macvtap(options):
+    # vorher prüfen, ob limits erreicht sind?
+    # erst: ip -j -echo link add link enp1s0f0 name enp1s0f0-tap type macvtap
+    # dann: ip link set enp1s0f0-tap netns 83356
+    # damit ist verschwindet es dann mit dem NS
+    output = subprocess.check_output(
+        ["ip", "-j", "-echo", "link", "add", "link", options.ifname, "type", "macvtap"]
+    )
+    output = json.loads(output)
+    assert len(output) == 1
+    ifindex_new = output[0]["ifindex"]
+    ifname_new = output[0]["ifname"]
+    assert ifname_new.startswith("macvtap")
+    try:
+        subprocess.check_call(
+            ["ip", "link", "set", "dev", ifname_new, "name", "macvtap0", "up", "netns", str(options.pid), "index", str(ifindex_new)]
+        )
+    except:
+        subprocess.check_call(
+            ["ip", "link", "del", ifname_new]
+        )
+        raise
+    uid = get_sudo_uid()
+    os.chown(
+        path=f"/dev/tap{ifindex_new}",
+        uid=uid,
+        gid=-1,
+        follow_symlinks=False,
+    )
 
 
 def main(program, options):
@@ -126,11 +165,8 @@ def main(program, options):
         args = ["ip", "link", "add", "link", options.ifname, "netns", str(options.pid), "type", "macvlan"]
 
     elif program == "ns-macvtap":
-        # vorher prüfen, ob limits erreicht sind?
-        # erst: ip -j -echo link add link enp1s0f0 name enp1s0f0-tap type macvtap
-        # dann: ip link set enp1s0f0-tap netns 83356
-        # damit ist verschwindet es dann mit dem NS
-        args = ["ip", "link", "add", "link", options.ifname, "netns", str(options.pid), "type", "macvtap"]
+        handle_ns_macvtap(options)
+        return
 
     try:
         os.execvp(args[0], args)

@@ -40,7 +40,7 @@ def t1():
         os.write(vtap, buf)
 
 
-threading.Thread(target=t1).start()
+threading.Thread(target=t1, daemon=True).start()
 
 while True:
     buf = os.read(vtap, 1522)

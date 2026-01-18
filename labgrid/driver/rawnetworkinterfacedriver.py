@@ -399,7 +399,7 @@ class RawNetworkInterfaceDriver(Driver):
 
         subprocess.check_call([
           "sudo",
-          "/home/jluebbe/ptx/labgrid/helpers/labgrid-raw-interface",
+          "labgrid-raw-interface",
           "ns-macvtap", self.iface.ifname, str(self._remote_netns_pid),
         ])
 

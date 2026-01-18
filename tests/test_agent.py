@@ -1,4 +1,5 @@
 import os
+import socket
 
 import pytest
 from py.path import local
@@ -145,3 +146,12 @@ def test_network_namespace():
     link_names = [link["ifname"] for link in links]
     assert "tap0" in link_names
 
+    _, s_handle = netns.create_socket("inet", "stream")
+    s = socket.fromfd(s_handle.fileno(), socket.AF_INET, socket.SOCK_STREAM)
+    assert s.getsockopt(socket.SOL_SOCKET, socket.SO_PROTOCOL) == socket.IPPROTO_TCP
+    s.close()
+
+    _, s_handle = netns.create_socket("inet", "dgram")
+    s = socket.fromfd(s_handle.fileno(), socket.AF_INET, socket.SOCK_DGRAM)
+    assert s.getsockopt(socket.SOL_SOCKET, socket.SO_PROTOCOL) == socket.IPPROTO_UDP
+    s.close()

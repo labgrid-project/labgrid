@@ -5,6 +5,7 @@ import time
 import fcntl
 import struct
 import subprocess
+import socket
 from pathlib import Path
 
 from pyroute2 import IPRoute
@@ -82,6 +83,13 @@ def handle_create_tun(*, address=None):
     return ("", dev_tun)
 
 
+def handle_socket(family, typ):
+    family = getattr(socket, f"AF_{family.upper()}")
+    typ = getattr(socket, f"SOCK_{typ.upper()}")
+    s = socket.socket(family, typ)
+    return ("", s)
+
+
 def handle_get_links():
     # TODO: switch to IPRoute
     import json
@@ -92,5 +100,6 @@ def handle_get_links():
 methods = {
     "unshare": handle_unshare,
     "create_tun": handle_create_tun,
+    "create_socket": handle_socket,
     "get_links": handle_get_links,
 }

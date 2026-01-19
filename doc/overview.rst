@@ -147,7 +147,7 @@ specific driver set a binding mapping before creating the driver:
   >>> t.set_binding_map({"port": "Second"})
   >>> sd = SerialDriver(t, "Driver")
   >>> sd
-  SerialDriver(target=Target(name='Test', env=None), name='Driver', state=<BindingState.bound: 1>, txdelay=0.0, timeout=3.0)
+  SerialDriver(target=Target(name='Test', env=None), name='Driver', state=<BindingState.bound: 1>, txdelay=0.0, timeout=3.0, linesep='\n')
   >>> sd.port
   SerialPort(target=Target(name='Test', env=None), name='Second', state=<BindingState.bound: 1>, avail=True, port=None, speed=115200)
 

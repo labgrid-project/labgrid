@@ -57,7 +57,7 @@ dynamic = ["version"]  # via setuptools_scm
 [project.optional-dependencies]
 doc = [
     "sphinx_rtd_theme>=1.0.0",
-    "Sphinx>=2.0.0",
+    "Sphinx>=2.0.0,<9.0.0",
     "sphinxcontrib-autoprogram>=0.1.9",
 ]
 docker = ["docker>=5.0.2"]

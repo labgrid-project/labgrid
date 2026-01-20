@@ -8,7 +8,7 @@ import subprocess
 import socket
 from pathlib import Path
 
-from pyroute2 import IPRoute
+#from pyroute2 import IPRoute
 
 import ctypes
 import os
@@ -65,7 +65,7 @@ def handle_unshare():
     #subprocess.check_call(['mount', '-t', 'proc', 'proc', '/proc'])
 
     unshared = True
-    
+
     return os.getpid()
 
 
@@ -77,8 +77,11 @@ def handle_create_tun(*, address=None):
     ifr = struct.pack('16sH22s', b"tap0", IFF_TAP|IFF_NO_PI, b'\x00'*22)
     fcntl.ioctl(dev_tun, TUNSETIFF, ifr)
 
-    ipr = IPRoute()
-    ipr.link('set', ifname="tap0", address=address, state="up")
+    #ipr = IPRoute()
+    #ipr.link('set', ifname="tap0", address=address, state="up")
+    subprocess.run(["ip", "link", "set", "up", "tap0"], check=True)
+    if address:
+        subprocess.run(["ip", "link", "set", "address", address, "dev", "tap0"], check=True)
 
     return ("", dev_tun)
 

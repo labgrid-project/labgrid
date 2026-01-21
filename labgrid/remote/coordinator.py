@@ -1117,9 +1117,9 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
         logging.info("Module grpcio-channelz not available")
 
     if server_credentials:
-        server.add_secure_port(listen, server_credentials)
+        bound = server.add_secure_port(listen, server_credentials)
     else:
-        server.add_insecure_port(listen)
+        bound = server.add_insecure_port(listen)
 
     logging.debug("Starting server")
     await server.start()
@@ -1136,6 +1136,10 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
 
     cleanup.append(server_graceful_shutdown())
     logging.info("Coordinator ready")
+    host, sep, port = listen.rpartition(":")
+    if not sep or not port.isdigit():
+        host = listen
+    print(f"listening on {host}:{bound}", flush=True)
     await server.wait_for_termination()
 
 

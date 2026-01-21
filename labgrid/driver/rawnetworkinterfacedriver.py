@@ -489,6 +489,24 @@ class RawNetworkInterfaceDriver(Driver):
                     check=True,
                 )
 
+            # Wait for addresses to finalize
+            while True:
+                data = json.loads(
+                    cmd.run(
+                        ["ip", "-j", "addr", "show", "dev", tap_interface], check=True, stdout=subprocess.PIPE
+                    ).stdout
+                )
+                for addr in data[0].get("addr_info", []):
+                    if addr.get("tentative", False):
+                        break
+                else:
+                    # No tentative address
+                    break
+                check_process(vpn_helper)
+                check_process(ns)
+                check_process(tap_tunnel)
+                time.sleep(0.1)
+
             yield cmd
 
     @Driver.check_active

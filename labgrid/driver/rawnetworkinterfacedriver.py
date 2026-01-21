@@ -7,7 +7,12 @@ import os
 import os.path
 import random
 import logging
-from contextlib import ExitStack
+import socket
+import tempfile
+import sys
+from contextlib import ExitStack, contextmanager
+import textwrap
+from contextlib import closing
 
 import attr
 
@@ -62,6 +67,93 @@ class VPNNamespace(object):
         cmd = self._get_cmd(command)
         self.logger.info("Popen %s", cmd)
         return subprocess.Popen(cmd, **kwargs)
+
+    @contextmanager
+    def _create_script(self, script):
+        with tempfile.NamedTemporaryFile("w") as s:
+            s.write(script)
+            s.flush()
+
+            yield [sys.executable, s.name]
+
+    def run_script(self, script, script_args=[], **kwargs):
+        with self._create_script(script) as command:
+            return self.run(command + script_args, **kwargs)
+
+    @contextmanager
+    def Popen_script(self, script, script_args=[], **kwargs):
+        with self._create_script(script) as command:
+            with self.Popen(command + script_args, **kwargs) as p:
+                yield p
+
+    def _pass_socket(self, script):
+        with ExitStack() as ctx:
+            local, remote = socket.socketpair()
+            ctx.callback(lambda: local.close())
+            ctx.callback(lambda: remote.close())
+
+            p = ctx.enter_context(
+                self.Popen_script(
+                    textwrap.dedent(
+                        f"""\
+                        import socket
+                        import sys
+
+                        dest = socket.socket(fileno={remote.fileno()})
+                        s = None
+                        """
+                    )
+                    + script
+                    + textwrap.dedent("""
+                        if s:
+                            socket.send_fds(dest, [b"\\x00"], [s.fileno()])
+                            sys.exit(0)
+                        sys.exit(1)
+                        """),
+                    pass_fds=(remote.fileno(),),
+                )
+            )
+            ctx.callback(lambda: p.terminate())
+            remote.close()
+
+            _, fds, _, _ = socket.recv_fds(local, 1024, 1024)
+
+            @ctx.callback
+            def close_fds():
+                for fd in fds:
+                    os.close(fd)
+
+            p.wait()
+            if p.returncode != 0:
+                raise subprocess.CalledProcessError(p.returncode, " ".join(p.args))
+
+            # Create a socket and ensure the file descriptor is not closed when
+            # the exitstack cleans up
+            return socket.socket(fileno=fds.pop(0))
+
+    def connect(self, address, port, family=socket.AF_UNSPEC, socktype=socket.SOCK_STREAM, proto=0):
+        return self._pass_socket(
+            textwrap.dedent(
+                f"""\
+                for family, type, proto, _, sockaddr in socket.getaddrinfo("{address}", {port}, {family}, {socktype}, {proto}):
+                    s = socket.socket(family, type, proto)
+                    s.connect(sockaddr)
+                    break
+                """
+            )
+        )
+
+    def bind(self, host, port, family=socket.AF_INET, socktype=socket.SOCK_STREAM, proto=0):
+        return self._pass_socket(
+            textwrap.dedent(
+                f"""\
+                for family, type, proto, _, sockaddr in socket.getaddrinfo("{host}", {port}, {family}, {socktype}, {proto}):
+                    s = socket.socket(family, type, proto)
+                    s.bind(sockaddr)
+                    break
+                """
+            )
+        )
 
 
 @target_factory.reg_driver

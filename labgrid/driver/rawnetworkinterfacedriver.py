@@ -397,13 +397,11 @@ class RawNetworkInterfaceDriver(Driver):
         self._start_remote_netns()
         self._start_local_netns()
 
-        cmd = [
+        subprocess.check_call([
           "sudo",
           "labgrid-raw-interface",
           "ns-macvtap", self.iface.ifname, str(self._remote_netns_pid),
-        ]
-        cmd = self._wrap_command(cmd)
-        subprocess.check_call(cmd)
+        ])
 
         links = self._remote_netns.get_links()
         r_macaddr = None

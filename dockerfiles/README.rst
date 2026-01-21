@@ -22,7 +22,7 @@ Example showing how to build labgrid-client image:
 
 .. code-block:: bash
 
-   $ docker build --target labgrid-client -t docker.io/labgrid/client -f dockerfiles/Dockerfile .
+   $ docker build --build-arg VERSION="$(python -m setuptools_scm)" --target labgrid-client -t docker.io/labgrid/client -f dockerfiles/Dockerfile .
 
 Using `BuildKit <https://docs.docker.com/develop/develop-images/build_enhancements/>`_
 is recommended to reduce build times.

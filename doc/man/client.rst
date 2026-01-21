@@ -80,6 +80,12 @@ LG_AGENT_PREFIX
 Add a prefix to ``.labgrid_agent_{agent_hash}.py`` allowing specification for
 where on the exporter it should be uploaded to. 
 
+LG_AGENT_PYTHON
+~~~~~~~~~~~~~~~
+Specify python executable other the the default ``python3``. By pointing
+to an executable in a particular virtual environment, use this environment
+and its packages to run the agent and any agent-wrapped code.
+
 Matches
 -------
 Match patterns are used to assign a resource to a specific place. The format is:

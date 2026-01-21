@@ -56,6 +56,9 @@ def handle_ns_macvtap(options):
     ifname_new = output[0]["ifname"]
     assert ifname_new.startswith("macvtap")
     try:
+        if options.mac_address:
+            subprocess.check_call(
+                ["ip", "link", "set", "address", options.mac_address, "dev", ifname_new])
         subprocess.check_call(
             ["ip", "link", "set", "dev", ifname_new, "name", "macvtap0", "up", "netns", str(options.pid), "index", str(ifindex_new)]
         )
@@ -230,6 +233,7 @@ if __name__ == "__main__":
     ns_mactap_parser = subparsers.add_parser("ns-macvtap")
     ns_mactap_parser.add_argument("ifname", type=str, help="interface name")
     ns_mactap_parser.add_argument("pid", type=int, help="pid of namespace agent")
+    ns_mactap_parser.add_argument("--mac-address", type=str, metavar="ADDRESS", help="Set interface MAC address to ADDRESS")
 
     args = parser.parse_args()
     try:

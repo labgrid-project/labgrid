@@ -6,7 +6,10 @@ import os
 import struct
 import sys
 import threading
+import struct
 
+
+HEADER = struct.Struct("<H")
 
 def open_tap(name, device="/dev/net/tun"):
     TUNSETIFF = 0x400454CA
@@ -35,7 +38,7 @@ vtap = open_macvtap(sys.argv[1])
 
 def t1():
     while True:
-        length = int.from_bytes(sys.stdin.buffer.read(2))
+        (length, ) = HEADER.unpack(sys.stdin.buffer.read(HEADER.size))
         buf = sys.stdin.buffer.read(length)
         os.write(vtap, buf)
 
@@ -44,6 +47,6 @@ threading.Thread(target=t1, daemon=True).start()
 
 while True:
     buf = os.read(vtap, 1522)
-    sys.stdout.buffer.write(len(buf).to_bytes(2))
+    sys.stdout.buffer.write(HEADER.pack(len(buf)))
     sys.stdout.buffer.write(buf)
     sys.stdout.buffer.flush()

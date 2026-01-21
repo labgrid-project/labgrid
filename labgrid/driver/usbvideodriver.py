@@ -139,13 +139,15 @@ class USBVideoDriver(Driver, VideoProtocol):
         return pipeline
 
     @Driver.check_active
-    def stream(self, caps_hint=None, controls=None):
+    def stream(self, caps_hint=None, controls=None, fps=False):
         caps = self.select_caps(caps_hint)
         pipeline = self.get_pipeline(self.video.path, caps, controls)
 
         tx_cmd = self.video.command_prefix + ["gst-launch-1.0", "-q"]
         tx_cmd += pipeline.split()
         rx_cmd = ["gst-launch-1.0", "playbin3", "buffer-duration=0", "uri=fd://0"]
+        if fps:
+            rx_cmd += ["video-sink=fpsdisplaysink"]
 
         tx = subprocess.Popen(
             tx_cmd,

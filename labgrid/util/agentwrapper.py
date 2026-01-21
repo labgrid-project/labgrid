@@ -101,7 +101,7 @@ class AgentWrapper:
                 fd_array = array.array("i")
                 fd_array.frombytes(cmsg_data)
                 fd = fd_array[0]
-                return os.fdopen(fd)
+                return fd
 
     def call(self, method, *args, **kwargs):
         request = {

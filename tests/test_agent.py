@@ -106,10 +106,11 @@ def test_local_fdpass():
     result = aw.test_fd()
     assert isinstance(result, tuple)
     assert result[0] == "dummy"
-    assert hasattr(result[1], "fileno")
+    assert isinstance(result[1], int)
 
-    fdpath = os.readlink(f"/proc/self/fd/{result[1].fileno()}")
-    assert fdpath.startswith("/memfd:test_fd")
+    with os.fdopen(result[1]) as f:
+        fdpath = os.readlink(f"/proc/self/fd/{f.fileno()}")
+        assert fdpath.startswith("/memfd:test_fd")
 
 
 def test_all_modules():
@@ -146,12 +147,12 @@ def test_network_namespace():
     link_names = [link["ifname"] for link in links]
     assert "tap0" in link_names
 
-    _, s_handle = netns.create_socket("inet", "stream")
-    s = socket.fromfd(s_handle.fileno(), socket.AF_INET, socket.SOCK_STREAM)
+    _, fd = netns.create_socket("inet", "stream")
+    s = socket.socket(fileno=fd)
     assert s.getsockopt(socket.SOL_SOCKET, socket.SO_PROTOCOL) == socket.IPPROTO_TCP
     s.close()
 
-    _, s_handle = netns.create_socket("inet", "dgram")
-    s = socket.fromfd(s_handle.fileno(), socket.AF_INET, socket.SOCK_DGRAM)
+    _, fd = netns.create_socket("inet", "dgram")
+    s = socket.socket(fileno=fd)
     assert s.getsockopt(socket.SOL_SOCKET, socket.SO_PROTOCOL) == socket.IPPROTO_UDP
     s.close()

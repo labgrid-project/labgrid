@@ -529,6 +529,26 @@ class USBHIDRelayExport(USBGenericExport):
 
 
 @attr.s(eq=False)
+class DenkoviRelayExport(USBGenericExport):
+    """ResourceExport for outputs on Denkovi relays"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
+        }
+
+
+@attr.s(eq=False)
 class USBFlashableExport(USBGenericExport):
     """ResourceExport for Flashable USB devices"""
 

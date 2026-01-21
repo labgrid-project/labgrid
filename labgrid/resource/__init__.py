@@ -13,6 +13,7 @@ from .udev import (
     DFUDevice,
     DeditecRelais8,
     HIDRelay,
+    DenkoviRelay,
     IMXUSBLoader,
     LXAUSBMux,
     MatchedSysfsGPIO,

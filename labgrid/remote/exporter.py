@@ -8,6 +8,7 @@ import sys
 import os
 import os.path
 import traceback
+import signal
 import shutil
 import subprocess
 from urllib.parse import urlsplit
@@ -949,8 +950,11 @@ class Exporter:
         for task in pending:
             task.cancel()
 
-        await self.pump_task
-        await self.poll_task
+        try:
+            await self.pump_task
+            await self.poll_task
+        except asyncio.CancelledError:
+            return
 
     def send_started(self):
         msg = labgrid_coordinator_pb2.ExporterInMessage()
@@ -1075,6 +1079,10 @@ class Exporter:
             except Exception:  # pylint: disable=broad-except
                 traceback.print_exc(file=sys.stderr)
 
+    async def stop(self):
+        if self.poll_task is not None:
+            self.poll_task.cancel() 
+
     async def add_resource(self, group_name, resource_name, cls, params):
         """Add a resource to the exporter and update status on the coordinator"""
         print(f"add resource {group_name}/{resource_name}: {cls}/{params}")
@@ -1116,6 +1124,13 @@ async def amain(config) -> bool:
 
     if inspect:
         inspect.exporter = exporter
+
+    def _stop():
+        asyncio.ensure_future(exporter.stop())
+
+    loop = asyncio.get_event_loop()
+    loop.add_signal_handler(signal.SIGINT, _stop)
+    loop.add_signal_handler(signal.SIGTERM, _stop)
 
     await exporter.run()
 

@@ -1353,21 +1353,21 @@ class ClientSession:
 
     def netns(self):
         place = self.get_acquired_place()
-        target = self._get_target(place)
-        name = self.args.name
-        drv = self._get_driver_or_new(target, "RawNetworkInterfaceDriver", name=name)
-        with drv.setup_netns(self.args.mac_address) as ns:
-            for a in self.args.address:
-                ns.run(["ip", "addr", "add", str(a), "dev", ns.intf], check=True)
+        with self._get_target(place) as target:
+            name = self.args.name
+            drv = self._get_driver_or_new(target, "RawNetworkInterfaceDriver", name=name)
+            with drv.setup_netns(self.args.mac_address) as ns:
+                for a in self.args.address:
+                    ns.run(["ip", "addr", "add", str(a), "dev", ns.intf], check=True)
 
-            cmd = self.args.cmd
-            if not cmd:
-                # Same behavior as nsenter with no command
-                cmd = os.environ.get("SHELL", "/bin/sh")
+                cmd = self.args.cmd
+                if not cmd:
+                    # Same behavior as nsenter with no command
+                    cmd = os.environ.get("SHELL", "/bin/sh")
 
-            p = ns.run(cmd)
-            if p.returncode != 0:
-                raise InteractiveCommandError("netns command error", p.returncode)
+                p = ns.run(cmd)
+                if p.returncode != 0:
+                    raise InteractiveCommandError("netns command error", p.returncode)
 
     def _get_tmc(self):
         place = self.get_acquired_place()

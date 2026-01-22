@@ -71,7 +71,7 @@ class Agent:
                 if isinstance(response, tuple) and len(response) == 2 and hasattr(response[1], 'fileno'):
                     try:
                         if self.fdpass is None:
-                            self.send({'error': f'cannot pass returned FD without LG_FDPASS'})
+                            self.send({'error': 'cannot pass returned FD without LG_FDPASS'})
                             break
                         socket.send_fds(self.fdpass, [b"\0"], (response[1].fileno(),))
                         self.send({'result': response[0], 'fdpass': True})

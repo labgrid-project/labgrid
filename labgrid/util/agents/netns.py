@@ -100,9 +100,48 @@ def handle_get_links():
     return json.loads(output)
 
 
+def handle_get_prefix():
+    return ["nsenter", "-t", str(os.getpid()), "-U", "-n", "-m", "--preserve-credentials"]
+
+
+def handle_get_pid():
+    return os.getpid()
+
+
+def handle_get_intf():
+    return "tap0"
+
+
+def handle_connect(*args, timeout=None, **kwargs):
+    for family, socktype, proto, _, sockaddr in socket.getaddrinfo(*args, **kwargs):
+        s = socket.socket(family, socktype, proto)
+        if timeout is not None:
+            s.settimeout(timeout)
+        s.connect(sockaddr)
+        return ("", s)
+
+    raise Exception("No matching address found")
+
+
+def handle_bind(*args, timeout=None, **kwargs):
+    for family, socktype, proto, _, sockaddr in socket.getaddrinfo(*args, **kwargs):
+        s = socket.socket(family, socktype, proto)
+        if timeout is not None:
+            s.settimeout(timeout)
+        s.bind(sockaddr)
+        return ("", s)
+
+    raise Exception("No matching address found")
+
+
 methods = {
     "unshare": handle_unshare,
     "create_tun": handle_create_tun,
     "create_socket": handle_socket,
     "get_links": handle_get_links,
+    "get_prefix": handle_get_prefix,
+    "get_pid": handle_get_pid,
+    "get_intf": handle_get_intf,
+    "bind": handle_bind,
+    "connect": handle_connect,
 }

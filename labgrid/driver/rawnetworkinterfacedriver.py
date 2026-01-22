@@ -4,11 +4,11 @@ import json
 import subprocess
 import time
 import os
-import threading
-import struct
 import functools
 import logging
 import socket
+import tempfile
+import sys
 
 import attr
 
@@ -453,7 +453,7 @@ class RawNetworkInterfaceDriver(Driver):
             )
             ctx.callback(lambda: remote_fwd.terminate())
 
-            tun_name, fd = local_ns.create_tun(address=r_macaddr)
+            _, fd = local_ns.create_tun(address=r_macaddr)
             tun_fd = ctx.enter_context(os.fdopen(fd))
 
             links = local_ns.get_links()

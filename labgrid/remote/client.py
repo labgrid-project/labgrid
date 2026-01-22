@@ -70,7 +70,9 @@ class ServerError(Error):
 
 
 class InteractiveCommandError(Error):
-    pass
+    def __init__(self, message, exitcode):
+        super().__init__(message)
+        self.exitcode = exitcode
 
 
 @attr.s(eq=False)
@@ -1050,9 +1052,7 @@ class ClientSession:
                 break
             if not self.args.loop:
                 if res:
-                    exc = InteractiveCommandError("microcom error")
-                    exc.exitcode = res
-                    raise exc
+                    raise InteractiveCommandError("microcom error", res)
                 break
             await asyncio.sleep(1.0)
 
@@ -1252,27 +1252,21 @@ class ClientSession:
 
         res = drv.interact(self.args.leftover)
         if res:
-            exc = InteractiveCommandError("ssh error")
-            exc.exitcode = res
-            raise exc
+            raise InteractiveCommandError("ssh error", res)
 
     def scp(self):
         drv = self._get_ssh()
 
         res = drv.scp(src=self.args.src, dst=self.args.dst)
         if res:
-            exc = InteractiveCommandError("scp error")
-            exc.exitcode = res
-            raise exc
+            raise InteractiveCommandError("scp error", res)
 
     def rsync(self):
         drv = self._get_ssh()
 
         res = drv.rsync(src=self.args.src, dst=self.args.dst, extra=self.args.leftover)
         if res:
-            exc = InteractiveCommandError("rsync error")
-            exc.exitcode = res
-            raise exc
+            raise InteractiveCommandError("rsync error", res)
 
     def sshfs(self):
         drv = self._get_ssh()
@@ -1310,9 +1304,7 @@ class ClientSession:
         args = ["telnet", str(ip)]
         res = subprocess.call(args)
         if res:
-            exc = InteractiveCommandError("telnet error")
-            exc.exitcode = res
-            raise exc
+            raise InteractiveCommandError("telnet error", res)
 
     def video(self):
         place = self.get_acquired_place()
@@ -1348,9 +1340,7 @@ class ClientSession:
         else:
             res = drv.stream(quality, controls=controls)
             if res:
-                exc = InteractiveCommandError("gst-launch-1.0 error")
-                exc.exitcode = res
-                raise exc
+                raise InteractiveCommandError("gst-launch-1.0 error", res)
 
     def audio(self):
         place = self.get_acquired_place()
@@ -1359,9 +1349,7 @@ class ClientSession:
         drv = self._get_driver_or_new(target, "USBAudioInputDriver", name=name)
         res = drv.play()
         if res:
-            exc = InteractiveCommandError("gst-launch-1.0 error")
-            exc.exitcode = res
-            raise exc
+            raise InteractiveCommandError("gst-launch-1.0 error", res)
 
     def netns(self):
         place = self.get_acquired_place()
@@ -1379,9 +1367,7 @@ class ClientSession:
 
             p = ns.run(cmd)
             if p.returncode != 0:
-                exc = InteractiveCommandError("netns command error")
-                exc.exitcode = p.returncode
-                raise exc
+                raise InteractiveCommandError("netns command error", p.returncode)
 
     def _get_tmc(self):
         place = self.get_acquired_place()

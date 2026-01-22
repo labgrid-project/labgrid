@@ -13,6 +13,8 @@ import string
 import sys
 import subprocess
 import json
+import struct
+import fcntl
 
 import yaml
 
@@ -41,6 +43,21 @@ def get_denylist():
 
     return denylist
 
+def open_tap(name, device="/dev/net/tun"):
+    TUNSETIFF = 0x400454CA
+    IFF_NO_PI = 0x1000
+    O_RDWR = 0x2
+    IFF_TAP = 0x0002
+
+    flags = IFF_TAP | IFF_NO_PI
+    name = name.encode()
+    ifr_name = name + b"\x00" * (16 - len(name))
+    ifr = struct.pack("16sH22s", ifr_name, flags, b"\x00" * 22)
+
+    fd = os.open(device, O_RDWR)
+    fcntl.ioctl(fd, TUNSETIFF, ifr)
+    return fd
+
 
 def handle_ns_macvtap(options):
     # vorher prüfen, ob limits erreicht sind?
@@ -67,13 +84,18 @@ def handle_ns_macvtap(options):
             ["ip", "link", "del", ifname_new]
         )
         raise
+    tap_name = f"/dev/tap{ifindex_new}"
     uid = get_sudo_uid()
     os.chown(
-        path=f"/dev/tap{ifindex_new}",
+        path=tap_name,
         uid=uid,
         gid=-1,
         follow_symlinks=False,
     )
+
+    with os.fdopen(open_tap(ifname_new, device=tap_name)) as macvtap_fd:
+        os.set_inheritable(macvtap_fd.fileno(), True)
+        os.execlp("labgrid-tap-fwd", "labgrid-tap-fwd", str(macvtap_fd.fileno()))
 
 
 def main(program, options):

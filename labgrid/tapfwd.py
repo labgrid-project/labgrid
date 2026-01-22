@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: MIT
 
-import fcntl
 import os
 import struct
 import sys
@@ -12,28 +11,6 @@ from abc import ABC, abstractmethod
 
 
 HEADER = struct.Struct("<H")
-
-
-def open_tap(name, device="/dev/net/tun"):
-    TUNSETIFF = 0x400454CA
-    IFF_NO_PI = 0x1000
-    O_RDWR = 0x2
-    IFF_TAP = 0x0002
-
-    flags = IFF_TAP | IFF_NO_PI
-    name = name.encode()
-    ifr_name = name + b"\x00" * (16 - len(name))
-    ifr = struct.pack("16sH22s", ifr_name, flags, b"\x00" * 22)
-
-    fd = os.open(device, O_RDWR)
-    fcntl.ioctl(fd, TUNSETIFF, ifr)
-    return fd
-
-
-def open_macvtap(name):
-    with open(f"/sys/class/net/{name}/ifindex") as f:
-        idx = f.read().strip()
-    return open_tap(name=name, device="/dev/tap" + idx)
 
 
 class Pipe(ABC):
@@ -182,12 +159,7 @@ async def pipe_loop(tap_fd, out_fd, in_fd):
 
 def main():
     parser = argparse.ArgumentParser("Stream tap to stdio")
-    source_group = parser.add_mutually_exclusive_group(required=True)
-
-    source_group.add_argument("--macvtap", help="Open macvtap tap")
-    source_group.add_argument("--tap", metavar="NAME", help="Open tap device NAME from /dev/net/tun")
-    source_group.add_argument("--fd", type=int, help="Use FD as tap file descriptor")
-
+    parser.add_argument("fd", type=int, help="Tap FD to stream to stdio")
     parser.add_argument("--verbose", "-v", action="count", default=-1, help="Increase verbosity")
 
     args = parser.parse_args()
@@ -200,20 +172,10 @@ def main():
         level = logging.WARNING
     root = logging.getLogger()
     root.setLevel(level)
-    if args.macvtap:
-        tap_fd = open_macvtap(args.macvtap)
-    elif args.tap:
-        tap_fd = open_tap(args.tap)
-    else:
-        tap_fd = args.fd
 
     # Duplicate stdin and stdout to new file descriptors for dedicated use by
     # the stream.
-    with (
-        os.fdopen(os.dup(sys.stdin.fileno())) as in_f,
-        os.fdopen(os.dup(sys.stdout.fileno())) as out_f,
-        os.fdopen(tap_fd) as tap_f,
-    ):
+    with os.fdopen(os.dup(sys.stdin.fileno())) as in_f, os.fdopen(os.dup(sys.stdout.fileno())) as out_f:
         # Replace stdin with devnull
         with open(os.devnull, "r+") as devnull:
             os.dup2(devnull.fileno(), sys.stdin.fileno())
@@ -221,7 +183,7 @@ def main():
         # Replace stdout with stderr
         os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
 
-        asyncio.run(pipe_loop(tap_f.fileno(), out_f.fileno(), in_f.fileno()))
+        asyncio.run(pipe_loop(args.fd, out_f.fileno(), in_f.fileno()))
 
 
 if __name__ == "__main__":

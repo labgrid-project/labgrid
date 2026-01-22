@@ -431,27 +431,36 @@ class RawNetworkInterfaceDriver(Driver):
             if mac_address:
                 cmd.append("--mac-address")
                 cmd.append(mac_address)
-            subprocess.run(
-                self._wrap_command(cmd),
-                check=True,
-            )
-
-            links = remote_ns.get_links()
-            r_macaddr = None
-            for link in links:
-                if link["ifname"] == "macvtap0":
-                    r_macaddr = link["address"]
-            assert r_macaddr is not None
 
             # Start tap forward in remote namespace
             remote_fwd = ctx.enter_context(
                 subprocess.Popen(
-                    self.iface.command_prefix + remote_ns.get_prefix() + ["labgrid-tap-fwd", "--macvtap", "macvtap0"],
+                    self._wrap_command(cmd),
                     stdout=subprocess.PIPE,
                     stdin=subprocess.PIPE,
                 )
             )
             ctx.callback(lambda: remote_fwd.terminate())
+
+            r_macaddr = None
+            to = Timeout(30.0)
+            while True:
+                if to.expired:
+                    raise TimeoutError("Timeout waiting for remote macvtap to be established")
+
+                links = remote_ns.get_links()
+                for link in links:
+                    if link["ifname"] == "macvtap0":
+                        r_macaddr = link["address"]
+                        break
+
+                if r_macaddr is not None:
+                    break
+
+                if remote_fwd.poll() is not None:
+                    raise ExecutionError(f"Remote tap forward {remote_fwd.pid} died with {remote_fwd.returncode}")
+
+                time.sleep(0.1)
 
             _, fd = local_ns.create_tun(address=r_macaddr)
             tun_fd = ctx.enter_context(os.fdopen(fd))
@@ -462,7 +471,7 @@ class RawNetworkInterfaceDriver(Driver):
 
             local_fwd = ctx.enter_context(
                 subprocess.Popen(
-                    local_ns.get_prefix() + ["labgrid-tap-fwd", "--fd", str(tun_fd.fileno())],
+                    local_ns.get_prefix() + ["labgrid-tap-fwd", str(tun_fd.fileno())],
                     stdin=remote_fwd.stdout,
                     stdout=remote_fwd.stdin,
                     pass_fds=(tun_fd.fileno(),),

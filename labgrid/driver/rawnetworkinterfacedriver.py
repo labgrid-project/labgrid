@@ -462,7 +462,7 @@ class RawNetworkInterfaceDriver(Driver):
                 subprocess.Popen(
                     self.iface.command_prefix
                     + remote_ns.get_prefix()
-                    + ["labgrid-macvtap-fwd", "--macvtap", "macvtap0"],
+                    + ["labgrid-tap-fwd", "--macvtap", "macvtap0"],
                     stdout=subprocess.PIPE,
                     stdin=subprocess.PIPE,
                 )

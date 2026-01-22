@@ -71,20 +71,20 @@ def handle_unshare():
 
 
 def handle_create_tun(*, address=None):
-    dev_tun = os.fdopen(os.open("/dev/net/tun", os.O_RDWR))
-    TUNSETIFF = 0x400454ca
-    IFF_TAP = 0x0002
-    IFF_NO_PI = 0x1000
-    ifr = struct.pack('16sH22s', b"tap0", IFF_TAP|IFF_NO_PI, b'\x00'*22)
-    fcntl.ioctl(dev_tun, TUNSETIFF, ifr)
+    with os.fdopen(os.open("/dev/net/tun", os.O_RDWR)) as dev_tun:
+        TUNSETIFF = 0x400454ca
+        IFF_TAP = 0x0002
+        IFF_NO_PI = 0x1000
+        ifr = struct.pack('16sH22s', b"tap0", IFF_TAP|IFF_NO_PI, b'\x00'*22)
+        fcntl.ioctl(dev_tun, TUNSETIFF, ifr)
 
-    #ipr = IPRoute()
-    #ipr.link('set', ifname="tap0", address=address, state="up")
-    subprocess.run(["ip", "link", "set", "up", "tap0"], check=True)
-    if address:
-        subprocess.run(["ip", "link", "set", "address", address, "dev", "tap0"], check=True)
+        #ipr = IPRoute()
+        #ipr.link('set', ifname="tap0", address=address, state="up")
+        subprocess.run(["ip", "link", "set", "up", "tap0"], check=True)
+        if address:
+            subprocess.run(["ip", "link", "set", "address", address, "dev", "tap0"], check=True)
 
-    return ("", dev_tun)
+        return ("", os.fdopen(os.dup(dev_tun.fileno())))
 
 
 def handle_socket(*args, **kwargs):

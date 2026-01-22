@@ -1372,7 +1372,7 @@ class ClientSession:
             for a in self.args.address:
                 ns.run(["ip", "addr", "add", str(a), "dev", ns.intf], check=True)
 
-            subprocess.run(ns.prefix)
+            subprocess.run(ns.prefix + ["--wd=" + os.getcwd()])
 
     def _get_tmc(self):
         place = self.get_acquired_place()

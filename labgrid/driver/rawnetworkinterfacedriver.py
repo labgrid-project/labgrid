@@ -38,8 +38,8 @@ class NetNamespace(object):
 
     def _get_cmd(self, command):
         if isinstance(command, str):
-            return self.prefix + ["--", "/bin/sh", "-c", command]
-        return self.prefix + ["--"] + command
+            return self.prefix + ["--wd=" + os.getcwd(), "--", "/bin/sh", "-c", command]
+        return self.prefix + ["--wd=" + os.getcwd(), "--"] + command
 
     def run(self, command, **kwargs):
         cmd = self._get_cmd(command)

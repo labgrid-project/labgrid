@@ -69,12 +69,22 @@ class NetNamespace(object):
             with self.Popen(command + script_args, **kwargs) as p:
                 yield p
 
+    def socket(self, *args, **kwargs):
+        err, fd = self._agent.create_socket(*args, **kwargs)
+        if err:
+            raise OSError(err, os.strerror(err))
+        return socket.socket(fileno=fd)
+
     def connect(self, address, port, *args, **kwargs):
-        _, fd = self._agent.connect(address, port, *args, **kwargs)
+        err, fd = self._agent.connect(address, port, *args, **kwargs)
+        if err:
+            raise OSError(err, os.strerror(err))
         return socket.socket(fileno=fd)
 
     def bind(self, host, port, *args, **kwargs):
-        _, fd = self._agent.bind(host, port, *args, **kwargs)
+        err, fd = self._agent.bind(host, port, *args, **kwargs)
+        if err:
+            raise OSError(err, os.strerror(err))
         return socket.socket(fileno=fd)
 
 

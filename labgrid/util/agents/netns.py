@@ -6,6 +6,7 @@ import fcntl
 import struct
 import subprocess
 import socket
+import errno
 from pathlib import Path
 
 #from pyroute2 import IPRoute
@@ -87,9 +88,11 @@ def handle_create_tun(*, address=None):
 
 
 def handle_socket(*args, **kwargs):
-    s = socket.socket(*args, **kwargs)
-    return ("", s)
-
+    try:
+        s = socket.socket(*args, **kwargs)
+        return (0, s)
+    except OSError as e:
+        return (e.errno, -1)
 
 def handle_get_links():
     # TODO: switch to IPRoute
@@ -112,24 +115,34 @@ def handle_get_intf():
 
 def handle_connect(*args, timeout=None, **kwargs):
     for family, socktype, proto, _, sockaddr in socket.getaddrinfo(*args, **kwargs):
-        s = socket.socket(family, socktype, proto)
-        if timeout is not None:
-            s.settimeout(timeout)
-        s.connect(sockaddr)
-        return ("", s)
+        try:
+            with socket.socket(family, socktype, proto) as s:
+                if timeout is not None:
+                    s.settimeout(timeout)
 
-    raise Exception("No matching address found")
+                s.connect(sockaddr)
+                return (0, s.dup())
+
+        except OSError as e:
+            return (e.errno, -1)
+
+    return (errno.EADDRNOTAVAIL, -1)
 
 
 def handle_bind(*args, timeout=None, **kwargs):
     for family, socktype, proto, _, sockaddr in socket.getaddrinfo(*args, **kwargs):
-        s = socket.socket(family, socktype, proto)
-        if timeout is not None:
-            s.settimeout(timeout)
-        s.bind(sockaddr)
-        return ("", s)
+        try:
+            with socket.socket(family, socktype, proto) as s:
+                if timeout is not None:
+                    s.settimeout(timeout)
 
-    raise Exception("No matching address found")
+                s.bind(sockaddr)
+                return ("", s.dup())
+
+        except OSError as e:
+            return (e.errno, -1)
+
+    return (errno.EADDRNOTAVAIL, -1)
 
 
 methods = {

@@ -86,10 +86,8 @@ def handle_create_tun(*, address=None):
     return ("", dev_tun)
 
 
-def handle_socket(family, typ):
-    family = getattr(socket, f"AF_{family.upper()}")
-    typ = getattr(socket, f"SOCK_{typ.upper()}")
-    s = socket.socket(family, typ)
+def handle_socket(*args, **kwargs):
+    s = socket.socket(*args, **kwargs)
     return ("", s)
 
 

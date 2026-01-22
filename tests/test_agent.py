@@ -147,12 +147,10 @@ def test_network_namespace():
     link_names = [link["ifname"] for link in links]
     assert "tap0" in link_names
 
-    _, fd = netns.create_socket("inet", "stream")
-    s = socket.socket(fileno=fd)
-    assert s.getsockopt(socket.SOL_SOCKET, socket.SO_PROTOCOL) == socket.IPPROTO_TCP
-    s.close()
+    _, fd = netns.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+    with socket.socket(fileno=fd) as s:
+        assert s.getsockopt(socket.SOL_SOCKET, socket.SO_PROTOCOL) == socket.IPPROTO_TCP
 
-    _, fd = netns.create_socket("inet", "dgram")
-    s = socket.socket(fileno=fd)
-    assert s.getsockopt(socket.SOL_SOCKET, socket.SO_PROTOCOL) == socket.IPPROTO_UDP
-    s.close()
+    _, fd = netns.create_socket(socket.AF_INET, socket.SOCK_DGRAM)
+    with socket.socket(fileno=fd) as s:
+        assert s.getsockopt(socket.SOL_SOCKET, socket.SO_PROTOCOL) == socket.IPPROTO_UDP

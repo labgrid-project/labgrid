@@ -5,10 +5,10 @@ import fcntl
 import os
 import struct
 import sys
-import struct
 import argparse
 import asyncio
 import logging
+from abc import ABC, abstractmethod
 
 
 HEADER = struct.Struct("<H")
@@ -36,7 +36,7 @@ def open_macvtap(name):
     return open_tap(name=name, device="/dev/tap" + idx)
 
 
-class Pipe(object):
+class Pipe(ABC):
     def __init__(self, in_fd, out_fd):
         self.frame = b""
         self.buffer = b""
@@ -49,8 +49,7 @@ class Pipe(object):
         self.eof_handler = self.set_eof
 
     def _handle_eof(self):
-        if self.eof_handler:
-            self.eof_handler()
+        self.eof_handler()
 
     def set_eof(self):
         self.eof = True
@@ -70,6 +69,14 @@ class Pipe(object):
             while (self.frame or self.buffer) and not self.eof:
                 await self.write_event.wait()
             self.loop.remove_writer(self.out_fd)
+
+    @abstractmethod
+    def read_in(self):
+        raise NotImplementedError("Must be implemented in derived class")
+
+    @abstractmethod
+    def write_out(self):
+        raise NotImplementedError("Must be implemented in derived class")
 
 
 class StreamToTapPipe(Pipe):
@@ -156,7 +163,6 @@ class TapToStreamPipe(Pipe):
 
 
 async def pipe_loop(tap_fd, out_fd, in_fd):
-    loop = asyncio.get_running_loop()
     os.set_blocking(tap_fd, False)
     os.set_blocking(out_fd, False)
     os.set_blocking(in_fd, False)

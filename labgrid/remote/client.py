@@ -1372,7 +1372,16 @@ class ClientSession:
             for a in self.args.address:
                 ns.run(["ip", "addr", "add", str(a), "dev", ns.intf], check=True)
 
-            subprocess.run(ns.prefix + ["--wd=" + os.getcwd()])
+            cmd = self.args.cmd
+            if not cmd:
+                # Same behavior as nsenter with no command
+                cmd = os.environ.get("SHELL", "/bin/sh")
+
+            p = ns.run(cmd)
+            if p.returncode != 0:
+                exc = InteractiveCommandError("netns command error")
+                exc.exitcode = p.returncode
+                raise exc
 
     def _get_tmc(self):
         place = self.get_acquired_place()
@@ -2008,6 +2017,9 @@ def main():
         help="assign address to interface (CIDR notation)",
     )
     subparser.add_argument("--mac-address", help="assign MAC address to interface")
+    subparser.add_argument(
+        "cmd", nargs=argparse.REMAINDER, help="command to execute in the namespace. If unspecified, $SHELL is invoked"
+    )
     subparser.set_defaults(func=ClientSession.netns)
 
     tmc_parser = subparsers.add_parser("tmc", help="control a USB TMC device")

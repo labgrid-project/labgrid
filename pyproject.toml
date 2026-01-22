@@ -231,6 +231,7 @@ include = [
   "labgrid/util/agents/network_interface.py",
   "labgrid/util/agents/usb_hid_relay.py",
   "labgrid/util/exceptions.py",
+  "labgrid/tapfwd.py",
 ]
 
 [tool.ruff.lint]

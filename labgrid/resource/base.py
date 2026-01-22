@@ -21,8 +21,13 @@ class NetworkInterface(Resource):
     """The basic NetworkInterface contains an interface name
 
     Args:
-        ifname (str): name of the interface"""
+        ifname (str): name of the interface
+        externally_managed (bool): if True, the interface configuration is managed
+            by the administrator and should not be changed by labgrid. Default is
+            False.
+    """
     ifname = attr.ib(default=None)
+    externally_managed = attr.ib(default=False, validator.attr.validators.instance_of(bool))
 
 @target_factory.reg_resource
 @attr.s

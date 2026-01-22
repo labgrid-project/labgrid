@@ -887,6 +887,9 @@ Ethernet or WiFi)
 
 Arguments:
   - ifname (str): name of the interface
+  - externally_managed (bool): if True, the interface configuration is managed
+    by the administrator and should not be changed by labgrid. Default is
+    False.
 
 Used by:
   - `NetworkInterfaceDriver`_

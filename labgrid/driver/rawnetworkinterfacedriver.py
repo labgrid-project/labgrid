@@ -7,6 +7,7 @@ import time
 import attr
 
 from .common import Driver
+from .exceptions import ExecutionError
 from ..factory import target_factory
 from ..step import step
 from ..util.helper import processwrapper
@@ -37,12 +38,12 @@ class RawNetworkInterfaceDriver(Driver):
         self._replay_handle = None
 
     def on_activate(self):
-        if self.manage_interface:
+        if self.manage_interface and not self.intf.externally_managed:
             self._set_interface("up")
             self._wait_state("up")
 
     def on_deactivate(self):
-        if self.manage_interface:
+        if self.manage_interface and not self.intf.externally_managed:
             self._set_interface("down")
             self._wait_state("down")
 
@@ -56,9 +57,14 @@ class RawNetworkInterfaceDriver(Driver):
             # keep wrapper and args as-is
             return wrapper + args
 
+    def _check_externally_managed(self):
+        if self.intf.externally_managed:
+            raise ExecutionError(f"Interface {self.intf.name} is externally managed and cannot be changed")
+
     @step(args=["state"])
     def _set_interface(self, state):
         """Set interface to given state."""
+        self._check_externally_managed()
         cmd = ["ip", self.iface.ifname, state]
         cmd = self._wrap_command(cmd)
         subprocess.check_call(cmd)
@@ -66,11 +72,13 @@ class RawNetworkInterfaceDriver(Driver):
     @Driver.check_active
     def set_interface_up(self):
         """Set bound interface up."""
+        self._check_externally_managed()
         self._set_interface("up")
 
     @Driver.check_active
     def set_interface_down(self):
         """Set bound interface down."""
+        self._check_externally_managed()
         self._set_interface("down")
 
     def _get_state(self):
@@ -125,6 +133,7 @@ class RawNetworkInterfaceDriver(Driver):
 
         Supported settings are described in ethtool(8) --change (use "_" instead of "-").
         """
+        self._check_externally_managed()
         cmd = ["ethtool", "change", self.iface.ifname]
         cmd += [item.replace("_", "-") for pair in settings.items() for item in pair]
         cmd = self._wrap_command(cmd)
@@ -149,6 +158,7 @@ class RawNetworkInterfaceDriver(Driver):
 
         Supported settings are described in ethtool(8) --set-eee (use "_" instead of "-").
         """
+        self._check_externally_managed()
         cmd = ["ethtool", "set-eee", self.iface.ifname]
         cmd += [item.replace("_", "-") for pair in settings.items() for item in pair]
         cmd = self._wrap_command(cmd)
@@ -159,6 +169,7 @@ class RawNetworkInterfaceDriver(Driver):
         """
         Returns pause parameters via ethtool of the bound network interface resource.
         """
+        self._check_externally_managed()
         cmd = self.iface.command_prefix + ["ethtool", "--json", "--show-pause", self.iface.ifname]
         output = subprocess.check_output(cmd, encoding="utf-8")
         return json.loads(output)[0]
@@ -171,6 +182,7 @@ class RawNetworkInterfaceDriver(Driver):
 
         Supported settings are described in ethtool(8) --pause
         """
+        self._check_externally_managed()
         cmd = ["ethtool", "pause", self.iface.ifname]
         cmd += [item for pair in settings.items() for item in pair]
         cmd = self._wrap_command(cmd)

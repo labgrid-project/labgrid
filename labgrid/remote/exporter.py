@@ -325,6 +325,7 @@ class NetworkInterfaceExport(ResourceExport):
         params = {
             "host": self.host,
             "ifname": self.local.ifname,
+            "externally_managed": self.local.externally_managed,
         }
         if self.cls == "USBNetworkInterface":
             params["extra"] = {

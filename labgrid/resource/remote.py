@@ -391,6 +391,7 @@ class RemoteNetworkInterface(NetworkResource, ManagedResource):
     manager_cls = RemotePlaceManager
 
     ifname = attr.ib(default=None)
+    externally_managed = attr.ib(default=False, validator.attr.validators.instance_of(bool))
 
 @attr.s(eq=False)
 class RemoteBaseProvider(NetworkResource):

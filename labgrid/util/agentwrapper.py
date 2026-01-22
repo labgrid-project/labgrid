@@ -6,7 +6,6 @@ import socket
 import subprocess
 import traceback
 import logging
-import array
 
 from .ssh import get_ssh_connect_timeout
 
@@ -93,22 +92,6 @@ class AgentWrapper:
     def __exit__(self, *exc):
         self.close()
 
-    def fdpass_recv(self):
-        int_size = array.array("i").itemsize
-        ancbufsize = socket.CMSG_LEN(int_size)
-
-        # Receive the message
-        msg, ancdata, flags, addr = self.fdpass.recvmsg(1, ancbufsize)
-
-        # Find and extract the file descriptor
-        for cmsg_level, cmsg_type, cmsg_data in ancdata:
-            if cmsg_level == socket.SOL_SOCKET and cmsg_type == socket.SCM_RIGHTS:
-                # Parse the bytestring into an integer
-                fd_array = array.array("i")
-                fd_array.frombytes(cmsg_data)
-                fd = fd_array[0]
-                return fd
-
     def call(self, method, *args, **kwargs):
         request = {
             'method': method,
@@ -124,7 +107,8 @@ class AgentWrapper:
         response = json.loads(response)
         if 'result' in response:
             if response.get('fdpass'):
-                return (response['result'], self.fdpass_recv())
+                _, fds, _, _ = socket.recv_fds(self.fdpass, 1, 1)
+                return (response['result'], fds[0])
             else:
                 return response['result']
         elif 'exception' in response:

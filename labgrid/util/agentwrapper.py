@@ -87,6 +87,12 @@ class AgentWrapper:
     def __getattr__(self, name):
         return MethodProxy(self, name)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
     def fdpass_recv(self):
         int_size = array.array("i").itemsize
         ancbufsize = socket.CMSG_LEN(int_size)

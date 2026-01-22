@@ -48,7 +48,7 @@ def handle_ns_macvtap(options):
     # dann: ip link set enp1s0f0-tap netns 83356
     # damit ist verschwindet es dann mit dem NS
     output = subprocess.check_output(
-        ["ip", "-j", "-echo", "link", "add", "link", options.ifname, "type", "macvtap"]
+        ["ip", "-j", "-echo", "link", "add", "link", options.ifname, "type", "macvtap", "mode", "bridge"]
     )
     output = json.loads(output)
     assert len(output) == 1

@@ -79,11 +79,14 @@ class Agent:
                 response = self.methods[name](*args, **kwargs)
                 # check if the method returned a file descriptor
                 if isinstance(response, tuple) and len(response) == 2 and hasattr(response[1], 'fileno'):
-                    if self.fdpass is None:
-                        self.send({'error': f'cannot pass returned FD without LG_FDPASS'})
-                        break
-                    self.fdpass_send(response[1].fileno())
-                    self.send({'result': response[0], 'fdpass': True})
+                    try:
+                        if self.fdpass is None:
+                            self.send({'error': f'cannot pass returned FD without LG_FDPASS'})
+                            break
+                        self.fdpass_send(response[1].fileno())
+                        self.send({'result': response[0], 'fdpass': True})
+                    finally:
+                        response[1].close()
                 else:
                     self.send({'result': response})
             except Exception as e:  # pylint: disable=broad-except

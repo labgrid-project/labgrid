@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import time
 import fcntl
 import struct
 import subprocess
@@ -12,7 +11,6 @@ from pathlib import Path
 #from pyroute2 import IPRoute
 
 import ctypes
-import os
 
 CLONE_NEWNS   = 0x00020000  # Mount namespace
 CLONE_NEWUSER = 0x10000000  # User namespace
@@ -56,7 +54,7 @@ def handle_unshare():
     uidmap = Path("/proc/self/uid_map")
     uidmap.write_text(f"0 {uid} 1")
     setgroups = Path("/proc/self/setgroups")
-    setgroups.write_text(f"deny")
+    setgroups.write_text("deny")
     gidmap = Path("/proc/self/gid_map")
     gidmap.write_text(f"0 {gid} 1")
 

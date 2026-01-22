@@ -486,7 +486,11 @@ class RawNetworkInterfaceDriver(Driver):
             ns = NetNamespace(local_ns)
 
             # Wait for IPv6 address negotiation to finish
+            to = Timeout(30.0)
             while True:
+                if to.expired:
+                    raise TimeoutError("Timeout waiting for IPv6 address negotiation to finish")
+
                 data = json.loads(
                     ns.run(["ip", "-j", "addr", "show", "dev", ns.intf], check=True, stdout=subprocess.PIPE).stdout
                 )

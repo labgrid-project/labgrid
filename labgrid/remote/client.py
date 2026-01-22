@@ -17,6 +17,7 @@ import shlex
 import shutil
 import json
 import itertools
+import ipaddress
 from textwrap import indent
 from socket import gethostname
 from getpass import getuser
@@ -1367,8 +1368,11 @@ class ClientSession:
         target = self._get_target(place)
         name = self.args.name
         drv = self._get_driver_or_new(target, "RawNetworkInterfaceDriver", name=name)
-        drv.setup_netns()
-        subprocess.call(drv._local_netns_prefix)
+        with drv.setup_netns(self.args.mac_address) as ns:
+            for a in self.args.address:
+                ns.run(["ip", "addr", "add", str(a), "dev", ns.intf], check=True)
+
+            subprocess.run(ns.prefix)
 
     def _get_tmc(self):
         place = self.get_acquired_place()
@@ -1995,6 +1999,15 @@ def main():
 
     subparser = subparsers.add_parser("netns", help="start a network namespace with access to NetworkInterface")
     subparser.add_argument("--name", "-n", help="optional resource name")
+    subparser.add_argument(
+        "--address",
+        "-a",
+        type=ipaddress.ip_interface,
+        action="append",
+        default=[],
+        help="assign address to interface (CIDR notation)",
+    )
+    subparser.add_argument("--mac-address", help="assign MAC address to interface")
     subparser.set_defaults(func=ClientSession.netns)
 
     tmc_parser = subparsers.add_parser("tmc", help="control a USB TMC device")

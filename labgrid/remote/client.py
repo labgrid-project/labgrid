@@ -17,6 +17,7 @@ import shlex
 import shutil
 import json
 import itertools
+import ipaddress
 from textwrap import indent
 from socket import gethostname
 from getpass import getuser
@@ -1400,6 +1401,26 @@ class ClientSession:
         if res:
             raise InteractiveCommandError("gst-launch-1.0 error", res)
 
+    def netns(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        name = self.args.name
+        drv = self._get_driver_or_new(target, "RawNetworkInterfaceDriver", name=name)
+        with drv.setup_netns(self.args.mac_address) as ns:
+            for a in self.args.address:
+                ns.run(["ip", "addr", "add", str(a), "dev", ns.intf], check=True)
+
+            cmd = self.args.cmd
+            if not cmd:
+                # Same behavior as nsenter with no command
+                cmd = os.environ.get("SHELL", "/bin/sh")
+
+            p = ns.run(cmd)
+            if p.returncode != 0:
+                exc = InteractiveCommandError("netns command error")
+                exc.exitcode = p.returncode
+                raise exc
+
     def _get_tmc(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
@@ -2059,6 +2080,22 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser = subparsers.add_parser("audio", help="start a audio stream")
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.set_defaults(func=ClientSession.audio)
+
+    subparser = subparsers.add_parser("netns", help="start a network namespace with access to NetworkInterface")
+    subparser.add_argument("--name", "-n", help="optional resource name")
+    subparser.add_argument(
+        "--address",
+        "-a",
+        type=ipaddress.ip_interface,
+        action="append",
+        default=[],
+        help="assign address to interface (CIDR notation)",
+    )
+    subparser.add_argument("--mac-address", help="assign MAC address to interface")
+    subparser.add_argument(
+        "cmd", nargs=argparse.REMAINDER, help="command to execute in the namespace. If unspecified, $SHELL is invoked"
+    )
+    subparser.set_defaults(func=ClientSession.netns)
 
     tmc_parser = subparsers.add_parser("tmc", help="control a USB TMC device")
     tmc_parser.add_argument("--name", "-n", help="optional resource name")

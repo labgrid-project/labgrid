@@ -1,3 +1,7 @@
+import os
+import socket
+import subprocess
+
 import pytest
 from py.path import local
 
@@ -96,6 +100,20 @@ def test_local():
     dummy = aw.load('dummy')
     assert dummy.neg(1) == -1
 
+
+def test_local_fdpass():
+    aw = AgentWrapper(None)
+
+    result = aw.test_fd()
+    assert isinstance(result, tuple)
+    assert result[0] == "dummy"
+    assert isinstance(result[1], int)
+
+    with os.fdopen(result[1]) as f:
+        fdpath = os.readlink(f"/proc/self/fd/{f.fileno()}")
+        assert fdpath.startswith("/memfd:test_fd")
+
+
 def test_all_modules():
     aw = AgentWrapper(None)
     aw.load('deditec_relais8')
@@ -115,3 +133,94 @@ def test_import_modules():
     import labgrid.util.agents
     import labgrid.util.agents.dummy
     from labgrid.util.agents import deditec_relais8, sysfsgpio
+
+
+def test_network_namespace():
+    with AgentWrapper(None) as aw:
+        netns = aw.load('netns')
+
+        ns_pid = netns.unshare()
+        assert ns_pid > 0
+
+        tun_name, tun_fd = netns.create_tun(address="be:df:8f:7a:12:db")
+
+        links = netns.get_links()
+        link_names = [link["ifname"] for link in links]
+        assert "tap0" in link_names
+
+        _, fd = netns.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        with socket.socket(fileno=fd) as s:
+            assert s.getsockopt(socket.SOL_SOCKET, socket.SO_PROTOCOL) == socket.IPPROTO_TCP
+
+        _, fd = netns.create_socket(socket.AF_INET, socket.SOCK_DGRAM)
+        with socket.socket(fileno=fd) as s:
+            assert s.getsockopt(socket.SOL_SOCKET, socket.SO_PROTOCOL) == socket.IPPROTO_UDP
+
+
+@pytest.mark.parametrize("family,host",
+    [
+        pytest.param(socket.AF_INET, "127.0.0.1", id="IPv4"),
+        pytest.param(socket.AF_INET6, "::1", id="IPv6"),
+    ]
+)
+def test_network_namespace_sockets(family, host):
+    with AgentWrapper(None) as aw:
+        netns = aw.load('netns')
+
+        ns_pid = netns.unshare()
+        assert ns_pid > 0
+
+        tun_name, tun_fd = netns.create_tun(address="be:df:8f:7a:12:db")
+
+        links = netns.get_links()
+        link_names = [link["ifname"] for link in links]
+        assert "tap0" in link_names
+
+        # Bring up lo in the namespace
+        subprocess.run(netns.get_prefix() + ["ip", "link", "set", "up", "dev", "lo"], check=True)
+
+        # Test TCP connections
+        _, fd = netns.bind(host, 5000, type=socket.SOCK_STREAM, timeout=10)
+        with socket.socket(fileno=fd) as server_sock:
+            assert server_sock.family == family
+            server_sock.listen(0)
+
+            _, fd = netns.connect(host, 5000, type=socket.SOCK_STREAM, timeout=10)
+            with socket.socket(fileno=fd) as client_sock:
+                c, addr = server_sock.accept()
+
+                client_sock.send(b"Hello")
+                assert c.recv(1024) == b"Hello"
+
+                c.send(b"World")
+                assert client_sock.recv(1024) == b"World"
+
+        # Test UDP
+        _, fd = netns.bind(host, 5000, type=socket.SOCK_DGRAM, timeout=10)
+        with socket.socket(fileno=fd) as server_sock:
+            assert server_sock.family == family
+
+            # Test connected UDP client socket
+            _, fd = netns.connect(host, 5000, type=socket.SOCK_DGRAM, timeout=10)
+            with socket.socket(fileno=fd) as client_sock:
+                client_sock.send(b"Hello")
+                data, addr = server_sock.recvfrom(1024)
+                assert data == b"Hello"
+
+                server_sock.sendto(b"World", addr)
+                data, addr = client_sock.recvfrom(1024)
+                assert data == b"World"
+
+
+            # Test unconnected UDP client socket
+            server_addr = server_sock.getsockname()
+
+            _, fd = netns.create_socket(server_sock.family, type=socket.SOCK_DGRAM)
+            with socket.socket(fileno=fd) as client_sock:
+                client_sock.sendto(b"Hello", server_addr)
+                data, addr = server_sock.recvfrom(1024)
+                assert data == b"Hello"
+
+                server_sock.sendto(b"World", addr)
+                data, addr = client_sock.recvfrom(1024)
+                assert data == b"World"

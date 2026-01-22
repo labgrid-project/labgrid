@@ -11,8 +11,18 @@ import argparse
 import os
 import string
 import sys
+import subprocess
+import json
+import struct
+import fcntl
 
 import yaml
+
+
+def get_sudo_uid() -> int:
+    uid = os.environ["SUDO_UID"]
+    if uid is not None:
+        return int(uid)
 
 
 def get_denylist():
@@ -23,6 +33,7 @@ def get_denylist():
     except (PermissionError, FileNotFoundError, AttributeError) as e:
         raise Exception(f"No configuration file ({denylist_file}), inaccessable or invalid yaml") from e
 
+    # FIXME: don't default to empty list for the check below
     denylist = data.get("raw-interface", {}).get("denied-interfaces", [])
 
     if not isinstance(denylist, list):
@@ -31,6 +42,60 @@ def get_denylist():
     denylist.append("lo")
 
     return denylist
+
+def open_tap(name, device="/dev/net/tun"):
+    TUNSETIFF = 0x400454CA
+    IFF_NO_PI = 0x1000
+    O_RDWR = 0x2
+    IFF_TAP = 0x0002
+
+    flags = IFF_TAP | IFF_NO_PI
+    name = name.encode()
+    ifr_name = name + b"\x00" * (16 - len(name))
+    ifr = struct.pack("16sH22s", ifr_name, flags, b"\x00" * 22)
+
+    fd = os.open(device, O_RDWR)
+    fcntl.ioctl(fd, TUNSETIFF, ifr)
+    return fd
+
+
+def handle_ns_macvtap(options):
+    # vorher prüfen, ob limits erreicht sind?
+    # erst: ip -j -echo link add link enp1s0f0 name enp1s0f0-tap type macvtap
+    # dann: ip link set enp1s0f0-tap netns 83356
+    # damit ist verschwindet es dann mit dem NS
+    output = subprocess.check_output(
+        ["ip", "-j", "-echo", "link", "add", "link", options.ifname, "type", "macvtap", "mode", "bridge"]
+    )
+    output = json.loads(output)
+    assert len(output) == 1
+    ifindex_new = output[0]["ifindex"]
+    ifname_new = output[0]["ifname"]
+    assert ifname_new.startswith("macvtap")
+    try:
+        if options.mac_address:
+            subprocess.check_call(
+                ["ip", "link", "set", "address", options.mac_address, "dev", ifname_new])
+        subprocess.check_call(
+            ["ip", "link", "set", "dev", ifname_new, "name", "macvtap0", "up", "netns", str(options.pid), "index", str(ifindex_new)]
+        )
+    except:
+        subprocess.check_call(
+            ["ip", "link", "del", ifname_new]
+        )
+        raise
+    tap_name = f"/dev/tap{ifindex_new}"
+    uid = get_sudo_uid()
+    os.chown(
+        path=tap_name,
+        uid=uid,
+        gid=-1,
+        follow_symlinks=False,
+    )
+
+    with os.fdopen(open_tap(ifname_new, device=tap_name)) as macvtap_fd:
+        os.set_inheritable(macvtap_fd.fileno(), True)
+        os.execlp("labgrid-tap-fwd", "labgrid-tap-fwd", str(macvtap_fd.fileno()))
 
 
 def main(program, options):
@@ -46,7 +111,7 @@ def main(program, options):
     if options.ifname in denylist:
         raise ValueError(f"Interface name '{options.ifname}' is denied in denylist.")
 
-    programs = ["tcpreplay", "tcpdump", "ip", "ethtool"]
+    programs = ["tcpreplay", "tcpdump", "ip", "ethtool", "ns-macvtap"]
     if program not in programs:
         raise ValueError(f"Invalid program {program} called with wrapper, valid programs are: {programs}")
 
@@ -112,6 +177,10 @@ def main(program, options):
             args.append(options.ifname)
             args.extend(options.ethtool_pause_args)
 
+    elif program == "ns-macvtap":
+        handle_ns_macvtap(options)
+        return
+
     try:
         os.execvp(args[0], args)
     except FileNotFoundError as e:
@@ -164,6 +233,12 @@ if __name__ == "__main__":
     ethtool_change_parser.add_argument(
         "ethtool_pause_args", metavar="ARG", nargs=argparse.REMAINDER, help="ethtool --pause args"
     )
+
+    # ns-macvtap
+    ns_mactap_parser = subparsers.add_parser("ns-macvtap")
+    ns_mactap_parser.add_argument("ifname", type=str, help="interface name")
+    ns_mactap_parser.add_argument("pid", type=int, help="pid of namespace agent")
+    ns_mactap_parser.add_argument("--mac-address", type=str, metavar="ADDRESS", help="Set interface MAC address to ADDRESS")
 
     args = parser.parse_args()
     try:

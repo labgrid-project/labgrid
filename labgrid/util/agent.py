@@ -6,6 +6,7 @@ import signal
 import sys
 import base64
 import types
+import socket
 
 def b2s(b):
     return base64.b85encode(b).decode('ascii')
@@ -25,6 +26,10 @@ class Agent:
 
         # use stderr for normal prints
         sys.stdout = sys.stderr
+
+        self.fdpass = None
+        if fdpass_env := os.environ.get("LG_FDPASS"):
+            self.fdpass = socket.socket(fileno=int(fdpass_env))
 
     def send(self, data):
         self.stdout.write(json.dumps(data)+'\n')
@@ -62,7 +67,18 @@ class Agent:
             kwargs = request['kwargs']
             try:
                 response = self.methods[name](*args, **kwargs)
-                self.send({'result': response})
+                # check if the method returned a file descriptor
+                if isinstance(response, tuple) and len(response) == 2 and hasattr(response[1], 'fileno'):
+                    try:
+                        if self.fdpass is None:
+                            self.send({'error': 'cannot pass returned FD without LG_FDPASS'})
+                            break
+                        socket.send_fds(self.fdpass, [b"\0"], (response[1].fileno(),))
+                        self.send({'result': response[0], 'fdpass': True})
+                    finally:
+                        response[1].close()
+                else:
+                    self.send({'result': response})
             except Exception as e:  # pylint: disable=broad-except
                 import traceback
                 try:
@@ -73,6 +89,10 @@ class Agent:
 
 def handle_test(*args, **kwargs):  # pylint: disable=unused-argument
     return args[::-1]
+
+def handle_test_fd():
+    fd = os.fdopen(os.memfd_create("test_fd"))
+    return ("dummy", fd)
 
 def handle_error(message):
     raise ValueError(message)
@@ -98,6 +118,7 @@ def main():
 
     a = Agent()
     a.register('test', handle_test)
+    a.register('test_fd', handle_test_fd)
     a.register('error', handle_error)
     a.register('usbtmc', handle_usbtmc)
     a.run()

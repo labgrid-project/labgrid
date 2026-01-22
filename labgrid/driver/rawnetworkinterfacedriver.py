@@ -23,9 +23,6 @@ from ..util.timeout import Timeout
 from ..resource.common import NetworkResource
 
 
-HEADER = struct.Struct("<H")
-
-
 class NetNamespace(object):
     def __init__(self, agent):
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -409,27 +406,6 @@ class RawNetworkInterfaceDriver(Driver):
             ns.unshare()
             yield ns
 
-    def _pump_d2p(self, dev, pipe):
-        while True:
-            buf = os.read(dev.fileno(), 1522)
-            if not buf:
-                return
-            # print('Got tap data with length {}'.format(len(buf)))
-            pipe.write(HEADER.pack(len(buf)))
-            pipe.write(buf)
-            pipe.flush()
-
-    def _pump_p2d(self, pipe, dev):
-        while True:
-            data = pipe.read(HEADER.size)
-            if not data:
-                return
-
-            (length,) = HEADER.unpack(data)
-            buf = pipe.read(length)
-            # print('Got vtap data with length {}'.format(len(buf)))
-            os.write(dev.fileno(), buf)
-
     @contextlib.contextmanager
     def setup_netns(self, mac_address=None):
         with contextlib.ExitStack() as ctx:
@@ -457,17 +433,15 @@ class RawNetworkInterfaceDriver(Driver):
                     r_macaddr = link["address"]
             assert r_macaddr is not None
 
-            # start mapvtap helper in remote namespace
-            helper = ctx.enter_context(
+            # Start tap forward in remote namespace
+            remote_fwd = ctx.enter_context(
                 subprocess.Popen(
-                    self.iface.command_prefix
-                    + remote_ns.get_prefix()
-                    + ["labgrid-tap-fwd", "--macvtap", "macvtap0"],
+                    self.iface.command_prefix + remote_ns.get_prefix() + ["labgrid-tap-fwd", "--macvtap", "macvtap0"],
                     stdout=subprocess.PIPE,
                     stdin=subprocess.PIPE,
                 )
             )
-            ctx.callback(lambda: helper.terminate())
+            ctx.callback(lambda: remote_fwd.terminate())
 
             tun_name, fd = local_ns.create_tun(address=r_macaddr)
             tun_fd = ctx.enter_context(os.fdopen(fd))
@@ -476,10 +450,19 @@ class RawNetworkInterfaceDriver(Driver):
             link_names = [link["ifname"] for link in links]
             assert "tap0" in link_names
 
-            # TODO: Using threads here is problematic because it's hard to
-            # clean them up correctly when the namespace exits
-            threading.Thread(target=self._pump_d2p, args=(tun_fd, helper.stdin), daemon=True).start()
-            threading.Thread(target=self._pump_p2d, args=(helper.stdout, tun_fd), daemon=True).start()
+            local_fwd = ctx.enter_context(
+                subprocess.Popen(
+                    local_ns.get_prefix() + ["labgrid-tap-fwd", "--fd", str(tun_fd.fileno())],
+                    stdin=remote_fwd.stdout,
+                    stdout=remote_fwd.stdin,
+                    pass_fds=(tun_fd.fileno(),),
+                )
+            )
+            ctx.callback(lambda: local_fwd.terminate())
+
+            # Close local pipes for the remote forward, now that the local forward is running
+            remote_fwd.stdin.close()
+            remote_fwd.stdout.close()
 
             ns = NetNamespace(local_ns)
 
@@ -495,8 +478,11 @@ class RawNetworkInterfaceDriver(Driver):
                     # No tentative addresses
                     break
 
-                if helper.poll() is not None:
-                    raise ExecutionError(f"Helper {helper.pid} died")
+                if remote_fwd.poll() is not None:
+                    raise ExecutionError(f"Remote tap forward {remote_fwd.pid} died with {remote_fwd.returncode}")
+
+                if local_fwd.poll() is not None:
+                    raise ExecutionError(f"Local tap forward {local_fwd.pid} died with {local_fwd.returncode}")
 
                 time.sleep(0.1)
 

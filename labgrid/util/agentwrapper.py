@@ -69,16 +69,17 @@ class AgentWrapper:
         else:
             # run locally
             self.fdpass, remote_fdpass = socket.socketpair()
-            env = os.environ.copy()
-            env["LG_FDPASS"] = str(remote_fdpass.fileno())
-            self.agent = subprocess.Popen(
-                ['python3', agent],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                env=env,
-                start_new_session=True,
-                pass_fds=(remote_fdpass.fileno(),),
-            )
+            with remote_fdpass:
+                env = os.environ.copy()
+                env["LG_FDPASS"] = str(remote_fdpass.fileno())
+                self.agent = subprocess.Popen(
+                    ['python3', agent],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    env=env,
+                    start_new_session=True,
+                    pass_fds=(remote_fdpass.fileno(),),
+                )
 
     def __del__(self):
         self.close()

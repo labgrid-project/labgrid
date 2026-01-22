@@ -460,7 +460,9 @@ class RawNetworkInterfaceDriver(Driver):
             # start mapvtap helper in remote namespace
             helper = ctx.enter_context(
                 subprocess.Popen(
-                    self.iface.command_prefix + remote_ns.get_prefix() + ["labgrid-macvtap-fwd", "macvtap0"],
+                    self.iface.command_prefix
+                    + remote_ns.get_prefix()
+                    + ["labgrid-macvtap-fwd", "--macvtap", "macvtap0"],
                     stdout=subprocess.PIPE,
                     stdin=subprocess.PIPE,
                 )

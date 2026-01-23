@@ -36,6 +36,14 @@ class NetNamespace(object):
     def intf(self):
         return self._agent.get_intf()
 
+    @functools.cached_property
+    def ifindex(self):
+        links = self._agent.get_links()
+        for intf in links:
+            if intf["ifname"] == self.intf:
+                return intf["ifindex"]
+        raise KeyError(f"Interface {self.intf} not found")
+
     def _get_cmd(self, command):
         if isinstance(command, str):
             return self.prefix + ["--wd=" + os.getcwd(), "--", "/bin/sh", "-c", command]

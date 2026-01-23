@@ -180,12 +180,14 @@ def test_network_namespace_sockets(family, host):
         subprocess.run(netns.get_prefix() + ["ip", "link", "set", "up", "dev", "lo"], check=True)
 
         # Test TCP connections
-        _, fd = netns.bind(host, 5000, type=socket.SOCK_STREAM, timeout=10)
+        ret, fd = netns.bind((host, 5000), family=family, type=socket.SOCK_STREAM, timeout=10)
+        assert ret == 0
         with socket.socket(fileno=fd) as server_sock:
             assert server_sock.family == family
             server_sock.listen(0)
 
-            _, fd = netns.connect(host, 5000, type=socket.SOCK_STREAM, timeout=10)
+            ret, fd = netns.connect((host, 5000), family=family, type=socket.SOCK_STREAM, timeout=10)
+            assert ret == 0
             with socket.socket(fileno=fd) as client_sock:
                 c, addr = server_sock.accept()
 
@@ -196,12 +198,14 @@ def test_network_namespace_sockets(family, host):
                 assert client_sock.recv(1024) == b"World"
 
         # Test UDP
-        _, fd = netns.bind(host, 5000, type=socket.SOCK_DGRAM, timeout=10)
+        ret, fd = netns.bind((host, 5000), family=family, type=socket.SOCK_DGRAM, timeout=10)
+        assert ret == 0
         with socket.socket(fileno=fd) as server_sock:
             assert server_sock.family == family
 
             # Test connected UDP client socket
-            _, fd = netns.connect(host, 5000, type=socket.SOCK_DGRAM, timeout=10)
+            ret, fd = netns.connect((host, 5000), family=family, type=socket.SOCK_DGRAM, timeout=10)
+            assert ret == 0
             with socket.socket(fileno=fd) as client_sock:
                 client_sock.send(b"Hello")
                 data, addr = server_sock.recvfrom(1024)
@@ -224,3 +228,10 @@ def test_network_namespace_sockets(family, host):
                 server_sock.sendto(b"World", addr)
                 data, addr = client_sock.recvfrom(1024)
                 assert data == b"World"
+
+        # Test getaddrinfo
+        ret, result = netns.getaddrinfo(host, 5000)
+        assert ret == 0
+        assert len(result) >= 1
+        for fam, socktype, proto, cannonname, sockaddr in result:
+            assert fam == family

@@ -111,36 +111,47 @@ def handle_get_intf():
     return "tap0"
 
 
-def handle_connect(*args, timeout=None, **kwargs):
-    for family, socktype, proto, _, sockaddr in socket.getaddrinfo(*args, **kwargs):
-        try:
-            with socket.socket(family, socktype, proto) as s:
-                if timeout is not None:
-                    s.settimeout(timeout)
+def handle_getaddrinfo(*args, **kwargs):
+    result = []
+    try:
+        for info in socket.getaddrinfo(*args, **kwargs):
+            result.append(info)
 
-                s.connect(sockaddr)
-                return (0, s.dup())
-
-        except OSError as e:
-            return (e.errno, -1)
-
-    return (errno.EADDRNOTAVAIL, -1)
+        return (0, result)
+    except OSError as e:
+        return ((e.errno, e.strerror), result)
 
 
-def handle_bind(*args, timeout=None, **kwargs):
-    for family, socktype, proto, _, sockaddr in socket.getaddrinfo(*args, **kwargs):
-        try:
-            with socket.socket(family, socktype, proto) as s:
-                if timeout is not None:
-                    s.settimeout(timeout)
+def handle_connect(address, family=socket.AF_INET, type=socket.SOCK_STREAM, proto=0, *, timeout=None):
+    try:
+        with socket.socket(family, type, proto) as s:
+            if timeout is not None:
+                s.settimeout(timeout)
 
-                s.bind(sockaddr)
-                return ("", s.dup())
+            if isinstance(address, list):
+                address = tuple(address)
 
-        except OSError as e:
-            return (e.errno, -1)
+            s.connect(address)
+            return (0, s.dup())
 
-    return (errno.EADDRNOTAVAIL, -1)
+    except OSError as e:
+        return ([e.errno, e.strerror], -1)
+
+
+def handle_bind(address, family=socket.AF_INET, type=socket.SOCK_STREAM, proto=0, *, timeout=None):
+    try:
+        with socket.socket(family, type, proto) as s:
+            if timeout is not None:
+                s.settimeout(timeout)
+
+            if isinstance(address, list):
+                address = tuple(address)
+
+            s.bind(address)
+            return (0, s.dup())
+
+    except OSError as e:
+        return ((e.errno, e.strerror), -1)
 
 
 methods = {
@@ -153,4 +164,5 @@ methods = {
     "get_intf": handle_get_intf,
     "bind": handle_bind,
     "connect": handle_connect,
+    "getaddrinfo": handle_getaddrinfo,
 }

@@ -72,20 +72,26 @@ class NetNamespace(object):
     def socket(self, *args, **kwargs):
         err, fd = self._agent.create_socket(*args, **kwargs)
         if err:
-            raise OSError(err, os.strerror(err))
+            raise OSError(*err)
         return socket.socket(fileno=fd)
 
-    def connect(self, address, port, *args, **kwargs):
-        err, fd = self._agent.connect(address, port, *args, **kwargs)
+    def connect(self, *args, **kwargs):
+        err, fd = self._agent.connect(*args, **kwargs)
         if err:
-            raise OSError(err, os.strerror(err))
+            raise OSError(*err)
         return socket.socket(fileno=fd)
 
-    def bind(self, host, port, *args, **kwargs):
-        err, fd = self._agent.bind(host, port, *args, **kwargs)
+    def bind(self, *args, **kwargs):
+        err, fd = self._agent.bind(*args, **kwargs)
         if err:
-            raise OSError(err, os.strerror(err))
+            raise OSError(*err)
         return socket.socket(fileno=fd)
+
+    def getaddrinfo(self, *args, **kwargs):
+        err, result = self._agent.getaddrinfo(*args, **kwargs)
+        if err:
+            raise OSError(*err)
+        return result
 
 
 @target_factory.reg_driver

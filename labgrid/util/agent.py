@@ -7,12 +7,19 @@ import sys
 import base64
 import types
 import socket
+import pickle
 
 def b2s(b):
     return base64.b85encode(b).decode('ascii')
 
 def s2b(s):
     return base64.b85decode(s.encode('ascii'))
+
+def py2s(o):
+    return b2s(pickle.dumps(o))
+
+def s2py(s):
+    return pickle.loads(s2b(s))
 
 class Agent:
     def __init__(self):

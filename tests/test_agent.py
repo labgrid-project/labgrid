@@ -6,7 +6,8 @@ import pytest
 from py.path import local
 
 import labgrid.util.agentwrapper
-from labgrid.util.agentwrapper import AgentError, AgentException, AgentWrapper, b2s, s2b
+from labgrid.util.agentwrapper import AgentError, AgentException, AgentWrapper
+from labgrid.util.agent import b2s, s2b, py2s, s2py
 
 @pytest.fixture(scope='function')
 def subprocess_mock(mocker):
@@ -58,6 +59,12 @@ def test_proxy(subprocess_mock):
 def test_bytes(subprocess_mock):
     aw = AgentWrapper('localhost')
     assert s2b(aw.test(b2s(b'\x00foo'))[0]) == b'\x00foo'
+
+def test_pydata(subprocess_mock):
+    with AgentWrapper('localhost') as aw:
+        d = s2py(aw.test(py2s((1, 'foo', True)))[0])
+        assert isinstance(d, tuple)
+        assert d == (1, 'foo', True)
 
 def test_exception(subprocess_mock):
     aw = AgentWrapper('localhost')

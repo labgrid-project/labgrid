@@ -5,13 +5,14 @@ import fcntl
 import struct
 import subprocess
 import socket
-import pickle
-import base64
 from pathlib import Path
 
 #from pyroute2 import IPRoute
 
 import ctypes
+
+s2py = s2py # pylint: disable=undefined-variable
+py2s = py2s # pylint: disable=undefined-variable
 
 CLONE_NEWNS   = 0x00020000  # Mount namespace
 CLONE_NEWUSER = 0x10000000  # User namespace
@@ -112,12 +113,11 @@ def handle_socket_dup(sockid):
         return ({"error": [e.errno, e.strerror]}, None)
 
 
-def handle_socket_call(sockid, func, arg_str):
-    args, kwargs = pickle.loads(base64.b85decode(arg_str))
+def handle_socket_call(sockid, func, args, kwargs):
     try:
         s = socket_table[sockid]
-        ret = getattr(s, func)(*args, **kwargs)
-        return (0, base64.b85encode(pickle.dumps(ret)).decode("ascii"))
+        ret = getattr(s, func)(*s2py(args), **s2py(kwargs))
+        return (0, py2s(ret))
     except OSError as e:
         return ([e.errno, e.strerror], None)
 

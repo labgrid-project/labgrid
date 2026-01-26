@@ -1,14 +1,14 @@
-import base64
 import contextlib
 import errno
 import functools
 import logging
 import os
-import pickle
 import socket
 import subprocess
 import sys
 import tempfile
+
+from .agent import py2s, s2py
 
 
 class NSSocket(socket.socket):
@@ -45,12 +45,11 @@ class NSSocket(socket.socket):
     def __netns_call(self, func, args, kwargs):
         if not self.__sockid:
             raise OSError(errno.EBADF, os.strerror(errno.EBADF))
-        arg_str = base64.b85encode(pickle.dumps((args, kwargs))).decode("ascii")
 
-        err, ret = self.__netns.socket_call(self.__sockid, func, arg_str)
+        err, ret = self.__netns.socket_call(self.__sockid, func, py2s(args), py2s(kwargs))
         if err != 0:
             raise OSError(*err)
-        return pickle.loads(base64.b85decode(ret))
+        return s2py(ret)
 
     def close(self):
         self.__close_remote_sock()

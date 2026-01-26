@@ -5,7 +5,8 @@ import fcntl
 import struct
 import subprocess
 import socket
-import errno
+import pickle
+import base64
 from pathlib import Path
 
 #from pyroute2 import IPRoute
@@ -23,6 +24,8 @@ libc.unshare.restype = ctypes.c_int
 
 libc.setns.argtypes = [ctypes.c_int, ctypes.c_int]
 libc.setns.restype = ctypes.c_int
+
+socket_table = {}
 
 def unshare(flags):
     ret = libc.unshare(flags)
@@ -88,9 +91,40 @@ def handle_create_tun(*, address=None):
 def handle_socket(*args, **kwargs):
     try:
         s = socket.socket(*args, **kwargs)
-        return (0, s)
+        socket_table[id(s)] = s
+        return ({"id": id(s)}, s.dup())
     except OSError as e:
-        return (e.errno, -1)
+        return ({"error": [e.errno, e.strerror]}, None)
+
+
+def handle_socket_close(sockid):
+    if sockid in socket_table:
+        socket_table[sockid].close()
+        del socket_table[sockid]
+
+
+def handle_socket_dup(sockid):
+    try:
+        s = socket_table[sockid].dup()
+        socket_table[id(s)] = s
+        return ({"id": id(s)}, s.dup())
+    except OSError as e:
+        return ({"error": [e.errno, e.strerror]}, None)
+
+
+def handle_socket_call(sockid, func, arg_str):
+    args, kwargs = pickle.loads(base64.b85decode(arg_str))
+    try:
+        s = socket_table[sockid]
+        ret = getattr(s, func)(*args, **kwargs)
+        return (0, base64.b85encode(pickle.dumps(ret)).decode("ascii"))
+    except OSError as e:
+        return ([e.errno, e.strerror], None)
+
+
+def handle_list_sockets():
+    return list(socket_table.keys())
+
 
 def handle_get_links():
     # TODO: switch to IPRoute
@@ -122,38 +156,6 @@ def handle_getaddrinfo(*args, **kwargs):
         return ((e.errno, e.strerror), result)
 
 
-def handle_connect(address, family=socket.AF_INET, type=socket.SOCK_STREAM, proto=0, *, timeout=None):
-    try:
-        with socket.socket(family, type, proto) as s:
-            if timeout is not None:
-                s.settimeout(timeout)
-
-            if isinstance(address, list):
-                address = tuple(address)
-
-            s.connect(address)
-            return (0, s.dup())
-
-    except OSError as e:
-        return ([e.errno, e.strerror], -1)
-
-
-def handle_bind(address, family=socket.AF_INET, type=socket.SOCK_STREAM, proto=0, *, timeout=None):
-    try:
-        with socket.socket(family, type, proto) as s:
-            if timeout is not None:
-                s.settimeout(timeout)
-
-            if isinstance(address, list):
-                address = tuple(address)
-
-            s.bind(address)
-            return (0, s.dup())
-
-    except OSError as e:
-        return ((e.errno, e.strerror), -1)
-
-
 methods = {
     "unshare": handle_unshare,
     "create_tun": handle_create_tun,
@@ -162,7 +164,9 @@ methods = {
     "get_prefix": handle_get_prefix,
     "get_pid": handle_get_pid,
     "get_intf": handle_get_intf,
-    "bind": handle_bind,
-    "connect": handle_connect,
+    "socket_call": handle_socket_call,
+    "socket_close": handle_socket_close,
+    "socket_dup": handle_socket_dup,
+    "list_sockets": handle_list_sockets,
     "getaddrinfo": handle_getaddrinfo,
 }

@@ -1,6 +1,9 @@
 import os
 import socket
 import subprocess
+import pickle
+import base64
+import errno
 
 import pytest
 from py.path import local
@@ -157,6 +160,7 @@ def test_network_namespace():
             assert s.getsockopt(socket.SOL_SOCKET, socket.SO_PROTOCOL) == socket.IPPROTO_UDP
 
 
+
 @pytest.mark.parametrize("family,host",
     [
         pytest.param(socket.AF_INET, "127.0.0.1", id="IPv4"),
@@ -164,49 +168,44 @@ def test_network_namespace():
     ]
 )
 def test_network_namespace_sockets(family, host):
+    from labgrid.util.netns import NetNamespace
+
     with AgentWrapper(None) as aw:
-        netns = aw.load('netns')
-
-        ns_pid = netns.unshare()
-        assert ns_pid > 0
-
-        tun_name, tun_fd = netns.create_tun(address="be:df:8f:7a:12:db")
+        netns = NetNamespace.create(aw, "be:df:8f:7a:12:db")
 
         links = netns.get_links()
         link_names = [link["ifname"] for link in links]
         assert "tap0" in link_names
 
         # Bring up lo in the namespace
-        subprocess.run(netns.get_prefix() + ["ip", "link", "set", "up", "dev", "lo"], check=True)
+        netns.run(["ip", "link", "set", "up", "dev", "lo"], check=True)
+
+        # Test getaddrinfo
+        for fam, socktype, proto, cannonname, sockaddr in netns.getaddrinfo(host, 5000):
+            assert fam == family
 
         # Test TCP connections
-        ret, fd = netns.bind((host, 5000), family=family, type=socket.SOCK_STREAM, timeout=10)
-        assert ret == 0
-        with socket.socket(fileno=fd) as server_sock:
-            assert server_sock.family == family
+        with netns.socket(family, socket.SOCK_STREAM) as server_sock:
+            server_sock.bind((host, 5000))
             server_sock.listen(0)
 
-            ret, fd = netns.connect((host, 5000), family=family, type=socket.SOCK_STREAM, timeout=10)
-            assert ret == 0
-            with socket.socket(fileno=fd) as client_sock:
-                c, addr = server_sock.accept()
+            with netns.socket(family, socket.SOCK_STREAM) as client_sock:
+                client_sock.connect((host, 5000))
 
+                c, addr = server_sock.accept()
                 client_sock.send(b"Hello")
                 assert c.recv(1024) == b"Hello"
 
                 c.send(b"World")
                 assert client_sock.recv(1024) == b"World"
 
-        # Test UDP
-        ret, fd = netns.bind((host, 5000), family=family, type=socket.SOCK_DGRAM, timeout=10)
-        assert ret == 0
-        with socket.socket(fileno=fd) as server_sock:
+        with netns.socket(family, socket.SOCK_DGRAM) as server_sock:
+            server_sock.bind((host, 5000))
             assert server_sock.family == family
 
             # Test connected UDP client socket
-            ret, fd = netns.connect((host, 5000), family=family, type=socket.SOCK_DGRAM, timeout=10)
-            assert ret == 0
-            with socket.socket(fileno=fd) as client_sock:
+            with netns.socket(family, socket.SOCK_DGRAM) as client_sock:
+                client_sock.connect((host, 5000))
                 client_sock.send(b"Hello")
                 data, addr = server_sock.recvfrom(1024)
                 assert data == b"Hello"
@@ -215,12 +214,10 @@ def test_network_namespace_sockets(family, host):
                 data, addr = client_sock.recvfrom(1024)
                 assert data == b"World"
 
-
             # Test unconnected UDP client socket
             server_addr = server_sock.getsockname()
 
-            _, fd = netns.create_socket(server_sock.family, type=socket.SOCK_DGRAM)
-            with socket.socket(fileno=fd) as client_sock:
+            with netns.socket(family, socket.SOCK_DGRAM) as client_sock:
                 client_sock.sendto(b"Hello", server_addr)
                 data, addr = server_sock.recvfrom(1024)
                 assert data == b"Hello"
@@ -229,9 +226,34 @@ def test_network_namespace_sockets(family, host):
                 data, addr = client_sock.recvfrom(1024)
                 assert data == b"World"
 
-        # Test getaddrinfo
-        ret, result = netns.getaddrinfo(host, 5000)
-        assert ret == 0
-        assert len(result) >= 1
-        for fam, socktype, proto, cannonname, sockaddr in result:
-            assert fam == family
+        # Test that closed sockets result in EBADF
+        s = netns.socket(family, socket.SOCK_DGRAM)
+        s.close()
+        with pytest.raises(OSError, check=lambda e: e.errno == errno.EBADF):
+            s.bind((host, 5000))
+
+        # Test dup()
+        with netns.socket(family, socket.SOCK_DGRAM) as server_sock:
+            server_sock.bind((host, 5000))
+
+            # Create, then close the duplicate socket. The server socket should still function
+            dup_sock = server_sock.dup()
+            dup_sock.close()
+
+            with netns.socket(family, socket.SOCK_DGRAM) as client_sock:
+                client_sock.connect((host, 5000))
+                client_sock.send(b"Hello")
+                data, addr = server_sock.recvfrom(1024)
+                assert data == b"Hello"
+
+                server_sock.sendto(b"World", addr)
+                data, addr = client_sock.recvfrom(1024)
+                assert data == b"World"
+
+        # Test detach
+        with netns.socket(family, socket.SOCK_DGRAM) as s:
+            fd = s.detach()
+        os.close(fd)
+
+        # Verify that all sockets were removed in the namespace
+        assert netns._agent.list_sockets() == []

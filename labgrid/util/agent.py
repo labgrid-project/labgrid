@@ -48,6 +48,10 @@ class Agent:
 
     def load(self, name, source):
         module = types.ModuleType(name)
+        module.__dict__["b2s"] = b2s
+        module.__dict__["s2b"] = s2b
+        module.__dict__["py2s"] = py2s
+        module.__dict__["s2py"] = s2py
         exec(compile(source, f'<loaded {name}>', 'exec'), module.__dict__)
         for k, v in module.methods.items():  # pylint: disable=no-member
             self.register(f'{name}.{k}', v)

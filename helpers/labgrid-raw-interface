@@ -38,7 +38,7 @@ def main(program, options):
         raise ValueError("Empty interface name.")
     if any((c == "/" or c.isspace()) for c in options.ifname):
         raise ValueError(f"Interface name '{options.ifname}' contains invalid characters.")
-    if len(options.ifname) > 16:
+    if len(options.ifname) > 15:
         raise ValueError(f"Interface name '{options.ifname}' is too long.")
 
     denylist = get_denylist()

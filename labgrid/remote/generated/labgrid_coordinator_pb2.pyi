@@ -1,9 +1,18 @@
 from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from collections.abc import Iterable as _Iterable, Mapping as _Mapping
+from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
+
+class AcquireMode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    ACQUIRE: _ClassVar[AcquireMode]
+    LEASE: _ClassVar[AcquireMode]
+ACQUIRE: AcquireMode
+LEASE: AcquireMode
 
 class ClientInMessage(_message.Message):
     __slots__ = ("sync", "startup", "subscribe")
@@ -315,10 +324,12 @@ class DeletePlaceMatchResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class AcquirePlaceRequest(_message.Message):
-    __slots__ = ("placename",)
+    __slots__ = ("placename", "mode")
     PLACENAME_FIELD_NUMBER: _ClassVar[int]
+    MODE_FIELD_NUMBER: _ClassVar[int]
     placename: str
-    def __init__(self, placename: _Optional[str] = ...) -> None: ...
+    mode: AcquireMode
+    def __init__(self, placename: _Optional[str] = ..., mode: _Optional[_Union[AcquireMode, str]] = ...) -> None: ...
 
 class AcquirePlaceResponse(_message.Message):
     __slots__ = ()

@@ -227,8 +227,14 @@ message DeletePlaceMatchRequest {
 message DeletePlaceMatchResponse {
 };
 
+enum AcquireMode {
+  ACQUIRE = 0;
+  LEASE = 1;
+}
+
 message AcquirePlaceRequest {
   string placename = 1;
+  AcquireMode mode = 2; // default 0 = ACQUIRE
 };
 
 message AcquirePlaceResponse {

@@ -84,6 +84,13 @@ class ErrorGroup(ExceptionGroup):
         errors_combined = "\n".join(f"- {' '.join(e.args)}" for e in self.exceptions)  # pylint: disable=not-an-iterable
         return f"{self.message}:\n{errors_combined}"
 
+class LockMode(enum.Enum):
+    acquire = "acquire"
+    lease = "lease"
+
+    def __str__(self):
+        return self.value
+
 
 @attr.s(eq=False)
 class ClientSession:
@@ -716,22 +723,41 @@ class ClientSession:
         if match:
             raise UserError(f"Match {match} has no matching remote resource")
 
-    async def acquire(self):
+    async def lock(self):
+        mode = getattr(self.args, "mode", LockMode.acquire)
+        grpc_mode = (
+            labgrid_coordinator_pb2.AcquireMode.LEASE
+            if mode == LockMode.lease
+            else labgrid_coordinator_pb2.AcquireMode.ACQUIRE
+        )
+        return await self._lock(grpc_mode)
+
+    async def _lock(self, mode):
         errors = []
         places = self.get_place_names_from_env() if self.env else [self.args.place]
         for place in places:
             try:
-                await self._acquire_place(place)
+                await self._lock_place(place, mode=mode)
             except Error as e:
                 errors.append(e)
 
         if errors:
             if len(errors) == 1:
                 raise errors[0]
-            raise ErrorGroup("Multiple errors occurred during acquire", errors)
+            raise ErrorGroup("Multiple errors occurred during lock", errors)
 
-    async def _acquire_place(self, place):
-        """Acquire a place, marking it unavailable for other clients"""
+    async def lease(self):
+        return await self._lock(labgrid_coordinator_pb2.AcquireMode.LEASE)
+
+    async def acquire(self):
+        return await self._lock(labgrid_coordinator_pb2.AcquireMode.ACQUIRE)
+
+    async def _lock_place(
+        self,
+        place,
+        mode=labgrid_coordinator_pb2.AcquireMode.ACQUIRE,
+    ):
+        """lock a place, marking it unavailable for other clients"""
         place = self.get_place(place)
         if place.acquired:
             host, user = place.acquired.split("/")
@@ -750,12 +776,13 @@ class ClientSession:
         if not self.args.allow_unmatched:
             self.check_matches(place)
 
-        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name)
+        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name, mode=mode)
 
         try:
             await self.stub.AcquirePlace(request)
             await self.sync_with_coordinator()
-            print(f"acquired place {place.name}")
+            verb = "leased" if mode == labgrid_coordinator_pb2.AcquireMode.LEASE else "acquired"
+            print(f"{verb} place {place.name}")
         except grpc.aio.AioRpcError as e:
             # check potential failure causes
             for exporter, groups in sorted(self.resources.items()):
@@ -1571,16 +1598,18 @@ class ClientSession:
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
 
+
+    async def _poll_reservation(self, token: str) -> Reservation:
+        request = labgrid_coordinator_pb2.PollReservationRequest(token=token)
+        try:
+            response: labgrid_coordinator_pb2.PollReservationResponse = await self.stub.PollReservation(request)
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+        return Reservation.from_pb2(response.reservation)
+
     async def _wait_reservation(self, token: str, verbose=True):
         while True:
-            request = labgrid_coordinator_pb2.PollReservationRequest(token=token)
-
-            try:
-                response: labgrid_coordinator_pb2.PollReservationResponse = await self.stub.PollReservation(request)
-            except grpc.aio.AioRpcError as e:
-                raise ServerError(e.details())
-
-            res = Reservation.from_pb2(response.reservation)
+            res = await self._poll_reservation(token)
             if verbose:
                 res.show()
             if res.state is ReservationState.waiting:
@@ -1591,6 +1620,24 @@ class ClientSession:
     async def wait_reservation(self):
         token = self.args.token
         await self._wait_reservation(token)
+
+    async def extend_reservation(self):
+        token = self.args.token
+        interval = self.args.interval
+
+        if interval is None:
+            res = await self._poll_reservation(token)  # refresh once
+            if not self.args.quiet:
+                print(f"extended reservation {res.token} until {datetime.fromtimestamp(res.timeout)}")
+            return
+
+        while True:
+            res = await self._poll_reservation(token)  # refresh repeatedly
+            if res.state is ReservationState.expired:
+                raise UserError("Reservation is expired; cannot extend")
+            if not self.args.quiet:
+                print(f"extended reservation {res.token} until {datetime.fromtimestamp(res.timeout)}")
+            await asyncio.sleep(interval)
 
     async def print_reservations(self):
         request = labgrid_coordinator_pb2.GetReservationsRequest()
@@ -1997,11 +2044,31 @@ def main():
     subparser.add_argument("name", metavar="NAME")
     subparser.set_defaults(func=ClientSession.add_named_match)
 
-    subparser = subparsers.add_parser("acquire", aliases=("lock",), help="acquire a place")
+    subparser = subparsers.add_parser("lock", help="lock a place (acquire by default)")
+    subparser.add_argument(
+        "--mode",
+        type=LockMode,
+        choices=LockMode,
+        default=LockMode.acquire,
+        help="lock mode: acquire (default) or lease",
+    )
+    subparser.add_argument(
+        "--allow-unmatched", action="store_true", help="allow missing resources for matches when locking the place"
+    )
+    subparser.set_defaults(func=ClientSession.lock)
+
+    # aliases
+    subparser = subparsers.add_parser("acquire", help="acquire a place (indefinite)")
     subparser.add_argument(
         "--allow-unmatched", action="store_true", help="allow missing resources for matches when locking the place"
     )
     subparser.set_defaults(func=ClientSession.acquire)
+
+    subparser = subparsers.add_parser("lease", help="lease a place (time-limited, requires extension)")
+    subparser.add_argument(
+        "--allow-unmatched", action="store_true", help="allow missing resources for matches when locking the place"
+    )
+    subparser.set_defaults(func=ClientSession.lease)
 
     subparser = subparsers.add_parser("release", aliases=("unlock",), help="release a place")
     subparser.add_argument(
@@ -2233,6 +2300,21 @@ def main():
     subparser = subparsers.add_parser("wait", help="wait for a reservation to be allocated")
     subparser.add_argument("token", type=str, default=token, nargs="?" if token else None)
     subparser.set_defaults(func=ClientSession.wait_reservation)
+
+    subparser = subparsers.add_parser("extend", help="repeat refresh every N seconds (keepalive loop)")
+    subparser.add_argument("token", type=str, default=token, nargs="?" if token else None)
+    subparser.add_argument(
+        "--interval",
+        type=float,
+        default=None,
+        help="poll interval in seconds",
+    )
+    subparser.add_argument(
+        "-q", "--quiet",
+        action="store_true",
+        help="do not print reservation status on each poll",
+    )
+    subparser.set_defaults(func=ClientSession.extend_reservation)
 
     subparser = subparsers.add_parser("reservations", help="list current reservations")
     subparser.set_defaults(func=ClientSession.print_reservations)

@@ -243,8 +243,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     async def _poll_step_schedule(self):
         # update reservations
-        with warn_if_slow("schedule reservations"):
-            self.schedule_reservations()
+        async with self.lock:
+            with warn_if_slow("schedule reservations"):
+                await self._schedule_reservations()
+
 
     async def poll(self, step_func):
         while not self.loop.is_closed():
@@ -835,6 +837,12 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
         if place.acquired:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {name} is already acquired")
+        if request.mode == labgrid_coordinator_pb2.AcquireMode.LEASE and not place.reservation:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                f"Place {name} is not reserved; lease mode requires a reservation",
+            )
+        res = None
         if place.reservation:
             res = self.reservations[place.reservation]
             if not res.owner == username:
@@ -854,11 +862,18 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             # revert earlier change
             place.acquired = None
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Failed to acquire resources for place {name}")
+        if res is not None:
+            if request.mode == labgrid_coordinator_pb2.AcquireMode.LEASE:
+                res.state = ReservationState.leased
+            else:
+                res.state = ReservationState.acquired
+            res.refresh()
         place.touch()
         self._publish_place(place)
         self.save_later()
-        self.schedule_reservations()
-        print(f"{place.name}: place acquired by {place.acquired}")
+        await self._schedule_reservations()
+        action = "leased" if request.mode == labgrid_coordinator_pb2.AcquireMode.LEASE else "acquired"
+        print(f"{place.name}: place {action} by {place.acquired}")
         return labgrid_coordinator_pb2.AcquirePlaceResponse()
 
     @locked
@@ -877,6 +892,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         if fromuser and place.acquired != fromuser:
             return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
+        await self._release_place(place)
+        return labgrid_coordinator_pb2.ReleasePlaceResponse()
+
+    async def _release_place(self, place, run_scheduler: bool = True):
+        assert self.lock.locked()
         await self._release_resources(place, place.acquired_resources)
 
         place.acquired = None
@@ -884,9 +904,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         place.touch()
         self._publish_place(place)
         self.save_later()
-        self.schedule_reservations()
+        if run_scheduler:
+            await self._schedule_reservations()
         print(f"{place.name}: place released")
-        return labgrid_coordinator_pb2.ReleasePlaceResponse()
+
 
     @locked
     async def AllowPlace(self, request, context):
@@ -924,18 +945,29 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         except Exception:
             logging.exception("error during get places")
 
-    def schedule_reservations(self):
+    async def _schedule_reservations(self):
         # The primary information is stored in the reservations and the places
         # only have a copy for convenience.
 
         # expire reservations
+        assert self.lock.locked()
         for res in list(self.reservations.values()):
             if res.state is ReservationState.acquired:
                 # acquired reservations do not expire
                 res.refresh()
+            
             if not res.expired:
                 continue
-            if res.state is not ReservationState.expired:
+            if res.state is ReservationState.leased:
+                for place in list(self.places.values()):
+                    if place.reservation == res.token and place.acquired == res.owner:
+                        await self._release_place(place, run_scheduler=False)
+
+                res.state = ReservationState.expired
+                res.allocations.clear()
+                res.refresh()
+                print("marked leased reservation expired (%s/%s)", res.owner, res.token)
+            elif res.state is not ReservationState.expired:
                 res.state = ReservationState.expired
                 res.allocations.clear()
                 res.refresh()
@@ -957,15 +989,23 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         res.allocations.clear()
                         res.refresh(300)
                         print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+                    elif res.state is ReservationState.leased and place.acquired != res.owner:
+                        res.state = ReservationState.expired
+                        res.allocations.clear()
+                        res.refresh(300)
+                        logging.info("marked leased reservation expired (%s/%s)", res.owner, res.token)
+                        break
                     if place.acquired is not None:
                         acquired_places.add(name)
                     assert name not in allocated_places, "conflicting allocation"
                     allocated_places.add(name)
-            if acquired_places and res.state is ReservationState.allocated:
-                # an allocated place was acquired
-                res.state = ReservationState.acquired
-                res.refresh()
-                print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+                else:
+                    continue  # inner loop didn't break
+                break          # inner loop broke -> break group loop
+            # if the reservation was deleted, skip the rest
+            if res.token not in self.reservations:
+                continue
+
             if not acquired_places and res.state is ReservationState.acquired:
                 # all allocated places were released
                 res.state = ReservationState.allocated
@@ -1050,7 +1090,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         owner = self.clients[peer].name
         res = Reservation(owner=owner, prio=request.prio, filters=fltrs)
         self.reservations[res.token] = res
-        self.schedule_reservations()
+        await self._schedule_reservations()
         return labgrid_coordinator_pb2.CreateReservationResponse(reservation=res.as_pb2())
 
     @locked
@@ -1060,8 +1100,17 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid token {token}")
         if token not in self.reservations:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {token} does not exist")
+
+        reservation = self.reservations[token]
+        owner = reservation.owner
+
+        # release any places currently leased under this token
+        for place in list(self.places.values()):
+            if place.reservation == token and place.acquired == owner:
+                await self._release_place(place, run_scheduler=False)
+
         del self.reservations[token]
-        self.schedule_reservations()
+        await self._schedule_reservations()
         return labgrid_coordinator_pb2.CancelReservationResponse()
 
     @locked

@@ -163,7 +163,11 @@ LABGRID-CLIENT COMMANDS
 
 ``add-named-match`` ``[match]`` ``[name]``  Add one match pattern with a name to a place
 
-``acquire (lock)``                          Acquire a place
+``lock`` (--mode=acquire|lease)             Lock a place (default: acquire indefinitely; use ``--mode=lease`` for a lease)
+
+``acquire (lock)``                          Acquire a place indefinitely
+
+``lease``                                   Lease a place (equivalent to ``lock --mode=lease``)
 
 ``allow`` ``[user]``                        Allow another user to access a place
 
@@ -226,6 +230,8 @@ LABGRID-CLIENT COMMANDS
 
 ``reservations``                            List current reservations
 
+``extend`` ``[token]``                      Refresh or continuously extend a reservation
+
 ``export`` ``[filename]``                   Export driver information to file (needs environment with drivers)
 
 ``version``                                 Print the labgrid version
@@ -233,6 +239,15 @@ LABGRID-CLIENT COMMANDS
 ``adb``.                                    Run Android Debug Bridge
 
 ``scrcpy``                                  Run scrcpy to remote control an android device
+
+LEASES
+------
+A lease is a time-limited acquisition of a place.
+
+Leases are always associated with a reservation. The reserved place is referenced
+using ``-p +``. To keep a lease active, the reservation must be extended using
+the ``extend`` command. If the reservation expires, the coordinator automatically
+releases the leased place.
 
 ADDING NAMED RESOURCES
 ----------------------
@@ -267,6 +282,32 @@ Open a console to the acquired place:
 .. code-block:: bash
 
    $ labgrid-client -p <placename> console
+
+Lease a place using a reservation:
+
+.. code-block:: bash
+
+   $ labgrid-client reserve board=imx8 --shell
+   $ labgrid-client wait
+   $ labgrid-client -p + lock --mode=lease
+
+Alternatively, using the lease command:
+
+.. code-block:: bash
+
+   $ labgrid-client -p + lease
+
+Extend the reservation to keep the lease alive:
+
+.. code-block:: bash
+
+   # pass token explicitly
+   $ labgrid-client extend ABC123 --interval 60
+
+   # or take token from the environment (LG_TOKEN)
+   $ export LG_TOKEN=ABC123
+   $ labgrid-client extend --interval 60
+
 
 Add all resources with the group "example-group" to the place example-place:
 

@@ -400,6 +400,7 @@ class ReservationState(enum.Enum):
     acquired = 2
     expired = 3
     invalid = 4
+    leased = 5
 
 
 @attr.s(eq=False)

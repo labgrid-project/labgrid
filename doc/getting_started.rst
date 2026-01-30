@@ -145,7 +145,7 @@ your board (manually) and run your first test:
 
 .. code-block:: bash
 
-    labgrid-venv $ pytest --lg-env local.yaml test_shell.py
+    labgrid-venv $ pytest --lg-env local.yaml --capture=no test_shell.py
 
 It should return successfully, in case it does not, open an `Issue
 <https://github.com/labgrid-project/labgrid/issues>`_.

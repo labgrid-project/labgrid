@@ -1,0 +1,25 @@
+rpi-cm4-101-panel:
+  location: 101 display panel on desk
+  USBSerialPort:
+    match:
+      ID_SERIAL: "FTDI_USB_Serial_Converter_FTBZ30UM"
+    speed: 115200
+  NetworkService:
+    address: '192.168.1.123'
+    port: 22
+    username: root
+    password: root
+  USBMassStorage:
+    match:
+      ID_SERIAL: 'mmcblk0_Raspberry_Pi_multi-function_USB_device_10000000124e610f-0:0'
+  RpibootDevice:
+    match:
+      ID_SERIAL: 'Broadcom_BCM2711_Boot_124e610f'
+  # gpio pins are set to control relay hat from waveshare
+  # https://www.waveshare.com/product/rpi-relay-board.htm
+  GpioPower:
+    cls: 'SysfsGPIO'
+    index: 533
+  GpioReset:
+    cls: 'SysfsGPIO'
+    index: 532

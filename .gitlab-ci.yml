@@ -1,0 +1,23 @@
+docker:
+  stage: build
+  tags: [ docker ]
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    DOCKERFILE: "dockerfiles/Dockerfile"
+    TARGETS: "labgrid-client labgrid-coordinator labgrid-exporter"
+  before_script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" > /kaniko/.docker/config.json
+  script:
+    - >
+        for TARGET in $TARGETS;
+        do
+          /kaniko/executor --context $CI_PROJECT_DIR --cleanup --dockerfile $CI_PROJECT_DIR/${DOCKERFILE} --destination $CI_REGISTRY_IMAGE/$TARGET:$CI_COMMIT_REF_SLUG --target ${TARGET} --build-arg VERSION="$CI_COMMIT_REF_SLUG";
+        done
+  rules:
+    - if: $CI_COMMIT_TAG
+      variables:
+        CI_COMMIT_REF_SLUG: "$CI_COMMIT_TAG"
+    - if: '$CI_COMMIT_BRANCH  =~ /^feature/ || $CI_COMMIT_BRANCH  =~ /^develop/ || $CI_COMMIT_TAG != null'

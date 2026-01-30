@@ -2121,6 +2121,10 @@ control is available.
 
 The driver's name will be displayed during interaction.
 
+.. note::
+  When using the ManualPowerDriver with pytest, use ``-s``/``--capture=no`` to
+  prevent stdout capturing.
+
 Binds to:
   - None
 
@@ -2485,6 +2489,10 @@ A :any:`ManualSwitchDriver` requires the user to control a switch or jumper on
 the target.
 This can be used if a driver binds to a :any:`DigitalOutputProtocol`, but no
 automatic control is available.
+
+.. note::
+  When using the ManualSwitchDriver with pytest, use ``-s``/``--capture=no`` to
+  prevent stdout capturing.
 
 Binds to:
   - None

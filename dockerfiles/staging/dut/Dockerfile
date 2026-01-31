@@ -14,7 +14,7 @@ RUN apt update -q=2 && \
 
 COPY --chown=root:root ./authorized_keys /root/.ssh/authorized_keys
 
-# As sshd scrubs ENV variables if they are set by the ENV varibale ensure to put the into /etc/profile as shown below
+# As sshd scrubs ENV variables if they are set by the ENV variable ensure to put the into /etc/profile as shown below
 ENV NOTVISIBLE="in users profile"
 RUN echo "export VISIBLE=now" >> /etc/profile
 

@@ -1103,6 +1103,29 @@ NetworkUSBSDWireDevice
 A :any:`NetworkUSBSDWireDevice` resource describes a `USBSDWireDevice`_
 resource available on a remote computer.
 
+USBSDWire3Device
+~~~~~~~~~~~~~~~~
+A :any:`USBSDWire3Device` resource describes a Tizen
+`SD Wire3 device <https://badgerd.nl/sdwire3/>`_.
+
+.. code-block:: yaml
+
+   USBSDWire3Device:
+     match:
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `USBSDWire3Driver`_
+  - `USBStorageDriver`_
+
+NetworkUSBSDWire3Device
+~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkUSBSDWire3Device` resource describes a `USBSDWire3Device`_
+resource available on a remote computer.
+
 USBVideo
 ~~~~~~~~
 A :any:`USBVideo` resource describes a USB video camera which is supported by a
@@ -3016,6 +3039,23 @@ Arguments:
 
 The driver can be used in test cases by calling its ``set_mode()`` method with
 argument being "dut", "host", "off", or "client".
+
+USBSDWire3Driver
+~~~~~~~~~~~~~~~~
+The :any:`USBSDWire3Driver` uses a `USBSDWire3Device`_ resource to control a
+USB-SD-Wire3 device via `sdwire <https://github.com/Badger-Embedded/sdwire-cli>`_
+tool.
+
+Binds to:
+  mux:
+    - `USBSDWire3Device`_
+    - `NetworkUSBSDWire3Device`_
+
+Implements:
+  - None yet
+
+Arguments:
+  - None
 
 USBVideoDriver
 ~~~~~~~~~~~~~~

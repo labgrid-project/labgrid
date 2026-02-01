@@ -1206,7 +1206,7 @@ class ClientSession:
         action = self.args.action
         target = self._get_target(place)
         name = self.args.name
-        from ..resource.remote import NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice
+        from ..resource.remote import NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice, NetworkUSBSDWire3Device
 
         drv = None
         for resource in target.resources:
@@ -1216,6 +1216,8 @@ class ClientSession:
                 drv = self._get_driver_or_new(target, "USBSDMuxDriver", name=name)
             elif isinstance(resource, NetworkUSBSDWireDevice):
                 drv = self._get_driver_or_new(target, "USBSDWireDriver", name=name)
+            elif isinstance(resource, NetworkUSBSDWire3Device):
+                drv = self._get_driver_or_new(target, "USBSDWire3Driver", name=name)
             if drv:
                 break
 

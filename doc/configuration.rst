@@ -303,7 +303,7 @@ hub.
 
    YKUSHPowerPort:
      serial: 'YK12345'
-     index: 1
+     index: '1'
 
 The example describes port 1 on the YKUSH USB hub with the
 serial ``YK12345``.
@@ -311,7 +311,8 @@ Use ``ykushcmd -l`` to get your serial number.
 
 Arguments:
   - serial (str): serial number of the YKUSH hub
-  - index (int): number of the port to switch
+  - index (str): number of the port to switch, use ``a`` to control the whole hub as one logical
+    port
 
 Used by:
   - `YKUSHPowerDriver`_

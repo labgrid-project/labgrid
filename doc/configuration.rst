@@ -1999,6 +1999,7 @@ Arguments:
     boots (for barebox >=v2025.03.0).
   - bootstring (regex, default="Linux version \\d"): regex that indicating that the Linux Kernel is
     booting
+  - boot_command (str, default="boot -v"): optional, boot command to boot target
   - password (str): optional, password to use for access to the shell
   - login_timeout (int, default=60): timeout for access to the shell
 

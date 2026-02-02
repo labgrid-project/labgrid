@@ -296,18 +296,19 @@ Used by:
 
 YKUSHPowerPort
 ++++++++++++++
-A :any:`YKUSHPowerPort` describes a *YEPKIT YKUSH* USB (HID) switchable USB
-hub.
+A :any:`YKUSHPowerPort` describes a *YEPKIT YKUSH*-family USB (HID)
+switchable USB hub.
+Models supported include YKUSH, YKUSH 3, and YKUSH XS.
 
 .. code-block:: yaml
 
    YKUSHPowerPort:
-     serial: 'YK12345'
+     serial: 'Y3N12345'
      index: '1'
 
-The example describes port 1 on the YKUSH USB hub with the
-serial ``YK12345``.
-Use ``ykushcmd -l`` to get your serial number.
+The example describes port 1 on the YKUSH 3 USB hub with the
+serial ``Y3N12345``.
+Use ``ykushcmd ykush3 -l`` to get your serial number.
 
 Arguments:
   - serial (str): serial number of the YKUSH hub

@@ -2,8 +2,14 @@ from urllib.parse import urlparse
 
 import pytest
 
-from labgrid.resource import NetworkPowerPort
-from labgrid.driver.powerdriver import ExternalPowerDriver, ManualPowerDriver, NetworkPowerDriver
+from labgrid.resource import NetworkPowerPort, YKUSHPowerPort
+from labgrid.driver.powerdriver import (
+    ExternalPowerDriver,
+    ManualPowerDriver,
+    NetworkPowerDriver,
+    YKUSHPowerDriver,
+)
+from labgrid.util.helper import processwrapper
 
 
 class TestManualPowerDriver:
@@ -307,3 +313,69 @@ class TestNetworkPowerDriver:
     def test_import_backend_poe_mib(self):
         pytest.importorskip("pysnmp")
         import labgrid.driver.power.poe_mib
+
+class TestYKUSHPowerDriver:
+    YKUSH_FAKE_SERIAL = "YK12345"
+    YKUSH_LIST_OUTPUT = f"Attached YKUSH Boards:\n1. Board found with serial number: {YKUSH_FAKE_SERIAL}".encode(
+        "utf-8"
+    )
+    YKUSH3_FAKE_SERIAL = "Y3N10673"
+    YKUSH3_LIST_OUTPUT = f"Attached YKUSH3 Boards:\n1. Board found with serial number: {YKUSH3_FAKE_SERIAL}".encode(
+        "utf-8"
+    )
+    YKUSHXS_LIST_OUTPUT = (
+        "Attached YKUSH XS Boards:\n1. Board found with serial number: YKU1234".encode(
+            "utf-8"
+        )
+    )
+
+    def test_create(self, target):
+        resource = YKUSHPowerPort(
+            target, "power", serial=self.YKUSH_FAKE_SERIAL, index=1
+        )
+        device = YKUSHPowerDriver(target, "power")
+        assert isinstance(device, YKUSHPowerDriver)
+
+    def test_default_off(self, target, mocker):
+        check_output_mock = mocker.patch(
+            "labgrid.util.helper.processwrapper.check_output"
+        )
+        check_output_mock.side_effect = [
+            self.YKUSH_LIST_OUTPUT,
+            self.YKUSHXS_LIST_OUTPUT,
+            self.YKUSH3_LIST_OUTPUT,
+            b"",
+        ]
+        resource = YKUSHPowerPort(
+            target, "power", serial=self.YKUSH_FAKE_SERIAL, index=2
+        )
+        resource.avail = True
+        device = YKUSHPowerDriver(target, "power")
+        target.activate(device)
+        device.off()
+
+        check_output_mock.assert_called_with(
+            ["ykushcmd", "ykush", "-s", self.YKUSH_FAKE_SERIAL, "-d", "2"]
+        )
+
+    def test_ykush3_on(self, target, mocker):
+        check_output_mock = mocker.patch(
+            "labgrid.util.helper.processwrapper.check_output"
+        )
+        check_output_mock.side_effect = [
+            self.YKUSH_LIST_OUTPUT,
+            self.YKUSHXS_LIST_OUTPUT,
+            self.YKUSH3_LIST_OUTPUT,
+            b"",
+        ]
+        resource = YKUSHPowerPort(
+            target, "power", serial=self.YKUSH3_FAKE_SERIAL, index=3
+        )
+        resource.avail = True
+        device = YKUSHPowerDriver(target, "power")
+        target.activate(device)
+        device.on()
+
+        check_output_mock.assert_called_with(
+            ["ykushcmd", "ykush3", "-s", self.YKUSH3_FAKE_SERIAL, "-u", "3"]
+        )

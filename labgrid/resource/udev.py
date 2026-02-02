@@ -403,6 +403,18 @@ class AlteraUSBBlaster(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class ADIICEDebugger(USBResource):
+    gdb_port = attr.ib(type=str, default=None)
+
+    def filter_match(self, device):
+        if device.properties.get('ID_VENDOR_ID') != "064b":
+            return False
+        if device.properties.get('ID_MODEL_ID') not in ["0617", "2500"]:
+            return False
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class SigrokUSBDevice(USBResource):
     """The SigrokUSBDevice describes an attached sigrok device with driver and
     optional channel mapping, it is identified via usb using udev.

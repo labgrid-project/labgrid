@@ -102,6 +102,7 @@ labgrid-client = "labgrid.remote.client:main"
 labgrid-exporter = "labgrid.remote.exporter:main"
 labgrid-suggest = "labgrid.resource.suggest:main"
 labgrid-coordinator = "labgrid.remote.coordinator:main"
+_labgrid-agent = "labgrid.util.agent:main"
 
 # the following makes a plugin available to pytest
 [project.entry-points.pytest11]

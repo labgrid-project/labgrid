@@ -63,6 +63,10 @@ doc = [
 docker = ["docker>=5.0.2"]
 graph = ["graphviz>=0.17.0"]
 kasa = ["python-kasa>=0.7.0"]
+lauterbach = [
+    "lauterbach-trace32-pystart>=0.4.0",
+    "lauterbach-trace32-rcl>=1.1.0",
+]
 modbus = ["pyModbusTCP>=0.2.0"]
 modbusrtu = ["minimalmodbus>=1.0.2"]
 mqtt = ["paho-mqtt>=2.0.0"]

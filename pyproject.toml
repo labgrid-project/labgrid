@@ -83,7 +83,6 @@ dev = [
 
     # additional dev dependencies
     "psutil>=5.8.0",
-    "pytest-asyncio>=0.25.3",
     "pytest-benchmark>=4.0.0",
     "pytest-cov>=3.0.0",
     "pytest-dependency>=0.5.1",
@@ -225,6 +224,7 @@ include = [
   "labgrid/driver/power/gude8031.py",
   "labgrid/driver/power/pe6216.py",
   "labgrid/driver/power/shelly_gen2.py",
+  "labgrid/driver/power/tapo.py",
   "labgrid/driver/rawnetworkinterfacedriver.py",
   "labgrid/protocol/**/*.py",
   "labgrid/remote/**/*.py",

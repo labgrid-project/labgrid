@@ -73,7 +73,7 @@ async def _power_set(host: str, port: str, index: str, value: bool) -> None:
     await device.update()
 
     if device.children:
-        assert len(device.children) > index, "Trying to access non-existant plug socket on device"
+        assert len(device.children) > index, "Trying to access non-existent plug socket on device"
 
     target = device if not device.children else device.children[index]
     if value:
@@ -98,7 +98,7 @@ async def _power_get(host: str, port: str, index: str) -> bool:
     if not device.children:
         pwr_state = device.is_on
     else:
-        assert len(device.children) > index, "Trying to access non-existant plug socket on device"
+        assert len(device.children) > index, "Trying to access non-existent plug socket on device"
         pwr_state = device.children[index].is_on
     await device.disconnect()
     return pwr_state

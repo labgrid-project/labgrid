@@ -146,7 +146,7 @@ The example describes port 0 on the remote power switch
 Arguments:
   - model (str): model of the power switch
   - host (str): hostname of the power switch
-  - index (int): number of the port to switch
+  - index (int, default=0): optional, number of the port to switch
 
 The ``model`` property selects one of several `backend implementations
 <https://github.com/labgrid-project/labgrid/tree/master/labgrid/driver/power>`_.
@@ -264,7 +264,7 @@ Currently available are:
   See the `documentation <https://docs.tinycontrol.pl/en/tcpdu/api/commands/>`__
 
 ``tplink``
-  Controls *TP-Link power strips* via `python-kasa
+  Controls *TP-Link smart plugs and power strips* via `python-kasa
   <https://github.com/python-kasa/python-kasa>`_.
 
 ``ubus``

@@ -179,6 +179,12 @@ class TestNetworkPowerDriver:
         d = NetworkPowerDriver(target, 'power')
         assert isinstance(d, NetworkPowerDriver)
 
+    def test_default_index(self, target):
+        r = NetworkPowerPort(target, 'power', model='netio', host='dummy')
+        d = NetworkPowerDriver(target, 'power')
+        assert r.index == '0'
+        assert isinstance(d, NetworkPowerDriver)
+
     @pytest.mark.parametrize('backend', ('rest', 'simplerest'))
     @pytest.mark.parametrize(
         'host',

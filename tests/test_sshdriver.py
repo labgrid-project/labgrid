@@ -1,5 +1,6 @@
 import pytest
 import socket
+import os
 
 from labgrid import Environment
 from labgrid.driver import SSHDriver, ExecutionError
@@ -218,3 +219,157 @@ def test_unix_socket_forward(ssh_localhost, tmpdir):
                 send_socket.send(test_string.encode("utf-8"))
 
                 assert client_socket.recv(16).decode("utf-8") == test_string
+
+
+@pytest.mark.sshusername
+def test_local_scp_to(ssh_localhost, tmpdir):
+    l_dir = tmpdir.join("local")
+    r_dir = tmpdir.join("remote")
+
+    os.mkdir(l_dir)
+    os.mkdir(r_dir)
+
+    magic = ["FOObar 1337 scp-to"]
+    name = "test_scp-to.txt"
+
+    file = l_dir.join(name)
+    open(file, 'x').writelines(magic)
+
+    ssh_localhost.scp(src=f'{file}', dst=f':{r_dir}')
+    assert open(r_dir.join(name), 'r').readlines() == magic
+
+
+@pytest.mark.sshusername
+def test_local_scp_from(ssh_localhost, tmpdir):
+    l_dir = tmpdir.join("local")
+    r_dir = tmpdir.join("remote")
+
+    os.mkdir(l_dir)
+    os.mkdir(r_dir)
+
+    magic = ["FOObar 1337 scp-to"]
+    name = 'test_scp-from.txt'
+
+    file = r_dir.join(name)
+    open(file, 'x').writelines(magic)
+
+    ssh_localhost.scp(src=f':{file}', dst=f'{l_dir}')
+    assert open(l_dir.join(name), 'r').readlines() == magic
+
+
+@pytest.mark.sshusername
+def test_local_scp_to_multi(ssh_localhost, tmpdir):
+    l_dir = tmpdir.join("local")
+    r_dir = tmpdir.join("remote")
+    os.mkdir(l_dir)
+    os.mkdir(r_dir)
+
+    n_files = 13
+
+    magics = [[f"FOObar 1337 scp-to_{i}"] for i in range(n_files)]
+    names = [f"test_scp-to_{i}.txt" for i in range(n_files)]
+
+    files = [str(l_dir.join(name)) for name in names]
+    for i in range(n_files):
+        open(files[i], 'x').writelines(magics[i])
+
+    ssh_localhost.scp(src=files, dst=f':{r_dir}')
+
+    for i in range(n_files):
+        assert open(r_dir.join(names[i]), 'r').readlines() == magics[i]
+
+
+@pytest.mark.sshusername
+def test_local_scp_from_multi(ssh_localhost, tmpdir):
+    l_dir = tmpdir.join("local")
+    r_dir = tmpdir.join("remote")
+    os.mkdir(l_dir)
+    os.mkdir(r_dir)
+
+    n_files = 13
+
+    magics = [[f"FOObar 1337 scp-from_{i}"] for i in range(n_files)]
+    names = [f"test_scp-from_{i}.txt" for i in range(n_files)]
+
+    files = [str(r_dir.join(name)) for name in names]
+    for i in range(n_files):
+        open(files[i], 'x').writelines(magics[i])
+
+    ssh_localhost.scp(src=[f":{f}" for f in files], dst=f'{l_dir}')
+
+    for i in range(n_files):
+        assert open(l_dir.join(names[i]), 'r').readlines() == magics[i]
+
+
+@pytest.mark.sshusername
+def test_local_scp_to_recursive(ssh_localhost, tmpdir):
+    l_dir = tmpdir.join("local")
+    r_dir = tmpdir.join("remote")
+    os.mkdir(l_dir)
+    os.mkdir(r_dir)
+
+    n_files = 13
+
+    magics = [[f"FOObar 1337 scp-to_{i}"] for i in range(n_files)]
+    names = [f"test_scp-to_{i}.txt" for i in range(n_files)]
+
+    files = [str(l_dir.join(name)) for name in names]
+    for i in range(n_files):
+        open(files[i], 'x').writelines(magics[i])
+
+    ssh_localhost.scp(src=f"{l_dir}", dst=f':{r_dir}', recursive=True)
+
+    for i in range(n_files):
+        assert open(r_dir.join("local").join(names[i]), 'r').readlines() == magics[i]
+
+
+@pytest.mark.sshusername
+def test_local_scp_from_recursive(ssh_localhost, tmpdir):
+    l_dir = tmpdir.join("local")
+    r_dir = tmpdir.join("remote")
+    os.mkdir(l_dir)
+    os.mkdir(r_dir)
+
+    n_files = 13
+
+    magics = [[f"FOObar 1337 scp-from_{i}"] for i in range(n_files)]
+    names = [f"test_scp-from_{i}.txt" for i in range(n_files)]
+
+    files = [str(r_dir.join(name)) for name in names]
+    for i in range(n_files):
+        open(files[i], 'x').writelines(magics[i])
+
+    ssh_localhost.scp(src=f":{r_dir}", dst=f'{l_dir}', recursive=True)
+
+    for i in range(n_files):
+        assert open(l_dir.join("remote").join(names[i]), 'r').readlines() == magics[i]
+
+
+@pytest.mark.sshusername
+def test_local_scp_none_remote(ssh_localhost, tmpdir):
+    l_dir = tmpdir.join("local")
+    r_dir = tmpdir.join("remote")
+    os.mkdir(l_dir)
+    os.mkdir(r_dir)
+
+    try:
+        ssh_localhost.scp(src=l_dir, dst=r_dir)
+    except ValueError:
+        return
+
+    assert False
+
+
+@pytest.mark.sshusername
+def test_local_scp_both_remote(ssh_localhost, tmpdir):
+    l_dir = tmpdir.join("local")
+    r_dir = tmpdir.join("remote")
+    os.mkdir(l_dir)
+    os.mkdir(r_dir)
+
+    try:
+        ssh_localhost.scp(src=f":{l_dir}", dst=f":{r_dir}")
+    except ValueError:
+        return
+
+    assert False

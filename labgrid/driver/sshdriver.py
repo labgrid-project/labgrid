@@ -356,25 +356,38 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             yield localport
 
     @Driver.check_active
-    @step(args=['src', 'dst'])
-    def scp(self, *, src, dst):
+    @step(args=['src', 'dst', 'recursive'])
+    def scp(self, *, src, dst, recursive=False):
         if not self._check_keepalive():
             raise ExecutionError("Keepalive no longer running")
 
-        if src.startswith(':') == dst.startswith(':'):
+        if not isinstance(src, list):
+            src = [src]
+
+        # take Path like objects into account
+        src = [str(f) for f in src]
+        dst = str(dst)
+
+        remote_src = [f.startswith(':') for f in src]
+        if any(remote_src) != all(remote_src):
+            raise ValueError("All sources must be consistently local or remote (start with :)")
+
+        if all(remote_src) == dst.startswith(':'):
             raise ValueError("Either source or destination must be remote (start with :)")
-        if src.startswith(':'):
-            src = '_' + src
-        if dst.startswith(':'):
-            dst = '_' + dst
+
+        src = [s.replace(':', '_:') for s in src]
+        dst = dst.replace(':', '_:')
 
         complete_cmd = [self._scp,
                 "-S", self._ssh,
                 "-F", "none",
                 "-o", f"ControlPath={self.control.replace('%', '%%')}",
-                src, dst,
+                *src,
+                dst,
         ]
-        
+
+        if recursive:
+            complete_cmd.insert(1, "-r")
         if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
             complete_cmd.insert(1, "-s")
         if self.explicit_scp_mode and self._scp_supports_explicit_scp_mode():
@@ -594,3 +607,4 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         if stdout:
             for line in stdout.splitlines():
                 self.logger.warning("Keepalive %s: %s", self.networkservice.address, line)
+

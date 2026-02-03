@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from labgrid.driver.power.tapo import _get_credentials, _power_get, _power_set, power_get
+from labgrid.driver.power.tapo import _get_credentials, power_get, power_set
 
 
 @pytest.fixture
@@ -50,89 +50,81 @@ class TestTapoPowerDriver:
         assert creds.username == "test_user"
         assert creds.password == "test_pass"
 
-    @pytest.mark.asyncio
-    async def test_power_get_single_plug_turn_on(self, mock_device_single_plug, mock_env):
+    def test_power_get_single_plug_turn_on(self, mock_device_single_plug, mock_env):
         mock_device_single_plug.is_on = True
 
         with patch("kasa.Device.connect", return_value=mock_device_single_plug):
-            result = await _power_get("192.168.1.100", None, "0")
+            result = power_get("192.168.1.100", None, "0")
             assert result is True
 
-    @pytest.mark.asyncio
-    async def test_power_get_single_plug_turn_off(self, mock_device_single_plug, mock_env):
+    def test_power_get_single_plug_turn_off(self, mock_device_single_plug, mock_env):
         mock_device_single_plug.is_on = False
 
         with patch("kasa.Device.connect", return_value=mock_device_single_plug):
-            result = await _power_get("192.168.1.100", None, "0")
+            result = power_get("192.168.1.100", None, "0")
             assert result is False
 
-    @pytest.mark.asyncio
-    async def test_power_get_single_plug_should_not_care_for_index(self, mock_device_single_plug, mock_env):
+    def test_power_get_single_plug_should_not_care_for_index(self, mock_device_single_plug, mock_env):
         invalid_index_ignored = "7"
         mock_device_single_plug.is_on = True
 
         with patch("kasa.Device.connect", return_value=mock_device_single_plug):
-            result = await _power_get("192.168.1.100", None, invalid_index_ignored)
+            result = power_get("192.168.1.100", None, invalid_index_ignored)
             assert result is True
 
-    @pytest.mark.asyncio
-    async def test_power_set_single_plug_turn_on(self, mock_device_single_plug, mock_env):
+    def test_power_set_single_plug_turn_on(self, mock_device_single_plug, mock_env):
         mock_device_single_plug.is_on = False
         with patch("kasa.Device.connect", return_value=mock_device_single_plug):
-            await _power_set("192.168.1.100", None, "0", True)
+            power_set("192.168.1.100", None, "0", True)
             mock_device_single_plug.turn_on.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_power_set_single_plug_turn_off(self, mock_device_single_plug, mock_env):
+    def test_power_set_single_plug_turn_off(self, mock_device_single_plug, mock_env):
         mock_device_single_plug.is_on = True
         with patch("kasa.Device.connect", return_value=mock_device_single_plug):
-            await _power_set("192.168.1.100", None, "0", False)
+            power_set("192.168.1.100", None, "0", False)
             mock_device_single_plug.turn_off.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_power_get_strip_valid_socket(self, mock_device_strip, mock_env):
+    def test_power_get_strip_valid_socket(self, mock_device_strip, mock_env):
         with patch("kasa.Device.connect", return_value=mock_device_strip):
             # Test first outlet (on)
-            result = await _power_get("192.168.1.100", None, "0")
+            result = power_get("192.168.1.100", None, "0")
             assert result is True
 
             # Test second outlet (off)
-            result = await _power_get("192.168.1.100", None, "1")
+            result = power_get("192.168.1.100", None, "1")
             assert result is False
 
             # Test third outlet (on)
-            result = await _power_get("192.168.1.100", None, "2")
+            result = power_get("192.168.1.100", None, "2")
             assert result is True
 
-    @pytest.mark.asyncio
-    async def test_power_set_strip_valid_socket(self, mock_device_strip, mock_env):
+    def test_power_set_strip_valid_socket(self, mock_device_strip, mock_env):
         with patch("kasa.Device.connect", return_value=mock_device_strip):
-            await _power_set("192.168.1.100", None, "0", False)
+            power_set("192.168.1.100", None, "0", False)
             mock_device_strip.children[0].turn_off.assert_called_once()
 
-            await _power_set("192.168.1.100", None, "1", True)
+            power_set("192.168.1.100", None, "1", True)
             mock_device_strip.children[1].turn_on.assert_called_once()
 
     def test_power_get_should_raise_assertion_error_when_invalid_index_strip(self, mock_device_strip, mock_env):
         invalid_socket = "5"
-        with patch("kasa.Device.connect", return_value=mock_device_strip):
-            with pytest.raises(AssertionError, match="Trying to access non-existant plug socket"):
-                power_get("192.168.1.100", None, invalid_socket)
+        with patch("kasa.Device.connect", return_value=mock_device_strip), \
+                pytest.raises(AssertionError, match="Trying to access non-existent plug socket"):
+            power_get("192.168.1.100", None, invalid_socket)
 
-    @pytest.mark.asyncio
-    async def test_power_set_should_raise_assertion_error_when_invalid_index_strip(self, mock_device_strip, mock_env):
+    def test_power_set_should_raise_assertion_error_when_invalid_index_strip(self, mock_device_strip, mock_env):
         invalid_socket = "5"
-        with patch("kasa.Device.connect", return_value=mock_device_strip):
-            with pytest.raises(AssertionError, match="Trying to access non-existant plug socket"):
-                await _power_set("192.168.1.100", None, invalid_socket, True)
+        with patch("kasa.Device.connect", return_value=mock_device_strip), \
+                pytest.raises(AssertionError, match="Trying to access non-existent plug socket"):
+            power_set("192.168.1.100", None, invalid_socket, True)
 
     def test_port_not_none_strip(self, mock_device_strip):
-        with patch("kasa.Device.connect", return_value=mock_device_strip):
-            with pytest.raises(AssertionError):
-                power_get("192.168.1.100", "8080", "0")
+        with patch("kasa.Device.connect", return_value=mock_device_strip), \
+                pytest.raises(AssertionError):
+            power_get("192.168.1.100", "8080", "0")
 
     def test_port_not_none_single_socket(self, mock_device_single_plug):
         mock_device_single_plug.is_on = True
-        with patch("kasa.Device.connect", return_value=mock_device_single_plug):
-            with pytest.raises(AssertionError):
-                power_get("192.168.1.100", "8080", "0")
+        with patch("kasa.Device.connect", return_value=mock_device_single_plug), \
+                pytest.raises(AssertionError):
+            power_get("192.168.1.100", "8080", "0")

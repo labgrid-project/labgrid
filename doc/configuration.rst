@@ -208,6 +208,11 @@ Currently available are:
 ``netio_kshell``
   Controls *NETIO 4C PDUs* via a Telnet interface.
 
+``pe6216``
+  Controls an Aten PE6216 PDU via a simple HTTP API.
+  This backend deliberately uses the standard username ``administrator`` and the default password
+  ``password`` and is not compatible with other credentials.
+
 ``poe_mib``
   Controls PoE switches using the PoE SNMP administration MiBs.
 
@@ -304,22 +309,24 @@ Used by:
 
 YKUSHPowerPort
 ++++++++++++++
-A :any:`YKUSHPowerPort` describes a *YEPKIT YKUSH* USB (HID) switchable USB
-hub.
+A :any:`YKUSHPowerPort` describes a *YEPKIT YKUSH*-family USB (HID)
+switchable USB hub.
+Models supported include YKUSH, YKUSH 3, and YKUSH XS.
 
 .. code-block:: yaml
 
    YKUSHPowerPort:
-     serial: 'YK12345'
-     index: 1
+     serial: 'Y3N12345'
+     index: '1'
 
-The example describes port 1 on the YKUSH USB hub with the
-serial ``YK12345``.
-Use ``ykushcmd -l`` to get your serial number.
+The example describes port 1 on the YKUSH 3 USB hub with the
+serial ``Y3N12345``.
+Use ``ykushcmd ykush3 -l`` to get your serial number.
 
 Arguments:
   - serial (str): serial number of the YKUSH hub
-  - index (int): number of the port to switch
+  - index (str): number of the port to switch, use ``a`` to control the whole hub as one logical
+    port
 
 Used by:
   - `YKUSHPowerDriver`_
@@ -2007,6 +2014,7 @@ Arguments:
     boots (for barebox >=v2025.03.0).
   - bootstring (regex, default="Linux version \\d"): regex that indicating that the Linux Kernel is
     booting
+  - boot_command (str, default="boot -v"): optional, boot command to boot target
   - password (str): optional, password to use for access to the shell
   - login_timeout (int, default=60): timeout for access to the shell
 

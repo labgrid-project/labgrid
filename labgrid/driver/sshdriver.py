@@ -36,7 +36,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     explicit_sftp_mode = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     explicit_scp_mode = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     username = attr.ib(default="", validator=attr.validators.instance_of(str))
-    password = attr.ib(default="", validator=attr.validators.instance_of(str))
+    password = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -57,7 +57,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _get_password(self):
         """Get the password from this class or from NetworkService"""
-        return self.password or self.networkservice.password
+        if self.password is not None:
+            return self.password
+        return self.networkservice.password
 
     def on_activate(self):
         self.ssh_prefix = ["-o", "LogLevel=ERROR"]
@@ -66,7 +68,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             if self.target.env:
                 keyfile_path = self.target.env.config.resolve_path(self.keyfile)
             self.ssh_prefix += ["-i", keyfile_path ]
-        if not self._get_password():
+        if self._get_password() is None:
             self.ssh_prefix += ["-o", "PasswordAuthentication=no"]
 
         self.control = self._start_own_master()
@@ -136,14 +138,15 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
         env = os.environ.copy()
         pass_file = ''
-        if self._get_password():
+        password = self._get_password()
+        if password is not None:
             fd, pass_file = tempfile.mkstemp()
             os.fchmod(fd, stat.S_IRWXU)
             #with openssh>=8.4 SSH_ASKPASS_REQUIRE can be used to force SSH_ASK_PASS
             #openssh<8.4 requires the DISPLAY var and a detached process with start_new_session=True
             env = {'SSH_ASKPASS': pass_file, 'DISPLAY':'', 'SSH_ASKPASS_REQUIRE':'force'}
             with open(fd, 'w') as f:
-                f.write("#!/bin/sh\necho " + shlex.quote(self._get_password()))
+                f.write("#!/bin/sh\necho " + shlex.quote(password))
 
         self.process = subprocess.Popen(args, env=env,
                                         stdout=subprocess.PIPE,
@@ -180,7 +183,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 f"Subprocess timed out [{subprocess_timeout}s] while executing {args}",
             )
         finally:
-            if self._get_password() and os.path.exists(pass_file):
+            if self._get_password() is not None and os.path.exists(pass_file):
                 os.remove(pass_file)
 
         if not os.path.exists(control):

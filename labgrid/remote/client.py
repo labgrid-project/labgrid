@@ -1818,7 +1818,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         "-s",
         "--state",
         type=str,
-        help="strategy state to switch into before command (default: value from env varibale LG_STATE)",
+        help="strategy state to switch into before command (default: value from env variable LG_STATE)",
     )
     parser.add_argument(
         "-i",

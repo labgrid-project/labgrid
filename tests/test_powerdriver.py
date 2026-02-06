@@ -307,6 +307,10 @@ class TestNetworkPowerDriver:
         pytest.importorskip("kasa")
         import labgrid.driver.power.tplink
 
+    def test_import_backend_tapo(self):
+        pytest.importorskip("kasa")
+        import labgrid.driver.power.tapo
+
     def test_import_backend_siglent(self):
         pytest.importorskip("vxi11")
         import labgrid.driver.power.siglent

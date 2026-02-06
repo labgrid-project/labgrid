@@ -1,0 +1,1 @@
+LABGRID_ENTRY_POINT = "labgrid"

@@ -377,6 +377,14 @@ file names refer to a shared filesystem (such as NFS or SMB).
   For exporters which are not directly accessible via SSH, add the host to your
   .ssh/config file, with a ProxyCommand when need.
 
+Extensibility via Plugins
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Labgrid can be extended using plugins,
+which allow third-party packages to register custom drivers and resources dynamically.
+This is powered by pluggy and setuptools entry points.
+For details on creating plugins, see :ref:`writing-plugins`.
+
 .. _overview-proxy-mechanism:
 
 Proxy Mechanism

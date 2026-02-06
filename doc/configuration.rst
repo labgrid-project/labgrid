@@ -1933,6 +1933,7 @@ Arguments:
   - boot_commands (dict, default={}): boot commands by name for LinuxBootProtocol boot command
   - login_timeout (int, default=30): timeout for login prompt detection in seconds
   - boot_timeout (int, default=30): timeout for initial Linux Kernel version detection
+  - strip_timestamp (bool, default=False): strip timestamps prepended to console when present
 
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~

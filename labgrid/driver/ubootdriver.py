@@ -1,14 +1,16 @@
 """The U-Boot Module contains the UBootDriver"""
+import re
 import attr
 from pexpect import TIMEOUT
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
-from ..util import gen_marker, Timeout, re_vt100
+from ..util import gen_marker, re_vt100, Timeout
 from ..step import step
 from .common import Driver
 from .commandmixin import CommandMixin
 
+re_uboot_timestamp = re.compile(r"^\[\s+\d+\.\d+\]\s*")
 
 @target_factory.reg_driver
 @attr.s(eq=False)
@@ -28,6 +30,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         boot_command (str): optional boot command to boot target
         login_timeout (int): optional, timeout for login prompt detection
         boot_timeout (int): optional, timeout for initial Linux Kernel version detection
+        strip_timestamp (bool, default=False): strip timestamps prepended to console when present
 
     """
     bindings = {"console": ConsoleProtocol, }
@@ -43,6 +46,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     boot_commands = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
     login_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
     boot_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
+    strip_timestamp = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -79,6 +83,11 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             data = re_vt100.sub(
                 '', before.decode('utf-8'), count=1000000
             ).replace("\r", "").split("\n")
+
+            # Strip possible U-Boot timestamps from the line
+            if self.strip_timestamp:
+                data = [re_uboot_timestamp.sub('', line) for line in data]
+
             self.logger.debug("Received Data: %s", data)
             # Remove first element, the invoked cmd
             data = data[data.index(marker) + 1:]

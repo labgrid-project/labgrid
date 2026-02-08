@@ -94,6 +94,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
     nic = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
+    linesep = attr.ib(default="\n", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

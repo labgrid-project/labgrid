@@ -6,6 +6,7 @@ from .powerprotocol import PowerProtocol
 from .filetransferprotocol import FileTransferProtocol
 from .infoprotocol import InfoProtocol
 from .digitaloutputprotocol import DigitalOutputProtocol
+from .digitalinputprotocol import DigitalInputProtocol
 from .mmioprotocol import MMIOProtocol
 from .filesystemprotocol import FileSystemProtocol
 from .resetprotocol import ResetProtocol

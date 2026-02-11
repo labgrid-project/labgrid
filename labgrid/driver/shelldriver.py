@@ -222,7 +222,6 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @step(args=['keyfile_path', 'dest_authorized_keys'])
     def _put_ssh_key(self, keyfile_path, dest_authorized_keys):
-        """Upload an SSH Key to a target"""
         regex = re.compile(
             r"""ssh-(rsa|ed25519)
             \s+(?P<key>[a-zA-Z0-9/+=]+) # Match Keystring
@@ -290,6 +289,13 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     def put_ssh_key(self, keyfile_path, dest_authorized_keys = None):
+        """
+        Upload an SSH Key to a target
+
+        Arguments:
+        keyfile_path (str): Path to a list of authorized_keys for ssh access
+        dest_authorized_keys (str|None): Target location for the authorized_keys file
+        """
         if dest_authorized_keys is None:
             dest_authorized_keys = self.dest_authorized_keys
         self._put_ssh_key(keyfile_path, dest_authorized_keys)

@@ -344,6 +344,19 @@ class NetworkHIDRelay(RemoteUSBResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkManagedGPIO(NetworkResource, ManagedResource):
+    manager_cls = RemotePlaceManager
+
+    """The NetworkManagedGPIO describes a remotely accessible gpio line"""
+    chip = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
+    pin = attr.ib(validator=attr.validators.optional(attr.validators.instance_of((str, int))))
+
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
 
 @target_factory.reg_resource
 @attr.s(eq=False)

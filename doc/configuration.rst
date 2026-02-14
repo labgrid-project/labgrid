@@ -608,6 +608,34 @@ NetworkHIDRelay
 A :any:`NetworkHIDRelay` describes an `HIDRelay`_ resource available on a
 remote computer.
 
+ManagedGPIO
++++++++++++
+
+A :any:`ManagedGPIO` resource describes a GPIO line that is managed by the
+`gpio-manager <https://libgpiod.readthedocs.io/en/stable/gpio-manager.html>`__
+daemon.
+
+.. note::
+   The ``gpio-manager`` daemon needs to be running on the same system as the
+   gpiochip and configured to manage the specified GPIO line. See the
+   `gpiocli request <https://libgpiod.readthedocs.io/en/stable/gpiocli-request.html>`__
+   documentation for details.
+
+.. code-block:: yaml
+
+   ManagedGPIO:
+     chip: /dev/gpiochip0
+     pin: 0
+
+Arguments:
+  - chip (str | int): path to the gpiochip device, e.g. ``/dev/gpiochip0`` or
+    the gpiochip number, e.g. ``0``.
+  - pin (str | int): gpio pin name or offset within the gpiochip, e.g. ``0``
+
+Used by:
+  - `GpioDigitalOutputDriver`_
+
+
 SysfsGPIO
 +++++++++
 
@@ -624,10 +652,41 @@ Arguments:
 Used by:
   - `GpioDigitalOutputDriver`_
 
+NetworkManagedGPIO
+++++++++++++++++++
+A :any:`NetworkManagedGPIO` describes a `ManagedGPIO`_ resource available on a
+remote computer.
+
 NetworkSysfsGPIO
 ++++++++++++++++
 A :any:`NetworkSysfsGPIO` describes a `SysfsGPIO`_ resource available on a
 remote computer.
+
+MatchedManagedGPIO
+++++++++++++++++++
+A :any:`MatchedManagedGPIO` describes a GPIO line, like a `ManagedGPIO`_.
+The gpiochip is identified by matching udev properties. This allows
+identification through hot-plugging or rebooting for controllers like
+USB based gpiochips.
+
+.. code-block:: yaml
+
+   MatchedManagedGPIO:
+     match:
+       '@SUBSYSTEM': 'usb'
+       '@ID_SERIAL_SHORT': 'D38EJ8LF'
+     pin: 0
+
+The example would search for a USB gpiochip with the key ``ID_SERIAL_SHORT``
+and the value ``D38EJ8LF`` and use the pin 0 of this device.
+The ``ID_SERIAL_SHORT`` property is set by the usb_id builtin helper program.
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+  - pin (str | int): gpio pin name or offset within the matched gpiochip.
+
+Used by:
+  - `GpioDigitalOutputDriver`_
 
 MatchedSysfsGPIO
 ++++++++++++++++
@@ -2357,13 +2416,16 @@ GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
 The :any:`GpioDigitalOutputDriver` writes a digital signal to a GPIO line.
 
-This driver configures GPIO lines via
-`the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`__.
+This driver configures GPIO lines via `gpio-manager <https://libgpiod.readthedocs.io/en/stable/gpio-manager.html>`__
+or `the legacy sysfs kernel interface <https://docs.kernel.org/next/admin-guide/gpio/sysfs.html>`__.
 While the driver automatically exports the GPIO, it does not configure it in
 any other way than as an output.
 
 Binds to:
   gpio:
+    - `ManagedGPIO`_
+    - `MatchedManagedGPIO`_
+    - `NetworkManagedGPIO`_
     - `SysfsGPIO`_
     - `MatchedSysfsGPIO`_
     - `NetworkSysfsGPIO`_

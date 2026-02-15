@@ -33,6 +33,7 @@ from .udev import (
     USBSerialPort,
     USBTMC,
     USBVideo,
+    RpibootDevice,
 )
 from .common import Resource, ResourceManager, ManagedResource
 from .ykushpowerport import YKUSHPowerPort, NetworkYKUSHPowerPort

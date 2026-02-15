@@ -1377,6 +1377,38 @@ Arguments:
 Used by:
   - none
 
+
+RpibootDevice
+~~~~~~~~~~~~~
+
+A :any:`RpibootDevice` describes an attached raspberry pi device in boot mode.
+This driver does not control power or the reset button. So in order to be
+able to set a pi into boot mode relays or simular need to be used to set the
+raspberry pi into bootmode.
+When then pi is in boot mode this resouce will become available and the
+rpiboot driver can be used to make the pi act like a MassStorageDevice.
+When the pi has been put into boot mode this driver can be used to make the
+pi act like a MassStorageDevice.
+
+.. code-block:: yaml
+
+  RpibootDevice:
+    match:
+      ID_SERIAL: 'Broadcom_BCM2711_Boot_124e610f'
+
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - RpibootDriver
+
+
+NetworkRpibootDevice
+~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkRpibootDevice` describes a `RpibootDevice`_ resource
+available on a remote computer.
+
 Providers
 ~~~~~~~~~
 Providers describe directories that are accessible by the target over a
@@ -3471,6 +3503,30 @@ Arguments:
   - manage_interface (bool, default=True): if ``True`` this driver will
     setup/teardown the interface on activate/deactivate. Set this to ``False``
     if you are managing the interface externally.
+
+RpibootDriver
+~~~~~~~~~~~~~
+The :any:`RpibootDriver` uses a `RpibootDevice`_ resource to enable a raspberry
+pi as an MassStorageDevice. Allowing for using `USBStorageDriver`_ to bootstrap
+a raspberry pi.
+
+Binds to:
+  rpi:
+    - `RpibootDevice`_
+    - `NetworkRpibootDevice`_
+
+Implements:
+  - None
+
+Arguments:
+  - None (yet)
+
+before using this driver the raspberry pi needs to be put into usbboot mode.
+This is done by pressing a EMMC-DISABLE / nRPIBOOT button on rpi cm expansion
+board or grounding pins using a jumper wire.
+How this is done is dependent on what raspberry pi is being used.
+For compute models and rpi5 `rpi-usbboot <https://github.com/raspberrypi/usbboot?tab=readme-ov-file#running>`_
+and for rpi4 `use gpio to enable RPIBOOT <https://github.com/raspberrypi/usbboot/tree/master/secure-boot-recovery#extra-steps-for-raspberry-pi-4b--pi-400>`.
 
 .. _conf-strategies:
 

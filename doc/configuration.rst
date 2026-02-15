@@ -617,9 +617,11 @@ A :any:`SysfsGPIO` resource describes a GPIO line.
 
    SysfsGPIO:
      index: 12
+     invert: False
 
 Arguments:
   - index (int): index of the GPIO line
+  - invert (bool, default=False): optional, whether the logic level is inverted(active-low)
 
 Used by:
   - `GpioDigitalOutputDriver`_
@@ -643,6 +645,7 @@ USB based gpiochips.
        '@SUBSYSTEM': 'usb'
        '@ID_SERIAL_SHORT': 'D38EJ8LF'
      pin: 0
+     invert: False
 
 The example would search for a USB gpiochip with the key ``ID_SERIAL_SHORT``
 and the value ``D38EJ8LF`` and use the pin 0 of this device.
@@ -651,6 +654,7 @@ The ``ID_SERIAL_SHORT`` property is set by the usb_id builtin helper program.
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
   - pin (int): gpio pin number within the matched gpiochip.
+  - invert (bool, default=False): optional, whether the logic level is inverted (active-low)
 
 Used by:
   - `GpioDigitalOutputDriver`_

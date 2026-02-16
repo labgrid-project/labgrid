@@ -566,6 +566,24 @@ class USBGenericRemoteExport(USBGenericExport):
         super().__attrs_post_init__()
         self.data["cls"] = f"Remote{self.cls}".replace("Network", "")
 
+@attr.s(eq=False)
+class USBADIICEEmulatorExport(USBGenericExport):
+    """ResourceExport for ADI ADZS-ICE-1x00 Emulator"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "gdb_port": self.local.gdb_port,
+        }
 
 exports["AndroidFastboot"] = USBGenericExport
 exports["AndroidUSBFastboot"] = USBGenericRemoteExport
@@ -574,6 +592,7 @@ exports["IMXUSBLoader"] = USBGenericExport
 exports["MXSUSBLoader"] = USBGenericExport
 exports["RKUSBLoader"] = USBGenericExport
 exports["AlteraUSBBlaster"] = USBGenericExport
+exports["ADIICEEmulator"] = USBADIICEEmulatorExport
 exports["SigrokUSBDevice"] = USBSigrokExport
 exports["SigrokUSBSerialDevice"] = USBSigrokExport
 exports["USBSDMuxDevice"] = USBSDMuxExport

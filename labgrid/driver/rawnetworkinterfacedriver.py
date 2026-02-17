@@ -35,14 +35,18 @@ class RawNetworkInterfaceDriver(Driver):
         super().__attrs_post_init__()
         self._record_handle = None
         self._replay_handle = None
+        self._allowed_commands = []
 
     def on_activate(self):
-        if self.manage_interface:
+        self._allowed_commands = set(
+            json.loads(subprocess.run(self._wrap_command(["allowed-commands"]), stdout=subprocess.PIPE).stdout)
+        )
+        if self.manage_interface and "ip" in self._allowed_commands:
             self._set_interface("up")
             self._wait_state("up")
 
     def on_deactivate(self):
-        if self.manage_interface:
+        if self.manage_interface and "ip" in self._allowed_commands:
             self._set_interface("down")
             self._wait_state("down")
 

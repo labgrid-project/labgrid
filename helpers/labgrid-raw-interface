@@ -11,19 +11,27 @@ import argparse
 import os
 import string
 import sys
+import json
 
 import yaml
 
+DENYLIST_FILE = "/etc/labgrid/helpers.yaml"
+PROGRAMS = ("tcpreplay", "tcpdump", "ip", "ethtool", "allowed-commands")
 
-def get_denylist():
-    denylist_file = "/etc/labgrid/helpers.yaml"
+
+def get_config():
     try:
-        with open(denylist_file) as stream:
+        with open(DENYLIST_FILE) as stream:
             data = yaml.load(stream, Loader=yaml.SafeLoader)
     except (PermissionError, FileNotFoundError, AttributeError) as e:
-        raise Exception(f"No configuration file ({denylist_file}), inaccessable or invalid yaml") from e
+        raise Exception(f"No configuration file ({DENYLIST_FILE}), inaccessable or invalid yaml") from e
 
-    denylist = data.get("raw-interface", {}).get("denied-interfaces", [])
+    return data.get("raw-interface", {})
+
+
+def get_denylist(config):
+    # FIXME: don't default to empty list for the check below
+    denylist = config.get("denied-interfaces", [])
 
     if not isinstance(denylist, list):
         raise Exception("No explicit denied-interfaces or not a list, please check your configuration")
@@ -33,7 +41,30 @@ def get_denylist():
     return denylist
 
 
+def get_allowed_commands(config):
+    allowed = set(config.get("allowed-commands", PROGRAMS))
+    allowed.add("allowed-commands")
+    return allowed
+
+
 def main(program, options):
+    config = get_config()
+
+    if program not in PROGRAMS:
+        raise ValueError(f"Invalid program {program} called with wrapper, valid programs are: {PROGRAMS}")
+
+    allowed_commands = get_allowed_commands(config)
+    if program not in allowed_commands:
+        raise ValueError(f"Command '{program}' is not allowed.")
+
+    args = [
+        program,
+    ]
+
+    if program == "allowed-commands":
+        print(json.dumps(sorted(list(allowed_commands))))
+        return 0
+
     if not options.ifname:
         raise ValueError("Empty interface name.")
     if any((c == "/" or c.isspace()) for c in options.ifname):
@@ -41,18 +72,11 @@ def main(program, options):
     if len(options.ifname) > 15:
         raise ValueError(f"Interface name '{options.ifname}' is too long.")
 
-    denylist = get_denylist()
+    denylist = get_denylist(config)
 
     if options.ifname in denylist:
         raise ValueError(f"Interface name '{options.ifname}' is denied in denylist.")
 
-    programs = ["tcpreplay", "tcpdump", "ip", "ethtool"]
-    if program not in programs:
-        raise ValueError(f"Invalid program {program} called with wrapper, valid programs are: {programs}")
-
-    args = [
-        program,
-    ]
 
     if program == "tcpreplay":
         args.append(f"--intf1={options.ifname}")
@@ -122,6 +146,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
     subparsers = parser.add_subparsers(dest="program", help="program to run")
+
+    # allowed-commands
+    allowed_commands_parser = subparsers.add_parser("allowed-commands")
 
     # tcpdump
     tcpdump_parser = subparsers.add_parser("tcpdump")

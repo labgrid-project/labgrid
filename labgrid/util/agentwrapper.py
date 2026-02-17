@@ -47,6 +47,7 @@ class AgentWrapper:
             os.path.abspath(os.path.dirname(__file__)),
             'agent.py')
         agent_prefix = os.environ.get("LG_AGENT_PREFIX", "")
+        python_exe = os.environ.get("LG_AGENT_PYTHON", "python3")
         if host:
             # copy agent.py and run via ssh
             with open(agent, 'rb') as agent_fd:
@@ -60,7 +61,7 @@ class AgentWrapper:
                  f'{host}:{agent_remote}'],
             )
             self.agent = subprocess.Popen(
-                ssh_opts + [host, '--', 'python3', agent_remote],
+                ssh_opts + [host, '--', python_exe, agent_remote],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 start_new_session=True,
@@ -68,7 +69,7 @@ class AgentWrapper:
         else:
             # run locally
             self.agent = subprocess.Popen(
-                ['python3', agent],
+                [python_exe, agent],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 start_new_session=True,

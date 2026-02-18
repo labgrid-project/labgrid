@@ -2,6 +2,8 @@ from urllib.parse import urlparse
 
 import pytest
 
+from labgrid.driver import ExecutionError
+from labgrid.driver.power.poe_netgear_plus import _get_hostname_and_password
 from labgrid.resource import NetworkPowerPort, YKUSHPowerPort
 from labgrid.driver.powerdriver import (
     ExternalPowerDriver,
@@ -292,6 +294,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.netio
         import labgrid.driver.power.netio_kshell
         import labgrid.driver.power.pe6216
+        import labgrid.driver.power.poe_netgear_plus
         import labgrid.driver.power.rest
         import labgrid.driver.power.sentry
         import labgrid.driver.power.eg_pms2_network
@@ -380,3 +383,21 @@ class TestYKUSHPowerDriver:
         check_output_mock.assert_called_with(
             ["ykushcmd", "ykush3", "-s", self.YKUSH3_FAKE_SERIAL, "-u", "3"]
         )
+
+
+class TestPoeNetgearPlusPowerDriver:
+    @pytest.mark.parametrize(
+        'url, expected_host, expected_pw',
+        [
+            ("http://example.com", "example.com", "P4ssword"),
+            ("http://ignored:detected_pw@example.com", "example.com", "detected_pw"),
+        ]
+    )
+    def test_get_hostname_and_password(self, url: str, expected_host: str, expected_pw: str):
+        returned_host, returned_pw = _get_hostname_and_password(url)
+        assert returned_host == expected_host
+        assert returned_pw == expected_pw
+
+    def test_get_hostname_and_pw_non_http_raises(self):
+        with pytest.raises(ExecutionError, match="URL must start with http://"):
+            _get_hostname_and_password("no_http_protocol")

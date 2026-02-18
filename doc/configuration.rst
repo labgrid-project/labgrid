@@ -216,6 +216,9 @@ Currently available are:
 ``poe_mib``
   Controls PoE switches using the PoE SNMP administration MiBs.
 
+``poe_netgear_plus``
+  Controls NETGEAR Plus switches using an HTTP interface.
+
 ``raritan``
   Controls *Raritan PDUs* via SNMP.
 

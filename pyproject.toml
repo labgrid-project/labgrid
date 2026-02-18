@@ -66,6 +66,7 @@ kasa = ["python-kasa>=0.7.0"]
 modbus = ["pyModbusTCP>=0.2.0"]
 modbusrtu = ["minimalmodbus>=1.0.2"]
 mqtt = ["paho-mqtt>=2.0.0"]
+netgear = ["py-netgear-plus>=0.4.7"]
 onewire = ["onewire>=0.2"]
 pyvisa = [
     "pyvisa>=1.11.3",
@@ -79,7 +80,7 @@ vxi11 = ["python-vxi11>=0.9"]
 xena = ["xenavalkyrie>=3.0.1"]
 deb = ["labgrid[modbus,onewire,snmp]"]
 dev = [
-    "labgrid[doc,docker,graph,kasa,modbus,modbusrtu,mqtt,onewire,pyvisa,snmp,vxi11]",
+    "labgrid[doc,docker,graph,kasa,modbus,modbusrtu,mqtt,netgear,onewire,pyvisa,snmp,vxi11]",
 
     # additional dev dependencies
     "psutil>=5.8.0",
@@ -223,6 +224,7 @@ include = [
   "labgrid/driver/manualswitchdriver.py",
   "labgrid/driver/power/gude8031.py",
   "labgrid/driver/power/pe6216.py",
+  "labgrid/driver/power/poe_netgear_plus.py",
   "labgrid/driver/power/shelly_gen2.py",
   "labgrid/driver/rawnetworkinterfacedriver.py",
   "labgrid/protocol/**/*.py",

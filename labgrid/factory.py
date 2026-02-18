@@ -1,14 +1,28 @@
 import inspect
 
 from .exceptions import InvalidConfigError, RegistrationError
+from .plugins.manager import PluginRegistrar, plugin_manager
 from .util.dict import filter_dict
 
 
-class TargetFactory:
+class TargetFactory(PluginRegistrar):
     def __init__(self):
         self.resources = {}
         self.drivers = {}
         self.all_classes = {}
+
+    def register_plugins(self):
+        # Register resources provided by labgrid plugins.
+        plugins_resources = plugin_manager.hook.labgrid_register_resources()
+        for resources_list in plugins_resources:
+            for resource_class in resources_list:
+                self.reg_resource(resource_class)
+
+        # Register drivers provided by labgrid plugins.
+        plugins_drivers = plugin_manager.hook.labgrid_register_drivers()
+        for drivers_list in plugins_drivers:
+            for driver_class in drivers_list:
+                self.reg_driver(driver_class)
 
     def reg_resource(self, cls):
         """Register a resource with the factory.
@@ -65,22 +79,21 @@ class TargetFactory:
         if isinstance(data, list):
             for item in data:
                 if not isinstance(item, dict):
-                    raise InvalidConfigError(
-                        f"invalid list item type {type(item)} (should be dict)")
+                    raise InvalidConfigError(f"invalid list item type {type(item)} (should be dict)")
                 if not item:
                     raise InvalidConfigError("invalid empty dict as list item")
                 if len(item) > 1:
-                    if 'cls' in item:
+                    if "cls" in item:
                         item = item.copy()
                     else:
                         raise InvalidConfigError(f"missing 'cls' key in {item}")
                 else:
                     # only one pair left
-                    (key, value), = item.items()
-                    if key == 'cls':
+                    ((key, value),) = item.items()
+                    if key == "cls":
                         item = item.copy()
                     else:
-                        item = {'cls':  key}
+                        item = {"cls": key}
                         if value is None:
                             raise InvalidConfigError("invalid list item, add empty dict for no arguments")  # pylint: disable=line-too-long
                         item.update(value)
@@ -88,73 +101,70 @@ class TargetFactory:
         elif isinstance(data, dict):
             for cls, args in data.items():
                 args = args.copy()
-                args.setdefault('cls', cls)
+                args.setdefault("cls", cls)
                 result.append(args)
         else:
             raise InvalidConfigError(f"invalid type {type(data)} (should be dict or list)")
         for item in result:
-            item.setdefault('name', None)
-            assert 'cls' in item
+            item.setdefault("name", None)
+            assert "cls" in item
         return result
 
     @staticmethod
     def normalize_config(config):
         resources = {}
         drivers = {}
-        for item in TargetFactory._convert_to_named_list(config.get('resources', {})):
-            resource = item.pop('cls')
-            name = item.pop('name', None)
-            args = item # remaining args
-            resources.setdefault(resource, {})[name] = (args, )
-        for item in TargetFactory._convert_to_named_list(config.get('drivers', {})):
-            driver = item.pop('cls')
-            name = item.pop('name', None)
-            bindings = item.pop('bindings', {})
-            args = item # remaining args
+        for item in TargetFactory._convert_to_named_list(config.get("resources", {})):
+            resource = item.pop("cls")
+            name = item.pop("name", None)
+            args = item  # remaining args
+            resources.setdefault(resource, {})[name] = (args,)
+        for item in TargetFactory._convert_to_named_list(config.get("drivers", {})):
+            driver = item.pop("cls")
+            name = item.pop("name", None)
+            bindings = item.pop("bindings", {})
+            args = item  # remaining args
             drivers.setdefault(driver, {})[name] = (args, bindings)
         return resources, drivers
 
     def make_resource(self, target, resource, name, args):
         assert isinstance(args, dict)
-        if not resource in self.resources:
+        if resource not in self.resources:
             raise InvalidConfigError(f"unknown resource class {resource}")
         try:
             cls = self.resources[resource]
             args = filter_dict(args, cls, warn=True)
             r = cls(target, name, **args)
         except TypeError as e:
-            raise InvalidConfigError(
-                f"failed to create {resource} for target '{target}' using {args} "
-            ) from e
+            raise InvalidConfigError(f"failed to create {resource} for target '{target}' using {args} ") from e
         return r
 
     def make_driver(self, target, driver, name, args):
         assert isinstance(args, dict)
-        if not driver in self.drivers:
+        if driver not in self.drivers:
             raise InvalidConfigError(f"unknown driver class {driver}")
         try:
             cls = self.drivers[driver]
             args = filter_dict(args, cls, warn=True)
             d = cls(target, name, **args)
         except TypeError as e:
-            raise InvalidConfigError(
-                f"failed to create {driver} for target '{target}' using {args} ") from e
+            raise InvalidConfigError(f"failed to create {driver} for target '{target}' using {args} ") from e
         return d
 
     def make_target(self, name, config, *, env=None):
         from .target import Target
 
         target = Target(name, env=env)
-        for item in TargetFactory._convert_to_named_list(config.get('resources', {})):
-            resource = item.pop('cls')
-            name = item.pop('name', None)
-            args = item # remaining args
+        for item in TargetFactory._convert_to_named_list(config.get("resources", {})):
+            resource = item.pop("cls")
+            name = item.pop("name", None)
+            args = item  # remaining args
             self.make_resource(target, resource, name, args)
-        for item in TargetFactory._convert_to_named_list(config.get('drivers', {})):
-            driver = item.pop('cls')
-            name = item.pop('name', None)
-            bindings = item.pop('bindings', {})
-            args = item # remaining args
+        for item in TargetFactory._convert_to_named_list(config.get("drivers", {})):
+            driver = item.pop("cls")
+            name = item.pop("name", None)
+            bindings = item.pop("bindings", {})
+            args = item  # remaining args
             target.set_binding_map(bindings)
             self.make_driver(target, driver, name, args)
         return target

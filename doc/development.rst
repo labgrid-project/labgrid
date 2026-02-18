@@ -323,6 +323,168 @@ implements this functionality, it expects a list of resources to wait for and
 optionally takes a timeout and whether the resource should be available or
 unavailable.
 
+.. _writing-plugins:
+
+Writing Plugins
+---------------
+
+Labgrid supports extensibility through a plugin system powered by 
+`pluggy <https://pluggy.readthedocs.io/en/stable/>`_.
+Plugins allow third-party packages to dynamically register custom drivers and 
+resources without modifying labgrid's core code.
+This is achieved via setuptools entry points and hook implementations.
+
+Plugin Structure
+~~~~~~~~~~~~~~~~
+
+Following labgrid's structure, a typical plugin package should organize drivers
+and resources in separate subdirectories:
+
+::
+
+    labgrid-myplugin/
+    ├── pyproject.toml
+    ├── labgrid_myplugin/
+    │   ├── __init__.py
+    │   ├── hooks.py
+    │   ├── drivers/
+    │   │   ├── __init__.py
+    │   │   └── mydriver.py
+    │   └── resources/
+    │       ├── __init__.py
+    │       └── myresource.py
+    └── README.md
+
+Where: 
+
+- ``drivers/`` contains custom driver implementations
+- ``resources/`` contains custom resource implementations
+- ``hooks.py`` contains the hook implementations
+- ``__init__.py`` imports and exposes the main components
+
+Implementing Custom Drivers and Resources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In ``drivers/mydriver.py``:
+
+.. code-block:: python
+
+   import attr
+
+   from labgrid.driver import Driver
+   from ..resources import MyCustomResource
+
+   @attr.s(eq=False)
+   class MyCustomDriver(Driver):
+       # Add your custom attributes and bindings
+       bindings = {"res": MyCustomResource}
+
+In ``drivers/__init__.py``:
+
+.. code-block:: python
+
+   from .mydriver import MyCustomDriver
+
+   __all__ = ["MyCustomDriver"]
+
+In ``resources/myresource.py``:
+
+.. code-block:: python
+
+   import attr
+   from labgrid.resource import Resource
+
+   @attr.s(eq=False)
+   class MyCustomResource(Resource):
+       host: str = attr.ib()
+       port: int = attr.ib(default=1234)
+
+In ``resources/__init__.py``:
+
+.. code-block:: python
+
+   from .myresource import MyCustomResource
+
+   __all__ = ["MyCustomResource"]
+
+Defining Hook Implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Plugins implement hooks defined in
+``labgrid/plugins/target_factory_hookspecs.py``.
+Create a separate ``hooks.py`` file with functions decorated by
+a marker created from ``HookimplMarker("labgrid")``:
+
+.. code-block:: python
+
+   from collections.abc import Sequence
+
+   from pluggy import HookimplMarker
+   from labgrid.driver import Driver
+   from labgrid.resource import Resource
+
+   from . import drivers, resources
+
+   hookimpl = HookimplMarker("labgrid")
+
+   @hookimpl
+   def labgrid_register_drivers() -> Sequence[type[Driver]]:
+       return [
+           drivers.MyCustomDriver,
+           # Add more driver classes here
+       ]
+
+   @hookimpl
+   def labgrid_register_resources() -> Sequence[type[Resource]]:
+       return [
+           resources.MyCustomResource,
+           # Add more resource classes here
+       ]
+
+These hooks return sequences of driver and resource classes (subclasses of
+``labgrid.driver.Driver`` and ``labgrid.resource.Resource`` respectively) to
+register with labgrid's TargetFactory.
+
+
+In ``__init__.py``, import the hooks to ensure they are registered when the 
+package is imported:
+
+.. code-block:: python
+
+   # Expose main components for convenience
+   from .drivers import MyCustomDriver
+   from .resources import MyCustomResource
+
+   __all__ = ["MyCustomDriver", "MyCustomResource"]
+
+Registering in pyproject.toml
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In your package's ``pyproject.toml``,
+define an entry point for the "labgrid" group pointing to your module.
+This uses standard setuptools entry points (also supported by Poetry and other
+build tools). The entry point name (left side) is an arbitrary unique identifier
+within the "labgrid" group - it can be anything, but conventionally matches the
+package name:
+
+.. code-block:: toml
+
+   [project.entry-points.labgrid]
+   labgrid-myplugin = "labgrid_myplugin.hooks"
+
+It is suggested to name your plugin package with the prefix ``labgrid-``, e.g.,
+``labgrid-myplugin``, to make it easy to identify as a labgrid plugin on PyPI.
+
+Once installed, labgrid will load these entry points and call the hooks to 
+register the classes.
+
+Using Plugins
+~~~~~~~~~~~~~
+
+When labgrid runs, it automatically discovers and registers classes from 
+installed plugins.
+These become available for use in environment configs or code, 
+just like built-in ones.
 
 Tips for Writing and Debugging Tests
 ------------------------------------

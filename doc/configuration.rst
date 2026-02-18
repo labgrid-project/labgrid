@@ -603,6 +603,28 @@ Arguments:
 Used by:
   - `HttpDigitalOutputDriver`_
 
+Eth008DigitalOutput
+++++++++++++++++++++
+An :any:`Eth008DigitalOutput` resource describes a digital output on a
+*Robot-Electronics eth008* relay board.
+
+.. code-block:: yaml
+
+   Eth008DigitalOutput:
+     host: '192.168.1.100'
+     index: 1
+     invert: false
+
+The example describes relay ``1`` on the ETH008 device at ``192.168.1.100``.
+
+Arguments:
+  - host (str): hostname or IP address of the ETH008 device
+  - index (int): number of the relay to use (1-8)
+  - invert (bool, default=False): whether to invert the output (active-low)
+
+Used by:
+  - `Eth008DigitalOutputDriver`_
+
 NetworkHIDRelay
 +++++++++++++++
 A :any:`NetworkHIDRelay` describes an `HIDRelay`_ resource available on a
@@ -3370,6 +3392,25 @@ Binds to:
 .. code-block:: yaml
 
    HttpDigitalOutputDriver: {}
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+Arguments:
+  - None
+
+Eth008DigitalOutputDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`Eth008DigitalOutputDriver` binds to an `Eth008DigitalOutput`_ to set
+and get a digital output state on a Robot-Electronics eth008 relay board.
+
+Binds to:
+  output:
+    - `Eth008DigitalOutput`_
+
+.. code-block:: yaml
+
+   Eth008DigitalOutputDriver: {}
 
 Implements:
   - :any:`DigitalOutputProtocol`

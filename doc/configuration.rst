@@ -1890,6 +1890,8 @@ Arguments:
     will explicitly use the SCP protocol for file transfers instead of scp's default protocol
   - username (str, default=username from `NetworkService`_): username used by SSH
   - password (str, default=password from `NetworkService`_): password used by SSH
+  - extra_options (list or str): optional, extra options required for the SSH connection, e.g.
+    defining host key algorithms
 
 UBootDriver
 ~~~~~~~~~~~

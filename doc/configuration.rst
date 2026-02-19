@@ -2927,6 +2927,9 @@ Arguments:
 The driver can be used in test cases by calling its ``capture()``, ``stop()``
 and ``analyze()`` methods.
 
+To capture for a certain predetermined amount of time or number of samples,
+methods ``capture_for_time()`` and ``capture_samples()`` can be used.
+
 SigrokPowerDriver
 ~~~~~~~~~~~~~~~~~
 The :any:`SigrokPowerDriver` uses a `SigrokUSBSerialDevice`_ resource to

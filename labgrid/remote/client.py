@@ -363,11 +363,11 @@ class ClientSession:
                         else:
                             places = None
 
-                        results.append((places, exporter, group_name, resource.cls))
+                        results.append((places, exporter, group_name, resource.cls, resource_name))
 
             results = sorted(results, key=lambda res: res[0][0].changed if res[0] else 0)
 
-            for places, exporter, group_name, resource_cls in results:
+            for places, exporter, group_name, resource_cls, resource_name in results:
                 if self.args.sort_by_matched_place_change:
                     places_strs = [f"{p.name}: {datetime.fromtimestamp(p.changed):%Y-%m-%d}" for p in places]
                     places_info = ", ".join(places_strs) if places_strs else "not used by any place"
@@ -375,7 +375,7 @@ class ClientSession:
                 else:
                     places_info = None
 
-                line = f"{exporter}/{group_name}/{resource_cls}"
+                line = f"{exporter}/{group_name}/{resource_cls}[/{resource_name}]"
                 if places_info is not None:
                     print(f"{line:<50s} {places_info}")
                 else:

@@ -363,6 +363,31 @@ NetworkUSBPowerPort
 A :any:`NetworkUSBPowerPort` describes a `USBPowerPort`_ resource available on
 a remote computer.
 
+LinkPiSmartHUBPowerPort
++++++++++++++++++++++++
+A :any:`LinkPiSmartHUBPowerPort` describes a LinkPi SmartHUB port with power switching.
+
+.. code-block:: yaml
+
+   LinkPiSmartHUBPowerPort:
+     match:
+       ID_SERIAL_SHORT: 'ABCD1234'
+     index: 5
+
+The example describes port '1' on the SmartHUB with the ID_SERIAL_SHORT ``ABCD1234``.
+
+Arguments:
+  - index (str or int): port name ('1' to '12') or internal port index (0 to 11)
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `LinkPiSmartHUBPowerDriver`_
+
+NetworkLinkPiSmartHUBPowerPort
+++++++++++++++++++++++++++++++
+A :any:`NetworkLinkPiSmartHUBPowerPort` describes a `LinkPiSmartHUBPowerPort`_
+resource available on a remote computer.
+
 SiSPMPowerPort
 ++++++++++++++
 A :any:`SiSPMPowerPort` describes a *GEMBIRD SiS-PM* as supported by
@@ -2306,6 +2331,28 @@ Implements:
 .. code-block:: yaml
 
    USBPowerDriver:
+     delay: 5.0
+
+Arguments:
+  - delay (float, default=2.0): delay in seconds between off and on
+
+LinkPiSmartHUBPowerDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`LinkPiSmartHUBPowerDriver` controls a `LinkPiSmartHUBPowerPort`_,
+allowing control of the target power state without user interaction.
+
+Binds to:
+  port:
+    - `LinkPiSmartHUBPowerPort`_
+    - `NetworkLinkPiSmartHUBPowerPort`_
+
+Implements:
+  - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
+
+.. code-block:: yaml
+
+   LinkPiSmartHUBPowerDriver:
      delay: 5.0
 
 Arguments:

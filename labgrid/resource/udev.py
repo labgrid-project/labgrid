@@ -650,6 +650,30 @@ class USBPowerPort(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class LinkPiSmartHUBPowerPort(USBResource):
+    """The LinkPiSmartHUBPowerPort describes a LinkPi SmartHUB port with power switching.
+
+    Args:
+        index (str or int): port name ('1' to '12') or internal port index (0 to 11)
+    """
+    index = attr.ib(default=None, validator=attr.validators.instance_of((str, int)))
+
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'tty'
+        self.match['@SUBSYSTEM'] = 'usb'
+        self.match.setdefault('ID_VENDOR_ID', '0403')
+        self.match.setdefault('ID_MODEL_ID', '6001')
+        super().__attrs_post_init__()
+
+    @property
+    def path(self):
+        if self.device is not None:
+            return self.device.device_node
+
+        return None
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class SiSPMPowerPort(USBResource):
     """This resource describes a SiS-PM (Silver Shield PM) power port.
 

@@ -1,12 +1,14 @@
 import shlex
+from contextlib import contextmanager
 
 import attr
 from pexpect import TIMEOUT
 
+from ..exceptions import CommandProcessBusy
 from ..factory import target_factory
 from ..protocol import CommandProtocol, ConsoleProtocol, LinuxBootProtocol
 from ..step import step
-from ..util import gen_marker, Timeout, re_vt100
+from ..util import gen_marker, Timeout, re_vt100, ConsoleMarkerProcess
 from .common import Driver
 from .commandmixin import CommandMixin
 
@@ -44,6 +46,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         self._status = 0
         # barebox' default log level, used as fallback if no log level can be saved
         self.saved_log_level = 7
+        self._process = None
 
     def on_activate(self):
         """Activate the BareboxDriver
@@ -59,6 +62,34 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Simply sets the internal status to 0
         """
         self._status = 0
+        assert not self._process, "Deactivating while a command process is running is not allowed"
+
+    @contextmanager
+    def _start_process(self, cmd: str, *, adjust_log_level: bool = True):
+        if self._process is not None:
+            raise CommandProcessBusy()
+
+        # FIXME: use codec, decodeerrors
+        marker = gen_marker()
+        # hide marker from expect
+        hidden_marker = f'"{marker[:4]}""{marker[4:]}"'
+        # generate command with marker and log level adjustment
+        cmp_command = f'echo -o /cmd {shlex.quote(cmd)}; echo {hidden_marker};'
+        if self.saved_log_level and adjust_log_level:
+            cmp_command += f' global.loglevel={self.saved_log_level};'
+        cmp_command += f' sh /cmd; echo {hidden_marker} $?;'
+        if self.saved_log_level and adjust_log_level:
+            cmp_command += ' global.loglevel=0;'
+
+        self.console.sendline(cmp_command)
+        self.console.expect(marker)
+
+        with ConsoleMarkerProcess(self.console, marker, self.prompt) as p:
+            self._process = p
+            try:
+                yield p
+            finally:
+                self._process = None
 
     @Driver.check_active
     @step(args=['cmd'])
@@ -76,31 +107,22 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         Returns:
             Tuple[List[str],List[str], int]: if successful, None otherwise
         """
-        # FIXME: use codec, decodeerrors
-        marker = gen_marker()
-        # hide marker from expect
-        hidden_marker = f'"{marker[:4]}""{marker[4:]}"'
-        # generate command with marker and log level adjustment
-        cmp_command = f'echo -o /cmd {shlex.quote(cmd)}; echo {hidden_marker};'
-        if self.saved_log_level and adjust_log_level:
-            cmp_command += f' global.loglevel={self.saved_log_level};'
-        cmp_command += f' sh /cmd; echo {hidden_marker} $?;'
-        if self.saved_log_level and adjust_log_level:
-            cmp_command += ' global.loglevel=0;'
-
         if self._status == 1:
-            self.console.sendline(cmp_command)
-            _, _, match, _ = self.console.expect(
-                rf'{marker}(.*){marker}\s+(\d+)\s+.*{self.prompt}',
-                timeout=timeout)
-            # Remove VT100 Codes and split by newline
-            data = re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
-            self.logger.debug("Received Data: %s", data)
-            # Get exit code
-            exitcode = int(match.group(2))
-            return (data, [], exitcode)
+            with self._start_process(cmd, adjust_log_level=adjust_log_level) as p:
+                output = p.read_to_end(timeout=timeout)
+                # Remove VT100 Codes and split by newline
+                data = re_vt100.sub('', output.group(1).decode('utf-8')).split('\r\n')[1:-1]
+                self.logger.debug("Received Data: %s", data)
+                return (data, [], p.exitcode)
 
         return None
+
+    @Driver.check_active
+    @step(args=['cmd'])
+    @contextmanager
+    def start_process(self, cmd: str):
+        with self._start_process(cmd) as p:
+            yield p
 
     @Driver.check_active
     @step()

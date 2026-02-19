@@ -86,18 +86,21 @@ class NetworkResource(Resource):
 
     Args:
         host (str): remote host the resource is available on
+        sshpassword (str): remote host ssh password
     """
     host = attr.ib(validator=attr.validators.instance_of(str))
+    sshpassword = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)), kw_only=True)
 
     @property
     def command_prefix(self):
         host = self.host
+        sshpassword = self.sshpassword
 
         if hasattr(self, 'extra'):
             if self.extra.get('proxy_required'):
                 host = self.extra.get('proxy')
 
-        conn = sshmanager.get(host)
+        conn = sshmanager.get(host, sshpassword)
         prefix = conn.get_prefix()
 
         return prefix + ['--']

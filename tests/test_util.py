@@ -303,6 +303,17 @@ def test_proxymanager_local_forced_proxy(target):
     assert (host, port) != (nhost, nport)
 
 @pytest.mark.localsshmanager
+def test_remote_networkresource(target, tmpdir):
+    name = "test"
+    host = "localhost"
+    sshpassword = "foo"
+    res = NetworkResource(target, name, host, sshpassword=sshpassword)
+
+    assert res.name == name
+    assert res.host == host
+    assert res.sshpassword == sshpassword
+
+@pytest.mark.localsshmanager
 def test_remote_managedfile(target, tmpdir):
     import hashlib
     import getpass

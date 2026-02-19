@@ -154,8 +154,8 @@ TOOLS KEYS
     Path to the usbsdmux tool, used by the USBSDMuxDriver.
     See: https://github.com/linux-automation/usbsdmux
 
-``uuu-loader``
-    Path to the uuu-loader binary, used by the UUUDriver.
+``uuu``
+    Path to the uuu binary, used by the UUUDriver.
     See: https://github.com/nxp-imx/mfgtools
 
 ``ykushcmd``

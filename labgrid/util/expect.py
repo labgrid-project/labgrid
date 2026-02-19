@@ -10,11 +10,12 @@ class PtxExpect(pexpect.spawn):
     driver: ConsoleProtocol object to be passed in
     """
 
-    def __init__(self, driver):
+    def __init__(self, driver, linesep=b"\n"):
         "Initializes a pexpect spawn instance with the required configuration"
         self.driver = driver
-        self.linesep = b"\n"
         pexpect.spawn.__init__(self, None, maxread=1)
+        # the linesep needs to be set *after* pexpect is initialized, otherwise it would be overwritten
+        self.linesep = linesep
 
     def send(self, s):
         "Write to underlying transport, return number of bytes written"

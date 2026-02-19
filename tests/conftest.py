@@ -13,6 +13,8 @@ from labgrid.driver.fake import FakeConsoleDriver
 
 psutil = pytest.importorskip("psutil")
 
+pytest_plugins = ["pytester"]
+
 @pytest.fixture(scope="session")
 def curses_init():
     """ curses only reads the terminfo DB once on the first import, so make

@@ -13,6 +13,8 @@ New Features in 25.1
   than one network interface defined.
 - Guermok HDMI to USB 3.0 capture dongle supported
 
+- The ``pytest``-specific parts of the labgrid framework now have typing hints.
+
 Breaking changes in 25.1
 ~~~~~~~~~~~~~~~~~~~~~~~~
 - The deprecated pytest plugin option ``--env-config`` has been removed. Use

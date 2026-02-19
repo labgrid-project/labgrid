@@ -1,20 +1,23 @@
 import os
 import copy
 import logging
+from typing import List, Optional
+
 import pytest
+from _pytest.logging import LoggingPlugin
 
 from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
-from ..logging import StepFormatter, StepLogger
+from ..logging import CONSOLE, StepFormatter, StepLogger
 from ..exceptions import NoStrategyFoundError
 
-LABGRID_ENV_KEY = pytest.StashKey[Environment]()
+LABGRID_ENV_KEY = pytest.StashKey[Optional[Environment]]()
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_cmdline_main(config):
-    def set_cli_log_level(level):
+def pytest_cmdline_main(config: pytest.Config) -> None:
+    def set_cli_log_level(level: int) -> None:
         nonlocal config
 
         try:
@@ -24,28 +27,38 @@ def pytest_cmdline_main(config):
         print(f"current_level: {current_level}")
 
         if isinstance(current_level, str):
+            s = current_level.strip()
             try:
-                current_level = int(logging.getLevelName(current_level))
+                current_level_val: Optional[int] = int(s)
             except ValueError:
-                current_level = None
+                v = logging.getLevelName(s.upper())
+                current_level_val = v if isinstance(v, int) else None
+        elif isinstance(current_level, int):
+            current_level_val = current_level
+        else:
+            current_level_val = None
+
+        assert current_level_val is None or isinstance(current_level_val, int), \
+            "unexpected type of current log level"
 
         # If no level was set previously (via ini or cli) or current_level is
         # less verbose than level, set to new level.
-        if current_level is None or level < current_level:
+        if current_level_val is None or level < current_level_val:
             config.option.log_cli_level = str(level)
 
     verbosity = config.getoption("verbose")
+    assert isinstance(verbosity, int), "unexpected verbosity option type"
     if verbosity > 3: # enable with -vvvv
         set_cli_log_level(logging.DEBUG)
     elif verbosity > 2: # enable with -vvv
-        set_cli_log_level(logging.CONSOLE)
+        set_cli_log_level(CONSOLE)
     elif verbosity > 1: # enable with -vv
         set_cli_log_level(logging.INFO)
 
 
-def configure_pytest_logging(config, plugin):
-    if hasattr(plugin.log_cli_handler.formatter, "add_color_level"):
-        plugin.log_cli_handler.formatter.add_color_level(logging.CONSOLE, "blue")
+def configure_pytest_logging(config: pytest.Config, plugin: LoggingPlugin) -> None:
+    if (add_color_level := getattr(plugin.log_cli_handler.formatter, "add_color_level", None)) is not None:
+        add_color_level(CONSOLE, "blue")
     plugin.log_cli_handler.setFormatter(StepFormatter(
         color=config.option.lg_colored_steps,
         parent=plugin.log_cli_handler.formatter,
@@ -63,12 +76,13 @@ def configure_pytest_logging(config, plugin):
     plugin.report_handler.setFormatter(StepFormatter(parent=caplog_formatter))
 
 @pytest.hookimpl(trylast=True)
-def pytest_configure(config):
+def pytest_configure(config: pytest.Config) -> None:
     StepLogger.start()
     config.add_cleanup(StepLogger.stop)
 
     logging_plugin = config.pluginmanager.getplugin('logging-plugin')
     if logging_plugin:
+        assert isinstance(logging_plugin, LoggingPlugin), "unexpected type of logging-plugin"
         configure_pytest_logging(config, logging_plugin)
 
     config.addinivalue_line("markers",
@@ -94,9 +108,11 @@ def pytest_configure(config):
     processwrapper.enable_logging()
 
 @pytest.hookimpl()
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config, items: List[pytest.Item]) -> None:
     """This function matches function feature flags with those found in the
     environment and disables the item if no match is found"""
+    del session  # unused
+
     env = config.stash[LABGRID_ENV_KEY]
 
     if not env:
@@ -145,7 +161,7 @@ def pytest_collection_modifyitems(config, items):
             )
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_runtest_setup(item):
+def pytest_runtest_setup(item) -> None:
     """
     Skip test if one of the targets uses a strategy considered broken.
     """

@@ -262,7 +262,7 @@ class Config:
 
         return imports
 
-    def get_paths(self):
+    def get_paths(self) -> dict[str, str]:
         """Helper function that returns the subdict of all paths
 
         Returns:
@@ -275,7 +275,7 @@ class Config:
 
         return paths
 
-    def get_images(self):
+    def get_images(self) -> dict[str, str]:
         """Helper function that returns the subdict of all images
 
         Returns:

@@ -5,6 +5,7 @@ import os.path
 import subprocess
 import traceback
 import logging
+from subprocess import CalledProcessError
 
 from .ssh import get_ssh_connect_timeout
 
@@ -47,6 +48,7 @@ class AgentWrapper:
             os.path.abspath(os.path.dirname(__file__)),
             'agent.py')
         agent_prefix = os.environ.get("LG_AGENT_PREFIX", "")
+        labgrid_agent_exists: bool = False
         if host:
             # copy agent.py and run via ssh
             with open(agent, 'rb') as agent_fd:
@@ -55,24 +57,48 @@ class AgentWrapper:
             agent_remote = os.path.join(agent_prefix, f'.labgrid_agent_{agent_hash}.py')
             connect_timeout = get_ssh_connect_timeout()
             ssh_opts = f'ssh -x -o ConnectTimeout={connect_timeout} -o PasswordAuthentication=no'.split()
-            subprocess.check_call(
-                ['rsync', '-e', ' '.join(ssh_opts), '-tq', agent,
-                 f'{host}:{agent_remote}'],
-            )
-            self.agent = subprocess.Popen(
-                ssh_opts + [host, '--', 'python3', agent_remote],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                start_new_session=True,
-            )
+            try:
+                labgrid_agent_exists = (0 == subprocess.check_call(ssh_opts + [host, '--', 'which', '_labgrid-agent'],))
+            except CalledProcessError:
+                pass
+            if not labgrid_agent_exists:
+                subprocess.check_call(
+                    ['rsync', '-e', ' '.join(ssh_opts), '-tq', agent,
+                     f'{host}:{agent_remote}'],
+                )
+                self.agent = subprocess.Popen(
+                    ssh_opts + [host, '--', 'python3', agent_remote],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    start_new_session=True,
+                )
+            else:
+                self.agent = subprocess.Popen(
+                    ssh_opts + [host, '--', '_labgrid-agent',],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    start_new_session=True,
+                )
         else:
             # run locally
-            self.agent = subprocess.Popen(
-                ['python3', agent],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                start_new_session=True,
-            )
+            try:
+                labgrid_agent_exists = (0 == subprocess.check_call(['which', '_labgrid-agent'],))
+            except CalledProcessError:
+                pass
+            if not labgrid_agent_exists:
+                self.agent = subprocess.Popen(
+                    ['python3', agent],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    start_new_session=True,
+                )
+            else:
+                self.agent = subprocess.Popen(
+                    ['_labgrid-agent'],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    start_new_session=True,
+                )
 
     def __del__(self):
         self.close()

@@ -55,6 +55,7 @@ dynamic = ["version"]  # via setuptools_scm
 "Bug Tracker" = "https://github.com/labgrid-project/labgrid/issues"
 
 [project.optional-dependencies]
+dbus = ["jeepney>=0.8.0"]
 doc = [
     "sphinx_rtd_theme>=1.0.0",
     "Sphinx>=2.0.0,<9.0.0",
@@ -79,7 +80,7 @@ vxi11 = ["python-vxi11>=0.9"]
 xena = ["xenavalkyrie>=3.0.1"]
 deb = ["labgrid[modbus,onewire,snmp]"]
 dev = [
-    "labgrid[doc,docker,graph,kasa,modbus,modbusrtu,mqtt,onewire,pyvisa,snmp,vxi11]",
+    "labgrid[dbus,doc,docker,graph,kasa,modbus,modbusrtu,mqtt,onewire,pyvisa,snmp,vxi11]",
 
     # additional dev dependencies
     "psutil>=5.8.0",

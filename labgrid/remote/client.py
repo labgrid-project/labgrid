@@ -938,7 +938,7 @@ class ClientSession:
         name = self.args.name
         target = self._get_target(place)
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
-        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
+        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkManagedGPIO, NetworkSysfsGPIO
         from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
 
         drv = None
@@ -960,7 +960,7 @@ class ClientSession:
                     drv = self._get_driver_or_new(target, "TasmotaPowerDriver", name=name)
                 elif isinstance(resource, NetworkYKUSHPowerPort):
                     drv = self._get_driver_or_new(target, "YKUSHPowerDriver", name=name)
-                elif isinstance(resource, NetworkSysfsGPIO):
+                elif isinstance(resource, (NetworkManagedGPIO, NetworkSysfsGPIO)):
                     self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
                     drv = self._get_driver_or_new(target, "DigitalOutputPowerDriver", name=name)
                 if drv:
@@ -980,7 +980,13 @@ class ClientSession:
         name = self.args.name
         target = self._get_target(place)
         from ..resource import ModbusTCPCoil, OneWirePIO, HttpDigitalOutput, WaveshareModbusTCPCoil
-        from ..resource.remote import NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO, NetworkHIDRelay
+        from ..resource.remote import (
+            NetworkDeditecRelais8,
+            NetworkHIDRelay,
+            NetworkLXAIOBusPIO,
+            NetworkManagedGPIO,
+            NetworkSysfsGPIO,
+        )
 
         drv = None
         try:
@@ -999,7 +1005,7 @@ class ClientSession:
                     drv = self._get_driver_or_new(target, "HttpDigitalOutputDriver", name=name)
                 elif isinstance(resource, NetworkDeditecRelais8):
                     drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name)
-                elif isinstance(resource, NetworkSysfsGPIO):
+                elif isinstance(resource, (NetworkManagedGPIO, NetworkSysfsGPIO)):
                     drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
                 elif isinstance(resource, NetworkLXAIOBusPIO):
                     drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name)

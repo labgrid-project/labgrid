@@ -13,7 +13,7 @@ import subprocess
 from urllib.parse import urlsplit
 import warnings
 from pathlib import Path
-from typing import Dict, Type
+from typing import Any, Dict, Type
 from socket import gethostname, getfqdn
 
 import attr
@@ -637,6 +637,37 @@ class EthernetPortExport(ResourceExport):
 
 
 exports["SNMPEthernetPort"] = EthernetPortExport
+
+
+@attr.s(eq=False)
+class ManagedGPIOExport(ResourceExport):
+    """ResourceExport for GPIO lines accessed via gpio-manager D-Bus service"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+        if self.cls == "ManagedGPIO":
+            from ..resource.base import ManagedGPIO
+
+            self.local = ManagedGPIO(target=None, name=None, **self.local_params)
+        elif self.cls == "MatchedManagedGPIO":
+            from ..resource.udev import MatchedManagedGPIO
+
+            self.local = MatchedManagedGPIO(target=None, name=None, **self.local_params)
+
+        self.data["cls"] = "NetworkManagedGPIO"
+
+    def _get_params(self) -> dict[str, Any]:
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "chip": self.local.chip,
+            "pin": self.local.pin,
+        }
+
+
+exports["ManagedGPIO"] = ManagedGPIOExport
+exports["MatchedManagedGPIO"] = ManagedGPIOExport
 
 
 @attr.s(eq=False)

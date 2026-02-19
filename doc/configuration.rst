@@ -68,34 +68,6 @@ Arguments:
 
 Used by:
   - `SerialDriver`_
-
-ModbusRTU
-+++++++++
-A :any:`ModbusRTU` resource is required to use the `ModbusRTUDriver`_.
-`Modbus RTU <https://en.wikipedia.org/wiki/Modbus>`_ is a communication
-protocol used to control many different kinds of electronic systems, such as
-thermostats, power plants, etc.
-Modbus is normally implemented on top of RS-485, though this is not strictly
-necessary, as long as the Modbus network only has one master (and up to 256
-slaves).
-
-This resource only supports local usage and will not work with an exporter.
-
-.. code-block:: yaml
-
-    ModbusRTU:
-      port: '/dev/ttyUSB0'
-      address: 16
-      speed: 115200
-      timeout: 0.25
-
-Arguments:
-  - port (str): tty the instrument is connected to, e.g. ``/dev/ttyUSB0``
-  - address (int): slave address on the modbus, e.g. 16
-  - speed (int, default=115200): baud rate of the serial port
-  - timeout (float, default=0.25): timeout in seconds
-
-Used by:
   - `ModbusRTUDriver`_
 
 USBSerialPort
@@ -1779,9 +1751,7 @@ Arguments:
 
 ModbusRTUDriver
 ~~~~~~~~~~~~~~~
-A :any:`ModbusRTUDriver` connects to a ModbusRTU resource. This driver only
-supports local usage and will not work with an exporter.
-
+A :any:`ModbusRTUDriver` connects to a SerialPort or NetworkSerialPort resource.
 The driver is implemented using the
 `minimalmodbus <https://minimalmodbus.readthedocs.io/en/stable/>`_ Python
 library.
@@ -1794,13 +1764,16 @@ network.
 
 Binds to:
   resource:
-    - `ModbusRTU`_
+    - `NetworkSerialPort`_
+    - `RawSerialPort`_
+    - `USBSerialPort`_
 
 Implements:
   - None (yet)
 
 Arguments:
-  - None
+  - address (int): slave address on the modbus, e.g. 16
+  - timeout (float): 0.5
 
 ShellDriver
 ~~~~~~~~~~~

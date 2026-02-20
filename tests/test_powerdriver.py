@@ -11,7 +11,6 @@ from labgrid.driver.powerdriver import (
     NetworkPowerDriver,
     YKUSHPowerDriver,
 )
-from labgrid.util.helper import processwrapper
 
 
 class TestManualPowerDriver:

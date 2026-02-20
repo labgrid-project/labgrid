@@ -17,6 +17,7 @@ from ..exception import ExecutionError
 
 PORT = 80
 
+
 def power_set(host, port, index, value):
     """
     The gude web-interface uses different pages for the three groups of
@@ -27,9 +28,7 @@ def power_set(host, port, index, value):
     assert 1 <= index <= 24
     # access the web interface...
     value = 1 if value else 0
-    response = requests.get(
-        f"http://{host}:{port}/ov.html?cmd=1&p={index}&s={value}"
-    )
+    response = requests.get(f"http://{host}:{port}/ov.html?cmd=1&p={index}&s={value}")
 
     # Check, that the port is in the desired state
     state = get_state(response, index)
@@ -62,7 +61,7 @@ def get_state(request, index):
     # raise an exception if the state cannot be determined.
 
     for line in request.text.splitlines():
-        if line.find(f"content=\"Power Port {index}") > 0:
+        if line.find(f'content="Power Port {index}') > 0:
             if line.find(",0") > 0:
                 return False
             if line.find(",1") > 0:

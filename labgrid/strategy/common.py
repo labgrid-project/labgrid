@@ -12,6 +12,7 @@ def never_retry(func):
     StrategyError from it. All subsequent calls to the decorated method will lead to the same
     exception.
     """
+
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         if self.broken:
@@ -55,9 +56,7 @@ class Strategy(Driver):  # reuse driver handling
         self.broken = None
 
         if self.target is None:
-            raise BindingError(
-                "Strategies can only be created on a valid target"
-            )
+            raise BindingError("Strategies can only be created on a valid target")
 
     def on_client_bound(self, client):
         raise NotImplementedError("Strategies do not support clients")

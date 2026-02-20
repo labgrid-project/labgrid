@@ -18,6 +18,7 @@ def check_external_progs_present():
     """Determine if host machine has a usable docker daemon"""
     try:
         import docker
+
         try:
             dock = docker.from_env()
             dock.info()
@@ -105,6 +106,7 @@ def docker_target(docker_env):
     # in attribute "instances" so by resetting "instances" to {}, next test
     # case will force creation of a fresh ResourceManager instance.
     from labgrid.resource import ResourceManager
+
     ResourceManager.instances = {}
 
 
@@ -113,9 +115,9 @@ def command(docker_target):
     """Bring system to a state where it's possible to execute commands
     on a running docker container. When done, stop the container again.
     """
-    strategy = docker_target.get_driver('DockerStrategy')
+    strategy = docker_target.get_driver("DockerStrategy")
     strategy.transition("accessible")
-    shell = docker_target.get_driver('CommandProtocol')
+    shell = docker_target.get_driver("CommandProtocol")
     yield shell
     strategy.transition("gone")
 
@@ -127,32 +129,33 @@ def docker_target_for_local_image(docker_env_for_local_container):
     yield t
 
     from labgrid.resource import ResourceManager
+
     ResourceManager.instances = {}
 
 
 @pytest.fixture
 def local_command(docker_target_for_local_image):
     """Same as `command` but uses a different image uri"""
-    strategy = docker_target_for_local_image.get_driver('DockerStrategy')
+    strategy = docker_target_for_local_image.get_driver("DockerStrategy")
     strategy.transition("accessible")
-    shell = docker_target_for_local_image.get_driver('CommandProtocol')
+    shell = docker_target_for_local_image.get_driver("CommandProtocol")
     yield shell
     strategy.transition("gone")
 
-@pytest.mark.skipif(not check_external_progs_present(),
-                    reason="No access to a docker daemon")
+
+@pytest.mark.skipif(not check_external_progs_present(), reason="No access to a docker daemon")
 def test_docker_with_daemon(command):
     """Test the docker machinery when a running docker daemon can be used
     (thus test is skipped if there is no such daemon). The tests executes
     a few tests inside a running docker container using SSHDriver for access.
     """
-    stdout, stderr, return_code = command.run('cat /proc/version')
+    stdout, stderr, return_code = command.run("cat /proc/version")
     assert return_code == 0
     assert len(stdout) > 0
     assert len(stderr) == 0
-    assert 'Linux' in stdout[0]
+    assert "Linux" in stdout[0]
 
-    stdout, stderr, return_code = command.run('false')
+    stdout, stderr, return_code = command.run("false")
     assert return_code != 0
     assert len(stdout) == 0
     assert len(stderr) == 0
@@ -161,6 +164,7 @@ def test_docker_with_daemon(command):
 @pytest.fixture
 def build_image():
     import docker
+
     client = docker.from_env()
     dockerfile_content = """
     FROM rastasheep/ubuntu-sshd:16.04
@@ -169,17 +173,16 @@ def build_image():
     image, logs = client.images.build(fileobj=dockerfile_stream, tag="local_rastasheep", rm=True)
 
 
-@pytest.mark.skipif(not check_external_progs_present(),
-                    reason="No access to a docker daemon")
+@pytest.mark.skipif(not check_external_progs_present(), reason="No access to a docker daemon")
 def test_docker_with_daemon_and_local_image(build_image, local_command):
     """Build a container locally and connect to it"""
-    stdout, stderr, return_code = local_command.run('cat /proc/version')
+    stdout, stderr, return_code = local_command.run("cat /proc/version")
     assert return_code == 0
     assert len(stdout) > 0
     assert len(stderr) == 0
-    assert 'Linux' in stdout[0]
+    assert "Linux" in stdout[0]
 
-    stdout, stderr, return_code = local_command.run('false')
+    stdout, stderr, return_code = local_command.run("false")
     assert return_code != 0
     assert len(stdout) == 0
     assert len(stderr) == 0
@@ -199,19 +202,18 @@ def test_docker_without_daemon(docker_env, mocker):
     docker daemon, real sockets or system time"""
 
     import docker
+
     # Target::update_resources() and Target::await_resources use
     # time.monotonic() and time.sleep() to control when to search
     # for resources. Avoid time delays and make running from cmd-line
     # and inside debugger equal by mocking out all time.
-    time_monotonic = mocker.patch('labgrid.target.monotonic')
+    time_monotonic = mocker.patch("labgrid.target.monotonic")
     time_monotonic.side_effect = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
 
     # Mock actions on the imported "docker" python module
-    docker_client_class = mocker.patch('docker.DockerClient',
-                                       autospec=True)
+    docker_client_class = mocker.patch("docker.DockerClient", autospec=True)
     docker_client = docker_client_class.return_value
-    api_client_class = mocker.patch('docker.api.client.APIClient',
-                                    autospec=True)
+    api_client_class = mocker.patch("docker.api.client.APIClient", autospec=True)
     docker_client.api = api_client_class.return_value
     api_client = docker_client.api
     api_client.base_url = "unix:///var/run/docker.sock"
@@ -222,24 +224,29 @@ def test_docker_without_daemon(docker_env, mocker):
     # - it is cached for future use; therefore no need to replicate
     # this entry in the side_effects list.
     api_client.containers.side_effect = [
-        [{'Labels': {DockerConstants.DOCKER_LG_CLEANUP_LABEL:
-                     DockerConstants.DOCKER_LG_CLEANUP_TYPE_AUTO},
-          'NetworkSettings': {'IPAddress': '1.1.1.1'},
-          'Names': 'old-one',
-          'Id': '0'
-          }],
-        [{'Labels': {DockerConstants.DOCKER_LG_CLEANUP_LABEL:
-                     DockerConstants.DOCKER_LG_CLEANUP_TYPE_AUTO},
-          'NetworkSettings': {'IPAddress': '2.1.1.1'},
-          'Names': 'actual-one',
-          'Id': '1'
-          }]
+        [
+            {
+                "Labels": {DockerConstants.DOCKER_LG_CLEANUP_LABEL: DockerConstants.DOCKER_LG_CLEANUP_TYPE_AUTO},
+                "NetworkSettings": {"IPAddress": "1.1.1.1"},
+                "Names": "old-one",
+                "Id": "0",
+            }
+        ],
+        [
+            {
+                "Labels": {DockerConstants.DOCKER_LG_CLEANUP_LABEL: DockerConstants.DOCKER_LG_CLEANUP_TYPE_AUTO},
+                "NetworkSettings": {"IPAddress": "2.1.1.1"},
+                "Names": "actual-one",
+                "Id": "1",
+            }
+        ],
     ]
     docker_client.images.get.side_effect = docker.errors.ImageNotFound(
-        "Image not found", response=None, explanation="")
+        "Image not found", response=None, explanation=""
+    )
 
     # Mock actions on the imported "socket" python module
-    socket_create_connection = mocker.patch('socket.create_connection')
+    socket_create_connection = mocker.patch("socket.create_connection")
     sock = mocker.MagicMock()
     # First two negative connection setup attempts are used at initial
     # resource setup during strategy.transition("shell"); these simulate
@@ -247,9 +254,10 @@ def test_docker_without_daemon(docker_env, mocker):
     # successful, return value is delivered when t.update_resources()
     # is called explicitly later on.
     socket_create_connection.side_effect = [
-        Exception('No connection on first call'),
-        Exception('No connection on second call'),
-        sock]
+        Exception("No connection on first call"),
+        Exception("No connection on second call"),
+        sock,
+    ]
 
     # get_target() - which calls make_target() - creates resources/drivers
     # from .yaml configured environment. Creation provokes binding
@@ -277,7 +285,7 @@ def test_docker_without_daemon(docker_env, mocker):
     # Assert what mock calls transitioning to "shell" must have caused
     #
     # DockerDriver::on_activate():
-    image_uri = t.get_driver('DockerDriver').image_uri
+    image_uri = t.get_driver("DockerDriver").image_uri
     docker_client.images.get.assert_called_once_with(image_uri)
     docker_client.images.pull.assert_called_once_with(image_uri)
 
@@ -306,6 +314,7 @@ def test_docker_without_daemon(docker_env, mocker):
     # Bonus: Test what happens if taking a forbidden strategy transition:
     # "shell" -> "unknown".
     from labgrid.strategy import StrategyError
+
     with pytest.raises(StrategyError):
         strategy.transition("unknown")
 
@@ -324,4 +333,5 @@ def test_docker_without_daemon(docker_env, mocker):
     # Return to "gone" state - to also use that part of the DockerDriver code.
     strategy.transition("gone")
     from labgrid.strategy.dockerstrategy import Status
+
     assert strategy.status == Status.gone

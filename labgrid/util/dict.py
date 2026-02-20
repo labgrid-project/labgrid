@@ -1,6 +1,7 @@
 """
 This module contains helper functions for working with dictionaries.
 """
+
 import warnings
 
 import attr
@@ -26,7 +27,8 @@ def flat_dict(d):
             if isinstance(value, dict):
                 yield from flatten(value, prefix=key)
             else:
-                yield '.'.join(key), value
+                yield ".".join(key), value
+
     return dict(flatten(d))
 
 
@@ -40,11 +42,9 @@ def filter_dict(d, cls, warn=False):
     if warn:
         remove = set(d) - fields
         for k in sorted(remove):
-            warnings.warn(
-                f"unsupported attribute '{k}' with value '{d[k]}' for class '{cls.__name__}'",
-                stacklevel=2
-            )
+            warnings.warn(f"unsupported attribute '{k}' with value '{d[k]}' for class '{cls.__name__}'", stacklevel=2)
     return {k: v for k, v in d.items() if k in fields}
+
 
 def find_dict(d, key):
     """

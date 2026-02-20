@@ -1,4 +1,4 @@
-""" tested with Siglent SPD3303X-E, and should be compatible with all SPD3000X series modules"""
+"""tested with Siglent SPD3303X-E, and should be compatible with all SPD3000X series modules"""
 
 import warnings
 

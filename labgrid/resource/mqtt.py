@@ -6,6 +6,7 @@ import attr
 from .common import ManagedResource, ResourceManager
 from ..factory import target_factory
 
+
 @attr.s(eq=False)
 class MQTTManager(ResourceManager):
     _available = attr.ib(default=attr.Factory(set), validator=attr.validators.instance_of(set))
@@ -17,6 +18,7 @@ class MQTTManager(ResourceManager):
 
     def _create_mqtt_connection(self, host):
         import paho.mqtt.client as mqtt
+
         client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         client.connect(host)
         client.on_message = self._on_message
@@ -30,7 +32,7 @@ class MQTTManager(ResourceManager):
         self._clients[host].subscribe(resource.avail_topic)
 
     def _on_message(self, client, userdata, msg):
-        payload = msg.payload.decode('utf-8')
+        payload = msg.payload.decode("utf-8")
         topic = msg.topic
         if payload.lower() == "online":
             with self._avail_lock:
@@ -40,7 +42,7 @@ class MQTTManager(ResourceManager):
                 self._available.discard(topic)
 
     def poll(self):
-        if monotonic()-self._last < 2:
+        if monotonic() - self._last < 2:
             return  # ratelimit requests
         self._last = monotonic()
         with self._avail_lock:
@@ -64,7 +66,5 @@ class MQTTResource(ManagedResource):
 @target_factory.reg_resource
 @attr.s(eq=False)
 class TasmotaPowerPort(MQTTResource):
-    power_topic = attr.ib(default=None,
-                         validator=attr.validators.instance_of(str))
-    status_topic = attr.ib(default=None,
-                         validator=attr.validators.instance_of(str))
+    power_topic = attr.ib(default=None, validator=attr.validators.instance_of(str))
+    status_topic = attr.ib(default=None, validator=attr.validators.instance_of(str))

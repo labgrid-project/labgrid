@@ -112,21 +112,21 @@ def main():
                         print(f"Adding match '{match}' for place {name}")
 
                     if not args.dry_run:
-                        request = labgrid_coordinator_pb2.AddPlaceMatchRequest(placename=name, pattern=match, rename=rename)
+                        request = labgrid_coordinator_pb2.AddPlaceMatchRequest(
+                            placename=name, pattern=match, rename=rename
+                        )
                         await session.stub.AddPlaceMatch(request)
                         await session.sync_with_coordinator()
                     changed = True
 
-            tags = { str(k): str(v) for k, v in config["places"][name].get("tags", {}).items() }
+            tags = {str(k): str(v) for k, v in config["places"][name].get("tags", {}).items()}
 
             if place_tags != tags:
                 print(
                     "Setting tags for place %s to %s"
                     % (
                         name,
-                        ", ".join(
-                            "%s=%s" % (key, value) for (key, value) in tags.items()
-                        ),
+                        ", ".join("%s=%s" % (key, value) for (key, value) in tags.items()),
                     )
                 )
 
@@ -146,10 +146,7 @@ def main():
         config = {"places": {}}
         for name, place in session.places.items():
             config["places"][name] = {
-                "matches": [
-                    {repr(m): m.rename} if m.rename else repr(m)
-                    for m in place.matches
-                    ],
+                "matches": [{repr(m): m.rename} if m.rename else repr(m) for m in place.matches],
                 "tags": {k: v for k, v in place.tags.items()},
             }
 
@@ -191,9 +188,7 @@ def main():
     subparsers = parser.add_subparsers()
     subparsers.required = True
 
-    sync_parser = subparsers.add_parser(
-        "sync", help="Synchronize coordinator places with file"
-    )
+    sync_parser = subparsers.add_parser("sync", help="Synchronize coordinator places with file")
     sync_parser.add_argument(
         "places",
         metavar="FILE",

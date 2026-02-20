@@ -36,7 +36,7 @@ Tests can now be run via:
 
 .. code-block:: bash
 
-   python -m pytest --lg-env <config>
+   python -m pytest
 
 Writing a Driver
 ----------------

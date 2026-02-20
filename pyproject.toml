@@ -224,6 +224,7 @@ include = [
   "labgrid/driver/power/gude8031.py",
   "labgrid/driver/power/pe6216.py",
   "labgrid/driver/power/shelly_gen2.py",
+  "labgrid/driver/power/tapo.py",
   "labgrid/driver/rawnetworkinterfacedriver.py",
   "labgrid/protocol/**/*.py",
   "labgrid/remote/**/*.py",

@@ -2,6 +2,7 @@ import requests
 
 PORT = 80
 
+
 def power_set(host, port, index, value):
     index = int(index)
     assert 1 <= index <= 8
@@ -29,5 +30,5 @@ def power_get(host, port, index):
     )
     r.raise_for_status()
 
-    state = r.text.split(',')[9 + index]
+    state = r.text.split(",")[9 + index]
     return bool(int(state, 2))

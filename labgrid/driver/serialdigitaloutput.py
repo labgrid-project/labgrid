@@ -6,6 +6,7 @@ from ..step import step
 from .common import Driver
 from . import SerialDriver
 
+
 @target_factory.reg_driver
 @attr.s(eq=False)
 class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
@@ -22,7 +23,7 @@ class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
     Usable signals are DTR and RTS.
     """
 
-    bindings = {'serial': SerialDriver}
+    bindings = {"serial": SerialDriver}
     signal = attr.ib(validator=attr.validators.instance_of(str))
     invert = attr.ib(validator=attr.validators.instance_of(bool))
 
@@ -31,7 +32,7 @@ class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
 
         # basic input format checking
         self.signal = self.signal.lower()
-        if self.signal not in  ["dtr", "rts"]:
+        if self.signal not in ["dtr", "rts"]:
             raise Exception("Unknown index for serial-power-driver")
 
         self._p = self.serial.serial
@@ -40,7 +41,7 @@ class SerialPortDigitalOutputDriver(Driver, DigitalOutputProtocol):
     @step()
     def get(self):
         if self.signal == "dtr":
-            val =  self._p.dtr
+            val = self._p.dtr
         elif self.signal == "rts":
             val = self._p.rts
         else:

@@ -14,7 +14,7 @@ from .exception import ExecutionError
 @target_factory.reg_driver
 @attr.s(eq=False)
 class HttpDigitalOutputDriver(Driver, DigitalOutputProtocol):
-    bindings = { "http": "HttpDigitalOutput" }
+    bindings = {"http": "HttpDigitalOutput"}
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -66,6 +66,4 @@ class HttpDigitalOutputDriver(Driver, DigitalOutputProtocol):
         elif res.text == self.http.body_deasserted:
             return False
 
-        raise ExecutionError(
-            f'response does not match asserted or deasserted state: "{res.text}"'
-        )
+        raise ExecutionError(f'response does not match asserted or deasserted state: "{res.text}"')

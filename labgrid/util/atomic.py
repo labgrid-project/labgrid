@@ -1,13 +1,11 @@
 import os
 import tempfile
 
+
 def atomic_replace(filename, data):
     f = None
     try:
-        with tempfile.NamedTemporaryFile(
-                mode='wb',
-                dir=os.path.dirname(filename),
-                delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="wb", dir=os.path.dirname(filename), delete=False) as f:
             f.write(data)
             f.flush()
             os.fsync(f.fileno())

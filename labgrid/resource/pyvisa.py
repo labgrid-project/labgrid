@@ -14,6 +14,7 @@ class PyVISADevice(Resource):
         url (str): device identifier on selected resource, e.g. <ip> for TCPIP resource
         backend (str, default=''): Visa library backend, e.g. '@sim' for pyvisa-sim backend
     """
+
     type = attr.ib(validator=attr.validators.instance_of(str))
     url = attr.ib(validator=attr.validators.instance_of(str))
-    backend = attr.ib(default='', validator=attr.validators.instance_of(str))
+    backend = attr.ib(default="", validator=attr.validators.instance_of(str))

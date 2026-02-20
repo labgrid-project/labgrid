@@ -20,21 +20,18 @@ class QuartusHPSDriver(Driver):
         "interface": {"AlteraUSBBlaster", "NetworkAlteraUSBBlaster"},
     }
 
-    image = attr.ib(
-        default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(str))
-    )
+    image = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
         # FIXME make sure we always have an environment or config
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('quartus_hps')
-            self.jtag_tool = self.target.env.config.get_tool('jtagconfig')
+            self.tool = self.target.env.config.get_tool("quartus_hps")
+            self.jtag_tool = self.target.env.config.get_tool("jtagconfig")
         else:
-            self.tool = 'quartus_hps'
-            self.jtag_tool = 'jtagconfig'
+            self.tool = "quartus_hps"
+            self.jtag_tool = "jtagconfig"
 
     def _get_cable_number(self):
         """
@@ -45,18 +42,13 @@ class QuartusHPSDriver(Driver):
         timeout = Timeout(10.0)
         while not timeout.expired:
             cmd = self.interface.command_prefix + [self.jtag_tool]
-            jtagconfig_process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE
-            )
+            jtagconfig_process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
             stdout, _ = jtagconfig_process.communicate()
 
             regex = rf".*(\d+)\) .* \[{re.escape(self.interface.path)}]\n(.*)\n"
             jtag_mapping = re.search(regex, stdout.decode("utf-8"), re.MULTILINE)
             if jtag_mapping is None:
-                raise ExecutionError(
-                    f"Could not get cable number for USB path {self.interface.path}"
-                )
+                raise ExecutionError(f"Could not get cable number for USB path {self.interface.path}")
 
             cable_number, first_chain = jtag_mapping.groups()
             try:
@@ -72,7 +64,7 @@ class QuartusHPSDriver(Driver):
         raise ExecutionError("Timeout while waiting for intact JTAG chain")
 
     @Driver.check_active
-    @step(args=['filename', 'address'])
+    @step(args=["filename", "address"])
     def flash(self, filename=None, address=0x0):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
@@ -91,7 +83,7 @@ class QuartusHPSDriver(Driver):
         processwrapper.check_output(cmd)
 
     @Driver.check_active
-    @step(args=['address', 'size'])
+    @step(args=["address", "size"])
     def erase(self, address=None, size=None):
 
         cable_number = self._get_cable_number()

@@ -3,6 +3,7 @@ import requests
 
 PORT = 80
 
+
 def power_set(host, port, index, value):
     index = int(index)
     assert 1 <= index <= 4
@@ -11,9 +12,7 @@ def power_set(host, port, index, value):
         portstring = {1: "1uuu", 2: "u1uu", 3: "uu1u", 4: "uuu1"}
     else:
         portstring = {1: "0uuu", 2: "u0uu", 3: "uu0u", 4: "uuu0"}
-    r = requests.get(
-        f"http://{host}:{port}/tgi/control.tgi?l=p:admin:admin&p={portstring[index]}"
-    )
+    r = requests.get(f"http://{host}:{port}/tgi/control.tgi?l=p:admin:admin&p={portstring[index]}")
     r.raise_for_status()
 
 

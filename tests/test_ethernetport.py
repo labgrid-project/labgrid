@@ -9,7 +9,7 @@ def test_instance(target):
     asyncio.set_event_loop(loop)
 
     try:
-        s = SNMPEthernetPort(target, 'port-1', switch='dummy-switch', interface='1')
-        assert (isinstance(s, SNMPEthernetPort))
+        s = SNMPEthernetPort(target, "port-1", switch="dummy-switch", interface="1")
+        assert isinstance(s, SNMPEthernetPort)
     finally:
         loop.close()

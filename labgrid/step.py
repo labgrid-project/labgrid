@@ -44,6 +44,7 @@ class Steps:
             except Exception as e:  # pylint: disable=broad-except
                 warnings.warn(f"unhandled exception during event notification: {e}")
 
+
 steps = Steps()
 
 
@@ -60,7 +61,7 @@ class StepEvent:
         if self.resource:
             result.append(self.resource.__class__.__name__)
         data = self.data.copy()
-        duration = data.pop('duration', 0.0)
+        duration = data.pop("duration", 0.0)
         pairs = [f"{k}={repr(v)}" for k, v in data.items() if v is not None]
         if duration >= 0.001:
             pairs.append(f"duration={duration:.3f}")
@@ -112,9 +113,7 @@ class Step:
         self._skipped = False
 
     def __repr__(self):
-        result = [
-            f"Step(title={self.title!r}, level={self.level}, status={self.status}"
-        ]
+        result = [f"Step(title={self.title!r}, level={self.level}, status={self.status}"]
         if self.args is not None:
             result.append(f", args={self.args}")
         if self.exception is not None:
@@ -139,19 +138,19 @@ class Step:
     @property
     def status(self):
         if self._start_ts is None:
-            return 'new'
+            return "new"
         if self._stop_ts is None:
-            return 'active'
+            return "active"
 
-        return 'done'
+        return "done"
 
     @property
     def is_active(self):
-        return self.status == 'active'
+        return self.status == "active"
 
     @property
     def is_done(self):
-        return self.status == 'done'
+        return self.status == "done"
 
     def _notify(self, event: StepEvent):
         assert event.step is self
@@ -161,27 +160,32 @@ class Step:
         assert self._start_ts is None
         self._start_ts = monotonic()
         steps.push(self)
-        self._notify(StepEvent(self, {
-            'state': 'start',
-            'args': self.args,
-        }))
+        self._notify(
+            StepEvent(
+                self,
+                {
+                    "state": "start",
+                    "args": self.args,
+                },
+            )
+        )
 
     def skip(self, reason):
         assert self._start_ts is not None
-        self._notify(StepEvent(self, {'skip': reason}))
+        self._notify(StepEvent(self, {"skip": reason}))
 
     def stop(self):
         assert self._start_ts is not None
         assert self._stop_ts is None
         self._stop_ts = monotonic()
-        event = StepEvent(self, {'state': 'stop'})
+        event = StepEvent(self, {"state": "stop"})
         if self.exception:
-            event['exception'] = self.exception
+            event["exception"] = self.exception
         else:
-            event['result'] = self.result
+            event["result"] = self.result
         duration = self.duration
         if duration:
-            event['duration'] = duration
+            event["duration"] = duration
         self._notify(event)
         steps.pop(self)
 
@@ -197,17 +201,18 @@ def step(*, title=None, args=[], result=False, tag=None):
         title = title or func.__name__
 
         signature = inspect.signature(func)
+
         @wraps(func)
         def wrapper(*_args, **_kwargs):
             bound = signature.bind_partial(*_args, **_kwargs)
             bound.apply_defaults()
-            source = func.__self__ if inspect.ismethod(func) else bound.arguments.get('self')
+            source = func.__self__ if inspect.ismethod(func) else bound.arguments.get("self")
             pathname = func.__code__.co_filename
-            sourceinfo = (pathname,  os.path.basename(pathname), func.__code__.co_firstlineno)
+            sourceinfo = (pathname, os.path.basename(pathname), func.__code__.co_firstlineno)
             step = steps.get_new(title, tag, source, sourceinfo)  # pylint: disable=redefined-outer-name
             # optionally pass the step object
-            if 'step' in signature.parameters:
-                _kwargs['step'] = step
+            if "step" in signature.parameters:
+                _kwargs["step"] = step
             if args:
                 step.args = {k: bound.arguments[k] for k in args}
             step.start()

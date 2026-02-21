@@ -2405,16 +2405,6 @@ def main():
             exit(1)
 
     logger = logging.getLogger()
-    if args.log_output:
-        # Clear all existing handlers from the logger
-        logger.handlers = []
-
-        # Create and add the new file handler
-        file_handler = logging.FileHandler(args.log_output)
-        file_formatter = logging.Formatter(
-            '%(asctime)s %(levelname)s:%(name)s:%(message)s')
-        file_handler.setFormatter(file_formatter)
-        logger.addHandler(file_handler)
 
     if args.verbose:
         logger.setLevel(logging.INFO)
@@ -2458,6 +2448,50 @@ def main():
                 print("No RemotePlace found in configuration file", file=sys.stderr)
                 exit(1)
             print(f"Selected role {role} and place {args.place} from configuration file")
+
+    # Auto-log when LG_LOG_DIR is set and no explicit -l was given
+    if not args.log_output:
+        log_dir = os.environ.get('LG_LOG_DIR')
+        if log_dir:
+            now = datetime.now()
+            day_dir = os.path.join(log_dir, now.strftime('%Y-%m-%d'))
+            # Use world-writable + sticky bit so multiple users
+            # (e.g. sglass and gitlab-runner) can share the log dir.
+            # Clear umask temporarily so makedirs() honours the mode.
+            old_umask = os.umask(0)
+            try:
+                os.makedirs(day_dir, mode=0o1777, exist_ok=True)
+            finally:
+                os.umask(old_umask)
+            role_name = role or args.place or 'unknown'
+            timestamp = now.strftime('%H%M%S')
+            cmd = args.command or 'nocmd'
+            job_id = os.environ.get('CI_JOB_ID')
+            suffix = f'-{job_id}' if job_id else ''
+            args.log_output = os.path.join(
+                day_dir, f'{role_name}-{timestamp}-{cmd}{suffix}.log')
+            # Auto-enable verbose logging for auto-logs
+            if not args.verbose:
+                args.verbose = 2  # CONSOLE level — includes serial traffic
+
+    if args.log_output:
+        # Clear all existing handlers from the logger
+        logger.handlers = []
+
+        # Create and add the new file handler
+        file_handler = logging.FileHandler(args.log_output)
+        file_formatter = logging.Formatter(
+            '%(asctime)s %(levelname)s:%(name)s:%(message)s')
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+
+    # Re-apply verbosity after potential auto-log adjustment
+    if args.verbose:
+        logger.setLevel(logging.INFO)
+    if args.verbose > 1:
+        logger.setLevel(logging.CONSOLE)
+    if args.debug or args.verbose > 2:
+        logger.setLevel(logging.DEBUG)
 
     for arg in args.variable or []:
         name, value = arg

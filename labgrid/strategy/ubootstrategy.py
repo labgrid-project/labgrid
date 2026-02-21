@@ -140,6 +140,13 @@ class UBootStrategy(Strategy):
             self.reset.set_reset_enable(True, mode='warm')
             time.sleep(1)
 
+        # Activate the console before releasing reset so we don't
+        # miss early output. When there is no separate reset driver,
+        # asserting reset powers off the board which can disrupt the
+        # serial connection, so deactivate and reactivate to get a
+        # clean FD.
+        if self.power == self.reset:
+            self.target.deactivate(self.console)
         self.target.activate(self.console)
 
         # Release reset

@@ -71,6 +71,8 @@ class UBootStrategy(Strategy):
                                     validator=attr.validators.instance_of(bool))
     power_on_button = attr.ib(default=False,
                               validator=attr.validators.instance_of(bool))
+    power_off_delay = attr.ib(default=0.0,
+                              validator=attr.validators.instance_of(float))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -126,6 +128,9 @@ class UBootStrategy(Strategy):
         if (not isinstance(self.reset, ServoResetDriver) and
                 not self.power_on_before_reset):
             self.reset.set_reset_enable(True, mode='warm')
+
+        if self.power_off_delay:
+            time.sleep(self.power_off_delay)
 
         if self.power != self.reset:
             self.power.on()

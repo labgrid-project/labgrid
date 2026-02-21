@@ -48,6 +48,7 @@ from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout
 from ..util.proxy import proxymanager
+from ..util.rcfile import apply_rcfile
 from ..util.helper import processwrapper
 from ..driver import Mode, ExecutionError
 from ..logging import basicConfig, StepLogger
@@ -2242,6 +2243,8 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
 def main():
     import inspect
+
+    apply_rcfile()
 
     basicConfig(
         level=logging.WARNING,

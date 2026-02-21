@@ -1,6 +1,7 @@
 import os
 import copy
 import logging
+from datetime import datetime
 import pytest
 
 from .. import Environment
@@ -68,15 +69,37 @@ def configure_pytest_logging(config, plugin):
 def pytest_configure(config):
     apply_rcfile()
 
+    # Auto-log when LG_LOG_DIR is set and no explicit --lg_log-output was given
+    if not config.option.lg_log_output:
+        log_dir = os.environ.get('LG_LOG_DIR')
+        if log_dir:
+            now = datetime.now()
+            day_dir = os.path.join(log_dir, now.strftime('%Y-%m-%d'))
+            # Use world-writable + sticky bit so multiple users
+            # (e.g. sglass and gitlab-runner) can share the log dir.
+            # Clear umask temporarily so makedirs() honours the mode.
+            old_umask = os.umask(0)
+            try:
+                os.makedirs(day_dir, mode=0o1777, exist_ok=True)
+            finally:
+                os.umask(old_umask)
+            role_name = config.option.lg_target or 'unknown'
+            timestamp = now.strftime('%H%M%S')
+            job_id = os.environ.get('CI_JOB_ID')
+            suffix = f'-{job_id}' if job_id else ''
+            config.option.lg_log_output = os.path.join(
+                day_dir, f'{role_name}-{timestamp}-pytest{suffix}.log')
+
     if config.option.lg_log_output:
         logger = logging.getLogger()
 
         # Create and add the new file handler
         file_handler = logging.FileHandler(config.option.lg_log_output)
-        file_formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+        file_formatter = logging.Formatter(
+            '%(asctime)s %(levelname)s:%(name)s:%(message)s')
         file_handler.setFormatter(file_formatter)
         logger.addHandler(file_handler)
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.CONSOLE)
 
     StepLogger.start()
     config.add_cleanup(StepLogger.stop)

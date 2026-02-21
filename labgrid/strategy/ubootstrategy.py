@@ -6,7 +6,9 @@ import time
 import attr
 from pexpect import TIMEOUT
 
+from ..exceptions import NoResourceFoundError
 from ..factory import target_factory
+from ..resource import Resource
 from .common import Strategy, StrategyError, never_retry
 from ..var_dict import get_var
 from ..driver.servodriver import ServoResetDriver
@@ -143,16 +145,43 @@ class UBootStrategy(Strategy):
         # Release reset
         self.reset.set_reset_enable(False, mode='warm')
 
-    def _reset_for_send(self):
+    def _reset_for_send(self, writer):
         """Reset / power on a non-flash-based board ready for use
 
         This case handles boards which cannot be booted from internal flash, so
-        U-Boot must be sent over USB
-        """
-        self._prepare_for_send()
+        U-Boot must be sent over USB. After releasing reset, wait for the USB
+        driver's resources to become available. If they do not appear within
+        2s, retry the full reset sequence once with a longer hold time.
 
-        # Give the board time to notice
-        time.sleep(.5)
+        Args:
+            writer: UBootWriterDriver used to determine which USB driver
+                resources to wait for after releasing reset
+        """
+        name = writer.get_send_driver_name()
+        resources = []
+        if name:
+            drv = self.target.get_driver(
+                name, activate=False, allow_missing=True)
+            if drv:
+                resources = [r for r in drv.suppliers
+                             if isinstance(r, Resource)]
+
+        for attempt in range(2):
+            self._prepare_for_send()
+
+            # Wait for the USB driver's resources to become available
+            if resources:
+                try:
+                    self.target.await_resources(resources, timeout=30.0)
+                except NoResourceFoundError:
+                    if attempt == 0:
+                        print('USB resource not available; retrying'
+                              ' reset with longer delays')
+                        continue
+                    raise
+
+            break
+
         if self.recovery:
             self.recovery.set_enable(False)
 
@@ -173,7 +202,7 @@ class UBootStrategy(Strategy):
             self.target.activate(self.power)
             self.target.activate(self.reset)
 
-            self._reset_for_send()
+            self._reset_for_send(writer)
 
             writer.send(image_dirs)
         else:

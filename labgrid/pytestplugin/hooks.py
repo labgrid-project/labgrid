@@ -8,6 +8,7 @@ from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
 from ..logging import StepFormatter, StepLogger
 from ..exceptions import NoStrategyFoundError
+from ..util.rcfile import apply_rcfile
 
 LABGRID_ENV_KEY = pytest.StashKey[Environment]()
 
@@ -64,6 +65,9 @@ def configure_pytest_logging(config, plugin):
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
+    apply_rcfile()
+
+
     StepLogger.start()
     config.add_cleanup(StepLogger.stop)
 

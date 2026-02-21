@@ -111,14 +111,16 @@ class UBootStrategy(Strategy):
             time.sleep(.2)
             self.button.set(False)
 
-    def _reset_for_send(self):
-        """Reset / power on a non-flash-based board ready for use
+    def _prepare_for_send(self):
+        """Reset / power-cycle the board ready for USB sending
 
-        This case handles boards which cannot be booted from internal flash, so
-        U-Boot must be sent over USB
+        This holds the board in reset, powers it on, enables recovery mode
+        if needed, then releases reset. The caller is responsible for waiting
+        until the USB device has enumerated and for disabling recovery.
         """
-        # Hold the board in reset, except for Servo since this prevents the
-        # USB-download mode from working (at least with snow)
+        # Hold the board in reset, except for Servo since this
+        # prevents the USB-download mode from working (at least
+        # with snow)
         if (not isinstance(self.reset, ServoResetDriver) and
                 not self.power_on_before_reset):
             self.reset.set_reset_enable(True, mode='warm')
@@ -140,6 +142,14 @@ class UBootStrategy(Strategy):
 
         # Release reset
         self.reset.set_reset_enable(False, mode='warm')
+
+    def _reset_for_send(self):
+        """Reset / power on a non-flash-based board ready for use
+
+        This case handles boards which cannot be booted from internal flash, so
+        U-Boot must be sent over USB
+        """
+        self._prepare_for_send()
 
         # Give the board time to notice
         time.sleep(.5)

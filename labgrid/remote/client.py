@@ -2394,7 +2394,8 @@ def main():
 
         # Create and add the new file handler
         file_handler = logging.FileHandler(args.log_output)
-        file_formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+        file_formatter = logging.Formatter(
+            '%(asctime)s %(levelname)s:%(name)s:%(message)s')
         file_handler.setFormatter(file_formatter)
         logger.addHandler(file_handler)
 

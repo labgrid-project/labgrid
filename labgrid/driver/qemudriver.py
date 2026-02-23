@@ -99,6 +99,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         super().__attrs_post_init__()
         self.status = 0
         self.txdelay = None
+        self.txchunk = None
         self._child = None
         self._tempdir = None
         self._socket = None

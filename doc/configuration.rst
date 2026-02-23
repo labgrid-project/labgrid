@@ -2676,6 +2676,7 @@ Implements:
          RKUSBDriver:
            image: 'mybootloaderkey'
            usb_loader: 'myloaderkey'
+           offset: 0x100
 
    images:
      mybootloaderkey: 'path/to/mybootloader.img'
@@ -2686,6 +2687,8 @@ Arguments:
     of an image to bootstrap onto the target
   - usb_loader (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of a first-stage bootloader image to write
+  - offset (int): optional, offset (in multiples of 512 bytes) at which the image passed as argument
+    should be written. If missing, 0x40 is assumed
 
 UUUDriver
 ~~~~~~~~~

@@ -1360,6 +1360,7 @@ class ClientSession:
     def video(self):
         place = self.get_acquired_place()
         quality = self.args.quality
+        fps = self.args.fps
         controls = self.args.controls
         target = self._get_target(place)
         name = self.args.name
@@ -1389,7 +1390,7 @@ class ClientSession:
                 mark = "*" if default == name else " "
                 print(f"{mark} {name:<10s} {caps:s}")
         else:
-            res = drv.stream(quality, controls=controls)
+            res = drv.stream(quality, controls=controls, fps=fps)
             if res:
                 raise InteractiveCommandError("gst-launch-1.0 error", res)
 
@@ -2052,6 +2053,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
     subparser = subparsers.add_parser("video", help="start a video stream")
     subparser.add_argument("-q", "--quality", type=str, help="select a video quality (use 'list' to show options)")
+    subparser.add_argument("-f", "--fps", action="store_true", help="Overlay FPS statistics")
     subparser.add_argument(
         "-c", "--controls", type=str, help="configure v4l controls (such as 'focus_auto=0,focus_absolute=40')"
     )

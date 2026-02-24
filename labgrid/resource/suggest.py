@@ -22,6 +22,7 @@ from .udev import (
     USBAudioInput,
     LXAUSBMux,
     HIDRelay,
+    DenkoviRelay,
     USBDebugger,
     USBPowerPort,
     MatchedSysfsGPIO
@@ -57,6 +58,7 @@ class Suggester:
         self.resources.append(USBAudioInput(**args))
         self.resources.append(LXAUSBMux(**args))
         self.resources.append(HIDRelay(**args))
+        self.resources.append(DenkoviRelay(**args))
         self.resources.append(USBDebugger(**args))
         self.resources.append(USBPowerPort(**args, index=0))
         self.resources.append(MatchedSysfsGPIO(**args, pin=0))

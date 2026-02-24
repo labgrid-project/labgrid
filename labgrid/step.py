@@ -1,5 +1,6 @@
 import inspect
 import os
+import threading
 import warnings
 from functools import wraps
 from time import monotonic
@@ -9,8 +10,14 @@ from time import monotonic
 # after some time
 class Steps:
     def __init__(self):
-        self._stack = []
+        self._local = threading.local()
         self._subscribers = []
+
+    @property
+    def _stack(self):
+        if not hasattr(self._local, 'stack'):
+            self._local.stack = []
+        return self._local.stack
 
     def get_current(self):
         return self._stack[-1] if self._stack else None

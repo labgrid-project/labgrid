@@ -38,7 +38,7 @@ class ModuleProxy:
 
 class AgentWrapper:
 
-    def __init__(self, host=None):
+    def __init__(self, host=None, pyvirtenv=None):
         self.agent = None
         self.loaded = {}
         self.logger = logging.getLogger(f"ResourceExport({host})")
@@ -59,8 +59,12 @@ class AgentWrapper:
                 ['rsync', '-e', ' '.join(ssh_opts), '-tq', agent,
                  f'{host}:{agent_remote}'],
             )
+            select_virtenv = []
+            if pyvirtenv is not None:
+                select_virtenv = f'source {pyvirtenv}/bin/activate &&'.split()
+            cmd = select_virtenv + ['python3', agent_remote]
             self.agent = subprocess.Popen(
-                ssh_opts + [host, '--', 'python3', agent_remote],
+                ssh_opts + [host, '--'] + cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 start_new_session=True,

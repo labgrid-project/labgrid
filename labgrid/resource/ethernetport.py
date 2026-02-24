@@ -6,29 +6,34 @@ import attr
 
 from ..factory import target_factory
 from .common import ManagedResource, ResourceManager
+from ..util.loop import ensure_event_loop
 
 @attr.s
 class SNMPSwitch:
     """SNMPSwitch describes a switch accessible over SNMP. This class
     implements functions to query ports and the forwarding database."""
     hostname = attr.ib(validator=attr.validators.instance_of(str))
+    loop = attr.ib()
 
     def __attrs_post_init__(self):
+        import pysnmp.hlapi.v3arch.asyncio as hlapi
+
         self.logger = logging.getLogger(f"{self}")
         self.ports = {}
         self.fdb = {}
         self.macs_by_port = {}
+        self.transport = self.loop.run_until_complete(hlapi.UdpTransportTarget.create((self.hostname, 161)))
         self._autodetect()
 
     def _autodetect(self):
-        from pysnmp import hlapi
+        import pysnmp.hlapi.v3arch.asyncio as hlapi
 
-        for (errorIndication, errorStatus, _, varBindTable) in hlapi.getCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.getCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
-                hlapi.UdpTransportTarget((self.hostname, 161)),
+                self.transport,
                 hlapi.ContextData(),
-                hlapi.ObjectType(hlapi.ObjectIdentity('SNMPv2-MIB', 'sysDescr', 0))):
+                hlapi.ObjectType(hlapi.ObjectIdentity('SNMPv2-MIB', 'sysDescr', 0)))):
             if errorIndication:
                 raise Exception(f"snmp error {errorIndication}")
             elif errorStatus:
@@ -51,7 +56,7 @@ class SNMPSwitch:
         Returns:
             Dict[Dict[]]: ports and their values
         """
-        from pysnmp import hlapi
+        import pysnmp.hlapi.v3arch.asyncio as hlapi
 
         variables = [
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifIndex')), 'index'),
@@ -64,14 +69,14 @@ class SNMPSwitch:
         ]
         ports = {}
 
-        for (errorIndication, errorStatus, _, varBindTable) in hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulkCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
-                hlapi.UdpTransportTarget((self.hostname, 161)),
+                self.transport,
                 hlapi.ContextData(),
                 0, 20,
                 *[x[0] for x in variables],
-                lexicographicMode=False):
+                lexicographicMode=False)):
             if errorIndication:
                 raise Exception(f"snmp error {errorIndication}")
             elif errorStatus:
@@ -93,18 +98,18 @@ class SNMPSwitch:
         Returns:
             Dict[List[str]]: ports and their values
         """
-        from pysnmp import hlapi
+        import pysnmp.hlapi.v3arch.asyncio as hlapi
 
         ports = {}
 
-        for (errorIndication, errorStatus, _, varBindTable) in hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulkCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
-                hlapi.UdpTransportTarget((self.hostname, 161)),
+                self.transport,
                 hlapi.ContextData(),
                 0, 50,
                 hlapi.ObjectType(hlapi.ObjectIdentity('BRIDGE-MIB', 'dot1dTpFdbPort')),
-                lexicographicMode=False):
+                lexicographicMode=False)):
             if errorIndication:
                 raise Exception(f"snmp error {errorIndication}")
             elif errorStatus:
@@ -126,18 +131,18 @@ class SNMPSwitch:
         Returns:
             Dict[List[str]]: ports and their values
         """
-        from pysnmp import hlapi
+        import pysnmp.hlapi.v3arch.asyncio as hlapi
 
         ports = {}
 
-        for (errorIndication, errorStatus, _, varBindTable) in hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulkCmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
-                hlapi.UdpTransportTarget((self.hostname, 161)),
+                self.transport,
                 hlapi.ContextData(),
                 0, 50,
                 hlapi.ObjectType(hlapi.ObjectIdentity('Q-BRIDGE-MIB', 'dot1qTpFdbPort')),
-                lexicographicMode=False):
+                lexicographicMode=False)):
             if errorIndication:
                 raise Exception(f"snmp error {errorIndication}")
             elif errorStatus:
@@ -223,6 +228,8 @@ class EthernetPortManager(ResourceManager):
 
             await asyncio.sleep(1.0)
 
+        self.loop = ensure_event_loop()
+
         async def poll_switches(self):
             current = set(resource.switch for resource in self.resources)
             removed = set(self.switches) - current
@@ -230,7 +237,7 @@ class EthernetPortManager(ResourceManager):
             for switch in removed:
                 del self.switches[switch]
             for switch in new:
-                self.switches[switch] = SNMPSwitch(switch)
+                self.switches[switch] = SNMPSwitch(switch, self.loop)
             for switch in current:
                 self.switches[switch].update()
                 await asyncio.sleep(1.0)
@@ -248,7 +255,6 @@ class EthernetPortManager(ResourceManager):
                     import traceback
                     traceback.print_exc(file=sys.stderr)
 
-        self.loop = asyncio.get_event_loop()
         self.poll_tasks.append(self.loop.create_task(poll(self, poll_neighbour)))
         self.poll_tasks.append(self.loop.create_task(poll(self, poll_switches)))
 
@@ -308,7 +314,6 @@ class EthernetPortManager(ResourceManager):
             if resource.extra != extra:
                 resource.extra = extra
                 self.logger.debug("new information for %s: %s", resource, extra)
-
 
 @target_factory.reg_resource
 @attr.s

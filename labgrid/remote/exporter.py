@@ -581,6 +581,7 @@ exports["USBSDWireDevice"] = USBSDWireExport
 exports["USBSDWire3Device"] = USBSDWire3Export
 exports["USBDebugger"] = USBGenericExport
 exports["USBHub"] = USBGenericRemoteExport
+exports["USBLauterbachDebugger"] = USBGenericRemoteExport
 exports["USBMassStorage"] = USBGenericExport
 exports["USBVideo"] = USBGenericExport
 exports["USBAudioInput"] = USBAudioInputExport

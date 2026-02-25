@@ -2353,6 +2353,72 @@ Implements:
 Arguments:
   - delay (float, default=2.0): delay in seconds between off and on
 
+ManualButtonDriver
+~~~~~~~~~~~~~~~~~~
+A :any:`ManualButtonDriver` requires the user to control the taget button.
+This is required if a strategy is used with the target, but no automatic
+button control is available.
+
+The driver's name will be displayed during interaction.
+
+Binds to:
+  - None
+
+Implements:
+  - :any:`ButtonProtocol`
+
+.. code-block:: yaml
+
+   ManualButtonDriver:
+     name: 'example-board'
+
+Arguments:
+  - None
+
+ExternalButtonDriver
+~~~~~~~~~~~~~~~~~~~~
+An :any:`ExternalButtonDriver` is used to control a target button via an
+external command.
+
+Binds to:
+  - None
+
+Implements:
+  - :any:`ButtonProtocol`
+
+.. code-block:: yaml
+
+   ExternalButtonDriver:
+     cmd_press: 'example_command press and hold'
+     cmd_release: 'example_command release'
+     cmd_press_for: 'example_command press_for'
+     delay: 2.0
+
+Arguments:
+  - cmd_press (str): command to press and hold the button on the board
+  - cmd_release (str): command to release the button on the board
+  - cmd_press_for (str): command to press, pause, and release the button on the board
+  - delay (float, default=1.0): delay in seconds when calling press_for
+
+DigitalOutputButtonDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`DigitalOutputButtonDriver` is used to control a target button via a
+DigitalOutputDriver
+
+Binds to:
+  - :any:`DigitalOutputProtocol`
+
+Implements:
+  - :any:`ButtonProtocol`
+
+.. code-block:: yaml
+
+   DigitalOutputButtonDriver:
+     delay: 2.0
+
+Arguments:
+  - delay (float, default=1.0): delay in seconds when calling press_for
+
 GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
 The :any:`GpioDigitalOutputDriver` writes a digital signal to a GPIO line.
@@ -2373,10 +2439,11 @@ Implements:
 
 .. code-block:: yaml
 
-   GpioDigitalOutputDriver: {}
+   GpioDigitalOutputDriver:
+     delay: 2.0
 
 Arguments:
-  - None
+  - delay (float, default=1.0): delay in seconds between off and on for a power cycle or between states for button press_for
 
 SerialPortDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

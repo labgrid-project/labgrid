@@ -294,6 +294,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.pe6216
         import labgrid.driver.power.rest
         import labgrid.driver.power.sentry
+        import labgrid.driver.power.sentry_sequential
         import labgrid.driver.power.eg_pms2_network
         import labgrid.driver.power.shelly_gen1
         import labgrid.driver.power.ubus
@@ -314,6 +315,137 @@ class TestNetworkPowerDriver:
     def test_import_backend_poe_mib(self):
         pytest.importorskip("pysnmp")
         import labgrid.driver.power.poe_mib
+
+
+class TestSentrySequentialBackend:
+    def test_power_get_on_value_3(self, mocker):
+        from labgrid.driver.power import sentry_sequential
+
+        mock_output = mocker.patch(
+            'labgrid.driver.power.sentry_sequential.processwrapper.check_output'
+        )
+        mock_output.return_value = b'.1.3.6.1.4.1.1718.3.2.3.1.10.1.1.5 3'
+
+        result = sentry_sequential.power_get('host', None, 5)
+        assert result is True
+
+    def test_power_get_on_value_5(self, mocker):
+        from labgrid.driver.power import sentry_sequential
+
+        mock_output = mocker.patch(
+            'labgrid.driver.power.sentry_sequential.processwrapper.check_output'
+        )
+        mock_output.return_value = b'.1.3.6.1.4.1.1718.3.2.3.1.10.1.1.5 5'
+
+        result = sentry_sequential.power_get('host', None, 5)
+        assert result is True
+
+    def test_power_get_off(self, mocker):
+        from labgrid.driver.power import sentry_sequential
+
+        mock_output = mocker.patch(
+            'labgrid.driver.power.sentry_sequential.processwrapper.check_output'
+        )
+        mock_output.return_value = b'.1.3.6.1.4.1.1718.3.2.3.1.10.1.1.5 4'
+
+        result = sentry_sequential.power_get('host', None, 5)
+        assert result is False
+
+    def test_power_set_on(self, mocker):
+        from labgrid.driver.power import sentry_sequential
+
+        mock_output = mocker.patch(
+            'labgrid.driver.power.sentry_sequential.processwrapper.check_output'
+        )
+
+        sentry_sequential.power_set('host', None, 5, True)
+
+        mock_output.assert_called_once()
+        call_args = mock_output.call_args[0][0]
+        assert 'int' in call_args
+        assert '1' in call_args
+
+    def test_power_set_off(self, mocker):
+        from labgrid.driver.power import sentry_sequential
+
+        mock_output = mocker.patch(
+            'labgrid.driver.power.sentry_sequential.processwrapper.check_output'
+        )
+
+        sentry_sequential.power_set('host', None, 5, False)
+
+        call_args = mock_output.call_args[0][0]
+        assert 'int' in call_args
+        assert '2' in call_args
+
+    def test_power_set_index_bounds(self):
+        from labgrid.driver.power import sentry_sequential
+
+        with pytest.raises(AssertionError):
+            sentry_sequential.power_set('host', None, 0, True)
+
+        with pytest.raises(AssertionError):
+            sentry_sequential.power_set('host', None, 17, True)
+
+    def test_power_get_index_bounds(self):
+        from labgrid.driver.power import sentry_sequential
+
+        with pytest.raises(AssertionError):
+            sentry_sequential.power_get('host', None, 0)
+
+        with pytest.raises(AssertionError):
+            sentry_sequential.power_get('host', None, 17)
+
+    def test_power_set_port_must_be_none(self):
+        from labgrid.driver.power import sentry_sequential
+
+        with pytest.raises(AssertionError):
+            sentry_sequential.power_set('host', 'port', 5, True)
+
+    def test_power_get_port_must_be_none(self):
+        from labgrid.driver.power import sentry_sequential
+
+        with pytest.raises(AssertionError):
+            sentry_sequential.power_get('host', 'port', 5)
+
+    def test_power_set_error_handling(self, mocker):
+        from labgrid.driver.power import sentry_sequential
+        from labgrid.driver.exception import ExecutionError
+
+        mock_output = mocker.patch(
+            'labgrid.driver.power.sentry_sequential.processwrapper.check_output'
+        )
+        mock_output.side_effect = Exception("SNMP failed")
+
+        with pytest.raises(ExecutionError):
+            sentry_sequential.power_set('host', None, 5, True)
+
+    def test_power_get_oid_mapping(self, mocker):
+        from labgrid.driver.power import sentry_sequential
+
+        mock_output = mocker.patch(
+            'labgrid.driver.power.sentry_sequential.processwrapper.check_output'
+        )
+        mock_output.return_value = b'.1.3.6.1.4.1.1718.3.2.3.1.10.1.1.1 3'
+
+        sentry_sequential.power_get('host', None, 1)
+
+        call_args = mock_output.call_args[0][0]
+        # Verify OID ends with .1.1.1 for index 1
+        assert '.1.3.6.1.4.1.1718.3.2.3.1.10.1.1.1' in call_args
+
+    def test_power_set_oid_mapping(self, mocker):
+        from labgrid.driver.power import sentry_sequential
+
+        mock_output = mocker.patch(
+            'labgrid.driver.power.sentry_sequential.processwrapper.check_output'
+        )
+
+        sentry_sequential.power_set('host', None, 16, True)
+
+        call_args = mock_output.call_args[0][0]
+        # Verify OID ends with .1.1.16 for index 16
+        assert '.1.3.6.1.4.1.1718.3.2.3.1.11.1.1.16' in call_args
 
 class TestYKUSHPowerDriver:
     YKUSH_FAKE_SERIAL = "YK12345"

@@ -227,8 +227,15 @@ Currently available are:
   for details.
 
 ``sentry``
-  Controls *Sentry PDUs* via SNMP using Sentry3-MIB.
-  It was tested on *CW-24VDD* and *4805-XLS-16*.
+  Controls *Sentry PDUs* via SNMP using Sentry3-MIB with multi-bank OID mapping.
+  Supports up to 48 outlets organized as 6 banks of 8 outlets each.
+  Tested on *CW-24VDD* and *4805-XLS-16*.
+  For single-bank sequential models like *CW-16V1*, use ``sentry_sequential`` instead.
+
+``sentry_sequential``
+  Controls *Sentry PDUs* via SNMP using Sentry3-MIB with sequential OID mapping.
+  Supports up to 16 outlets numbered sequentially (1.1.1 through 1.1.16).
+  Suitable for single-bank models like *CW-16V1*.
 
 ``shelly_gen1``
   Controls relays of *Shelly* devices using the Gen 1 Device API.

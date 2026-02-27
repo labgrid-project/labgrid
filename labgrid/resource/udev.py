@@ -824,6 +824,34 @@ class USBDebugger(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class MatchedManagedGPIO(USBResource):
+    """The MatchedManagedGPIO described a ManagedGPIO matched by Udev
+
+    Args:
+        pin (str | int): gpio pin name or offset within the matched gpiochip."""
+    pin = attr.ib(default=None, validator=attr.validators.instance_of((str, int)))
+    chip = None
+
+    def __attrs_post_init__(self):
+        self.match['SUBSYSTEM'] = 'gpio'
+        super().__attrs_post_init__()
+
+    def filter_match(self, device):
+        # Match only the char device
+        if device.properties.get('DEVNAME') is None:
+            return False
+
+        return super().filter_match(device)
+
+    def update(self):
+        super().update()
+        if self.device is not None:
+            self.chip = self.device.properties.get('DEVNAME')
+        else:
+            self.chip = None
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class MatchedSysfsGPIO(USBResource):
     """The MatchedSysfsGPIO described a SysfsGPIO matched by Udev
 

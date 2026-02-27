@@ -38,6 +38,17 @@ class EthernetPort(Resource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class ManagedGPIO(Resource):
+    """The basic ManagedGPIO contains an index
+
+    Args:
+        chip (str): path to gpiochip device.
+        pin (str | int): name or index of target gpio line."""
+    chip = attr.ib(default=None, validator=attr.validators.instance_of(str))
+    pin = attr.ib(default=None, validator=attr.validators.instance_of((str, int)))
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class SysfsGPIO(Resource):
     """The basic SysfsGPIO contains an index
 

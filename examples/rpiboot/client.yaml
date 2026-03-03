@@ -1,0 +1,30 @@
+targets:
+  main:
+    resources:
+    - RemotePlace:
+        name: !template '$LG_PLACE'
+    drivers:
+    - GpioDigitalOutputDriver:
+        name: 'power-driver'
+        bindings:
+          gpio: 'GpioPower'
+    - GpioDigitalOutputDriver:
+        name: 'reset-driver'
+        bindings:
+          gpio: 'GpioReset'
+    - DigitalOutputPowerDriver:
+        delay: 2.0
+        bindings:
+          output: 'power-driver'
+    - DigitalOutputResetDriver:
+        delay: 2.0
+        bindings:
+          output: 'reset-driver'
+    - SerialDriver: {}
+    - SSHDriver: {}
+    - ShellDriver:
+        login_prompt: '[\w-]+ login: '
+        username: root
+        password: root
+        prompt: 'root@[\w-]+:[^ ]+# '
+    - DUTStrategy: {}

@@ -3574,6 +3574,11 @@ the "shell" state:
 This command would transition from the bootloader into a Linux shell and
 activate the `ShellDriver`_.
 
+Arguments:
+  - wait_for_systemd (bool, default=True): If True, wait for all systemd services
+    to be up and running when transitioning to the "shell" state
+  - systemd_timeout (int, default=30): Timeout to wait for systemd services in seconds
+
 ShellStrategy
 ~~~~~~~~~~~~~
 A :any:`ShellStrategy` has three states:
@@ -3619,6 +3624,11 @@ the "shell" state:
 
 This command would transition directly into a Linux shell and
 activate the `ShellDriver`_.
+
+Arguments:
+  - wait_for_systemd (bool, default=True): If True, wait for all systemd services
+    to be up and running when transitioning to the "shell" state
+  - systemd_timeout (int, default=30): Timeout to wait for systemd services in seconds
 
 UBootStrategy
 ~~~~~~~~~~~~~
@@ -3668,6 +3678,11 @@ the "shell" state:
 
 This command would transition from the bootloader into a Linux shell and
 activate the `ShellDriver`_.
+
+Arguments:
+  - wait_for_systemd (bool, default=True): If True, wait for all systemd services
+    to be up and running when transitioning to the "shell" state
+  - systemd_timeout (int, default=30): Timeout to wait for systemd services in seconds
 
 DockerStrategy
 ~~~~~~~~~~~~~~

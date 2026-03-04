@@ -979,7 +979,13 @@ class ClientSession:
         action = self.args.action
         name = self.args.name
         target = self._get_target(place)
-        from ..resource import ModbusTCPCoil, OneWirePIO, HttpDigitalOutput, WaveshareModbusTCPCoil
+        from ..resource import (
+            ModbusTCPCoil,
+            OneWirePIO,
+            HttpDigitalOutput,
+            WaveshareModbusTCPCoil,
+            Eth008DigitalOutput,
+        )
         from ..resource.remote import NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO, NetworkHIDRelay
 
         drv = None
@@ -993,6 +999,8 @@ class ClientSession:
                     drv = self._get_driver_or_new(target, "WaveShareModbusCoilDriver", name=name)
                 elif isinstance(resource, ModbusTCPCoil):
                     drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name)
+                elif isinstance(resource, Eth008DigitalOutput):
+                    drv = self._get_driver_or_new(target, "Eth008DigitalOutputDriver", name=name)
                 elif isinstance(resource, OneWirePIO):
                     drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name)
                 elif isinstance(resource, HttpDigitalOutput):

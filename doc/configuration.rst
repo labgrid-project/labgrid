@@ -2736,6 +2736,8 @@ Implements:
          UUUDriver:
            image: 'mybootloaderkey'
            script: 'spl'
+           extra_files:
+             - 'fitImage'
 
    images:
      mybootloaderkey: 'path/to/mybootloader.img'
@@ -2744,6 +2746,7 @@ Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of an image to bootstrap onto the target
   - script (str): optional, run built-in script with ``uuu -b``, called with image as arg0
+  - extra_files (list): optional, paths to synchronize to exporter before invoking ``uuu``
 
 USBStorageDriver
 ~~~~~~~~~~~~~~~~

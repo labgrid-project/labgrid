@@ -16,10 +16,11 @@ class MQTTManager(ResourceManager):
     _topic_lock = attr.ib(default=threading.Lock())
     _last = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
 
-    def _create_mqtt_connection(self, host):
+    def _create_mqtt_connection(self, host, username, password):
         import paho.mqtt.client as mqtt
 
         client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        client.username_pw_set(username, password)
         client.connect(host)
         client.on_message = self._on_message
         client.loop_start()
@@ -27,9 +28,12 @@ class MQTTManager(ResourceManager):
 
     def on_resource_added(self, resource):
         host = resource.host
-        if host not in self._clients:
-            self._clients[host] = self._create_mqtt_connection(host)
-        self._clients[host].subscribe(resource.avail_topic)
+        username = resource.username
+        password = resource.password
+        key = f"{host}:{username or ''}:{password or ''}"
+        if key not in self._clients:
+            self._clients[key] = self._create_mqtt_connection(host, username, password)
+        self._clients[key].subscribe(resource.avail_topic)
 
     def _on_message(self, client, userdata, msg):
         payload = msg.payload.decode("utf-8")
@@ -57,6 +61,8 @@ class MQTTResource(ManagedResource):
 
     host = attr.ib(validator=attr.validators.instance_of(str))
     avail_topic = attr.ib(validator=attr.validators.instance_of(str))
+    username = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    password = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
 
     def __attrs_post_init__(self):
         self.timeout = 30.0

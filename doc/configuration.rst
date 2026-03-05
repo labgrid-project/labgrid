@@ -1792,13 +1792,15 @@ Binds to:
 
    SerialDriver:
      txdelay: 0.05
+     txchunk: 1
 
 Implements:
   - :any:`ConsoleProtocol`
   - :any:`ResetProtocol`
 
 Arguments:
-  - txdelay (float, default=0.0): time in seconds to wait before sending each byte
+  - txdelay (float, default=0.0): time in seconds to wait before sending a chunk
+  - txchunk (int, default=1): number of bytes the `txdelay` should apply to
   - timeout (float, default=3.0): time in seconds to wait for a network serial port before
     an error occurs
 
@@ -2052,10 +2054,12 @@ Implements:
    ExternalConsoleDriver:
      cmd: 'microcom /dev/ttyUSB2'
      txdelay: 0.05
+     txchunk: 1
 
 Arguments:
   - cmd (str): command to execute and then bind to.
-  - txdelay (float, default=0.0): time in seconds to wait before sending each byte
+  - txdelay (float, default=0.0): time in seconds to wait before sending a chunk
+  - txchunk (int, default=1): number of bytes the `txdelay` should apply to
 
 AndroidFastbootDriver
 ~~~~~~~~~~~~~~~~~~~~~

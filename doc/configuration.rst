@@ -416,6 +416,8 @@ Arguments:
     "OFF"
   - avail_topic (str): topic that signals the availability of the Tasmota power
     outlet
+  - username (str): Optional, MQTT username to authenticate as
+  - password (str): Optional, MQTT password to authenticate with
 
 Used by:
   - `TasmotaPowerDriver`_

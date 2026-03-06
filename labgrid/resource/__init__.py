@@ -49,3 +49,6 @@ from .httpdigitalout import HttpDigitalOutput
 from .sigrok import SigrokDevice
 from .fastboot import AndroidNetFastboot
 from .eth008 import Eth008DigitalOutput
+from .laa import LAASerialPort, LAAPowerPort, LAAUSBGadgetMassStorage, \
+                 LAAUSBPort, LAAButtonPort, \
+                 LAALed, LAATempSensor, LAAWattMeter, LAAProvider

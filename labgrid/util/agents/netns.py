@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 
+import base64
 import ctypes
 import fcntl
 import os
+import pickle
 import socket
 import struct
 import subprocess
 from pathlib import Path
-
-s2py = s2py  # pylint: disable=undefined-variable
-py2s = py2s  # pylint: disable=undefined-variable
 
 CLONE_NEWNS = 0x00020000  # Mount namespace
 CLONE_NEWUSER = 0x10000000  # User namespace
@@ -24,6 +23,22 @@ libc.setns.argtypes = [ctypes.c_int, ctypes.c_int]
 libc.setns.restype = ctypes.c_int
 
 socket_table = {}
+
+
+def b2s(b):
+    return base64.b85encode(b).decode('ascii')
+
+
+def s2b(s):
+    return base64.b85decode(s.encode('ascii'))
+
+
+def py2s(o):
+    return b2s(pickle.dumps(o))
+
+
+def s2py(s):
+    return pickle.loads(s2b(s))
 
 
 def unshare(flags):

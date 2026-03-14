@@ -3,6 +3,7 @@ import errno
 import os
 import socket
 import subprocess
+import time
 
 import pytest
 
@@ -133,3 +134,32 @@ def test_detach(netns):
 
     # Verify that all sockets were removed in the namespace
     assert netns._agent.list_sockets() == []
+
+
+def test_socks(netns, tmp_path):
+    with contextlib.ExitStack() as stack:
+        (port, password) = stack.enter_context(netns.socks_proxy())
+
+        import requests
+
+        proxy_url = f"socks5h://labgrid:{password}@127.0.0.1:{port}"
+
+        proxies = {"http": proxy_url, "https": proxy_url}
+
+        session = requests.Session()
+        session.proxies.update(proxies)
+
+        tmp_file = tmp_path / "data"
+        tmp_file.write_bytes(b"test\n")
+
+        httpd = stack.enter_context(netns.Popen(["busybox", "httpd", "-f", "-h", str(tmp_path)]))
+        stack.callback(lambda: httpd.terminate())
+
+        time.sleep(1)
+
+        response = session.get("http://127.0.0.1/data", timeout=5)
+        assert response.content == b"test\n"
+        assert response.status_code == 200
+
+        response = session.get("http://127.0.0.1/missing", timeout=5)
+        assert response.status_code == 404

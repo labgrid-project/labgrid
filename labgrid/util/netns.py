@@ -3,11 +3,14 @@ import errno
 import functools
 import logging
 import os
+import random
 import socket
+import string
 import subprocess
 import sys
 import tempfile
 
+from . import get_free_port
 from .agent import py2s, s2py
 
 
@@ -162,3 +165,29 @@ class NetNamespace:
         if err:
             raise OSError(*err)
         return result
+
+    @contextlib.contextmanager
+    def socks_proxy(self):
+        port = get_free_port()
+        password = "".join(random.choice(string.ascii_letters + string.digits) for i in range(10))
+
+        with contextlib.ExitStack() as stack:
+            proxy = stack.enter_context(
+                self.Popen(
+                    ["microsocks", "-u", "labgrid", "-P", password, "-i", "127.0.0.1"],
+                )
+            )
+            stack.callback(lambda: proxy.terminate())
+            s = stack.enter_context(socket.socket())
+            s.bind(("127.0.0.1", port))
+            s.listen()
+            socat = stack.enter_context(
+                self.Popen(
+                    ["socat", f"ACCEPT-FD:{s.fileno()},fork", "TCP4:127.0.0.1:1080"],
+                    pass_fds=(s.fileno(),),
+                )
+            )
+            stack.callback(lambda: socat.terminate())
+            stack.callback(lambda: print("A"))
+            s.close()
+            yield (port, password)

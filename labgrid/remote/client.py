@@ -1420,6 +1420,20 @@ class ClientSession:
                 for a in self.args.address:
                     ns.run(["ip", "addr", "add", str(a), "dev", ns.intf], check=True)
 
+                if self.args.nsenter:
+                    with open(self.args.nsenter, "w") as wrapper:
+                        wrapper.write(
+                            "\n".join(
+                                [
+                                    "#!/usr/bin/sh",
+                                    " ".join(ns.prefix) + ' "$@"',
+                                    "",
+                                ]
+                            )
+                        )
+                        os.fchmod(wrapper.fileno(), 0o755)
+                    print(f"Use {self.args.nsenter} to enter the namespace")
+
                 cmd = self.args.cmd
                 if not cmd:
                     # Same behavior as nsenter with no command
@@ -2100,6 +2114,14 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         help="assign address to interface (CIDR notation)",
     )
     subparser.add_argument("--mac-address", help="assign MAC address to interface")
+    subparser.add_argument(
+        "--nsenter",
+        "-e",
+        nargs="?",
+        default=False,
+        const="labgrid-nsenter",
+        help="create nsenter wrapper script",
+    )
     subparser.add_argument(
         "cmd", nargs=argparse.REMAINDER, help="command to execute in the namespace. If unspecified, $SHELL is invoked"
     )

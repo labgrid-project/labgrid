@@ -424,6 +424,8 @@ Arguments:
     "OFF"
   - avail_topic (str): topic that signals the availability of the Tasmota power
     outlet
+  - username (str): Optional, MQTT username to authenticate as
+  - password (str): Optional, MQTT password to authenticate with
 
 Used by:
   - `TasmotaPowerDriver`_
@@ -1543,6 +1545,175 @@ Arguments:
 
 Used by:
   - `NFSProviderDriver`_
+
+LAA Resources
+~~~~~~~~~~~~~
+Resources for devices connected via a `Linaro Automation Appliance (LAA)
+<https://hub.linaro.com/library/laa/laa>`_.
+Requires the ``laam`` package, install with ``pip install labgrid[laa]``.
+For a working example test suite, see `labgrid-laa-examples
+<https://gitlab.com/Linaro/lava/appliance/labgrid-laa-examples>`_.
+
+LAASerialPort
++++++++++++++
+A :any:`LAASerialPort` describes a serial port on the LAA.
+
+.. code-block:: yaml
+
+   LAASerialPort:
+     laa_identity: 'laa-00175'
+     serial_name: 'ttymxc3'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+  - serial_name (str): name of the serial port on the LAA
+
+Used by:
+  - `LAASerialDriver`_
+
+LAAPowerPort
+++++++++++++
+A :any:`LAAPowerPort` describes the power control for a device on the LAA.
+Power on and off are sequences of (vbus, state) tuples that are executed
+in order.
+
+.. code-block:: yaml
+
+   LAAPowerPort:
+     laa_identity: 'laa-00175'
+     power_on:
+       - ['3v3', 'on']
+       - ['5v', 'on']
+     power_off:
+       - ['3v3', 'off']
+       - ['5v', 'off']
+     power_cycle:
+       - ['3v3', 'off']
+       - ['5v', 'reset']
+       - ['3v3', 'on']
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+  - power_on (list): sequence of [vbus, state] pairs for power on
+  - power_off (list): sequence of [vbus, state] pairs for power off
+  - power_cycle (list, optional): sequence for power cycle, if not set
+    the driver does off + delay + on
+
+Used by:
+  - `LAAPowerDriver`_
+
+LAAUSBGadgetMassStorage
+++++++++++++++++++++++++
+A :any:`LAAUSBGadgetMassStorage` describes a USB gadget mass storage device
+on the LAA. This can be used to simulate a USB stick being plugged in or out.
+
+.. code-block:: yaml
+
+   LAAUSBGadgetMassStorage:
+     laa_identity: 'laa-00175'
+     image: 'boot.img'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+  - image (str): mass storage image filename
+
+Used by:
+  - `LAAUSBGadgetMassStorageDriver`_
+
+LAAUSBPort
+++++++++++
+A :any:`LAAUSBPort` describes USB ports on the LAA that can be toggled.
+
+.. code-block:: yaml
+
+   LAAUSBPort:
+     laa_identity: 'laa-00175'
+     usb_ports: [1, 2]
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+  - usb_ports (list): list of USB port numbers to control
+
+Used by:
+  - `LAAUSBDriver`_
+
+LAAButtonPort
++++++++++++++
+A :any:`LAAButtonPort` describes virtual buttons on the LAA.
+
+.. code-block:: yaml
+
+   LAAButtonPort:
+     laa_identity: 'laa-00175'
+     buttons: ['power', 'reset']
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+  - buttons (list): list of button names available
+
+Used by:
+  - `LAAButtonDriver`_
+
+LAALed
+++++++
+A :any:`LAALed` describes an LED on the LAA.
+
+.. code-block:: yaml
+
+   LAALed:
+     laa_identity: 'laa-00175'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+
+Used by:
+  - `LAALedDriver`_
+
+LAATempSensor
++++++++++++++
+A :any:`LAATempSensor` describes a temperature sensor on the LAA.
+
+.. code-block:: yaml
+
+   LAATempSensor:
+     laa_identity: 'laa-00175'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+
+Used by:
+  - `LAATempDriver`_
+
+LAAWattMeter
+++++++++++++
+A :any:`LAAWattMeter` describes a power meter on the LAA.
+
+.. code-block:: yaml
+
+   LAAWattMeter:
+     laa_identity: 'laa-00175'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+
+Used by:
+  - `LAAWattDriver`_
+
+LAAProvider
++++++++++++
+A :any:`LAAProvider` describes file storage on the LAA. Files uploaded
+here are served via TFTP to the device under test.
+
+.. code-block:: yaml
+
+   LAAProvider:
+     laa_identity: 'laa-00175'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+
+Used by:
+  - `LAAProviderDriver`_
 
 RemotePlace
 ~~~~~~~~~~~
@@ -3523,6 +3694,177 @@ Arguments:
   - manage_interface (bool, default=True): if ``True`` this driver will
     setup/teardown the interface on activate/deactivate. Set this to ``False``
     if you are managing the interface externally.
+
+LAA Drivers
+~~~~~~~~~~~
+Drivers for devices connected via a `Linaro Automation Appliance (LAA)
+<https://hub.linaro.com/library/laa/laa>`_.
+Requires the ``laam`` package, install with ``pip install labgrid[laa]``.
+
+LAASerialDriver
++++++++++++++++
+The :any:`LAASerialDriver` connects to a serial port on the LAA via
+a WebSocket bridge provided by laam.
+
+Binds to:
+  port:
+    - `LAASerialPort`_
+
+Implements:
+  - :any:`ConsoleProtocol`
+
+.. code-block:: yaml
+
+   LAASerialDriver:
+     txdelay: 0.0
+     timeout: 3.0
+
+Arguments:
+  - txdelay (float, default=0.0): time in seconds to wait after each write
+  - timeout (float, default=3.0): default read timeout in seconds
+
+LAAPowerDriver
+++++++++++++++
+The :any:`LAAPowerDriver` controls power to the device via the LAA.
+It executes the power on/off sequences from the resource.
+
+Binds to:
+  port:
+    - `LAAPowerPort`_
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   LAAPowerDriver:
+     delay: 2.0
+
+Arguments:
+  - delay (float, default=2.0): time in seconds between off and on during
+    power cycle (only used when no power_cycle sequence is set)
+
+LAAUSBGadgetMassStorageDriver
+++++++++++++++++++++++++++++++
+The :any:`LAAUSBGadgetMassStorageDriver` controls a USB gadget mass storage
+device on the LAA. It can simulate a USB stick being plugged in or out.
+
+Binds to:
+  port:
+    - `LAAUSBGadgetMassStorage`_
+
+.. code-block:: yaml
+
+   LAAUSBGadgetMassStorageDriver: {}
+
+Arguments:
+  - None
+
+LAAUSBDriver
+++++++++++++
+The :any:`LAAUSBDriver` toggles USB ports on the LAA.
+
+Binds to:
+  port:
+    - `LAAUSBPort`_
+
+.. code-block:: yaml
+
+   LAAUSBDriver: {}
+
+Arguments:
+  - None
+
+LAAButtonDriver
++++++++++++++++
+The :any:`LAAButtonDriver` controls virtual buttons on the LAA.
+
+Binds to:
+  port:
+    - `LAAButtonPort`_
+
+.. code-block:: yaml
+
+   LAAButtonDriver: {}
+
+Arguments:
+  - None
+
+The driver provides ``press(button)`` and ``release(button)`` methods.
+The button name must match one of the names in the resource.
+
+LAALedDriver
++++++++++++++
+The :any:`LAALedDriver` controls an LED on the LAA.
+
+Binds to:
+  port:
+    - `LAALed`_
+
+.. code-block:: yaml
+
+   LAALedDriver: {}
+
+Arguments:
+  - None
+
+LAATempDriver
++++++++++++++
+The :any:`LAATempDriver` reads a temperature sensor on the LAA.
+
+Binds to:
+  port:
+    - `LAATempSensor`_
+
+.. code-block:: yaml
+
+   LAATempDriver: {}
+
+Arguments:
+  - None
+
+The driver provides a ``get_temp(probe)`` method that returns a dict
+with the temperature reading.
+
+LAAWattDriver
++++++++++++++
+The :any:`LAAWattDriver` reads a power meter on the LAA.
+
+Binds to:
+  port:
+    - `LAAWattMeter`_
+
+.. code-block:: yaml
+
+   LAAWattDriver: {}
+
+Arguments:
+  - None
+
+The driver provides a ``get_watts(vbus)`` method that returns a dict
+with the power reading.
+
+LAAProviderDriver
++++++++++++++++++
+The :any:`LAAProviderDriver` manages files on the LAA file storage
+where they are served via TFTP. The ``stage()`` method accepts a local
+file path or a URL. The ``list()`` method returns the files on the LAA
+and ``remove(name)`` deletes a file.
+
+Binds to:
+  provider:
+    - `LAAProvider`_
+
+.. code-block:: yaml
+
+   LAAProviderDriver: {}
+
+Arguments:
+  - None
+
+The ``stage()`` method returns the filename as stored on the LAA.
+The ``list()`` method returns a list of filenames. The ``remove(name)``
+method removes a file by name.
 
 .. _conf-strategies:
 

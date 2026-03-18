@@ -12,6 +12,8 @@ New Features in 25.1
   ``add_port_forward()`` and ``remove_port_forward()``  in case there is more
   than one network interface defined.
 - Guermok HDMI to USB 3.0 capture dongle supported
+- The `consoleexpectmixin` now supports chunking of multiple bytes
+  with the ``txchunk`` attribute.
 
 Breaking changes in 25.1
 ~~~~~~~~~~~~~~~~~~~~~~~~

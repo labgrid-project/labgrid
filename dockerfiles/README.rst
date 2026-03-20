@@ -7,6 +7,8 @@ for the 3 different components of a Labgrid distributed infrastructure.
 - **labgrid-coordinator**
   An image with the Labgrid coordinator.
   a Labgrid coordinator instance.
+- **labgrid-coordinator-statsd**
+  An image with a statsd reporter for the Labgrid coordinator.
 - **labgrid-client**
   An image with the Labgrid client tools and pytest integration.
 - **labgrid-exporter**
@@ -27,7 +29,7 @@ Example showing how to build labgrid-client image:
 Using `BuildKit <https://docs.docker.com/develop/develop-images/build_enhancements/>`_
 is recommended to reduce build times.
 
-You can also choose to build all 3 images with the included script. The script
+You can also choose to build all images with the included script. The script
 will automatically use `docker buildx
 <https://docs.docker.com/engine/reference/commandline/buildx/>`` if available.
 
@@ -39,7 +41,6 @@ will automatically use `docker buildx
 The script supports ``podman`` as well.
 
 .. code-block:: bash
-  
    $ export DOCKER=podman
    $ ./dockerfiles/build.sh
 
@@ -77,6 +78,20 @@ so you can restart the service without losing state.
 
    $ docker run -t -p 20408:20408 -v $HOME/coordinator:/opt/coordinator \
 	 docker.io/labgrid/coordinator
+
+
+labgrid-coordinator-statsd usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The labgrid-coordinator-statsd image can be used to run a statsd reporter for the coordinator.
+
+The address of the statsd server and other options can be configured using parameters as passed to the ``contrib/coordinator-statsd.py`` script.
+For example, to run the statsd reporter with a coordinator at 192.168.1.42:20408:
+
+.. code-block:: bash
+
+   $ docker run -e LG_COORDINATOR=192.168.1.42:20408 docker.io/labgrid/coordinator-statsd \
+    --statsd-server=192.168.1.50
 
 
 labgrid-client usage
@@ -141,7 +156,7 @@ client:
 .. code-block:: bash
 
    $ cd dockerfiles/staging
-   $ CURRENT_UID=$(id -u):$(id -g) docker compose up -d coordinator exporter dut
+   $ CURRENT_UID=$(id -u):$(id -g) docker compose up -d coordinator coordinator-statsd exporter dut
 
 To run the smoke test just run the client:
 

@@ -57,3 +57,13 @@ RUN apt update -q=2 && \
 VOLUME /opt/conf
 
 CMD ["/entrypoint.sh"]
+
+#
+# Coordinator statsd
+#
+FROM labgrid-base AS labgrid-coordinator-statsd
+ARG VERSION
+
+RUN pip3 install "statsd>=4.0.1"
+
+ENTRYPOINT ["/opt/labgrid/contrib/coordinator-statsd.py"]

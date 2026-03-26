@@ -11,24 +11,21 @@ Supported Functionality:
 """
 
 from importlib import import_module
+from importlib.util import find_spec
 
 
 class VISAInstrument:
     def __init__(self, device_identifier, backend, timeout):
-        try:
-            _py_pyvisa_module = import_module('pyvisa')
-        except ModuleNotFoundError as e:
-            raise ModuleNotFoundError("pyvisa module not found, please install it") from e
-        else:
-            _pyvisa_resource_manager = _py_pyvisa_module.ResourceManager(backend)
-            if _pyvisa_resource_manager is None:
-                raise ValueError("pyVISA backend not found")
-            self._pyvisa_device = _pyvisa_resource_manager.open_resource(device_identifier)
-            if 'SOCKET' in device_identifier:
-                self._pyvisa_device.read_termination = '\n'
-                self._pyvisa_device.write_termination = '\n'
-            if self._pyvisa_device is None:
-                raise ValueError("pyVISA device not found")
+        if not find_spec("pyvisa"):
+            raise ModuleNotFoundError("pyvisa module not found, please install it")
+		
+        _py_pyvisa_module = import_module('pyvisa')
+        _pyvisa_resource_manager = _py_pyvisa_module.ResourceManager(backend)
+        if _pyvisa_resource_manager is None:
+            raise ValueError("pyVISA backend not found")
+        self._pyvisa_device = _pyvisa_resource_manager.open_resource(device_identifier)
+        if self._pyvisa_device is None:
+            raise ValueError("pyVISA device not found")
             try:
                 self._pyvisa_device.clear()
             except _py_pyvisa_module.errors.VisaIOError as e:

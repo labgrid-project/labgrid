@@ -1,4 +1,4 @@
-from .base import SerialPort, NetworkInterface, EthernetPort, SysfsGPIO
+from .base import SerialPort, NetworkInterface, EthernetPort, SysfsGPIO, GpiodGPIO
 from .ethernetport import SNMPEthernetPort
 from .serialport import RawSerialPort, NetworkSerialPort
 from .modbus import ModbusTCPCoil, WaveshareModbusTCPCoil

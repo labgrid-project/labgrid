@@ -28,6 +28,7 @@ from .sigrokdriver import SigrokDriver, SigrokPowerDriver, SigrokDmmDriver
 from .usbstoragedriver import USBStorageDriver, Mode
 from .resetdriver import DigitalOutputResetDriver
 from .gpiodriver import GpioDigitalOutputDriver
+from .gpioddriver import GpiodDigitalOutputDriver
 from .filedigitaloutput import FileDigitalOutputDriver
 from .serialdigitaloutput import SerialPortDigitalOutputDriver
 from .xenadriver import XenaDriver

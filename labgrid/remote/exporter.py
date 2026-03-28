@@ -699,6 +699,40 @@ exports["SysfsGPIO"] = GPIOSysFSExport
 exports["MatchedSysfsGPIO"] = GPIOSysFSExport
 
 
+@attr.s(eq=False)
+class GPIOgpiodExport(ResourceExport):
+    """ResourceExport for GPIOs based on gpiod"""
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        if self.cls == "GpiodGPIO":
+            from ..resource.base import GpiodGPIO
+            self.local = GpiodGPIO(target=None, name=None, **self.local_params)
+
+        self.data["cls"] = "NetworkGpiodGPIO"
+        self.system_exported = False
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "offset": self.local.offset,
+        }
+
+    def _get_start_params(self):
+        return {
+            "offset": self.local.offset,
+        }
+
+    def _start(self, start_params):
+        """Start a GPIO"""
+        self.system_exported = True
+
+    def _stop(self, start_params):
+        """Disable a GPIO"""
+
+exports["GpiodGPIO"] = GPIOgpiodExport
+
+
 @attr.s
 class NetworkServiceExport(ResourceExport):
     """ResourceExport for a NetworkService

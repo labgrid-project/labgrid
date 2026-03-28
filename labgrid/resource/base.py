@@ -44,3 +44,13 @@ class SysfsGPIO(Resource):
     Args:
         index (int): index of target gpio line."""
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class GpiodGPIO(Resource):
+    """The basic GpiodGPIO contains an offset
+
+    Args:
+        offset (int): index of target gpio line."""
+    offset = attr.ib(validator=attr.validators.instance_of(int))

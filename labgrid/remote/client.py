@@ -1308,6 +1308,10 @@ class ClientSession:
             return drv
 
     def ssh(self):
+        if self.args.leftover and not self.args.name:
+            potential_name = self.args.leftover[0]
+            print(f"Unknown argument '{potential_name}', did you miss a '-n'?")
+
         drv = self._get_ssh()
 
         res = drv.interact(self.args.leftover)

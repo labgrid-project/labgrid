@@ -635,6 +635,32 @@ NetworkHIDRelay
 A :any:`NetworkHIDRelay` describes an `HIDRelay`_ resource available on a
 remote computer.
 
+GpiodGPIO
++++++++++
+
+A :any:`GpiodGPIO` resource describes a modern descriptor based GPIO line.
+
+.. code-block:: yaml
+
+    GpiodGPIO:
+      offset: 26
+
+Arguments:
+  - offset (int): the offset of the GPIO, the driver will then identify the gpiochip.
+
+Used by:
+  - `GpiodDigitalOutputDriver`_
+
+Note: in the likely case of having multiple GPIOs use something like
+
+.. code-block:: yaml
+
+    gpio26:
+      cls: GpiodGPIO
+      offset: 26
+
+Use named-match e.g. for `gpio26` at driver matching.
+
 SysfsGPIO
 +++++++++
 
@@ -2574,6 +2600,29 @@ Implements:
 .. code-block:: yaml
 
    GpioDigitalOutputDriver: {}
+
+Arguments:
+  - None
+
+GpiodDigitalOutputDriver
+~~~~~~~~~~~~~~~~~
+The :any:`GpiodDigitalOutputDriver` writes a digital signal to a GPIO line.
+
+This driver configures GPIO lines via the modern approach and requires gpio utils in v2.x or higher to be installed on the Exporter platform. The tools can manage
+holding the GPIO stable in one state and labgrid will be mentioned as owner. In case of another competing process holding the same GPIO already,
+labgrid will fail and will not blindly claim a specified GPIO resource. Also respective permissions or capabilities need to be configured accordingly.
+
+Binds to:
+  gpio:
+    - `GpiodGPIO`
+    - NetworkGpiodGPIO
+
+Implements:
+  - :any:`GpiodDigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   GpiodDigitalOutputDriver: {}
 
 Arguments:
   - None

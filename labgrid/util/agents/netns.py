@@ -68,7 +68,7 @@ def handle_unshare():
     gid = os.getgid()
 
     unshare(CLONE_NEWUSER)
-    unshare(CLONE_NEWNET | CLONE_NEWNS)
+    unshare(CLONE_NEWNET)
 
     uidmap = Path("/proc/self/uid_map")
     uidmap.write_text(f"0 {uid} 1")
@@ -78,7 +78,7 @@ def handle_unshare():
     gidmap.write_text(f"0 {gid} 1")
 
     # mount again from inside the netns, so that the correct devices are visible
-    subprocess.check_call(["mount", "-t", "sysfs", "sysfs", "/sys"])
+    # subprocess.check_call(["mount", "-t", "sysfs", "sysfs", "/sys"])
     # subprocess.check_call(['mount', '-t', 'devtmpfs', 'devtmpfs', '/dev'])
     # subprocess.check_call(['mount', '-t', 'proc', 'proc', '/proc'])
 

@@ -229,6 +229,11 @@ Currently available are:
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/rest.py>`__
   for details.
 
+``secomp``
+  Controls *Secomp* PDUs via HTTP. This is a 19" Rackmount PDU sold and
+  rebranded under various names e.g. VALUE IP, Argus, Intellinet, or
+  LogiLink 8p01.
+
 ``sentry``
   Controls *Sentry PDUs* via SNMP using Sentry3-MIB.
   It was tested on *CW-24VDD* and *4805-XLS-16*.

@@ -1330,19 +1330,42 @@ Such device could be a signal generator.
 
 .. code-block:: yaml
 
-   PyVISADevice:
-     type: 'TCPIP'
-     url: '192.168.110.11'
+   - PyVISADevice:
+       name: lxi_instrument
+       type: 'TCPIP'
+       url: '192.168.110.11'
+       backend: '@py'
+   - PyVISADevice:
+       name: raw_socket_instrument
+       type: 'TCPIP'
+       resource: 'SOCKET'
+       url: '192.168.110.12'
+       backend: '@py'
+   - PyVISADevice:
+       name: usbtmc_instrument
+       type: 'USB0'
+       url: '6833::3220::DM3O224500792::0'
+       backend: '@py'
+   - PyVISADevice:
+       name: serial_instrument
+       type: 'ASRL/dev/ttyACM0'
+       backend: '@py'
 
 Arguments:
   - type (str): device resource type following the PyVISA resource syntax, e.g.
     ASRL, TCPIP...
   - url (str): device identifier on selected resource, e.g. <ip> for TCPIP
     resource
+  - resource (str): VISA resource type (default is ``INSTR``), ``INSTR``, ``SOCKET`` or ``RAW``.
   - backend (str): optional, Visa library backend, e.g. '@sim' for pyvisa-sim backend
 
 Used by:
   - `PyVISADriver`_
+
+NetworkPyVISADevice
+~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkPyVISADevice` describes a `PyVISADevice`_ resource
+available on a remote computer.
 
 HTTPVideoStream
 ~~~~~~~~~~~~~~~
@@ -3388,12 +3411,62 @@ equipment manageable by PyVISA.
 Binds to:
   pyvisa_resource:
     - `PyVISADevice`_
+    - `NetworkPyVISADevice`_
+
+.. code-block:: yaml
+
+   PyVISADriver: {}
 
 Implements:
   - None yet
 
 Arguments:
   - None
+
+TMInstrumentDriver
+~~~~~~~~~~~~~~~~~~
+The :any:`TMInstrument` uses a low-level drivers to control SCPI compatible test and measurement instruments.
+
+Binds to:
+  pyvisa_resource:
+    - `PyVISADriver`_
+    - `USBTMCDriver`_
+
+.. code-block:: yaml
+
+   TMInstrument: {}
+
+Implements:
+  - None yet
+
+Arguments:
+  - None
+
+TMInstrumentPowerDriver
+~~~~~~~~~~~~~~~~~~~~~~~
+The :any:`TMInstrumentPower` uses a `PyVISADevice`_ resource to
+control a programmable power supply.
+
+Binds to:
+  sigrok:
+    - `PyVISADevice`_
+    - `NetworkPyVISADevice`_
+
+Implements:
+  - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
+
+.. code-block:: yaml
+
+   TMInstrumentPower:
+     delay: 3.0
+
+Arguments:
+  - delay (float, default=3.0): delay in seconds between off and on
+  - max_voltage (float): optional, maximum allowed voltage for protection against
+    accidental damage (in volts)
+  - max_current (float): optional, maximum allowed current for protection against
+    accidental damage (in ampere)
 
 NetworkInterfaceDriver
 ~~~~~~~~~~~~~~~~~~~~~~

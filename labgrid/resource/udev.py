@@ -409,7 +409,7 @@ class ADIICEEmulator(USBResource):
     def filter_match(self, device):
         if device.properties.get('ID_VENDOR_ID') != "064b":
             return False
-        if device.properties.get('ID_MODEL_ID') not in ["0617", "2500"]:
+        if device.properties.get('ID_MODEL_ID') not in ["0617", "2500", "0283"]:
             return False
         return super().filter_match(device)
 

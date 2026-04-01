@@ -15,6 +15,7 @@ class GpiodDigitalOutputDriver(Driver, DigitalOutputProtocol):
     bindings = {
         "gpio": { "GpiodGPIO", "NetworkGpiodGPIO"},
     }
+    initval = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(bool)))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -32,6 +33,11 @@ class GpiodDigitalOutputDriver(Driver, DigitalOutputProtocol):
         self.wrapper.close()
         self.wrapper = None
         self.proxy = None
+
+    def preinit(self):
+        """Explicitly called only during acquire if 'initval' is configured"""
+        if self.initval is not None:
+            self.proxy.set(self.gpio.offset, self.initval)
 
     @Driver.check_active
     @step(args=['status'])

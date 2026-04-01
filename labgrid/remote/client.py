@@ -99,6 +99,10 @@ class ClientSession:
     args = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(argparse.Namespace)))
     monitor = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
+    def __init__(self):
+        # register list for preinitialization at 'acquire'
+        self._preinit = []
+
     def gethostname(self):
         return os.environ.get("LG_HOSTNAME", gethostname())
 
@@ -698,9 +702,14 @@ class ClientSession:
 
     def check_matches(self, place):
         resources = []
+        self._preinit = []
         for exporter, groups in self.resources.items():
             for group_name, group in groups.items():
                 for resource_name, resource in group.items():
+                    # register to preinit resources at successfull 'acquire'
+                    if resource.cls in ['NetworkGpiodGPIO', 'GpiodGPIO']:
+                        self._preinit.append(resource_name)
+
                     resource_path = (exporter, group_name, resource.cls, resource_name)
                     resources.append(resource_path)
 
@@ -748,6 +757,21 @@ class ClientSession:
             await self.stub.AcquirePlace(request)
             await self.sync_with_coordinator()
             print(f"acquired place {place.name}")
+
+            if self._preinit:
+                target = self._get_target(place)
+                for res_name in self._preinit:
+                    match = next((m for m in place.matches if m.name == res_name), None)
+                    driver_name = match.rename if (match and match.rename) else res_name
+                    try:
+                        # preinitialize (gpiod) gpios
+                        drv = target.get_driver("DigitalOutputProtocol", name=driver_name)
+                        if hasattr(drv, 'preinit'):
+                            drv.preinit()
+                    except Exception:
+                        # no DigitalOutputProtocol driver, skip
+                        pass
+
         except grpc.aio.AioRpcError as e:
             # check potential failure causes
             for exporter, groups in sorted(self.resources.items()):

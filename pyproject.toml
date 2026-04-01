@@ -103,6 +103,7 @@ labgrid-client = "labgrid.remote.client:main"
 labgrid-exporter = "labgrid.remote.exporter:main"
 labgrid-suggest = "labgrid.resource.suggest:main"
 labgrid-coordinator = "labgrid.remote.coordinator:main"
+labgrid-tap-fwd = "labgrid.tapfwd:main"
 
 # the following makes a plugin available to pytest
 [project.entry-points.pytest11]
@@ -234,6 +235,9 @@ include = [
   "labgrid/util/agents/network_interface.py",
   "labgrid/util/agents/usb_hid_relay.py",
   "labgrid/util/exceptions.py",
+  "labgrid/util/netns.py",
+  "labgrid/tapfwd.py",
+  "tests/test_netns.py",
 ]
 
 [tool.ruff.lint]

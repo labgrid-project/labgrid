@@ -2,6 +2,7 @@ import base64
 import hashlib
 import json
 import os.path
+import socket
 import subprocess
 import traceback
 import logging
@@ -37,11 +38,11 @@ class ModuleProxy:
         return MethodProxy(self.wrapper, f'{self.name}.{name}')
 
 class AgentWrapper:
-
     def __init__(self, host=None):
         self.agent = None
         self.loaded = {}
         self.logger = logging.getLogger(f"ResourceExport({host})")
+        self.fdpass = None
 
         agent = os.path.join(
             os.path.abspath(os.path.dirname(__file__)),
@@ -67,18 +68,30 @@ class AgentWrapper:
             )
         else:
             # run locally
-            self.agent = subprocess.Popen(
-                ['python3', agent],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                start_new_session=True,
-            )
+            self.fdpass, remote_fdpass = socket.socketpair()
+            with remote_fdpass:
+                env = os.environ.copy()
+                env["LG_FDPASS"] = str(remote_fdpass.fileno())
+                self.agent = subprocess.Popen(
+                    ['python3', agent],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    env=env,
+                    start_new_session=True,
+                    pass_fds=(remote_fdpass.fileno(),),
+                )
 
     def __del__(self):
         self.close()
 
     def __getattr__(self, name):
         return MethodProxy(self, name)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
 
     def call(self, method, *args, **kwargs):
         request = {
@@ -94,7 +107,11 @@ class AgentWrapper:
         response = response.decode('ASCII')
         response = json.loads(response)
         if 'result' in response:
-            return response['result']
+            if response.get('fdpass'):
+                _, fds, _, _ = socket.recv_fds(self.fdpass, 1, 1)
+                return (response['result'], fds[0])
+            else:
+                return response['result']
         elif 'exception' in response:
             e = response['exception']
             # work around BaseException repr change

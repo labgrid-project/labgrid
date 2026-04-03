@@ -39,6 +39,8 @@ class USBStorageDriver(Driver):
             "NetworkUSBSDWireDevice",
             "USBSDWire3Device",
             "NetworkUSBSDWire3Device",
+            "USBSDWireBadgerdDevice",
+            "NetworkUSBSDWireBadgerdDevice",
         },
     }
     image = attr.ib(

@@ -1316,6 +1316,24 @@ Used by:
   - `USBSDWireDriver`_
   - `USBStorageDriver`_
 
+USBSDWireBadgerdDevice
+~~~~~~~~~~~~~~~~~~~~~~
+A :any:`USBSDWireBadgerdDevice` resource describes a Bagerd
+`SDWire device <https://badgerd.nl/sdwire3>`_.
+
+.. code-block:: yaml
+
+   USBSDWireBadgerdDevice:
+     match:
+       ID_SERIAL_SHORT: 'serial-1234'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `USBSDWireBadgerdDevice`_
+  - `USBStorageDriver`_
+
 NetworkUSBSDWireDevice
 ~~~~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkUSBSDWireDevice` resource describes a `USBSDWireDevice`_

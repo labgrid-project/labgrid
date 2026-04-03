@@ -21,6 +21,7 @@ from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, \
 from .usbsdmuxdriver import USBSDMuxDriver
 from .usbsdwiredriver import USBSDWireDriver
 from .usbsdwire3driver import USBSDWire3Driver
+from .usbsdwirebadgerddriver import USBSDWireBadgerdDriver
 from .common import Driver
 from .qemudriver import QEMUDriver
 from .modbusdriver import ModbusCoilDriver, WaveShareModbusCoilDriver

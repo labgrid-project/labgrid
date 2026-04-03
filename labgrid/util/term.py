@@ -53,8 +53,6 @@ async def external(check_allowed, host, port, resource, logfile, listen_only):
         if logfile:
             logging.warning("--logfile option not supported by telnet, ignoring")
 
-    if logfile:
-        call.append(f"--logfile={logfile}")
     logging.info("connecting to %s calling %s", resource, " ".join(call))
     p = await asyncio.create_subprocess_exec(*call)
     while p.returncode is None:
@@ -131,6 +129,7 @@ async def run(check_allowed, cons, log_fd, listen_only):
 
                 to_cons += data
 
+        # Drain one byte at a time, honouring txdelay between bytes
         if to_cons and time.monotonic() > next_cons:
             cons._write(to_cons[:1])
             to_cons = to_cons[1:]

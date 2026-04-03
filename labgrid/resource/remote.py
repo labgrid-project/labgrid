@@ -282,6 +282,18 @@ class NetworkUSBSDWire3Device(RemoteUSBResource):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkUSBSDWireBadgerdDevice(RemoteUSBResource):
+    """The NetworkUSBSDWireBadgerdDevice describes a remotely accessible USBSDWireBadgerd device"""
+    control_serial = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()

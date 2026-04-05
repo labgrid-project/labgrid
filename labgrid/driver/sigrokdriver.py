@@ -175,7 +175,7 @@ class SigrokDriver(SigrokCommon):
         csv_filename = f'{os.path.splitext(self._basename)[0]}.csv'
 
         # sigrok-cli can be quit through any keypress
-        stdout, stderr = self._process.communicate(input="q")
+        stdout, stderr = self._process.communicate(input=b"q")
         self.logger.debug("stdout: %s", stdout)
         self.logger.debug("stderr: %s", stderr)
 

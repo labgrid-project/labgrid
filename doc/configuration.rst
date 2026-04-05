@@ -2625,7 +2625,8 @@ Implements:
    GpiodDigitalOutputDriver: {}
 
 Arguments:
-  - None
+  - initval (bool): optionally provide preinitialization activated at acquiring
+    the Place. True will set the GPIO line to high, False to low.
 
 SerialPortDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1316,10 +1316,20 @@ class ClientSession:
 
     def scp(self):
         drv = self._get_ssh()
-
-        res = drv.scp(src=self.args.src, dst=self.args.dst)
-        if res:
-            raise InteractiveCommandError("scp error", res)
+        import glob
+        sources = []
+        for s in self.args.src:
+            expanded = glob.glob(s)
+            if expanded:
+                sources.extend(expanded)
+            else:
+                sources.append(s)
+        for src_file in sources:
+            res = drv.scp(src=src_file, dst=self.args.dst)
+            if res:
+                exc = InteractiveCommandError("scp error", res)
+                exc.exitcode = res
+                raise exc
 
     def rsync(self):
         drv = self._get_ssh()
@@ -2052,7 +2062,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
     subparser = subparsers.add_parser("scp", help="transfer file via scp")
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.add_argument("src", help="source path (use :dir/file for remote side)")
+    subparser.add_argument("src", nargs='+', help="source path(s) (use :dir/file for remote side)")
     subparser.add_argument("dst", help="destination path (use :dir/file for remote side)")
     subparser.set_defaults(func=ClientSession.scp)
 

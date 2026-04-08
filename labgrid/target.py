@@ -17,8 +17,38 @@ from .factory import target_factory
 
 @attr.s(eq=False)
 class Target:
+    """Target device (DUT)
+
+    Implements a target device which has a select of resources and drivers
+    attached.
+
+    Attributes:
+        name (str): Name of the target, e.g. 'samus'
+        env (Environment): Environment object containing various settings
+        var_dict (dict): Dictionary of variables provided from cmdline:
+            key (str): variable name
+            value (str): variable value
+        log (logging.Logger): Logger to use for logging output
+        resources (list of Resource): Resources attached to this target
+        drivers (list of Driver): Drivers attached to this target
+        last_update (int): Monotonic time of last call to update_resources(),
+            used to ensure that updates happen no more than 10 times a second
+        _binding_map (dict): Maps resources used by the target to a member name:
+            key (str): Name of binding, .e.g. 'power'
+            value (Driver): Driver to use for this binding, e.g. 'PowerProtocol'
+
+            Note that this is set by set_binding_map() and emptied when
+            bind_driver() is called.
+        _lookup_table (dict): Maps resource names to their classes:
+            key (str): Resource-class name
+            value (Resource): Associated resource class
+
+            Note that this does not appear to be used in Labgrid, even though
+            it is maintained.
+    """
     name = attr.ib(validator=attr.validators.instance_of(str))
     env = attr.ib(default=None)
+    var_dict = attr.ib(default={})
 
     def __attrs_post_init__(self):
         self.log = logging.getLogger(f"target({self.name})")
@@ -155,7 +185,32 @@ class Target:
             self.await_resources(found)
         return found[0]
 
-    def _get_driver(self, cls, *, name=None, resource=None, activate=True, active=False):
+    def _get_driver(self, cls, *, name=None, resource=None, active=False,
+                    activate=True, allow_missing=False):
+        """Find a single driver referenced by the target
+
+        Targets have a list of associated drivers. This method provides various
+        ways of looking up that list. The search fails if multiple drivers
+        match the criteria
+
+        Args:
+            cls (str): driver class to search for
+            name (str): name to use as a filter, or None
+            resource (Resource): resource to use as a filter, or None
+            active (bool): True to only return activated drivers, False to
+                return any matching driver
+            allow_missing (bool): True to allow the driver to be missing,
+                in which case None is returned
+            activate (bool): True to activate the driver once found
+
+        Returns:
+            Driver: driver found, or None if there is none and allow_missing is
+                True
+
+        Except:
+            NoDriverFoundError: No matching driver found (and allow_missing is
+                False), or multiple matching drivers found
+        """
         assert not (activate is True and active is True)
 
         found = []
@@ -175,6 +230,8 @@ class Target:
                 continue
             found.append(drv)
         if not found:
+            if allow_missing:
+                return None
             name_msg = f" named '{name}'" if name else ""
             if other_names:
                 raise NoDriverFoundError(
@@ -210,29 +267,54 @@ class Target:
         return found[0]
 
     def get_active_driver(self, cls, *, name=None, resource=None):
-        """
-        Helper function to get the active driver of the target.
-        Returns the active driver found, otherwise None.
+        """Get the active driver of the target
 
-        Arguments:
-        cls -- driver-class to return as a resource
-        name -- optional name to use as a filter
-        resource -- optional resource to use as a filter
-        """
-        return self._get_driver(cls, name=name, resource=resource, activate=False, active=True)
+        This looks for a driver of the given class (which can be a protocol)
+        which has already been activated. This useful when there are two drivers
+        providing a certain protocol, but only one is active at a time.
 
-    def get_driver(self, cls, *, name=None, resource=None, activate=True):
-        """
-        Helper function to get a driver of the target.
-        Returns the first valid driver found, otherwise None.
+        Args:
+            cls (str): driver class to search for
+            *: Note sure what this is for
+            name (str): name to use as a filter, or None
+            resource -- optional resource to use as a filter
 
-        Arguments:
-        cls -- driver-class to return as a resource
-        name -- optional name to use as a filter
-        resource -- optional resource to use as a filter
-        activate -- activate the driver (default True)
+        Returns:
+            Driver: no matching (activated) driver found
+
+        Except:
+            NoDriverFoundError: No matching driver found, or multiple matching
+                drivers found
         """
-        return self._get_driver(cls, name=name, resource=resource, activate=activate)
+        return self._get_driver(cls, name=name, resource=resource,
+                                active=True, activate=False)
+
+    def get_driver(self, cls, *, name=None, resource=None, activate=True,
+                   allow_missing=False):
+        """Get the active driver of the target
+
+        This looks for a driver of the given class (which can be a protocol)
+        which has already been activated. This useful when there are two drivers
+        providing a certain protocol, but only one is active at a time.
+
+        Args:
+            cls (str): driver class to search for
+            *: Note sure what this is for
+            name (str): name to use as a filter, or None
+            resource -- optional resource to use as a filter
+            activate (bool): True to activate the driver once found
+            allow_missing (bool): True to allow the driver to be missing,
+                in which case None is returned
+
+        Returns:
+            Driver: no matching driver found
+
+        Except:
+            NoDriverFoundError: No matching driver found, or multiple matching
+                drivers found
+        """
+        return self._get_driver(cls, name=name, resource=resource,
+                                activate=activate, allow_missing=allow_missing)
 
     def get_strategy(self):
         """

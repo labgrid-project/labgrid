@@ -168,6 +168,30 @@ class NetworkRKUSBLoader(RemoteUSBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class NetworkSamsungUSBLoader(RemoteUSBResource):
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkSunxiUSBLoader(RemoteUSBResource):
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkTegraUSBLoader(RemoteUSBResource):
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class NetworkAlteraUSBBlaster(RemoteUSBResource):
     def __attrs_post_init__(self):
         self.timeout = 10.0
@@ -254,6 +278,18 @@ class NetworkUSBSDWireDevice(RemoteUSBResource):
 @attr.s(eq=False)
 class NetworkUSBSDWire3Device(RemoteUSBResource):
     """The NetworkUSBSDWire3Device describes a remotely accessible USBSDWire3 device"""
+    control_serial = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkUSBSDWireBadgerdDevice(RemoteUSBResource):
+    """The NetworkUSBSDWireBadgerdDevice describes a remotely accessible USBSDWireBadgerd device"""
     control_serial = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))

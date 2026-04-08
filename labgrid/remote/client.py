@@ -1341,6 +1341,10 @@ class ClientSession:
     def sshfs(self):
         if self.args.mount and self.args.unmount:
             raise MarsError("Cannot use --mount and --unmount at the same time.")
+
+        if (self.args.path and self.args.path.startswith(':') and
+            self.args.mountpoint.startswith(':')):
+            raise ExecutionError("Ambiguous: Both path and mountpoint cannot start with ':'.")
         drv = self._get_ssh()
 
         drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint, mount=self.args.mount, unmount=self.args.unmount)

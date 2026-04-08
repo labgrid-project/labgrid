@@ -45,6 +45,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._scp = self._get_tool("scp")
         self._sshfs = self._get_tool("sshfs")
         self._rsync = self._get_tool("rsync")
+        self._fusermount = self._get_tool("fusermount")
 
     def _get_tool(self, name):
         if self.target.env:
@@ -422,24 +423,105 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         )
         return sub.wait()
 
+    # development remote mounting/unmounting options will require:
+    # - sshd up and running on host
+    # - fusermount available on Exporter
+    # - sshfs available on Exporter
     @Driver.check_active
     @step(args=['path', 'mountpoint'])
     def sshfs(self, *, path=None, mountpoint=None, mount=False, unmount=False):
         import os, subprocess
 
+        # remote path logic
+        mount_is_remote = mountpoint.startswith(':') if mountpoint else False
+        path_is_remote = True if not mount_is_remote else False
+
         # unmount
         if unmount:
-            if not os.path.ismount(mountpoint):
-                self.logger.info("Skipping, %s is not a mountpoint.", mountpoint)
-                return
-
-            self.logger.info("Unmounting %s", mountpoint)
-            subprocess.run(["fusermount", "-u", mountpoint], check=True)
+            target = mountpoint.lstrip(':')
+            if mount_is_remote:
+                self.logger.info("Unmounting remote %s", target)
+                self.run(f"fusermount -u {target} || umount {target} || sudo umount {target}")
+            else:
+                if not os.path.ismount(target):
+                    self.logger.info("Skipping, %s is not a mountpoint.", target)
+                    return
+                subprocess.run([self._fusermount, "-u", target], check=True)
             return
 
-        # mount, checks
+        # checks
+        path = path.lstrip(':')
+        mountpoint = mountpoint.lstrip(':')
+
         if not path:
             raise ExecutionError("Remote path is required for mounting")
+
+        if mount_is_remote:
+            if not mount:
+                raise ExecutionError("Remote mountpoints require the --mount flag.")
+
+            # arg: local IP
+            local_ip_address = ""
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                s.connect((f"{self.networkservice.address}", 1))
+                local_ip_address = s.getsockname()[0]
+            except Exception:
+                raise ExecutionError("Could not identify used local IP address")
+            finally:
+                s.close()
+
+            # arg: local user
+            local_user = os.getlogin()
+
+            # arg: local path
+            from pathlib import Path
+            local_path = Path(path).resolve()
+            if not os.path.exists(local_path):
+                raise ExecutionError(f"Local path {local_path} is invalid")
+
+            # arg: remote mountpoint
+            # - check if remote mountpoint is a valid absolute path
+            remote_mountpoint = mountpoint
+            res, stderr, ret = self.run(f"cd / && test -d {remote_mountpoint} ; echo $?")
+            if res[0] != '0':
+                raise ExecutionError(f"Remote mountpoint {remote_mountpoint} is not a valid absolute path")
+
+            # - check if remote mountpoint is already mounted
+            res, stderr, ret = self.run(f"grep -qs ' {remote_mountpoint} ' /proc/mounts &> /dev/null; echo $?")
+            if res[0] == '0':
+                self.logger.info("Remote destination %s is already mounted. Skipping", remote_mountpoint)
+                return
+
+            # build remote mount command
+            session_bg_time = 5
+            # Note:
+            # Remotely mounting sshfs is supposed to be a development feature.
+            # Thus we execute ssh in terminal mode to allow for interactivly
+            # asking for a password, rather than assuming credentials on the
+            # DUT (which could be setup equally outside labgrid). After that
+            # sshfs puts itself to the background.
+            # The sshfs command needs an execution shell when being in
+            # foreground. Even when executed with nohup a missing shell will
+            # shut sshfs down immediately when the shell access is gone. The
+            # trick here is to execute sshfs with nohup (to avoid closing on
+            # HUP) piping the (empty) nohup log file to /dev/null, then sleep
+            # some seconds, to allow sshfs moving into the background. Being in
+            # the background the sshfs mount will persist closing the ssh
+            # session.
+            inner_cmd = f"nohup sshfs {local_user}@{local_ip_address}:{local_path} {remote_mountpoint} > /dev/null 2>&1 && sleep {session_bg_time}"
+            remote_cmd = [
+                self._ssh,
+                "-o", f"ControlPath={self.control.replace('%', '%%')}",
+                "-t",
+                "-l", self._get_username(),
+                self.networkservice.address,
+                inner_cmd  # The remote shell will execute this
+            ]
+            self.logger.info("Running command: %s", remote_cmd)
+            sub = subprocess.Popen(remote_cmd)
+            return sub.wait()
 
         if os.path.ismount(mountpoint):
             self.logger.info("Destination %s is already mounted. Skipping", mountpoint)
@@ -448,20 +530,18 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         # mount, build command
         complete_cmd = [self._sshfs]
         if mount:
-            complete_cmd.extend(["-o", "reconnect,ServerAliveInterval=15,ServerAliveCountMax=3", f"{self._get_username()}@{self.networkservice.address}:{path}", mountpoint])
+            remote_src = f"{self._get_username()}@{self.networkservice.address}:{path}"
+            complete_cmd.extend(["-o", "reconnect,ServerAliveInterval=15", remote_src, mountpoint])
         else:
             complete_cmd.extend(["-F", "none", "-f", "-o", f"ControlPath={self.control.replace('%', '%%')}", f":{path}", mountpoint])
 
         self.logger.debug("Running command: %s", complete_cmd)
-
         sub = subprocess.Popen(complete_cmd)
         try:
             exit_code = sub.wait(1)
             if exit_code != 0:
-                raise ExecutionError(
-                    f"error executing command: {complete_cmd}"
-                )
-        except subprocess.TimeoutExpired:  # still running
+                raise ExecutionError(f"error executing command: {complete_cmd}")
+        except subprocess.TimeoutExpired:
             if mount:
                 self.logger.info("SSHFS mounted in background: %s (Unmount manually)", mountpoint)
             else:

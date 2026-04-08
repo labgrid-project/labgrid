@@ -39,8 +39,8 @@ This is the client to control a boards status and interface with it on remote ma
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client [\-x ADDRESS] [\-c CONFIG] [\-p PLACE] [\-s STATE]
-                      [\-i INITIAL_STATE] [\-d] [\-v] [\-P PROXY]
+usage: labgrid\-client [\-x ADDRESS] [\-c CONFIG] [\-p PLACE] [\-s STATE] [\-a]
+                      [\-i INITIAL_STATE] [\-e END_STATE] [\-d] [\-v] [\-P PROXY]
                       COMMAND ...
 .EE
 .UNINDENT
@@ -67,8 +67,18 @@ strategy state to switch into before command (default: value from env varibale L
 .UNINDENT
 .INDENT 0.0
 .TP
+.B \-a, \-\-acquire
+acquire place before starting and release after finishing
+.UNINDENT
+.INDENT 0.0
+.TP
 .B \-i <initial_state>, \-\-initial\-state <initial_state>
 strategy state to force into before switching to desired state
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-e <end_state>, \-\-end\-state <end_state>
+strategy state to switch into after command
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -233,7 +243,7 @@ connect to the console
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client console|con [\-l] [\-o] [\-\-logfile FILE] [name]
+usage: labgrid\-client console|con [\-i] [\-l] [\-o] [\-\-logfile FILE] [name]
 .EE
 .UNINDENT
 .UNINDENT
@@ -241,6 +251,11 @@ usage: labgrid\-client console|con [\-l] [\-o] [\-\-logfile FILE] [name]
 .TP
 .B name
 optional resource name
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-i, \-\-internal
+use an internal console instead of microcom
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -599,9 +614,14 @@ release a place
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client release|unlock [\-k]
+usage: labgrid\-client release|unlock [\-f] [\-k]
 .EE
 .UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-f, \-\-force
+don\(aqt raise an error if the place is not acquired
 .UNINDENT
 .INDENT 0.0
 .TP

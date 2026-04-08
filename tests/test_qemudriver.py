@@ -112,3 +112,39 @@ def test_qemu_port_forwarding_with_netdev(qemu_target, qemu_driver, qemu_mock, q
     assert qemu_driver._forwarded_ports == {}
 
     qemu_target.deactivate(qemu_driver)
+
+def test_add_usb_network_device(qemu_target, qemu_driver, qemu_mock, qemu_version_mock, mocker):
+    qemu_target.activate(qemu_driver)
+
+    qemu_driver.on()
+    qemu_driver.qmp.execute = mocker.MagicMock(return_value={})
+    qemu_driver.add_usb_network_device()
+    qemu_driver.qmp.execute.assert_any_call("netdev_add", {"type": "user", "id": "usbnet"})
+    qemu_driver.qmp.execute.assert_any_call("device_add", {"driver": "usb-net", "id": "usb-net-0", "netdev": "usbnet", "bus": "xhci.0"})
+
+    qemu_target.deactivate(qemu_driver)
+
+
+def test_add_usb_network_device_custom_args(qemu_target, qemu_driver, qemu_mock, qemu_version_mock, mocker):
+    qemu_target.activate(qemu_driver)
+
+    qemu_driver.on()
+    qemu_driver.qmp.execute = mocker.MagicMock(return_value={})
+    qemu_driver.add_usb_network_device(device_id="usb-net-1", netdev="mynet", bus="xhci.0")
+    qemu_driver.qmp.execute.assert_any_call("netdev_add", {"type": "user", "id": "mynet"})
+    qemu_driver.qmp.execute.assert_any_call("device_add", {"driver": "usb-net", "id": "usb-net-1", "netdev": "mynet", "bus": "xhci.0"})
+
+    qemu_target.deactivate(qemu_driver)
+
+
+def test_remove_usb_network_device(qemu_target, qemu_driver, qemu_mock, qemu_version_mock, mocker):
+    qemu_target.activate(qemu_driver)
+
+    qemu_driver.on()
+    qemu_driver.qmp.execute = mocker.MagicMock(return_value={})
+    qemu_driver.add_usb_network_device()
+    qemu_driver.remove_usb_network_device()
+    qemu_driver.qmp.execute.assert_any_call("device_del", {"id": "usb-net-0"})
+    qemu_driver.qmp.execute.assert_any_call("netdev_del", {"id": "usbnet"})
+
+    qemu_target.deactivate(qemu_driver)

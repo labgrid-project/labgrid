@@ -127,7 +127,7 @@ class SerialLoggingReporter:
 
 
 class StepLogger:
-    _started = False
+    started = False
     _logger = None
     _serial_logger = None
     _length_limit = 100
@@ -144,21 +144,21 @@ class StepLogger:
     @classmethod
     def start(cls, length_limit=None):
         """starts the StepLogger"""
-        assert not cls._started
+        assert not cls.started
         if cls._logger is None:
             cls._logger = logging.getLogger("StepLogger")
         steps.subscribe(cls.notify)
         cls._serial_logger = SerialLoggingReporter()
-        cls._started = True
+        cls.started = True
         if length_limit is not None:
             cls._length_limit = length_limit
 
     @classmethod
     def stop(cls):
         """stops the StepLogger"""
-        assert cls._started
+        assert cls.started
         steps.unsubscribe(cls.notify)
-        cls._started = False
+        cls.started = False
 
     @classmethod
     def get_prefix(cls, event):

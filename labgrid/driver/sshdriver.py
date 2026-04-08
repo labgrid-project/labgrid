@@ -377,7 +377,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 "-o", f"ControlPath={self.control.replace('%', '%%')}",
                 src, dst,
         ]
-        
+
         if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
             complete_cmd.insert(1, "-s")
         if self.explicit_scp_mode and self._scp_supports_explicit_scp_mode():
@@ -424,31 +424,52 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     @step(args=['path', 'mountpoint'])
-    def sshfs(self, *, path, mountpoint):
-        if not self._check_keepalive():
-            raise ExecutionError("Keepalive no longer running")
+    def sshfs(self, *, path=None, mountpoint=None, mount=False, unmount=False):
+        import os, subprocess
 
-        complete_cmd = [self._sshfs,
-                "-F", "none",
-                "-f",
-                "-o", f"ControlPath={self.control.replace('%', '%%')}",
-                f":{path}",
-                mountpoint,
-        ]
+        # unmount
+        if unmount:
+            if not os.path.ismount(mountpoint):
+                self.logger.info("Skipping, %s is not a mountpoint.", mountpoint)
+                return
+
+            self.logger.info("Unmounting %s", mountpoint)
+            subprocess.run(["fusermount", "-u", mountpoint], check=True)
+            return
+
+        # mount, checks
+        if not path:
+            raise ExecutionError("Remote path is required for mounting")
+
+        if os.path.ismount(mountpoint):
+            self.logger.info("Destination %s is already mounted. Skipping", mountpoint)
+            return
+
+        # mount, build command
+        complete_cmd = [self._sshfs]
+        if mount:
+            complete_cmd.extend(["-o", "reconnect,ServerAliveInterval=15,ServerAliveCountMax=3", f"{self._get_username()}@{self.networkservice.address}:{path}", mountpoint])
+        else:
+            complete_cmd.extend(["-F", "none", "-f", "-o", f"ControlPath={self.control.replace('%', '%%')}", f":{path}", mountpoint])
 
         self.logger.debug("Running command: %s", complete_cmd)
-        sub = subprocess.Popen(
-            complete_cmd,
-        )
-        try:
-            sub.wait(1)
-            raise ExecutionError(
-                f"error executing command: {complete_cmd}"
-            )
-        except subprocess.TimeoutExpired:  # still running
-            self.logger.info("Started SSHFS on %s. Press CTRL-C to stop.", mountpoint)
 
-        sub.wait()
+        sub = subprocess.Popen(complete_cmd)
+        try:
+            exit_code = sub.wait(1)
+            if exit_code != 0:
+                raise ExecutionError(
+                    f"error executing command: {complete_cmd}"
+                )
+        except subprocess.TimeoutExpired:  # still running
+            if mount:
+                self.logger.info("SSHFS mounted in background: %s (Unmount manually)", mountpoint)
+            else:
+                if not self._check_keepalive():
+                    raise ExecutionError("Keepalive no longer running")
+
+                self.logger.info("Started SSHFS on %s. Press CTRL-C to stop.", mountpoint)
+                sub.wait()
 
     def get_status(self):
         """The SSHDriver is always connected, return 1"""

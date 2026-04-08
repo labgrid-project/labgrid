@@ -1339,9 +1339,11 @@ class ClientSession:
             raise InteractiveCommandError("rsync error", res)
 
     def sshfs(self):
+        if self.args.mount and self.args.unmount:
+            raise MarsError("Cannot use --mount and --unmount at the same time.")
         drv = self._get_ssh()
 
-        drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint)
+        drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint, mount=self.args.mount, unmount=self.args.unmount)
 
     def forward(self):
         if not self.args.local and not self.args.remote:
@@ -2076,7 +2078,12 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
     subparser = subparsers.add_parser("sshfs", help="mount via sshfs (blocking)")
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.add_argument("path", help="remote path on the target")
+    # create a group to make "--mount" and "--unmount" mutually exclusive
+    group = subparser.add_mutually_exclusive_group()
+    group.add_argument("--mount", action="store_true", help="mount daemonized (manual unmount required)")
+    group.add_argument("--unmount", action="store_true", help="unmount the local path")
+    # mountpoint is always needed, path is only for mounting
+    subparser.add_argument("path", nargs="?", help="remote path on the target (only for mounting)")
     subparser.add_argument("mountpoint", help="local path")
     subparser.set_defaults(func=ClientSession.sshfs)
 

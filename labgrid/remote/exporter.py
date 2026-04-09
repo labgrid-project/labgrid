@@ -20,6 +20,11 @@ from socket import gethostname, getfqdn
 import attr
 import grpc
 
+from labgrid.remote.grpc.interceptor.client import (
+    IdentityClientStreamStreamInterceptor,
+    IdentityClientUnaryUnaryInterceptor,
+)
+
 from .config import ResourceConfig
 from .common import ResourceEntry, queue_as_aiter
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
@@ -831,9 +836,14 @@ class Exporter:
         if urlsplit(f"//{config['coordinator']}").port is None:
             config["coordinator"] += ":20408"
 
+        identity = (None, self.name, f"labgrid-exporter {labgrid_version()}")
         self.channel = grpc.aio.insecure_channel(
             target=config["coordinator"],
             options=channel_options,
+            interceptors=[
+                IdentityClientUnaryUnaryInterceptor(*identity),
+                IdentityClientStreamStreamInterceptor(*identity),
+            ],
         )
         self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
         self.out_queue = asyncio.Queue()

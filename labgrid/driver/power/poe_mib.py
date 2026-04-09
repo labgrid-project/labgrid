@@ -12,6 +12,7 @@ def power_set(host, port, index, value):
     oid_value = "1" if value else "2"
 
     _snmp.set(outlet_control_oid, oid_value)
+    _snmp.cleanup()
 
 def power_get(host, port, index):
     _snmp = SimpleSNMP(host, 'private', port=port)
@@ -19,6 +20,7 @@ def power_get(host, port, index):
 
     value = _snmp.get(output_status_oid)
 
+    _snmp.cleanup()
     if value == 1:  # On
         return True
     if value == 2:  # Off

@@ -21,6 +21,11 @@ import pathlib
 import attr
 import grpc
 
+from labgrid.remote.grpc.interceptor.client import (
+    IdentityClientStreamStreamInterceptor,
+    IdentityClientUnaryUnaryInterceptor,
+)
+
 from .config import ResourceConfig
 from .common import ResourceEntry, get_client_credentials, queue_as_aiter
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
@@ -914,16 +919,23 @@ class Exporter:
         if urlsplit(f"//{config['coordinator']}").port is None:
             config["coordinator"] += ":20408"
 
+        identity = (None, self.name, f"labgrid-exporter {labgrid_version()}")
+        interceptors = [
+            IdentityClientUnaryUnaryInterceptor(*identity),
+            IdentityClientStreamStreamInterceptor(*identity),
+        ]
         if config["credentials"]:
             self.channel = grpc.aio.secure_channel(
                 target=config["coordinator"],
                 credentials=config["credentials"],
                 options=channel_options,
+                interceptors=interceptors,
             )
         else:
             self.channel = grpc.aio.insecure_channel(
                 target=config["coordinator"],
                 options=channel_options,
+                interceptors=interceptors,
             )
         self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
         self.out_queue = asyncio.Queue()

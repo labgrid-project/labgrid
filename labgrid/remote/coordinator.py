@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import contextvars
 import logging
 import asyncio
 import traceback
@@ -12,9 +13,13 @@ import random
 import signal
 import pathlib
 from typing import Optional
+
 import attr
 import grpc
 from grpc_reflection.v1alpha import reflection
+
+from labgrid.remote.grpc.interceptor.server import IdentityServerInterceptor
+from labgrid.remote.identity import ClientIdentity
 
 from .common import (
     ResourceEntry,
@@ -30,6 +35,10 @@ from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
+
+client_identity_context: contextvars.ContextVar[Optional[ClientIdentity]] = contextvars.ContextVar(
+    "client_identity", default=None
+)
 
 
 @contextmanager
@@ -1128,6 +1137,7 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
     ]
     server = grpc.aio.server(
         options=channel_options,
+        interceptors=[IdentityServerInterceptor(client_identity_context)],
     )
     coordinator = Coordinator()
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)

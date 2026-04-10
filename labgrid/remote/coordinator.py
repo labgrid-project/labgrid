@@ -1267,11 +1267,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         print(f"{place.name}: place released")
 
-    @add_identity
-    @locked
-    async def AllowPlace(self, request, context, *, identity):
-        placename = request.placename
-        user = request.user
+    async def share_place(self, placename, user, context, *, identity):
         peer = context.peer()
         try:
             username = infer_peer_identity(self.clients, context, identity)
@@ -1291,7 +1287,23 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         place.touch()
         self._publish_place(place)
         self.save_later()
+
+    @add_identity
+    @locked
+    async def AllowPlace(self, request, context, *, identity):
+        await self.share_place(request.placename, request.user, context, identity=identity)
         return labgrid_coordinator_pb2.AllowPlaceResponse()
+
+    @add_identity
+    @locked
+    async def SharePlace(self, request, context, *, identity):
+        name = request.name
+        logging.debug("SharePlace name=%s user=%s", name, request.user)
+        if not name or not isinstance(name, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+
+        await self.share_place(name, request.user, context, identity=identity)
+        return labgrid_coordinator_pb2.SharePlaceResponse()
 
     @locked
     async def UnsharePlace(self, request, context):

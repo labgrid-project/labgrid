@@ -1,8 +1,11 @@
-import pytest
+from time import monotonic, sleep
 
 import grpc
+import pytest
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
+
+LIST_PLACE_RESOURCES_PATTERN = "testhost/ClsNotEqualResourceName/NetworkSerialPort/ExampleResource"
 
 
 @pytest.fixture(scope="function")
@@ -381,3 +384,63 @@ def test_coordinator_refresh_reservation_not_found(coordinator, coordinator_plac
 
     assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
     assert excinfo.value.details() == "Reservation nonexistent does not exist"
+
+
+def wait_for_list_place_resources(stub, name, expected_count, timeout=5.0):
+    deadline = monotonic() + timeout
+    request = labgrid_coordinator_pb2.ListPlaceResourcesRequest(name=name)
+    while monotonic() < deadline:
+        res = stub.ListPlaceResources(request)
+        if len(res.resources) == expected_count:
+            return res
+        sleep(0.1)
+    return stub.ListPlaceResources(request)
+
+
+def test_coordinator_list_place_resources(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = stub.AddPlaceMatch(
+        labgrid_coordinator_pb2.AddPlaceMatchRequest(placename="test", pattern=LIST_PLACE_RESOURCES_PATTERN)
+    )
+    assert res
+    res = wait_for_list_place_resources(stub, "test", 1)
+    assert len(res.resources) == 1
+    assert res.resources[0].cls == "NetworkSerialPort"
+    assert res.resources[0].path.exporter_name == "testhost"
+    assert res.resources[0].path.group_name == "ClsNotEqualResourceName"
+    assert res.resources[0].path.resource_name == "ExampleResource"
+
+
+def test_coordinator_list_place_resources_no_matches(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = stub.AddPlaceMatch(
+        labgrid_coordinator_pb2.AddPlaceMatchRequest(placename="test", pattern=LIST_PLACE_RESOURCES_PATTERN)
+    )
+    assert res
+    res = wait_for_list_place_resources(stub, "test", 1)
+    assert len(res.resources) == 1
+    res = stub.DeletePlaceMatch(
+        labgrid_coordinator_pb2.DeletePlaceMatchRequest(placename="test", pattern=LIST_PLACE_RESOURCES_PATTERN)
+    )
+    assert res
+    res = stub.ListPlaceResources(labgrid_coordinator_pb2.ListPlaceResourcesRequest(name="test"))
+    assert res
+    assert len(res.resources) == 0
+
+
+def test_coordinator_list_place_resources_place_does_not_exist(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaceResources(labgrid_coordinator_pb2.ListPlaceResourcesRequest(name="test_nonexistant_place"))
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "Place test_nonexistant_place does not exist"
+
+
+def test_coordinator_list_place_resources_name_not_provided(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaceResources(labgrid_coordinator_pb2.ListPlaceResourcesRequest())
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"

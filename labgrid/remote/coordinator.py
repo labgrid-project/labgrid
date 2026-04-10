@@ -1090,6 +1090,21 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     def _get_places(self):
         return {k: v.asdict() for k, v in self.places.items()}
 
+    async def GetPlace(self, request, context):
+        name = request.name
+        logging.debug("GetPlace name=%s", name)
+        if not name or not isinstance(name, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+        try:
+            place = self.places[name]
+            # Copy without yielding: reads need not wait for exporter operations.
+            return labgrid_coordinator_pb2.GetPlaceResponse(place=place.as_pb2())
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
+        except Exception:
+            logging.exception("error during get place")
+            await context.abort(grpc.StatusCode.INTERNAL, "internal error")
+
     @locked
     async def GetPlaces(self, unused_request, unused_context):
         logging.debug("GetPlaces")

@@ -978,6 +978,39 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AllowPlaceResponse()
 
+    @locked
+    async def UnsharePlace(self, request, context):
+        placename = request.name
+        logging.debug("UnsharePlace name=%s user=%s", placename, request.user)
+        if not placename or not isinstance(placename, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+
+        user = request.user
+        peer = context.peer()
+        try:
+            username = infer_peer_identity(self.clients, context, client_identity_context)
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
+        try:
+            place = self.places[placename]
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {placename} does not exist")
+        if not place.acquired:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired")
+        if not place.acquired == username:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired by {username}"
+            )
+        try:
+            place.allowed.remove(user)
+            place.touch()
+            self._publish_place(place)
+            self.save_later()
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not shared with {user}")
+
+        return labgrid_coordinator_pb2.UnsharePlaceResponse()
+
     def _get_places(self):
         return {k: v.asdict() for k, v in self.places.items()}
 

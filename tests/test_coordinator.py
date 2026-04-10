@@ -287,6 +287,40 @@ def test_coordinator_place_allow(coordinator, coordinator_place):
     assert res
 
 
+def test_coordinator_place_unshare(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"))
+    assert res
+    res = stub.AllowPlace(labgrid_coordinator_pb2.AllowPlaceRequest(placename="test", user="othertest"))
+    assert res
+    res = stub.UnsharePlace(labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest"))
+    assert res
+
+
+def test_coordinator_place_unshare_not_acquired(coordinator, coordinator_place):
+    stub = coordinator_place
+    request = labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.UnsharePlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+    assert excinfo.value.details() == "Place test is not acquired"
+
+
+def test_coordinator_place_unshare_not_shared(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"))
+    assert res
+    request = labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.UnsharePlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+    assert excinfo.value.details() == "Place test is not shared with othertest"
+
+
 def test_coordinator_create_reservation(coordinator, coordinator_place):
     tags = {"board": "test"}
     stub = coordinator_place
@@ -577,6 +611,16 @@ def test_coordinator_get_place_not_provided(coordinator, channel_stub):
 
     with pytest.raises(grpc.RpcError) as excinfo:
         channel_stub.GetPlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_place_unshare_name_not_provided(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.UnsharePlaceRequest(user="test")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.UnsharePlace(request)
 
     assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
     assert excinfo.value.details() == "name was not a string"

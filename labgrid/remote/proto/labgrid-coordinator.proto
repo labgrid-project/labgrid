@@ -39,6 +39,8 @@ service Coordinator {
 
   rpc AllowPlace(AllowPlaceRequest) returns (AllowPlaceResponse) {}
 
+  rpc UnsharePlace(UnsharePlaceRequest) returns (UnsharePlaceResponse) {}
+
   rpc CreateReservation(CreateReservationRequest) returns (CreateReservationResponse) {}
 
   rpc CancelReservation(CancelReservationRequest) returns (CancelReservationResponse) {}
@@ -310,6 +312,13 @@ message AllowPlaceRequest {
 message AllowPlaceResponse {
 };
 
+message UnsharePlaceRequest {
+  string name = 1;
+  string user = 2;
+};
+
+message UnsharePlaceResponse {
+};
 
 message CreateReservationRequest {
   map<string, Reservation.Filter> filters = 1;

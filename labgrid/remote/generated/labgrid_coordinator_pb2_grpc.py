@@ -99,6 +99,11 @@ class CoordinatorStub(object):
                 request_serializer=labgrid__coordinator__pb2.AllowPlaceRequest.SerializeToString,
                 response_deserializer=labgrid__coordinator__pb2.AllowPlaceResponse.FromString,
                 )
+        self.UnsharePlace = channel.unary_unary(
+                '/labgrid.Coordinator/UnsharePlace',
+                request_serializer=labgrid__coordinator__pb2.UnsharePlaceRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.UnsharePlaceResponse.FromString,
+                )
         self.CreateReservation = channel.unary_unary(
                 '/labgrid.Coordinator/CreateReservation',
                 request_serializer=labgrid__coordinator__pb2.CreateReservationRequest.SerializeToString,
@@ -231,6 +236,12 @@ class CoordinatorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def UnsharePlace(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def CreateReservation(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -348,6 +359,11 @@ def add_CoordinatorServicer_to_server(servicer, server):
                     servicer.AllowPlace,
                     request_deserializer=labgrid__coordinator__pb2.AllowPlaceRequest.FromString,
                     response_serializer=labgrid__coordinator__pb2.AllowPlaceResponse.SerializeToString,
+            ),
+            'UnsharePlace': grpc.unary_unary_rpc_method_handler(
+                    servicer.UnsharePlace,
+                    request_deserializer=labgrid__coordinator__pb2.UnsharePlaceRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.UnsharePlaceResponse.SerializeToString,
             ),
             'CreateReservation': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateReservation,
@@ -670,6 +686,23 @@ class Coordinator(object):
         return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/AllowPlace',
             labgrid__coordinator__pb2.AllowPlaceRequest.SerializeToString,
             labgrid__coordinator__pb2.AllowPlaceResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def UnsharePlace(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/UnsharePlace',
+            labgrid__coordinator__pb2.UnsharePlaceRequest.SerializeToString,
+            labgrid__coordinator__pb2.UnsharePlaceResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

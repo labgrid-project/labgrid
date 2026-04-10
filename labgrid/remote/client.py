@@ -154,10 +154,6 @@ class ClientSession:
 
         self.pump_task = self.loop.create_task(self.message_pump())
         msg = labgrid_coordinator_pb2.ClientInMessage()
-        msg.startup.version = labgrid_version()
-        msg.startup.name = f"{self.gethostname()}/{self.getuser()}"
-        self.out_queue.put_nowait(msg)
-        msg = labgrid_coordinator_pb2.ClientInMessage()
         msg.subscribe.all_places = True
         self.out_queue.put_nowait(msg)
         msg = labgrid_coordinator_pb2.ClientInMessage()

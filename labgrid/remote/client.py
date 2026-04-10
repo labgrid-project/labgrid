@@ -486,11 +486,11 @@ class ClientSession:
             host, user = place.acquired.split("/")
             if user != self.getuser():
                 raise UserError(
-                    f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}"
+                    f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()}"
                 )
             if host != self.gethostname():
                 raise UserError(
-                    f"place {place.name} is not acquired on this computer, acquired on {host}. To allow this host, use labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()} on the other host"
+                    f"place {place.name} is not acquired on this computer, acquired on {host}. To share with this host, use labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()} on the other host"
                 )
 
     def get_place(self, place=None):
@@ -738,17 +738,17 @@ class ClientSession:
         place = self.get_place(place)
         if place.acquired:
             host, user = place.acquired.split("/")
-            allowhelp = f"'labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}' on {host}."
+            sharehelp = f"'labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()}' on {host}."
             if self.getuser() == user:
                 if self.gethostname() == host:
                     raise UserError(f"You have already acquired place {place.name}.")
                 else:
                     raise UserError(
-                        f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {allowhelp}"
+                        f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {sharehelp}"
                     )
             else:
                 raise UserError(
-                    f"Place {place.name} is already acquired by {place.acquired}. To work simultaneously, {user} can execute {allowhelp}"
+                    f"Place {place.name} is already acquired by {place.acquired}. To work simultaneously, {user} can execute {sharehelp}"
                 )
         if not self.args.allow_unmatched:
             self.check_matches(place)
@@ -832,20 +832,20 @@ class ClientSession:
 
         print(f"{self.args.acquired} has released place {place.name}")
 
-    async def allow(self):
-        """Allow another use access to a previously acquired place"""
+    async def share(self):
+        """Share access to a previously acquired place with another user"""
         place = self.get_acquired_place()
         if "/" not in self.args.user:
             raise UserError(f"user {self.args.user} must be in <host>/<username> format")
-        request = labgrid_coordinator_pb2.AllowPlaceRequest(placename=place.name, user=self.args.user)
+        request = labgrid_coordinator_pb2.SharePlaceRequest(name=place.name, user=self.args.user)
 
         try:
-            await self.stub.AllowPlace(request)
+            await self.stub.SharePlace(request)
             await self.sync_with_coordinator()
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
 
-        print(f"allowed {self.args.user} for place {place.name}")
+        print(f"shared place {place.name} with {self.args.user}")
 
     async def unshare(self):
         """Remove another user's access to a previously acquired place"""
@@ -2000,9 +2000,9 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument("acquired", metavar="HOST/USER", help="User and host to match against when releasing")
     subparser.set_defaults(func=ClientSession.release_from)
 
-    subparser = subparsers.add_parser("allow", help="allow another user to access a place")
+    subparser = subparsers.add_parser("share", aliases=("allow",), help="share a place with another user")
     subparser.add_argument("user", help="<host>/<username>")
-    subparser.set_defaults(func=ClientSession.allow)
+    subparser.set_defaults(func=ClientSession.share)
 
     subparser = subparsers.add_parser("unshare", help="remove another user's access to a place")
     subparser.add_argument("user", help="<host>/<username>")

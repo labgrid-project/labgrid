@@ -373,6 +373,18 @@ class AllowPlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class SharePlaceRequest(_message.Message):
+    __slots__ = ("name", "user")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    USER_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    user: str
+    def __init__(self, name: _Optional[str] = ..., user: _Optional[str] = ...) -> None: ...
+
+class SharePlaceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
 class UnsharePlaceRequest(_message.Message):
     __slots__ = ("name", "user")
     NAME_FIELD_NUMBER: _ClassVar[int]

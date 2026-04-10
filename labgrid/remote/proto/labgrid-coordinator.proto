@@ -35,7 +35,11 @@ service Coordinator {
 
   rpc ReleasePlace(ReleasePlaceRequest) returns (ReleasePlaceResponse) {}
 
-  rpc AllowPlace(AllowPlaceRequest) returns (AllowPlaceResponse) {}
+  rpc AllowPlace(AllowPlaceRequest) returns (AllowPlaceResponse) {
+    option deprecated = true;
+  }
+
+  rpc SharePlace(SharePlaceRequest) returns (SharePlaceResponse) {}
 
   rpc UnsharePlace(UnsharePlaceRequest) returns (UnsharePlaceResponse) {}
 
@@ -272,11 +276,22 @@ message ReleasePlaceResponse {
 };
 
 message AllowPlaceRequest {
+  option deprecated = true;
+
   string placename = 1;
   string user = 2;
 };
 
 message AllowPlaceResponse {
+  option deprecated = true;
+};
+
+message SharePlaceRequest {
+  string name = 1;
+  string user = 2;
+};
+
+message SharePlaceResponse {
 };
 
 message UnsharePlaceRequest {

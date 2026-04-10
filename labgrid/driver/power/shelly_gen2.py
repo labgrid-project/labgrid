@@ -27,4 +27,4 @@ def power_get(host: str, port: int, index: int = 0):
     payload = {"id": 1, "method": "Switch.GetStatus", "params": {"id": index}}
     r = requests.post(f"{host}/rpc", json=payload)
     r.raise_for_status()
-    return r.json()["output"]
+    return r.json()["result"]["output"]

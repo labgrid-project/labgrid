@@ -1,7 +1,8 @@
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from collections.abc import Iterable as _Iterable, Mapping as _Mapping
+from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -173,6 +174,18 @@ class DeletePlaceRequest(_message.Message):
 class DeletePlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class GetPlaceRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class GetPlaceResponse(_message.Message):
+    __slots__ = ("place",)
+    PLACE_FIELD_NUMBER: _ClassVar[int]
+    place: Place
+    def __init__(self, place: _Optional[_Union[Place, _Mapping]] = ...) -> None: ...
 
 class GetPlacesRequest(_message.Message):
     __slots__ = ()

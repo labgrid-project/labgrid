@@ -237,6 +237,11 @@ def exporter(tmpdir, coordinator):
         NetworkService:
           address: "192.168.0.1"
           username: "root"
+    ClsNotEqualResourceName:
+        ExampleResource:
+            cls: NetworkSerialPort
+            host: 'localhost'
+            port: 4000
     """
     )
 

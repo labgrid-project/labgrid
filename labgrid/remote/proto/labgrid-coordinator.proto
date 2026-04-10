@@ -19,6 +19,8 @@ service Coordinator {
 
   rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {}
 
+  rpc ListPlaceResources(ListPlaceResourcesRequest) returns (ListPlaceResourcesResponse) {}
+
   rpc AddPlaceAlias(AddPlaceAliasRequest) returns (AddPlaceAliasResponse) {}
 
   rpc DeletePlaceAlias(DeletePlaceAliasRequest) returns (DeletePlaceAliasResponse) {}
@@ -190,6 +192,14 @@ message GetPlacesRequest {
 
 message GetPlacesResponse {
   repeated Place places = 1;
+}
+
+message ListPlaceResourcesRequest {
+  string name = 1;
+}
+
+message ListPlaceResourcesResponse {
+  repeated Resource resources = 1;
 }
 
 message Place {

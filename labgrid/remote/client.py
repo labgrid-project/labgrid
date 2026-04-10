@@ -873,6 +873,23 @@ class ClientSession:
 
         print(f"allowed {self.args.user} for place {place.name}")
 
+    async def unshare(self):
+        """Remove another user's access to a previously acquired place"""
+        place = self.get_acquired_place()
+        if "/" not in self.args.user:
+            raise UserError(f"user {self.args.user} must be in <host>/<username> format")
+        request = labgrid_coordinator_pb2.UnsharePlaceRequest(name=place.name, user=self.args.user)
+
+        try:
+            await self.stub.UnsharePlace(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNIMPLEMENTED:
+                raise ServerError("This coordinator does not support unshare; update the coordinator to use it") from e
+            raise ServerError(e.details())
+
+        print(f"unshared place {place.name} with {self.args.user}")
+
     def get_target_resources(self, place):
         self._check_allowed(place)
         resources = {}
@@ -2104,6 +2121,10 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser = subparsers.add_parser("allow", help="allow another user to access a place")
     subparser.add_argument("user", help="<host>/<username>")
     subparser.set_defaults(func=ClientSession.allow, needs_resources=False)
+
+    subparser = subparsers.add_parser("unshare", help="remove another user's access to a place")
+    subparser.add_argument("user", help="<host>/<username>")
+    subparser.set_defaults(func=ClientSession.unshare, needs_resources=False)
 
     subparser = subparsers.add_parser("env", help="generate a labgrid environment file for a place")
     subparser.set_defaults(func=ClientSession.print_env)

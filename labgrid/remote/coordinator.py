@@ -536,8 +536,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except KeyError:
                 logging.info("Never received startup from peer %s that disconnected", peer)
 
-    @locked
-    async def AddPlace(self, request, context):
+    async def create_place(
+        self,
+        request: labgrid_coordinator_pb2.CreatePlaceRequest | labgrid_coordinator_pb2.AddPlaceRequest,
+        context,
+    ) -> Place:
         name = request.name
         if not name or not isinstance(name, str):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
@@ -548,7 +551,18 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.places[name] = place
         self._publish_place(place)
         self.save_later()
+        return place
+
+    @locked
+    async def AddPlace(self, request, context):
+        await self.create_place(request, context)
         return labgrid_coordinator_pb2.AddPlaceResponse()
+
+    @locked
+    async def CreatePlace(self, request, context):
+        logging.debug("CreatePlace name=%s", request.name)
+        place = await self.create_place(request, context)
+        return labgrid_coordinator_pb2.CreatePlaceResponse(place=place.as_pb2())
 
     @locked
     async def DeletePlace(self, request, context):

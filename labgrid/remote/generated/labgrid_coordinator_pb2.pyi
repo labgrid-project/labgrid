@@ -165,6 +165,18 @@ class AddPlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class CreatePlaceRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class CreatePlaceResponse(_message.Message):
+    __slots__ = ("place",)
+    PLACE_FIELD_NUMBER: _ClassVar[int]
+    place: Place
+    def __init__(self, place: _Optional[_Union[Place, _Mapping]] = ...) -> None: ...
+
 class DeletePlaceRequest(_message.Message):
     __slots__ = ("name",)
     NAME_FIELD_NUMBER: _ClassVar[int]

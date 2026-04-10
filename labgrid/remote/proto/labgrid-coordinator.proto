@@ -7,7 +7,11 @@ service Coordinator {
 
   rpc ExporterStream(stream ExporterInMessage) returns (stream ExporterOutMessage) {}
 
-  rpc AddPlace(AddPlaceRequest) returns (AddPlaceResponse) {}
+  rpc AddPlace(AddPlaceRequest) returns (AddPlaceResponse) {
+    option deprecated = true;
+  }
+
+  rpc CreatePlace(CreatePlaceRequest) returns (CreatePlaceResponse) {}
 
   rpc DeletePlace(DeletePlaceRequest) returns (DeletePlaceResponse) {}
 
@@ -141,10 +145,21 @@ message ExporterSetAcquiredRequest {
 };
 
 message AddPlaceRequest {
+  option deprecated = true;
+
   string name = 1;
 };
 
 message AddPlaceResponse {
+  option deprecated = true;
+};
+
+message CreatePlaceRequest {
+  string name = 1;
+};
+
+message CreatePlaceResponse {
+  Place place = 1;
 };
 
 message DeletePlaceRequest {

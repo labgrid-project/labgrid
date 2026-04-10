@@ -51,6 +51,37 @@ def test_coordinator_add_place(coordinator, channel_stub):
     assert res, f"There was an error: {res}"
 
 
+def test_coordinator_create_place(coordinator, channel_stub):
+    name = "test"
+    place = labgrid_coordinator_pb2.CreatePlaceRequest(name=name)
+    res = channel_stub.CreatePlace(place)
+    assert res, f"There was an error: {res}"
+    assert res.place.name == name
+
+
+def test_coordinator_create_place_already_exists(coordinator, channel_stub):
+    name = "test"
+    place = labgrid_coordinator_pb2.CreatePlaceRequest(name=name)
+    res = channel_stub.CreatePlace(place)
+    assert res, f"There was an error: {res}"
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.CreatePlace(place)
+
+    assert excinfo.value.code() == grpc.StatusCode.ALREADY_EXISTS
+    assert excinfo.value.details() == "Place test already exists"
+
+
+def test_coordinator_create_place_not_provided(coordinator, channel_stub):
+    place = labgrid_coordinator_pb2.CreatePlaceRequest()
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.CreatePlace(place)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
+
+
 def test_coordinator_del_place(coordinator, channel_stub):
     name = "test"
     place = labgrid_coordinator_pb2.AddPlaceRequest(name=name)

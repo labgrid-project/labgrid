@@ -1,3 +1,5 @@
+import contextvars
+import logging
 from typing import Optional
 
 from labgrid.remote.common import get_metadata_single_value_by_key
@@ -46,3 +48,18 @@ class ClientIdentity:
             return cls(f"{hostname}/{username}", user_agent)
 
         return cls(hostname, user_agent)
+
+
+def infer_peer_identity(clients, context, identity_contextvar: contextvars.ContextVar[Optional[ClientIdentity]]):
+    logger = logging.getLogger("infer_peer_identity")
+
+    user = identity_contextvar.get()
+    if user:
+        logger.debug("identity sourced from metadata")
+        return user.id
+
+    try:
+        logger.debug("identity sourced from self.clients")
+        return clients[context.peer()].name
+    except KeyError:
+        raise

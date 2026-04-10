@@ -11,6 +11,8 @@ service Coordinator {
 
   rpc DeletePlace(DeletePlaceRequest) returns (DeletePlaceResponse) {}
 
+  rpc GetPlace(GetPlaceRequest) returns (GetPlaceResponse) {}
+
   rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {}
 
   rpc AddPlaceAlias(AddPlaceAliasRequest) returns (AddPlaceAliasResponse) {}
@@ -149,6 +151,14 @@ message DeletePlaceRequest {
 
 message DeletePlaceResponse {
 };
+
+message GetPlaceRequest {
+  string name = 1;
+};
+
+message GetPlaceResponse {
+  Place place = 1;
+}
 
 message GetPlacesRequest {
 };

@@ -1679,10 +1679,15 @@ class ClientSession:
 
     async def _wait_reservation(self, reservation_id: str, verbose=True):
         while True:
-            request = labgrid_coordinator_pb2.PollReservationRequest(token=reservation_id)
+            request = labgrid_coordinator_pb2.RefreshReservationRequest(reservation_id=reservation_id)
 
             try:
-                response: labgrid_coordinator_pb2.PollReservationResponse = await self.stub.PollReservation(request)
+                response = await self._call_with_fallback(
+                    self.stub.RefreshReservation,
+                    request,
+                    self.stub.PollReservation,
+                    labgrid_coordinator_pb2.PollReservationRequest(token=reservation_id),
+                )
             except grpc.aio.AioRpcError as e:
                 raise ServerError(e.details())
 

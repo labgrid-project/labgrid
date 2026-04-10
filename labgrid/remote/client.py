@@ -566,15 +566,15 @@ class ClientSession:
                         print(f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}):")  # pylint: disable=line-too-long
                         print(indent(pformat(resource.asdict()), prefix="  "))
 
-    async def add_place(self):
-        """Add a place to the coordinator"""
+    async def create_place(self):
+        """Create a place on the coordinator"""
         name = self.args.place
         if not name:
             raise UserError("missing place name. Set with -p <place> or via env var LG_PLACE")
 
-        request = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
+        request = labgrid_coordinator_pb2.CreatePlaceRequest(name=name)
         try:
-            await self.stub.AddPlace(request)
+            await self.stub.CreatePlace(request)
             await self.sync_with_coordinator()
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
@@ -1943,9 +1943,9 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
     subparser = subparsers.add_parser(
         "create",
-        help="add a new place with the name specified via --place or the LG_PLACE environment variable",
+        help="create a new place with the name specified via --place or the LG_PLACE environment variable",
     )
-    subparser.set_defaults(func=ClientSession.add_place)
+    subparser.set_defaults(func=ClientSession.create_place)
 
     subparser = subparsers.add_parser("delete", help="delete an existing place")
     subparser.set_defaults(func=ClientSession.del_place)

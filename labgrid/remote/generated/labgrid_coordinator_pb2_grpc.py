@@ -129,6 +129,11 @@ class CoordinatorStub(object):
                 request_serializer=labgrid__coordinator__pb2.PollReservationRequest.SerializeToString,
                 response_deserializer=labgrid__coordinator__pb2.PollReservationResponse.FromString,
                 )
+        self.RefreshReservation = channel.unary_unary(
+                '/labgrid.Coordinator/RefreshReservation',
+                request_serializer=labgrid__coordinator__pb2.RefreshReservationRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.RefreshReservationResponse.FromString,
+                )
         self.ExtendLease = channel.unary_unary(
                 '/labgrid.Coordinator/ExtendLease',
                 request_serializer=labgrid__coordinator__pb2.ExtendLeaseRequest.SerializeToString,
@@ -282,6 +287,12 @@ class CoordinatorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RefreshReservation(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ExtendLease(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -411,6 +422,11 @@ def add_CoordinatorServicer_to_server(servicer, server):
                     servicer.PollReservation,
                     request_deserializer=labgrid__coordinator__pb2.PollReservationRequest.FromString,
                     response_serializer=labgrid__coordinator__pb2.PollReservationResponse.SerializeToString,
+            ),
+            'RefreshReservation': grpc.unary_unary_rpc_method_handler(
+                    servicer.RefreshReservation,
+                    request_deserializer=labgrid__coordinator__pb2.RefreshReservationRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.RefreshReservationResponse.SerializeToString,
             ),
             'ExtendLease': grpc.unary_unary_rpc_method_handler(
                     servicer.ExtendLease,
@@ -820,6 +836,23 @@ class Coordinator(object):
         return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/PollReservation',
             labgrid__coordinator__pb2.PollReservationRequest.SerializeToString,
             labgrid__coordinator__pb2.PollReservationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def RefreshReservation(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/RefreshReservation',
+            labgrid__coordinator__pb2.RefreshReservationRequest.SerializeToString,
+            labgrid__coordinator__pb2.RefreshReservationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

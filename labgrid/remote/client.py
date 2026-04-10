@@ -1751,7 +1751,16 @@ class ClientSession:
 
     async def _wait_reservation(self, reservation_id: str, verbose=True):
         while True:
-            res = await self._poll_reservation(reservation_id)
+            request = labgrid_coordinator_pb2.RefreshReservationRequest(reservation_id=reservation_id)
+
+            try:
+                response: labgrid_coordinator_pb2.RefreshReservationResponse = await self.stub.RefreshReservation(
+                    request
+                )
+            except grpc.aio.AioRpcError as e:
+                raise ServerError(e.details())
+
+            res = Reservation.from_pb2(response.reservation)
             if verbose:
                 res.show()
             if res.state is ReservationState.waiting:

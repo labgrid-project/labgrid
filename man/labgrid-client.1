@@ -149,22 +149,6 @@ usage: labgrid\-client add\-named\-match PATTERN NAME
 .TP
 .B name
 .UNINDENT
-.SS labgrid\-client allow
-.sp
-allow another user to access a place
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.EX
-usage: labgrid\-client allow user
-.EE
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.TP
-.B user
-<host>/<username>
-.UNINDENT
 .SS labgrid\-client audio
 .sp
 start a audio stream
@@ -785,6 +769,22 @@ usage: labgrid\-client set\-tags KEY=VALUE [KEY=VALUE ...]
 .TP
 .B key=value
 use an empty value for deletion
+.UNINDENT
+.SS labgrid\-client share|allow
+.sp
+share a place with another user
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client share|allow user
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B user
+<host>/<username>
 .UNINDENT
 .SS labgrid\-client show
 .sp

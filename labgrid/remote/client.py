@@ -1619,10 +1619,12 @@ class ClientSession:
 
     async def _wait_reservation(self, token: str, verbose=True):
         while True:
-            request = labgrid_coordinator_pb2.PollReservationRequest(token=token)
+            request = labgrid_coordinator_pb2.RefreshReservationRequest(reservation_id=token)
 
             try:
-                response: labgrid_coordinator_pb2.PollReservationResponse = await self.stub.PollReservation(request)
+                response: labgrid_coordinator_pb2.RefreshReservationResponse = await self.stub.RefreshReservation(
+                    request
+                )
             except grpc.aio.AioRpcError as e:
                 raise ServerError(e.details())
 

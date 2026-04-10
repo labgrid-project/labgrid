@@ -139,6 +139,11 @@ class CoordinatorStub(object):
                 request_serializer=labgrid__coordinator__pb2.PollReservationRequest.SerializeToString,
                 response_deserializer=labgrid__coordinator__pb2.PollReservationResponse.FromString,
                 _registered_method=True)
+        self.RefreshReservation = channel.unary_unary(
+                '/labgrid.Coordinator/RefreshReservation',
+                request_serializer=labgrid__coordinator__pb2.RefreshReservationRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.RefreshReservationResponse.FromString,
+                _registered_method=True)
         self.GetReservations = channel.unary_unary(
                 '/labgrid.Coordinator/GetReservations',
                 request_serializer=labgrid__coordinator__pb2.GetReservationsRequest.SerializeToString,
@@ -275,6 +280,12 @@ class CoordinatorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RefreshReservation(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetReservations(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -388,6 +399,11 @@ def add_CoordinatorServicer_to_server(servicer, server):
                     servicer.PollReservation,
                     request_deserializer=labgrid__coordinator__pb2.PollReservationRequest.FromString,
                     response_serializer=labgrid__coordinator__pb2.PollReservationResponse.SerializeToString,
+            ),
+            'RefreshReservation': grpc.unary_unary_rpc_method_handler(
+                    servicer.RefreshReservation,
+                    request_deserializer=labgrid__coordinator__pb2.RefreshReservationRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.RefreshReservationResponse.SerializeToString,
             ),
             'GetReservations': grpc.unary_unary_rpc_method_handler(
                     servicer.GetReservations,
@@ -962,6 +978,33 @@ class Coordinator(object):
             '/labgrid.Coordinator/PollReservation',
             labgrid__coordinator__pb2.PollReservationRequest.SerializeToString,
             labgrid__coordinator__pb2.PollReservationResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RefreshReservation(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/labgrid.Coordinator/RefreshReservation',
+            labgrid__coordinator__pb2.RefreshReservationRequest.SerializeToString,
+            labgrid__coordinator__pb2.RefreshReservationResponse.FromString,
             options,
             channel_credentials,
             insecure,

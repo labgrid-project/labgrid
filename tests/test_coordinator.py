@@ -175,6 +175,30 @@ def test_coordinator_place_allow(coordinator, coordinator_place):
     assert res
 
 
+def test_coordinator_place_unshare(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"))
+    assert res
+    res = stub.AllowPlace(labgrid_coordinator_pb2.AllowPlaceRequest(placename="test", user="othertest"))
+    assert res
+    res = stub.UnsharePlace(labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest"))
+    assert res
+
+
+def test_coordinator_place_unshare_not_acquired(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(Exception, match=r".Place test is not acquired.*"):
+        stub.UnsharePlace(labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest"))
+
+
+def test_coordinator_place_unshare_not_shared(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"))
+    assert res
+    with pytest.raises(Exception, match=r".Place test is not shared with othertest.*"):
+        stub.UnsharePlace(labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest"))
+
+
 def test_coordinator_create_reservation(coordinator, coordinator_place):
     tags = {"board": "test"}
     stub = coordinator_place

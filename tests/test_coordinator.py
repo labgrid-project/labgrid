@@ -544,3 +544,39 @@ def test_extend_lease_failure_keeps_single_resource_lease(mocker):
             await asyncio.gather(*coordinator.poll_tasks, return_exceptions=True)
 
     asyncio.run(run_test())
+
+
+def test_coordinator_get_place(coordinator, channel_stub):
+    name = "test"
+    place = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
+    res = channel_stub.AddPlace(place)
+    assert res, f"There was an error: {res}"
+
+    request = labgrid_coordinator_pb2.GetPlaceRequest(name=name)
+    res = channel_stub.GetPlace(request)
+
+    from labgrid.remote.common import Place
+
+    place = Place.from_pb2(res.place)
+
+    assert place.name == name, f"There was an error: {res}"
+
+
+def test_coordinator_get_place_missing(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.GetPlaceRequest(name="missing")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.GetPlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "Place missing does not exist"
+
+
+def test_coordinator_get_place_not_provided(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.GetPlaceRequest()
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.GetPlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"

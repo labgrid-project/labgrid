@@ -34,6 +34,11 @@ class CoordinatorStub(object):
                 request_serializer=labgrid__coordinator__pb2.DeletePlaceRequest.SerializeToString,
                 response_deserializer=labgrid__coordinator__pb2.DeletePlaceResponse.FromString,
                 )
+        self.GetPlace = channel.unary_unary(
+                '/labgrid.Coordinator/GetPlace',
+                request_serializer=labgrid__coordinator__pb2.GetPlaceRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.GetPlaceResponse.FromString,
+                )
         self.GetPlaces = channel.unary_unary(
                 '/labgrid.Coordinator/GetPlaces',
                 request_serializer=labgrid__coordinator__pb2.GetPlacesRequest.SerializeToString,
@@ -143,6 +148,12 @@ class CoordinatorServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def DeletePlace(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetPlace(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -272,6 +283,11 @@ def add_CoordinatorServicer_to_server(servicer, server):
                     servicer.DeletePlace,
                     request_deserializer=labgrid__coordinator__pb2.DeletePlaceRequest.FromString,
                     response_serializer=labgrid__coordinator__pb2.DeletePlaceResponse.SerializeToString,
+            ),
+            'GetPlace': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPlace,
+                    request_deserializer=labgrid__coordinator__pb2.GetPlaceRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.GetPlaceResponse.SerializeToString,
             ),
             'GetPlaces': grpc.unary_unary_rpc_method_handler(
                     servicer.GetPlaces,
@@ -433,6 +449,23 @@ class Coordinator(object):
         return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/DeletePlace',
             labgrid__coordinator__pb2.DeletePlaceRequest.SerializeToString,
             labgrid__coordinator__pb2.DeletePlaceResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetPlace(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/GetPlace',
+            labgrid__coordinator__pb2.GetPlaceRequest.SerializeToString,
+            labgrid__coordinator__pb2.GetPlaceResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

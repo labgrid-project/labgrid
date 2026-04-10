@@ -205,6 +205,18 @@ class DeletePlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class GetPlaceRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class GetPlaceResponse(_message.Message):
+    __slots__ = ("place",)
+    PLACE_FIELD_NUMBER: _ClassVar[int]
+    place: Place
+    def __init__(self, place: _Optional[_Union[Place, _Mapping]] = ...) -> None: ...
+
 class GetPlacesRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...

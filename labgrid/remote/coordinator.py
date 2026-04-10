@@ -1207,15 +1207,25 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CancelReservationResponse()
 
+    async def refresh_reservation(self, reservation_id: str, context) -> Reservation:
+        try:
+            res = self.reservations[reservation_id]
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {reservation_id} does not exist")
+        if res.state in (ReservationState.waiting, ReservationState.allocated):
+            res.refresh()
+        return res
+
     @locked
     async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context):
-        token = request.token
-        try:
-            res = self.reservations[token]
-        except KeyError:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {token} does not exist")
-        res.refresh()
+        res = await self.refresh_reservation(request.token, context)
         return labgrid_coordinator_pb2.PollReservationResponse(reservation=res.as_pb2())
+
+    @locked
+    async def RefreshReservation(self, request: labgrid_coordinator_pb2.RefreshReservationRequest, context):
+        logging.debug("RefreshReservation reservation_id=%s", request.reservation_id)
+        res = await self.refresh_reservation(request.reservation_id, context)
+        return labgrid_coordinator_pb2.RefreshReservationResponse(reservation=res.as_pb2())
 
     @locked
     async def GetReservations(self, request: labgrid_coordinator_pb2.GetReservationsRequest, context):

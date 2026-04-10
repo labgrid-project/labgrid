@@ -47,7 +47,11 @@ service Coordinator {
 
   rpc CancelReservation(CancelReservationRequest) returns (CancelReservationResponse) {}
 
-  rpc PollReservation(PollReservationRequest) returns (PollReservationResponse) {}
+  rpc PollReservation(PollReservationRequest) returns (PollReservationResponse) {
+    option deprecated = true;
+  }
+
+  rpc RefreshReservation(RefreshReservationRequest) returns (RefreshReservationResponse) {}
 
   rpc GetReservations(GetReservationsRequest) returns (GetReservationsResponse) {}
 }
@@ -333,12 +337,24 @@ message CancelReservationResponse {
 };
 
 message PollReservationRequest {
+  option deprecated = true;
+
   string token = 1;
 };
 
 message PollReservationResponse {
+  option deprecated = true;
+
   Reservation reservation = 1;
 };
+
+message RefreshReservationRequest {
+  string reservation_id = 1;
+}
+
+message RefreshReservationResponse {
+  Reservation reservation = 1;
+}
 
 message GetReservationsResponse {
   repeated Reservation reservations = 1;

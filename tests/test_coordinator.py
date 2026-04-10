@@ -313,3 +313,71 @@ def test_coordinator_get_place_not_provided(coordinator, channel_stub):
 
     assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
     assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_place_unshare_name_not_provided(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.UnsharePlaceRequest(user="test")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.UnsharePlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_poll_reservation(coordinator, coordinator_place):
+    tags = {"board": "test"}
+    stub = coordinator_place
+    res = stub.SetPlaceTags(labgrid_coordinator_pb2.SetPlaceTagsRequest(placename="test", tags=tags))
+    assert res
+    res = stub.CreateReservation(
+        labgrid_coordinator_pb2.CreateReservationRequest(
+            filters={
+                "main": labgrid_coordinator_pb2.Reservation.Filter(filter=tags),
+            },
+            prio=1.0,
+        )
+    )
+    assert res
+    token = res.reservation.token
+    res = stub.PollReservation(labgrid_coordinator_pb2.PollReservationRequest(token=token))
+    assert res
+    assert res.reservation.token == token
+
+
+def test_coordinator_poll_reservation_not_found(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.PollReservation(labgrid_coordinator_pb2.PollReservationRequest(token="nonexistent"))
+
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+    assert excinfo.value.details() == "Reservation nonexistent does not exist"
+
+
+def test_coordinator_refresh_reservation(coordinator, coordinator_place):
+    tags = {"board": "test"}
+    stub = coordinator_place
+    res = stub.SetPlaceTags(labgrid_coordinator_pb2.SetPlaceTagsRequest(placename="test", tags=tags))
+    assert res
+    res = stub.CreateReservation(
+        labgrid_coordinator_pb2.CreateReservationRequest(
+            filters={
+                "main": labgrid_coordinator_pb2.Reservation.Filter(filter=tags),
+            },
+            prio=1.0,
+        )
+    )
+    assert res
+    token = res.reservation.token
+    res = stub.RefreshReservation(labgrid_coordinator_pb2.RefreshReservationRequest(reservation_id=token))
+    assert res
+    assert res.reservation.token == token
+
+
+def test_coordinator_refresh_reservation_not_found(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.RefreshReservation(labgrid_coordinator_pb2.RefreshReservationRequest(reservation_id="nonexistent"))
+
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+    assert excinfo.value.details() == "Reservation nonexistent does not exist"

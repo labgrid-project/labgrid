@@ -49,6 +49,11 @@ class CoordinatorStub(object):
                 request_serializer=labgrid__coordinator__pb2.GetPlacesRequest.SerializeToString,
                 response_deserializer=labgrid__coordinator__pb2.GetPlacesResponse.FromString,
                 )
+        self.ListPlaceResources = channel.unary_unary(
+                '/labgrid.Coordinator/ListPlaceResources',
+                request_serializer=labgrid__coordinator__pb2.ListPlaceResourcesRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.ListPlaceResourcesResponse.FromString,
+                )
         self.AddPlaceAlias = channel.unary_unary(
                 '/labgrid.Coordinator/AddPlaceAlias',
                 request_serializer=labgrid__coordinator__pb2.AddPlaceAliasRequest.SerializeToString,
@@ -186,6 +191,12 @@ class CoordinatorServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def GetPlaces(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListPlaceResources(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -342,6 +353,11 @@ def add_CoordinatorServicer_to_server(servicer, server):
                     servicer.GetPlaces,
                     request_deserializer=labgrid__coordinator__pb2.GetPlacesRequest.FromString,
                     response_serializer=labgrid__coordinator__pb2.GetPlacesResponse.SerializeToString,
+            ),
+            'ListPlaceResources': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListPlaceResources,
+                    request_deserializer=labgrid__coordinator__pb2.ListPlaceResourcesRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.ListPlaceResourcesResponse.SerializeToString,
             ),
             'AddPlaceAlias': grpc.unary_unary_rpc_method_handler(
                     servicer.AddPlaceAlias,
@@ -564,6 +580,23 @@ class Coordinator(object):
         return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/GetPlaces',
             labgrid__coordinator__pb2.GetPlacesRequest.SerializeToString,
             labgrid__coordinator__pb2.GetPlacesResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ListPlaceResources(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/ListPlaceResources',
+            labgrid__coordinator__pb2.ListPlaceResourcesRequest.SerializeToString,
+            labgrid__coordinator__pb2.ListPlaceResourcesResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

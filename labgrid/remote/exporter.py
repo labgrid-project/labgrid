@@ -29,6 +29,82 @@ exports: Dict[str, Type[ResourceEntry]] = {}
 reexec = False
 
 
+def _expand_hubs(data):
+    """Expand hub/port references in match dicts to ID_PATH values.
+
+    If the config data contains a top-level 'hubs' key, it is popped and
+    used to resolve any match dicts that contain 'hub' and 'port' keys
+    into a full ID_PATH string.
+
+    When 'iface' is also present, the result uses '@ID_PATH' (ancestor
+    match) with the interface appended after a colon.  Without 'iface',
+    the result uses 'ID_PATH' (direct match) with no interface suffix.
+
+    For example, given::
+
+        hubs:
+          a:
+            base: 'pci-0000:04:00.0-usb-0:2'
+            ports:
+              7: '2.3'
+
+    a match dict ``{'hub': 'a', 'port': 7, 'iface': '1.0'}`` becomes
+    ``{'@ID_PATH': 'pci-0000:04:00.0-usb-0:2.2.3:1.0'}``.
+
+    Without iface, ``{'hub': 'a', 'port': 7}`` becomes
+    ``{'ID_PATH': 'pci-0000:04:00.0-usb-0:2.2.3'}``.
+    """
+    hubs = data.pop("hubs", None)
+    if not hubs:
+        return
+
+    for group_name, group in data.items():
+        if not isinstance(group, dict):
+            continue
+        for resource_name, params in group.items():
+            if not isinstance(params, dict):
+                continue
+            match = params.get("match")
+            if not isinstance(match, dict):
+                continue
+
+            hub_name = match.get("hub")
+            port_num = match.get("port")
+            if hub_name is None and port_num is None:
+                continue
+            if hub_name is None or port_num is None:
+                raise ExporterError(
+                    f"{group_name}/{resource_name}: 'hub' and 'port' must both be specified in a match"
+                )
+
+            hub = hubs.get(hub_name)
+            if hub is None:
+                raise ExporterError(
+                    f"{group_name}/{resource_name}: hub '{hub_name}' is not defined in the hubs section"
+                )
+
+            ports = hub.get("ports", {})
+            # YAML may parse port keys as integers or strings
+            suffix = ports.get(port_num)
+            if suffix is None:
+                suffix = ports.get(str(port_num))
+            if suffix is None:
+                suffix = ports.get(int(port_num))
+            if suffix is None:
+                raise ExporterError(
+                    f"{group_name}/{resource_name}: port {port_num} is not defined in hub '{hub_name}'"
+                )
+
+            iface = match.get("iface")
+            del match["hub"]
+            del match["port"]
+            if iface is not None:
+                del match["iface"]
+                match["@ID_PATH"] = f"{hub['base']}.{suffix}:{iface}"
+            else:
+                match["ID_PATH"] = f"{hub['base']}.{suffix}"
+
+
 class ExporterError(Exception):
     pass
 
@@ -852,6 +928,7 @@ class Exporter:
             "name": self.name,
         }
         resource_config = ResourceConfig(self.config["resources"], config_template_env)
+        _expand_hubs(resource_config.data)
         for group_name, group in resource_config.data.items():
             group_name = str(group_name)
             for resource_name, params in group.items():

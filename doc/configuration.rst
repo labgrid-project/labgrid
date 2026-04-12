@@ -4402,6 +4402,77 @@ to achieve the same effect:
        match:
          '@ID_PATH': 'pci-0000:05:00.0-usb-3-1.4'
 
+.. _exporter-hub-abstraction:
+
+USB Hub Abstraction
+~~~~~~~~~~~~~~~~~~~
+When a lab uses USB hubs with many ports, the raw ``ID_PATH`` strings in
+match entries become long and hard to maintain.  The exporter supports a
+``hubs`` section that defines USB hubs by name, with a base path and a
+mapping from logical port numbers to USB path suffixes.  Resources can
+then use ``hub`` and ``port`` in their match dict instead of a raw
+``ID_PATH``.
+
+Define hubs at the top level of the exporter configuration:
+
+.. code-block:: yaml
+
+   hubs:
+     a:
+       base: 'pci-0000:00:14.0-usb-0:10'
+       ports:
+         1: '2.1'
+         2: '2.2'
+         3: '2.3'
+         # ...
+     b:
+       base: 'pci-0000:04:00.0-usb-0:2'
+       ports:
+         1: '1.1'
+         2: '1.2'
+         # ...
+
+Each hub has a ``base`` path (the PCI path up to the hub's root port) and
+a ``ports`` mapping from logical port number to the USB path suffix for
+that port.  The port suffixes depend on the hub's internal topology and
+must be determined for each hub model (for example by plugging a device
+into each port and checking ``udevadm info``).
+
+Resources reference a hub port using ``hub`` and ``port`` in their match
+dict.  For resources that need an ancestor match (like serial ports),
+add ``iface`` to specify the USB interface number:
+
+.. code-block:: yaml
+
+   board1:
+     USBSerialPort:
+       match:
+         hub: a
+         port: 3
+         iface: '1.0'
+
+     HIDRelay:
+       index: 4
+       match:
+         hub: a
+         port: 14
+
+When ``iface`` is present, the expansion produces an ``@ID_PATH`` (ancestor
+match) with the interface appended after a colon:
+``@ID_PATH: pci-0000:00:14.0-usb-0:10.2.3:1.0``.
+
+When ``iface`` is absent, the expansion produces a plain ``ID_PATH`` (direct
+match) with no interface suffix:
+``ID_PATH: pci-0000:00:14.0-usb-0:10.1.2``.
+
+Other match keys (such as ``ID_SERIAL_SHORT``) can be used alongside
+``hub``/``port`` and are preserved in the expanded match.  Resources that
+do not use hub/port matching (e.g. those matched by serial number) are
+unaffected.
+
+The ``hubs`` section is removed from the configuration data after
+expansion and does not appear as a resource group.
+
 Templating the Exporter Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To reduce the amount of repeated declarations when many similar resources

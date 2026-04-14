@@ -468,6 +468,7 @@ class USBSDWireExport(USBGenericExport):
             "path": self.local.path,
             "vendor_id": self.local.vendor_id,
             "model_id": self.local.model_id,
+            "control_serial": self.local.control_serial,
         }
 
 

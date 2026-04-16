@@ -746,6 +746,17 @@ def wait_for_list_place_resources(stub, name, expected_count, timeout=5.0):
     return stub.ListPlaceResources(request)
 
 
+def wait_for_list_resources(stub, expected_count, timeout=5.0):
+    deadline = monotonic() + timeout
+    request = labgrid_coordinator_pb2.ListResourcesRequest()
+    while monotonic() < deadline:
+        res = stub.ListResources(request)
+        if len(res.resources) == expected_count:
+            return res
+        sleep(0.1)
+    return stub.ListResources(request)
+
+
 def test_coordinator_list_place_resources(coordinator, coordinator_place, exporter):
     stub = coordinator_place
     res = stub.AddPlaceMatch(
@@ -793,3 +804,17 @@ def test_coordinator_list_place_resources_name_not_provided(coordinator, coordin
 
     assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
     assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_list_resources(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = wait_for_list_resources(stub, 5)
+    assert len(res.resources) == 5
+
+
+def test_coordinator_list_resources_pagination_not_supported(coordinator, channel_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListResources(labgrid_coordinator_pb2.ListResourcesRequest(page_size=1))
+
+    assert excinfo.value.code() == grpc.StatusCode.UNIMPLEMENTED
+    assert excinfo.value.details() == "ListResources does not yet support pagination"

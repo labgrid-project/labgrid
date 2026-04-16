@@ -1175,6 +1175,20 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         except Exception:
             logging.exception("error during get places")
 
+    async def ListResources(self, request, context):
+        logging.debug("ListResources")
+
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    serialised = resource.as_pb2()
+                    serialised.path.exporter_name = resource.path[0]
+                    serialised.path.group_name = resource.path[1]
+                    serialised.path.resource_name = resource.path[3]
+                    resources.append(serialised)
+        return labgrid_coordinator_pb2.ListResourcesResponse(resources=resources)
+
     async def ListPlaceResources(self, request, context):
         name = request.name
         logging.debug("ListPlaceResources name=%s", name)

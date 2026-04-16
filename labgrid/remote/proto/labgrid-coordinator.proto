@@ -19,6 +19,8 @@ service Coordinator {
 
   rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {}
 
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {}
+
   rpc ListPlaceResources(ListPlaceResourcesRequest) returns (ListPlaceResourcesResponse) {}
 
   rpc AddPlaceAlias(AddPlaceAliasRequest) returns (AddPlaceAliasResponse) {}
@@ -193,6 +195,17 @@ message GetPlacesRequest {
 message GetPlacesResponse {
   repeated Place places = 1;
 }
+
+message ListResourcesRequest {
+  optional string filter = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+};
+
+message ListResourcesResponse {
+  repeated Resource resources = 1;
+  string next_page_token = 2;
+};
 
 message ListPlaceResourcesRequest {
   string name = 1;

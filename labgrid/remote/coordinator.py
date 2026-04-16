@@ -14,6 +14,7 @@ import signal
 from typing import Optional
 
 import attr
+import celpy
 import grpc
 from grpc_reflection.v1alpha import reflection
 
@@ -38,6 +39,29 @@ from ..util import atomic_replace, labgrid_version, yaml, Timeout
 client_identity_context: contextvars.ContextVar[Optional[ClientIdentity]] = contextvars.ContextVar(
     "client_identity", default=None
 )
+
+
+class CompiledCelFilter:
+    def __init__(self, program):
+        self.program = program
+
+    def execute(self, context):
+        try:
+            result = self.program.evaluate(celpy.json_to_cel(context))
+        except celpy.CELEvalError as exc:
+            raise RuntimeError(exc) from exc
+
+        if isinstance(result, celpy.celtypes.BoolType):
+            return bool(result)
+        return result
+
+
+def compile_cel_filter(expression):
+    environment = celpy.Environment()
+    try:
+        return CompiledCelFilter(environment.program(environment.compile(expression)))
+    except celpy.CELParseError as exc:
+        raise ValueError(exc) from exc
 
 
 @contextmanager
@@ -1063,6 +1087,52 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             logging.exception("error during get places")
 
     @locked
+    async def ListResources(self, request, context):
+        logging.debug("ListResources")
+
+        if request.page_size != 0 or request.page_token != "":
+            await context.abort(grpc.StatusCode.UNIMPLEMENTED, "ListResources does not yet support pagination")
+
+        filter_program = None
+        if request.filter:
+            try:
+                filter_program = compile_cel_filter(request.filter)
+            except ValueError as exc:
+                await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    if filter_program is not None:
+                        filter_context = resource.asdict()
+                        filter_context["path"] = {
+                            "exporter_name": resource.path[0],
+                            "group_name": resource.path[1],
+                            "resource_name": resource.path[3],
+                        }
+
+                        try:
+                            filter_result = filter_program.execute(filter_context)
+                            if not isinstance(filter_result, bool):
+                                await context.abort(
+                                    grpc.StatusCode.INVALID_ARGUMENT,
+                                    "Filter must evaluate to a boolean",
+                                )
+
+                            if not filter_result:
+                                continue
+                        except (RuntimeError, TypeError) as exc:
+                            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+                    serialised = resource.as_pb2()
+                    serialised.path.exporter_name = resource.path[0]
+                    serialised.path.group_name = resource.path[1]
+                    serialised.path.resource_name = resource.path[3]
+                    resources.append(serialised)
+        return labgrid_coordinator_pb2.ListResourcesResponse(resources=resources)
+
+    @locked
     async def ListPlaceResources(self, request, context):
         name = request.name
         logging.debug("ListPlaceResources name=%s", name)
@@ -1254,7 +1324,6 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     async def GetReservations(self, request: labgrid_coordinator_pb2.GetReservationsRequest, context):
         reservations = [x.as_pb2() for x in self.reservations.values()]
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
-
 
 async def serve(listen, cleanup) -> None:
     asyncio.current_task().set_name("coordinator-serve")

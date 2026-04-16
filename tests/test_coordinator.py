@@ -397,6 +397,20 @@ def wait_for_list_place_resources(stub, name, expected_count, timeout=5.0):
     return stub.ListPlaceResources(request)
 
 
+def wait_for_list_resources(stub, expected_count, filter_expr=None, timeout=5.0):
+    deadline = monotonic() + timeout
+    kwargs = {}
+    if filter_expr is not None:
+        kwargs["filter"] = filter_expr
+    request = labgrid_coordinator_pb2.ListResourcesRequest(**kwargs)
+    while monotonic() < deadline:
+        res = stub.ListResources(request)
+        if len(res.resources) == expected_count:
+            return res
+        sleep(0.1)
+    return stub.ListResources(request)
+
+
 def test_coordinator_list_place_resources(coordinator, coordinator_place, exporter):
     stub = coordinator_place
     res = stub.AddPlaceMatch(
@@ -444,3 +458,46 @@ def test_coordinator_list_place_resources_name_not_provided(coordinator, coordin
 
     assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
     assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_list_resources(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = wait_for_list_resources(stub, 5)
+    assert len(res.resources) == 5
+
+
+def test_coordinator_list_resources_filter_on_resource_name(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = wait_for_list_resources(stub, 1, filter_expr="path.resource_name == 'ExampleResource'")
+    assert len(res.resources) == 1
+    assert res.resources[0].cls == "NetworkSerialPort"
+    assert res.resources[0].path.exporter_name == "testhost"
+    assert res.resources[0].path.group_name == "ClsNotEqualResourceName"
+    assert res.resources[0].path.resource_name == "ExampleResource"
+
+
+def test_coordinator_list_resources_pagination_not_supported(coordinator, channel_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListResources(labgrid_coordinator_pb2.ListResourcesRequest(page_size=1))
+
+    assert excinfo.value.code() == grpc.StatusCode.UNIMPLEMENTED
+    assert excinfo.value.details() == "ListResources does not yet support pagination"
+
+
+def test_coordinator_list_resources_invalid_filter(coordinator, channel_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListResources(labgrid_coordinator_pb2.ListResourcesRequest(filter="("))
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details().startswith("Invalid filter:")
+
+
+def test_coordinator_list_resources_filter_must_be_boolean(coordinator, channel_stub, exporter):
+    res = wait_for_list_resources(channel_stub, 5)
+    assert len(res.resources) == 5
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListResources(labgrid_coordinator_pb2.ListResourcesRequest(filter="path.resource_name"))
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "Filter must evaluate to a boolean"

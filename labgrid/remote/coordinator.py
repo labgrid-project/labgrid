@@ -1362,6 +1362,42 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         reservations = [x.as_pb2() for x in self.reservations.values()]
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
 
+    @locked
+    async def ListReservations(self, request, context):
+        if request.page_size != 0 or request.page_token != "":
+            await context.abort(grpc.StatusCode.UNIMPLEMENTED, "ListReservations does not yet support pagination")
+
+        filter_program = None
+        if request.filter:
+            try:
+                filter_program = compile_cel_filter(request.filter)
+            except ValueError as exc:
+                await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+        reservations = []
+        for reservation in self.reservations.values():
+            if filter_program is not None:
+                filter_context = reservation.asdict()
+                filter_context["token"] = reservation.token
+
+                try:
+                    filter_result = filter_program.execute(filter_context)
+                    if not isinstance(filter_result, bool):
+                        await context.abort(
+                            grpc.StatusCode.INVALID_ARGUMENT,
+                            "Filter must evaluate to a boolean",
+                        )
+
+                    if not filter_result:
+                        continue
+                except (RuntimeError, TypeError) as exc:
+                    await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+            reservations.append(reservation.as_pb2())
+
+        return labgrid_coordinator_pb2.ListReservationsResponse(reservations=reservations)
+
+
 async def serve(listen, cleanup) -> None:
     asyncio.current_task().set_name("coordinator-serve")
     # It seems since https://github.com/grpc/grpc/pull/34647, the

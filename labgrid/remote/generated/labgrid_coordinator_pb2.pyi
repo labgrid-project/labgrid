@@ -555,3 +555,21 @@ class GetReservationsResponse(_message.Message):
 class GetReservationsRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class ListReservationsRequest(_message.Message):
+    __slots__ = ("filter", "page_size", "page_token")
+    FILTER_FIELD_NUMBER: _ClassVar[int]
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    filter: str
+    page_size: int
+    page_token: str
+    def __init__(self, filter: _Optional[str] = ..., page_size: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+
+class ListReservationsResponse(_message.Message):
+    __slots__ = ("reservations", "next_page_token")
+    RESERVATIONS_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    reservations: _containers.RepeatedCompositeFieldContainer[Reservation]
+    next_page_token: str
+    def __init__(self, reservations: _Optional[_Iterable[_Union[Reservation, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...

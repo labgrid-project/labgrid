@@ -164,6 +164,11 @@ class CoordinatorStub(object):
                 request_serializer=labgrid__coordinator__pb2.GetReservationsRequest.SerializeToString,
                 response_deserializer=labgrid__coordinator__pb2.GetReservationsResponse.FromString,
                 _registered_method=True)
+        self.ListReservations = channel.unary_unary(
+                '/labgrid.Coordinator/ListReservations',
+                request_serializer=labgrid__coordinator__pb2.ListReservationsRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.ListReservationsResponse.FromString,
+                _registered_method=True)
 
 
 class CoordinatorServicer(object):
@@ -325,6 +330,12 @@ class CoordinatorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListReservations(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_CoordinatorServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -457,6 +468,11 @@ def add_CoordinatorServicer_to_server(servicer, server):
                     servicer.GetReservations,
                     request_deserializer=labgrid__coordinator__pb2.GetReservationsRequest.FromString,
                     response_serializer=labgrid__coordinator__pb2.GetReservationsResponse.SerializeToString,
+            ),
+            'ListReservations': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListReservations,
+                    request_deserializer=labgrid__coordinator__pb2.ListReservationsRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.ListReservationsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -1161,6 +1177,33 @@ class Coordinator(object):
             '/labgrid.Coordinator/GetReservations',
             labgrid__coordinator__pb2.GetReservationsRequest.SerializeToString,
             labgrid__coordinator__pb2.GetReservationsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListReservations(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/labgrid.Coordinator/ListReservations',
+            labgrid__coordinator__pb2.ListReservationsRequest.SerializeToString,
+            labgrid__coordinator__pb2.ListReservationsResponse.FromString,
             options,
             channel_credentials,
             insecure,

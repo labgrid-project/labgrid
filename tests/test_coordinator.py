@@ -501,3 +501,58 @@ def test_coordinator_list_resources_filter_must_be_boolean(coordinator, channel_
 
     assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
     assert excinfo.value.details() == "Filter must evaluate to a boolean"
+
+
+def test_coordinator_list_places(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest())
+    assert res
+    assert len(res.places) == 1
+    assert res.places[0].name == "test"
+
+
+def test_coordinator_list_places_pagination_not_supported(coordinator, channel_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(page_size=1))
+
+    assert excinfo.value.code() == grpc.StatusCode.UNIMPLEMENTED
+    assert excinfo.value.details() == "ListPlaces does not yet support pagination"
+
+
+def test_coordinator_list_places_filter_on_place_name(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(filter="name == 'test'"))
+    assert res
+    assert len(res.places) == 1
+    assert res.places[0].name == "test"
+
+
+def test_coordinator_list_places_filter_on_place_name_no_matches(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(filter="name == 'missing'"))
+    assert res
+    assert len(res.places) == 0
+
+
+def test_coordinator_list_places_filter_invalid_syntax(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(filter="name =="))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Invalid filter" in excinfo.value.details()
+
+
+def test_coordinator_list_places_filter_unknown_field(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(filter="missing == 'x'"))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Invalid filter" in excinfo.value.details()
+
+
+def test_coordinator_list_places_filter_must_evaluate_to_boolean(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(filter="name"))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Filter must evaluate to a boolean" in excinfo.value.details()

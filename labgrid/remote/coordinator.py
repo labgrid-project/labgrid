@@ -1062,6 +1062,43 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             logging.exception("error during get places")
 
     @locked
+    async def ListPlaces(self, request, context):
+        logging.debug("ListPlaces")
+
+        if request.page_size != 0 or request.page_token != "":
+            await context.abort(grpc.StatusCode.UNIMPLEMENTED, "ListPlaces does not yet support pagination")
+
+        filter_program = None
+        if request.filter:
+            try:
+                filter_program = cel.compile(request.filter)  # pylint: disable=no-member
+            except ValueError as exc:
+                await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+        places = []
+        for place in self.places.values():
+            if filter_program is not None:
+                filter_context = place.asdict()
+                filter_context["name"] = place.name
+
+                try:
+                    filter_result = filter_program.execute(filter_context)
+                    if not isinstance(filter_result, bool):
+                        await context.abort(
+                            grpc.StatusCode.INVALID_ARGUMENT,
+                            "Filter must evaluate to a boolean",
+                        )
+
+                    if not filter_result:
+                        continue
+                except (RuntimeError, TypeError) as exc:
+                    await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+            places.append(place.as_pb2())
+
+        return labgrid_coordinator_pb2.ListPlacesResponse(places=places)
+
+    @locked
     async def ListResources(self, request, context):
         logging.debug("ListResources")
 

@@ -17,7 +17,11 @@ service Coordinator {
 
   rpc GetPlace(GetPlaceRequest) returns (GetPlaceResponse) {}
 
-  rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {}
+  rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {
+    option deprecated = true;
+  }
+
+  rpc ListPlaces(ListPlacesRequest) returns (ListPlacesResponse) {}
 
   rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {}
 
@@ -190,10 +194,24 @@ message GetPlaceResponse {
 }
 
 message GetPlacesRequest {
+  option deprecated = true;
 };
 
 message GetPlacesResponse {
+  option deprecated = true;
+
   repeated Place places = 1;
+}
+
+message ListPlacesRequest {
+  optional string filter = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListPlacesResponse {
+  repeated Place places = 1;
+  string next_page_token = 2;
 }
 
 message ListResourcesRequest {

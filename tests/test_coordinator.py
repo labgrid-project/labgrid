@@ -104,6 +104,20 @@ def coordinator_place(channel_stub):
     return channel_stub
 
 
+@pytest.fixture(scope="function")
+def coordinator_reservation(channel_stub):
+    res = channel_stub.CreateReservation(
+        labgrid_coordinator_pb2.CreateReservationRequest(
+            filters={
+                "main": labgrid_coordinator_pb2.Reservation.Filter(filter={"board": "test"}),
+            },
+            prio=1.0,
+        )
+    )
+    assert res, f"There was an error: {res}"
+    return res.reservation.token
+
+
 def test_startup(coordinator):
     pass
 
@@ -834,3 +848,19 @@ def test_coordinator_list_places_pagination_not_supported(coordinator, channel_s
 
     assert excinfo.value.code() == grpc.StatusCode.UNIMPLEMENTED
     assert excinfo.value.details() == "ListPlaces does not yet support pagination"
+
+
+def test_coordinator_list_reservations(coordinator, coordinator_place, coordinator_reservation):
+    stub = coordinator_place
+    res = stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest())
+    assert res
+    assert len(res.reservations) == 1
+    assert res.reservations[0].token == coordinator_reservation
+
+
+def test_coordinator_list_reservations_pagination_not_supported(coordinator, channel_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(page_size=1))
+
+    assert excinfo.value.code() == grpc.StatusCode.UNIMPLEMENTED
+    assert excinfo.value.details() == "ListReservations does not yet support pagination"

@@ -61,7 +61,11 @@ service Coordinator {
 
   rpc RefreshReservation(RefreshReservationRequest) returns (RefreshReservationResponse) {}
 
-  rpc GetReservations(GetReservationsRequest) returns (GetReservationsResponse) {}
+  rpc GetReservations(GetReservationsRequest) returns (GetReservationsResponse) {
+    option deprecated = true;
+  }
+
+  rpc ListReservations(ListReservationsRequest) returns (ListReservationsResponse) {}
 }
 
 message ClientInMessage {
@@ -401,8 +405,21 @@ message RefreshReservationResponse {
 }
 
 message GetReservationsResponse {
+  option deprecated = true;
+
   repeated Reservation reservations = 1;
 };
 
 message GetReservationsRequest {
+  option deprecated = true;
+};
+
+message ListReservationsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+};
+
+message ListReservationsResponse {
+  repeated Reservation reservations = 1;
+  string next_page_token = 2;
 };

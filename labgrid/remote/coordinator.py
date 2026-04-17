@@ -1398,8 +1398,17 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @locked
     async def GetReservations(self, request: labgrid_coordinator_pb2.GetReservationsRequest, context):
+        logging.warning("GetReservations is deprecated; use ListReservations instead")
         reservations = [x.as_pb2() for x in self.reservations.values()]
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
+
+    async def ListReservations(self, request, context):
+        # Copy the current state without yielding or waiting for the mutation lock.
+        reservations = []
+        for reservation in self.reservations.values():
+            reservations.append(reservation.as_pb2())
+
+        return labgrid_coordinator_pb2.ListReservationsResponse(reservations=reservations)
 
 
 async def serve(listen, cleanup, server_credentials=None, debug=False) -> None:

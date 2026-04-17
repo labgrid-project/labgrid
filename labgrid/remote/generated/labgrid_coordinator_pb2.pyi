@@ -546,3 +546,13 @@ class GetReservationsResponse(_message.Message):
 class GetReservationsRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class ListReservationsRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class ListReservationsResponse(_message.Message):
+    __slots__ = ("reservations",)
+    RESERVATIONS_FIELD_NUMBER: _ClassVar[int]
+    reservations: _containers.RepeatedCompositeFieldContainer[Reservation]
+    def __init__(self, reservations: _Optional[_Iterable[_Union[Reservation, _Mapping]]] = ...) -> None: ...

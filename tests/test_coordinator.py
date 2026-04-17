@@ -43,6 +43,20 @@ def coordinator_place(channel_stub):
     return channel_stub
 
 
+@pytest.fixture(scope="function")
+def coordinator_reservation(channel_stub):
+    res = channel_stub.CreateReservation(
+        labgrid_coordinator_pb2.CreateReservationRequest(
+            filters={
+                "main": labgrid_coordinator_pb2.Reservation.Filter(filter={"board": "test"}),
+            },
+            prio=1.0,
+        )
+    )
+    assert res, f"There was an error: {res}"
+    return res.reservation.token
+
+
 def test_startup(coordinator):
     pass
 
@@ -554,5 +568,66 @@ def test_coordinator_list_places_filter_must_evaluate_to_boolean(coordinator, co
     stub = coordinator_place
     with pytest.raises(grpc.RpcError) as excinfo:
         stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(filter="name"))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Filter must evaluate to a boolean" in excinfo.value.details()
+
+
+def test_coordinator_list_reservations(coordinator, coordinator_place, coordinator_reservation):
+    stub = coordinator_place
+    res = stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest())
+    assert res
+    assert len(res.reservations) == 1
+    assert res.reservations[0].token == coordinator_reservation
+
+
+def test_coordinator_list_reservations_pagination_not_supported(coordinator, channel_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(page_size=1))
+
+    assert excinfo.value.code() == grpc.StatusCode.UNIMPLEMENTED
+    assert excinfo.value.details() == "ListReservations does not yet support pagination"
+
+
+def test_coordinator_list_reservations_filter_on_token(coordinator, coordinator_place, coordinator_reservation):
+    stub = coordinator_place
+    res = stub.ListReservations(
+        labgrid_coordinator_pb2.ListReservationsRequest(filter=f"token == '{coordinator_reservation}'")
+    )
+    assert res
+    assert len(res.reservations) == 1
+    assert res.reservations[0].token == coordinator_reservation
+
+
+def test_coordinator_list_reservations_filter_on_token_no_matches(
+    coordinator, coordinator_place, coordinator_reservation
+):
+    stub = coordinator_place
+    res = stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(filter="token == '1234'"))
+    assert res
+    assert len(res.reservations) == 0
+
+
+def test_coordinator_list_reservations_filter_invalid_syntax(coordinator, coordinator_place, coordinator_reservation):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(filter="tokens =="))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Invalid filter" in excinfo.value.details()
+
+
+def test_coordinator_list_reservations_filter_unknown_field(coordinator, coordinator_place, coordinator_reservation):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(filter="missing == 'x'"))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Invalid filter" in excinfo.value.details()
+
+
+def test_coordinator_list_reservations_filter_must_evaluate_to_boolean(
+    coordinator, coordinator_place, coordinator_reservation
+):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(filter="token"))
     assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
     assert "Filter must evaluate to a boolean" in excinfo.value.details()

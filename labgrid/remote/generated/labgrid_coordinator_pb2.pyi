@@ -216,6 +216,16 @@ class GetPlacesResponse(_message.Message):
     places: _containers.RepeatedCompositeFieldContainer[Place]
     def __init__(self, places: _Optional[_Iterable[_Union[Place, _Mapping]]] = ...) -> None: ...
 
+class ListPlacesRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class ListPlacesResponse(_message.Message):
+    __slots__ = ("places",)
+    PLACES_FIELD_NUMBER: _ClassVar[int]
+    places: _containers.RepeatedCompositeFieldContainer[Place]
+    def __init__(self, places: _Optional[_Iterable[_Union[Place, _Mapping]]] = ...) -> None: ...
+
 class ListResourcesRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...

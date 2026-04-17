@@ -1169,11 +1169,22 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @locked
     async def GetPlaces(self, unused_request, unused_context):
-        logging.debug("GetPlaces")
+        logging.warning("GetPlaces is deprecated; use ListPlaces instead")
         try:
             return labgrid_coordinator_pb2.GetPlacesResponse(places=[x.as_pb2() for x in self.places.values()])
         except Exception:
             logging.exception("error during get places")
+
+    async def ListPlaces(self, request, context):
+        logging.debug("ListPlaces")
+        # Successful list reads do not yield while copying the current state.
+        # They need not wait for mutations which are awaiting exporter replies.
+
+        places = []
+        for place in self.places.values():
+            places.append(place.as_pb2())
+
+        return labgrid_coordinator_pb2.ListPlacesResponse(places=places)
 
     async def ListResources(self, request, context):
         logging.debug("ListResources")

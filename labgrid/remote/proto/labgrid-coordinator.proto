@@ -17,7 +17,11 @@ service Coordinator {
 
   rpc GetPlace(GetPlaceRequest) returns (GetPlaceResponse) {}
 
-  rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {}
+  rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {
+    option deprecated = true;
+  }
+
+  rpc ListPlaces(ListPlacesRequest) returns (ListPlacesResponse) {}
 
   rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {}
 
@@ -195,9 +199,19 @@ message GetPlaceResponse {
 }
 
 message GetPlacesRequest {
+  option deprecated = true;
 };
 
 message GetPlacesResponse {
+  option deprecated = true;
+
+  repeated Place places = 1;
+}
+
+message ListPlacesRequest {
+}
+
+message ListPlacesResponse {
   repeated Place places = 1;
 }
 

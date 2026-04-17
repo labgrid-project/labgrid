@@ -810,3 +810,11 @@ def test_coordinator_list_resources(coordinator, coordinator_place, exporter):
     stub = coordinator_place
     res = wait_for_list_resources(stub, 5)
     assert len(res.resources) == 5
+
+
+def test_coordinator_list_places(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest())
+    assert res
+    assert len(res.places) == 1
+    assert res.places[0].name == "test"

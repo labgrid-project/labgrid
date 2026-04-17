@@ -818,3 +818,19 @@ def test_coordinator_list_resources_pagination_not_supported(coordinator, channe
 
     assert excinfo.value.code() == grpc.StatusCode.UNIMPLEMENTED
     assert excinfo.value.details() == "ListResources does not yet support pagination"
+
+
+def test_coordinator_list_places(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest())
+    assert res
+    assert len(res.places) == 1
+    assert res.places[0].name == "test"
+
+
+def test_coordinator_list_places_pagination_not_supported(coordinator, channel_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(page_size=1))
+
+    assert excinfo.value.code() == grpc.StatusCode.UNIMPLEMENTED
+    assert excinfo.value.details() == "ListPlaces does not yet support pagination"

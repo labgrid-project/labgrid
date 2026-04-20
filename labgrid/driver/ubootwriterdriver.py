@@ -1,6 +1,7 @@
 import os
 import pathlib
 import shutil
+import subprocess
 import time
 
 import attr
@@ -25,6 +26,12 @@ class UBootWriterDriver(Driver):
     efi_firmware = attr.ib(default='', validator=attr.validators.instance_of(str))
     efi_vars = attr.ib(default='', validator=attr.validators.instance_of(str))
     root_disk = attr.ib(default='', validator=attr.validators.instance_of(str))
+    # For method 'qemu-efi-iso': image slot holding the pristine source ISO
+    # and path to the helper script that rewrites it. The destination ISO
+    # is taken from the bound QEMUDriver's 'disk' attribute, so QEMU boots
+    # straight from the rewritten file.
+    source_disk = attr.ib(default='', validator=attr.validators.instance_of(str))
+    update_script = attr.ib(default='', validator=attr.validators.instance_of(str))
 
     bindings = {
         'storage': {'USBStorageDriver', None},
@@ -136,6 +143,34 @@ class UBootWriterDriver(Driver):
                 '-drive', f'if=pflash,format=raw,file={self.efi_firmware},readonly=on',
                 '-drive', f'if=pflash,format=raw,file={evars}',
                 '-drive', f'if=virtio,file={self.root_disk},format=raw,id=hd1,snapshot=on',
+                ])
+        elif self.method == 'qemu-efi-iso':
+            # Rewrite a source ISO (e.g. Ubuntu live CD) so that its EFI
+            # system partition chainloads the freshly-built U-Boot EFI
+            # app, then boot it through OVMF. The QEMUDriver's 'disk'
+            # attribute names the rewritten ISO; regeneration is skipped
+            # when inputs have not changed since the last run.
+            cfg = self.target.env.config
+            source = cfg.get_image_path(self.source_disk)
+            dest = cfg.get_image_path(self.qemu.disk)
+            uboot = os.path.join(image_dir, 'u-boot-app.efi')
+
+            inputs = [source, uboot, self.update_script]
+            newest_input = max(os.path.getmtime(p) for p in inputs)
+            if (not os.path.exists(dest) or
+                    os.path.getmtime(dest) < newest_input):
+                subprocess.run(
+                    [self.update_script, source, '-u', uboot, '-o', dest],
+                    check=True)
+
+            # make a copy of the EFI vars so that updates won't persist, e.g.
+            # Ubuntu setting itself as the default boot and bypassing U-Boot
+            evars = os.path.join(image_dir, 'efi-vars.fd')
+            shutil.copy(self.efi_vars, evars)
+
+            self.qemu.set_writer_args([
+                '-drive', f'if=pflash,format=raw,file={self.efi_firmware},readonly=on',
+                '-drive', f'if=pflash,format=raw,file={evars}',
                 ])
         elif self.method == 'ti,am625':
             r5_dest = pathlib.PurePath('/tiboot3.bin')

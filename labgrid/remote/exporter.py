@@ -29,6 +29,139 @@ exports: Dict[str, Type[ResourceEntry]] = {}
 reexec = False
 
 
+def _resolve_hub_base(hubs, hub_name, seen=None):
+    """Resolve a hub's full base path, following parent references.
+
+    A hub can specify ``base`` directly, or use ``parent`` and ``port``
+    to inherit from another hub.  Returns the resolved base path string.
+    """
+    if seen is None:
+        seen = set()
+    if hub_name in seen:
+        raise ExporterError(f"circular hub reference: {' -> '.join(seen)} -> {hub_name}")
+    seen.add(hub_name)
+
+    hub = hubs.get(hub_name)
+    if hub is None:
+        raise ExporterError(f"hub '{hub_name}' is not defined in the hubs section")
+
+    if "base" in hub:
+        return hub["base"]
+
+    if "parent" not in hub or "port" not in hub:
+        raise ExporterError(
+            f"hub '{hub_name}' must have either 'base' or both 'parent' and 'port'"
+        )
+
+    parent_name = hub["parent"]
+    parent_port = hub["port"]
+    parent_base = _resolve_hub_base(hubs, parent_name, seen)
+
+    parent_hub = hubs[parent_name]
+    parent_ports = parent_hub.get("ports", {})
+    suffix = parent_ports.get(parent_port)
+    if suffix is None:
+        suffix = parent_ports.get(str(parent_port))
+    if suffix is None:
+        try:
+            suffix = parent_ports.get(int(parent_port))
+        except (ValueError, TypeError):
+            pass
+    if suffix is None:
+        raise ExporterError(
+            f"hub '{hub_name}': port {parent_port} is not defined in parent hub '{parent_name}'"
+        )
+
+    return f"{parent_base}.{suffix}"
+
+
+def _expand_hubs(data):
+    """Expand hub/port references in match dicts to ID_PATH values.
+
+    If the config data contains a top-level 'hubs' key, it is popped and
+    used to resolve any match dicts that contain 'hub' and 'port' keys
+    into a full ID_PATH string.
+
+    When 'iface' is also present, the result uses '@ID_PATH' (ancestor
+    match) with the interface appended after a colon.  Without 'iface',
+    the result uses 'ID_PATH' (direct match) with no interface suffix.
+
+    Hubs can reference other hubs via 'parent' and 'port' instead of
+    'base', allowing devices behind sub-hubs (e.g. a YKUSH on a port
+    of a larger hub) to be described naturally.
+
+    For example, given::
+
+        hubs:
+          c:
+            base: 'pci-0000:03:00.2-usb-0:5'
+            ports:
+              14: '1.2'
+          ykush0:
+            parent: c
+            port: 14
+            ports:
+              2: '2'
+
+    a match dict ``{'hub': 'ykush0', 'port': 2}`` becomes
+    ``{'ID_PATH': 'pci-0000:03:00.2-usb-0:5.1.2.2'}``.
+    """
+    hubs = data.pop("hubs", None)
+    if not hubs:
+        return
+
+    for group_name, group in data.items():
+        if not isinstance(group, dict):
+            continue
+        for resource_name, params in group.items():
+            if not isinstance(params, dict):
+                continue
+            match = params.get("match")
+            if not isinstance(match, dict):
+                continue
+
+            hub_name = match.get("hub")
+            port_num = match.get("port")
+            if hub_name is None and port_num is None:
+                continue
+            if hub_name is None or port_num is None:
+                raise ExporterError(
+                    f"{group_name}/{resource_name}: 'hub' and 'port' must both be specified in a match"
+                )
+
+            hub = hubs.get(hub_name)
+            if hub is None:
+                raise ExporterError(
+                    f"{group_name}/{resource_name}: hub '{hub_name}' is not defined in the hubs section"
+                )
+
+            base = _resolve_hub_base(hubs, hub_name)
+
+            ports = hub.get("ports", {})
+            # YAML may parse port keys as integers or strings
+            suffix = ports.get(port_num)
+            if suffix is None:
+                suffix = ports.get(str(port_num))
+            if suffix is None:
+                try:
+                    suffix = ports.get(int(port_num))
+                except (ValueError, TypeError):
+                    pass
+            if suffix is None:
+                raise ExporterError(
+                    f"{group_name}/{resource_name}: port {port_num} is not defined in hub '{hub_name}'"
+                )
+
+            iface = match.get("iface")
+            del match["hub"]
+            del match["port"]
+            if iface is not None:
+                del match["iface"]
+                match["@ID_PATH"] = f"{base}.{suffix}:{iface}"
+            else:
+                match["ID_PATH"] = f"{base}.{suffix}"
+
+
 class ExporterError(Exception):
     pass
 
@@ -967,6 +1100,7 @@ class Exporter:
         resource_config = ResourceConfig(self.config["resources"],
                                          config_template_env,
                                          verbose=self.verbose)
+        _expand_hubs(resource_config.data)
         for group_name, group in resource_config.data.items():
             group_name = str(group_name)
             for resource_name, params in group.items():

@@ -29,9 +29,12 @@ class UBootWriterDriver(Driver):
     # For method 'qemu-efi-iso': image slot holding the pristine source ISO
     # and path to the helper script that rewrites it. The destination ISO
     # is taken from the bound QEMUDriver's 'disk' attribute, so QEMU boots
-    # straight from the rewritten file.
+    # straight from the rewritten file. 'cmdline' is an optional override
+    # for the kernel command line; if empty, the script falls back to the
+    # value shipped in the source ISO's grub.cfg.
     source_disk = attr.ib(default='', validator=attr.validators.instance_of(str))
     update_script = attr.ib(default='', validator=attr.validators.instance_of(str))
+    cmdline = attr.ib(default='', validator=attr.validators.instance_of(str))
 
     bindings = {
         'storage': {'USBStorageDriver', None},
@@ -159,9 +162,11 @@ class UBootWriterDriver(Driver):
             newest_input = max(os.path.getmtime(p) for p in inputs)
             if (not os.path.exists(dest) or
                     os.path.getmtime(dest) < newest_input):
-                subprocess.run(
-                    [self.update_script, source, '-u', uboot, '-o', dest],
-                    check=True)
+                cmd = [self.update_script, source,
+                       '-u', uboot, '-o', dest]
+                if self.cmdline:
+                    cmd += ['-a', self.cmdline]
+                subprocess.run(cmd, check=True)
 
             # make a copy of the EFI vars so that updates won't persist, e.g.
             # Ubuntu setting itself as the default boot and bypassing U-Boot

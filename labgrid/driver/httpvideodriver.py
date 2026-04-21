@@ -21,9 +21,11 @@ class HTTPVideoDriver(Driver, VideoProtocol):
         return ("high", [("high", None)])
 
     @Driver.check_active
-    def stream(self, quality_hint=None):
+    def stream(self, quality_hint=None, controls=None):
         s = urlsplit(self.video.url)
-        if s.scheme == "http":
+        if s.port:
+            default_port = s.port
+        elif s.scheme == "http":
             default_port = 80
         elif s.scheme == "https":
             default_port = 443

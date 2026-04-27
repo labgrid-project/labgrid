@@ -5,12 +5,12 @@ from labgrid.driver import ExternalConsoleDriver
 
 class TestExternalConsoleDriver:
     def test_create(self, target):
-        d = ExternalConsoleDriver(target, 'console', cmd='cat')
-        assert (isinstance(d, ExternalConsoleDriver))
+        d = ExternalConsoleDriver(target, "console", cmd="cat")
+        assert isinstance(d, ExternalConsoleDriver)
 
     def test_communicate(self, target):
         data = b"test\ndata"
-        d = ExternalConsoleDriver(target, 'console', cmd='cat')
+        d = ExternalConsoleDriver(target, "console", cmd="cat")
         target.activate(d)
         d.write(data)
         time.sleep(0.1)
@@ -18,4 +18,26 @@ class TestExternalConsoleDriver:
         d.write(data)
         time.sleep(0.1)
         assert d.read(5, max_size=5) == data[:5]  # assert max_size limits read bytes
+        d.close()
+
+    def test_chunking(self, target):
+        data = b"even sized\ndata."
+        d = ExternalConsoleDriver(target, 'console', cmd='cat')
+        target.activate(d)
+        d.txchunk = 2
+        d.txdelay = 0.01
+        d.write(data)
+        time.sleep(0.1)
+        assert d.read(len(data)) == data  # assert written data is read
+
+        data = b"odd sized\ndata."
+        d.write(data)
+        time.sleep(0.1)
+        assert d.read(len(data)) == data  # assert written data is read
+
+        data = b"odd chunk\nsize."
+        d.txchunk = 3
+        d.write(data)
+        time.sleep(0.1)
+        assert d.read(len(data)) == data  # assert written data is read
         d.close()

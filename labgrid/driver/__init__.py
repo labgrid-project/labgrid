@@ -19,12 +19,13 @@ from .powerdriver import ManualPowerDriver, ExternalPowerDriver, \
 from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, RKUSBDriver, UUUDriver
 from .usbsdmuxdriver import USBSDMuxDriver
 from .usbsdwiredriver import USBSDWireDriver
+from .usbsdwire3driver import USBSDWire3Driver
 from .common import Driver
 from .qemudriver import QEMUDriver
-from .modbusdriver import ModbusCoilDriver
+from .modbusdriver import ModbusCoilDriver, WaveShareModbusCoilDriver
 from .modbusrtudriver import ModbusRTUDriver
 from .sigrokdriver import SigrokDriver, SigrokPowerDriver, SigrokDmmDriver
-from .usbstoragedriver import USBStorageDriver, NetworkUSBStorageDriver, Mode
+from .usbstoragedriver import USBStorageDriver, Mode
 from .resetdriver import DigitalOutputResetDriver
 from .gpiodriver import GpioDigitalOutputDriver
 from .filedigitaloutput import FileDigitalOutputDriver
@@ -48,3 +49,8 @@ from .usbtmcdriver import USBTMCDriver
 from .deditecrelaisdriver import DeditecRelaisDriver
 from .dediprogflashdriver import DediprogFlashDriver
 from .httpdigitaloutput import HttpDigitalOutputDriver
+from .eth008digitaloutput import Eth008DigitalOutputDriver
+from .laadriver import LAASerialDriver, LAAPowerDriver, \
+                       LAAUSBGadgetMassStorageDriver, LAAUSBDriver, \
+                       LAAButtonDriver, LAALedDriver, LAATempDriver, LAAWattDriver, \
+                       LAAProviderDriver

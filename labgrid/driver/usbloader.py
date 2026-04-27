@@ -55,6 +55,7 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
     }
 
     image = attr.ib(default=None)
+    verify = attr.ib(default=True, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -78,9 +79,13 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
         mf = ManagedFile(filename, self.loader)
         mf.sync_to_resource()
 
+        command = [self.tool, "-p", str(self.loader.path)]
+        if self.verify:
+            command.append("-c")
+        command.append(mf.get_remote_path())
+
         processwrapper.check_output(
-            self.loader.command_prefix +
-            [self.tool, "-p", str(self.loader.path), "-c", mf.get_remote_path()],
+            self.loader.command_prefix + command,
             print_on_silent_log=True
         )
 

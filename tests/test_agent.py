@@ -1,8 +1,13 @@
+import os
+import socket
+import subprocess
+
 import pytest
 from py.path import local
 
 import labgrid.util.agentwrapper
-from labgrid.util.agentwrapper import AgentError, AgentException, AgentWrapper, b2s, s2b
+from labgrid.util.agentwrapper import AgentError, AgentException, AgentWrapper
+from labgrid.util.agent import b2s, s2b, py2s, s2py
 
 @pytest.fixture(scope='function')
 def subprocess_mock(mocker):
@@ -55,6 +60,12 @@ def test_bytes(subprocess_mock):
     aw = AgentWrapper('localhost')
     assert s2b(aw.test(b2s(b'\x00foo'))[0]) == b'\x00foo'
 
+def test_pydata(subprocess_mock):
+    with AgentWrapper('localhost') as aw:
+        d = s2py(aw.test(py2s((1, 'foo', True)))[0])
+        assert isinstance(d, tuple)
+        assert d == (1, 'foo', True)
+
 def test_exception(subprocess_mock):
     aw = AgentWrapper('localhost')
 
@@ -96,20 +107,32 @@ def test_local():
     dummy = aw.load('dummy')
     assert dummy.neg(1) == -1
 
-def test_all_modules():
+
+def test_local_fdpass():
     aw = AgentWrapper(None)
-    aw.load('deditec_relais8')
+
+    result = aw.test_fd()
+    assert isinstance(result, tuple)
+    assert result[0] == "dummy"
+    assert isinstance(result[1], int)
+
+    with os.fdopen(result[1]) as f:
+        fdpath = os.readlink(f"/proc/self/fd/{f.fileno()}")
+        assert fdpath.startswith("/memfd:test_fd")
+
+
+@pytest.mark.parametrize('module_name', [
+    'deditec_relais8',
+    'sysfsgpio',
+    'usb_hid_relay'
+])
+def test_all_modules(module_name: str) -> None:
+    aw = AgentWrapper(None)
+
+    aw.load(module_name)
     methods = aw.list()
-    assert 'deditec_relais8.set' in methods
-    assert 'deditec_relais8.get' in methods
-    aw.load('sysfsgpio')
-    methods = aw.list()
-    assert 'sysfsgpio.set' in methods
-    assert 'sysfsgpio.get' in methods
-    aw.load('usb_hid_relay')
-    methods = aw.list()
-    assert 'usb_hid_relay.set' in methods
-    assert 'usb_hid_relay.get' in methods
+    assert f'{module_name}.set' in methods
+    assert f'{module_name}.get' in methods
 
 def test_import_modules():
     import labgrid.util.agents

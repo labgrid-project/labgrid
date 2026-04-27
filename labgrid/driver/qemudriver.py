@@ -99,6 +99,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         super().__attrs_post_init__()
         self.status = 0
         self.txdelay = None
+        self.txchunk = None
         self._child = None
         self._tempdir = None
         self._socket = None
@@ -225,7 +226,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             boot_args.append(self.boot_args)
         if self.kernel is not None and boot_args:
             cmd.append("-append")
-            cmd.append(" ".join(boot_args))
+            cmd.append(shlex.quote(" ".join(boot_args)))
 
         return cmd
 
@@ -315,21 +316,25 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
                 "Can't use monitor command on non-running target")
         return self.qmp.execute(command, arguments)
 
-    def _add_port_forward(self, proto, local_address, local_port, remote_address, remote_port):
+    def _add_port_forward(self, proto, local_address, local_port, remote_address, remote_port, netdev):
+        command = ("hostfwd_add", netdev, f"{proto}:{local_address}:{local_port}-{remote_address}:{remote_port}")
+        command = filter(None, command)
         self.monitor_command(
             "human-monitor-command",
-            {"command-line": f"hostfwd_add {proto}:{local_address}:{local_port}-{remote_address}:{remote_port}"},
+            {"command-line": " ".join(command)},
         )
 
-    def add_port_forward(self, proto, local_address, local_port, remote_address, remote_port):
-        self._add_port_forward(proto, local_address, local_port, remote_address, remote_port)
-        self._forwarded_ports[(proto, local_address, local_port)] = (proto, local_address, local_port, remote_address, remote_port)
+    def add_port_forward(self, proto, local_address, local_port, remote_address, remote_port, netdev=""):
+        self._add_port_forward(proto, local_address, local_port, remote_address, remote_port, netdev)
+        self._forwarded_ports[(proto, local_address, local_port, netdev)] = (proto, local_address, local_port, remote_address, remote_port, netdev)
 
-    def remove_port_forward(self, proto, local_address, local_port):
-        del self._forwarded_ports[(proto, local_address, local_port)]
+    def remove_port_forward(self, proto, local_address, local_port, netdev=""):
+        del self._forwarded_ports[(proto, local_address, local_port, netdev)]
+        command = ("hostfwd_remove", netdev, f"{proto}:{local_address}:{local_port}")
+        command = filter(None, command)
         self.monitor_command(
             "human-monitor-command",
-            {"command-line": f"hostfwd_remove {proto}:{local_address}:{local_port}"},
+            {"command-line": " ".join(command)},
         )
 
     def _read(self, size=1, timeout=10, max_size=None):

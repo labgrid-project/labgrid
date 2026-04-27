@@ -61,24 +61,23 @@ INDEX_TO_OID = {
 BASE_STATUS_OID = ".1.3.6.1.4.1.1718.3.2.3.1.10"
 BASE_CTRL_OID = ".1.3.6.1.4.1.1718.3.2.3.1.11"
 
+
 def _snmp_get(host, oid):
-    out = processwrapper.check_output(
-        f"snmpget -v1 -c private -O qn {host} {oid}".split()
-    ).decode('ascii')
-    out_oid, value = out.strip().split(' ', 1)
+    out = processwrapper.check_output(f"snmpget -v1 -c private -O qn {host} {oid}".split()).decode("ascii")
+    out_oid, value = out.strip().split(" ", 1)
     assert oid == out_oid
     if value == "3" or value == "5":
         return True
     if value == "4":
         return False
 
+
 def _snmp_set(host, oid, value):
     try:
-        processwrapper.check_output(
-            f"snmpset -v1 -c private {host} {oid} {value}".split()
-        )
+        processwrapper.check_output(f"snmpset -v1 -c private {host} {oid} {value}".split())
     except Exception as e:
         raise ExecutionError("failed to set SNMP value") from e
+
 
 def power_set(host, port, index, value):
     assert port is None

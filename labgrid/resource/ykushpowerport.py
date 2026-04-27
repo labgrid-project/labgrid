@@ -11,19 +11,20 @@ class YKUSHPowerPort(Resource):
 
     Args:
         serial (str): serial of the YKUSH device
-        index (int): port index"""
+        index (str): port index"""
+
     serial = attr.ib(validator=attr.validators.instance_of(str))
-    index = attr.ib(validator=attr.validators.instance_of(int),
-                    converter=int)
+    index = attr.ib(validator=attr.validators.instance_of(str), converter=str)
+
 
 @target_factory.reg_resource
 @attr.s(eq=False)
 class NetworkYKUSHPowerPort(NetworkResource):
-    """"This resource describes a remote YEPKIT YKUSH switchable USB hub.
+    """ "This resource describes a remote YEPKIT YKUSH switchable USB hub.
 
     Args:
         serial (str): serial of the YKUSH device
-        index (int): port index"""
+        index (str): port index"""
+
     serial = attr.ib(validator=attr.validators.instance_of(str))
-    index = attr.ib(validator=attr.validators.instance_of(int),
-                    converter=int)
+    index = attr.ib(validator=attr.validators.instance_of(str), converter=str)

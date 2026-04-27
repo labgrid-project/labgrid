@@ -37,6 +37,8 @@ class USBStorageDriver(Driver):
             "NetworkUSBSDMuxDevice",
             "USBSDWireDevice",
             "NetworkUSBSDWireDevice",
+            "USBSDWire3Device",
+            "NetworkUSBSDWire3Device",
         },
     }
     image = attr.ib(
@@ -113,7 +115,7 @@ class USBStorageDriver(Driver):
 
                 args = ["cp", "-T", copied_sources[0], target_path]
 
-            processwrapper.check_output(self.storage.command_prefix + args)
+            processwrapper.check_output(self.storage.wrap_command(args))
             self.proxy.unmount(self.devpath)
         except:
             # We are going to die with an exception anyway, so no point in waiting
@@ -231,7 +233,7 @@ class USBStorageDriver(Driver):
         """
         args = ["cat", f"/sys/class/block/{self._get_devpath(partition)[5:]}/size"]
         try:
-            size = subprocess.check_output(self.storage.command_prefix + args)
+            size = subprocess.check_output(self.storage.wrap_command(args))
         except subprocess.CalledProcessError:
             # while the medium is getting ready, the file does not yet exist
             return 0
@@ -240,13 +242,3 @@ class USBStorageDriver(Driver):
         except ValueError:
             # when the medium gets ready the sysfs attribute is empty for a short time span
             return 0
-
-
-@target_factory.reg_driver
-@attr.s(eq=False)
-class NetworkUSBStorageDriver(USBStorageDriver):
-    def __attrs_post_init__(self):
-        import warnings
-        warnings.warn("NetworkUSBStorageDriver is deprecated, use USBStorageDriver instead",
-                      DeprecationWarning)
-        super().__attrs_post_init__()

@@ -19,6 +19,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
+    - uses: docker/setup-compose-action@v1
+      with:
+        version: latest
     - name: Install system dependencies
       run: |
         sudo apt install -yq python3-pip python3-setuptools-scm

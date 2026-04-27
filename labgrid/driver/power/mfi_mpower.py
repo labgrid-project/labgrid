@@ -91,7 +91,7 @@ def power_get(host, port, index):
         elif port['output'] == 1:
             return True
         else:
-            raise ExecutionError("unexpected port output value: '{port['output']}'")
+            raise ExecutionError(f"unexpected port output value: '{port['output']}'")
     else:
         raise ExecutionError(f"unexpected http response: code {r.status_code}, content type '{r.headers['Content-Type']}' and content: '{r.text}'")
 

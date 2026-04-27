@@ -34,12 +34,14 @@ class ConsoleExpectMixin:
     @step(args=['data'], tag='console')
     def write(self, data):
         if self.txdelay:
-            self.logger.debug("Write %i bytes: %s (with %fs txdelay)",
-                              len(data), data, self.txdelay)
+            self.logger.debug("Write %i bytes: %s (with %fs txdelay per %i bytes)",
+                              len(data), data, self.txdelay, self.txchunk)
+
             count = 0
-            for i in range(len(data)):
+            for i in range(0, len(data), self.txchunk):
                 time.sleep(self.txdelay)
-                count += self._write(data[i:i+1])
+                count += self._write(data[i:i+self.txchunk])
+
             return count
 
         self.logger.debug("Write %i bytes: %s", len(data), data)

@@ -3,5 +3,5 @@ def handle_neg(value):
 
 
 methods = {
-    'neg': handle_neg,
+    "neg": handle_neg,
 }

@@ -47,13 +47,6 @@ def test_env_fixture_no_logging(short_env, short_test):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before
 
-def test_env_old_fixture(short_env, short_test):
-    with pexpect.spawn(f'pytest --env-config {short_env} {short_test}') as spawn:
-        spawn.expect("deprecated option --env-config")
-        spawn.expect(pexpect.EOF)
-        spawn.close()
-        assert spawn.exitstatus == 0
-
 def test_env_env_fixture(short_env, short_test):
     env=os.environ.copy()
     env['LG_ENV'] = short_env
@@ -69,7 +62,11 @@ def test_env_with_junit(short_env, short_test, tmpdir):
         spawn.close()
         assert spawn.exitstatus == 0
 
-def test_help(short_test):
+def test_help(short_test, monkeypatch):
+    # argparse in Python >= 3.14 enables colored output by default,
+    # disable that to allow argument assertions below
+    monkeypatch.setenv("NO_COLOR", "1")
+
     with pexpect.spawn(f'pytest --help {short_test}') as spawn:
         spawn.expect(pexpect.EOF)
         assert b'--lg-coordinator=COORDINATOR_ADDRESS' in spawn.before

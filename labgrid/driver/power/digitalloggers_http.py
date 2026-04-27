@@ -1,25 +1,27 @@
-'''
+"""
 Driver for Digital Loggers PDU that use the legacy HTTP API.
 Tested with Web Power Switch 7.
-'''
+"""
 
 import re
 import requests
+
 
 def power_set(host, port, index, value):
     assert port is None
 
     index = int(index)
-    value = 'ON' if value else 'OFF'
-    host = f'{host}/outlet?{index}={value}'
+    value = "ON" if value else "OFF"
+    host = f"{host}/outlet?{index}={value}"
     r = requests.get(host)
     r.raise_for_status()
+
 
 def power_get(host, port, index):
     assert port is None
 
     index = int(index)
-    host = f'{host}/status'
+    host = f"{host}/status"
     r = requests.get(host)
     r.raise_for_status()
 

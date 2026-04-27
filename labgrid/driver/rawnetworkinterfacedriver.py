@@ -3,24 +3,37 @@ import contextlib
 import json
 import subprocess
 import time
+import os
 
 import attr
 
 from .common import Driver
+from .exception import ExecutionError
 from ..factory import target_factory
 from ..step import step
+from ..util.agentwrapper import AgentWrapper
 from ..util.helper import processwrapper
 from ..util.managedfile import ManagedFile
 from ..util.timeout import Timeout
+from ..util.netns import NetNamespace
 from ..resource.common import NetworkResource
 
 
 @target_factory.reg_driver
 @attr.s(eq=False)
 class RawNetworkInterfaceDriver(Driver):
+    """RawNetworkInterface - Manage a network interface and interact with it at a low level
+
+    Args:
+        manage_interface (bool, default=True): if True this driver will
+        setup/teardown the interface on activate/deactivate. Set this to False
+        if you are managing the interface externally.
+    """
+
     bindings = {
         "iface": {"NetworkInterface", "RemoteNetworkInterface", "USBNetworkInterface"},
     }
+    manage_interface = attr.ib(default=True, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -28,12 +41,14 @@ class RawNetworkInterfaceDriver(Driver):
         self._replay_handle = None
 
     def on_activate(self):
-        self._set_interface("up")
-        self._wait_state("up")
+        if self.manage_interface:
+            self._set_interface("up")
+            self._wait_state("up")
 
     def on_deactivate(self):
-        self._set_interface("down")
-        self._wait_state("down")
+        if self.manage_interface:
+            self._set_interface("down")
+            self._wait_state("down")
 
     def _wrap_command(self, args):
         wrapper = ["sudo", "labgrid-raw-interface"]
@@ -205,10 +220,30 @@ class RawNetworkInterfaceDriver(Driver):
             cmd.append(str(timeout))
         cmd = self._wrap_command(cmd)
         if filename is None:
-            self._record_handle = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+            self._record_handle = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         else:
             with open(filename, "wb") as outdata:
                 self._record_handle = subprocess.Popen(cmd, stdout=outdata, stderr=subprocess.PIPE)
+
+        # wait for capture start
+        stderr = b""
+        while True:
+            line = self._record_handle.stderr.readline()
+            if not line:  # process ended prematurely
+                try:
+                    self._stop(self._record_handle)
+                except subprocess.CalledProcessError as e:
+                    # readd consumed stderr to exception
+                    e.stderr = stderr
+                    raise
+
+            if line.startswith(b"tcpdump: listening on"):
+                break
+
+            # collect and log other lines in stderr before capturing has started
+            stderr += line
+            self.logger.warning(line.decode().rstrip())
+
         return self._record_handle
 
     @Driver.check_active
@@ -323,3 +358,114 @@ class RawNetworkInterfaceDriver(Driver):
         Returns the MAC address of the bound network interface resource.
         """
         return self.get_statistics()["address"]
+
+    @Driver.check_active
+    @contextlib.contextmanager
+    def _netns(self, host):
+        with AgentWrapper(host) as wrapper:
+            ns = wrapper.load("netns")
+            ns.unshare()
+            yield ns
+
+    @Driver.check_active
+    @step()
+    @contextlib.contextmanager
+    def setup_netns(self, mac_address=None):
+        with contextlib.ExitStack() as ctx:
+            remote_ns = ctx.enter_context(self._netns(self.iface.host))
+            local_ns = ctx.enter_context(self._netns(None))
+
+            cmd = [
+                "-d",
+                "ns-macvtap",
+                self.iface.ifname,
+                str(remote_ns.get_pid()),
+            ]
+            if mac_address:
+                cmd.append("--mac-address")
+                cmd.append(mac_address)
+
+            # Start tap forward in remote namespace
+            remote_fwd = ctx.enter_context(
+                subprocess.Popen(
+                    self._wrap_command(cmd),
+                    stdout=subprocess.PIPE,
+                    stdin=subprocess.PIPE,
+                )
+            )
+            ctx.callback(lambda: remote_fwd.terminate())
+            self.logger.debug("Started remote tap forward '%s'", " ".join(remote_fwd.args))
+
+            r_macaddr = None
+            to = Timeout(30.0)
+            while True:
+                if to.expired:
+                    raise TimeoutError("Timeout waiting for remote macvtap to be established")
+
+                links = remote_ns.get_links()
+                for link in links:
+                    if link["ifname"] == "macvtap0":
+                        r_macaddr = link["address"]
+                        break
+
+                if r_macaddr is not None:
+                    break
+
+                if remote_fwd.poll() is not None:
+                    raise ExecutionError(
+                        f"Remote tap forward {remote_fwd.pid} died with {remote_fwd.returncode} during setup"
+                    )
+
+                time.sleep(0.1)
+
+            self.logger.debug("Remote macvtap MAC address is %s", r_macaddr)
+
+            _, fd = local_ns.create_tun(address=r_macaddr)
+            tun_fd = ctx.enter_context(os.fdopen(fd))
+
+            links = local_ns.get_links()
+            link_names = [link["ifname"] for link in links]
+            assert "tap0" in link_names
+
+            local_fwd = ctx.enter_context(
+                subprocess.Popen(
+                    local_ns.get_prefix() + ["labgrid-tap-fwd", str(tun_fd.fileno())],
+                    stdin=remote_fwd.stdout,
+                    stdout=remote_fwd.stdin,
+                    pass_fds=(tun_fd.fileno(),),
+                )
+            )
+            ctx.callback(lambda: local_fwd.terminate())
+            self.logger.debug("Started local tap forward '%s'", " ".join(local_fwd.args))
+
+            # Close local pipes for the remote forward, now that the local forward is running
+            remote_fwd.stdin.close()
+            remote_fwd.stdout.close()
+
+            ns = NetNamespace(local_ns)
+
+            # Wait for IPv6 address negotiation to finish
+            to = Timeout(30.0)
+            while True:
+                if to.expired:
+                    raise TimeoutError("Timeout waiting for IPv6 address negotiation to finish")
+
+                data = json.loads(
+                    ns.run(["ip", "-j", "addr", "show", "dev", ns.intf], check=True, stdout=subprocess.PIPE).stdout
+                )
+                for addr in data[0].get("addr_info", []):
+                    if addr.get("tentative", False):
+                        break
+                else:
+                    # No tentative addresses
+                    break
+
+                if remote_fwd.poll() is not None:
+                    raise ExecutionError(f"Remote tap forward {remote_fwd.pid} died with {remote_fwd.returncode}")
+
+                if local_fwd.poll() is not None:
+                    raise ExecutionError(f"Local tap forward {local_fwd.pid} died with {local_fwd.returncode}")
+
+                time.sleep(0.1)
+
+            yield ns

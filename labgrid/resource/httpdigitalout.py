@@ -26,9 +26,5 @@ class HttpDigitalOutput(Resource):
     method = attr.ib(default="PUT", validator=attr.validators.instance_of(str))
 
     url_get = attr.ib(default="", validator=attr.validators.instance_of(str))
-    body_get_asserted = attr.ib(
-        default="", validator=attr.validators.instance_of(str)
-    )
-    body_get_deasserted = attr.ib(
-        default="", validator=attr.validators.instance_of(str)
-    )
+    body_get_asserted = attr.ib(default="", validator=attr.validators.instance_of(str))
+    body_get_deasserted = attr.ib(default="", validator=attr.validators.instance_of(str))

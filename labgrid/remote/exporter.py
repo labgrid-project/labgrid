@@ -421,6 +421,25 @@ class USBSDWireExport(USBGenericExport):
             "path": self.local.path,
             "vendor_id": self.local.vendor_id,
             "model_id": self.local.model_id,
+        }
+
+
+@attr.s(eq=False)
+class USBSDWire3Export(USBGenericExport):
+    """ResourceExport for USB devices accessed directly from userspace"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
             "control_serial": self.local.control_serial,
         }
 
@@ -503,6 +522,7 @@ class USBDeditecRelaisExport(USBGenericExport):
             "vendor_id": self.local.vendor_id,
             "model_id": self.local.model_id,
             "index": self.local.index,
+            "invert": self.local.invert,
         }
 
 
@@ -523,6 +543,7 @@ class USBHIDRelayExport(USBGenericExport):
             "vendor_id": self.local.vendor_id,
             "model_id": self.local.model_id,
             "index": self.local.index,
+            "invert": self.local.invert,
         }
 
 
@@ -557,6 +578,7 @@ exports["SigrokUSBDevice"] = USBSigrokExport
 exports["SigrokUSBSerialDevice"] = USBSigrokExport
 exports["USBSDMuxDevice"] = USBSDMuxExport
 exports["USBSDWireDevice"] = USBSDWireExport
+exports["USBSDWire3Device"] = USBSDWire3Export
 exports["USBDebugger"] = USBGenericExport
 exports["USBHub"] = USBGenericRemoteExport
 exports["USBMassStorage"] = USBGenericExport

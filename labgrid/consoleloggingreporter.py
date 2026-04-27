@@ -11,6 +11,7 @@ class ConsoleLoggingReporter:
     Args:
         logpath (str): path to store the logfiles in
     """
+
     instance = None
 
     @classmethod
@@ -49,13 +50,12 @@ class ConsoleLoggingReporter:
             log = self._logcache[source]
         except KeyError:
             if source.name:
-                name = f'console_{source.target.name}_{source.name}'
+                name = f"console_{source.target.name}_{source.name}"
             else:
-                name = f'console_{source.target.name}'
+                name = f"console_{source.target.name}"
             name = os.path.join(self.logpath, name)
             try:
-                log = self._logcache[source] = open(name, mode='ab',
-                                                    buffering=0)
+                log = self._logcache[source] = open(name, mode="ab", buffering=0)
             except OSError as e:
                 print(f"failed to open log file {name}: {e}", file=sys.stderr)
                 log = self._logcache[source] = None
@@ -63,28 +63,20 @@ class ConsoleLoggingReporter:
                 return None
 
             if source.name:
-                log.write(
-                    f"Labgrid Console Logfile for {source.target.name} {source.name}\n"
-                    .encode("utf-8")
-                )
+                log.write(f"Labgrid Console Logfile for {source.target.name} {source.name}\n".encode("utf-8"))
             else:
-                log.write(
-                    f"Labgrid Console Logfile for {source.target.name}\n"
-                    .encode("utf-8")
-                )
-            log.write(
-                f"Logfile started at {datetime.now()}\n".encode("utf-8")
-            )
-            log.write("=== Log starts here ===\n".encode('utf-8'))
+                log.write(f"Labgrid Console Logfile for {source.target.name}\n".encode("utf-8"))
+            log.write(f"Logfile started at {datetime.now()}\n".encode("utf-8"))
+            log.write("=== Log starts here ===\n".encode("utf-8"))
 
         return log
 
     def notify(self, event):
         """This is the callback function for steps"""
         step = event.step
-        if step.tag == 'console':
-            if step.title == 'read':
-                if event.data.get('state') == 'stop':
+        if step.tag == "console":
+            if step.title == "read":
+                if event.data.get("state") == "stop":
                     if step.result and step.source:
                         log = self.get_logfile(event)
                         if not log:

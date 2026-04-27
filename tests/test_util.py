@@ -1,4 +1,5 @@
 import os.path
+import re
 import subprocess
 import socket
 import atexit
@@ -14,7 +15,7 @@ from labgrid.util import diff_dict, flat_dict, filter_dict
 from labgrid.util.helper import get_free_port
 from labgrid.util.ssh import ForwardError, SSHConnection, sshmanager
 from labgrid.util.proxy import proxymanager
-from labgrid.util.managedfile import ManagedFile
+from labgrid.util.managedfile import ManagedFile, ManagedFileError
 from labgrid.driver.exception import ExecutionError
 from labgrid.resource.serialport import NetworkSerialPort
 from labgrid.resource.common import Resource, NetworkResource
@@ -352,6 +353,47 @@ Test
     assert hash == mf.get_hash()
     assert str(t) == mf.get_remote_path()
 
+def test_network_managedfile_no_sync(target, tmpdir):
+    res = NetworkResource(target, "test", "localhost")
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+    mf = ManagedFile(t, res, detect_nfs=False)
+
+    expected = re.escape("sync_to_resource() needs to be called before the remote-path can be retrieved")
+    with pytest.raises(ManagedFileError, match=expected) as e:
+        mf.get_remote_path()
+
+def test_local_managedfile_symlink(target, tmpdir):
+    res = Resource(target, "test")
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+    mf = ManagedFile(t, res, detect_nfs=False)
+    mf.sync_to_resource(symlink=tmpdir.join("link"))
+
+    assert str(t) == mf.get_remote_path()
+    assert os.path.islink(tmpdir.join("link"))
+
+@pytest.mark.localsshmanager
+def test_remote_managedfile_symlink(target, tmpdir):
+    res = NetworkResource(target, "test", "localhost")
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+    mf = ManagedFile(t, res, detect_nfs=False)
+    mf.sync_to_resource(symlink=tmpdir.join("link"))
+
+    assert os.path.islink(tmpdir.join("link"))
 
 def test_find_dict():
     dict_a = {"a": {"a.a": {"a.a.a": "a.a.a_val"}}, "b": "b_val"}

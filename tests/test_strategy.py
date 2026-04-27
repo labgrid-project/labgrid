@@ -8,7 +8,7 @@ def test_create_barebox(target):
     console = FakeConsoleDriver(target, "console")
     power = FakePowerDriver(target, "power")
     barebox = BareboxDriver(target, "barebox")
-    shell = ShellDriver(target, "shell", prompt='root@dummy', login_prompt='login:', username='root')
+    shell = ShellDriver(target, "shell", prompt="root@dummy", login_prompt="login:", username="root")
     s = BareboxStrategy(target, "strategy")
 
     assert isinstance(s, Strategy)
@@ -17,11 +17,12 @@ def test_create_barebox(target):
 
     assert s.state is BindingState.bound
 
+
 def test_create_uboot(target):
     console = FakeConsoleDriver(target, "console")
     power = FakePowerDriver(target, "power")
     barebox = UBootDriver(target, "uboot")
-    shell = ShellDriver(target, "shell", prompt='root@dummy', login_prompt='login:', username='root')
+    shell = ShellDriver(target, "shell", prompt="root@dummy", login_prompt="login:", username="root")
     s = UBootStrategy(target, "strategy")
 
     assert isinstance(s, Strategy)

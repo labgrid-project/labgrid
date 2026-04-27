@@ -2,8 +2,15 @@ from urllib.parse import urlparse
 
 import pytest
 
-from labgrid.resource import NetworkPowerPort
-from labgrid.driver.powerdriver import ExternalPowerDriver, ManualPowerDriver, NetworkPowerDriver
+from labgrid.driver import ExecutionError
+from labgrid.driver.power.poe_netgear_plus import _get_hostname_and_password
+from labgrid.resource import NetworkPowerPort, YKUSHPowerPort
+from labgrid.driver.powerdriver import (
+    ExternalPowerDriver,
+    ManualPowerDriver,
+    NetworkPowerDriver,
+    YKUSHPowerDriver,
+)
 
 
 class TestManualPowerDriver:
@@ -285,11 +292,14 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.gude24
         import labgrid.driver.power.netio
         import labgrid.driver.power.netio_kshell
+        import labgrid.driver.power.pe6216
+        import labgrid.driver.power.poe_netgear_plus
         import labgrid.driver.power.rest
         import labgrid.driver.power.sentry
         import labgrid.driver.power.eg_pms2_network
         import labgrid.driver.power.shelly_gen1
         import labgrid.driver.power.ubus
+        import labgrid.driver.power.tinycontrol_tcpdu
 
     def test_import_backend_eaton(self):
         pytest.importorskip("pysnmp")
@@ -306,3 +316,87 @@ class TestNetworkPowerDriver:
     def test_import_backend_poe_mib(self):
         pytest.importorskip("pysnmp")
         import labgrid.driver.power.poe_mib
+
+class TestYKUSHPowerDriver:
+    YKUSH_FAKE_SERIAL = "YK12345"
+    YKUSH_LIST_OUTPUT = f"Attached YKUSH Boards:\n1. Board found with serial number: {YKUSH_FAKE_SERIAL}".encode(
+        "utf-8"
+    )
+    YKUSH3_FAKE_SERIAL = "Y3N10673"
+    YKUSH3_LIST_OUTPUT = f"Attached YKUSH3 Boards:\n1. Board found with serial number: {YKUSH3_FAKE_SERIAL}".encode(
+        "utf-8"
+    )
+    YKUSHXS_LIST_OUTPUT = (
+        "Attached YKUSH XS Boards:\n1. Board found with serial number: YKU1234".encode(
+            "utf-8"
+        )
+    )
+
+    def test_create(self, target):
+        resource = YKUSHPowerPort(
+            target, "power", serial=self.YKUSH_FAKE_SERIAL, index=1
+        )
+        device = YKUSHPowerDriver(target, "power")
+        assert isinstance(device, YKUSHPowerDriver)
+
+    def test_default_off(self, target, mocker):
+        check_output_mock = mocker.patch(
+            "labgrid.util.helper.processwrapper.check_output"
+        )
+        check_output_mock.side_effect = [
+            self.YKUSH_LIST_OUTPUT,
+            self.YKUSHXS_LIST_OUTPUT,
+            self.YKUSH3_LIST_OUTPUT,
+            b"",
+        ]
+        resource = YKUSHPowerPort(
+            target, "power", serial=self.YKUSH_FAKE_SERIAL, index=2
+        )
+        resource.avail = True
+        device = YKUSHPowerDriver(target, "power")
+        target.activate(device)
+        device.off()
+
+        check_output_mock.assert_called_with(
+            ["ykushcmd", "ykush", "-s", self.YKUSH_FAKE_SERIAL, "-d", "2"]
+        )
+
+    def test_ykush3_on(self, target, mocker):
+        check_output_mock = mocker.patch(
+            "labgrid.util.helper.processwrapper.check_output"
+        )
+        check_output_mock.side_effect = [
+            self.YKUSH_LIST_OUTPUT,
+            self.YKUSHXS_LIST_OUTPUT,
+            self.YKUSH3_LIST_OUTPUT,
+            b"",
+        ]
+        resource = YKUSHPowerPort(
+            target, "power", serial=self.YKUSH3_FAKE_SERIAL, index=3
+        )
+        resource.avail = True
+        device = YKUSHPowerDriver(target, "power")
+        target.activate(device)
+        device.on()
+
+        check_output_mock.assert_called_with(
+            ["ykushcmd", "ykush3", "-s", self.YKUSH3_FAKE_SERIAL, "-u", "3"]
+        )
+
+
+class TestPoeNetgearPlusPowerDriver:
+    @pytest.mark.parametrize(
+        'url, expected_host, expected_pw',
+        [
+            ("http://example.com", "example.com", "P4ssword"),
+            ("http://ignored:detected_pw@example.com", "example.com", "detected_pw"),
+        ]
+    )
+    def test_get_hostname_and_password(self, url: str, expected_host: str, expected_pw: str):
+        returned_host, returned_pw = _get_hostname_and_password(url)
+        assert returned_host == expected_host
+        assert returned_pw == expected_pw
+
+    def test_get_hostname_and_pw_non_http_raises(self):
+        with pytest.raises(ExecutionError, match="URL must start with http://"):
+            _get_hostname_and_password("no_http_protocol")

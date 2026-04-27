@@ -1,7 +1,7 @@
 from .base import SerialPort, NetworkInterface, EthernetPort, SysfsGPIO
 from .ethernetport import SNMPEthernetPort
 from .serialport import RawSerialPort, NetworkSerialPort
-from .modbus import ModbusTCPCoil
+from .modbus import ModbusTCPCoil, WaveshareModbusTCPCoil
 from .modbusrtu import ModbusRTU
 from .networkservice import NetworkService
 from .onewireport import OneWirePIO
@@ -29,6 +29,7 @@ from .udev import (
     USBPowerPort,
     USBSDMuxDevice,
     USBSDWireDevice,
+    USBSDWire3Device,
     USBSerialPort,
     USBTMC,
     USBVideo,
@@ -47,3 +48,7 @@ from .dediprogflasher import DediprogFlasher, NetworkDediprogFlasher
 from .httpdigitalout import HttpDigitalOutput
 from .sigrok import SigrokDevice
 from .fastboot import AndroidNetFastboot
+from .eth008 import Eth008DigitalOutput
+from .laa import LAASerialPort, LAAPowerPort, LAAUSBGadgetMassStorage, \
+                 LAAUSBPort, LAAButtonPort, \
+                 LAALed, LAATempSensor, LAAWattMeter, LAAProvider

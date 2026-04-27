@@ -1,4 +1,3 @@
-import os
 import queue
 import warnings
 from collections import OrderedDict
@@ -214,16 +213,10 @@ class USBResource(ManagedResource):
         return None
 
     def read_attr(self, attribute):
-        """read uncached attribute value from sysfs
-
-        pyudev currently supports only cached access to attributes, so we read
-        directly from sysfs.
-        """
-        # FIXME update pyudev to support udev_device_set_sysattr_value(dev,
-        # attr, None) to clear the cache
+        """read uncached attribute value"""
         if self.device is not None:
-            with open(os.path.join(self.device.sys_path, attribute), 'rb') as f:
-                return f.read().rstrip(b'\n') # drop trailing newlines
+            self.device.attributes.unset(attribute)
+            return self.device.attributes.get(attribute)
 
         return None
 
@@ -287,7 +280,8 @@ class IMXUSBLoader(USBResource):
                          ("1fc9", "0128"), ("1fc9", "0126"),
                          ("1fc9", "012b"), ("1fc9", "0134"),
                          ("1fc9", "013e"), ("1fc9", "0146"),
-                         ("1fc9", "014e"),
+                         ("1fc9", "014e"), ("1fc9", "0129"),
+                         ("1fc9", "0159"), ("1fc9", "015d"),
                          ("1b67", "4fff"), ("0525", "b4a4"), # SPL
                          ("3016", "1001"),
                          ]:
@@ -301,7 +295,29 @@ class RKUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
-        if match not in [("2207", "110a")]:
+        if match not in [("2207", "110a"),  # RV1108
+                         ("2207", "110b"),  # RV1126
+                         ("2207", "110c"),  # RV1106
+                         ("2207", "110e"),  # RV1103B
+                         ("2207", "110f"),  # RV1126B
+                         ("2207", "300a"),  # RK3066
+                         ("2207", "301a"),  # RK3036
+                         ("2207", "310b"),  # RK3188
+                         ("2207", "310c"),  # RK3128
+                         ("2207", "320a"),  # RK3288
+                         ("2207", "320b"),  # RK322X
+                         ("2207", "320c"),  # RK3328
+                         ("2207", "330a"),  # RK3368
+                         ("2207", "330c"),  # RK3399
+                         ("2207", "330d"),  # PX30
+                         ("2207", "330e"),  # RK3308
+                         ("2207", "350a"),  # RK3568
+                         ("2207", "350b"),  # RK3588
+                         ("2207", "350c"),  # RK3528
+                         ("2207", "350d"),  # RK3562
+                         ("2207", "350e"),  # RK3576
+                         ("2207", "350f"),  # RK3506
+                         ]:
             return False
 
         return super().filter_match(device)
@@ -461,16 +477,13 @@ class USBSDWireDevice(USBResource):
     it is identified via USB using udev
     """
 
-    control_path = attr.ib(
-        default=None,
-        validator=attr.validators.optional(str)
-    )
     disk_path = attr.ib(
         default=None,
         validator=attr.validators.optional(str)
     )
 
     def __attrs_post_init__(self):
+        self.control_serial = None
         self.match['ID_VENDOR_ID'] = '04e8'
         self.match['ID_MODEL_ID'] = '6001'
         self.match['@ID_VENDOR_ID'] = '0424'
@@ -488,6 +501,59 @@ class USBSDWireDevice(USBResource):
         pass
 
     # Overwrite the poll function. Only mark the SDWire as available if both
+    # control_serial and disk_path are available.
+    def poll(self):
+        super().poll()
+        if self.device is not None and not self.avail:
+            for child in self.device.parent.children:
+                if child.subsystem == 'block' and child.device_type == 'disk':
+                    self.disk_path = child.device_node
+            self.control_serial = self.device.properties.get('ID_SERIAL_SHORT')
+
+    def update(self):
+        super().update()
+        if self.device is None:
+            self.disk_path = None
+            self.control_serial = None
+
+    @property
+    def path(self):
+        return self.disk_path
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class USBSDWire3Device(USBResource):
+    """The USBSDWire3Device describes an attached SDWire3 device,
+    it is identified via USB using udev
+    """
+
+    control_serial = attr.ib(
+        default=None,
+        validator=attr.validators.optional(str)
+    )
+    disk_path = attr.ib(
+        default=None,
+        validator=attr.validators.optional(str)
+    )
+
+    def __attrs_post_init__(self):
+        self.match['ID_VENDOR_ID'] = '0bda'
+        self.match['ID_MODEL_ID'] = '0316'
+        self.match['@ID_VENDOR_ID'] = '1d6b'
+        self.match['@ID_MODEL_ID'] = '0002'        
+        super().__attrs_post_init__()
+
+    # Overwrite the avail attribute with our internal property
+    @property
+    def avail(self):
+        return bool(self.control_serial)
+
+    # Forbid the USBResource super class to set the avail property
+    @avail.setter
+    def avail(self, prop):
+        pass
+
+    # Overwrite the poll function. Only mark the SDWire3 as available if both
     # paths are available.
     def poll(self):
         super().poll()
@@ -739,6 +805,8 @@ class USBDebugger(USBResource):
                          ("0483", "374b"),  # STLINK-V3
                          ("0483", "374e"),  # STLINK-V3
                          ("0483", "374f"),  # STLINK-V3
+                         ("0483", "3754"),  # STLINK-V3
+                         ("04b4", "f155"),  # KitProg3 CMSIS-DAP
                          ("15ba", "0003"),  # Olimex ARM-USB-OCD
                          ("15ba", "002b"),  # Olimex ARM-USB-OCD-H
                          ("15ba", "0004"),  # Olimex ARM-USB-TINY
@@ -746,6 +814,7 @@ class USBDebugger(USBResource):
                          ("1366", "0101"),  # SEGGER J-Link PLUS
                          ("1366", "0105"),  # SEGGER J-Link
                          ("1366", "1015"),  # SEGGER J-Link
+                         ("1366", "1024"),  # SEGGER J-Link
                          ("1366", "1051"),  # SEGGER J-Link
                          ("1366", "1061"),  # SEGGER J-Link
                          ]:

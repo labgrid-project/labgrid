@@ -67,9 +67,12 @@ class ManagedFile:
                     self.local_path,
                     f"{self.rpath}{os.path.basename(self.local_path)}"
                 )
+        else:
+            self.rpath = os.path.dirname(self.local_path) + "/"
 
-            if symlink is not None:
-                self.logger.info("Linking")
+        if symlink is not None:
+            self.logger.info("Linking")
+            if isinstance(self.resource, NetworkResource):
                 try:
                     conn.run_check(f"test ! -e {symlink} -o -L {symlink}")
                 except ExecutionError:
@@ -77,6 +80,10 @@ class ManagedFile:
                 # use short options to be compatible with busybox
                 # --symbolic --force --no-dereference
                 conn.run_check(f"ln -sfn {self.rpath}{os.path.basename(self.local_path)} {symlink}")
+            else:
+                if os.path.exists(symlink) and not os.path.islink(symlink):
+                    raise ManagedFileError(f"Path {symlink} exists but is not a symlink.")
+                os.symlink(f"{self.rpath}{os.path.basename(self.local_path)}", symlink)
 
 
     def _on_nfs(self, conn):
@@ -129,6 +136,9 @@ class ManagedFile:
             str: path to the file on the remote host
         """
         if isinstance(self.resource, NetworkResource):
+            if self.rpath is None:
+                raise ManagedFileError("sync_to_resource() needs to be called before the remote-path can be retrieved")
+
             return f"{self.rpath}{os.path.basename(self.local_path)}"
 
         return self.local_path

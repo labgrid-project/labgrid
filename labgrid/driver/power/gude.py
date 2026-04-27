@@ -4,14 +4,13 @@ from ..exception import ExecutionError
 
 PORT = 80
 
+
 def power_set(host, port, index, value):
     index = int(index)
     assert 1 <= index <= 8
     # access the web interface...
     value = 1 if value else 0
-    r = requests.get(
-        f"http://{host}:{port}/switch.html?cmd=1&p={index}&s={value}"
-    )
+    r = requests.get(f"http://{host}:{port}/switch.html?cmd=1&p={index}&s={value}")
     r.raise_for_status()
 
 

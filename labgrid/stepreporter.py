@@ -17,6 +17,7 @@ class StepReporter:
     def start(cls):
         """starts the StepReporter"""
         from warnings import warn
+
         warn(
             """
             StepReporter is deprecated, use the StepLogger and basicConfig from labgrid.logging
@@ -43,5 +44,5 @@ class StepReporter:
             return
 
         step = event.step
-        indent = '  '*step.level
+        indent = "  " * step.level
         print(f"{indent}{event}")

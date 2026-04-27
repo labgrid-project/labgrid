@@ -1,4 +1,5 @@
 """The autoinstall.main module runs an installation script automatically on multiple targets."""
+
 import ast
 import argparse
 import logging
@@ -20,22 +21,22 @@ class Handler(multiprocessing.Process):
         self.name = name
 
         self.context = {
-            'name': self.name,
-            'env': self.env,
-            'config': self.config,
+            "name": self.name,
+            "env": self.env,
+            "config": self.config,
         }
         self.context.update(target_factory.resources)
         self.context.update(target_factory.drivers)
 
     def _get_function(self, name, context):
-        snippet = self.config.data['autoinstall'].get(name)
+        snippet = self.config.data["autoinstall"].get(name)
         if not snippet:
             return None
 
         code = f"def {name}():\n{textwrap.indent(snippet, ' ')}"
         tree = ast.parse(code, filename=self.env.config_file)
         ast.increment_lineno(tree, snippet.start_mark.line)
-        co = compile(tree, filename=self.env.config_file, mode='exec')
+        co = compile(tree, filename=self.env.config_file, mode="exec")
 
         stage = {}
         exec(co, context, stage)  # pylint: disable=exec-used
@@ -43,21 +44,23 @@ class Handler(multiprocessing.Process):
 
     def _get_setup_function(self):
         context = self.context
-        context['log'] = self.log.getChild('setup')
-        setup = self._get_function('setup', self.context)
+        context["log"] = self.log.getChild("setup")
+        setup = self._get_function("setup", self.context)
         if setup is None:
+
             def setup():
                 pass
+
         return setup
 
     def _get_handler_function(self):
         context = self.context.copy()
-        context['log'] = self.log.getChild('handler')
-        handler = self._get_function('handler', context)
+        context["log"] = self.log.getChild("handler")
+        handler = self._get_function("handler", context)
         return handler
 
     def _get_initial_resource(self):
-        cls = self.config.data['autoinstall'].get('initial-resource')
+        cls = self.config.data["autoinstall"].get("initial-resource")
         if not cls:
             return None
 
@@ -69,7 +72,7 @@ class Handler(multiprocessing.Process):
 
         try:
             self.target = self.env.get_target(self.name)
-            self.context['target'] = self.target
+            self.context["target"] = self.target
             if self.target is None:
                 raise KeyError
         except Exception:  # pylint: disable=broad-except
@@ -88,8 +91,7 @@ class Handler(multiprocessing.Process):
     def run_once(self):
         try:
             if self.initial_resource:
-                self.log.info("waiting until %s is available",
-                              self.initial_resource.display_name)
+                self.log.info("waiting until %s is available", self.initial_resource.display_name)
                 while True:
                     self.target.update_resources()
                     if self.initial_resource.avail:
@@ -100,13 +102,11 @@ class Handler(multiprocessing.Process):
             self.target.update_resources()
             result = self.handler()
             if result is not None:
-                self.log.warning("unexpected return value from handler: %s",
-                                 repr(result))
+                self.log.warning("unexpected return value from handler: %s", repr(result))
             self.log.info("completed handler")
 
             if self.initial_resource:
-                self.log.info("waiting until %s is unavailable",
-                              self.initial_resource.display_name)
+                self.log.info("waiting until %s is unavailable", self.initial_resource.display_name)
                 while True:
                     self.target.update_resources()
                     if not self.initial_resource.avail:
@@ -115,11 +115,9 @@ class Handler(multiprocessing.Process):
 
         except NoResourceFoundError as e:
             if e.filter and len(e.filter) > 1:
-                self.log.warning("resources %s not found, restarting",
-                                 e.filter)
+                self.log.warning("resources %s not found, restarting", e.filter)
             elif e.filter:
-                self.log.warning("resource %s not found, restarting",
-                                 next(iter(e.filter)))
+                self.log.warning("resource %s not found, restarting", next(iter(e.filter)))
             else:
                 self.log.warning("resource not found, restarting")
         except Exception:  # pylint: disable=broad-except
@@ -141,24 +139,20 @@ class Manager:
         self.log = logging.getLogger("manager")
 
     def configure(self):
-        if not 'autoinstall' in self.env.config.data:
-            self.log.error("no 'autoinstall' section found in '%s'",
-                           self.env.config_file)
+        if not "autoinstall" in self.env.config.data:
+            self.log.error("no 'autoinstall' section found in '%s'", self.env.config_file)
             return False
 
-        if not 'handler' in self.env.config.data['autoinstall']:
-            self.log.error("no 'handler' definition found in '%s'",
-                           self.env.config_file)
+        if not "handler" in self.env.config.data["autoinstall"]:
+            self.log.error("no 'handler' definition found in '%s'", self.env.config_file)
             return False
 
         self.handlers = {}
-        for target_name in self.config.data.get('targets', {}).keys():
-            self.handlers[target_name] = Handler(self.env, self.args,
-                                                 target_name)
+        for target_name in self.config.data.get("targets", {}).keys():
+            self.handlers[target_name] = Handler(self.env, self.args, target_name)
 
         if not self.handlers:
-            self.log.error("no targets found in '%s'",
-                           self.env.config_file)
+            self.log.error("no targets found in '%s'", self.env.config_file)
             return False
 
         return True
@@ -175,28 +169,14 @@ class Manager:
         for handler in self.handlers.values():
             handler.join()
 
+
 def main():
     basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-d',
-        '--debug',
-        action='store_true',
-        default=False,
-        help="enable debug mode"
-    )
-    parser.add_argument(
-        '--once',
-        action='store_true',
-        default=False,
-        help="handle each target only once"
-    )
-    parser.add_argument(
-        'config',
-        type=str,
-        help="config file"
-    )
+    parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
+    parser.add_argument("--once", action="store_true", default=False, help="handle each target only once")
+    parser.add_argument("config", type=str, help="config file")
 
     args = parser.parse_args()
 

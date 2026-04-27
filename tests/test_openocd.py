@@ -6,8 +6,7 @@ from labgrid.resource.udev import USBDebugger
 from labgrid.driver.openocddriver import OpenOCDDriver
 
 
-pytestmark = pytest.mark.skipif(not which("openocd"),
-                              reason="openocd not available")
+pytestmark = pytest.mark.skipif(not which("openocd"), reason="openocd not available")
 
 
 def test_openocd_resource(target):

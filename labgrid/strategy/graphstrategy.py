@@ -5,25 +5,28 @@ from .common import Strategy, StrategyError
 from ..step import step
 
 __all__ = [
-    'InvalidGraphStrategyError',
-    'GraphStrategyRuntimeError',
-    'GraphStrategyError',
-    'GraphStrategy',
+    "InvalidGraphStrategyError",
+    "GraphStrategyRuntimeError",
+    "GraphStrategyError",
+    "GraphStrategy",
 ]
 
 
 class GraphStrategyError(StrategyError):
     """Generic GraphStrategy error"""
+
     pass
 
 
 class InvalidGraphStrategyError(GraphStrategyError):
     """GraphStrategy error raised during initialization of broken strategies"""
+
     pass
 
 
 class GraphStrategyRuntimeError(GraphStrategyError):
     """GraphStrategy error raised during runtime when used in unintended ways"""
+
     pass
 
 
@@ -37,50 +40,45 @@ class GraphStrategy(Strategy):
         self.states = {}
 
         for state_name in dir(self):
-            if not state_name.startswith('state_'):
+            if not state_name.startswith("state_"):
                 continue
 
             method = getattr(self, state_name)
 
             if not callable(method):
-                raise InvalidGraphStrategyError(
-                    f"GraphStrategy state '{state_name}' is not callable"
-                )
+                raise InvalidGraphStrategyError(f"GraphStrategy state '{state_name}' is not callable")
 
-            state_name = '_'.join(state_name.split('_')[1:])
+            state_name = "_".join(state_name.split("_")[1:])
 
             self.states[state_name] = {
-                'method': step()(method),
-                'dependencies': getattr(method, 'dependencies', []),
+                "method": step()(method),
+                "dependencies": getattr(method, "dependencies", []),
             }
 
         if not self.states:
-            raise InvalidGraphStrategyError(
-                'GraphStrategies without states are invalid')
+            raise InvalidGraphStrategyError("GraphStrategies without states are invalid")
 
         # check dependencies
         state_names = self.states.keys()
 
         for state_name in state_names:
-            for dependency in self.states[state_name]['dependencies']:
+            for dependency in self.states[state_name]["dependencies"]:
                 if dependency not in state_names:
                     raise InvalidGraphStrategyError(
                         f"{state_name}: State '{dependency}' is unknown. State names are: {', '.join(state_names)}"  # pylint: disable=line-too-long
                     )
 
         # find root state
-        root_states = [k for k, v in self.states.items()
-                       if not v['dependencies']]
+        root_states = [k for k, v in self.states.items() if not v["dependencies"]]
 
         if not root_states:
-            raise InvalidGraphStrategyError(
-                'GraphStrategies without root state are invalid')
+            raise InvalidGraphStrategyError("GraphStrategies without root state are invalid")
 
         # check check if exact one root state is defined
         if len(root_states) > 1:
             raise InvalidGraphStrategyError(
-                'Only one root state supported. Defined root states: {}'.format(  # NOQA
-                    ', '.join(root_states),
+                "Only one root state supported. Defined root states: {}".format(  # NOQA
+                    ", ".join(root_states),
                 )
             )
 
@@ -89,9 +87,9 @@ class GraphStrategy(Strategy):
 
         # setup grahviz cache
         self._graph_cache = {
-            'tempdir': None,
-            'graph': None,
-            'path': self.path,
+            "tempdir": None,
+            "graph": None,
+            "path": self.path,
         }
 
     def invalidate(self):
@@ -105,7 +103,7 @@ class GraphStrategy(Strategy):
         # deactivate all drivers to restore initial state
         self.target.deactivate_all_drivers()
 
-    @step(args=['state'])
+    @step(args=["state"])
     def transition(self, state, via=None):
         """
         Computes the path from root state (via "via" state, if given) to given state.
@@ -114,20 +112,17 @@ class GraphStrategy(Strategy):
         computed path (starting from the root node) are executed.
         """
         if not isinstance(via, (type(None), list)):
-            raise GraphStrategyRuntimeError(
-                "'via' has to be a list or None"
-                )
+            raise GraphStrategyRuntimeError("'via' has to be a list or None")
         # for use with labgrid-client -s, if only state is set, try to extract
         # the via states
-        if ':' in state and via is None:
-            state, via = state.split(':')
-            via = via.split(',')
+        if ":" in state and via is None:
+            state, via = state.split(":")
+            via = via.split(",")
         via = via or []
         try:
             # check if another transition is running
             if self.__transition_running:
-                raise GraphStrategyRuntimeError(
-                    'Another transition is already running')
+                raise GraphStrategyRuntimeError("Another transition is already running")
 
             # lock transition
             self.__transition_running = True
@@ -153,7 +148,7 @@ class GraphStrategy(Strategy):
                     self.target.deactivate_all_drivers()
 
                 try:
-                    self.states[state_name]['method']()
+                    self.states[state_name]["method"]()
 
                 except Exception:
                     self.invalidate()
@@ -174,7 +169,9 @@ class GraphStrategy(Strategy):
         """
         via = via or []
         via = via[::-1]
-        path = [state, ]
+        path = [
+            state,
+        ]
         current_state = self.states[state]
 
         for via_state in via:
@@ -183,11 +180,11 @@ class GraphStrategy(Strategy):
                     f"Unknown state '{via_state}' in via. State names are: {', '.join(self.states.keys())}"  # pylint: disable=line-too-long
                 )
 
-        while current_state['dependencies']:
-            next_state = current_state['dependencies'][0]
+        while current_state["dependencies"]:
+            next_state = current_state["dependencies"][0]
 
             for i in via:
-                if i in current_state['dependencies']:
+                if i in current_state["dependencies"]:
                     via.remove(i)
                     next_state = i
 
@@ -197,11 +194,8 @@ class GraphStrategy(Strategy):
         # no via states should be left now
         if via:
             raise GraphStrategyRuntimeError(
-                "Path to '{}' via {} does not exist".format(
-                    state, ', '.join(["'{}'".format(v) for v in via])
-                )
+                "Path to '{}' via {} does not exist".format(state, ", ".join(["'{}'".format(v) for v in via]))
             )
-
 
         return path
 
@@ -211,8 +205,8 @@ class GraphStrategy(Strategy):
         relative to the previously executed one.
         Otherwise the given path is returned.
         """
-        if path[:-(len(path) - len(self.path))] == self.path:
-            return path[len(self.path):]
+        if path[: -(len(path) - len(self.path))] == self.path:
+            return path[len(self.path) :]
 
         return path
 
@@ -226,57 +220,64 @@ class GraphStrategy(Strategy):
         """
         from graphviz import Digraph
 
-        if(self._graph_cache['graph'] and
-           self._graph_cache['path'] == self.path):
-            return self._graph_cache['graph']
+        if self._graph_cache["graph"] and self._graph_cache["path"] == self.path:
+            return self._graph_cache["graph"]
 
-        if not self._graph_cache['tempdir']:
-            self._graph_cache['tempdir'] = TemporaryDirectory()
+        if not self._graph_cache["tempdir"]:
+            self._graph_cache["tempdir"] = TemporaryDirectory()
 
         dg = Digraph(
-            filename=os.path.join(self._graph_cache['tempdir'].name, 'graph'),
-            format='png',
+            filename=os.path.join(self._graph_cache["tempdir"].name, "graph"),
+            format="png",
         )
 
         edges = []
 
-        dg.attr('node', style='filled', fillcolor='lightblue2', penwidth='1')
-        dg.attr('edge', style='solid')
+        dg.attr("node", style="filled", fillcolor="lightblue2", penwidth="1")
+        dg.attr("edge", style="solid")
 
         for index, node_name in enumerate(self.path):
             attrs = {}
 
             if node_name == self.path[-1]:
-                attrs = {'penwidth': '2'}
+                attrs = {"penwidth": "2"}
 
             dg.node(node_name, **attrs)
 
             if index < len(self.path) - 1:
-                edges.append((node_name, self.path[index + 1], ))
+                edges.append(
+                    (
+                        node_name,
+                        self.path[index + 1],
+                    )
+                )
                 dg.edge(*edges[-1])
 
-        dg.attr('node', style='filled', color='lightgrey',
-                fillcolor='lightgrey')
+        dg.attr("node", style="filled", color="lightgrey", fillcolor="lightgrey")
 
-        dg.attr('edge', style='dashed', arrowhead='empty')
+        dg.attr("edge", style="dashed", arrowhead="empty")
 
         for node_name in self.states:
             if node_name not in self.path:
                 dg.node(node_name)
 
-            for edge in self.states[node_name]['dependencies']:
-                if (edge, node_name, ) in edges:
+            for edge in self.states[node_name]["dependencies"]:
+                if (
+                    edge,
+                    node_name,
+                ) in edges:
                     continue
 
                 dg.edge(edge, node_name)
 
-        self._graph_cache['graph'] = dg
+        self._graph_cache["graph"] = dg
 
         return dg
 
     @classmethod
     def depends(cls, *dependencies):
         """``@depends`` decorator used to list states the decorated state directly depends on."""
+
         def decorator(function):
             function.dependencies = list(dependencies)
 

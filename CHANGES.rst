@@ -1,3 +1,27 @@
+Release 25.1 (Unreleased)
+-------------------------
+
+New Features in 25.1
+~~~~~~~~~~~~~~~~~~~~
+
+- The default interrupt key for the `BareboxDriver` is now CTRL+D (``\x04``)
+  instead of a line feed (``\n``). barebox v2025.03.0 onwards handles
+  CTRL+D specially to halt autoboot countdown without running interactive
+  hooks like bringing up network interfaces automatically.
+- The `QEMUDriver` now supports a ``netdev`` argument which can be added to
+  ``add_port_forward()`` and ``remove_port_forward()``  in case there is more
+  than one network interface defined.
+- Guermok HDMI to USB 3.0 capture dongle supported
+- The `consoleexpectmixin` now supports chunking of multiple bytes
+  with the ``txchunk`` attribute.
+
+Breaking changes in 25.1
+~~~~~~~~~~~~~~~~~~~~~~~~
+- The deprecated pytest plugin option ``--env-config`` has been removed. Use
+  ``--lg-env`` instead.
+- The deprecated ``NetworkUSBStorageDriver`` has been removed. Use the
+  `USBStorageDriver` instead.
+
 Release 25.0 (Released May 7, 2025)
 -----------------------------------
 As announced `before
@@ -115,6 +139,36 @@ Known issues in 25.0
   We've worked around this by closing stderr on shutdown.
   See `issue #1544 <https://github.com/labgrid-project/labgrid/issues/1544>`_
   and `PR #1605 <https://github.com/labgrid-project/labgrid/pull/1605>`_.
+
+Release 24.0.3 (Released Feb 12, 2025)
+--------------------------------------
+
+Bug fixes in 24.0.3
+~~~~~~~~~~~~~~~~~~~
+- Fix support for networks without SSID in the agent used by the
+  NetworkInterfaceDriver.
+- Fix concurrent access to USB HID relays.
+- Fix some actions workflows.
+
+
+Release 24.0.2 (Released Sep 28, 2024)
+--------------------------------------
+
+Bug fixes in 24.0.2
+~~~~~~~~~~~~~~~~~~~
+- Limit pysnmp's pyasn1 dependency to <0.6.0 in pyproject.toml to work around
+  `pyasn1.compat.octets ModuleNotFoundError <https://github.com/pyasn1/pyasn1/issues/76>`_.
+
+
+Release 24.0.1 (Released Aug 19, 2024)
+--------------------------------------
+
+Bug fixes in 24.0.1
+~~~~~~~~~~~~~~~~~~~
+- Add "six" to crossbar-requirements.txt as a stop-gap solution for implicit
+  six usage of txtorcon (a crossbar dependency). Fixes errors such as:
+  ModuleNotFoundError: No module named 'six'
+
 
 Release 24.0 (Released Aug 12, 2024)
 ------------------------------------
@@ -647,7 +701,7 @@ Breaking changes in 0.3.0
 - The ``HawkbitTestClient`` and ``USBStick`` classes have been removed
 - The original USBStorageDriver was removed, ``NetworkUSBStorageDriver`` was
   renamed to `USBStorageDriver`.
-  A deprecated `NetworkUSBStorageDriver` exists temporarily for compatibility
+  A deprecated ``NetworkUSBStorageDriver`` exists temporarily for compatibility
   reasons.
 
 Known issues in 0.3.0

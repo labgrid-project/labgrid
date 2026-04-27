@@ -26,14 +26,13 @@ def login(base_url: str) -> None:
     """
     login_url = f"{base_url}/login.html"
     try:
-        response = requests.post(login_url, data={'pw': 1})
+        response = requests.post(login_url, data={"pw": 1})
     except requests.exceptions.ConnectionError as err:
         raise ExecutionError(
             f"Device not found at {base_url} or the network interface of the "
             "device is not active (press the reset button on the device)"
         ) from err
-    if response.status_code != 200 or not re.search(LOGIN_SUCCESS_REGEX,
-                                                    response.text):
+    if response.status_code != 200 or not re.search(LOGIN_SUCCESS_REGEX, response.text):
         raise ExecutionError("Login to Energenie web interface failed")
 
 
@@ -54,12 +53,11 @@ def power_set(host, port, index, value):
 
     value = 1 if value else 0
     login(base_url=base_url)
-    response = requests.post(base_url, data={f'cte{index}': value})
+    response = requests.post(base_url, data={f"cte{index}": value})
     response.raise_for_status()
     logout(base_url=base_url)
     if not response.status_code == 200:
-        raise ExecutionError(f"Switching socket at index {index} "
-                             f"{'on' if value else 'off'} failed")
+        raise ExecutionError(f"Switching socket at index {index} {'on' if value else 'off'} failed")
 
 
 def power_get(host, port, index):

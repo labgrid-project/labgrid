@@ -208,6 +208,17 @@ Currently available are:
 ``netio_kshell``
   Controls *NETIO 4C PDUs* via a Telnet interface.
 
+``pe6216``
+  Controls an Aten PE6216 PDU via a simple HTTP API.
+  This backend deliberately uses the standard username ``administrator`` and the default password
+  ``password`` and is not compatible with other credentials.
+
+``poe_mib``
+  Controls PoE switches using the PoE SNMP administration MiBs.
+
+``poe_netgear_plus``
+  Controls NETGEAR Plus switches using an HTTP interface.
+
 ``raritan``
   Controls *Raritan PDUs* via SNMP.
 
@@ -228,6 +239,13 @@ Currently available are:
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/shelly_gen1.py>`__
   for details.
 
+  ``shelly_gen2``
+  Controls relays of *Shelly* devices using the
+  `Gen2+ API <https://shelly-api-docs.shelly.cloud/gen2/General/RPCProtocol/>`__.
+  See the `docstring in the module
+  <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/shelly_gen2.py>`__
+  for details.
+
 ``siglent``
   Controls *Siglent SPD3000X* series modules via the `vxi11 Python module
   <https://pypi.org/project/python-vxi11/>`_.
@@ -239,28 +257,29 @@ Currently available are:
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/simplerest.py>`__
   for details.
 
-``tplink``
-  Controls *TP-Link power strips* via `python-kasa
-  <https://github.com/python-kasa/python-kasa>`_.
-
 ``tinycontrol``
   Controls a tinycontrol.eu IP Power Socket via HTTP.
   It was tested on the *6G10A v2* model.
   `Manual <https://tinycontrol.pl/media/documents/manual_IP_Power_Socket__6G10A_v2_LANLIS-010-015_En-1.pdf>`__
 
-``poe_mib``
-  Controls PoE switches using the PoE SNMP administration MiBs.
+``tinycontrol_tcpdu``
+  Controls a Tinycontrol tcPDU via HTTP.
+  See the `documentation <https://docs.tinycontrol.pl/en/tcpdu/api/commands/>`__
+
+``tplink``
+  Controls *TP-Link power strips* via `python-kasa
+  <https://github.com/python-kasa/python-kasa>`_.
 
 ``ubus``
-  Controls *PoE switches* running OpenWrt using the *ubus* interface.
-  Further information available at <https://openwrt.org/docs/techref/ubus>
+  Controls *PoE switches* running OpenWrt using the
+  `ubus interface <https://openwrt.org/docs/techref/ubus>`__,
 
 Used by:
   - `NetworkPowerDriver`_
 
 PDUDaemonPort
 +++++++++++++
-A :any:`PDUDaemonPort` describes a PDU port accessible via `PDUDaemon
+A :any:`PDUDaemonPort` describes a Power Distribution Unit (PDU) port accessible via `PDUDaemon
 <https://github.com/pdudaemon/pdudaemon>`_.
 As one PDUDaemon instance can control many PDUs, the instance name from the
 PDUDaemon configuration file needs to be specified.
@@ -285,30 +304,32 @@ Used by:
 
 YKUSHPowerPort
 ++++++++++++++
-A :any:`YKUSHPowerPort` describes a *YEPKIT YKUSH* USB (HID) switchable USB
-hub.
+A :any:`YKUSHPowerPort` describes a *YEPKIT YKUSH*-family USB (HID)
+switchable USB hub.
+Models supported include YKUSH, YKUSH 3, and YKUSH XS.
 
 .. code-block:: yaml
 
    YKUSHPowerPort:
-     serial: 'YK12345'
-     index: 1
+     serial: 'Y3N12345'
+     index: '1'
 
-The example describes port 1 on the YKUSH USB hub with the
-serial ``YK12345``.
-Use ``ykushcmd -l`` to get your serial number.
+The example describes port 1 on the YKUSH 3 USB hub with the
+serial ``Y3N12345``.
+Use ``ykushcmd ykush3 -l`` to get your serial number.
 
 Arguments:
   - serial (str): serial number of the YKUSH hub
-  - index (int): number of the port to switch
+  - index (str): number of the port to switch, use ``a`` to control the whole hub as one logical
+    port
 
 Used by:
   - `YKUSHPowerDriver`_
 
 NetworkYKUSHPowerPort
 +++++++++++++++++++++
-A :any:`NetworkYKUSHPowerPort` describes a `YKUSHPowerPort`_ available on a
-remote computer.
+A :any:`NetworkYKUSHPowerPort` describes a `YKUSHPowerPort`_ resource available
+on a remote computer.
 
 USBPowerPort
 ++++++++++++
@@ -340,6 +361,11 @@ Used by:
    looking for, paths without the interface will fail to match since they use
    the ``usb`` driver.
 
+NetworkUSBPowerPort
++++++++++++++++++++
+A :any:`NetworkUSBPowerPort` describes a `USBPowerPort`_ resource available on
+a remote computer.
+
 SiSPMPowerPort
 ++++++++++++++
 A :any:`SiSPMPowerPort` describes a *GEMBIRD SiS-PM* as supported by
@@ -361,6 +387,11 @@ Arguments:
 
 Used by:
   - `SiSPMPowerDriver`_
+
+NetworkSiSPMPowerPort
++++++++++++++++++++++
+A :any:`NetworkSiSPMPowerPort` describes a `SiSPMPowerPort`_ resource available
+on a remote computer.
 
 TasmotaPowerPort
 ++++++++++++++++
@@ -385,6 +416,8 @@ Arguments:
     "OFF"
   - avail_topic (str): topic that signals the availability of the Tasmota power
     outlet
+  - username (str): Optional, MQTT username to authenticate as
+  - password (str): Optional, MQTT password to authenticate with
 
 Used by:
   - `TasmotaPowerDriver`_
@@ -416,6 +449,32 @@ Arguments:
 Used by:
   - `ModbusCoilDriver`_
 
+WaveshareModbusTCPCoil
+++++++++++++++++++++++
+A :any:`WaveshareModbusTCPCoil` describes a Waveshare branded coil accessible via *Modbus TCP*.
+
+.. code-block:: yaml
+
+   WaveshareModbusTCPCoil:
+     host: '192.168.23.42'
+     coil: 1
+     coil_count: 8
+
+The example describes the coil ``1`` (zero indexed) of ``8`` on the Waveshare Modbus TCP relay
+module ``192.168.23.42``.
+
+Arguments:
+  - host (str): hostname of the Modbus TCP server e.g. ``192.168.23.42:502``
+  - coil (int): index of the coil, e.g. ``3``
+  - coil_count (int, default=8): total number of coils on this module
+  - invert (bool, default=False): whether the logic level is inverted
+    (active-low)
+  - write_multiple_coils (bool, default=False): whether to perform write
+    using "write multiple coils" method instead of "write single coil"
+
+Used by:
+  - `WaveShareModbusCoilDriver`_
+
 DeditecRelais8
 ++++++++++++++
 A :any:`DeditecRelais8` describes a *Deditec USB GPO module* with 8 relays.
@@ -436,6 +495,11 @@ Arguments:
 
 Used by:
   - `DeditecRelaisDriver`_
+
+NetworkDeditecRelais8
++++++++++++++++++++++
+A :any:`NetworkDeditecRelais8` describes a `DeditecRelais8`_ resource available
+on a remote computer.
 
 OneWirePIO
 ++++++++++
@@ -486,7 +550,8 @@ Used by:
 
 NetworkLXAIOBusPIO
 ++++++++++++++++++
-A :any:`NetworkLXAIOBusPIO` describes an `LXAIOBusPIO`_ exported over the network.
+A :any:`NetworkLXAIOBusPIO` describes an `LXAIOBusPIO`_ resource available on a
+remote computer.
 
 HIDRelay
 ++++++++
@@ -543,9 +608,32 @@ Arguments:
 Used by:
   - `HttpDigitalOutputDriver`_
 
+Eth008DigitalOutput
+++++++++++++++++++++
+An :any:`Eth008DigitalOutput` resource describes a digital output on a
+*Robot-Electronics eth008* relay board.
+
+.. code-block:: yaml
+
+   Eth008DigitalOutput:
+     host: '192.168.1.100'
+     index: 1
+     invert: false
+
+The example describes relay ``1`` on the ETH008 device at ``192.168.1.100``.
+
+Arguments:
+  - host (str): hostname or IP address of the ETH008 device
+  - index (int): number of the relay to use (1-8)
+  - invert (bool, default=False): whether to invert the output (active-low)
+
+Used by:
+  - `Eth008DigitalOutputDriver`_
+
 NetworkHIDRelay
 +++++++++++++++
-A :any:`NetworkHIDRelay` describes an `HIDRelay`_ exported over the network.
+A :any:`NetworkHIDRelay` describes an `HIDRelay`_ resource available on a
+remote computer.
 
 SysfsGPIO
 +++++++++
@@ -563,6 +651,11 @@ Arguments:
 Used by:
   - `GpioDigitalOutputDriver`_
 
+NetworkSysfsGPIO
+++++++++++++++++
+A :any:`NetworkSysfsGPIO` describes a `SysfsGPIO`_ resource available on a
+remote computer.
+
 MatchedSysfsGPIO
 ++++++++++++++++
 A :any:`MatchedSysfsGPIO` describes a GPIO line, like a `SysfsGPIO`_.
@@ -578,9 +671,9 @@ USB based gpiochips.
        '@ID_SERIAL_SHORT': 'D38EJ8LF'
      pin: 0
 
-The example would search for a USB gpiochip with the key `ID_SERIAL_SHORT`
-and the value `D38EJ8LF` and use the pin 0 of this device.
-The `ID_SERIAL_SHORT` property is set by the usb_id builtin helper program.
+The example would search for a USB gpiochip with the key ``ID_SERIAL_SHORT``
+and the value ``D38EJ8LF`` and use the pin 0 of this device.
+The ``ID_SERIAL_SHORT`` property is set by the usb_id builtin helper program.
 
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
@@ -614,7 +707,7 @@ These and the sudo configuration needs to be prepared by the administrator.
 Arguments:
   - address (str): hostname of the remote system
   - username (str): username used by SSH
-  - password (str, default=""): password used by SSH
+  - password (str, default=None): optional, password used by SSH
   - port (int, default=22): port used by SSH
 
 Used by:
@@ -636,7 +729,7 @@ Writing images to disk requires installation of ``dd`` or optionally
 
 For mounting the file system and writing into it,
 `PyGObject <https://pygobject.readthedocs.io/>`_ must be installed.
-For Debian, the necessary packages are `python3-gi` and `gir1.2-udisks-2.0`.
+For Debian, the necessary packages are ``python3-gi`` and ``gir1.2-udisks-2.0``.
 This is not required for writing images to disks.
 
 Arguments:
@@ -647,11 +740,8 @@ Used by:
 
 NetworkUSBMassStorage
 ~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkUSBMassStorage` resource describes a USB memory stick or similar
-device available on a remote computer.
-
-The NetworkUSBMassStorage can be used in test cases by calling the
-``write_files()``, ``write_image()``, and ``get_size()`` functions.
+A :any:`NetworkUSBMassStorage` resource describes `USBMassStorage`_ resource
+available on a remote computer.
 
 SigrokDevice
 ~~~~~~~~~~~~
@@ -731,18 +821,18 @@ Used by:
 
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ available on a remote
-computer.
+A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ resource available on
+a remote computer.
 
 NetworkIMXUSBLoader
 ~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkIMXUSBLoader` describes an `IMXUSBLoader`_ available on a remote
-computer.
+A :any:`NetworkIMXUSBLoader` describes an `IMXUSBLoader`_ resource available on
+a remote computer.
 
 NetworkRKUSBLoader
 ~~~~~~~~~~~~~~~~~~
-A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ available on a remote
-computer.
+A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ resource available on a
+remote computer.
 
 AndroidUSBFastboot
 ~~~~~~~~~~~~~~~~~~
@@ -767,6 +857,11 @@ Arguments:
 Used by:
   - `AndroidFastbootDriver`_
 
+RemoteAndroidUSBFastboot
+~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`RemoteAndroidUSBFastboot` describes a `AndroidUSBFastboot`_ resource
+available on a remote computer.
+
 AndroidNetFastboot
 ~~~~~~~~~~~~~~~~~~
 An :any:`AndroidNetFastboot` resource describes a network device in *Fastboot
@@ -787,6 +882,11 @@ Arguments:
 Used by:
   - `AndroidFastbootDriver`_
 
+RemoteAndroidNetFastboot
+~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`RemoteAndroidNetFastboot` describes an `AndroidNetFastboot`_ resource
+available on a remote computer.
+
 DFUDevice
 ~~~~~~~~~
 A :any:`DFUDevice` resource describes a USB device in DFU (Device Firmware
@@ -803,6 +903,11 @@ Arguments:
 
 Used by:
   - `DFUDriver`_
+
+NetworkDFUDevice
+~~~~~~~~~~~~~~~~
+A :any:`NetworkDFUDevice` describes a `DFUDevice`_ resource available on a
+remote computer.
 
 NetworkInterface
 ~~~~~~~~~~~~~~~~
@@ -861,6 +966,11 @@ Used by:
   - `OpenOCDDriver`_
   - `QuartusHPSDriver`_
 
+NetworkAlteraUSBBlaster
+~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkAlteraUSBBlaster` describes an `AlteraUSBBlaster`_ resource
+available on a remote computer.
+
 USBDebugger
 ~~~~~~~~~~~
 A :any:`USBDebugger` resource describes a JTAG USB adapter (for example an
@@ -877,6 +987,11 @@ Arguments:
 
 Used by:
   - `OpenOCDDriver`_
+
+NetworkUSBDebugger
+~~~~~~~~~~~~~~~~~~
+A :any:`NetworkUSBDebugger` describes a `USBDebugger`_ resource available on a
+remote computer.
 
 SNMPEthernetPort
 ~~~~~~~~~~~~~~~~
@@ -921,9 +1036,8 @@ Used by:
 
 NetworkSigrokUSBDevice
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkSigrokUSBDevice` resource describes a *Sigrok* USB device
-connected to a host which is exported over the network.
-The `SigrokDriver`_ will access it via SSH.
+A :any:`NetworkSigrokUSBDevice` describes a `SigrokUSBDevice`_ resource
+available on a remote computer.
 
 SigrokUSBSerialDevice
 ~~~~~~~~~~~~~~~~~~~~~
@@ -950,6 +1064,11 @@ Used by:
   - `SigrokPowerDriver`_
   - `SigrokDmmDriver`_
 
+NetworkSigrokUSBSerialDevice
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkSigrokUSBSerialDevice` describes a `SigrokUSBSerialDevice`_
+resource available on a remote computer.
+
 USBSDMuxDevice
 ~~~~~~~~~~~~~~
 A :any:`USBSDMuxDevice` resource describes a Pengutronix
@@ -971,8 +1090,8 @@ Used by:
 
 NetworkUSBSDMuxDevice
 ~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkUSBSDMuxDevice` resource describes a `USBSDMuxDevice`_ available
-on a remote computer.
+A :any:`NetworkUSBSDMuxDevice` resource describes a `USBSDMuxDevice`_ resource
+available on a remote computer.
 
 LXAUSBMux
 ~~~~~~~~~
@@ -992,8 +1111,8 @@ Used by:
 
 NetworkLXAUSBMux
 ~~~~~~~~~~~~~~~~
-A :any:`NetworkLXAUSBMux` resource describes an `LXAUSBMux`_ available on a
-remote computer.
+A :any:`NetworkLXAUSBMux` resource describes an `LXAUSBMux`_ resource available
+on a remote computer.
 
 USBSDWireDevice
 ~~~~~~~~~~~~~~~
@@ -1015,8 +1134,31 @@ Used by:
 
 NetworkUSBSDWireDevice
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkUSBSDWireDevice` resource describes a `USBSDWireDevice`_ available
-on a remote computer.
+A :any:`NetworkUSBSDWireDevice` resource describes a `USBSDWireDevice`_
+resource available on a remote computer.
+
+USBSDWire3Device
+~~~~~~~~~~~~~~~~
+A :any:`USBSDWire3Device` resource describes a Tizen
+`SD Wire3 device <https://badgerd.nl/sdwire3/>`_.
+
+.. code-block:: yaml
+
+   USBSDWire3Device:
+     match:
+       '@ID_PATH': 'pci-0000:00:14.0-usb-0:1.2'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `USBSDWire3Driver`_
+  - `USBStorageDriver`_
+
+NetworkUSBSDWire3Device
+~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkUSBSDWire3Device` resource describes a `USBSDWire3Device`_
+resource available on a remote computer.
 
 USBVideo
 ~~~~~~~~
@@ -1125,7 +1267,8 @@ Used by:
 
 NetworkFlashrom
 ~~~~~~~~~~~~~~~
-A :any:`NetworkFlashrom` describes a `Flashrom`_ available on a remote computer.
+A :any:`NetworkFlashrom` describes a `Flashrom`_ resource available on a remote
+computer.
 
 USBFlashableDevice
 ~~~~~~~~~~~~~~~~~~
@@ -1154,7 +1297,7 @@ Used by:
 NetworkUSBFlashableDevice
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkUSBFlashableDevice` resource describes a `USBFlashableDevice`_
-resource available on a remote computer
+resource available on a remote computer.
 
 DediprogFlasher
 ~~~~~~~~~~~~~~~
@@ -1183,8 +1326,8 @@ Used by:
 
 NetworkDediprogFlasher
 ~~~~~~~~~~~~~~~~~~~~~~
-A :any:`NetworkDediprogFlasher` describes a `DediprogFlasher`_ available on a
-remote computer.
+A :any:`NetworkDediprogFlasher` describes a `DediprogFlasher`_ resource
+available on a remote computer.
 
 XenaManager
 ~~~~~~~~~~~
@@ -1279,6 +1422,17 @@ see below.
 
 For now, the TFTP/NFS/HTTP server needs to be configured before using it from
 labgrid.
+
+Because labgrid uses absolute paths as targets for symlinks for exposing files
+on the TFTP server and because the target of those symlinks is in
+``/var/cache/labgrid/``, the TFTP server needs to follow symlinks whose target
+path is both absolute and in ``/var/cache/labgrid``. Note that depending on the
+configuration of the TFTP server, ``/var/cache/labgrid`` may not be the root
+directory of your TFTP server.
+
+`atftpd <https://sourceforge.net/projects/atftp/>`_ is known to work whereas
+`tftpd-hpa <https://git.kernel.org/pub/scm/network/tftp/tftp-hpa.git/>`_ doesn't
+seem to be working well with such symlinks.
 
 TFTPProvider
 ++++++++++++
@@ -1384,6 +1538,175 @@ Arguments:
 Used by:
   - `NFSProviderDriver`_
 
+LAA Resources
+~~~~~~~~~~~~~
+Resources for devices connected via a `Linaro Automation Appliance (LAA)
+<https://hub.linaro.com/library/laa/laa>`_.
+Requires the ``laam`` package, install with ``pip install labgrid[laa]``.
+For a working example test suite, see `labgrid-laa-examples
+<https://gitlab.com/Linaro/lava/appliance/labgrid-laa-examples>`_.
+
+LAASerialPort
++++++++++++++
+A :any:`LAASerialPort` describes a serial port on the LAA.
+
+.. code-block:: yaml
+
+   LAASerialPort:
+     laa_identity: 'laa-00175'
+     serial_name: 'ttymxc3'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+  - serial_name (str): name of the serial port on the LAA
+
+Used by:
+  - `LAASerialDriver`_
+
+LAAPowerPort
+++++++++++++
+A :any:`LAAPowerPort` describes the power control for a device on the LAA.
+Power on and off are sequences of (vbus, state) tuples that are executed
+in order.
+
+.. code-block:: yaml
+
+   LAAPowerPort:
+     laa_identity: 'laa-00175'
+     power_on:
+       - ['3v3', 'on']
+       - ['5v', 'on']
+     power_off:
+       - ['3v3', 'off']
+       - ['5v', 'off']
+     power_cycle:
+       - ['3v3', 'off']
+       - ['5v', 'reset']
+       - ['3v3', 'on']
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+  - power_on (list): sequence of [vbus, state] pairs for power on
+  - power_off (list): sequence of [vbus, state] pairs for power off
+  - power_cycle (list, optional): sequence for power cycle, if not set
+    the driver does off + delay + on
+
+Used by:
+  - `LAAPowerDriver`_
+
+LAAUSBGadgetMassStorage
+++++++++++++++++++++++++
+A :any:`LAAUSBGadgetMassStorage` describes a USB gadget mass storage device
+on the LAA. This can be used to simulate a USB stick being plugged in or out.
+
+.. code-block:: yaml
+
+   LAAUSBGadgetMassStorage:
+     laa_identity: 'laa-00175'
+     image: 'boot.img'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+  - image (str): mass storage image filename
+
+Used by:
+  - `LAAUSBGadgetMassStorageDriver`_
+
+LAAUSBPort
+++++++++++
+A :any:`LAAUSBPort` describes USB ports on the LAA that can be toggled.
+
+.. code-block:: yaml
+
+   LAAUSBPort:
+     laa_identity: 'laa-00175'
+     usb_ports: [1, 2]
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+  - usb_ports (list): list of USB port numbers to control
+
+Used by:
+  - `LAAUSBDriver`_
+
+LAAButtonPort
++++++++++++++
+A :any:`LAAButtonPort` describes virtual buttons on the LAA.
+
+.. code-block:: yaml
+
+   LAAButtonPort:
+     laa_identity: 'laa-00175'
+     buttons: ['power', 'reset']
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+  - buttons (list): list of button names available
+
+Used by:
+  - `LAAButtonDriver`_
+
+LAALed
+++++++
+A :any:`LAALed` describes an LED on the LAA.
+
+.. code-block:: yaml
+
+   LAALed:
+     laa_identity: 'laa-00175'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+
+Used by:
+  - `LAALedDriver`_
+
+LAATempSensor
++++++++++++++
+A :any:`LAATempSensor` describes a temperature sensor on the LAA.
+
+.. code-block:: yaml
+
+   LAATempSensor:
+     laa_identity: 'laa-00175'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+
+Used by:
+  - `LAATempDriver`_
+
+LAAWattMeter
+++++++++++++
+A :any:`LAAWattMeter` describes a power meter on the LAA.
+
+.. code-block:: yaml
+
+   LAAWattMeter:
+     laa_identity: 'laa-00175'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+
+Used by:
+  - `LAAWattDriver`_
+
+LAAProvider
++++++++++++
+A :any:`LAAProvider` describes file storage on the LAA. Files uploaded
+here are served via TFTP to the device under test.
+
+.. code-block:: yaml
+
+   LAAProvider:
+     laa_identity: 'laa-00175'
+
+Arguments:
+  - laa_identity (str): LAA identity for connection
+
+Used by:
+  - `LAAProviderDriver`_
+
 RemotePlace
 ~~~~~~~~~~~
 A :any:`RemotePlace` describes a set of resources attached to a labgrid remote
@@ -1453,15 +1776,15 @@ This manager is automatically created when a resource derived from
 :any:`USBResource` (such as :any:`USBSerialPort`, :any:`IMXUSBLoader` or
 :any:`AndroidUSBFastboot`) is instantiated.
 
-To identify the kernel device which corresponds to a configured `USBResource`,
+To identify the kernel device which corresponds to a configured :any:`USBResource`,
 each existing (and subsequently added) kernel device is matched against the
 configured resources.
-This is based on a list of `match entries` which must all be tested
+This is based on a list of *match entries* which must all be tested
 successfully against the potential kernel device.
 Match entries starting with an ``@`` are checked against the device's parents
 instead of itself; here one matching parent causes the check to be successful.
 
-A given `USBResource` class has builtin match entries that are checked first,
+A given :any:`USBResource` class has builtin match entries that are checked first,
 for example that the ``SUBSYSTEM`` is ``tty`` as in the case of the
 :any:`USBSerialPort`.
 Only if these succeed, match entries provided by the user for the resource
@@ -1473,6 +1796,10 @@ info <device> -a``) are useable as match keys.
 Finally ``sys_name`` allows matching against the name of the directory in
 sysfs.
 All match entries must succeed for the device to be accepted.
+
+Note that all udev property values are strings and are therefore case sensitive.
+Hex values such as ``ID_MODEL_ID`` must match the exact case reported by udev
+(e.g., ``"04d8"`` will not match ``"04D8"``).
 
 labgrid provides a small utility called ``labgrid-suggest`` which will
 output the proper YAML formatted snippets for you.
@@ -1636,13 +1963,15 @@ Binds to:
 
    SerialDriver:
      txdelay: 0.05
+     txchunk: 1
 
 Implements:
   - :any:`ConsoleProtocol`
   - :any:`ResetProtocol`
 
 Arguments:
-  - txdelay (float, default=0.0): time in seconds to wait before sending each byte
+  - txdelay (float, default=0.0): time in seconds to wait before sending a chunk
+  - txchunk (int, default=1): number of bytes the `txdelay` should apply to
   - timeout (float, default=3.0): time in seconds to wait for a network serial port before
     an error occurs
 
@@ -1794,6 +2123,7 @@ Arguments:
   - boot_commands (dict, default={}): boot commands by name for LinuxBootProtocol boot command
   - login_timeout (int, default=30): timeout for login prompt detection in seconds
   - boot_timeout (int, default=30): timeout for initial Linux Kernel version detection
+  - strip_timestamp (bool, default=False): strip timestamps prepended to console when present
 
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~
@@ -1875,6 +2205,7 @@ Arguments:
     boots (for barebox >=v2025.03.0).
   - bootstring (regex, default="Linux version \\d"): regex that indicating that the Linux Kernel is
     booting
+  - boot_command (str, default="boot -v"): optional, boot command to boot target
   - password (str): optional, password to use for access to the shell
   - login_timeout (int, default=60): timeout for access to the shell
 
@@ -1894,10 +2225,12 @@ Implements:
    ExternalConsoleDriver:
      cmd: 'microcom /dev/ttyUSB2'
      txdelay: 0.05
+     txchunk: 1
 
 Arguments:
   - cmd (str): command to execute and then bind to.
-  - txdelay (float, default=0.0): time in seconds to wait before sending each byte
+  - txdelay (float, default=0.0): time in seconds to wait before sending a chunk
+  - txchunk (int, default=1): number of bytes the `txdelay` should apply to
 
 AndroidFastbootDriver
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1907,9 +2240,9 @@ USB or network *Fastboot state*.
 Binds to:
   fastboot:
     - `AndroidUSBFastboot`_
-    - RemoteAndroidUSBFastboot
+    - `RemoteAndroidUSBFastboot`_
     - `AndroidNetFastboot`_
-    - RemoteAndroidNetFastboot
+    - `RemoteAndroidNetFastboot`_
 
 Implements:
   - None (yet)
@@ -1937,7 +2270,7 @@ Firmware Upgrade) mode.
 Binds to:
   dfu:
     - `DFUDevice`_
-    - NetworkDFUDevice
+    - `NetworkDFUDevice`_
 
 Implements:
   - None (yet)
@@ -1965,9 +2298,9 @@ Consider updating your OpenOCD version when using multiple USB Blasters.
 Binds to:
   interface:
     - `AlteraUSBBlaster`_
-    - NetworkAlteraUSBBlaster
+    - `NetworkAlteraUSBBlaster`_
     - `USBDebugger`_
-    - NetworkUSBDebugger
+    - `NetworkUSBDebugger`_
 
 Implements:
   - :any:`BootstrapProtocol`
@@ -2000,7 +2333,7 @@ flash a target's QSPI.
 Binds to:
   interface:
     - `AlteraUSBBlaster`_
-    - NetworkAlteraUSBBlaster
+    - `NetworkAlteraUSBBlaster`_
 
 Implements:
   - None
@@ -2019,6 +2352,10 @@ This is required if a strategy is used with the target, but no automatic power
 control is available.
 
 The driver's name will be displayed during interaction.
+
+.. note::
+  When using the ManualPowerDriver with pytest, use ``-s``/``--capture=no`` to
+  prevent stdout capturing.
 
 Binds to:
   - None
@@ -2160,7 +2497,7 @@ target power state without user interaction.
 Binds to:
   hub:
     - `USBPowerPort`_
-    - NetworkUSBPowerPort
+    - `NetworkUSBPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -2182,7 +2519,7 @@ target power state without user interaction.
 Binds to:
   port:
     - `SiSPMPowerPort`_
-    - NetworkSiSPMPowerPort
+    - `NetworkSiSPMPowerPort`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -2220,14 +2557,16 @@ GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~
 The :any:`GpioDigitalOutputDriver` writes a digital signal to a GPIO line.
 
-This driver configures GPIO lines via `the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`.
-While the driver automatically exports the GPIO, it does not configure it in any other way than as an output.
+This driver configures GPIO lines via
+`the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`__.
+While the driver automatically exports the GPIO, it does not configure it in
+any other way than as an output.
 
 Binds to:
   gpio:
     - `SysfsGPIO`_
     - `MatchedSysfsGPIO`_
-    - NetworkSysfsGPIO
+    - `NetworkSysfsGPIO`_
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -2337,6 +2676,25 @@ Implements:
 Arguments:
   - None
 
+WaveShareModbusCoilDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`WaveShareModbusCoilDriver` controls a `WaveshareModbusTCPCoil`_ resource.
+It can set and get the current state of the resource.
+
+Binds to:
+  coil:
+    - `WaveshareModbusTCPCoil`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   WaveShareModbusCoilDriver: {}
+
+Arguments:
+  - None
+
 HIDRelayDriver
 ~~~~~~~~~~~~~~
 An :any:`HIDRelayDriver` controls an `HIDRelay`_ or `NetworkHIDRelay`_ resource.
@@ -2364,6 +2722,10 @@ the target.
 This can be used if a driver binds to a :any:`DigitalOutputProtocol`, but no
 automatic control is available.
 
+.. note::
+  When using the ManualSwitchDriver with pytest, use ``-s``/``--capture=no`` to
+  prevent stdout capturing.
+
 Binds to:
   - None
 
@@ -2386,7 +2748,7 @@ It can set and get the current state of the resource.
 Binds to:
   relais:
     - `DeditecRelais8`_
-    - NetworkDeditecRelais8
+    - `NetworkDeditecRelais8`_
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -2433,6 +2795,9 @@ An :any:`IMXUSBDriver` is used to upload an image into a device in the *i.MX
 USB loader state*.
 This is useful to bootstrap a bootloader onto a device.
 This driver uses the ``imx-usb-loader`` tool from barebox.
+If your device has the ``SDP_READ_DISABLE`` fuse burnt, then reading back data
+over USB is not possible anymore, which means, that the verification of the
+image is not possible anymore. Set ``verify`` to False in this case.
 
 Binds to:
   loader:
@@ -2451,6 +2816,7 @@ Implements:
        drivers:
          IMXUSBDriver:
            image: 'mybootloaderkey'
+           verify: True
 
    images:
      mybootloaderkey: 'path/to/mybootloader.img'
@@ -2458,6 +2824,7 @@ Implements:
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of an image to bootstrap onto the target
+  - verify (bool, default=True): optional, wether to verify the written image or not
 
 BDIMXUSBDriver
 ~~~~~~~~~~~~~~
@@ -2768,7 +3135,7 @@ control a programmable power supply.
 Binds to:
   sigrok:
     - `SigrokUSBSerialDevice`_
-    - NetworkSigrokUSBSerialDevice
+    - `NetworkSigrokUSBSerialDevice`_
 
 Implements:
   - :any:`PowerProtocol`
@@ -2799,7 +3166,7 @@ Binds to:
     - `SigrokUSBDevice`_
     - `NetworkSigrokUSBDevice`_
     - `SigrokUSBSerialDevice`_
-    - NetworkSigrokUSBSerialDevice
+    - `NetworkSigrokUSBSerialDevice`_
 
 Implements:
   - None yet
@@ -2850,7 +3217,7 @@ tool.
 Binds to:
   mux:
     - `LXAUSBMux`_
-    - `NetworkLXAUSBMux`
+    - `NetworkLXAUSBMux`_
 
 Implements:
   - None yet
@@ -2871,7 +3238,7 @@ tool.
 Binds to:
   mux:
     - `USBSDWireDevice`_
-    - `NetworkUSBSDWireDevice`
+    - `NetworkUSBSDWireDevice`_
 
 Implements:
   - None yet
@@ -2881,6 +3248,23 @@ Arguments:
 
 The driver can be used in test cases by calling its ``set_mode()`` method with
 argument being "dut", "host", "off", or "client".
+
+USBSDWire3Driver
+~~~~~~~~~~~~~~~~
+The :any:`USBSDWire3Driver` uses a `USBSDWire3Device`_ resource to control a
+USB-SD-Wire3 device via `sdwire <https://github.com/Badger-Embedded/sdwire-cli>`_
+tool.
+
+Binds to:
+  mux:
+    - `USBSDWire3Device`_
+    - `NetworkUSBSDWire3Device`_
+
+Implements:
+  - None yet
+
+Arguments:
+  - None
 
 USBVideoDriver
 ~~~~~~~~~~~~~~
@@ -2903,7 +3287,7 @@ Arguments:
 Although the driver can be used from Python code by calling the ``stream()``
 method, it is currently mainly useful for the ``video`` subcommand of
 ``labgrid-client``.
-It supports the `Logitech HD Pro Webcam C920` with the USB ID 046d:082d and a
+It supports the *Logitech HD Pro Webcam C920* with the USB ID ``046d:082d`` and a
 few others.
 More cameras can be added to ``get_qualities()`` and ``get_pipeline()`` in
 ``labgrid/driver/usbvideodriver.py``.
@@ -2951,7 +3335,7 @@ Arguments:
 Currently, it can be used by the ``labgrid-client`` ``tmc`` subcommands to show
 (and save) a screenshot, to show per channel measurements and to execute raw
 TMC commands.
-It only supports the `Keysight DSO-X 2000` series (with the USB ID 0957:1798),
+It only supports the *Keysight DSO-X 2000* series (with the USB ID ``0957:1798``),
 but more devices can be added by extending ``on_activate()`` in
 ``labgrid/driver/usbtmcdriver.py`` and writing a corresponding backend in
 ``labgrid/driver/usbtmc/``.
@@ -3098,14 +3482,14 @@ flashed.
 XenaDriver
 ~~~~~~~~~~
 The :any:`XenaDriver` allows to use Xena networking test equipment.
-Using the `xenavalkyrie` library a full API to control the tester is available.
+Using the ``xenavalkyrie`` library a full API to control the tester is available.
 
 Binds to:
   xena_manager:
     - `XenaManager`_
 
 The driver is supposed to work with all Xena products from the "Valkyrie Layer 2-3 Test platform"
-Currently tested on a `XenaCompact` chassis equipped with a `1 GE test module`.
+Currently tested on a *XenaCompact* chassis equipped with a *1 GE test module*.
 
 DockerDriver
 ~~~~~~~~~~~~
@@ -3142,7 +3526,7 @@ Arguments:
         containers storage. Throw an error if no image is found and the pull
         fails.
       - never: Never pull the image but use the one from the local containers
-        storage. Throw a `docker.errors.ImageNotFound` if no image is found.
+        storage. Throw a ``docker.errors.ImageNotFound`` if no image is found.
 
   - command (str): optional, command to run in the container (depends on image)
   - volumes (list): optional, list to configure volumes mounted inside the container
@@ -3186,6 +3570,25 @@ Binds to:
 .. code-block:: yaml
 
    HttpDigitalOutputDriver: {}
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+Arguments:
+  - None
+
+Eth008DigitalOutputDriver
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`Eth008DigitalOutputDriver` binds to an `Eth008DigitalOutput`_ to set
+and get a digital output state on a Robot-Electronics eth008 relay board.
+
+Binds to:
+  output:
+    - `Eth008DigitalOutput`_
+
+.. code-block:: yaml
+
+   Eth008DigitalOutputDriver: {}
 
 Implements:
   - :any:`DigitalOutputProtocol`
@@ -3270,7 +3673,9 @@ network interface to the user, including:
   Address Autoconfiguration) and Neighbor Discovery
 - disabling Generic Receive Offload (GRO)
 
-This might change in the future.
+This might change in the future. If you do not want the driver to automatically
+manage the interface (e.g. you are managing it externally), set
+``manage_interface`` to ``False``.
 
 Binds to:
   iface:
@@ -3282,7 +3687,180 @@ Implements:
   - None yet
 
 Arguments:
+  - manage_interface (bool, default=True): if ``True`` this driver will
+    setup/teardown the interface on activate/deactivate. Set this to ``False``
+    if you are managing the interface externally.
+
+LAA Drivers
+~~~~~~~~~~~
+Drivers for devices connected via a `Linaro Automation Appliance (LAA)
+<https://hub.linaro.com/library/laa/laa>`_.
+Requires the ``laam`` package, install with ``pip install labgrid[laa]``.
+
+LAASerialDriver
++++++++++++++++
+The :any:`LAASerialDriver` connects to a serial port on the LAA via
+a WebSocket bridge provided by laam.
+
+Binds to:
+  port:
+    - `LAASerialPort`_
+
+Implements:
+  - :any:`ConsoleProtocol`
+
+.. code-block:: yaml
+
+   LAASerialDriver:
+     txdelay: 0.0
+     timeout: 3.0
+
+Arguments:
+  - txdelay (float, default=0.0): time in seconds to wait after each write
+  - timeout (float, default=3.0): default read timeout in seconds
+
+LAAPowerDriver
+++++++++++++++
+The :any:`LAAPowerDriver` controls power to the device via the LAA.
+It executes the power on/off sequences from the resource.
+
+Binds to:
+  port:
+    - `LAAPowerPort`_
+
+Implements:
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   LAAPowerDriver:
+     delay: 2.0
+
+Arguments:
+  - delay (float, default=2.0): time in seconds between off and on during
+    power cycle (only used when no power_cycle sequence is set)
+
+LAAUSBGadgetMassStorageDriver
+++++++++++++++++++++++++++++++
+The :any:`LAAUSBGadgetMassStorageDriver` controls a USB gadget mass storage
+device on the LAA. It can simulate a USB stick being plugged in or out.
+
+Binds to:
+  port:
+    - `LAAUSBGadgetMassStorage`_
+
+.. code-block:: yaml
+
+   LAAUSBGadgetMassStorageDriver: {}
+
+Arguments:
   - None
+
+LAAUSBDriver
+++++++++++++
+The :any:`LAAUSBDriver` toggles USB ports on the LAA.
+
+Binds to:
+  port:
+    - `LAAUSBPort`_
+
+.. code-block:: yaml
+
+   LAAUSBDriver: {}
+
+Arguments:
+  - None
+
+LAAButtonDriver
++++++++++++++++
+The :any:`LAAButtonDriver` controls virtual buttons on the LAA.
+
+Binds to:
+  port:
+    - `LAAButtonPort`_
+
+.. code-block:: yaml
+
+   LAAButtonDriver: {}
+
+Arguments:
+  - None
+
+The driver provides ``press(button)`` and ``release(button)`` methods.
+The button name must match one of the names in the resource.
+
+LAALedDriver
++++++++++++++
+The :any:`LAALedDriver` controls an LED on the LAA.
+
+Binds to:
+  port:
+    - `LAALed`_
+
+.. code-block:: yaml
+
+   LAALedDriver: {}
+
+Arguments:
+  - None
+
+LAATempDriver
++++++++++++++
+The :any:`LAATempDriver` reads a temperature sensor on the LAA.
+
+Binds to:
+  port:
+    - `LAATempSensor`_
+
+.. code-block:: yaml
+
+   LAATempDriver: {}
+
+Arguments:
+  - None
+
+The driver provides a ``get_temp(probe)`` method that returns a dict
+with the temperature reading.
+
+LAAWattDriver
++++++++++++++
+The :any:`LAAWattDriver` reads a power meter on the LAA.
+
+Binds to:
+  port:
+    - `LAAWattMeter`_
+
+.. code-block:: yaml
+
+   LAAWattDriver: {}
+
+Arguments:
+  - None
+
+The driver provides a ``get_watts(vbus)`` method that returns a dict
+with the power reading.
+
+LAAProviderDriver
++++++++++++++++++
+The :any:`LAAProviderDriver` manages files on the LAA file storage
+where they are served via TFTP. The ``stage()`` method accepts a local
+file path or a URL. The ``list()`` method returns the files on the LAA
+and ``remove(name)`` deletes a file.
+
+Binds to:
+  provider:
+    - `LAAProvider`_
+
+.. code-block:: yaml
+
+   LAAProviderDriver: {}
+
+Arguments:
+  - None
+
+The ``stage()`` method returns the filename as stored on the LAA.
+The ``list()`` method returns a list of filenames. The ``remove(name)``
+method removes a file by name.
 
 .. _conf-strategies:
 
@@ -3290,6 +3868,8 @@ Strategies
 ----------
 Strategies are used to ensure that the device is in a certain state during a test.
 Such a state could be the bootloader or a booted Linux kernel with shell.
+
+.. _conf-bareboxstrategy:
 
 BareboxStrategy
 ~~~~~~~~~~~~~~~
@@ -3491,7 +4071,7 @@ StepReporter
 .. warning::
     The StepReporter is deprecated, use the `StepLogger`_ instead.
 
-The :any:`StepReporter` outputs individual labgrid steps to `STDOUT`.
+The :any:`StepReporter` outputs individual labgrid steps to ``STDOUT``.
 
 .. doctest::
 
@@ -3619,6 +4199,51 @@ All the resources and drivers in this chapter have a YAML example snippet which
 can simply be added (at the correct indentation level, one level deeper) to the
 environment configuration.
 
+See the :ref:`labgrid-device-config` man page for documentation on the
+top-level ``options``, ``images``, ``tools``, and ``imports`` keys in the
+environment configuration.
+
+.. _environment-configuration-feature-flags:
+
+Feature Flags
+~~~~~~~~~~~~~
+Similar targets or multi target environments may differ from each other in
+certain small aspects, e.g. one device has a camera or screen connected, but
+another one has not.
+In labgrid's environment configs, such variations are described as feature flags.
+
+Here's an example environment configuration for a target-scoped feature
+``camera``:
+
+.. code-block:: yaml
+  :name: feature-flag-env.yaml
+
+  targets:
+    main:
+      features:
+        - camera
+      resources: {}
+      drivers: {}
+
+Features can not only be set per target, but also globally:
+
+.. code-block:: yaml
+  :name: feature-flag-global-env.yaml
+
+  features:
+    - camera
+  targets:
+    main:
+      features:
+        - console
+      resources: {}
+      drivers: {}
+
+See :ref:`usage_pytestplugin_mark_lg_feature` for how to make use of feature
+flags in tests.
+
+Multiple Drivers of the Same Type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If you want to use multiple drivers of the same type, the resources and drivers
 need to be lists, e.g:
 
@@ -3671,6 +4296,8 @@ To bind the correct driver to the correct resource, explicit ``name`` and
 The property name for the binding (e.g. ``port`` in the example above) is
 documented for each individual driver in this chapter.
 
+Templating the Environment Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The YAML configuration file also supports templating for some substitutions,
 these are:
 
@@ -3694,10 +4321,6 @@ would resolve the ``qemu_bin`` path relative to the ``BASE`` dir of the YAML
 file and try to use the `RemotePlace`_ with the name set in the ``LG_PLACE``
 environment variable.
 
-See the :ref:`labgrid-device-config` man page for documentation on the
-top-level ``options``, ``images``, ``tools``, and ``examples`` keys in the
-environment configuration.
-
 .. _exporter-configuration:
 
 Exporter Configuration
@@ -3705,8 +4328,8 @@ Exporter Configuration
 The exporter is configured by using a YAML file (with a syntax similar to the
 environment configs used for pytest) or by instantiating the :any:`Environment`
 object.
-To configure the exporter, you need to define one or more `resource groups`,
-each containing one or more `resources`.
+To configure the exporter, you need to define one or more *resource groups*,
+each containing one or more *resources*.
 The syntax for exported resource names is ``<exporter>/<group>/<class>/<name>``,
 which allows the exporter to group resources for various usage scenarios, e.g.
 all resources of a specific place or for a specific test setup.
@@ -3730,7 +4353,7 @@ The basic structure of an exporter configuration file is:
        <params>
 
 By default, the class name is inferred from the resource name,
-and `<params>` will be passed to its constructor.
+and ``<params>`` will be passed to its constructor.
 For USB resources, you will most likely want to use :ref:`udev-matching` here.
 
 As a simple example, here is one group called ``usb-hub-in-rack12`` containing
@@ -3779,8 +4402,8 @@ to achieve the same effect:
        match:
          '@ID_PATH': 'pci-0000:05:00.0-usb-3-1.4'
 
-Templating
-~~~~~~~~~~
+Templating the Exporter Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To reduce the amount of repeated declarations when many similar resources
 need to be exported, the `Jinja2 template engine <http://jinja.pocoo.org/>`_
 is used as a preprocessor for the configuration file:
@@ -3819,12 +4442,32 @@ something like ``{{ env['FOOBAR'] }}`` to insert the content of environment
 variable ``FOOBAR``.
 In addition to ``env`` the template also has access to the following variables:
 
-isolated
-  ``True`` or ``False``, depending on the :code:`--isolated` command line option.
+drop_ins
+  An alphabetically sorted list of files in a directory named after the
+  currently processed template with ".d" appended. For example if the template
+  is named ``/etc/labgrid/configuration.yaml`` the list will contain files
+  matching ``/etc/labgrid/configuration.yaml.d/*.yaml`` pattern. The paths are
+  relative to the directory containing the template (i.e. ``/etc/labgrid``
+  in our example). These files can be included using the ``include`` directive.
+  A template loading all its drop-ins at would look like this
+
+.. code-block::
+
+   # for f in drop_ins
+   {% include f %}
+   # endfor
+
+.. warning::
+   Use the ``{% include f %}`` form instead of ``# include f``, otherwise
+   Jinja2 would strip newline characters before concatenation, and thus break
+   the YAML formatting.
 
 hostname
   The hostname of the exporter host. Can be used to e.g. construct URLs to the
   current host (``http://{{ hostname }}/``).
+
+isolated
+  ``True`` or ``False``, depending on the :code:`--isolated` command line option.
 
 name
   The name of the exporter.

@@ -115,7 +115,28 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._forwarded_ports = {}
         self.image = None
         self._writer_args = None
+        self._stderr_file = None
         atexit.register(self._atexit)
+
+    def _stderr_tail(self, n=30):
+        if not self._stderr_file:
+            return ''
+        try:
+            self._stderr_file.flush()
+            self._stderr_file.seek(0)
+            data = self._stderr_file.read().decode('utf-8', errors='replace')
+        except (OSError, ValueError):
+            return ''
+        lines = data.splitlines()
+        return '\n'.join(lines[-n:]) if lines else '(no stderr output)'
+
+    def _qemu_died(self):
+        if not self._child:
+            return None
+        rc = self._child.poll()
+        if rc is None:
+            return None
+        return rc, self._stderr_tail()
 
     def _atexit(self):
         if not self._child:
@@ -309,8 +330,10 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._cmd.append("chardev:serialsocket")
 
         self.logger.debug("Starting with: %s", self._cmd)
+        self._stderr_file = tempfile.TemporaryFile()
         self._child = subprocess.Popen(
-            self._cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            self._cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=self._stderr_file)
 
         # prepare for timeout handing
         self._clientsocket, address = self._socket.accept()
@@ -321,9 +344,10 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self.qmp = QMPMonitor(self._child.stdout, self._child.stdin)
         except QMPError as exc:
             if self._child.poll() is not None:
-                _, err = self._child.communicate()
+                self._child.communicate()
                 raise IOError(
-                    f"QEMU error: {err} (exitcode={self._child.returncode})"
+                    f"QEMU exited during startup: rc={self._child.returncode}\n"
+                    f"stderr tail:\n{self._stderr_tail()}"
                 ) from exc
             raise
 
@@ -341,11 +365,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         if not self.status:
             return
         self.monitor_command('quit')
-        if self._child.wait() != 0:
+        rc = self._child.wait()
+        if rc != 0:
             self._child.communicate()
-            raise IOError
+            tail = self._stderr_tail()
+            raise IOError(
+                f"QEMU exited with rc={rc}\nstderr tail:\n{tail}")
         self._child = None
         self.status = 0
+        if self._stderr_file:
+            self._stderr_file.close()
+            self._stderr_file = None
 
     def cycle(self):
         """Cycle the emulator by restarting it"""
@@ -392,7 +422,20 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             size = 4096
             size = min(max_size, size) if max_size else size
             res = self._clientsocket.recv(size)
+            if not res:
+                died = self._qemu_died()
+                if died:
+                    rc, tail = died
+                    raise IOError(
+                        f"QEMU exited mid-session: rc={rc}\n"
+                        f"stderr tail:\n{tail}")
         else:
+            died = self._qemu_died()
+            if died:
+                rc, tail = died
+                raise IOError(
+                    f"QEMU exited during read: rc={rc}\n"
+                    f"stderr tail:\n{tail}")
             raise TIMEOUT(f"Timeout of {timeout:.2f} seconds exceeded")
         return res
 

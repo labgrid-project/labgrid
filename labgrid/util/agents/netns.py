@@ -104,6 +104,19 @@ def handle_create_tun(*, address=None):
         return ("", os.fdopen(os.dup(dev_tun.fileno())))
 
 
+def handle_create_vcan(ifname, enable_fd):
+    subprocess.run(["ip", "link", "add", "dev", ifname, "type", "vcan"], check=True)
+    subprocess.run(["ip", "link", "set", "dev", ifname, "up"], check=True)
+
+    with socket.socket(socket.PF_CAN, socket.SOCK_RAW | socket.SOCK_NONBLOCK, socket.CAN_RAW) as can:
+        can.bind((ifname,))
+
+        if enable_fd:
+            can.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FD_FRAMES, 1)
+
+        return ("", os.fdopen(os.dup(can.fileno())))
+
+
 def handle_socket(*args, **kwargs):
     try:
         # The socket creation parameters are constant integers defined by the
@@ -185,6 +198,7 @@ methods = {
     "unshare": handle_unshare,
     "create_tun": handle_create_tun,
     "create_socket": handle_socket,
+    "create_vcan": handle_create_vcan,
     "get_links": handle_get_links,
     "get_prefix": handle_get_prefix,
     "get_pid": handle_get_pid,

@@ -1,5 +1,6 @@
 Release 26.0 (Unreleased)
 -------------------------
+Sponsored by: Analog Devices GmbH
 
 New Features in 26.0
 ~~~~~~~~~~~~~~~~~~~~

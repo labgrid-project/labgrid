@@ -1,7 +1,7 @@
-Release 25.1 (Unreleased)
+Release 26.0 (Unreleased)
 -------------------------
 
-New Features in 25.1
+New Features in 26.0
 ~~~~~~~~~~~~~~~~~~~~
 
 - The default interrupt key for the `BareboxDriver` is now CTRL+D (``\x04``)
@@ -15,7 +15,7 @@ New Features in 25.1
 - The `consoleexpectmixin` now supports chunking of multiple bytes
   with the ``txchunk`` attribute.
 
-Breaking changes in 25.1
+Breaking changes in 26.0
 ~~~~~~~~~~~~~~~~~~~~~~~~
 - The deprecated pytest plugin option ``--env-config`` has been removed. Use
   ``--lg-env`` instead.

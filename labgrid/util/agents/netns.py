@@ -167,7 +167,7 @@ def handle_get_links():
 
 def handle_get_prefix():
     """Returns the command prefix to use to execute commands in the namespace"""
-    return ["nsenter", "-t", str(os.getpid()), "-U", "-n", "-m", "--preserve-credentials"]
+    return ["nsenter", "-t", str(os.getpid()), "-U", "-n", "--preserve-credentials"]
 
 
 def handle_get_pid():

@@ -3691,6 +3691,35 @@ Arguments:
     setup/teardown the interface on activate/deactivate. Set this to ``False``
     if you are managing the interface externally.
 
+CanInterfaceDriver
+~~~~~~~~~~~~~~~~~~
+The :any:`CanInterfaceDriver` provides access to local and remote CAN
+interfaces. For remote interfaces, the ``helpers/labgrid-raw-interface``
+must be installed in the PATH on the exporter (see
+`RawNetworkInterfaceDriver`_ for details).
+
+The driver supports:
+
+- Setting up the interface (requires privileges)
+- Sending and receiving frames on the CAN interface
+- Configuring filters on the socket
+
+Bind to:
+  iface:
+    - `NetworkInterface`_
+    - `RemoteNetworkInterface`_
+    - `USBNetworkInterface`_
+
+Implements:
+  - None
+
+Arguments:
+ - bitrate (int): The CAN bitrate to use when setting up or verifying the
+   interface.
+ - dbitrate (int): optional, CAN-FD data bitrate to use when setting up or
+   verifying the interface. This enables CAN-FD support on the interface
+   and the socket.
+
 LAA Drivers
 ~~~~~~~~~~~
 Drivers for devices connected via a `Linaro Automation Appliance (LAA)

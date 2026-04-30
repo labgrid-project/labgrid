@@ -7,6 +7,7 @@ import string
 import logging
 from datetime import datetime
 from fnmatch import fnmatchcase
+from typing import Any
 
 import attr
 
@@ -27,34 +28,48 @@ TAG_VAL = re.compile(r"[a-z0-9_]?")
 
 
 def set_map_from_dict(m, d):
-    for k, v in d.items():
-        assert isinstance(k, str)
+    def mapval_from_val(mapval: labgrid_coordinator_pb2.MapValue, v):
         if v is None:
-            m[k].Clear()
+            mapval.Clear()
         elif isinstance(v, bool):
-            m[k].bool_value = v
+            mapval.bool_value = v
         elif isinstance(v, int):
             if v < 0:
-                m[k].int_value = v
+                mapval.int_value = v
             else:
-                m[k].uint_value = v
+                mapval.uint_value = v
         elif isinstance(v, float):
-            m[k].float_value = v
+            mapval.float_value = v
         elif isinstance(v, str):
-            m[k].string_value = v
+            mapval.string_value = v
+        elif isinstance(v, list):
+            for listval in v:
+                mv = labgrid_coordinator_pb2.MapValue()
+                mapval_from_val(mv, listval)
+                mapval.array_value.values.append(mv)
         else:
             raise ValueError(f"cannot translate {repr(v)} to MapValue")
 
+    for k, v in d.items():
+        assert isinstance(k, str)
+        mapval_from_val(m[k], v)
 
 def build_dict_from_map(m):
+    def val_from_mapval(mapval: labgrid_coordinator_pb2.MapValue) -> Any:
+        kind = mapval.WhichOneof("kind")
+        if kind is None:
+            return None
+        elif kind == "array_value":
+            lv = list()
+            for mv in mapval.array_value.values:
+                lv.append(val_from_mapval(mv))
+            return lv
+        else:
+            return getattr(mapval, kind)
+
     d = {}
     for k, v in m.items():
-        v: labgrid_coordinator_pb2.MapValue
-        kind = v.WhichOneof("kind")
-        if kind is None:
-            d[k] = None
-        else:
-            d[k] = getattr(v, kind)
+        d[k] = val_from_mapval(v)
     return d
 
 

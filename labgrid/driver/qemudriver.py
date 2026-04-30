@@ -337,6 +337,48 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             {"command-line": " ".join(command)},
         )
 
+    def add_usb_network_device(self, device_id="usb-net-0", netdev="usbnet", bus="xhci.0"):
+        """Hot-plug a USB network device into the running QEMU instance via QMP.
+
+        Creates a ``user`` netdev backend and attaches a ``usb-net`` device to
+        the ``qemu-xhci`` controller.
+        The controller must already be present at QEMU startup
+        (``-device qemu-xhci,id=xhci`` in ``extra_args``).
+
+        Both the netdev and the device are created at runtime so no netdev
+        backend lingers unattached at boot (which would produce a QEMU warning).
+
+        Args:
+            device_id: Unique QMP device id.  Defaults to ``"usb-net-0"``.
+            netdev:    Id for the netdev backend (created on the fly).
+                       Defaults to ``"usbnet"``.
+            bus:       USB controller bus to attach to.  Defaults to ``"xhci.0"``.
+
+        Example::
+            driver.add_usb_network_device()
+            # or with explicit args:
+            driver.add_usb_network_device(device_id="usb-net-0", netdev="usbnet", bus="xhci.0")
+        """
+        self.monitor_command(
+            "netdev_add",
+            {"type": "user", "id": netdev},
+        )
+        self.monitor_command(
+            "device_add",
+            {"driver": "usb-net", "id": device_id, "netdev": netdev, "bus": bus},
+        )
+
+    def remove_usb_network_device(
+        self, device_id="usb-net-0", netdev="usbnet"):
+        """Hot-unplug a USB network device from the running QEMU instance via QMP.
+
+        Args:
+            device_id: QMP device id to remove.  Defaults to ``"usb-net-0"``.
+            netdev:    Id of the netdev backend to destroy.  Defaults to ``"usbnet"``.
+        """
+        self.monitor_command("device_del", {"id": device_id})
+        self.monitor_command("netdev_del", {"id": netdev})
+
     def _read(self, size=1, timeout=10, max_size=None):
         ready, _, _ = select.select([self._clientsocket], [], [], timeout)
         if ready:

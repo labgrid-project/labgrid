@@ -1404,6 +1404,31 @@ Arguments:
 Used by:
   - none
 
+ADB
+~~~
+
+USBADBDevice
+++++++++++++
+
+:any:`USBADBDevice` describes a local adb device connected via USB.
+
+Arguments:
+ - serialno (str): The serial number of the device as shown by adb
+
+RemoteUSBADBDevice
+++++++++++++++++++
+
+A :any:`RemoteUSBADBDevice` describes a `USBADBDevice`_ available on a remote computer.
+
+NetworkADBDevice
+++++++++++++++++
+
+:any:`NetworkADBDevice` describes an ADB device available via TCP.
+
+Arguments:
+ - host (str): The address of the TCP ADP device
+ - port (int): The TCP port ADB is exposed on the device
+
 Providers
 ~~~~~~~~~
 Providers describe directories that are accessible by the target over a
@@ -3861,6 +3886,24 @@ Arguments:
 The ``stage()`` method returns the filename as stored on the LAA.
 The ``list()`` method returns a list of filenames. The ``remove(name)``
 method removes a file by name.
+
+ADBDriver
+~~~~~~~~~
+The :any:`ADBDriver` allows interaction with ADB devices. It allows the 
+execution of commands, transfer of files, and rebooting of the device.
+
+It can interact with both USB and TCP adb devices.
+
+Binds to:
+  iface:
+    - `USBADBDevice`_
+    - `RemoteUSBADBDevice`_
+    - `NetworkADBDevice`_
+
+Implements:
+  - :any:`CommandProtocol`
+  - :any:`FileTransferProtocol`
+  - :any:`ResetProtocol`
 
 .. _conf-strategies:
 

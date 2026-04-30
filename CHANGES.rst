@@ -15,6 +15,8 @@ New Features in 25.1
 - The `consoleexpectmixin` now supports chunking of multiple bytes
   with the ``txchunk`` attribute.
 
+- The ``pytest``-specific parts of the labgrid framework now have typing hints.
+
 Breaking changes in 25.1
 ~~~~~~~~~~~~~~~~~~~~~~~~
 - The deprecated pytest plugin option ``--env-config`` has been removed. Use

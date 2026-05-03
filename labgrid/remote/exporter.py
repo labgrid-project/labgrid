@@ -200,6 +200,7 @@ class ResourceExport(ResourceEntry):
     host = attr.ib(default=gethostname(), validator=attr.validators.instance_of(str))
     proxy = attr.ib(default=None)
     proxy_required = attr.ib(default=False)
+    group_name = attr.ib(default="")
     user = attr.ib(default=None, init=False)
     local = attr.ib(init=False)
     local_params = attr.ib(init=False)
@@ -402,6 +403,33 @@ class SerialPortExport(ResourceExport):
                 "-Y",
                 "    max-connections: 10",
             ]
+            # If LG_SERIAL_TRACE_DIR is set, ask ser2net to log all
+            # serial traffic for this device.  Useful for centralised
+            # audit on the exporter host.
+            #
+            # ser2net is started fresh on each acquire and stopped on
+            # release, so the trace file scope is one acquire session.
+            # Include the acquiring user in the filename so traffic is
+            # attributed automatically.
+            trace_dir = os.environ.get("LG_SERIAL_TRACE_DIR")
+            if trace_dir:
+                os.makedirs(trace_dir, exist_ok=True)
+                # Use the board (group) name and acquiring user in
+                # the filename so logs group naturally per board and
+                # are attributed to the user, e.g. bbb-okaro_sjg.log.
+                # The user is sent by newer coordinators only — older
+                # ones leave it None.
+                board = self.group_name or os.path.basename(start_params["path"])
+                user = (self.user or "unknown").replace("/", "_")
+                trace_path = os.path.join(
+                    trace_dir, f"{board}-{user}.log"
+                )
+                cmd += [
+                    "-Y",
+                    f"    trace-both: {trace_path}",
+                    "-Y",
+                    "    trace-both-timestamp: true",
+                ]
         else:
             cmd = [
                 self.ser2net_bin,
@@ -1281,7 +1309,11 @@ class Exporter:
         proxy_req = self.isolated
         if issubclass(export_cls, ResourceExport):
             res = group[resource_name] = export_cls(
-                config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req
+                config,
+                host=self.hostname,
+                proxy=getfqdn(),
+                proxy_required=proxy_req,
+                group_name=group_name,
             )
             res.poll()
         else:

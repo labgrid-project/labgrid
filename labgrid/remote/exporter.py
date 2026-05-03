@@ -67,6 +67,7 @@ class ResourceExport(ResourceEntry):
     host = attr.ib(default=gethostname(), validator=attr.validators.instance_of(str))
     proxy = attr.ib(default=None)
     proxy_required = attr.ib(default=False)
+    user = attr.ib(default=None, init=False)
     local = attr.ib(init=False)
     local_params = attr.ib(init=False)
     start_params = attr.ib(init=False)
@@ -912,6 +913,7 @@ class Exporter:
                                 out_message.set_acquired_request.group_name,
                                 out_message.set_acquired_request.resource_name,
                                 out_message.set_acquired_request.place_name,
+                                out_message.set_acquired_request.user or None,
                             )
                         else:
                             await self.release(
@@ -952,7 +954,7 @@ class Exporter:
             # perhaps with queue join/task_done
             # this should be a command from the coordinator
 
-    async def acquire(self, group_name, resource_name, place_name):
+    async def acquire(self, group_name, resource_name, place_name, user=None):
         resource = self.groups.get(group_name, {}).get(resource_name)
         if resource is None:
             raise UnknownResourceError(
@@ -964,6 +966,11 @@ class Exporter:
                 f"Resource {group_name}/{resource_name} is already acquired by {resource.acquired}"
             )
 
+        # Stash the acquiring user so ResourceExport subclasses can use it
+        # (e.g. for per-user trace files).  Older coordinators don't send
+        # this field, in which case it stays None.
+        if isinstance(resource, ResourceExport):
+            resource.user = user
         try:
             resource.acquire(place_name)
         finally:

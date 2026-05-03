@@ -67,6 +67,7 @@ class ResourceExport(ResourceEntry):
     host = attr.ib(default=gethostname(), validator=attr.validators.instance_of(str))
     proxy = attr.ib(default=None)
     proxy_required = attr.ib(default=False)
+    group_name = attr.ib(default="")
     user = attr.ib(default=None, init=False)
     local = attr.ib(init=False)
     local_params = attr.ib(init=False)
@@ -231,6 +232,34 @@ class SerialPortExport(ResourceExport):
             },
         }
 
+    @staticmethod
+    def _build_trace_args(group_name, user, path):
+        """Return ser2net YAML args for trace logging, or [] if disabled
+
+        Reads LG_SERIAL_TRACE_DIR; when set, creates the directory and
+        builds a per-board, per-user file path under it, then returns
+        the YAML option pairs needed to enable trace-both for that
+        file.  The board comes from the resource's group name when
+        available, falling back to the basename of the device path so
+        the filename is still meaningful.  The user is the host/user
+        identity passed in by the coordinator (slashes are rewritten
+        to underscores so it is filesystem-safe), or ``unknown`` when
+        the coordinator did not send one.
+        """
+        trace_dir = os.environ.get("LG_SERIAL_TRACE_DIR")
+        if not trace_dir:
+            return []
+        os.makedirs(trace_dir, exist_ok=True)
+        board = group_name or os.path.basename(path)
+        user_label = (user or "unknown").replace("/", "_")
+        trace_path = os.path.join(trace_dir, f"{board}-{user_label}.log")
+        return [
+            "-Y",
+            f"    trace-both: {trace_path}",
+            "-Y",
+            "    trace-both-timestamp: true",
+        ]
+
     def _start(self, start_params):
         """Start ``ser2net`` subprocess"""
         assert self.local.avail
@@ -264,6 +293,12 @@ class SerialPortExport(ResourceExport):
                 "-Y",
                 "    max-connections: 10",
             ]
+            # If LG_SERIAL_TRACE_DIR is set, ask ser2net to log all
+            # serial traffic for this device.  Useful for centralised
+            # audit on the exporter host.  ser2net is started fresh
+            # on each acquire and stopped on release, so the trace
+            # file scope is one acquire session.
+            cmd += self._build_trace_args(self.group_name, self.user, start_params["path"])
         else:
             cmd = [
                 self.ser2net_bin,
@@ -1030,7 +1065,11 @@ class Exporter:
         proxy_req = self.isolated
         if issubclass(export_cls, ResourceExport):
             res = group[resource_name] = export_cls(
-                config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req
+                config,
+                host=self.hostname,
+                proxy=getfqdn(),
+                proxy_required=proxy_req,
+                group_name=group_name,
             )
             res.poll()
         else:

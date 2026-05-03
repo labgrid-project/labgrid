@@ -166,6 +166,43 @@ allocated before returning.
 A reservation will time out after a short time, if it is neither refreshed nor
 used by locked places.
 
+Logging Serial Traffic on the Exporter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When several developers (or CI jobs) share the same boards through a
+single coordinator, it is often useful for the lab admin to keep an
+independent record of every serial-console session.  The per-client
+``--logfile`` option only records output for the user who set it, so
+it does not help the operator answer questions like *which commands
+left this board in a bad state?* after the fact.
+
+To enable a centralised log on the exporter host, set the
+``LG_SERIAL_TRACE_DIR`` environment variable before starting
+``labgrid-exporter``:
+
+.. code-block:: bash
+
+   $ export LG_SERIAL_TRACE_DIR=/var/log/labgrid/serial
+   $ labgrid-exporter my-config.yaml
+
+For each acquire, the exporter then asks ``ser2net`` to record both
+sides of the serial connection to a file named ``<board>-<user>.log``
+under that directory, where ``<board>`` is the resource group name
+and ``<user>`` is the host/user identity reported by the coordinator
+(slashes are rewritten to underscores so the result is filesystem
+safe).  Each line is timestamped, which makes it easy to correlate a
+trace with other audit logs.
+
+Because ``ser2net`` is started fresh on each acquire and stopped on
+release, the trace covers exactly one session per acquire.  Repeated
+acquires by the same user on the same board append to the same file,
+so a long-running developer ends up with a single, continuous log per
+board.
+
+This feature complements rather than replaces the per-client
+``--logfile``: the client log is what the developer sees in their
+terminal, the exporter trace is the operator's independent record.
+
 Library
 -------
 labgrid can be used directly as a Python library, without the infrastructure

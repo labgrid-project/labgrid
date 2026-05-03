@@ -291,6 +291,49 @@ After this you can run ``ub-int bbb``, ``ub-cli bbb`` etc. from any
 machine joined to the tailnet, and the connection to the lab is
 transparent.
 
+Lightweight read-only access (no U-Boot tree)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you only want to interact with whatever is already running on a
+board (e.g. for triage or quick debugging) and not build/flash a new
+U-Boot, you do not need a U-Boot source tree on the client machine.
+``ub-int -T <board>`` skips the build and bootstrap steps entirely.
+
+Minimal client setup:
+
+1. Install tailscale and join the tailnet (as above).
+2. Install labgrid from the U-Boot integration branch (this PR) —
+   the env config below uses drivers (``UBootStrategy``,
+   ``UBootProviderDriver``, ``UBootWriterDriver``, etc.) that are
+   not yet in upstream labgrid:
+
+   .. code-block:: bash
+
+      git clone https://github.com/labgrid-project/labgrid.git
+      cd labgrid
+      gh pr checkout 1411          # or the tip of this PR's branch
+      pip install --user .
+
+3. Add an SSH alias for kea (as above).
+4. Use the example env config shipped with the labgrid checkout:
+   ``contrib/u-boot/example_env.cfg``.  It defines all the lab
+   targets and drivers and works as-is for read-only use.
+5. Set just two environment variables:
+
+   .. code-block:: bash
+
+      export PATH=$HOME/.local/bin:$PATH
+      export LG_COORDINATOR=100.64.0.1:20408
+      export LG_ENV=$HOME/labgrid/contrib/u-boot/example_env.cfg
+
+6. Run ``labgrid-client console -p <board>`` to connect, or — if you
+   have the ``ub-xxx`` scripts checked out locally (under
+   ``contrib/u-boot/`` in the same labgrid checkout) — ``ub-int -T
+   <board>`` for the full strategy without building.
+
+This setup needs no U-Boot tree, no ``UB_TEST_HOOKS``, and no
+``buildman`` — only the labgrid checkout and the env config.
+
 Notes
 ^^^^^
 

@@ -1145,6 +1145,15 @@ A desired state must be set using \fBLG_STATE\fP or \fB\-s\fP/\fB\-\-state\fP\&.
 .sp
 This variable can be used to specify the configuration file to use without
 using the \fB\-\-config\fP option, the \fB\-\-config\fP option overrides it.
+.sp
+The special value \fBcoordinator:\fP (or \fB\-\-config coordinator:\fP) tells the
+client to fetch the environment from the coordinator over the \fBGetEnvironment\fP
+RPC instead of reading a local file, which is useful when working from a remote
+machine that does not have the lab env file available locally.  The fetched
+YAML is cached under \fB$XDG_CACHE_HOME/labgrid/env.cfg\fP (or
+\fB~/.cache/labgrid/env.cfg\fP) so it can be inspected after the fact.  The
+coordinator must have been started with \fB\-\-environment\fP; see
+\fBlabgrid\-coordinator\fP(1).
 .SS LG_COORDINATOR
 .sp
 This variable can be used to set the default coordinator in the format

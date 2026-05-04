@@ -446,3 +446,13 @@ class GetReservationsResponse(_message.Message):
 class GetReservationsRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class GetEnvironmentRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class GetEnvironmentResponse(_message.Message):
+    __slots__ = ("config",)
+    CONFIG_FIELD_NUMBER: _ClassVar[int]
+    config: str
+    def __init__(self, config: _Optional[str] = ...) -> None: ...

@@ -15,6 +15,7 @@ import subprocess
 import json
 import struct
 import fcntl
+import socket
 
 import yaml
 
@@ -103,6 +104,31 @@ def handle_ns_macvtap(options):
         os.execlp("labgrid-tap-fwd", "labgrid-tap-fwd", str(macvtap_fd.fileno()))
 
 
+def handle_canpipe(options):
+    cmd = ["ip", "link", "set", "dev", options.ifname]
+
+    subprocess.check_call(cmd + ["down"])
+
+    cmd += ["up"]
+    cmd += ["type", "can"]
+    cmd += ["bitrate", str(options.bitrate)]
+
+    if options.dbitrate is not None:
+        cmd += ["dbitrate", str(options.dbitrate)]
+        cmd += ["fd", "on"]
+    else:
+        cmd += ["fd", "off"]
+
+    subprocess.check_call(cmd)
+
+    with socket.socket(socket.PF_CAN, socket.SOCK_RAW | socket.SOCK_NONBLOCK, socket.CAN_RAW) as can:
+        can.bind((options.ifname,))
+        can.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FD_FRAMES, 1)
+
+        os.set_inheritable(can.fileno(), True)
+        os.execlp("labgrid-tap-fwd", "labgrid-tap-fwd", str(can.fileno()))
+
+
 def main(program, options):
     if not options.ifname:
         raise ValueError("Empty interface name.")
@@ -116,7 +142,7 @@ def main(program, options):
     if options.ifname in denylist:
         raise ValueError(f"Interface name '{options.ifname}' is denied in denylist.")
 
-    programs = ["tcpreplay", "tcpdump", "ip", "ethtool", "ns-macvtap"]
+    programs = ["tcpreplay", "tcpdump", "ip", "ethtool", "ns-macvtap", "canpipe"]
     if program not in programs:
         raise ValueError(f"Invalid program {program} called with wrapper, valid programs are: {programs}")
 
@@ -186,6 +212,10 @@ def main(program, options):
         handle_ns_macvtap(options)
         return
 
+    elif program == "canpipe":
+        handle_canpipe(options)
+        return
+
     try:
         os.execvp(args[0], args)
     except FileNotFoundError as e:
@@ -244,6 +274,11 @@ if __name__ == "__main__":
     ns_mactap_parser.add_argument("ifname", type=str, help="interface name")
     ns_mactap_parser.add_argument("pid", type=int, help="pid of namespace agent")
     ns_mactap_parser.add_argument("--mac-address", type=str, metavar="ADDRESS", help="Set interface MAC address to ADDRESS")
+
+    canpipe_parser = subparsers.add_parser("canpipe")
+    canpipe_parser.add_argument("ifname", type=str, help="CAN interface name")
+    canpipe_parser.add_argument("bitrate", type=int, help="CAN interface bitrate")
+    canpipe_parser.add_argument("dbitrate", type=int, default=None, nargs='?', help="CAN interface FD bitrate")
 
     args = parser.parse_args()
     try:

@@ -100,11 +100,26 @@ See <\X'tty: link https://labgrid.readthedocs.io/en/latest/configuration.html#ex
 for more information.
 .SS ENVIRONMENT VARIABLES
 .sp
-The following environment variable can be used to configure labgrid\-exporter.
+The following environment variables can be used to configure
+labgrid\-exporter.
 .SS LG_COORDINATOR
 .sp
 This variable can be used to set the default coordinator in the format
 \fBHOST[:PORT]\fP (instead of using the \fB\-x\fP option).
+.SS LG_SERIAL_TRACE_DIR
+.sp
+When set, the exporter records all serial\-port traffic for each
+acquired resource into \fB<LG_SERIAL_TRACE_DIR>/<board>\-<user>.log\fP,
+where \fB<board>\fP is the resource group name and \fB<user>\fP is the
+acquiring user identity reported by the coordinator (in
+\fBhost/user\fP form, with \fB/\fP rewritten to \fB_\fP).  Both directions
+are captured and each line is timestamped, giving the lab admin an
+independent record of every session that is not affected by
+per\-client logging options.
+.sp
+The directory is created on demand.  A fresh ser2net instance is
+started for each acquire, so repeated acquires by the same user on
+the same board append to the same file.
 .SS EXAMPLES
 .sp
 Start the exporter with the configuration file \fBmy\-config.yaml\fP:

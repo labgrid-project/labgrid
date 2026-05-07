@@ -118,8 +118,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                  "-o", "ControlPersist=300", "-o",
                  "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
                  "-o", "ServerAliveInterval=15", "-MN", "-S", control.replace('%', '%%'), "-p",
-                 str(self.networkservice.port), "-l", self._get_username(),
-                 self.networkservice.address]
+                 str(self.networkservice.port)]
+        if self._get_username():
+            args += ["-l", self._get_username()]
+        args += [self.networkservice.address]
 
         # proxy via the exporter if we have an ifname suffix
         address = self.networkservice.address
@@ -214,9 +216,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             raise ExecutionError("Keepalive no longer running")
 
         complete_cmd = [self._ssh, "-x", *self.ssh_prefix,
-                        "-p", str(self.networkservice.port), "-l", self._get_username(),
-                        self.networkservice.address
-                        ] + cmd.split(" ")
+                        "-p", str(self.networkservice.port)]
+        if self._get_username():
+            complete_cmd += ["-l", self._get_username()]
+        complete_cmd += [self.networkservice.address] + cmd.split(" ")
         self.logger.debug("Sending command: %s", complete_cmd)
         if self.stderr_merge:
             stderr_pipe = subprocess.STDOUT
@@ -482,6 +485,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['filename', 'remotepath'])
     def put(self, filename, remotepath=''):
+        destination = f"{self.networkservice.address}:{remotepath}"
+        if self._get_username():
+            destination = f"{self._get_username()}@{destination}"
+
         transfer_cmd = [
             self._scp,
             "-S", self._ssh,
@@ -489,7 +496,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             "-P", str(self.networkservice.port),
             "-r",
             filename,
-            f"{self._get_username()}@{self.networkservice.address}:{remotepath}"
+            destination
             ]
 
         if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
@@ -513,13 +520,17 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     @Driver.check_active
     @step(args=['filename', 'destination'])
     def get(self, filename, destination="."):
+        source = f"{self.networkservice.address}:{filename}"
+        if self._get_username():
+            source = f"{self._get_username()}@{source}"
+
         transfer_cmd = [
             self._scp,
             "-S", self._ssh,
             *self.ssh_prefix,
             "-P", str(self.networkservice.port),
             "-r",
-            f"{self._get_username()}@{self.networkservice.address}:{filename}",
+            source,
             destination
             ]
 
@@ -543,7 +554,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _cleanup_own_master(self):
         """Exit the controlmaster and delete the tmpdir"""
-        complete_cmd = f"{self._ssh} -x -o ControlPath={self.control.replace('%', '%%')} -O exit -p {self.networkservice.port} -l {self._get_username()} {self.networkservice.address}".split(' ')  # pylint: disable=line-too-long
+        complete_cmd = [self._ssh, "-x", "-o", f"ControlPath={self.control.replace('%', '%%')}", "-O", "exit", "-p", str(self.networkservice.port)]  # pylint: disable=line-too-long
+        if self._get_username():
+            complete_cmd += ["-l", self._get_username()]
+        complete_cmd += [self.networkservice.address]
         res = subprocess.call(
             complete_cmd,
             stdin=subprocess.DEVNULL,
@@ -560,7 +574,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     def _start_keepalive(self):
         """Starts a keepalive connection via the own or external master."""
-        args = [self._ssh, *self.ssh_prefix, self.networkservice.address, "cat"]
+        args = [self._ssh, *self.ssh_prefix]
+        if self._get_username():
+            args += ["-l", self._get_username()]
+        args += [self.networkservice.address, "cat"]
 
         assert self._keepalive is None
         self._keepalive = subprocess.Popen(

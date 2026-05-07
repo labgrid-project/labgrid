@@ -817,6 +817,14 @@ class USBDebugger(USBResource):
                          ("1366", "1024"),  # SEGGER J-Link
                          ("1366", "1051"),  # SEGGER J-Link
                          ("1366", "1061"),  # SEGGER J-Link
+                         ("064b", "0617"),  # Analog Devices ICE-1000 Emulator
+                         ("064b", "2500"),  # Analog Devices ICE-1500 Emulator
+                         ("064b", "0283"),  # Analog Devices ICE-2000 Emulator
+                         ("064b", "2503"),  # Analog Devices Onboard Debug Agent
+                         ("064b", "2504"),  # Analog Devices Onboard Debug Agent
+                         ("064b", "2507"),  # Analog Devices Onboard Debug Agent
+                         ("064b", "2508"),  # Analog Devices Onboard Debug Agent
+                         ("064b", "250A"),  # Analog Devices Onboard Debug Agent
                          ]:
             return False
 

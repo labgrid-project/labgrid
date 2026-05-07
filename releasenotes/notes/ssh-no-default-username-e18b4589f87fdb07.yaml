@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    NetworkService no longer requires a username. This allows using the users
+    username for SSH connections to the DUT.

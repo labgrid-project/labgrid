@@ -1,0 +1,938 @@
+##
+## kea lab: local resources to be exported with:
+##
+##    labgrid-exporter kea.yaml
+##
+## The devices
+
+rpi3:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb-port1
+    ## hub c4
+    match:
+      '@ID_PATH': 'pci-0000:03:00.2-usb-0:5.2.4:1.0'
+
+  USBSDWireDevice:
+    ## sdwire0
+    ## hub c9
+    match:
+      ## '@ID_PATH': 'pci-0000:03:00.2-usb-0:5.4.1.2' ??
+      'ID_SERIAL_SHORT': 'sdwire-18'
+
+  YKUSHPowerPort:
+    ## ykush 0 1
+    serial: 'YK17698'
+    index: 1
+
+opi_pc:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port4
+    ## hub c7
+    match:
+      '@ID_PATH': 'pci-0000:03:00.2-usb-0:5.3.3:1.0'
+
+  USBSDWireDevice:
+    ## sdwire2
+    ## hub c8
+    match:
+      'ID_SERIAL_SHORT': '202001064004'
+
+  NetworkPowerPort:
+    ## dli_main_port1
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.19
+    index: 1
+
+## Hangs at: Returning to boot ROM...
+rock2:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port8
+    ## hub c3
+    match:
+      '@ID_PATH': 'pci-0000:03:00.2-usb-0:5.2.3:1.0'
+
+  USBSDWireDevice:
+    ## sdwire5
+    ## hub c13
+    match:
+      'ID_SERIAL_SHORT': 'sdwireda10'
+
+  YKUSHPowerPort:
+    ## ykush 0 3
+    serial: 'YK17698'
+    index: 3
+
+## boots but ignores uSD card
+## need to try sending
+pcduino3:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port2
+    ## 1-5.3.1
+    ## hub c5
+    match:
+      '@ID_PATH': 'pci-0000:03:00.2-usb-0:5.3.1:1.0'
+
+  USBSDWireDevice:
+    ## sdwire1
+    ## hub c10
+    match:
+      'ID_SERIAL_SHORT': 'sdwire-7'
+
+  YKUSHPowerPort:
+    ## ykush 0 2 (hub c14)
+    serial: 'YK17698'
+    index: 2
+
+  SunxiUSBLoader:
+    ## ykush 0 2(hub c14)
+    ## hub c14
+    ## 1-5.1.2.2
+    match:
+      'ID_PATH': 'pci-0000:03:00.2-usb-0:5.1.2.2'
+
+  HIDRelay:
+    ## recovery
+    ## usbrelay 0 4
+    ## hub a 14
+    ## serial: 6QMBS
+    index: 4
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:10.1.2'
+
+  ## RecoveryControl:
+  ## usbrelay 0 4
+  ##  serial:
+
+pcduino3_nano:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port12
+    ## hub b2
+    match:
+      '@ID_PATH': 'pci-0000:04:00.0-usb-0:2.2.2:1.0'
+
+  USBSDWireDevice:
+    ## sdwire8
+    ## hub b12
+    match:
+      'ID_SERIAL_SHORT': 'sdwireda1'
+
+  YKUSHPowerPort:
+    ## ykush 1 1
+    serial: 'YK18511'
+    index: 1
+
+samus:
+  location: lab
+
+  Servo:
+    servo_name: samus
+    serial: 686203-00047
+    port: 9900
+    board: samus
+
+  ServoSerialPort:
+    servo_name: samus
+
+  ServoReset:
+    servo_name: samus
+
+  NetworkPowerPort:
+    ## dli_second_port3
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.22
+    index: 3
+
+  SFEmulator:
+    serial: DP025143
+    chip: W25Q64CV
+
+## Downloads but no serial output
+nyan-big:
+  location: lab
+
+  Servo:
+    servo_name: nyan-big
+    serial: 911416-00900
+    port: 9901
+    board: nyan-big
+
+  ServoSerialPort:
+    servo_name: nyan-big
+
+  ServoReset:
+    servo_name: nyan-big
+
+  ServoRecovery:
+    servo_name: nyan-big
+
+  SFEmulator:
+    serial: DP138817
+    chip: W25Q32DW
+
+  NetworkPowerPort:
+    ## dli_second_port2
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.22
+    index: 2
+
+  TegraUSBLoader:
+    ## hub e9
+    ## 1-5.1.2.2
+    match:
+      'ID_PATH': 'pci-0000:03:00.2-usb-0:3.4.1'
+
+link:
+  location: lab
+
+  Servo:
+    servo_name: link
+    serial: 905537-00223
+    port: 9902
+    board: link
+
+  ServoSerialPort:
+    servo_name: link
+
+  ServoReset:
+    servo_name: link
+
+  SFEmulator:
+    serial: DP022781
+    chip: W25Q64FV
+
+  NetworkPowerPort:
+    ## dli_second_port7
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.22
+    index: 7
+
+jerry:
+  location: lab
+
+  Servo:
+    servo_name: jerry
+    serial: 730422-00045
+    port: 9903
+    board: jerry
+
+  ServoSerialPort:
+    servo_name: jerry
+
+  ServoReset:
+    servo_name: jerry
+
+  SFEmulator:
+    serial: DP022783
+    chip: GD25LQ32
+
+  NetworkPowerPort:
+    ## dli_second_port8
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.22
+    index: 8
+
+minnowmax:
+  location: lab
+
+  USBSerialPort:
+    ## ttyusb_port7
+    ## hub b3
+    match:
+      '@ID_PATH': 'pci-0000:04:00.0-usb-0:2.2.3:1.0'
+
+  NetworkPowerPort:
+    ## dli_main_port6
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.19
+    index: 6
+
+  SFEmulator:
+    serial: DP139140
+    chip: W25Q64DW
+
+zynq_zybo:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port5
+    ## hub c1
+    match:
+      '@ID_PATH': 'pci-0000:03:00.2-usb-0:5.2.1:1.0'
+      ##ID_SERIAL_SHORT: 210279653540
+      ##ID_USB_INTERFACE_NUM: 01
+
+  USBSDWireDevice:
+    ## sdwire3
+    ## hub
+    match:
+      'ID_SERIAL_SHORT': '202001064001'
+
+  NetworkPowerPort:
+    ## dli_main_port5
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.19
+    index: 5
+
+  HIDRelay:
+    ## usbrelay 0 6
+    ##serial: 6QMBS
+    index: 6
+    match:
+      '@ID_PATH': 'pci-0000:00:14.0-usb-0:10.1.2'
+
+tk1:
+  location: 'lab'
+  NetworkSerialPort:
+    ## portserver 1 1
+    ## base port 2000, 16 ports
+    host: 192.168.4.23
+    port: 2001
+    speed: 115200
+
+  ##HIDRelay:
+    ## power button
+    ## usbrelay 0 1
+    ##serial: 6QMBS
+    ##index: 1
+    ##usbrelay: True
+    ##match:
+      ##'@ID_PATH': 'pci-0000:00:14.0-usb-0:10.1.2'
+
+  HIDRelay:
+    ## reset
+    ## usbrelay 0 2
+    ##serial: 6QMBS
+    index: 2
+    match:
+      '@ID_PATH': 'pci-0000:00:14.0-usb-0:10.1.2'
+
+  HIDRelay:
+    ## recovery
+    ## usbrelay 0 3
+    ##serial: 6QMBS
+    index: 3
+    match:
+      '@ID_PATH': 'pci-0000:00:14.0-usb-0:10.1.2'
+
+  TegraUSBLoader:
+    ## hub a 13
+    match:
+      ID_PATH: pci-0000:00:14.0-usb-0:10.1.1
+
+puma:
+  location: 'lab'
+
+  USBSerialPort:
+    ## ttyusb_port6
+    ## hub c2
+    match:
+      '@ID_PATH': 'pci-0000:03:00.2-usb-0:5.2.2:1.0'
+
+  USBSDWireDevice:
+    ## sdwire4
+    ## hub b9
+    match:
+      'ID_SERIAL_SHORT': '202001064005'
+
+  NetworkPowerPort:
+    ## dli_main_port2
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.19
+    index: 2
+
+  HIDRelay:
+    ## usbrelay 0 6=7
+    ##serial: 6QMBS
+    index: 7
+    match:
+      '@ID_PATH': pci-0000:03:00.2-usb-0:5.2.2:1.0
+
+salmon:
+  location: 'lab'
+
+  NetworkSerialPort:
+    ## portserver 1 2
+    ## base port 2000, 16 ports
+    host: 192.168.4.23
+    port: 2002
+    speed: 115200
+
+  HIDRelay:
+    ## reset
+    ## usbrelay 1 2
+    ##serial: 6AAMZ (hub d2)
+    index: 2
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:4.2.3
+
+  HIDRelay:
+    ## recovery
+    ## usbrelay 1 1
+    ##serial: 6AAMZ (hub d2)
+    index: 1
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:4.2.3
+
+  IMXUSBLoader:
+    ## hub d 3
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:4.2.2
+
+xu3:
+  location: 'lab'
+
+  USBSerialPort:
+    ## ttyusb_port10
+    ## hub b7
+    match:
+      '@ID_PATH': 'pci-0000:04:00.0-usb-0:2.3.3:1.0'
+
+  USBSDWireDevice:
+    ## sdwire7
+    ## hub b8
+    match:
+      ID_SERIAL_SHORT: '202001064002'
+
+  NetworkPowerPort:
+    ## dli_main_port3
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.19
+    index: 3
+
+olimex-a20:
+  location: 'lab'
+
+  USBSerialPort:
+    ## ttyusb_port13
+    ## hub a2
+    match:
+      ID_PATH: pci-0000:00:14.0-usb-0:10.2.2:1.0
+
+  USBSDWireDevice:
+    ## sdwire9
+    ## hub a1
+    match:
+      ID_SERIAL_SHORT: 'sdwireda2'
+
+  NetworkPowerPort:
+    ## dli_main_port4
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.19
+    index: 4
+
+  ## HIDRelay:
+    ## reset
+    ## usbrelay 3 7
+    ##serial: 8QMBS (hub e11)
+    ## index: 7
+    ## match:
+      ## ID_PATH: pci-0000:03:00.2-usb-0:3.4.3
+
+  HIDRelay:
+    ## recovery
+    ## usbrelay 3 8
+    ##serial: 8QMBS (hub e11)
+    index: 8
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:3.4.3
+
+  SunxiUSBLoader:
+    ## hub a12
+    ## send doesn't work as the board is powered from USB
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.4:1.0'
+
+## hangs after SPL
+opi_pc2:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port14
+    ## hub a3
+    match:
+      ID_PATH: pci-0000:00:14.0-usb-0:10.2.3:1.0
+
+  USBSDWireDevice:
+    ## sdwire10
+    ## hub a4
+    match:
+      'ID_SERIAL_SHORT': sdwireda3
+
+  NetworkPowerPort:
+    ## dli_main_port8
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.19
+    index: 8
+
+  SunxiUSBLoader:
+    ## hub a11
+    ## doesn't work as no recovery
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.3:1.0'  ## check this
+
+bpi:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port15
+    ## hub b13
+    match:
+      ID_PATH: pci-0000:04:00.0-usb-0:2.1.1:1.0
+
+  USBSDWireDevice:
+    ## sdwire11
+    ## hub
+    match:
+      'ID_SERIAL_SHORT': sdwireda4
+
+  YKUSHPowerPort:
+    ## ykush 1 2
+    serial: 'YK18511'
+    index: 2
+
+## critical medium error on disk
+rpi2:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port (new to labgrid)
+    ## hub c6
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:5.3.2:1.0
+
+  USBSDWireDevice:
+    ## sdwire12
+    ## hub
+    match:
+      'ID_SERIAL_SHORT': sdwireda5
+
+  YKUSHPowerPort:
+    ## ykush 1 3
+    serial: 'YK18511'
+    index: 3
+
+## No serial
+## Same problem as zynq_zybo as the serial only appears when board is powered
+edison:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port17
+    ## hub
+    match:
+      ##ID_PATH: pci-0000:03:00.2-usb-0:5.3.3:1.0
+      ID_PATH: pci-0000:00:14.0-usb-0:10.1.4:1.0
+      ##ID_SERIAL_SHORT: A903JP72
+      ##ID_USB_INTERFACE_NUM: '00'
+
+  NetworkPowerPort:
+    ## dli_second_port5
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.22
+    index: 5
+
+  HIDRelay:
+    ## recovery
+    ## usbrelay 2 5
+    ## hub a 10
+    ## serial: 7QMBS
+    index: 5
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.2'
+
+  ##IntelUSBLoader:
+    ## ykush2_port1
+    ## hube_10
+    ##match:
+      ##'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.3:1.0'  ## check this
+
+## Battery broken. Powers on with:
+## $ dut-control -p 9904 ec_uart_pty
+## ec_uart_pty:/dev/pts/41
+## $ ssh kea cu -l /dev/pts/41
+bob:
+  location: lab
+
+  Servo:
+    servo_name: bob
+    serial: 911416-00262
+    port: 9904
+    board: bob
+
+  ServoSerialPort:
+    servo_name: bob
+
+  ServoReset:
+    servo_name: bob
+
+  SFEmulator:
+    serial: DP139156
+    chip: GD25LQ32
+
+  NetworkPowerPort:
+    ## dli_fourth_port5
+    ## was dli_second_port7
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.27
+    index: 5
+
+## No response on serial
+lcdk:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port18
+    ## hub e4
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:3.2.4:1.0
+
+  USBSDWireDevice:
+    ## sdwire13
+    ## hub e3
+    match:
+      'ID_SERIAL_SHORT': 'sdwireda6'
+
+  NetworkPowerPort:
+    ## dli_second_port6
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.22
+    index: 6
+
+  HIDRelay:
+    ## reset
+    ## usbrelay 2 8
+    ## hub a 10
+    ## serial: 7QMBS
+    index: 8
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.2'
+
+  ## RecoveryControl:
+  ## usbrelay 0 4
+  ##  serial:
+
+ff3399:
+  location: 'lab'
+
+  USBSerialPort:
+    speed: 1500000
+    ## ttyusb_port19
+    ## hub e5
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:3.3.1:1.0
+
+  USBSDWireDevice:
+    ## sdwire14
+    ## hub e6
+    match:
+      ##'ID_SERIAL_SHORT': 'sdwireda7'
+      'ID_SERIAL_SHORT': 'da68'
+
+  HIDRelay:
+    ## recovery
+    ## usbrelay 2 1
+    ## hub a 10
+    ## serial: 7QMBS
+    index: 1
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.2'
+
+## stuck at "Start Snapper 9260 Bootstrap..." - needs USB boot
+sn9260:
+  location: 'lab'
+  NetworkSerialPort:
+    ## portserver 1 3
+    ## base port 2000, 16 ports
+    host: 192.168.4.23
+    port: 2003
+    speed: 115200
+
+  HIDRelay:
+    ## reset
+    ## usbrelay 2 2
+    ## hub a 10
+    ## serial: 7QMBS
+    index: 2
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.2'
+
+  HIDRelay:
+    ## recovery
+    ## usbrelay 2 3
+    ## hub a 10
+    ## serial: 7QMBS
+    index: 3
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.2'
+
+coral:
+  location: lab
+
+  Servo:
+    servo_name: coral
+    serial: 911416-00840
+    port: 9905
+    board: coral
+
+  NetworkPowerPort:
+    ## dli_second_port1
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.22
+    index: 1
+
+  ServoSerialPort:
+    servo_name: coral
+
+  ServoReset:
+    servo_name: coral
+
+  SFEmulator:
+    ## try DP034599
+    serial: DP033694
+    chip: w25q128fw
+
+rpi3z:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port20
+    ## hub f1
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:2.1.1:1.0
+
+  USBSDWireDevice:
+    ## sdwire15
+    ## hub e1
+    match:
+      'ID_SERIAL_SHORT': 'da61'
+
+  YKUSHPowerPort:
+    ## ykush 2 2
+    serial: 'YK19193'
+    index: 2
+
+bbb:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port21
+    ## hub f2
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:2.1.2:1.0
+
+  USBSDWireDevice:
+    ## sdwire16
+    ## hub f3
+    match:
+      'ID_SERIAL_SHORT': 'da62'
+
+  NetworkPowerPort:
+    ## dli_second_port4
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.22
+    index: 4
+
+  HIDRelay:
+    ## reset
+    ## usbrelay 3 6
+    ##serial: 8QMBS (hub e11)
+    index: 6
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:3.4.3
+
+snow:
+  location: lab
+
+  Servo:
+    servo_name: snow
+    serial: 911416-00558
+    port: 9906
+    board: daisy
+
+  NetworkPowerPort:
+    ## dli_fourth_port3
+    ## was dli_second_port7
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.27
+    index: 3
+
+  ServoSerialPort:
+    servo_name: snow
+
+  ServoReset:
+    servo_name: snow
+
+  ServoRecovery:
+    servo_name: snow
+
+  SamsungUSBLoader:
+    ## hub d4
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:4.2.4
+
+kevin:
+  location: lab
+
+  ## Port d1
+  Servo:
+    servo_name: kevin
+    serial: 911416-00627
+    port: 9907
+    board: kevin
+
+  NetworkPowerPort:
+    ## dli_fourth_port1
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.27
+    index: 1
+
+  ServoSerialPort:
+    servo_name: kevin
+
+  ServoReset:
+    servo_name: kevin
+
+  ServoRecovery:
+    servo_name: kevin
+
+  SFEmulator:
+    serial: DP137244
+    chip: gd25lq64
+
+## no serial output
+pine64:
+  location: 'lab'
+
+  USBSerialPort:
+    ## ttyusb_port22
+    ## hub f4
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:2.1.4:1.0
+
+  USBSDWireDevice:
+    ## sdwire17
+    ## hub f6
+    match:
+      'ID_SERIAL_SHORT': 'da63'
+
+  HIDRelay:
+    ## reset
+    ## usbrelay 2 4
+    ## hub a 10
+    ## serial: 7QMBS
+    index: 4
+    match:
+      'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.2'
+
+  SunxiUSBLoader:
+    ## hub f5
+    match:
+      'ID_PATH': 'pci-0000:03:00.2-usb-0:5.3.1.2'  ## check
+
+## no serial output
+c4:
+  location: 'lab'
+
+  USBSerialPort:
+    ## ttyusb_port23
+    ## hub f7
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:2.2.3:1.0
+
+  USBSDWireDevice:
+    ## sdwire18
+    ## hub f8
+    match:
+      'ID_SERIAL_SHORT': 'da64'
+
+  NetworkPowerPort:
+    ## dli_main_port7
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.19
+    index: 7
+
+rpi4:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port24
+    ## hub f9
+    match:
+      '@ID_PATH': 'pci-0000:03:00.2-usb-0:2.3.3:1.0'
+
+  USBSDWireDevice:
+    ## sdwire19
+    ## hub f10
+    match:
+      'ID_SERIAL_SHORT': 'sdwireda9'
+
+  NetworkPowerPort:
+    ## dli_fourth_port6
+    model: digitalloggers_http
+    host: http://admin:1234@192.168.4.27
+    index: 6
+
+  HIDRelay:
+    ## reset
+    ## usbrelay 3 5
+    ##serial: 8QMBS (hub e11)
+    index: 5
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:3.4.3
+
+rpi0:
+  location: 'lab'
+  USBSerialPort:
+    ## ttyusb_port25
+    ## hub f12
+    match:
+      '@ID_PATH': 'pci-0000:03:00.2-usb-0:2.3.4:1.0'
+
+  USBSDWireDevice:
+    ## sdwire20
+    ## hub f13
+    match:
+      'ID_SERIAL_SHORT': 'da66'
+
+  YKUSHPowerPort:
+    ## ykush2_port3
+    ## ykush 2 3
+    serial: 'YK19193'
+    index: 3
+
+qemu-x86:
+  location: 'lab'
+
+qemu-x86_64:
+  location: 'lab'
+
+qemu_arm:
+  location: 'lab'
+
+play:
+  location: 'lab'
+  USBSerialPort:
+    ## hub
+    match:
+      '@ID_PATH': pci-0000:03:00.2-usb-0:2.4.3:1.0
+
+  USBSDWireDevice:
+    ## hub
+    match:
+      ID_SERIAL_SHORT: da69
+
+  reset:
+    ## reset
+    ## usbrelay 3 5
+    ## hub e 11
+    ##serial: 8QMBS (hub e11)
+    cls: HIDRelay
+    index: 5
+    match:
+      ID_PATH: pci-0000:03:00.2-usb-0:3.4.3
+
+  recovery:
+    ##recovery (USR1)
+    ##usbrelay 2 7
+    ##hub a 10
+    ##serial: 7QMBS
+    cls: HIDRelay
+    index: 6
+    match:
+      ID_PATH: pci-0000:00:14.0-usb-0:10.4.2

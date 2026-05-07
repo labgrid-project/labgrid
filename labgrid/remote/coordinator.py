@@ -647,6 +647,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         request.group_name = resource.path[1]
         request.resource_name = resource.path[3]
         request.place_name = place.name
+        if place.acquired:
+            request.user = place.acquired
         cmd = ExporterCommand(request)
         self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
         await cmd.wait()

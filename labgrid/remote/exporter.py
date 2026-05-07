@@ -29,6 +29,139 @@ exports: Dict[str, Type[ResourceEntry]] = {}
 reexec = False
 
 
+def _resolve_hub_base(hubs, hub_name, seen=None):
+    """Resolve a hub's full base path, following parent references.
+
+    A hub can specify ``base`` directly, or use ``parent`` and ``port``
+    to inherit from another hub.  Returns the resolved base path string.
+    """
+    if seen is None:
+        seen = set()
+    if hub_name in seen:
+        raise ExporterError(f"circular hub reference: {' -> '.join(seen)} -> {hub_name}")
+    seen.add(hub_name)
+
+    hub = hubs.get(hub_name)
+    if hub is None:
+        raise ExporterError(f"hub '{hub_name}' is not defined in the hubs section")
+
+    if "base" in hub:
+        return hub["base"]
+
+    if "parent" not in hub or "port" not in hub:
+        raise ExporterError(
+            f"hub '{hub_name}' must have either 'base' or both 'parent' and 'port'"
+        )
+
+    parent_name = hub["parent"]
+    parent_port = hub["port"]
+    parent_base = _resolve_hub_base(hubs, parent_name, seen)
+
+    parent_hub = hubs[parent_name]
+    parent_ports = parent_hub.get("ports", {})
+    suffix = parent_ports.get(parent_port)
+    if suffix is None:
+        suffix = parent_ports.get(str(parent_port))
+    if suffix is None:
+        try:
+            suffix = parent_ports.get(int(parent_port))
+        except (ValueError, TypeError):
+            pass
+    if suffix is None:
+        raise ExporterError(
+            f"hub '{hub_name}': port {parent_port} is not defined in parent hub '{parent_name}'"
+        )
+
+    return f"{parent_base}.{suffix}"
+
+
+def _expand_hubs(data):
+    """Expand hub/port references in match dicts to ID_PATH values.
+
+    If the config data contains a top-level 'hubs' key, it is popped and
+    used to resolve any match dicts that contain 'hub' and 'port' keys
+    into a full ID_PATH string.
+
+    When 'iface' is also present, the result uses '@ID_PATH' (ancestor
+    match) with the interface appended after a colon.  Without 'iface',
+    the result uses 'ID_PATH' (direct match) with no interface suffix.
+
+    Hubs can reference other hubs via 'parent' and 'port' instead of
+    'base', allowing devices behind sub-hubs (e.g. a YKUSH on a port
+    of a larger hub) to be described naturally.
+
+    For example, given::
+
+        hubs:
+          c:
+            base: 'pci-0000:03:00.2-usb-0:5'
+            ports:
+              14: '1.2'
+          ykush0:
+            parent: c
+            port: 14
+            ports:
+              2: '2'
+
+    a match dict ``{'hub': 'ykush0', 'port': 2}`` becomes
+    ``{'ID_PATH': 'pci-0000:03:00.2-usb-0:5.1.2.2'}``.
+    """
+    hubs = data.pop("hubs", None)
+    if not hubs:
+        return
+
+    for group_name, group in data.items():
+        if not isinstance(group, dict):
+            continue
+        for resource_name, params in group.items():
+            if not isinstance(params, dict):
+                continue
+            match = params.get("match")
+            if not isinstance(match, dict):
+                continue
+
+            hub_name = match.get("hub")
+            port_num = match.get("port")
+            if hub_name is None and port_num is None:
+                continue
+            if hub_name is None or port_num is None:
+                raise ExporterError(
+                    f"{group_name}/{resource_name}: 'hub' and 'port' must both be specified in a match"
+                )
+
+            hub = hubs.get(hub_name)
+            if hub is None:
+                raise ExporterError(
+                    f"{group_name}/{resource_name}: hub '{hub_name}' is not defined in the hubs section"
+                )
+
+            base = _resolve_hub_base(hubs, hub_name)
+
+            ports = hub.get("ports", {})
+            # YAML may parse port keys as integers or strings
+            suffix = ports.get(port_num)
+            if suffix is None:
+                suffix = ports.get(str(port_num))
+            if suffix is None:
+                try:
+                    suffix = ports.get(int(port_num))
+                except (ValueError, TypeError):
+                    pass
+            if suffix is None:
+                raise ExporterError(
+                    f"{group_name}/{resource_name}: port {port_num} is not defined in hub '{hub_name}'"
+                )
+
+            iface = match.get("iface")
+            del match["hub"]
+            del match["port"]
+            if iface is not None:
+                del match["iface"]
+                match["@ID_PATH"] = f"{base}.{suffix}:{iface}"
+            else:
+                match["ID_PATH"] = f"{base}.{suffix}"
+
+
 class ExporterError(Exception):
     pass
 
@@ -67,6 +200,8 @@ class ResourceExport(ResourceEntry):
     host = attr.ib(default=gethostname(), validator=attr.validators.instance_of(str))
     proxy = attr.ib(default=None)
     proxy_required = attr.ib(default=False)
+    group_name = attr.ib(default="")
+    user = attr.ib(default=None, init=False)
     local = attr.ib(init=False)
     local_params = attr.ib(init=False)
     start_params = attr.ib(init=False)
@@ -186,7 +321,7 @@ class ResourceExport(ResourceEntry):
 
 @attr.s(eq=False)
 class SerialPortExport(ResourceExport):
-    """ResourceExport for a USB or Raw SerialPort"""
+    """ResourceExport for a USB, Raw or Servo SerialPort"""
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -198,6 +333,11 @@ class SerialPortExport(ResourceExport):
             from ..resource.udev import USBSerialPort
 
             self.local = USBSerialPort(target=None, name=None, **self.local_params)
+        elif self.cls == "ServoSerialPort":
+            from ..resource.servo import ServoSerialPort
+            self.local = ServoSerialPort(target=None, name=None, **self.local_params)
+        else:
+            raise ExporterError(f'Unknown class nane {self.cls} in in SerialPortExport')
         self.data["cls"] = "NetworkSerialPort"
         self.child = None
         self.port = None
@@ -263,6 +403,33 @@ class SerialPortExport(ResourceExport):
                 "-Y",
                 "    max-connections: 10",
             ]
+            # If LG_SERIAL_TRACE_DIR is set, ask ser2net to log all
+            # serial traffic for this device.  Useful for centralised
+            # audit on the exporter host.
+            #
+            # ser2net is started fresh on each acquire and stopped on
+            # release, so the trace file scope is one acquire session.
+            # Include the acquiring user in the filename so traffic is
+            # attributed automatically.
+            trace_dir = os.environ.get("LG_SERIAL_TRACE_DIR")
+            if trace_dir:
+                os.makedirs(trace_dir, exist_ok=True)
+                # Use the board (group) name and acquiring user in
+                # the filename so logs group naturally per board and
+                # are attributed to the user, e.g. bbb-okaro_sjg.log.
+                # The user is sent by newer coordinators only — older
+                # ones leave it None.
+                board = self.group_name or os.path.basename(start_params["path"])
+                user = (self.user or "unknown").replace("/", "_")
+                trace_path = os.path.join(
+                    trace_dir, f"{board}-{user}.log"
+                )
+                cmd += [
+                    "-Y",
+                    f"    trace-both: {trace_path}",
+                    "-Y",
+                    "    trace-both-timestamp: true",
+                ]
         else:
             cmd = [
                 self.ser2net_bin,
@@ -272,7 +439,7 @@ class SerialPortExport(ResourceExport):
                 "-C",
                 f"{self.port}:telnet:0:{start_params['path']}:{self.local.speed} NONE 8DATABITS 1STOPBIT LOCAL",  # pylint: disable=line-too-long
             ]
-        self.logger.info("Starting ser2net with: %s", " ".join(cmd))
+        self.logger.debug("Starting ser2net with: %s", ' '.join(cmd))
         self.child = subprocess.Popen(cmd)
         try:
             self.child.wait(timeout=0.5)
@@ -302,6 +469,48 @@ class SerialPortExport(ResourceExport):
 
 exports["USBSerialPort"] = SerialPortExport
 exports["RawSerialPort"] = SerialPortExport
+exports["ServoSerialPort"] = SerialPortExport
+
+@attr.s(eq=False)
+class ServoResetExport(ResourceExport):
+    """ResourceExport for CPU reset on a Servo board"""
+    servo_name = attr.ib(default='', validator=attr.validators.instance_of(str))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.servo import ServoReset
+        self.local = ServoReset(target=None, name=None, **self.local_params)
+        self.data['cls'] = "NetworkServoReset"
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': self.host,
+            'servo_name': self.local.servo_name,
+        }
+
+exports["ServoReset"] = ServoResetExport
+
+
+@attr.s(eq=False)
+class ServoRecoveryExport(ResourceExport):
+    """ResourceExport for recovery button on a Servo board"""
+    servo_name = attr.ib(default='', validator=attr.validators.instance_of(str))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.servo import ServoRecovery
+        self.local = ServoRecovery(target=None, name=None, **self.local_params)
+        self.data['cls'] = "NetworkServoRecovery"
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            'host': self.host,
+            'servo_name': self.local.servo_name,
+        }
+
+exports["ServoRecovery"] = ServoRecoveryExport
 
 
 @attr.s(eq=False)
@@ -421,11 +630,32 @@ class USBSDWireExport(USBGenericExport):
             "path": self.local.path,
             "vendor_id": self.local.vendor_id,
             "model_id": self.local.model_id,
+            "control_serial": self.local.control_serial,
         }
 
 
 @attr.s(eq=False)
 class USBSDWire3Export(USBGenericExport):
+    """ResourceExport for USB devices accessed directly from userspace"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "control_serial": self.local.control_serial,
+        }
+
+
+@attr.s(eq=False)
+class USBSDWireBadgerdExport(USBGenericExport):
     """ResourceExport for USB devices accessed directly from userspace"""
 
     def __attrs_post_init__(self):
@@ -573,12 +803,16 @@ exports["DFUDevice"] = USBGenericExport
 exports["IMXUSBLoader"] = USBGenericExport
 exports["MXSUSBLoader"] = USBGenericExport
 exports["RKUSBLoader"] = USBGenericExport
+exports["SamsungUSBLoader"] = USBGenericExport
+exports["SunxiUSBLoader"] = USBGenericExport
+exports["TegraUSBLoader"] = USBGenericExport
 exports["AlteraUSBBlaster"] = USBGenericExport
 exports["SigrokUSBDevice"] = USBSigrokExport
 exports["SigrokUSBSerialDevice"] = USBSigrokExport
 exports["USBSDMuxDevice"] = USBSDMuxExport
 exports["USBSDWireDevice"] = USBSDWireExport
 exports["USBSDWire3Device"] = USBSDWire3Export
+exports["USBSDWireBadgerdDevice"] = USBSDWireBadgerdExport
 exports["USBDebugger"] = USBGenericExport
 exports["USBHub"] = USBGenericRemoteExport
 exports["USBMassStorage"] = USBGenericExport
@@ -802,6 +1036,45 @@ class YKUSHPowerPortExport(ResourceExport):
 
 exports["YKUSHPowerPort"] = YKUSHPowerPortExport
 
+@attr.s(eq=False)
+class SFEmulatorExport(ResourceExport):
+    """ResourceExport for SFEmulator devices"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = f"Network{local_cls_name}"
+        from ..resource import sfemulator
+        local_cls = getattr(sfemulator, local_cls_name)
+        self.local = local_cls(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return {
+            "host": self.host,
+            **self.local_params
+        }
+
+exports["SFEmulator"] = SFEmulatorExport
+
+@attr.s(eq=False)
+class ServoExport(ResourceExport):
+    """ResourceExport for Servo devices"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        local_cls_name = self.cls
+        self.data['cls'] = f"Network{local_cls_name}"
+        from ..resource import servo
+        local_cls = getattr(servo, local_cls_name)
+        self.local = local_cls(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return {
+            "host": self.host,
+            **self.local_params
+        }
+
+exports["Servo"] = ServoExport
 
 class Exporter:
     def __init__(self, config) -> None:
@@ -837,7 +1110,9 @@ class Exporter:
         self.out_queue = asyncio.Queue()
         self.pump_task = None
 
+        self.verbose = config['verbose']
         self.poll_task = None
+        self.resource_count = 0
 
         self.groups = {}
 
@@ -851,7 +1126,10 @@ class Exporter:
             "hostname": self.hostname,
             "name": self.name,
         }
-        resource_config = ResourceConfig(self.config["resources"], config_template_env)
+        resource_config = ResourceConfig(self.config["resources"],
+                                         config_template_env,
+                                         verbose=self.verbose)
+        _expand_hubs(resource_config.data)
         for group_name, group in resource_config.data.items():
             group_name = str(group_name)
             for resource_name, params in group.items():
@@ -878,6 +1156,7 @@ class Exporter:
 
         logging.info("creating poll task")
         self.poll_task = self.loop.create_task(self.poll())
+        print(f'Exporting completed ({self.resource_count} resources)')
 
         (done, pending) = await asyncio.wait((self.pump_task, self.poll_task), return_when=asyncio.FIRST_COMPLETED)
         logging.debug("task(s) %s exited, shutting down exporter", done)
@@ -912,6 +1191,7 @@ class Exporter:
                                 out_message.set_acquired_request.group_name,
                                 out_message.set_acquired_request.resource_name,
                                 out_message.set_acquired_request.place_name,
+                                out_message.set_acquired_request.user or None,
                             )
                         else:
                             await self.release(
@@ -952,7 +1232,7 @@ class Exporter:
             # perhaps with queue join/task_done
             # this should be a command from the coordinator
 
-    async def acquire(self, group_name, resource_name, place_name):
+    async def acquire(self, group_name, resource_name, place_name, user=None):
         resource = self.groups.get(group_name, {}).get(resource_name)
         if resource is None:
             raise UnknownResourceError(
@@ -964,6 +1244,11 @@ class Exporter:
                 f"Resource {group_name}/{resource_name} is already acquired by {resource.acquired}"
             )
 
+        # Stash the acquiring user so ResourceExport subclasses can use it
+        # (e.g. for per-user trace files).  Older coordinators don't send
+        # this field, in which case it stays None.
+        if isinstance(resource, ResourceExport):
+            resource.user = user
         try:
             resource.acquire(place_name)
         finally:
@@ -1011,7 +1296,8 @@ class Exporter:
 
     async def add_resource(self, group_name, resource_name, cls, params):
         """Add a resource to the exporter and update status on the coordinator"""
-        print(f"add resource {group_name}/{resource_name}: {cls}/{params}")
+        logging.debug("add resource %s/%s: %s/%s", group_name, resource_name,
+                      cls, params)
         group = self.groups.setdefault(group_name, {})
         assert resource_name not in group
         export_cls = exports.get(cls, ResourceEntry)
@@ -1023,7 +1309,11 @@ class Exporter:
         proxy_req = self.isolated
         if issubclass(export_cls, ResourceExport):
             res = group[resource_name] = export_cls(
-                config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req
+                config,
+                host=self.hostname,
+                proxy=getfqdn(),
+                proxy_required=proxy_req,
+                group_name=group_name,
             )
             res.poll()
         else:
@@ -1031,18 +1321,24 @@ class Exporter:
                 "proxy": getfqdn(),
                 "proxy_required": proxy_req,
             }
-            group[resource_name] = export_cls(config)
+            resource = export_cls(config)
+            group[resource_name] = resource
+        self.resource_count += 1
         await self.update_resource(group_name, resource_name)
 
     async def update_resource(self, group_name, resource_name):
         """Update status on the coordinator"""
         resource = self.groups[group_name][resource_name]
+        logging.debug(resource)
+        data = resource.asdict()
+        logging.debug(data)
         msg = labgrid_coordinator_pb2.ExporterInMessage()
         msg.resource.CopyFrom(resource.as_pb2())
         msg.resource.path.group_name = group_name
         msg.resource.path.resource_name = resource_name
         self.out_queue.put_nowait(msg)
-        logging.info("queued update for resource %s/%s", group_name, resource_name)
+        logging.debug("queued update for resource %s/%s", group_name,
+                      resource_name)
 
 
 async def amain(config) -> bool:
@@ -1093,6 +1389,13 @@ def main():
     parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
     parser.add_argument(
         "--pystuck-port", metavar="PORT", type=int, default=6667, help="use a different pystuck port than 6667"
+        )
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        action='store_true',
+        default=False,
+        help="enable verbose mode"
     )
     parser.add_argument("resources", metavar="RESOURCES", type=str, help="resource config file name")
 
@@ -1106,6 +1409,7 @@ def main():
         "resources": args.resources,
         "coordinator": args.coordinator,
         "isolated": args.isolated,
+        "verbose": args.debug,
     }
 
     print(f"exporter name: {config['name']}")

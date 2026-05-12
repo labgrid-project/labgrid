@@ -17,12 +17,12 @@ def basicConfig(**kwargs):
     root.handlers[0].setFormatter(StepFormatter(indent=indent, parent=parent))
 
 
-logging.CONSOLE = logging.INFO - 5
-assert(logging.CONSOLE > logging.DEBUG)
-logging.addLevelName(logging.CONSOLE, "CONSOLE")
+CONSOLE = logging.INFO - 5
+assert(CONSOLE > logging.DEBUG)
+logging.addLevelName(CONSOLE, "CONSOLE")
 
 # Use composition instead of inheritance
-class StepFormatter:
+class StepFormatter(logging.Formatter):
     def __init__(self, *args, indent=True, color=None, parent=None, **kwargs):
         self.formatter = parent or logging.Formatter(*args, **kwargs)
         self.indent = indent
@@ -106,11 +106,11 @@ class SerialLoggingReporter:
 
                 for part in parts:
                     data = self.vt100_replace_cr_nl(part)
-                    logger.log(logging.CONSOLE, self._create_message(event, data), extra=extra)
+                    logger.log(CONSOLE, self._create_message(event, data), extra=extra)
 
             elif state == "start" and step.args and "data" in step.args:
                 data = self.vt100_replace_cr_nl(step.args["data"])
-                logger.log(logging.CONSOLE, self._create_message(event, data), extra=extra)
+                logger.log(CONSOLE, self._create_message(event, data), extra=extra)
 
     def flush(self):
         if self.lastevent is None:
@@ -122,7 +122,7 @@ class SerialLoggingReporter:
         for source, logger in self.loggers.items():
             data = self.vt100_replace_cr_nl(self.bufs[source])
             if data:
-                logger.log(logging.CONSOLE, self._create_message(self.lastevent, data), extra=extra)
+                logger.log(CONSOLE, self._create_message(self.lastevent, data), extra=extra)
             self.bufs[source] = b""
 
 

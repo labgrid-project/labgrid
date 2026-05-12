@@ -9,6 +9,7 @@ import time
 from contextlib import contextmanager
 import copy
 import random
+import signal
 
 import attr
 import grpc
@@ -1157,7 +1158,13 @@ async def serve(listen, cleanup) -> None:
         # existing RPCs to continue within the grace period.
         await server.stop(5)
 
+    def callback():
+        asyncio.ensure_future(server_graceful_shutdown())
+
     cleanup.append(server_graceful_shutdown())
+    loop = asyncio.get_event_loop()
+    loop.add_signal_handler(signal.SIGINT, callback)
+    loop.add_signal_handler(signal.SIGTERM, callback)
     logging.info("Coordinator ready")
     host, sep, port = listen.rpartition(":")
     if not sep or not port.isdigit():

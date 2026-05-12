@@ -901,6 +901,7 @@ class Exporter:
                 logging.debug("received message %s", out_message)
                 kind = out_message.WhichOneof("kind")
                 if kind == "hello":
+                    print("Exporter ready", flush=True)
                     logging.info("connected to coordinator version %s", out_message.hello.version)
                 elif kind == "set_acquired_request":
                     logging.debug("acquire request")

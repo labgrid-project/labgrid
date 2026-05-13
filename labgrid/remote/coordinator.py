@@ -1053,7 +1053,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     place.reservation = res.token
         for name in old_map.keys() | new_map.keys():
             if old_map.get(name) != new_map.get(name):
-                self._publish_place(place)
+                self._publish_place(self.places[name])
 
     @locked
     async def CreateReservation(self, request: labgrid_coordinator_pb2.CreateReservationRequest, context):

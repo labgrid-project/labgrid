@@ -488,6 +488,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             if res[0] != '0':
                 raise ExecutionError(f"Remote mountpoint {remote_mountpoint} is not a valid absolute path")
 
+            res, stderr, ret = self.run(f"test -r {remote_mountpoint} -a -w {remote_mountpoint} ; echo $?")
+            if res[0] != '0':
+                raise ExecutionError(f"Permission denied: user '{self._get_username()}' cannot access '{remote_mountpoint}'")
+
             # - check if remote mountpoint is already mounted
             res, stderr, ret = self.run(f"grep -qs ' {remote_mountpoint} ' /proc/mounts &> /dev/null; echo $?")
             if res[0] == '0':

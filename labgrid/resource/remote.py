@@ -86,6 +86,16 @@ class RemotePlaceManager(ResourceManager):
             expanded.append(new)
         self.expanded_resources.extend(expanded)
         self.logger.debug("expanded remote resources for place %s: %s", remote_place.name, expanded)
+
+        # handle remote place config
+        remote_place_config = place.get_remote_place_config()
+        resources, _ = target_factory.normalize_config(remote_place_config)
+        if "RemotePlace" in resources:
+            # RemotePlace not allowed in remote place config, would recurse infitintely
+            raise ValueError("RemotePlace not allowed in remote place config")
+        target_factory.make_resources_from_config(remote_place.target, remote_place_config.get("resources", {}))
+        target_factory.make_drivers_from_config(remote_place.target, remote_place_config.get("drivers", {}))
+
         remote_place.avail = True
         remote_place.tags = copy.deepcopy(place.tags)
 

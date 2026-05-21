@@ -66,6 +66,8 @@ service Coordinator {
   }
 
   rpc ListReservations(ListReservationsRequest) returns (ListReservationsResponse) {}
+
+  rpc SetPlaceRemotePlaceConfig(SetPlaceRemotePlaceConfigRequest) returns (SetPlaceRemotePlaceConfigResponse) {}
 }
 
 message ClientInMessage {
@@ -414,4 +416,13 @@ message ListReservationsRequest {
 
 message ListReservationsResponse {
   repeated Reservation reservations = 1;
+};
+
+message SetPlaceRemotePlaceConfigRequest {
+  string placename = 1;
+  double changed = 2;
+  string remote_place_config = 3;
+};
+
+message SetPlaceRemotePlaceConfigResponse {
 };

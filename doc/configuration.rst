@@ -1823,6 +1823,8 @@ RemotePlace
 ~~~~~~~~~~~
 A :any:`RemotePlace` describes a set of resources attached to a labgrid remote
 place.
+Resources, drivers and options from the place's remote place config are created
+as well.
 
 .. code-block:: yaml
 

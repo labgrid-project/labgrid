@@ -2,6 +2,7 @@ import inspect
 
 from .exceptions import InvalidConfigError, RegistrationError
 from .util.dict import filter_dict
+from .binding import BindingError
 
 
 class TargetFactory:
@@ -145,19 +146,30 @@ class TargetFactory:
         from .target import Target
 
         target = Target(name, env=env)
-        for item in TargetFactory._convert_to_named_list(config.get('resources', {})):
+        self.make_resources_from_config(target, config.get('resources', {}))
+        self.make_drivers_from_config(target, config.get('drivers', {}))
+        return target
+
+    def make_resources_from_config(self, target, resource_config):
+        for item in TargetFactory._convert_to_named_list(resource_config):
             resource = item.pop('cls')
             name = item.pop('name', None)
             args = item # remaining args
             self.make_resource(target, resource, name, args)
-        for item in TargetFactory._convert_to_named_list(config.get('drivers', {})):
+
+    def make_drivers_from_config(self, target, driver_config):
+        for item in TargetFactory._convert_to_named_list(driver_config):
             driver = item.pop('cls')
             name = item.pop('name', None)
             bindings = item.pop('bindings', {})
             args = item # remaining args
-            target.set_binding_map(bindings)
-            self.make_driver(target, driver, name, args)
-        return target
+            if target is not None:
+                target.set_binding_map(bindings)
+            try:
+                self.make_driver(target, driver, name, args)
+            except BindingError:
+                if target is not None:
+                    raise
 
     def class_from_string(self, string: str):
         try:

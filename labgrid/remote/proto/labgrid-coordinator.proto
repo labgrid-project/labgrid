@@ -167,6 +167,7 @@ message Place {
   double created = 9;
   double changed = 10;
   optional string reservation = 11;
+  optional string remote_env = 12;
 };
 
 message ResourceMatch {

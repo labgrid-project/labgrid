@@ -193,7 +193,7 @@ class GetPlacesResponse(_message.Message):
     def __init__(self, places: _Optional[_Iterable[_Union[Place, _Mapping]]] = ...) -> None: ...
 
 class Place(_message.Message):
-    __slots__ = ("name", "aliases", "comment", "tags", "matches", "acquired", "acquired_resources", "allowed", "created", "changed", "reservation")
+    __slots__ = ("name", "aliases", "comment", "tags", "matches", "acquired", "acquired_resources", "allowed", "created", "changed", "reservation", "remote_place_config")
     class TagsEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -212,6 +212,7 @@ class Place(_message.Message):
     CREATED_FIELD_NUMBER: _ClassVar[int]
     CHANGED_FIELD_NUMBER: _ClassVar[int]
     RESERVATION_FIELD_NUMBER: _ClassVar[int]
+    REMOTE_PLACE_CONFIG_FIELD_NUMBER: _ClassVar[int]
     name: str
     aliases: _containers.RepeatedScalarFieldContainer[str]
     comment: str
@@ -223,7 +224,8 @@ class Place(_message.Message):
     created: float
     changed: float
     reservation: str
-    def __init__(self, name: _Optional[str] = ..., aliases: _Optional[_Iterable[str]] = ..., comment: _Optional[str] = ..., tags: _Optional[_Mapping[str, str]] = ..., matches: _Optional[_Iterable[_Union[ResourceMatch, _Mapping]]] = ..., acquired: _Optional[str] = ..., acquired_resources: _Optional[_Iterable[str]] = ..., allowed: _Optional[_Iterable[str]] = ..., created: _Optional[float] = ..., changed: _Optional[float] = ..., reservation: _Optional[str] = ...) -> None: ...
+    remote_place_config: str
+    def __init__(self, name: _Optional[str] = ..., aliases: _Optional[_Iterable[str]] = ..., comment: _Optional[str] = ..., tags: _Optional[_Mapping[str, str]] = ..., matches: _Optional[_Iterable[_Union[ResourceMatch, _Mapping]]] = ..., acquired: _Optional[str] = ..., acquired_resources: _Optional[_Iterable[str]] = ..., allowed: _Optional[_Iterable[str]] = ..., created: _Optional[float] = ..., changed: _Optional[float] = ..., reservation: _Optional[str] = ..., remote_place_config: _Optional[str] = ...) -> None: ...
 
 class ResourceMatch(_message.Message):
     __slots__ = ("exporter", "group", "cls", "name", "rename")

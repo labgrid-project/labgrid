@@ -853,14 +853,22 @@ class ClientSession:
         return resources
 
     def get_target_config(self, place):
+        remote_env = place.get_remote_env()
         config = {}
-        resources = config["resources"] = []
+        # resources from remote env
+        resources = config["resources"] = remote_env.get("resources", [])
+
+        # resources by match
         for (name, _), resource in self.get_target_resources(place).items():
             args = OrderedDict()
             if name != resource.cls:
                 args["name"] = name
             args.update(resource.args)
             resources.append({resource.cls: args})
+
+        # drivers from remote env
+        config["drivers"] = remote_env.get("drivers", [])
+
         return config
 
     def print_env(self):

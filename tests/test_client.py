@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import textwrap
 import time
 
 import pytest
@@ -649,3 +650,138 @@ def test_same_name_resources(place, exporter, tmpdir):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
+
+
+def test_remoteplace_remote_place_config(monkeypatch, place, exporter, tmpdir, isolated_resource_managers, mocker):
+    from labgrid import Target
+    from labgrid.resource import RemotePlace
+
+    # store remote place config via edit sub command using a fake editor setting the file's content
+    remote_place_config = textwrap.dedent(
+        """\
+        resources:
+          NetworkService:
+            address: localhost
+            username: root
+        drivers:
+          SerialDriver:
+            txdelay: 0.1
+        options:
+          foo: bar
+        """
+    )
+    config_file = tmpdir.join("remote-place-config.yaml")
+    config_file.write(remote_place_config)
+    editor = tmpdir.join("editor.sh")
+    editor.write(f'#!/bin/sh\ncp "{config_file}" "$1"\n')
+    editor.chmod(0o755)
+    monkeypatch.setenv("EDITOR", str(editor))
+
+    # set remote place config
+    with pexpect.spawn(f"{sys.executable} -m labgrid.remote.client -p test edit") as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # check that remote place config is shown
+    with pexpect.spawn(f"{sys.executable} -m labgrid.remote.client -p test show") as spawn:
+        spawn.expect("remote place config:")
+        for line in textwrap.indent(remote_place_config, "    ").splitlines():
+            spawn.expect_exact(line)
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # serial port for SerialDriver to bind to
+    with pexpect.spawn(f'{sys.executable} -m labgrid.remote.client -p test add-match "*/Testport/*"') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn(f"{sys.executable} -m labgrid.remote.client -p test acquire") as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    # check that driver from remote place config is available and binds to the Testport
+    mocker.patch("serial.rfc2217.Serial")
+    target = Target("test")
+    RemotePlace(target, name="test")
+    serial_driver = target.get_driver("SerialDriver", activate=True)
+    assert serial_driver.txdelay == 0.1
+
+    # check that resource from remote place config is available
+    assert target.get_resource("NetworkService").address == "localhost"
+
+    assert target.options == {"foo": "bar"}
+
+
+@pytest.mark.parametrize(
+    "broken_config,saveable",
+    [
+        pytest.param("drivers: [", False, id="broken-yaml"),  # broken YAML is unsaveable
+        pytest.param("drivers: {InexistentDriver: {}}", True, id="inexistent-driver"),  # inexistent driver saveable
+        pytest.param("resources: {RemotePlace: {name: other}}", True, id="remote-place"),  # RemotePlace saveable
+    ],
+)
+def test_remoteplace_remote_place_config_invalid(
+    monkeypatch, place, tmpdir, isolated_resource_managers, broken_config, saveable
+):
+    editor = tmpdir.join("editor.sh")
+    editor.write(f'#!/bin/sh\necho "{broken_config}" > "$1"\n')
+    editor.chmod(0o755)
+    monkeypatch.setenv("EDITOR", str(editor))
+
+    with pexpect.spawn(f"{sys.executable} -m labgrid.remote.client -p test edit") as spawn:
+        spawn.expect_exact("Error:")
+        spawn.expect_exact("Save anyway?")
+        spawn.sendline("y")
+        if not saveable:
+            spawn.expect_exact("Coordinator Error:")
+            spawn.expect_exact("Reopen editor?")
+            spawn.sendline("n")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn(f"{sys.executable} -m labgrid.remote.client -p test show") as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert (b"remote place config" in spawn.before) == saveable, spawn.before.strip()
+
+
+def test_remoteplace_remote_place_config_changed_elsewhere(monkeypatch, place, tmpdir):
+    editor = tmpdir.join("editor.sh")
+    editor.write(
+        textwrap.dedent(
+            f"""\
+            #!/bin/sh
+            if [ -z "$NESTED" ]; then
+                # while editing the config is changed
+                NESTED=1 {sys.executable} -m labgrid.remote.client -p test edit
+                echo "options: {{foo: overtaken}}" > "$1"
+            else
+                echo "options: {{foo: overtaking}}" > "$1"
+            fi
+            """
+        )
+    )
+    editor.chmod(0o755)
+    monkeypatch.setenv("EDITOR", str(editor))
+
+    with pexpect.spawn(f"{sys.executable} -m labgrid.remote.client -p test edit") as spawn:
+        spawn.expect_exact("Coordinator Error:")
+        spawn.expect_exact("changed elsewhere")
+        spawn.expect_exact("Reopen editor?")
+        spawn.sendline("n")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn(f"{sys.executable} -m labgrid.remote.client -p test show") as spawn:
+        output = spawn.read()
+        spawn.close()
+        assert spawn.exitstatus == 0, output.strip()
+        assert b"foo: overtaking" in output
+        assert b"foo: overtaken" not in output

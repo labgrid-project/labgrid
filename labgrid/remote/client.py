@@ -14,9 +14,11 @@ import signal
 import sys
 import shlex
 import shutil
+import tempfile
 import json
 import itertools
 import ipaddress
+import warnings
 from textwrap import indent
 from socket import gethostname, gethostbyname
 from getpass import getuser
@@ -48,7 +50,7 @@ from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout
+from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout, load
 from ..util.proxy import proxymanager
 from ..util.ssh import sshmanager
 from ..util.helper import processwrapper
@@ -1800,6 +1802,79 @@ class ClientSession:
         scrcpy_cmd += self.args.leftover
         subprocess.run(scrcpy_cmd, env=env_var, check=True)
 
+    @staticmethod
+    def check_remote_place_config(remote_place_config_yaml):
+        """Checks a remote place config for errors."""
+        with warnings.catch_warnings():
+            # turn UserWarnings (e.g. emitted for unsupported attributes or duplicate YAML keys) into exceptions
+            warnings.simplefilter("error", UserWarning)
+
+            config = load(remote_place_config_yaml) or {}
+
+            if "RemotePlace" in target_factory.normalize_config(config)[0]:
+                raise ValueError("RemotePlace not allowed in remote place config")
+
+            # instantiate resources and drivers without a target and bindings (the config may be incomplete as
+            # drivers may bind to resources provided by the coordinator)
+            target_factory.make_resources_from_config(None, config.get("resources", {}))
+            target_factory.make_drivers_from_config(None, config.get("drivers", {}))
+
+    async def edit_remote_place_config(self):
+        """Edits the remote place config of an idle place in $EDITOR and stores it in the coordinator."""
+        place = self.get_idle_place()
+        editor = os.environ.get("EDITOR", "vi")
+        # remember last place change to be sent along with the new config for optimistic locking
+        changed = place.changed
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # write current remote place config to temporary file
+            path = pathlib.Path(tmpdir, "remote-place-config.yaml")
+            path.write_text(place.remote_place_config or "")
+
+            while True:
+                # open editor
+                subprocess.run(shlex.split(editor) + [str(path)], check=True)
+                new_remote_place_config = path.read_text()
+
+                try:
+                    self.check_remote_place_config(new_remote_place_config)
+                except Exception as e:
+                    # let the user decide how to proceed on errors during the check
+                    if self.args.debug:
+                        traceback.print_exc(file=sys.stderr)
+                    else:
+                        print(f"Error: {e}")
+                    while (
+                        key := input("Save anyway? [y]es, [N]o and reopen editor, [q]uit without saving ").lower()
+                    ) not in ("", "y", "n", "q"):
+                        pass
+                    if key == "q":
+                        return
+                    if key != "y":
+                        # start over again
+                        continue
+
+                # the coordinator rejects the request if the place was changed since we fetched it
+                request = labgrid_coordinator_pb2.SetPlaceRemotePlaceConfigRequest(
+                    placename=place.name, changed=changed, remote_place_config=new_remote_place_config
+                )
+                try:
+                    await self.stub.SetPlaceRemotePlaceConfig(request)
+                except grpc.aio.AioRpcError as e:
+                    if self.args.debug:
+                        traceback.print_exc(file=sys.stderr)
+                    else:
+                        print(f"Error: {e.details()}")
+                    # reopening the editor lets the user keep the config (e.g. copy it elsewhere) before starting over
+                    while (key := input("Reopen editor? [Y]es, [n]o ").lower()) not in ("", "y", "n"):
+                        pass
+                    if key == "n":
+                        return
+                    continue
+
+                await self.sync_with_coordinator()
+                return
+
 
 def start_session(
     address: str,
@@ -2382,6 +2457,9 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     scrcpy_subparser = adb_subparsers.add_parser("scrcpy", help="Run scrcpy to remote control an android device")
     scrcpy_subparser.add_argument("--name", "-n", help="optional resource name")
     scrcpy_subparser.set_defaults(func=ClientSession.scrcpy)
+
+    subparser = subparsers.add_parser("edit", help="edit remote place config")
+    subparser.set_defaults(func=ClientSession.edit_remote_place_config)
 
     return parser
 

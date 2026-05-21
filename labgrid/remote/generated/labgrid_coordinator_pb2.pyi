@@ -448,3 +448,17 @@ class GetReservationsResponse(_message.Message):
 class GetReservationsRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class SetPlaceRemoteEnvRequest(_message.Message):
+    __slots__ = ("placename", "changed", "remote_env")
+    PLACENAME_FIELD_NUMBER: _ClassVar[int]
+    CHANGED_FIELD_NUMBER: _ClassVar[int]
+    REMOTE_ENV_FIELD_NUMBER: _ClassVar[int]
+    placename: str
+    changed: float
+    remote_env: str
+    def __init__(self, placename: _Optional[str] = ..., changed: _Optional[float] = ..., remote_env: _Optional[str] = ...) -> None: ...
+
+class SetPlaceRemoteEnvResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...

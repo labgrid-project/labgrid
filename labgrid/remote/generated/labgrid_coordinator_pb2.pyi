@@ -456,3 +456,17 @@ class GetReservationsResponse(_message.Message):
 class GetReservationsRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class SetPlaceRemotePlaceConfigRequest(_message.Message):
+    __slots__ = ("placename", "changed", "remote_place_config")
+    PLACENAME_FIELD_NUMBER: _ClassVar[int]
+    CHANGED_FIELD_NUMBER: _ClassVar[int]
+    REMOTE_PLACE_CONFIG_FIELD_NUMBER: _ClassVar[int]
+    placename: str
+    changed: float
+    remote_place_config: str
+    def __init__(self, placename: _Optional[str] = ..., changed: _Optional[float] = ..., remote_place_config: _Optional[str] = ...) -> None: ...
+
+class SetPlaceRemotePlaceConfigResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...

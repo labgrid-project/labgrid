@@ -10,12 +10,13 @@ import sys
 import time
 
 from labgrid import Environment, Target
-from labgrid.remote.common import Place, get_client_credentials, get_metadata_single_value_by_key
+from labgrid.driver import SSHDriver, SerialDriver
+from labgrid.remote.common import Place, ResourceEntry, get_client_credentials, get_metadata_single_value_by_key
 from labgrid.remote.coordinator import get_server_credentials
 from labgrid.remote.exporter import Exporter, SerialPortExport
 from labgrid.remote.generated import labgrid_coordinator_pb2
 from labgrid.remote.generated import labgrid_coordinator_pb2_grpc
-from labgrid.resource import RemotePlace
+from labgrid.resource import NetworkSerialPort, NetworkService, RemotePlace
 from labgrid.util.yaml import dump
 
 
@@ -592,3 +593,30 @@ def test_get_metadata_single_value_by_key_is_case_sensitive():
     metadata = [("Key", "value")]
     assert get_metadata_single_value_by_key(metadata, "key") is None
     assert get_metadata_single_value_by_key(metadata, "Key") == "value"
+
+
+def test_remote_place_config_drivers_bind(dummy_session):
+    # bind remote place config's SerialDriver to matched NetworkSerialPort resource
+    # bind remote place config's SSHDriver to remote place config's NetworkService resource
+    dummy_session.resources[("console", "NetworkSerialPort")] = ResourceEntry(
+        {"cls": "NetworkSerialPort", "params": {"host": "localhost", "port": 2342}, "avail": True}
+    )
+    dummy_session.place.remote_place_config = textwrap.dedent(
+        """\
+             resources:
+               NetworkService:
+                 address: "localhost"
+                 username: "root"
+             drivers:
+               SerialDriver: {}
+               SSHDriver: {}
+        """
+    )
+
+    target = Target("test")
+    RemotePlace(target, name="test")
+
+    serial_driver = target.get_driver(SerialDriver, activate=False)
+    assert serial_driver.port is target.get_resource(NetworkSerialPort, wait_avail=False)
+    ssh_driver = target.get_driver(SSHDriver, activate=False)
+    assert ssh_driver.networkservice is target.get_resource(NetworkService, wait_avail=False)

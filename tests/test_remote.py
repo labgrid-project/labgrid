@@ -10,7 +10,7 @@ import sys
 import time
 
 from labgrid import Environment, Target
-from labgrid.remote.common import get_client_credentials, get_metadata_single_value_by_key
+from labgrid.remote.common import Place, get_client_credentials, get_metadata_single_value_by_key
 from labgrid.remote.coordinator import get_server_credentials
 from labgrid.remote.exporter import Exporter, SerialPortExport
 from labgrid.remote.generated import labgrid_coordinator_pb2
@@ -442,7 +442,7 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
         loop = None
 
         def get_place(self, name):
-            return argparse.Namespace(tags={}, acquired_resources=[])
+            return Place(name)
 
         def get_target_resources(self, place):
             return {}

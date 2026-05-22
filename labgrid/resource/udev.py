@@ -811,12 +811,94 @@ class USBDebugger(USBResource):
                          ("15ba", "002b"),  # Olimex ARM-USB-OCD-H
                          ("15ba", "0004"),  # Olimex ARM-USB-TINY
                          ("15ba", "002a"),  # Olimex ARM-USB-TINY-H
-                         ("1366", "0101"),  # SEGGER J-Link PLUS
+                         # SEGGER J-Link IDs extracted from udev rules as shipped by the j-link driver package
+                         # (https://www.segger.com/downloads/jlink/JLink_Linux_x86_64.tgz)
+                         ("1366", "0101"),  # SEGGER J-Link
+                         ("1366", "0102"),  # SEGGER J-Link
+                         ("1366", "0103"),  # SEGGER J-Link
+                         ("1366", "0104"),  # SEGGER J-Link
                          ("1366", "0105"),  # SEGGER J-Link
+                         ("1366", "0107"),  # SEGGER J-Link
+                         ("1366", "0108"),  # SEGGER J-Link
+                         ("1366", "1001"),  # SEGGER J-Link
+                         ("1366", "1002"),  # SEGGER J-Link
+                         ("1366", "1003"),  # SEGGER J-Link
+                         ("1366", "1004"),  # SEGGER J-Link
+                         ("1366", "1005"),  # SEGGER J-Link
+                         ("1366", "1006"),  # SEGGER J-Link
+                         ("1366", "1007"),  # SEGGER J-Link
+                         ("1366", "1008"),  # SEGGER J-Link
+                         ("1366", "1009"),  # SEGGER J-Link
+                         ("1366", "100a"),  # SEGGER J-Link
+                         ("1366", "100b"),  # SEGGER J-Link
+                         ("1366", "100c"),  # SEGGER J-Link
+                         ("1366", "100d"),  # SEGGER J-Link
+                         ("1366", "100e"),  # SEGGER J-Link
+                         ("1366", "100f"),  # SEGGER J-Link
+                         ("1366", "1010"),  # SEGGER J-Link
+                         ("1366", "1011"),  # SEGGER J-Link
+                         ("1366", "1012"),  # SEGGER J-Link
+                         ("1366", "1013"),  # SEGGER J-Link
+                         ("1366", "1014"),  # SEGGER J-Link
                          ("1366", "1015"),  # SEGGER J-Link
+                         ("1366", "1016"),  # SEGGER J-Link
+                         ("1366", "1017"),  # SEGGER J-Link
+                         ("1366", "1018"),  # SEGGER J-Link
+                         ("1366", "1019"),  # SEGGER J-Link
+                         ("1366", "101a"),  # SEGGER J-Link
+                         ("1366", "101b"),  # SEGGER J-Link
+                         ("1366", "101c"),  # SEGGER J-Link
+                         ("1366", "101d"),  # SEGGER J-Link
+                         ("1366", "101e"),  # SEGGER J-Link
+                         ("1366", "101f"),  # SEGGER J-Link
+                         ("1366", "1020"),  # SEGGER J-Link
+                         ("1366", "1021"),  # SEGGER J-Link
+                         ("1366", "1022"),  # SEGGER J-Link
+                         ("1366", "1023"),  # SEGGER J-Link
                          ("1366", "1024"),  # SEGGER J-Link
+                         ("1366", "1025"),  # SEGGER J-Link
+                         ("1366", "1026"),  # SEGGER J-Link
+                         ("1366", "1027"),  # SEGGER J-Link
+                         ("1366", "1028"),  # SEGGER J-Link
+                         ("1366", "1029"),  # SEGGER J-Link
+                         ("1366", "102a"),  # SEGGER J-Link
+                         ("1366", "102b"),  # SEGGER J-Link
+                         ("1366", "102c"),  # SEGGER J-Link
+                         ("1366", "102d"),  # SEGGER J-Link
+                         ("1366", "102e"),  # SEGGER J-Link
+                         ("1366", "102f"),  # SEGGER J-Link
+                         ("1366", "1050"),  # SEGGER J-Link
                          ("1366", "1051"),  # SEGGER J-Link
+                         ("1366", "1052"),  # SEGGER J-Link
+                         ("1366", "1053"),  # SEGGER J-Link
+                         ("1366", "1054"),  # SEGGER J-Link
+                         ("1366", "1055"),  # SEGGER J-Link
+                         ("1366", "1056"),  # SEGGER J-Link
+                         ("1366", "1057"),  # SEGGER J-Link
+                         ("1366", "1058"),  # SEGGER J-Link
+                         ("1366", "1059"),  # SEGGER J-Link
+                         ("1366", "105a"),  # SEGGER J-Link
+                         ("1366", "105b"),  # SEGGER J-Link
+                         ("1366", "105c"),  # SEGGER J-Link
+                         ("1366", "105d"),  # SEGGER J-Link
+                         ("1366", "105e"),  # SEGGER J-Link
+                         ("1366", "105f"),  # SEGGER J-Link
+                         ("1366", "1060"),  # SEGGER J-Link
                          ("1366", "1061"),  # SEGGER J-Link
+                         ("1366", "1062"),  # SEGGER J-Link
+                         ("1366", "1063"),  # SEGGER J-Link
+                         ("1366", "1064"),  # SEGGER J-Link
+                         ("1366", "1065"),  # SEGGER J-Link
+                         ("1366", "1066"),  # SEGGER J-Link
+                         ("1366", "1067"),  # SEGGER J-Link
+                         ("1366", "1068"),  # SEGGER J-Link
+                         ("1366", "1069"),  # SEGGER J-Link
+                         ("1366", "106a"),  # SEGGER J-Link
+                         ("1366", "106b"),  # SEGGER J-Link
+                         ("1366", "106c"),  # SEGGER J-Link
+                         ("1366", "106d"),  # SEGGER J-Link
+                         ("1366", "106e"),  # SEGGER J-Link
+                         ("1366", "106f"),  # SEGGER J-Link
                          ("064b", "0617"),  # Analog Devices ICE-1000 Emulator
                          ("064b", "2500"),  # Analog Devices ICE-1500 Emulator
                          ("064b", "0283"),  # Analog Devices ICE-2000 Emulator

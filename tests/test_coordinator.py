@@ -389,7 +389,7 @@ def test_coordinator_propagate_release_identity(
     coordinator._publish_place = mocker.Mock()
     coordinator._publish_resource = mocker.Mock()
     coordinator.save_later = mocker.Mock()
-    coordinator.schedule_reservations = mocker.Mock()
+    coordinator.schedule_reservations = mocker.AsyncMock()
     if legacy_name:
         coordinator.clients["client-peer"] = SimpleNamespace(name=legacy_name)
     context = SimpleNamespace(
@@ -405,7 +405,7 @@ def test_coordinator_propagate_release_identity(
         context.abort.assert_not_awaited()
         assert place.acquired is None
         assert not place.acquired_resources
-        coordinator.schedule_reservations.assert_called_once_with()
+        coordinator.schedule_reservations.assert_awaited_once_with()
     else:
         with pytest.raises(RuntimeError, match="RPC aborted"):
             asyncio.run(coordinator.ReleasePlace(request, context))
@@ -415,7 +415,7 @@ def test_coordinator_propagate_release_identity(
         )
         assert place.acquired == owner
         assert place.acquired_resources == [resource]
-        coordinator.schedule_reservations.assert_not_called()
+        coordinator.schedule_reservations.assert_not_awaited()
         coordinator._publish_resource.assert_called_once_with(resource)
 
     assert len(requests) == 1

@@ -74,6 +74,16 @@ class CoordinatorStub(object):
                 request_serializer=labgrid__coordinator__pb2.AcquirePlaceRequest.SerializeToString,
                 response_deserializer=labgrid__coordinator__pb2.AcquirePlaceResponse.FromString,
                 )
+        self.LeasePlace = channel.unary_unary(
+                '/labgrid.Coordinator/LeasePlace',
+                request_serializer=labgrid__coordinator__pb2.LeasePlaceRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.LeasePlaceResponse.FromString,
+                )
+        self.GetLeaseConfig = channel.unary_unary(
+                '/labgrid.Coordinator/GetLeaseConfig',
+                request_serializer=labgrid__coordinator__pb2.GetLeaseConfigRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.GetLeaseConfigResponse.FromString,
+                )
         self.ReleasePlace = channel.unary_unary(
                 '/labgrid.Coordinator/ReleasePlace',
                 request_serializer=labgrid__coordinator__pb2.ReleasePlaceRequest.SerializeToString,
@@ -98,6 +108,11 @@ class CoordinatorStub(object):
                 '/labgrid.Coordinator/PollReservation',
                 request_serializer=labgrid__coordinator__pb2.PollReservationRequest.SerializeToString,
                 response_deserializer=labgrid__coordinator__pb2.PollReservationResponse.FromString,
+                )
+        self.ExtendLease = channel.unary_unary(
+                '/labgrid.Coordinator/ExtendLease',
+                request_serializer=labgrid__coordinator__pb2.ExtendLeaseRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.ExtendLeaseResponse.FromString,
                 )
         self.GetReservations = channel.unary_unary(
                 '/labgrid.Coordinator/GetReservations',
@@ -181,6 +196,18 @@ class CoordinatorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def LeasePlace(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetLeaseConfig(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ReleasePlace(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -206,6 +233,12 @@ class CoordinatorServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def PollReservation(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ExtendLease(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -280,6 +313,16 @@ def add_CoordinatorServicer_to_server(servicer, server):
                     request_deserializer=labgrid__coordinator__pb2.AcquirePlaceRequest.FromString,
                     response_serializer=labgrid__coordinator__pb2.AcquirePlaceResponse.SerializeToString,
             ),
+            'LeasePlace': grpc.unary_unary_rpc_method_handler(
+                    servicer.LeasePlace,
+                    request_deserializer=labgrid__coordinator__pb2.LeasePlaceRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.LeasePlaceResponse.SerializeToString,
+            ),
+            'GetLeaseConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetLeaseConfig,
+                    request_deserializer=labgrid__coordinator__pb2.GetLeaseConfigRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.GetLeaseConfigResponse.SerializeToString,
+            ),
             'ReleasePlace': grpc.unary_unary_rpc_method_handler(
                     servicer.ReleasePlace,
                     request_deserializer=labgrid__coordinator__pb2.ReleasePlaceRequest.FromString,
@@ -304,6 +347,11 @@ def add_CoordinatorServicer_to_server(servicer, server):
                     servicer.PollReservation,
                     request_deserializer=labgrid__coordinator__pb2.PollReservationRequest.FromString,
                     response_serializer=labgrid__coordinator__pb2.PollReservationResponse.SerializeToString,
+            ),
+            'ExtendLease': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExtendLease,
+                    request_deserializer=labgrid__coordinator__pb2.ExtendLeaseRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.ExtendLeaseResponse.SerializeToString,
             ),
             'GetReservations': grpc.unary_unary_rpc_method_handler(
                     servicer.GetReservations,
@@ -525,6 +573,40 @@ class Coordinator(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
+    def LeasePlace(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/LeasePlace',
+            labgrid__coordinator__pb2.LeasePlaceRequest.SerializeToString,
+            labgrid__coordinator__pb2.LeasePlaceResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetLeaseConfig(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/GetLeaseConfig',
+            labgrid__coordinator__pb2.GetLeaseConfigRequest.SerializeToString,
+            labgrid__coordinator__pb2.GetLeaseConfigResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
     def ReleasePlace(request,
             target,
             options=(),
@@ -606,6 +688,23 @@ class Coordinator(object):
         return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/PollReservation',
             labgrid__coordinator__pb2.PollReservationRequest.SerializeToString,
             labgrid__coordinator__pb2.PollReservationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ExtendLease(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/ExtendLease',
+            labgrid__coordinator__pb2.ExtendLeaseRequest.SerializeToString,
+            labgrid__coordinator__pb2.ExtendLeaseResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

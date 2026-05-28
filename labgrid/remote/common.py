@@ -7,11 +7,13 @@ import random
 import re
 import string
 import logging
+import math
 from datetime import datetime
 from fnmatch import fnmatchcase
 from typing import Optional
 import warnings
 
+from google.protobuf import timestamp_pb2  # pylint: disable=no-name-in-module
 import attr
 import grpc
 
@@ -114,6 +116,23 @@ def get_client_credentials(tls: bool, cacert=None) -> Optional[grpc.ChannelCrede
 
     with open(cacert, "rb") as fc:
         return grpc.ssl_channel_credentials(root_certificates=fc.read())
+
+
+def timestamp_from_float(value: float):
+    """Convert POSIX seconds without depending on the platform's time_t range."""
+    if not math.isfinite(value):
+        raise ValueError("timestamp must be finite")
+    seconds = math.floor(value)
+    nanos = round((value - seconds) * 1_000_000_000)
+    ts = timestamp_pb2.Timestamp()  # pylint: disable=no-member
+    # The protobuf conversion normalizes nanos and validates the timestamp range.
+    ts.FromNanoseconds(seconds * 1_000_000_000 + nanos)
+    return ts
+
+
+def float_from_timestamp(ts) -> float:
+    """Convert a validated protobuf timestamp to POSIX seconds."""
+    return ts.ToNanoseconds() / 1_000_000_000
 
 
 @attr.s(eq=False)
@@ -329,7 +348,7 @@ class Place:
                 continue
             setattr(self, k, v)
 
-    def show(self, level=0):
+    def show(self, level=0, reservation=None):
         indent = "  " * level
         if self.aliases:
             print(indent + f"aliases: {', '.join(sorted(self.aliases))}")
@@ -359,6 +378,11 @@ class Place:
         print(indent + f"changed: {datetime.fromtimestamp(self.changed)}")
         if self.reservation:
             print(indent + f"reservation: {self.reservation}")
+
+        if reservation is not None:
+            print(indent + f"lease timeout: {datetime.fromtimestamp(reservation.timeout)}")
+            if reservation.state is ReservationState.leased:
+                print(indent + f"lease started: {datetime.fromtimestamp(reservation.lease_start_time)}")
 
     def getmatch(self, resource_path):
         """Return the ResourceMatch object for the given resource path or None if not found.
@@ -450,6 +474,7 @@ class ReservationState(enum.Enum):
     acquired = 2
     expired = 3
     invalid = 4
+    leased = 5
 
 
 @attr.s(eq=False)
@@ -470,6 +495,36 @@ class Reservation:
     allocations = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
     created = attr.ib(default=attr.Factory(time.time))
     timeout = attr.ib(default=attr.Factory(lambda: time.time() + 60))
+    lease_start_time = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
+    # Monotonic clocks are local to this coordinator process and must not be serialized.
+    _lease_start_monotonic = attr.ib(default=None, init=False, repr=False)
+    _lease_deadline_monotonic = attr.ib(default=None, init=False, repr=False)
+
+    def start_lease(self, duration):
+        self.lease_start_time = time.time()
+        self._lease_start_monotonic = time.monotonic()
+        self._lease_deadline_monotonic = self._lease_start_monotonic + duration
+        self.timeout = self.lease_start_time + duration
+        self.state = ReservationState.leased
+
+    @property
+    def lease_duration(self):
+        """Return the granted lease duration, or None without coordinator timing state."""
+        if self._lease_start_monotonic is None or self._lease_deadline_monotonic is None:
+            return None
+        return self._lease_deadline_monotonic - self._lease_start_monotonic
+
+    def extend_lease(self, duration):
+        assert self.state is ReservationState.leased
+        assert self._lease_deadline_monotonic is not None
+        self._lease_deadline_monotonic += duration
+        self.timeout = self._get_timeout()
+
+    def _get_timeout(self):
+        # Project the deadline to epoch time for clients, including after clock corrections.
+        if self.state is ReservationState.leased and self._lease_deadline_monotonic is not None:
+            return time.time() + (self._lease_deadline_monotonic - time.monotonic())
+        return self.timeout
 
     def asdict(self):
         return {
@@ -479,7 +534,8 @@ class Reservation:
             "filters": self.filters,
             "allocations": self.allocations,
             "created": self.created,
-            "timeout": self.timeout,
+            "timeout": self._get_timeout(),
+            "lease_start_time": self.lease_start_time,
         }
 
     def refresh(self, delta=60):
@@ -487,6 +543,8 @@ class Reservation:
 
     @property
     def expired(self):
+        if self.state is ReservationState.leased and self._lease_deadline_monotonic is not None:
+            return self._lease_deadline_monotonic < time.monotonic()
         return self.timeout < time.time()
 
     def show(self, level=0):
@@ -504,7 +562,7 @@ class Reservation:
             for name, allocation in self.allocations.items():
                 print(indent + f"  {name}: {', '.join(allocation)}")
         print(indent + f"created: {datetime.fromtimestamp(self.created)}")
-        print(indent + f"timeout: {datetime.fromtimestamp(self.timeout)}")
+        print(indent + f"timeout: {datetime.fromtimestamp(self._get_timeout())}")
 
     def as_pb2(self):
         res = labgrid_coordinator_pb2.Reservation()
@@ -522,7 +580,9 @@ class Reservation:
             assert len(allocation) == 1
             res.allocations.update({"main": allocation[0]})
         res.created = self.created
-        res.timeout = self.timeout
+        res.timeout = self._get_timeout()
+        if self.lease_start_time > 0:
+            res.lease_start_time.CopyFrom(timestamp_from_float(self.lease_start_time))
         return res
 
     @classmethod
@@ -542,6 +602,7 @@ class Reservation:
             allocations=allocations,
             created=pb2.created,
             timeout=pb2.timeout,
+            lease_start_time=float_from_timestamp(pb2.lease_start_time) if pb2.HasField("lease_start_time") else 0.0,
         )
 
 

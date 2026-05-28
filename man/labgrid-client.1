@@ -39,7 +39,7 @@ This is the client to control a boards status and interface with it on remote ma
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client [\-x ADDRESS] [\-\-tls] [\-\-cert CERT] [\-c CONFIG]
+usage: labgrid\-client [\-x ADDRESS] [\-\-tls] [\-\-cacert CACERT] [\-c CONFIG]
                       [\-p PLACE] [\-s STATE] [\-i INITIAL_STATE] [\-d] [\-v]
                       [\-P PROXY]
                       COMMAND ...
@@ -58,8 +58,8 @@ enable TLS gRPC channel
 .UNINDENT
 .INDENT 0.0
 .TP
-.B \-\-cert <cert>
-path to the server\(aqs TLS certificate (in PEM format)
+.B \-\-cacert <cacert>
+path to CA certificate or CA bundle for verifying the coordinator (in PEM format)
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1251,7 +1251,7 @@ Retrieve a list of places on a \fBlabgrid\-coordinator\fP that uses TLS gRPC cha
 .INDENT 3.5
 .sp
 .EX
-$ labgrid\-client \-\-tls [\-\-cert PATH] places
+$ labgrid\-client \-\-tls [\-\-cacert PATH] places
 .EE
 .UNINDENT
 .UNINDENT

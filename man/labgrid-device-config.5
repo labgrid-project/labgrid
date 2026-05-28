@@ -65,10 +65,10 @@ Defaults to \fB127.0.0.1:20408\fP\&.
 enables a TLS gRPC channel for \fBRemotePlace\fP connections.
 Defaults to whether \fBLG_COORDINATOR_TLS\fP is set.
 .TP
-.B \fBcoordinator_cert\fP
-path to the coordinator TLS certificate in PEM format for \fBRemotePlace\fP
-connections. If unset, the host CA certificates are used. Relative paths are
-resolved relative to the configuration file.
+.B \fBcoordinator_cacert\fP
+path to a CA certificate or CA bundle in PEM format for verifying the
+coordinator in \fBRemotePlace\fP connections. If unset, the host CA certificates
+are used. Relative paths are resolved relative to the configuration file.
 .UNINDENT
 .SS IMAGES
 .sp

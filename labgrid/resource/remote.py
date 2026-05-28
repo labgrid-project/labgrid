@@ -17,32 +17,29 @@ class RemotePlaceManager(ResourceManager):
         self.ready = None
         self.unmanaged_resources = []
 
-    @staticmethod
-    def _is_tls_option_enabled(value):
-        if isinstance(value, str):
-            return value.strip().lower() == "true"
-
-        return value is True
-
     def _get_credentials(self):
         from ..remote.common import get_client_credentials
 
         tls = os.environ.get("LG_COORDINATOR_TLS") is not None
-        cert = None
+        cacert = None
 
         if self.env:
             config = self.env.config
             tls = config.get_option("coordinator_tls", tls)
-
-            cert = config.get_option("coordinator_cert", "")
-            if cert:
-                cert = config.resolve_path(str(cert))
+            if isinstance(tls, str):
+                tls = tls.strip().lower() == "true"
             else:
-                cert = None
+                tls = tls is True
+
+            cacert = config.get_option("coordinator_cacert", "")
+            if cacert:
+                cacert = config.resolve_path(str(cacert))
+            else:
+                cacert = None
 
         args = Namespace(
-            tls=self._is_tls_option_enabled(tls),
-            cert=cert,
+            tls=tls,
+            cacert=cacert,
         )
 
         return get_client_credentials(args)

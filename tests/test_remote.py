@@ -172,7 +172,7 @@ def test_tls_coordinator_with_client(tmpdir):
         coord_spawn.expect("INFO:root:Coordinator ready", timeout=1)
 
         with pexpect.spawn(
-            f"python -m labgrid.remote.client --tls --cert {cert} reserve abc=123", cwd=tmpdir
+            f"python -m labgrid.remote.client --tls --cacert {cert} reserve abc=123", cwd=tmpdir
         ) as client_spawn:
             client_spawn.expect("  state: waiting", timeout=1)
             client_spawn.close()
@@ -200,7 +200,7 @@ def test_tls_coordinator_with_exporter(tmpdir):
         coord_spawn.expect("INFO:root:Coordinator ready", timeout=1)
 
         with pexpect.spawn(
-            f"python -m labgrid.remote.exporter --tls --cert {cert} {config}", cwd=tmpdir
+            f"python -m labgrid.remote.exporter --tls --cacert {cert} {config}", cwd=tmpdir
         ) as exporter_spawn:
             exporter_spawn.expect(
                 "add resource Testport/NetworkSerialPort: NetworkSerialPort/OrderedDict.*", timeout=1
@@ -269,7 +269,7 @@ def test_get_server_credentials_valid(tmpdir):
 def test_get_client_credentials_not_tls():
     args = {
         "tls": False,
-        "cert": None,
+        "cacert": None,
     }
 
     ns = argparse.Namespace(**args)
@@ -283,7 +283,7 @@ def test_get_client_credentials_valid(tmpdir):
 
     args = {
         "tls": True,
-        "cert": cert_path,
+        "cacert": cert_path,
     }
 
     ns = argparse.Namespace(**args)
@@ -342,12 +342,12 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
 
 
 @pytest.mark.parametrize(
-    ("options", "tls_env", "expected_tls", "expected_cert"),
+    ("options", "tls_env", "expected_tls", "expected_cacert"),
     [
         pytest.param({}, False, False, None, id="default-no-tls"),
         pytest.param({}, True, True, None, id="tls-env"),
         pytest.param(
-            {"coordinator_tls": True, "coordinator_cert": "cert.pem"},
+            {"coordinator_tls": True, "coordinator_cacert": "cert.pem"},
             False,
             True,
             "cert.pem",
@@ -358,14 +358,14 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
         pytest.param({"coordinator_tls": "false"}, True, False, None, id="config-string-overrides-env"),
     ],
 )
-def test_remote_place_client_credentials(monkeypatch, tmpdir, options, tls_env, expected_tls, expected_cert):
+def test_remote_place_client_credentials(monkeypatch, tmpdir, options, tls_env, expected_tls, expected_cacert):
     cert_path, _ = setup_tmp_cert_key(tmpdir)
     assert cert_path.basename == "cert.pem"
-    if expected_cert:
-        expected_cert = str(tmpdir.join(expected_cert))
+    if expected_cacert:
+        expected_cacert = str(tmpdir.join(expected_cacert))
 
     captured = _capture_remote_place_credentials(monkeypatch, tmpdir, options=options, tls_env=tls_env)
 
     assert captured["args"].tls is expected_tls
-    assert captured["args"].cert == expected_cert
+    assert captured["args"].cacert == expected_cacert
     assert captured["credentials"] == ("credentials" if expected_tls else None)

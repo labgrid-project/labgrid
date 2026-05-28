@@ -1093,7 +1093,11 @@ def main():
         help="coordinator host and port",
     )
     parser.add_argument("--tls", action="store_true", default=False, help="enable TLS gRPC channel")
-    parser.add_argument("--cert", type=pathlib.PurePath, help="path to TLS certificate (in PEM format)")
+    parser.add_argument(
+        "--cacert",
+        type=pathlib.PurePath,
+        help="path to CA certificate or CA bundle for verifying the coordinator (in PEM format)",
+    )
     parser.add_argument(
         "-n",
         "--name",

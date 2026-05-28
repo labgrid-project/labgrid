@@ -137,7 +137,7 @@ Retrieve a list of places on a ``labgrid-coordinator`` that uses TLS gRPC channe
 
 .. code-block:: bash
 
-    $ labgrid-client --tls [--cert PATH] places
+    $ labgrid-client --tls [--cacert PATH] places
 
 See Also
 --------

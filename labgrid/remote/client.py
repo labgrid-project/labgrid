@@ -1875,7 +1875,11 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         default=os.environ.get("LG_COORDINATOR_TLS") is not None,
         help="enable TLS gRPC channel",
     )
-    parser.add_argument("--cert", type=pathlib.PurePath, help="path to the server's TLS certificate (in PEM format)")
+    parser.add_argument(
+        "--cacert",
+        type=pathlib.PurePath,
+        help="path to CA certificate or CA bundle for verifying the coordinator (in PEM format)",
+    )
     parser.add_argument(
         "-c",
         "--config",

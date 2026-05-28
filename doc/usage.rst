@@ -179,6 +179,68 @@ allocated before returning.
 A reservation will time out after a short time, if it is neither refreshed nor
 used by locked places.
 
+Leasing a place using a reservation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After a reservation has been allocated, the reserved place can be acquired
+either indefinitely or as a lease.
+
+First, create a reservation and export the reservation id:
+
+.. code-block:: bash
+
+  $ eval `labgrid-client reserve board=imx8 --shell`
+  $ echo $LG_RESERVATION
+  ABC123
+
+Once the reservation is allocated, the reserved place can be referenced using
+``-p +``, which expands to the place allocated to the reservation.
+
+.. code-block:: bash
+
+  $ labgrid-client -p + lease
+  leased place board-01
+
+A lease is time-limited and must be renewed using the ``extend`` command,
+passing the associated reservation id.
+
+To extend the lease once:
+
+.. code-block:: bash
+
+  $ labgrid-client extend ABC123
+
+The reservation id can also be taken from the environment variable
+``LG_RESERVATION``:
+
+.. code-block:: bash
+
+  $ export LG_RESERVATION=ABC123
+  $ labgrid-client extend
+
+To continuously keep the lease alive, use the keepalive mode:
+
+.. code-block:: bash
+
+  $ labgrid-client extend --keepalive
+
+In keepalive mode, the client automatically renews the lease at a suitable interval.
+The total lease duration is capped by ``LG_MAX_LEASE_DURATION``, which defaults
+to 2 hours.
+
+If a lease extension fails (for example due to exporter issues), the lease is
+cancelled and the place is released to avoid inconsistent state.
+
+To acquire the place indefinitely (unchanged behaviour), use ``lock`` or
+``acquire`` without lease mode:
+
+.. code-block:: bash
+
+  $ labgrid-client -p + lock
+  # or
+  $ labgrid-client -p + acquire
+
+
 Library
 -------
 labgrid can be used directly as a Python library, without the infrastructure

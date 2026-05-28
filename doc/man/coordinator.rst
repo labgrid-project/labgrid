@@ -28,7 +28,7 @@ OPTIONS
 --tls
     enable TLS gRPC channel
 --cert
-    path to TLS certificate (in PEM format)
+    path to server TLS certificate (in PEM format)
 --key
     path to TLS key (in PEM format)
 -d, --debug

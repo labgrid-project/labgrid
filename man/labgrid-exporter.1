@@ -54,8 +54,8 @@ coordinator \fBHOST[:PORT]\fP to connect to, defaults to \fB127.0.0.1:20408\fP
 .B  \-\-tls
 enable TLS gRPC channel
 .TP
-.B  \-\-cert
-path to TLS certificate (in PEM format)
+.B  \-\-cacert
+path to CA certificate or CA bundle for verifying the coordinator (in PEM format)
 .TP
 .B  \-i\fP,\fB  \-\-isolated
 enable isolated mode (always request SSH forwards)
@@ -138,7 +138,7 @@ Same as above, but connecting to a \fBlabgrid\-coordinator\fP that uses TLS gRPC
 .INDENT 3.5
 .sp
 .EX
-$ labgrid\-exporter \-\-tls [\-\-cert PATH] \-n myname my\-config.yaml
+$ labgrid\-exporter \-\-tls [\-\-cacert PATH] \-n myname my\-config.yaml
 .EE
 .UNINDENT
 .UNINDENT

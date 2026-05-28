@@ -1204,7 +1204,7 @@ def main():
         help="coordinator listening host and port",
     )
     parser.add_argument("--tls", action="store_true", default=False, help="enable TLS gRPC channel")
-    parser.add_argument("--cert", type=pathlib.PurePath, help="path to TLS certificate (in PEM format)")
+    parser.add_argument("--cert", type=pathlib.PurePath, help="path to server TLS certificate (in PEM format)")
     parser.add_argument("--key", type=pathlib.PurePath, help="path to TLS key (in PEM format)")
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
     parser.add_argument("--pystuck", action="store_true", help="enable pystuck")

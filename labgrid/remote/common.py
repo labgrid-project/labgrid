@@ -1,4 +1,6 @@
 import asyncio
+import platform
+import subprocess
 import time
 import enum
 import random
@@ -59,15 +61,57 @@ def build_dict_from_map(m):
     return d
 
 
-def get_client_credentials(tls: bool, cert=None) -> Optional[grpc.ChannelCredentials]:
+def _fetch_root_certificates_darwin():
+    try:
+        p = subprocess.run(
+            ["security", "find-certificate", "-a", "-p"],
+            capture_output=True,
+            timeout=10,
+        )
+        if p.returncode != 0 or not p.stdout:
+            return None
+        return p.stdout
+    except Exception:
+        logging.exception("unexpected error when fetching certificates from macOS Keychain")
+
+    return None
+
+
+def _fetch_root_certificates_linux():
+    ca_bundle_path = "/etc/ssl/certs/ca-certificates.crt"
+    try:
+        # TODO: Current supports Debian/Ubuntu. Extend to support other distributions.
+        with open(ca_bundle_path, "rb") as f:
+            certs = f.read()
+        if certs:
+            return certs
+    except OSError as e:
+        logging.warning("failed to read CA bundle at %s: %s", ca_bundle_path, e)
+    except Exception:
+        logging.exception("unexpected error while reading ca certificates")
+
+    return None
+
+
+def _fetch_root_certificates():
+    if platform.system() == "Darwin":
+        return _fetch_root_certificates_darwin()
+
+    if platform.system() == "Linux":
+        return _fetch_root_certificates_linux()
+
+    return None
+
+
+def get_client_credentials(tls: bool, cacert=None) -> Optional[grpc.ChannelCredentials]:
     if not tls:
         return None
 
-    if not cert:
-        return grpc.ssl_channel_credentials()
+    if not cacert:
+        return grpc.ssl_channel_credentials(root_certificates=_fetch_root_certificates())
 
-    with open(cert, "rb") as fc:
-        return grpc.ssl_channel_credentials(fc.read())
+    with open(cacert, "rb") as fc:
+        return grpc.ssl_channel_credentials(root_certificates=fc.read())
 
 
 @attr.s(eq=False)

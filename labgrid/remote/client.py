@@ -1877,7 +1877,11 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         default=os.environ.get("LG_COORDINATOR_TLS") is not None,
         help="enable TLS gRPC channel",
     )
-    parser.add_argument("--cert", type=pathlib.PurePath, help="path to the server's TLS certificate (in PEM format)")
+    parser.add_argument(
+        "--cacert",
+        type=pathlib.PurePath,
+        help="path to CA certificate or CA bundle for verifying the coordinator (in PEM format)",
+    )
     parser.add_argument(
         "-c",
         "--config",
@@ -2374,7 +2378,7 @@ def main():
                 coordinator_address = os.environ.get("LG_COORDINATOR", "127.0.0.1:20408")
 
             tls = args.tls
-            cert = args.cert
+            cacert = args.cacert
             if env:
                 tls = env.config.get_option("coordinator_tls", tls)
                 if isinstance(tls, str):
@@ -2382,10 +2386,10 @@ def main():
                 else:
                     tls = tls is True
 
-                if not cert:
-                    cert = env.config.get_option("coordinator_cert", "")
-                    if cert:
-                        cert = env.config.resolve_path(str(cert))
+                if not cacert:
+                    cacert = env.config.get_option("coordinator_cacert", "")
+                    if cacert:
+                        cacert = env.config.resolve_path(str(cacert))
 
             logging.debug('Starting session with "%s"', coordinator_address)
             loop = asyncio.new_event_loop()
@@ -2393,7 +2397,7 @@ def main():
             session = start_session(
                 coordinator_address,
                 extra=extra,
-                credentials=get_client_credentials(tls, cert),
+                credentials=get_client_credentials(tls, cacert),
                 debug=args.debug,
                 loop=loop,
             )

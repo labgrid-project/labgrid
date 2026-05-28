@@ -382,6 +382,19 @@ class ClientSession:
                 else:
                     print(line)
 
+    async def _get_reservation_by_token(self, token):
+        request = labgrid_coordinator_pb2.GetReservationsRequest()
+        try:
+            response = await self.stub.GetReservations(request)
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details()) from e
+
+        for res_pb in response.reservations:
+            res = Reservation.from_pb2(res_pb)
+            if res.token == token:
+                return res
+        return None
+
     async def print_places(self):
         """Print out the places"""
         if self.args.sort_last_changed:
@@ -524,8 +537,13 @@ class ClientSession:
     async def print_place(self):
         """Print out the current place and related resources"""
         place = self.get_place()
+        reservation = None
+        if place.reservation:
+            reservation = await self._get_reservation_by_token(place.reservation)
+
         print(f"Place '{place.name}':")
-        place.show(level=1)
+        place.show(level=1, reservation=reservation)
+
         if place.acquired:
             for resource_path in place.acquired_resources:
                 (exporter, group_name, cls, resource_name) = resource_path
@@ -722,6 +740,20 @@ class ClientSession:
                 raise errors[0]
             raise ErrorGroup("Multiple errors occurred during acquire", errors)
 
+    async def lease(self):
+        errors = []
+        places = self.get_place_names_from_env() if self.env else [self.args.place]
+        for place in places:
+            try:
+                await self._lease_place(place)
+            except Error as e:
+                errors.append(e)
+
+        if errors:
+            if len(errors) == 1:
+                raise errors[0]
+            raise ErrorGroup("Multiple errors occurred during lease", errors)
+
     async def _acquire_place(self, place):
         """Acquire a place, marking it unavailable for other clients"""
         place = self.get_place(place)
@@ -766,6 +798,55 @@ class ClientSession:
                             f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}) already acquired by place '{resource.acquired}'"
                         )  # pylint: disable=line-too-long
 
+            raise ServerError(e.details())
+
+    async def _lease_place(self, place):
+        """Lease a place using a reservation"""
+        place = self.get_place(place)
+
+        if place.acquired:
+            host, user = place.acquired.split("/")
+            allowhelp = f"'labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}' on {host}."
+
+            if self.getuser() != user:
+                raise UserError(
+                    f"Place {place.name} is already acquired by {place.acquired}. "
+                    f"To work simultaneously, {user} can execute {allowhelp}"
+                )
+
+            if self.gethostname() == host:
+                raise UserError(f"You have already acquired place {place.name}.")
+
+            raise UserError(
+                f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {allowhelp}"
+            )
+
+        if not self.args.allow_unmatched:
+            self.check_matches(place)
+
+        request = labgrid_coordinator_pb2.LeasePlaceRequest(placename=place.name)
+
+        try:
+            await self.stub.LeasePlace(request)
+            await self.sync_with_coordinator()
+            print(f"leased place {place.name}")
+        except grpc.aio.AioRpcError as e:
+            # check potential failure causes
+            for exporter, groups in sorted(self.resources.items()):
+                for group_name, group in sorted(groups.items()):
+                    for resource_name, resource in sorted(group.items()):
+                        resource_path = (exporter, group_name, resource.cls, resource_name)
+                        if not resource.acquired:
+                            continue
+                        match = place.getmatch(resource_path)
+                        if match is None:
+                            continue
+                        name = resource_name
+                        if match.rename:
+                            name = match.rename
+                        print(
+                            f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}) already acquired by place '{resource.acquired}'"
+                        )  # pylint: disable=line-too-long
             raise ServerError(e.details())
 
     async def release(self):
@@ -1591,16 +1672,25 @@ class ClientSession:
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
 
+    async def _extend_lease(self, token: str) -> Reservation:
+        request = labgrid_coordinator_pb2.ExtendLeaseRequest(token=token)
+        try:
+            response = await self.stub.ExtendLease(request)
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+        return Reservation.from_pb2(response.reservation)
+
+    async def _poll_reservation(self, token: str) -> Reservation:
+        request = labgrid_coordinator_pb2.PollReservationRequest(token=token)
+        try:
+            response: labgrid_coordinator_pb2.PollReservationResponse = await self.stub.PollReservation(request)
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+        return Reservation.from_pb2(response.reservation)
+
     async def _wait_reservation(self, token: str, verbose=True):
         while True:
-            request = labgrid_coordinator_pb2.PollReservationRequest(token=token)
-
-            try:
-                response: labgrid_coordinator_pb2.PollReservationResponse = await self.stub.PollReservation(request)
-            except grpc.aio.AioRpcError as e:
-                raise ServerError(e.details())
-
-            res = Reservation.from_pb2(response.reservation)
+            res = await self._poll_reservation(token)
             if verbose:
                 res.show()
             if res.state is ReservationState.waiting:
@@ -1611,6 +1701,37 @@ class ClientSession:
     async def wait_reservation(self):
         token = self.args.token
         await self._wait_reservation(token)
+
+    async def _get_lease_config(self):
+        request = labgrid_coordinator_pb2.GetLeaseConfigRequest()
+        try:
+            response = await self.stub.GetLeaseConfig(request)
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details()) from e
+        return response
+
+    async def extend_reservation(self):
+        token = self.args.token
+
+        if not self.args.keepalive:
+            res = await self._extend_lease(token)
+            if not self.args.quiet:
+                print(f"extended lease {res.token} until {datetime.fromtimestamp(res.timeout)}")
+            return
+
+        lease_config = await self._get_lease_config()
+        interval = max(1.0, lease_config.default_extend_duration / 2.0)
+
+        while True:
+            res = await self._extend_lease(token)
+            if res.state is ReservationState.expired:
+                raise UserError("Reservation is expired; cannot extend lease")
+            if not self.args.quiet:
+                print(
+                    f"extended lease {res.token} until {datetime.fromtimestamp(res.timeout)} "
+                    f"(next keepalive in {interval:.1f}s)"
+                )
+            await asyncio.sleep(interval)
 
     async def print_reservations(self):
         request = labgrid_coordinator_pb2.GetReservationsRequest()
@@ -1959,6 +2080,12 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     )
     subparser.set_defaults(func=ClientSession.acquire)
 
+    subparser = subparsers.add_parser("lease", help="lease a place (time-limited, requires extension)")
+    subparser.add_argument(
+        "--allow-unmatched", action="store_true", help="allow missing resources for matches when locking the place"
+    )
+    subparser.set_defaults(func=ClientSession.lease)
+
     subparser = subparsers.add_parser("release", aliases=("unlock",), help="release a place")
     subparser.add_argument(
         "-k", "--kick", action="store_true", help="release a place even if it is acquired by a different user"
@@ -2217,6 +2344,21 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument("token", type=str, nargs="?")
     subparser.set_defaults(func=ClientSession.wait_reservation)
 
+    subparser = subparsers.add_parser("extend", help="extend a lease by the coordinator default duration")
+    subparser.add_argument("token", type=str, nargs="?")
+    subparser.add_argument(
+        "--keepalive",
+        action="store_true",
+        help="keep extending the lease automatically using coordinator policy",
+    )
+    subparser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="do not print lease status on each extension",
+    )
+    subparser.set_defaults(func=ClientSession.extend_reservation)
+
     subparser = subparsers.add_parser("reservations", help="list current reservations")
     subparser.set_defaults(func=ClientSession.print_reservations)
 
@@ -2281,7 +2423,7 @@ def main():
     if args.initial_state is None:
         args.initial_state = initial_state
 
-    if args.command in ["cancel-reservation", "wait"] and args.token is None:
+    if args.command in ["cancel-reservation", "wait", "extend"] and args.token is None:
         if token:
             args.token = token
         else:

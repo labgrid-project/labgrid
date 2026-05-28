@@ -19,6 +19,9 @@ This is the man page for the coordinator. Clients and exporters connect to the
 coordinator to publish resources, manage place configuration and handle mutual
 exclusion.
 
+Before using leases, upgrade all clients and exporters using the coordinator
+to versions that support leases.
+
 OPTIONS
 -------
 -h, --help
@@ -46,12 +49,22 @@ ENVIRONMENT
 ``LG_COORDINATOR_POLL_INTERVAL``
     Delay in seconds between runs of each coordinator polling task.
     These tasks save pending state changes, synchronize resources and schedule
-    reservations.
-    A shorter interval makes periodic checks for expired reservations more frequent,
+    reservations, including handling expired leases.
+    A shorter interval makes periodic checks for expired leases more frequent,
     at the cost of running these tasks more often.
-    Polling can take longer if the coordinator is busy or an exporter fails.
+    Release can take longer if the coordinator is busy or an exporter fails.
 
-This variable is read and validated by the coordinator before the gRPC server
+``LG_COORDINATOR_DEFAULT_LEASE_DURATION``
+    Initial lease duration in seconds.
+
+``LG_COORDINATOR_DEFAULT_EXTEND_DURATION``
+    Seconds added by each successful lease extension.
+
+``LG_COORDINATOR_MAX_LEASE_DURATION``
+    Maximum duration in seconds from lease start.
+    Initial and extension durations must not exceed this value.
+
+These variables are read and validated by the coordinator before the gRPC server
 is created.
 
 TLS WITH A REVERSE PROXY

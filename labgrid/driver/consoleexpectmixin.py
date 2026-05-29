@@ -11,12 +11,12 @@ class ConsoleExpectMixin:
     Console driver mixin to implement the read, write, expect and sendline methods. It uses
     the internal _read and _write methods.
 
-    The class using the ConsoleExpectMixin must provide a logger and a txdelay attribute.
+    The class using the ConsoleExpectMixin must provide a logger, txdelay and linesep attribute.
     """
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        self._expect = PtxExpect(self)
+        self._expect = PtxExpect(self, self.linesep.encode("ASCII"))
 
     @Driver.check_active
     @step(result=True, tag='console')

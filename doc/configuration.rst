@@ -682,6 +682,27 @@ Arguments:
 Used by:
   - `GpioDigitalOutputDriver`_
 
+DevfsMTDPartition
++++++++++++++++++
+
+A :any:`DevfsMTDPartition` resource describes a MTD partition accessible through the devFS.
+
+.. code-block:: yaml
+
+   DevfsMTDPartition:
+     index: 0
+
+Arguments:
+  - index (int): index of the MTD partition
+
+Used by:
+  - `FlashcpDriver`_
+
+NetworkDevfsMTDPartition
++++++++++++++++++
+
+A :any:`NetworkDevfsMTDPartition` resource describes a `DevfsMTDPartition`_ resource available on a remote computer.
+
 NetworkService
 ~~~~~~~~~~~~~~
 A :any:`NetworkService` describes a remote SSH connection.

@@ -44,3 +44,12 @@ class SysfsGPIO(Resource):
     Args:
         index (int): index of target gpio line."""
     index = attr.ib(default=None, validator=attr.validators.instance_of(int))
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class DevfsMTDPartition(Resource):
+    """The basic DevfsMTDPartition contains an index
+
+    Args:
+        index (int): index of target MTD partition."""
+    index = attr.ib(default=None, validator=attr.validators.instance_of(int))

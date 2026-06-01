@@ -700,6 +700,23 @@ class GPIOSysFSExport(ResourceExport):
 exports["SysfsGPIO"] = GPIOSysFSExport
 exports["MatchedSysfsGPIO"] = GPIOSysFSExport
 
+@attr.s(eq=False)
+class DevfsMTDPartitionExport(ResourceExport):
+    """ResourceExport for a DevfsMTDPartition"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.base import DevfsMTDPartition
+        self.data['cls'] = "NetworkDevfsMTDPartition"
+        self.local = DevfsMTDPartition(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return {
+            'host': self.host,
+            **self.local_params
+        }
+
+exports["DevfsMTDPartition"] = DevfsMTDPartitionExport
 
 @attr.s
 class NetworkServiceExport(ResourceExport):

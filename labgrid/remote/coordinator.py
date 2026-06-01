@@ -241,8 +241,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     async def _poll_step_schedule(self):
         # update reservations
-        with warn_if_slow("schedule reservations"):
-            self.schedule_reservations()
+        async with self.lock:
+            with warn_if_slow("schedule reservations"):
+                self.schedule_reservations()
 
     async def poll(self, step_func):
         while not self.loop.is_closed():
@@ -956,6 +957,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         # only have a copy for convenience.
 
         # expire reservations
+        assert self.lock.locked()
         for res in list(self.reservations.values()):
             if res.state is ReservationState.acquired:
                 # acquired reservations do not expire

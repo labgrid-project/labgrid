@@ -1,4 +1,5 @@
 from .bareboxdriver import BareboxDriver
+from .buttondriver import ButtonDriver
 from .ubootdriver import UBootDriver
 from .smallubootdriver import SmallUBootDriver
 from .serialdriver import SerialDriver
@@ -15,11 +16,13 @@ from .onewiredriver import OneWirePIODriver
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver, \
                          DigitalOutputPowerDriver, YKUSHPowerDriver, \
                          USBPowerDriver, SiSPMPowerDriver, NetworkPowerDriver, \
-                         PDUDaemonDriver
-from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, RKUSBDriver, UUUDriver
+                         PDUDaemonDriver, AlwaysPowerDriver
+from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, \
+                       RKUSBDriver, SunxiUSBDriver, UUUDriver
 from .usbsdmuxdriver import USBSDMuxDriver
 from .usbsdwiredriver import USBSDWireDriver
 from .usbsdwire3driver import USBSDWire3Driver
+from .usbsdwirebadgerddriver import USBSDWireBadgerdDriver
 from .common import Driver
 from .qemudriver import QEMUDriver
 from .modbusdriver import ModbusCoilDriver, WaveShareModbusCoilDriver
@@ -27,6 +30,7 @@ from .modbusrtudriver import ModbusRTUDriver
 from .sigrokdriver import SigrokDriver, SigrokPowerDriver, SigrokDmmDriver
 from .usbstoragedriver import USBStorageDriver, Mode
 from .resetdriver import DigitalOutputResetDriver
+from .recoverydriver import DigitalOutputRecoveryDriver
 from .gpiodriver import GpioDigitalOutputDriver
 from .filedigitaloutput import FileDigitalOutputDriver
 from .serialdigitaloutput import SerialPortDigitalOutputDriver
@@ -54,3 +58,7 @@ from .laadriver import LAASerialDriver, LAAPowerDriver, \
                        LAAUSBGadgetMassStorageDriver, LAAUSBDriver, \
                        LAAButtonDriver, LAALedDriver, LAATempDriver, LAAWattDriver, \
                        LAAProviderDriver
+from .sfemulatordriver import SFEmulatorDriver
+from .servodriver import ServoDriver
+from .ubootproviderdriver import UBootProviderDriver
+from .ubootwriterdriver import UBootWriterDriver

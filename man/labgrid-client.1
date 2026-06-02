@@ -67,6 +67,12 @@ strategy state to switch into before command (default: value from env varibale L
 .UNINDENT
 .INDENT 0.0
 .TP
+.BI \-r \ ROLE\fR,\fB \ \-\-role \ ROLE
+specify the role to operate on
+.TP
+.BI \-c \ CONFIG\fR,\fB \ \-\-config \ CONFIG
+set the configuration file
+.TP
 .B \-i <initial_state>, \-\-initial\-state <initial_state>
 strategy state to force into before switching to desired state
 .UNINDENT
@@ -80,6 +86,9 @@ enable debug mode (show python tracebacks)
 .B \-v, \-\-verbose
 .UNINDENT
 .INDENT 0.0
+.TP
+.B  \-a\fP,\fB  \-\-acquire
+acquire the place before performing the requested operation
 .TP
 .B \-P <proxy>, \-\-proxy <proxy>
 proxy connections via given ssh host

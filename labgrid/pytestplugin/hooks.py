@@ -1,6 +1,7 @@
 import os
 import copy
 import logging
+from datetime import datetime
 import pytest
 
 from .. import Environment
@@ -8,6 +9,8 @@ from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
 from ..logging import StepFormatter, StepLogger
 from ..exceptions import NoStrategyFoundError
+from ..util.rcfile import apply_rcfile
+from ..var_dict import add_var
 
 LABGRID_ENV_KEY = pytest.StashKey[Environment]()
 
@@ -64,6 +67,40 @@ def configure_pytest_logging(config, plugin):
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
+    apply_rcfile()
+
+    # Auto-log when LG_LOG_DIR is set and no explicit --lg_log-output was given
+    if not config.option.lg_log_output:
+        log_dir = os.environ.get('LG_LOG_DIR')
+        if log_dir:
+            now = datetime.now()
+            day_dir = os.path.join(log_dir, now.strftime('%Y-%m-%d'))
+            # Use world-writable + sticky bit so multiple users
+            # (e.g. sglass and gitlab-runner) can share the log dir.
+            # Clear umask temporarily so makedirs() honours the mode.
+            old_umask = os.umask(0)
+            try:
+                os.makedirs(day_dir, mode=0o1777, exist_ok=True)
+            finally:
+                os.umask(old_umask)
+            role_name = config.option.lg_target or 'unknown'
+            timestamp = now.strftime('%H%M%S')
+            job_id = os.environ.get('CI_JOB_ID')
+            suffix = f'-{job_id}' if job_id else ''
+            config.option.lg_log_output = os.path.join(
+                day_dir, f'{role_name}-{timestamp}-pytest{suffix}.log')
+
+    if config.option.lg_log_output:
+        logger = logging.getLogger()
+
+        # Create and add the new file handler
+        file_handler = logging.FileHandler(config.option.lg_log_output)
+        file_formatter = logging.Formatter(
+            '%(asctime)s %(levelname)s:%(name)s:%(message)s')
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+        logger.setLevel(logging.CONSOLE)
+
     StepLogger.start()
     config.add_cleanup(StepLogger.stop)
 
@@ -81,6 +118,12 @@ def pytest_configure(config):
         ConsoleLoggingReporter(lg_log)
     lg_env = config.option.lg_env
     lg_coordinator = config.option.lg_coordinator
+    lg_target = config.option.lg_target
+
+    for arg in config.option.lg_var or []:
+        name, value = arg
+        add_var(name, value)
+
 
     env = None
     if lg_env is None:
@@ -89,6 +132,8 @@ def pytest_configure(config):
         env = Environment(config_file=lg_env)
         if lg_coordinator is not None:
             env.config.set_option('coordinator_address', lg_coordinator)
+        if lg_target is not None:
+            env.config.set_option('target', lg_target)
     config.stash[LABGRID_ENV_KEY] = env
 
     processwrapper.enable_logging()
@@ -153,10 +198,15 @@ def pytest_runtest_setup(item):
     # requested (might have been executed already for a prior test). If that's the case and the
     # strategy is broken, skip the test.
     if "strategy" in item.fixturenames:
+        from ..remote.client import UserError
+
         env = item.config.stash[LABGRID_ENV_KEY]
         # skip test even if only one of the targets in the env has a broken strategy
         for target_name in env.config.get_targets():
-            target = env.get_target(target_name)
+            try:
+                target = env.get_target(target_name)
+            except UserError:
+                continue  # place not acquired, skip it
             try:
                 strategy = target.get_strategy()
                 if strategy.broken:

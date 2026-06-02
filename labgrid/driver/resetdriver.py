@@ -24,3 +24,10 @@ class DigitalOutputResetDriver(Driver, ResetProtocol):
         self.output.set(True)
         time.sleep(self.delay)
         self.output.set(False)
+
+    @Driver.check_active
+    @step(title='set_enable', args=['enable', 'mode'])
+    def set_reset_enable(self, enable, mode='cold'):
+        if not enable:
+            time.sleep(self.delay)
+        self.output.set(enable)

@@ -1,0 +1,152 @@
+# kea lab - places
+#
+# Synced with sync-places.py
+
+places:
+  rpi3:
+    matches:
+      - kea/rpi3/*
+
+  opi_pc:
+    matches:
+      - kea/opi_pc/*
+
+  rock2:
+    matches:
+      - kea/rock2/*
+
+  pcduino3:
+    matches:
+      - kea/pcduino3/*
+
+  pcduino3_nano:
+    matches:
+      - kea/pcduino3_nano/*
+
+  samus:
+    matches:
+      - kea/samus/*
+
+  nyan-big:
+    matches:
+      - kea/nyan-big/*
+
+  link:
+    matches:
+      - kea/link/*
+
+  jerry:
+    matches:
+      - kea/jerry/*
+
+  minnowmax:
+    matches:
+      - kea/minnowmax/*
+
+  zynq_zybo:
+    matches:
+      - kea/zynq_zybo/*
+
+  tk1:
+    matches:
+      - kea/tk1/*
+
+  puma:
+    matches:
+      - kea/puma/*
+
+  salmon:
+    matches:
+      - kea/salmon/*
+
+  xu3:
+    matches:
+      - kea/xu3/*
+
+  olimex-a20:
+    matches:
+      - kea/olimex-a20/*
+
+  opi_pc2:
+    matches:
+      - kea/opi_pc2/*
+
+  bpi:
+    matches:
+      - kea/bpi/*
+
+  rpi2:
+    matches:
+      - kea/rpi2/*
+
+  edison:
+    matches:
+      - kea/edison/*
+
+  bob:
+    matches:
+      - kea/bob/*
+
+  lcdk:
+    matches:
+      - kea/lcdk/*
+
+  ff3399:
+    matches:
+      - kea/ff3399/*
+
+  sn9260:
+    matches:
+      - kea/sn9260/*
+
+  coral:
+    matches:
+      - kea/coral/*
+
+  rpi3z:
+    matches:
+      - kea/rpi3z/*
+
+  bbb:
+    matches:
+      - kea/bbb/*
+
+  snow:
+    matches:
+      - kea/snow/*
+
+  kevin:
+    matches:
+      - kea/kevin/*
+
+  pine64:
+    matches:
+      - kea/pine64/*
+
+  c4:
+    matches:
+      - kea/c4/*
+
+  rpi4:
+    matches:
+      - kea/rpi4/*
+
+  rpi0:
+    matches:
+      - kea/rpi0/*
+
+  qemu-x86:
+    matches:
+      - kea/qemu-x86/*
+
+  qemu-x86_64:
+    matches:
+      - kea/qemu-x86_64/*
+
+  qemu_arm:
+    matches:
+      - kea/qemu_arm/*
+
+  play:
+    matches:
+      - kea/play/*

@@ -278,7 +278,8 @@ class IMXUSBLoader(USBResource):
                          ("15a2", "007d"), ("15a2", "0076"),
                          ("15a2", "0080"), ("15a2", "003a"),
                          ("1fc9", "0128"), ("1fc9", "0126"),
-                         ("1fc9", "012b"), ("1fc9", "0134"),
+                         ("1fc9", "012b"), ("1fc9", "012f"),
+                         ("1fc9", "0134"),
                          ("1fc9", "013e"), ("1fc9", "0146"),
                          ("1fc9", "014e"), ("1fc9", "0129"),
                          ("1fc9", "0159"), ("1fc9", "015d"),
@@ -329,6 +330,39 @@ class MXSUSBLoader(USBResource):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
         if match not in [("066f", "3780"), ("15a2", "004f")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class SamsungUSBLoader(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("04e8", "1234")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class SunxiUSBLoader(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("1f3a", "efe8")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class TegraUSBLoader(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("0955", "7340"), ("0955", "7140")]:  # or 7740
             return False
 
         return super().filter_match(device)
@@ -572,6 +606,59 @@ class USBSDWire3Device(USBResource):
     @property
     def path(self):
         return self.disk_path
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class USBSDWireBadgerdDevice(USBResource):
+    """The USBSDWireBadgerdDevice describes an attached Badgerd SDWire device,
+    it is identified via USB using udev
+    """
+
+    control_path = attr.ib(
+        default=None,
+        validator=attr.validators.optional(str)
+    )
+    disk_path = attr.ib(
+        default=None,
+        validator=attr.validators.optional(str)
+    )
+
+    def __attrs_post_init__(self):
+        self.match['ID_VENDOR_ID'] = '0bda'
+        self.match['ID_MODEL_ID'] = '0316'
+        super().__attrs_post_init__()
+
+    # Overwrite the avail attribute with our internal property
+    @property
+    def avail(self):
+        return bool(self.disk_path and self.control_serial)
+
+    # Forbid the USBResource super class to set the avail property
+    @avail.setter
+    def avail(self, prop):
+        pass
+
+    # Overwrite the poll function. Only mark the SDWire as available if both
+    # paths are available.
+    def poll(self):
+        super().poll()
+        if self.device is not None and not self.avail:
+            for child in self.device.parent.children:
+                if child.subsystem == 'block' and child.device_type == 'disk':
+                    self.disk_path = child.device_node
+            self.control_serial = self.device.properties.get('ID_SERIAL_SHORT')
+
+    def update(self):
+        super().update()
+        if self.device is None:
+            self.disk_path = None
+            self.control_serial = None
+
+    @property
+    def path(self):
+        return self.disk_path
+
 
 @target_factory.reg_resource
 @attr.s(eq=False)

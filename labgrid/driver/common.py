@@ -83,6 +83,17 @@ class Driver(BindingMixin):
             res |= supplier.get_bound_resources()
         return res
 
+    def query_info(self, name):
+        """Query for information from the driver
+
+        Args:
+            name (str): Name of item to query
+
+        Returns:
+            str: Value associated with that name, or None if none
+        """
+        return None
+
 def check_file(filename, *, command_prefix=[]):
     if subprocess.call(command_prefix + ['test', '-r', filename]) != 0:
         raise ExecutionError(f"File {filename} is not readable")

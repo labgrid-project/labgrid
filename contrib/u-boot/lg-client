@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Usage
+# lg-client ...   (run labgrid-client with environment variables set)
+
+mydir=$(dirname $0)
+
+. ${mydir}/lg-env
+
+# Execute the command
+labgrid-client $@

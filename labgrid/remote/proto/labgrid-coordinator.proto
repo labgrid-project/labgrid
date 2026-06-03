@@ -108,9 +108,13 @@ message MapValue {
     uint64 uint_value = 3;
     double float_value = 4;
     string string_value = 5;
-    // FIXME do we need arrays?
+    MapValueArray array_value = 6;
   }
 };
+
+message MapValueArray {
+  repeated MapValue values = 1;
+}
 
 message ExporterResponse {
   bool success = 1;

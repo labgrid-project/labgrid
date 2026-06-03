@@ -1,4 +1,6 @@
 """The QEMUDriver implements a driver to use a QEMU target"""
+import os
+import pty
 import select
 import shlex
 import shutil
@@ -365,3 +367,34 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
     def __str__(self):
         return f"QemuDriver({self.target.name})"
+
+    @Driver.check_active
+    def interact(self):
+        """Start interactive microcom session."""
+        microcom_bin = shutil.which("microcom")
+        if microcom_bin is None:
+            raise ExecutionError("microcom not found")
+
+        # connect microcom to PTY
+        master, slave = pty.openpty()
+        microcom_cmd = [microcom_bin, "-p", os.ttyname(slave)]
+        print(f"connecting to {self} calling {' '.join(microcom_cmd)}")
+        microcom_proc = subprocess.Popen(microcom_cmd)
+
+        # relay serial data to PTY
+        buf_size = 4096
+
+        while microcom_proc.poll() is None:
+            ready, _, _ = select.select([self._clientsocket, master], [], [], 1.0)
+            if self._clientsocket in ready:
+                data = self._read(max_size=buf_size)
+                if not data:
+                    break
+                os.write(master, data)
+            if master in ready:
+                data = os.read(master, buf_size)
+                if not data:
+                    break
+                self._write(data)
+
+        return microcom_proc.wait()

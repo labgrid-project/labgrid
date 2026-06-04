@@ -1,8 +1,11 @@
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 from time import sleep
 
 import pytest
 
 from labgrid import step, steps
+from labgrid.step import Steps
 
 
 @step()
@@ -28,6 +31,40 @@ def test_nested():
     inner_level = step_outer()
     assert steps.get_current() is None
     assert inner_level == 2
+
+
+@step()
+def step_wait(started, release, *, step):
+    started.set()
+    assert release.wait(timeout=2)
+    assert steps.get_current() is step
+    return step
+
+
+def test_thread_local_stack():
+    thread_1_started = Event()
+    thread_2_started = Event()
+    release_thread_1 = Event()
+    release_thread_2 = Event()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_1 = executor.submit(step_wait, thread_1_started, release_thread_1)
+        assert thread_1_started.wait(timeout=2)
+
+        future_2 = executor.submit(step_wait, thread_2_started, release_thread_2)
+        assert thread_2_started.wait(timeout=2)
+
+        release_thread_1.set()
+        try:
+            step_1 = future_1.result(timeout=2)
+        finally:
+            release_thread_2.set()
+
+        step_2 = future_2.result(timeout=2)
+
+    assert step_1.level == 1
+    assert step_2.level == 1
+    assert steps.get_current() is None
 
 
 @step()
@@ -174,3 +211,58 @@ def test_subscriber_error():
     with pytest.warns(UserWarning):
         step = step_event_skip()
     steps.unsubscribe(callback)
+
+
+def test_subscriber_can_unsubscribe_during_notification():
+    local_steps = Steps()
+    calls = []
+
+    def first(event):
+        calls.append(("first", event))
+        local_steps.unsubscribe(first)
+
+    def second(event):
+        calls.append(("second", event))
+
+    local_steps.subscribe(first)
+    local_steps.subscribe(second)
+
+    event = object()
+    local_steps.notify(event)
+
+    assert calls == [("first", event), ("second", event)]
+
+
+def test_notifications_are_serialized():
+    local_steps = Steps()
+    first_started = Event()
+    release_first = Event()
+    second_submitted = Event()
+    second_started = Event()
+
+    def callback(event):
+        if event == "first":
+            first_started.set()
+            assert release_first.wait(timeout=2)
+        else:
+            second_started.set()
+
+    def notify_second():
+        second_submitted.set()
+        local_steps.notify("second")
+
+    local_steps.subscribe(callback)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first = executor.submit(local_steps.notify, "first")
+        assert first_started.wait(timeout=2)
+        second = executor.submit(notify_second)
+        assert second_submitted.wait(timeout=2)
+        try:
+            assert not second_started.wait(timeout=0.1)
+        finally:
+            release_first.set()
+        first.result(timeout=2)
+        second.result(timeout=2)
+
+    assert second_started.is_set()

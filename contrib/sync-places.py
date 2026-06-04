@@ -161,7 +161,7 @@ def main():
             strings and tags should be assigned to those places. The files are
             structured like:
 
-              places: # A dictonary of places where each key is a place name
+              places: # A dictionary of places where each key is a place name
                 my-place1: # Replace with your place
                   matches: # A list of match patterns. Replace with your match patterns
                     - "*/my-place1/*"

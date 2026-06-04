@@ -58,17 +58,28 @@ def open_tap(name, device="/dev/net/tun"):
     return fd
 
 
+def find_unused_macvtap_name():
+    """Find an unused macvtap interface name by checking existing interfaces."""
+    output = subprocess.check_output(["ip", "-j", "link", "show"])
+    existing = {iface["ifname"] for iface in json.loads(output)}
+    for i in range(0, 1000):
+        name = f"macvtap{i}"
+        if name not in existing:
+            return name
+    raise RuntimeError("Could not find an unused macvtap interface name")
+
+
 def handle_ns_macvtap(options):
     # Use macvtap in bridge mode. This is more consistent than using hairpin
     # mode and relying on a switch to relay packets back into the interface.
-    output = subprocess.check_output(
-        ["ip", "-j", "-echo", "link", "add", "link", options.ifname, "type", "macvtap", "mode", "bridge"]
-    )
-    output = json.loads(output)
-    assert len(output) == 1
-    ifindex_new = output[0]["ifindex"]
-    ifname_new = output[0]["ifname"]
-    assert ifname_new.startswith("macvtap")
+
+    # TODO: Can simplify this to use the "-echo" option for "ip link add" once iproute2 v6.0.0+ is ubiquitous.
+    ifname_new = find_unused_macvtap_name()
+    subprocess.check_call(["ip", "link", "add", "link", options.ifname, "name", ifname_new, "type", "macvtap", "mode", "bridge"])
+    output = subprocess.check_output(["ip", "-j", "link", "show", ifname_new])
+    info = json.loads(output)
+    assert len(info) == 1
+    ifindex_new = info[0]["ifindex"]
     try:
         # Set the flag that tells the kernel to allow multicast to flow through
         # the macvtap. This is required to be done on the exporter side for the
@@ -82,7 +93,7 @@ def handle_ns_macvtap(options):
             subprocess.check_call(
                 ["ip", "link", "set", "address", options.mac_address, "dev", ifname_new])
         subprocess.check_call(
-            ["ip", "link", "set", "dev", ifname_new, "name", "macvtap0", "up", "netns", str(options.pid), "index", str(ifindex_new)]
+            ["ip", "link", "set", "dev", ifname_new, "name", "macvtap0", "up", "netns", str(options.pid)]
         )
     except:
         subprocess.check_call(

@@ -1,5 +1,5 @@
-Release 26.0 (Unreleased)
--------------------------
+Release 26.0 (Released Jun 06, 2026)
+------------------------------------
 Sponsored by: Analog Devices GmbH
 
 New Features in 26.0
@@ -9,12 +9,45 @@ New Features in 26.0
   instead of a line feed (``\n``). barebox v2025.03.0 onwards handles
   CTRL+D specially to halt autoboot countdown without running interactive
   hooks like bringing up network interfaces automatically.
+- Support for the tinycontrol tcPDU has been added as a power backend.
+- Support for shelly gen2+ devices has been added as a power backend.
+- Support for Waveshare Modbus Relays was added.
+- The upload directory for labgrid agent python files can be set via
+  the ``LG_AGENT_PREFIX`` environment variable.
+- The ManagedFile now returns an error when trying to access the underlying
+  file path before the file was synced.
+- The RKUSBLoader match was extended with all currently known USB IDs.
+- The error message for trying to acquire a place that is locked by another
+  user was improved.
+- The ``Strategy`` class has gained a new ``never_retry`` decorator that
+  stores the first exception and raises it for every subsequent call.
+  The pytestplugin also correctly respects that StrategyError.
+- IMXUSBDriver has gained a ``verify`` property that is enabled by default, but
+  can disable the verification step for SoCs that don't support it.
+- The codebase gained a lot of fixes for python 3.14 support.
+- ``labgrid-client`` with a multi-target environment configuration now 
+  correctly tries to acquire/release all targets in the environment
+  configuration.
+- IMXUSBLoader now correctly recognizes i.MX95 & i.MX91.
+- Exporter configuration files can now include drop-in files from .d
+  directories by using jinja templates.
+- Labgrid has gained support for new USB SDWire 3 devices.
+- The BareboxDriver has gained support for the ``boot_command``, similar to
+  the UBootDriver.
+- Labgrid has gained support for Aten PE6216 PDUs.
 - The `QEMUDriver` now supports a ``netdev`` argument which can be added to
   ``add_port_forward()`` and ``remove_port_forward()``  in case there is more
   than one network interface defined.
 - Guermok HDMI to USB 3.0 capture dongle supported
+- The UBootDriver can now optionally strip timestamps.
+- Labgrid has partially switched to enforce ruff formatting for some files.
+- Labgrid has gained support for the Linaro Automation Appliance (LAA).
+- The MQTTManager now supports authentication.
 - The `consoleexpectmixin` now supports chunking of multiple bytes
   with the ``txchunk`` attribute.
+- Labgrid has gained support for network namespace forwarding from exporters
+  to clients. This allows accessing a network as if it is locally connected.
+- HTTPVideoDrivers now optionally allow the specification of a port.
 
 Breaking changes in 26.0
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -22,6 +55,46 @@ Breaking changes in 26.0
   ``--lg-env`` instead.
 - The deprecated ``NetworkUSBStorageDriver`` has been removed. Use the
   `USBStorageDriver` instead.
+
+Bug fixes in 26.0
+~~~~~~~~~~~~~~~~~
+- Console activation in the ShellDriver now correctly disables kernel messages
+  on that console.
+- The ShellDriver now correctly handles an existing /tmp/labgrid-ssh directory.
+- An error in the mfi_mpower driver was fixed to correctly use f-strings.
+- An error message in the coordinator was fixed to correctly emit resource and
+  reason.
+- The ShellDriver public key writing has been fixed to write the keys in chunks.
+  This fixes an issue where the number of allowed characters on the command line
+  is too small to contain the full public key.
+- The sync-places contrib script has been fixed to filter tags on creation.
+- Several labgrid client subcommands have been fixed to match the resource name
+  as well.
+- Ordering of ResourceMatches has been fixed.
+- Locking problems in the coordinator with regards to reservations have been
+  fixed.
+
+Release 25.0.1 (Released Jul 07, 2025)
+--------------------------------------
+
+Bug fixes in 25.0.1
+~~~~~~~~~~~~~~~~~~~
+- Fix losing exceptions in `SSHDriver` control master start while handling
+  timeouts in some cases.
+- Make pytestplugin only set a color for the custom console log level if
+  formatter class supports it.
+- Add missing `MatchedSysfsGPIO` binding to `GpioDigitalOutputDriver`.
+- Fix a couple of unevaluated variables in exception and log messages.
+- Use only non-deprecated directives in Dockerfile.
+- Always use latest stable docker compose release in CI.
+- Create symlinks in `ManagedFile` even when skipping sync for local providers.
+- Use ``importlib`` instead of ``pkg_resources`` to retrieve version, because
+  setuptools (providing ``pkg_resources``) is no longer pre-installed in
+  virtualenvs created with the ``venv`` module.
+- Allow passing non-strings to `StepFormatter`.
+- Properly escape file and directory names in the `USBStorageDriver`.
+- Fix ``labgrid-client`` named resource handling for the ``io``, ``bootstrap``,
+  ``sd-mux`` and ``video`` sub commands
 
 Release 25.0 (Released May 7, 2025)
 -----------------------------------

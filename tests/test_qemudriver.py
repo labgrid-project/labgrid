@@ -1,3 +1,5 @@
+import subprocess
+
 import pytest
 
 from labgrid.driver import QEMUDriver
@@ -44,8 +46,8 @@ def qemu_driver(qemu_target, qemu_mock):
 @pytest.fixture
 def qemu_mock(mocker):
     popen_mock = mocker.patch('subprocess.Popen')
-    popen_mock.return_value.wait.return_value = 0
-    popen_mock.return_value.stdout.readline.return_value = b"""
+    instance_mock = mocker.MagicMock()
+    instance_mock.stdout.readline.return_value = b"""
     {
       "QMP": {
         "version": {}
@@ -53,6 +55,10 @@ def qemu_mock(mocker):
       "return": {}
     }
     """
+
+    instance_mock.wait = mocker.MagicMock(side_effect=subprocess.TimeoutExpired(cmd='qemu', timeout=0.5))
+    instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
+    popen_mock.return_value = instance_mock
 
     select_mock = mocker.patch('select.select')
     select_mock.return_value = True, None, None

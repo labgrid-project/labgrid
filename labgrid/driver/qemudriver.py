@@ -237,7 +237,17 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         qemu_cmd.append("chardev:serialsocket")
 
         self.logger.debug("Starting with: %s", qemu_cmd)
-        self._child = subprocess.Popen(qemu_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        self._child = subprocess.Popen(qemu_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        try:
+            self._child.wait(timeout=0.5)
+            _, err = self._child.communicate()
+            raise IOError(
+                f"QEMU exited immediately: {err.decode().strip()} (exitcode={self._child.returncode})"
+            )
+        except subprocess.TimeoutExpired:
+            # good, QEMU did not exit immediately
+            pass
 
         # prepare for timeout handing
         self._clientsocket, address = self._socket.accept()

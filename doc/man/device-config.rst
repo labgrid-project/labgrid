@@ -43,6 +43,15 @@ OPTIONS KEYS
   takes as parameter the coordinator ``HOST[:PORT]`` to connect to.
   Defaults to ``127.0.0.1:20408``.
 
+``coordinator_tls``
+  enables a TLS gRPC channel for ``RemotePlace`` connections.
+  Defaults to whether ``LG_COORDINATOR_TLS`` is set.
+
+``coordinator_cert``
+  path to the coordinator TLS certificate in PEM format for ``RemotePlace``
+  connections. If unset, the host CA certificates are used. Relative paths are
+  resolved relative to the configuration file.
+
 .. _labgrid-device-config-images:
 
 IMAGES

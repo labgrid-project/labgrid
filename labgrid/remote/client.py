@@ -41,6 +41,7 @@ from .common import (
     TAG_KEY,
     TAG_VAL,
     queue_as_aiter,
+    get_client_credentials,
 )
 from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
@@ -92,6 +93,11 @@ class ClientSession:
     the coordinator."""
 
     address = attr.ib(validator=attr.validators.instance_of(str))
+    credentials = attr.ib(
+        default=None,
+        kw_only=True,
+        validator=attr.validators.optional(attr.validators.instance_of(grpc.ChannelCredentials)),
+    )
     loop = attr.ib(validator=attr.validators.instance_of(asyncio.BaseEventLoop))
     env = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(Environment)))
     role = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
@@ -120,10 +126,18 @@ class ClientSession:
             ("grpc.http2.max_pings_without_data", 0),  # no limit
         ]
 
-        self.channel = grpc.aio.insecure_channel(
-            target=self.address,
-            options=channel_options,
-        )
+        if self.credentials:
+            self.channel = grpc.aio.secure_channel(
+                target=self.address,
+                credentials=self.credentials,
+                options=channel_options,
+            )
+        else:
+            self.channel = grpc.aio.insecure_channel(
+                target=self.address,
+                options=channel_options,
+            )
+
         self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
 
         self.out_queue = asyncio.Queue()
@@ -1698,7 +1712,12 @@ def ensure_event_loop(external_loop=None):
 
 
 def start_session(
-    address: str, *, extra: Dict[str, Any] = None, debug: bool = False, loop: "asyncio.AbstractEventLoop | None" = None
+    address: str,
+    *,
+    extra: Dict[str, Any] = None,
+    credentials: grpc.ChannelCredentials = None,
+    debug: bool = False,
+    loop: "asyncio.AbstractEventLoop | None" = None,
 ):
     """
     Starts a ClientSession.
@@ -1706,6 +1725,8 @@ def start_session(
     Args:
         address: coordinator address as HOST[:PORT], PORT defaults to 20408
         extra: additional kwargs for ClientSession
+        credentials: optional gRPC channel credentials; when None, use an
+              insecure channel
         debug: set debug mode of the event loop
         loop: explicit event loop to use (otherwise a previously stashed loop,
               if retrievable the current thread's loop or a new loop is used)
@@ -1720,7 +1741,7 @@ def start_session(
 
     address = proxymanager.get_grpc_address(address, default_port=20408)
 
-    session = ClientSession(address, loop, **extra)
+    session = ClientSession(address, loop, credentials=credentials, **extra)
     loop.run_until_complete(session.start())
     return session
 
@@ -1848,6 +1869,13 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         type=str,
         help="coordinator HOST[:PORT] (default: value from env variable LG_COORDINATOR, otherwise 127.0.0.1:20408)",
     )
+    parser.add_argument(
+        "--tls",
+        action="store_true",
+        default=os.environ.get("LG_COORDINATOR_TLS") is not None,
+        help="enable TLS gRPC channel",
+    )
+    parser.add_argument("--cert", type=pathlib.PurePath, help="path to the server's TLS certificate (in PEM format)")
     parser.add_argument(
         "-c",
         "--config",
@@ -2346,7 +2374,9 @@ def main():
             logging.debug('Starting session with "%s"', coordinator_address)
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            session = start_session(coordinator_address, extra=extra, debug=args.debug, loop=loop)
+            session = start_session(
+                coordinator_address, extra=extra, credentials=get_client_credentials(args), debug=args.debug, loop=loop
+            )
             logging.debug("Started session")
 
             try:

@@ -51,9 +51,45 @@ display command line help
 .BI \-l \ ADDRESS\fR,\fB \ \-\-listen \ ADDRESS
 make coordinator listen on host and port
 .TP
+.B  \-\-tls
+enable TLS gRPC channel
+.TP
+.B  \-\-cert
+path to TLS certificate (in PEM format)
+.TP
+.B  \-\-key
+path to TLS key (in PEM format)
+.TP
 .B  \-d\fP,\fB  \-\-debug
 enable debug mode
 .UNINDENT
+.SS TLS WITH A REVERSE PROXY
+.sp
+Instead of enabling TLS in \fBlabgrid\-coordinator\fP directly, a reverse proxy can
+terminate TLS and forward cleartext gRPC to the coordinator. For example, with
+\fBnginx\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+server {
+    listen 20407 ssl http2;
+    server_name labgrid.example.com;
+
+    ssl_certificate     /etc/ssl/labgrid\-coordinator.crt;
+    ssl_certificate_key /etc/ssl/labgrid\-coordinator.key;
+
+    location / {
+        grpc_pass grpc://127.0.0.1:20408;
+    }
+}
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+In this setup, start \fBlabgrid\-coordinator\fP without \fB\-\-tls\fP and point
+\fBlabgrid\-client\fP and \fBlabgrid\-exporter\fP at the reverse proxy using
+\fB\-\-tls\fP\&.
 .SS SEE ALSO
 .sp
 \fBlabgrid\-client\fP(1), \fBlabgrid\-exporter\fP(1)

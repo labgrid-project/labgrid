@@ -7,8 +7,9 @@ import string
 import logging
 from datetime import datetime
 from fnmatch import fnmatchcase
-
+from typing import Optional
 import attr
+import grpc
 
 from .generated import labgrid_coordinator_pb2
 
@@ -56,6 +57,17 @@ def build_dict_from_map(m):
         else:
             d[k] = getattr(v, kind)
     return d
+
+
+def get_client_credentials(tls: bool, cert=None) -> Optional[grpc.ChannelCredentials]:
+    if not tls:
+        return None
+
+    if not cert:
+        return grpc.ssl_channel_credentials()
+
+    with open(cert, "rb") as fc:
+        return grpc.ssl_channel_credentials(fc.read())
 
 
 @attr.s(eq=False)

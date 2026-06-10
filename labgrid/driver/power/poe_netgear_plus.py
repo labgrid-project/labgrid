@@ -21,8 +21,6 @@ NetworkPowerPort:
 
 from urllib.parse import urlparse
 
-from py_netgear_plus import NetgearSwitchConnector
-
 from ..exception import ExecutionError
 
 
@@ -61,6 +59,8 @@ def power_set(host: str, _port: int, index: int, value: bool) -> None:
         value: Whether the port should enable PoE output
 
     """
+    from py_netgear_plus import NetgearSwitchConnector
+
     index = int(index)
     netgear_port_number = index + 1
 
@@ -94,6 +94,8 @@ def power_get(host: str, _port: int, index: int) -> bool:
         ExecutionError: In case the status dictionary contains unexpected PoE status values.
 
     """
+    from py_netgear_plus import NetgearSwitchConnector
+
     index = int(index)
     netgear_port_number = index + 1
 

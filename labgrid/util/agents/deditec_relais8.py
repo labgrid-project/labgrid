@@ -10,6 +10,7 @@ Supported Functionality:
 
 - Turn digital output on and off
 """
+
 import logging
 
 from binascii import unhexlify, hexlify
@@ -19,31 +20,32 @@ import usb.util
 
 
 class Relais8:
-    _padding = 'FEFEFEFEFEFEFEFEFF'
-    _post_padding = '000000'
+    _padding = "FEFEFEFEFEFEFEFEFF"
+    _post_padding = "000000"
 
     _configuration_sequence = [
-        '3430FF',
-        '3434FF',
-        '34C0FF',
-        '3400FF',
-        '3402FF',
-        '340CFF',
-        '340EFF',
-        '3404FF',
-        '3406FF',
-        '3408FF',
-        '340AFF',
-        '3410FF',
-        '3412FF',
-        '3414FF',
-        '3416FF',
-        '34F4FF',
-        '34F5FF',
-        '34F6FF',
-        '34F7FF',
-        '34F0FF',
-        '34ECFF']
+        "3430FF",
+        "3434FF",
+        "34C0FF",
+        "3400FF",
+        "3402FF",
+        "340CFF",
+        "340EFF",
+        "3404FF",
+        "3406FF",
+        "3408FF",
+        "340AFF",
+        "3410FF",
+        "3412FF",
+        "3414FF",
+        "3416FF",
+        "34F4FF",
+        "34F5FF",
+        "34F6FF",
+        "34F7FF",
+        "34F0FF",
+        "34ECFF",
+    ]
 
     def __init__(self, **args):
         self._dev = usb.core.find(**args)
@@ -60,14 +62,10 @@ class Relais8:
         self._dev.ctrl_transfer(64, 3, 20, 0, 0, 5000)
         self._dev.ctrl_transfer(64, 9, 2, 0, 0, 5000)
         self._ep_out = usb.util.find_descriptor(
-            intf,
-            custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == \
-                usb.util.ENDPOINT_OUT
+            intf, custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_OUT
         )
         self._ep_in = usb.util.find_descriptor(
-            intf,
-            custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == \
-                usb.util.ENDPOINT_IN
+            intf, custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_IN
         )
         self._sequence_number = 0
         self._logger = logging.getLogger("Device: ")
@@ -91,7 +89,7 @@ class Relais8:
         self.write(complete_request)
 
     def write(self, data):
-        self._sequence_number = (self._sequence_number + 1) & 0xff
+        self._sequence_number = (self._sequence_number + 1) & 0xFF
         self._logger.debug("Writing data: %s", hexlify(data))
         self._ep_out.write(data)
 
@@ -101,15 +99,15 @@ class Relais8:
             reset = True
         if status > 255 or status < 0:
             return
-        data = f'0123{0 if reset else 8}000000001{status:02X}00000000000000'
+        data = f"0123{0 if reset else 8}000000001{status:02X}00000000000000"
         self.write(unhexlify(Relais8._padding + data))
         self.read(255)
 
     def set_output(self, number, status):
         if status:
-            data = f'238000000001{1 << number - 1:02X}00000000000000'
+            data = f"238000000001{1 << number - 1:02X}00000000000000"
         else:
-            data = f'23A000000001{1 << number - 1:02X}00000000000000'
+            data = f"23A000000001{1 << number - 1:02X}00000000000000"
         complete_request = unhexlify(Relais8._padding)
         complete_request += bytes([self._sequence_number])
         complete_request += unhexlify(data)
@@ -117,15 +115,15 @@ class Relais8:
         self.read(255)
 
     def get_output(self, number):
-        data = '34000000000F'
+        data = "34000000000F"
         complete_request = unhexlify(Relais8._padding)
         complete_request += bytes([self._sequence_number])
         complete_request += unhexlify(data)
         self.write(complete_request)
         read_data = self.read(255).tobytes()
-        index = read_data.find(b'\x1a')
-        if read_data[index+1] == self._sequence_number - 1:
-            outputs = read_data[index+2]
+        index = read_data.find(b"\x1a")
+        if read_data[index + 1] == self._sequence_number - 1:
+            outputs = read_data[index + 2]
         else:
             raise IOError("Could not read outputs from device")
         return outputs & (1 << (number - 1)) > 0
@@ -145,6 +143,6 @@ def handle_get(busnum, devnum, number):
 
 
 methods = {
-    'set': handle_set,
-    'get': handle_get,
+    "set": handle_set,
+    "get": handle_get,
 }

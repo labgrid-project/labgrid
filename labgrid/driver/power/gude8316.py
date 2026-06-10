@@ -15,6 +15,7 @@ from ..exception import ExecutionError
 
 PORT = 80
 
+
 def power_set(host, port, index, value):
     # The gude web-interface uses different pages for the three groups of
     # switches. The web-interface always uses the 'correct' page to set a
@@ -23,9 +24,7 @@ def power_set(host, port, index, value):
     assert 1 <= index <= 8
     # access the web interface...
     value = 1 if value else 0
-    r = requests.get(
-        f"http://{host}:{port}/ov.html?cmd=1&p={index}&s={value}"
-    )
+    r = requests.get(f"http://{host}:{port}/ov.html?cmd=1&p={index}&s={value}")
     r.raise_for_status()
 
 
@@ -45,7 +44,7 @@ def power_get(host, port, index):
     r = requests.get(f"http://{host}:{port}/ov.html")
     r.raise_for_status()
     for line_no, line in enumerate(r.text.splitlines()):
-        if line_no == index and line.find("content=\"Power Port ") > 0:
+        if line_no == index and line.find('content="Power Port ') > 0:
             if line.find(",0") > 0:
                 return False
             if line.find(",1") > 0:

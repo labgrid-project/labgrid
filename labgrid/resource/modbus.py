@@ -18,9 +18,8 @@ class ModbusTCPCoil(Resource):
     host = attr.ib(validator=attr.validators.instance_of(str))
     coil = attr.ib(validator=attr.validators.instance_of(int))
     invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
-    write_multiple_coils = attr.ib(
-        default=False, validator=attr.validators.instance_of(bool)
-    )
+    write_multiple_coils = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+
 
 @target_factory.reg_resource
 @attr.s(eq=False)

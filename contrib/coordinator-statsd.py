@@ -72,11 +72,7 @@ async def report_reservations(session, tags, gauges):
         for group_name, group in groups.items():
             inc_gauge(
                 gauges,
-                ".".join(
-                    ["reservations", group_name]
-                    + [group.get(t, "") for t in tags]
-                    + [reservation.state.name]
-                ),
+                ".".join(["reservations", group_name] + [group.get(t, "") for t in tags] + [reservation.state.name]),
             )
 
 
@@ -92,9 +88,7 @@ async def report_places(session, tags, gauges):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Report Labgrid usage metrics to statsd"
-    )
+    parser = argparse.ArgumentParser(description="Report Labgrid usage metrics to statsd")
     parser.add_argument(
         "-x",
         "--coordinator",

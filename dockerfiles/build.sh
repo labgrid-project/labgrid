@@ -59,7 +59,7 @@ perform_regular_build() {
 
     log_info "building for native platform only."
 
-    for t in client exporter coordinator; do
+    for t in client exporter coordinator coordinator-statsd; do
         "${docker_cmd}" build --build-arg VERSION="${version}" \
             --target labgrid-${t} -t "${IMAGE_PREFIX}${t}:${IMAGE_TAG}" -f "${script_dir}/Dockerfile" \
             "${extra_args[@]}" .
@@ -73,7 +73,7 @@ perform_docker_buildx_build() {
     version="${3}"
     extra_args=("${@:4}")
 
-    for t in client exporter coordinator; do
+    for t in client exporter coordinator coordinator-statsd; do
         "${docker_cmd}" buildx build --build-arg VERSION="${version}" \
             --target labgrid-${t} -t "${IMAGE_PREFIX}${t}:${IMAGE_TAG}" -f "${script_dir}/Dockerfile" \
             "${extra_args[@]}" .

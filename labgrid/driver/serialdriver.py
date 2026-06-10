@@ -20,6 +20,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     bindings = {"port": {"SerialPort", "NetworkSerialPort"}, }
 
     txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
+    txchunk = attr.ib(default=1, validator=attr.validators.instance_of(int))
     timeout = attr.ib(default=3.0, validator=attr.validators.instance_of(float))
 
     def __attrs_post_init__(self):

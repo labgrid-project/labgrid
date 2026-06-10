@@ -7,6 +7,11 @@ services:
     network_mode: "host"
     command: bash -c "cp /home/root/coordinator/places_example.yaml /opt/coordinator/places.yaml &&
       /usr/local/bin/labgrid-coordinator"
+  coordinator-statsd:
+    image: "${IMAGE_PREFIX:-docker.io/labgrid/}coordinator-statsd"
+    network_mode: "host"
+    depends_on:
+      - coordinator
   client:
     image: "${IMAGE_PREFIX:-docker.io/labgrid/}client"
     volumes:

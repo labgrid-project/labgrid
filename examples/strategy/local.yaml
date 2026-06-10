@@ -8,6 +8,7 @@ targets:
         name: "example"
       SerialDriver:
         txdelay: 0.01
+        txchunk: 1
       BareboxDriver:
         prompt: 'barebox@[^:]+:[^ ]+ '
         bootstring: 'Modules linked in'

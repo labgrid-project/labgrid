@@ -14,12 +14,11 @@ from ..util import Timeout
 class MQTTError(Exception):
     pass
 
+
 @target_factory.reg_driver
 @attr.s(eq=False)
 class TasmotaPowerDriver(Driver, PowerProtocol):
-    bindings = {
-            "power": {"TasmotaPowerPort"}
-    }
+    bindings = {"power": {"TasmotaPowerPort"}}
     delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
     _client = attr.ib(default=None)
     _status = attr.ib(default=None)
@@ -27,6 +26,7 @@ class TasmotaPowerDriver(Driver, PowerProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         import paho.mqtt.client as mqtt
+
         self._client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 
     def on_activate(self):
@@ -39,9 +39,9 @@ class TasmotaPowerDriver(Driver, PowerProtocol):
         self._client.loop_stop()
 
     def _on_message(self, client, userdata, msg):
-        if msg.payload == b'ON':
+        if msg.payload == b"ON":
             status = True
-        elif msg.payload == b'OFF':
+        elif msg.payload == b"OFF":
             status = False
         else:
             raise ValueError(f"Unknown status: {msg.payload}. Must be 'ON' or 'OFF'")

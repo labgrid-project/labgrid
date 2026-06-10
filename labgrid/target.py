@@ -264,9 +264,9 @@ class Target:
         >>> console = FakeConsoleDriver(target, 'console')
         >>> target.activate(console)
         >>> target[FakeConsoleDriver]
-        FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0)
+        FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0, txchunk=1)
         >>> target[FakeConsoleDriver, 'console']
-        FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0)
+        FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0, txchunk=1)
         """
         name = None
         if not isinstance(key, tuple):
@@ -563,3 +563,9 @@ class Target:
         self.deactivate_all_drivers()
         for res in reversed(self.resources):
             self.deactivate(res)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.cleanup()

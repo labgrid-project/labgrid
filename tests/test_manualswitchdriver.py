@@ -15,9 +15,7 @@ class TestManualSwitchDriver:
         target.activate(d)
         d.set(True)
 
-        m.assert_called_once_with(
-            "Set foo-switch for target Test to ON and press enter"
-        )
+        m.assert_called_once_with("Set foo-switch for target Test to ON and press enter")
 
     def test_set_off(self, target, mocker):
         m = mocker.patch("builtins.input")
@@ -26,9 +24,7 @@ class TestManualSwitchDriver:
         target.activate(d)
         d.set(False)
 
-        m.assert_called_once_with(
-            "Set foo-switch for target Test to OFF and press enter"
-        )
+        m.assert_called_once_with("Set foo-switch for target Test to OFF and press enter")
 
     def test_get(self, target, mocker):
         m = mocker.patch("builtins.input")

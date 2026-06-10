@@ -49,3 +49,8 @@ from .usbtmcdriver import USBTMCDriver
 from .deditecrelaisdriver import DeditecRelaisDriver
 from .dediprogflashdriver import DediprogFlashDriver
 from .httpdigitaloutput import HttpDigitalOutputDriver
+from .eth008digitaloutput import Eth008DigitalOutputDriver
+from .laadriver import LAASerialDriver, LAAPowerDriver, \
+                       LAAUSBGadgetMassStorageDriver, LAAUSBDriver, \
+                       LAAButtonDriver, LAALedDriver, LAATempDriver, LAAWattDriver, \
+                       LAAProviderDriver

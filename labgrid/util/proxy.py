@@ -6,7 +6,7 @@ from .ssh import sshmanager
 
 from ..resource.common import Resource
 
-__all__ = ['proxymanager']
+__all__ = ["proxymanager"]
 
 
 class ProxyError(Exception):
@@ -17,6 +17,7 @@ class ProxyManager:
     """The ProxyManager class is only used inside labgrid.util.proxy (similar
     to a singleton), don't instanciate this class, use the exported
     proxymanager instead."""
+
     _force_proxy = os.environ.get("LG_PROXY", None)
 
     @classmethod
@@ -26,7 +27,7 @@ class ProxyManager:
 
     @classmethod
     def get_host_and_port(cls, res, *, default_port=None, force_port=None):
-        """ get host and port for a proxy connection from a Resource
+        """get host and port for a proxy connection from a Resource
 
         Args:
             res (Resource): The resource to retrieve the proxy for
@@ -43,7 +44,7 @@ class ProxyManager:
         """
         assert isinstance(res, Resource)
 
-        prefix = '' if '//' in res.host else '//'
+        prefix = "" if "//" in res.host else "//"
         s = urlparse(prefix + res.host)
         host = s.hostname
         if force_port:
@@ -51,20 +52,20 @@ class ProxyManager:
         elif s.port:
             port = s.port
         else:
-            port = getattr(res, 'port', None) or default_port
+            port = getattr(res, "port", None) or default_port
 
-        extra = getattr(res, 'extra', {})
+        extra = getattr(res, "extra", {})
         if extra:
-            proxy_required = extra.get('proxy_required')
-            proxy = extra.get('proxy')
+            proxy_required = extra.get("proxy_required")
+            proxy = extra.get("proxy")
             if proxy_required:
                 port = sshmanager.request_forward(proxy, host, port)
-                host = 'localhost'
+                host = "localhost"
                 return host, port
 
         if cls._force_proxy:
             port = sshmanager.request_forward(cls._force_proxy, host, port)
-            host = 'localhost'
+            host = "localhost"
 
         return host, port
 
@@ -85,9 +86,9 @@ class ProxyManager:
 
         if cls._force_proxy:
             port = sshmanager.request_forward(cls._force_proxy, hostname, port)
-            hostname = 'localhost'
+            hostname = "localhost"
 
-        if ':' in hostname:
+        if ":" in hostname:
             # IPv6 address
             s = s._replace(netloc=f"[{hostname}]:{port}")
         else:
@@ -109,9 +110,9 @@ class ProxyManager:
 
         proxy = cls._force_proxy
 
-        extra = getattr(res, 'extra', {})
-        if extra.get('proxy_required') or proxy:  # use specific proxy when needed
-            proxy = extra.get('proxy') or proxy
+        extra = getattr(res, "extra", {})
+        if extra.get("proxy_required") or proxy:  # use specific proxy when needed
+            proxy = extra.get("proxy") or proxy
 
         if not proxy:
             return None
@@ -121,15 +122,17 @@ class ProxyManager:
         if ifname:
             command += [
                 "--",
-                "sudo", "--non-interactive",
-                "labgrid-bound-connect", ifname, host, str(port),
+                "sudo",
+                "--non-interactive",
+                "labgrid-bound-connect",
+                ifname,
+                host,
+                str(port),
             ]
         else:
-            if ':' in host:  # IPv6
+            if ":" in host:  # IPv6
                 host = f"[{host}]"
-            command += [
-                "-W", f"{host}:{port}"
-            ]
+            command += ["-W", f"{host}:{port}"]
         return command
 
 

@@ -1,10 +1,11 @@
-""" tested with NETIO 4C, should be compatible with all NETIO 4-models """
+"""tested with NETIO 4C, should be compatible with all NETIO 4-models"""
 
 import re
 
 import pexpect
 
 PORT = 1234
+
 
 def power_set(host, port, index, value):
     index = int(index)

@@ -10,6 +10,7 @@ from ..step import step
 
 class Status(enum.Enum):
     """The possible states of a docker container"""
+
     unknown = 0
     gone = 1
     accessible = 2
@@ -24,6 +25,7 @@ class DockerStrategy(Strategy):
     ready for access (e.g. shell access via SSH if the docker image
     runs an SSH daemon).
     """
+
     bindings = {
         "docker_driver": DockerDriver,
     }
@@ -34,7 +36,7 @@ class DockerStrategy(Strategy):
         super().__attrs_post_init__()
 
     @never_retry
-    @step(args=['status'])
+    @step(args=["status"])
     def transition(self, status):
         if not isinstance(status, Status):
             status = Status[status]
@@ -48,7 +50,5 @@ class DockerStrategy(Strategy):
             self.docker_driver.off()
             self.target.deactivate(self.docker_driver)
         else:
-            raise StrategyError(
-                f"no transition found from {self.status} to {status}"
-            )
+            raise StrategyError(f"no transition found from {self.status} to {status}")
         self.status = status

@@ -18,14 +18,15 @@ class DFUDriver(Driver):
         super().__attrs_post_init__()
         # FIXME make sure we always have an environment or config
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('dfu-util')
+            self.tool = self.target.env.config.get_tool("dfu-util")
         else:
-            self.tool = 'dfu-util'
+            self.tool = "dfu-util"
 
     def _get_dfu_prefix(self):
         return self.dfu.command_prefix + [
             self.tool,
-            "-p", self.dfu.path,
+            "-p",
+            self.dfu.path,
         ]
 
     def on_activate(self):
@@ -35,25 +36,20 @@ class DFUDriver(Driver):
         pass
 
     @Driver.check_active
-    @step(args=['altsetting', 'filename'])
+    @step(args=["altsetting", "filename"])
     def download(self, altsetting, filename):
         mf = ManagedFile(filename, self.dfu)
         mf.sync_to_resource()
 
         processwrapper.check_output(
-            self._get_dfu_prefix() + ['--alt', str(altsetting), '--download', mf.get_remote_path()],
-            print_on_silent_log=True
+            self._get_dfu_prefix() + ["--alt", str(altsetting), "--download", mf.get_remote_path()],
+            print_on_silent_log=True,
         )
 
     @step()
     def detach(self, altsetting):
-        processwrapper.check_output(
-            self._get_dfu_prefix() + ['--alt', str(altsetting), '--detach']
-        )
+        processwrapper.check_output(self._get_dfu_prefix() + ["--alt", str(altsetting), "--detach"])
 
     @step()
     def list(self):
-        processwrapper.check_output(
-            self._get_dfu_prefix() + ['--list'],
-            print_on_silent_log=True
-        )
+        processwrapper.check_output(self._get_dfu_prefix() + ["--list"], print_on_silent_log=True)

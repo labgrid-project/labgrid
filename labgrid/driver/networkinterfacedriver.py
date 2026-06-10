@@ -31,7 +31,7 @@ class NetworkInterfaceDriver(Driver):
             # port forwarding is not useful for localhost
             self.ssh = None
         self.wrapper = AgentWrapper(host)
-        self.proxy = self.wrapper.load('network_interface')
+        self.proxy = self.wrapper.load("network_interface")
 
     def on_deactivate(self):
         try:

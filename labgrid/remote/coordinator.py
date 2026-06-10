@@ -9,6 +9,7 @@ import time
 from contextlib import contextmanager
 import copy
 import random
+import signal
 
 import attr
 import grpc
@@ -240,8 +241,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     async def _poll_step_schedule(self):
         # update reservations
-        with warn_if_slow("schedule reservations"):
-            self.schedule_reservations()
+        async with self.lock:
+            with warn_if_slow("schedule reservations"):
+                self.schedule_reservations()
 
     async def poll(self, step_func):
         while not self.loop.is_closed():
@@ -955,6 +957,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         # only have a copy for convenience.
 
         # expire reservations
+        assert self.lock.locked()
         for res in list(self.reservations.values()):
             if res.state is ReservationState.acquired:
                 # acquired reservations do not expire
@@ -1053,7 +1056,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     place.reservation = res.token
         for name in old_map.keys() | new_map.keys():
             if old_map.get(name) != new_map.get(name):
-                self._publish_place(place)
+                self._publish_place(self.places[name])
 
     @locked
     async def CreateReservation(self, request: labgrid_coordinator_pb2.CreateReservationRequest, context):
@@ -1143,7 +1146,7 @@ async def serve(listen, cleanup) -> None:
     except ImportError:
         logging.info("Module grpcio-channelz not available")
 
-    server.add_insecure_port(listen)
+    bound = server.add_insecure_port(listen)
     logging.debug("Starting server")
     await server.start()
 
@@ -1157,8 +1160,18 @@ async def serve(listen, cleanup) -> None:
         # existing RPCs to continue within the grace period.
         await server.stop(5)
 
+    def callback():
+        asyncio.ensure_future(server_graceful_shutdown())
+
     cleanup.append(server_graceful_shutdown())
+    loop = asyncio.get_event_loop()
+    loop.add_signal_handler(signal.SIGINT, callback)
+    loop.add_signal_handler(signal.SIGTERM, callback)
     logging.info("Coordinator ready")
+    host, sep, port = listen.rpartition(":")
+    if not sep or not port.isdigit():
+        host = listen
+    print(f"listening on {host}:{bound}", flush=True)
     await server.wait_for_termination()
 
 

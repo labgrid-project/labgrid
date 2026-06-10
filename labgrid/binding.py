@@ -41,8 +41,7 @@ class BindingMixin:
 
     # these are controlled by the Target
     target = attr.ib()
-    name = attr.ib(
-        validator=attr.validators.optional(attr.validators.instance_of(str)))
+    name = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
     state = attr.ib(default=BindingState.idle, init=False)
 
     def __attrs_post_init__(self):
@@ -108,9 +107,7 @@ class BindingMixin:
         @wraps(func)
         def wrapper(self, *_args, **_kwargs):
             if self.state is BindingState.active:
-                raise StateError(
-                    f'{self} is active, but must be deactivated to call {func.__qualname__}'
-                )
+                raise StateError(f"{self} is active, but must be deactivated to call {func.__qualname__}")
             elif self.state is not BindingState.bound:
                 raise StateError(
                     f'{self} has not been bound, {func.__qualname__} cannot be called in state "{self.state.name}"'  # pylint: disable=line-too-long
@@ -123,6 +120,7 @@ class BindingMixin:
         """
         Marks a binding (or binding set) as requiring an explicit name.
         """
+
         def __init__(self, value):
             self.value = value
 

@@ -1,12 +1,12 @@
-""" A driver to control the Tinycontrol tcPDU
-    Reference: https://docs.tinycontrol.pl/en/tcpdu/api/commands
+"""A driver to control the Tinycontrol tcPDU
+Reference: https://docs.tinycontrol.pl/en/tcpdu/api/commands
 
-    Example configuration to use port #3 on a device with URL 'http://172.17.180.53/'
+Example configuration to use port #3 on a device with URL 'http://172.17.180.53/'
 
-    NetworkPowerPort:
-      model: tinycontrol_tcpdu
-      host: 'http://172.17.180.53'
-      index: 3
+NetworkPowerPort:
+  model: tinycontrol_tcpdu
+  host: 'http://172.17.180.53'
+  index: 3
 """
 
 from urllib.parse import urljoin
@@ -30,4 +30,4 @@ def power_get(host, port, index):
     r = requests.get(urljoin(host, "/api/v1/read/status/?outValues"))
     r.raise_for_status()
     json_decoded = r.json()
-    return json_decoded[f'out{index}'] == 1
+    return json_decoded[f"out{index}"] == 1

@@ -25,7 +25,7 @@ class DeditecRelaisDriver(Driver, DigitalOutputProtocol):
         else:
             host = None
         self.wrapper = AgentWrapper(host)
-        self.proxy = self.wrapper.load('deditec_relais8')
+        self.proxy = self.wrapper.load("deditec_relais8")
 
     def on_deactivate(self):
         self.wrapper.close()
@@ -33,7 +33,7 @@ class DeditecRelaisDriver(Driver, DigitalOutputProtocol):
         self.proxy = None
 
     @Driver.check_active
-    @step(args=['status'])
+    @step(args=["status"])
     def set(self, status):
         if self.relais.invert:
             status = not status

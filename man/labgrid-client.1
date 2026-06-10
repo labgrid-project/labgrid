@@ -487,6 +487,44 @@ usage: labgrid\-client monitor
 .EE
 .UNINDENT
 .UNINDENT
+.SS labgrid\-client netns
+.sp
+start a network namespace with access to NetworkInterface
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client netns [\-\-name NAME] [\-\-address ADDRESS]
+                            [\-\-mac\-address MAC_ADDRESS] [\-\-nsenter [NSENTER]]
+                            ...
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B cmd
+command to execute in the namespace. If unspecified, $SHELL is invoked
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-name <name>, \-n <name>
+optional resource name
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-address <address>, \-a <address>
+assign address to interface (CIDR notation)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-mac\-address <mac_address>
+assign MAC address to interface
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-nsenter <nsenter>, \-e <nsenter>
+create nsenter wrapper script
+.UNINDENT
 .SS labgrid\-client places|p
 .sp
 list available places

@@ -3,11 +3,10 @@ from ...util.helper import processwrapper
 
 OID = ".1.3.6.1.4.1.318.1.1.4.4.2.1.3"
 
+
 def _snmp_get(host, oid):
-    out = processwrapper.check_output(
-        f"snmpget -v1 -c private -O qn {host} {oid}".split()
-    ).decode('ascii')
-    out_oid, value = out.strip().split(' ', 1)
+    out = processwrapper.check_output(f"snmpget -v1 -c private -O qn {host} {oid}".split()).decode("ascii")
+    out_oid, value = out.strip().split(" ", 1)
     assert oid == out_oid
     if value == "1":
         return True
@@ -19,9 +18,7 @@ def _snmp_get(host, oid):
 
 def _snmp_set(host, oid, value):
     try:
-        processwrapper.check_output(
-            f"snmpset -v1 -c private {host} {oid} {value}".split()
-        )
+        processwrapper.check_output(f"snmpset -v1 -c private {host} {oid} {value}".split())
     except Exception as e:
         raise ExecutionError("failed to set SNMP value") from e
 

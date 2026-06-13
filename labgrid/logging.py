@@ -107,10 +107,12 @@ class SerialLoggingReporter:
                 for part in parts:
                     part += b"\r\n"
                     data = self.vt100_replace_cr_nl(part)
+                    extra["data"] = part.decode()
                     logger.log(logging.CONSOLE, self._create_message(event, data), extra=extra)
 
             elif state == "start" and step.args and "data" in step.args:
                 data = self.vt100_replace_cr_nl(step.args["data"])
+                extra["data"] = step.args["data"].decode()
                 logger.log(logging.CONSOLE, self._create_message(event, data), extra=extra)
 
     def flush(self):
@@ -123,6 +125,7 @@ class SerialLoggingReporter:
         for source, logger in self.loggers.items():
             data = self.vt100_replace_cr_nl(self.bufs[source])
             if data:
+                extra["data"] = self.bufs[source].decode()
                 logger.log(logging.CONSOLE, self._create_message(self.lastevent, data), extra=extra)
             self.bufs[source] = b""
 

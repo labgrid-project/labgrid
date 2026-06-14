@@ -1,11 +1,8 @@
-import datetime
-
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from collections.abc import Iterable as _Iterable, Mapping as _Mapping
-from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
+from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -141,14 +138,16 @@ class Hello(_message.Message):
     def __init__(self, version: _Optional[str] = ...) -> None: ...
 
 class ExporterOutMessage(_message.Message):
-    __slots__ = ("hello", "set_acquired_request", "lease_extended_request")
+    __slots__ = ("hello", "set_acquired_request", "lease_started_request", "lease_extended_request")
     HELLO_FIELD_NUMBER: _ClassVar[int]
     SET_ACQUIRED_REQUEST_FIELD_NUMBER: _ClassVar[int]
+    LEASE_STARTED_REQUEST_FIELD_NUMBER: _ClassVar[int]
     LEASE_EXTENDED_REQUEST_FIELD_NUMBER: _ClassVar[int]
     hello: Hello
     set_acquired_request: ExporterSetAcquiredRequest
+    lease_started_request: ExporterLeaseStartedRequest
     lease_extended_request: ExporterLeaseExtendedRequest
-    def __init__(self, hello: _Optional[_Union[Hello, _Mapping]] = ..., set_acquired_request: _Optional[_Union[ExporterSetAcquiredRequest, _Mapping]] = ..., lease_extended_request: _Optional[_Union[ExporterLeaseExtendedRequest, _Mapping]] = ...) -> None: ...
+    def __init__(self, hello: _Optional[_Union[Hello, _Mapping]] = ..., set_acquired_request: _Optional[_Union[ExporterSetAcquiredRequest, _Mapping]] = ..., lease_started_request: _Optional[_Union[ExporterLeaseStartedRequest, _Mapping]] = ..., lease_extended_request: _Optional[_Union[ExporterLeaseExtendedRequest, _Mapping]] = ...) -> None: ...
 
 class ExporterSetAcquiredRequest(_message.Message):
     __slots__ = ("group_name", "resource_name", "place_name")
@@ -159,6 +158,18 @@ class ExporterSetAcquiredRequest(_message.Message):
     resource_name: str
     place_name: str
     def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ...) -> None: ...
+
+class ExporterLeaseStartedRequest(_message.Message):
+    __slots__ = ("group_name", "resource_name", "place_name", "duration")
+    GROUP_NAME_FIELD_NUMBER: _ClassVar[int]
+    RESOURCE_NAME_FIELD_NUMBER: _ClassVar[int]
+    PLACE_NAME_FIELD_NUMBER: _ClassVar[int]
+    DURATION_FIELD_NUMBER: _ClassVar[int]
+    group_name: str
+    resource_name: str
+    place_name: str
+    duration: int
+    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., duration: _Optional[int] = ...) -> None: ...
 
 class ExporterLeaseExtendedRequest(_message.Message):
     __slots__ = ("group_name", "resource_name", "place_name", "duration")
@@ -469,7 +480,7 @@ class Reservation(_message.Message):
     created: float
     timeout: float
     lease_start_time: _timestamp_pb2.Timestamp
-    def __init__(self, owner: _Optional[str] = ..., token: _Optional[str] = ..., state: _Optional[int] = ..., prio: _Optional[float] = ..., filters: _Optional[_Mapping[str, Reservation.Filter]] = ..., allocations: _Optional[_Mapping[str, str]] = ..., created: _Optional[float] = ..., timeout: _Optional[float] = ..., lease_start_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    def __init__(self, owner: _Optional[str] = ..., token: _Optional[str] = ..., state: _Optional[int] = ..., prio: _Optional[float] = ..., filters: _Optional[_Mapping[str, Reservation.Filter]] = ..., allocations: _Optional[_Mapping[str, str]] = ..., created: _Optional[float] = ..., timeout: _Optional[float] = ..., lease_start_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
 
 class CancelReservationRequest(_message.Message):
     __slots__ = ("token",)

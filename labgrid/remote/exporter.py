@@ -936,6 +936,29 @@ class Exporter:
                         logging.debug("queuing %s", in_message)
                         self.out_queue.put_nowait(in_message)
                         logging.debug("queued %s", in_message)
+                elif kind == "lease_started_request":
+                    logging.debug("lease started request")
+                    success = False
+                    reason = None
+                    try:
+                        await self.lease_started(
+                            out_message.lease_started_request.group_name,
+                            out_message.lease_started_request.resource_name,
+                            out_message.lease_started_request.place_name,
+                            out_message.lease_started_request.duration,
+                        )
+                        success = True
+                    except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
+                        reason = e.args[0]
+                        logging.warning("lease_started_request failed: %s", reason)
+                    finally:
+                        in_message = labgrid_coordinator_pb2.ExporterInMessage()
+                        in_message.response.success = success
+                        if reason:
+                            in_message.response.reason = reason
+                        logging.debug("queuing %s", in_message)
+                        self.out_queue.put_nowait(in_message)
+                        logging.debug("queued %s", in_message)
                 elif kind == "lease_extended_request":
                     logging.debug("lease extended request")
                     success = False
@@ -995,6 +1018,29 @@ class Exporter:
                 f"Resource {group_name}/{resource_name} is already acquired by {resource.acquired}"
             )
 
+        try:
+            resource.acquire(place_name)
+        finally:
+            await self.update_resource(group_name, resource_name)
+
+    async def lease_started(self, group_name, resource_name, place_name, duration):
+        resource = self.groups.get(group_name, {}).get(resource_name)
+        if resource is None:
+            raise UnknownResourceError(
+                f"lease start request for unknown resource {group_name}/{resource_name} by {place_name}"
+            )
+
+        if resource.acquired:
+            raise InvalidResourceRequestError(
+                f"Resource {group_name}/{resource_name} is already acquired by {resource.acquired}"
+            )
+
+        logging.info(
+            "received lease start for %s/%s by %s seconds",
+            group_name,
+            resource_name,
+            duration,
+        )
         try:
             resource.acquire(place_name)
         finally:

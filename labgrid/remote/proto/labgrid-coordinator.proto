@@ -135,7 +135,8 @@ message ExporterOutMessage {
   oneof kind {
     Hello hello = 1;
     ExporterSetAcquiredRequest set_acquired_request = 2;
-    ExporterLeaseExtendedRequest lease_extended_request = 3;
+    ExporterLeaseStartedRequest lease_started_request = 3;
+    ExporterLeaseExtendedRequest lease_extended_request = 4;
   };
 };
 
@@ -145,6 +146,13 @@ message ExporterSetAcquiredRequest {
   optional string place_name = 3;
   string acquirer_identity = 4;
 };
+
+message ExporterLeaseStartedRequest {
+  string group_name = 1;
+  string resource_name = 2;
+  string place_name = 3;
+  uint64 duration = 4;
+}
 
 message ExporterLeaseExtendedRequest {
   string group_name = 1;

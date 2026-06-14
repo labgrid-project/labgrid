@@ -576,6 +576,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 out_msg = labgrid_coordinator_pb2.ExporterOutMessage()
                 if cmd.kind == "set_acquired_request":
                     out_msg.set_acquired_request.CopyFrom(cmd.request)
+                elif cmd.kind == "lease_started_request":
+                    out_msg.lease_started_request.CopyFrom(cmd.request)
                 elif cmd.kind == "lease_extended_request":
                     out_msg.lease_extended_request.CopyFrom(cmd.request)
                 else:
@@ -752,6 +754,27 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         if resource.acquired != place.name:
             logging.warning("resource %s not acquired by this place after acquire request", resource)
 
+    async def _lease_resource(self, place, resource, duration):
+        assert self.lock.locked()
+
+        # this triggers an update from the exporter which is published
+        # to the clients
+        request = labgrid_coordinator_pb2.ExporterLeaseStartedRequest()
+        request.group_name = resource.path[1]
+        request.resource_name = resource.path[3]
+        request.place_name = place.name
+        request.duration = duration
+        cmd = ExporterCommand("lease_started_request", request)
+        self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
+        try:
+            await cmd.wait()
+        except asyncio.TimeoutError as e:
+            raise ExporterError("timed out waiting for exporter while leasing resource") from e
+        if not cmd.response.success:
+            raise ExporterError(cmd.response.reason or "exporter returned failure without a reason")
+        if resource.acquired != place.name:
+            logging.warning("resource %s not acquired by this place after lease request", resource)
+
     async def _acquire_resources(self, place, resources):
         assert self.lock.locked()
 
@@ -790,6 +813,45 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             if isinstance(e, CoordinatorError):
                 raise
             raise CoordinatorError(f"failed to acquire {resource}") from e
+
+        for resource in resources:
+            place.acquired_resources.append(resource)
+
+    async def _lease_resources(self, place, resources, duration):
+        assert self.lock.locked()
+
+        resources = resources.copy()  # we may modify the list
+        # all resources need to be free
+        for resource in resources:
+            if resource.acquired:
+                raise CoordinatorError(f"{resource} is already acquired by {resource.acquired}")
+
+            for otherplace in self.places.values():
+                for oldres in otherplace.acquired_resources:
+                    if resource.path == oldres.path:
+                        logging.info(
+                            "Conflicting orphaned resource %s for lease request for place %s", oldres, place.name
+                        )
+                        raise CoordinatorError(
+                            f"conflicting orphaned resource {oldres} for lease request for place {place.name}"
+                        )
+
+        # lease resources
+        leased = []
+        try:
+            for resource in resources:
+                await self._lease_resource(place, resource, duration)
+                leased.append(resource)
+        except Exception as e:
+            logging.exception("failed to lease %s", resource)
+            # cleanup
+            try:
+                await self._release_resources(place, leased)
+            except CoordinatorError:
+                logging.exception("failed to release leased resources during lease cleanup")
+            if isinstance(e, CoordinatorError):
+                raise
+            raise CoordinatorError(f"failed to lease {resource}") from e
 
         for resource in resources:
             place.acquired_resources.append(resource)
@@ -1016,6 +1078,23 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             place.acquired = None
             raise
 
+    async def _lease_place_resources(self, place, owner, duration):
+        assert self.lock.locked()
+
+        place.acquired = owner
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    if place.hasmatch(resource.path):
+                        resources.append(resource)
+
+        try:
+            await self._lease_resources(place, resources, duration)
+        except CoordinatorError:
+            place.acquired = None
+            raise
+
     @add_identity
     @locked
     async def AcquirePlace(self, request, context, *, identity):
@@ -1090,7 +1169,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             )
 
         try:
-            await self._acquire_place_resources(place, username)
+            await self._lease_place_resources(place, username, self.default_lease_duration)
         except CoordinatorError as e:
             message = f"Failed to lease resources for place {name}"
             if str(e):

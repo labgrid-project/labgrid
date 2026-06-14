@@ -1060,6 +1060,10 @@ class Exporter:
                     await self.acquire(request.group_name, request.resource_name, request.place_name)
                 else:
                     await self.release(request.group_name, request.resource_name)
+            elif kind == "lease_started_request":
+                await self.lease_started(
+                    request.group_name, request.resource_name, request.place_name, request.duration
+                )
             elif kind == "lease_extended_request":
                 await self.lease_extended(
                     request.group_name,
@@ -1101,7 +1105,7 @@ class Exporter:
                 if kind == "hello":
                     print("Exporter ready", flush=True)
                     logging.info("connected to coordinator version %s", out_message.hello.version)
-                elif kind in ("set_acquired_request", "lease_extended_request"):
+                elif kind in ("set_acquired_request", "lease_started_request", "lease_extended_request"):
                     await self._handle_resource_request(kind, getattr(out_message, kind))
                 else:
                     logging.debug("unknown request: %s", kind)
@@ -1135,6 +1139,29 @@ class Exporter:
                 f"Resource {group_name}/{resource_name} is already in use by {resource.acquired}"
             )
 
+        try:
+            resource.acquire(place_name)
+        finally:
+            await self.update_resource(group_name, resource_name)
+
+    async def lease_started(self, group_name, resource_name, place_name, duration):
+        resource = self.groups.get(group_name, {}).get(resource_name)
+        if resource is None:
+            raise UnknownResourceError(
+                f"lease start request for unknown resource {group_name}/{resource_name} by {place_name}"
+            )
+
+        if resource.acquired:
+            raise InvalidResourceRequestError(
+                f"Resource {group_name}/{resource_name} is already acquired by {resource.acquired}"
+            )
+
+        logging.info(
+            "received lease start for %s/%s by %s seconds",
+            group_name,
+            resource_name,
+            duration,
+        )
         try:
             resource.acquire(place_name)
         finally:

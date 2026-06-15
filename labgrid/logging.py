@@ -89,6 +89,7 @@ class SerialLoggingReporter:
         state = event.data.get("state")
         extra = {
             "step": step,
+            "method": event.step.title,
         }
         if step.tag == "console":
             self.loggers[step.source] = logging.getLogger(
@@ -121,6 +122,7 @@ class SerialLoggingReporter:
 
         extra = {
             "step": self.lastevent.step,
+            "method": self.lastevent.step.title,
         }
         for source, logger in self.loggers.items():
             data = self.vt100_replace_cr_nl(self.bufs[source])

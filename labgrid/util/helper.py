@@ -1,17 +1,18 @@
+import errno
 import fcntl
-import os
 import logging
+import os
 import pty
 import re
 import select
 import subprocess
-import errno
-from socket import socket, AF_INET, SOCK_STREAM
 from contextlib import closing
+from socket import AF_INET, SOCK_STREAM, socket
 
 import attr
 
 from ..step import step
+from .timeout import Timeout
 
 re_vt100 = re.compile(r"(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]")
 
@@ -40,7 +41,7 @@ class ProcessWrapper:
     loglevel = logging.INFO
 
     @step(args=['command'], result=True, tag='process')
-    def check_output(self, command, *, print_on_silent_log=False, input=None, stdin=None): # pylint: disable=redefined-builtin
+    def check_output(self, command, *, print_on_silent_log=False, input=None, stdin=None, timeout=None): # pylint: disable=redefined-builtin
         """Run a command and supply the output to callback functions"""
         logger = logging.getLogger("Process")
         res = []
@@ -81,6 +82,9 @@ class ProcessWrapper:
         write_fds = []
         if stdin_w is not None:
             write_fds.append(stdin_w)
+
+        if timeout is not None:
+            timeout = Timeout(timeout)
 
         while True:
             ready_r, ready_w, _ = select.select(read_fds, write_fds, [], 0.1)
@@ -127,6 +131,9 @@ class ProcessWrapper:
             if process.returncode is not None:
                 break
 
+            if timeout is not None and timeout.expired:
+                break
+
         if stdin_w is not None:
             os.close(stdin_w)
 
@@ -142,6 +149,11 @@ class ProcessWrapper:
 
         if print_on_silent_log and logger.getEffectiveLevel() > ProcessWrapper.loglevel:
             self.disable_print()
+
+        if timeout is not None and timeout.expired:
+            raise TimeoutError(
+                f"Timeout of {timeout.timeout} seconds exceeded while waiting for process: [{process.pid}] command: {command}"
+            )
 
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode,

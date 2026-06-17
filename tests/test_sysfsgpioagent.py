@@ -36,11 +36,11 @@ class TestGpioAgent:
             super().set(val)
 
     def test_instantiation(self):
-        gpio_line = TestGpioAgent.GpioDigitalOutputMock(index=13)
+        gpio_line = TestGpioAgent.GpioDigitalOutputMock(index=13, invert=False)
         assert isinstance(gpio_line, GpioDigitalOutput)
 
     def test_set(self):
-        gpio_line = TestGpioAgent.GpioDigitalOutputMock(index=13)
+        gpio_line = TestGpioAgent.GpioDigitalOutputMock(index=13, invert=False)
         for val in [True, False, True, False]:
             gpio_line.set(val)
             assert gpio_line.get() == val

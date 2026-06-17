@@ -37,9 +37,9 @@ class GpioDigitalOutputDriver(Driver, DigitalOutputProtocol):
     @Driver.check_active
     @step(args=['status'])
     def set(self, status):
-        self.proxy.set(self.gpio.index, status)
+        self.proxy.set(self.gpio.index, self.gpio.invert, status)
 
     @Driver.check_active
     @step(result=True)
     def get(self):
-        return self.proxy.get(self.gpio.index)
+        return self.proxy.get(self.gpio.index, self.gpio.invert)

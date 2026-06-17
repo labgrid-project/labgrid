@@ -986,6 +986,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         res.allocations.clear()
                         res.refresh(300)
                         print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+                        break
                     if place.acquired is not None:
                         acquired_places.add(name)
                     assert name not in allocated_places, "conflicting allocation"

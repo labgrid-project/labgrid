@@ -102,7 +102,7 @@ def pytest_collection_modifyitems(config, items):
     if not env:
         return
 
-    have_feature = env.get_features() | env.get_target_features()
+    have_feature = env.get_features() | env.get_all_features()
 
     for item in items:
         # pytest.mark.lg_feature

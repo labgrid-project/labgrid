@@ -1,4 +1,5 @@
 import subprocess
+import warnings
 import attr
 
 from ..factory import target_factory
@@ -94,11 +95,21 @@ class RKUSBDriver(Driver, BootstrapProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        # FIXME make sure we always have an environment or config
+        tools = {}
         if self.target.env:
-            self.tool = self.target.env.config.get_tool('rk-usb-loader')
+            tools = self.target.env.config.data.get('tools') or {}
+        if 'rkdeveloptool' not in tools and 'rk-usb-loader' in tools:
+            # Backward compatibility: the rkdeveloptool binary used to be
+            # configured under the (misnamed) 'rk-usb-loader' tools key, which
+            # is now used by the RKBootstrapDriver instead.
+            warnings.warn(
+                "Configuring rkdeveloptool under the 'rk-usb-loader' tools key is "
+                "deprecated, use the 'rkdeveloptool' key instead",
+                DeprecationWarning,
+            )
+            self.tool = self.target.get_tool('rk-usb-loader')
         else:
-            self.tool = 'rk-usb-loader'
+            self.tool = self.target.get_tool('rkdeveloptool')
 
     def on_activate(self):
         pass
@@ -138,6 +149,54 @@ class RKUSBDriver(Driver, BootstrapProtocol):
                 processwrapper.check_output(
                     self.loader.command_prefix +
                     [self.tool, 'wl', '0x40', mf.get_remote_path()],
+                    print_on_silent_log=True
+                )
+                break
+            except subprocess.CalledProcessError:
+                if timeout.expired:
+                    raise
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class RKBootstrapDriver(Driver, BootstrapProtocol):
+    """The RKBootstrapDriver uploads a combined barebox image into a Rockchip
+    SoC in MaskROM mode using barebox's ``rk-usb-loader`` tool.
+
+    In contrast to the :any:`RKUSBDriver` (which uses rkdeveloptool's ``db`` and
+    ``wl`` commands to flash a bootloader to storage), this driver loads the
+    image into RAM and executes it, i.e. it performs a true bootstrap.
+    """
+    bindings = {
+        "loader": {"RKUSBLoader", "NetworkRKUSBLoader"},
+    }
+
+    image = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self.tool = self.target.get_tool('rk-usb-loader')
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    @Driver.check_active
+    @step(args=['filename'])
+    def load(self, filename=None):
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        timeout = Timeout(3.0)
+        while True:
+            try:
+                processwrapper.check_output(
+                    self.loader.command_prefix +
+                    [self.tool, mf.get_remote_path()],
                     print_on_silent_log=True
                 )
                 break

@@ -26,7 +26,7 @@ from py_netgear_plus import NetgearSwitchConnector
 from ..exception import ExecutionError
 
 
-def _get_hostname_and_password(url: str) -> tuple[str, str]:
+def _get_hostname_port_and_password(url: str) -> tuple[str, int, str]:
     """Obtain credentials from url or default and return hostname and password.
 
     If no password is in the URL return "P4ssword", which fulfills  the minimal requirements from Netgear:
@@ -35,20 +35,23 @@ def _get_hostname_and_password(url: str) -> tuple[str, str]:
     - at least one lower case character
     - at least one number
 
+    If no port is in the URL, return 80.
+
     Args:
         url: A URL with an optional basic auth prefix.
 
     Returns:
-        A tuple of the hostname, and the extracted or default password
+        A tuple of the hostname, port and the extracted or default password
 
     """
     parse_result = urlparse(url)
     if parse_result.scheme != "http":
         raise ExecutionError(f"URL must start with http://, found {parse_result.scheme} for {url}.")
 
-    password = "P4ssword" if parse_result.password is None else parse_result.password
+    password = parse_result.password or "P4ssword"
+    port = parse_result.port or 80
 
-    return parse_result.hostname, password
+    return parse_result.hostname, port, password
 
 
 def power_set(host: str, _port: int, index: int, value: bool) -> None:
@@ -64,9 +67,11 @@ def power_set(host: str, _port: int, index: int, value: bool) -> None:
     index = int(index)
     netgear_port_number = index + 1
 
-    (hostname, password) = _get_hostname_and_password(host)
+    (hostname, port, password) = _get_hostname_port_and_password(host)
 
-    sw = NetgearSwitchConnector(hostname, password)
+    network_address = f"{hostname}:{port}"
+
+    sw = NetgearSwitchConnector(network_address, password)
     sw.autodetect_model()
     try:
         sw.get_login_cookie()
@@ -97,9 +102,10 @@ def power_get(host: str, _port: int, index: int) -> bool:
     index = int(index)
     netgear_port_number = index + 1
 
-    (hostname, password) = _get_hostname_and_password(host)
+    (hostname, port, password) = _get_hostname_port_and_password(host)
+    network_address = f"{hostname}:{port}"
 
-    sw = NetgearSwitchConnector(hostname, password)
+    sw = NetgearSwitchConnector(network_address, password)
     sw.autodetect_model()
     try:
         sw.get_login_cookie()

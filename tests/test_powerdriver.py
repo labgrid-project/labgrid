@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 import pytest
 
 from labgrid.driver import ExecutionError
-from labgrid.driver.power.poe_netgear_plus import _get_hostname_and_password
+from labgrid.driver.power.poe_netgear_plus import _get_hostname_port_and_password
 from labgrid.resource import NetworkPowerPort, YKUSHPowerPort
 from labgrid.driver.powerdriver import (
     ExternalPowerDriver,
@@ -393,10 +393,11 @@ class TestPoeNetgearPlusPowerDriver:
         ]
     )
     def test_get_hostname_and_password(self, url: str, expected_host: str, expected_pw: str):
-        returned_host, returned_pw = _get_hostname_and_password(url)
+        returned_host, returned_port, returned_pw = _get_hostname_port_and_password(url)
         assert returned_host == expected_host
+        assert returned_port == 80
         assert returned_pw == expected_pw
 
     def test_get_hostname_and_pw_non_http_raises(self):
         with pytest.raises(ExecutionError, match="URL must start with http://"):
-            _get_hostname_and_password("no_http_protocol")
+            _get_hostname_port_and_password("no_http_protocol")

@@ -21,11 +21,7 @@ class MXSUSBDriver(Driver, BootstrapProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        # FIXME make sure we always have an environment or config
-        if self.target.env:
-            self.tool = self.target.env.config.get_tool('mxs-usb-loader')
-        else:
-            self.tool = 'mxs-usb-loader'
+        self.tool = self.target.get_tool('mxs-usb-loader')
 
     def on_activate(self):
         pass
@@ -59,11 +55,7 @@ class IMXUSBDriver(Driver, BootstrapProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        # FIXME make sure we always have an environment or config
-        if self.target.env:
-            self.tool = self.target.env.config.get_tool('imx-usb-loader')
-        else:
-            self.tool = 'imx-usb-loader'
+        self.tool = self.target.get_tool('imx-usb-loader')
 
     def on_activate(self):
         pass
@@ -166,11 +158,7 @@ class UUUDriver(Driver, BootstrapProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        # FIXME make sure we always have an environment or config
-        if self.target.env:
-            self.tool = self.target.env.config.get_tool('uuu-loader')
-        else:
-            self.tool = 'uuu-loader'
+        self.tool = self.target.get_tool('uuu-loader')
 
     def on_activate(self):
         pass
@@ -211,11 +199,7 @@ class BDIMXUSBDriver(Driver, BootstrapProtocol):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        # FIXME make sure we always have an environment or config
-        if self.target.env:
-            self.tool = self.target.env.config.get_tool('imx_usb')
-        else:
-            self.tool = 'imx_usb'
+        self.tool = self.target.get_tool('imx_usb')
 
     def on_activate(self):
         pass

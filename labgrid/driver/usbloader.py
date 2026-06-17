@@ -206,7 +206,7 @@ class BDIMXUSBDriver(Driver, BootstrapProtocol):
     must be specified explicitly.
     """
     bindings = {
-        "loader": {"IMXUSBLoader", "NetworkIMXUSBLoader"},
+        'loader': {'IMXUSBLoader', 'NetworkIMXUSBLoader'},
     }
 
     def __attrs_post_init__(self):
@@ -238,3 +238,171 @@ class BDIMXUSBDriver(Driver, BootstrapProtocol):
             ],
             print_on_silent_log=True
         )
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class SamsungUSBDriver(Driver, BootstrapProtocol):
+    bindings = {
+        'loader': {'SamsungUSBLoader', 'NetworkSamsungUSBLoader'},
+    }
+
+    bl1 = attr.ib(validator=attr.validators.instance_of(str))
+    bl1_loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    spl_loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    image = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('smdk-usbdl')
+        else:
+            self.tool = 'smdk-usbdl'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    @Driver.check_active
+    @step(args=['filename'])
+    def load(self, filename=None, phase=None):
+        if filename is None and phase == 'bl1':
+            filename = self.bl1
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        if phase == 'bl1':
+            addr = self.bl1_loadaddr
+        elif phase == 'spl':
+            addr = self.spl_loadaddr
+        elif phase in (None, 'u-boot'):
+            addr = self.loadaddr
+        else:
+            raise ValueError(f"Unknown phase '{phase}'")
+        pathname = mf.get_remote_path()
+
+        args = [self.tool, '-a', f'{addr:x}',
+                '-b', f'{self.loader.busnum:03d}',
+                '-d', f'{self.loader.devnum:03d}',
+                '-f', pathname]
+
+        processwrapper.check_output(
+            self.loader.command_prefix + args,
+        )
+
+    @Driver.check_active
+    @step()
+    def execute(self):
+        """The load() method automatically executes, so this does nothing"""
+        pass
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class SunxiUSBDriver(Driver, BootstrapProtocol):
+    bindings = {
+        "loader": {"SunxiUSBLoader", "NetworkSunxiUSBLoader"},
+    }
+
+    loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    image = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('sunxi-fel')
+        else:
+            self.tool = 'sunxi-fel'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    def _run_tool(self, *part):
+        args = ['-d', '%s:%s' % (self.loader.busnum, self.loader.devnum)]
+        cmd = ['sunxi-fel'] + args + list(part)
+
+        processwrapper.check_output(
+            self.loader.command_prefix + cmd,
+            print_on_silent_log=True
+        )
+
+    @Driver.check_active
+    @step(args=['filename', 'phase'])
+    def load(self, filename=None, phase=None):
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        pathname = mf.get_remote_path()
+        if phase == 'spl':
+            self._run_tool('spl', pathname)
+        else:
+            self._run_tool('write', f'{self.loadaddr:#x}', pathname)
+
+    @Driver.check_active
+    @step()
+    def execute(self):
+        self._run_tool('exe', '%#x' % self.loadaddr)
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class TegraUSBDriver(Driver, BootstrapProtocol):
+    bindings = {
+        'loader': {'TegraUSBLoader', 'NetworkTegraUSBLoader'},
+    }
+
+    loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    bct = attr.ib(validator=attr.validators.instance_of(str))
+    usb_path = attr.ib(validator=attr.validators.instance_of(str))
+    image = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('tegrarcm')
+        else:
+            self.tool = 'tegrarcm'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    @Driver.check_active
+    @step(args=['filename'])
+    def load(self, filename=None, phase=None):
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        pathname = mf.get_remote_path()
+        args = [self.tool, '--bct=' + self.bct,
+               f'--bootloader={pathname}',
+               f'--loadaddr={self.loadaddr:#08x}',
+               '--usb-port-path', self.usb_path]
+
+        processwrapper.check_output(
+            self.loader.command_prefix + args,
+            print_on_silent_log=True
+        )
+
+    @Driver.check_active
+    @step()
+    def execute(self):
+        """The load() method automatically executes, so this does nothing"""
+        pass

@@ -16,7 +16,8 @@ from .powerdriver import ManualPowerDriver, ExternalPowerDriver, \
                          DigitalOutputPowerDriver, YKUSHPowerDriver, \
                          USBPowerDriver, SiSPMPowerDriver, NetworkPowerDriver, \
                          PDUDaemonDriver
-from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, RKUSBDriver, UUUDriver
+from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, \
+                       RKUSBDriver, SunxiUSBDriver, UUUDriver
 from .usbsdmuxdriver import USBSDMuxDriver
 from .usbsdwiredriver import USBSDWireDriver
 from .usbsdwire3driver import USBSDWire3Driver
@@ -54,3 +55,4 @@ from .laadriver import LAASerialDriver, LAAPowerDriver, \
                        LAAUSBGadgetMassStorageDriver, LAAUSBDriver, \
                        LAAButtonDriver, LAALedDriver, LAATempDriver, LAAWattDriver, \
                        LAAProviderDriver
+from .sfemulatordriver import SFEmulatorDriver

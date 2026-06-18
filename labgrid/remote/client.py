@@ -2302,12 +2302,21 @@ def main():
         print("Setting the initial state requires a desired state", file=sys.stderr)
         exit(1)
 
-    if args.proxy:
-        proxymanager.force_proxy(args.proxy)
-
     env = None
     if args.config:
         env = Environment(config_file=args.config)
+
+    # Proxy precedence: --proxy command line argument > 'proxy' config option >
+    # LG_PROXY environment variable (the latter is the proxymanager's default).
+    # A 'proxy' config option that is present but empty/false explicitly
+    # disables proxying, even when LG_PROXY is set.
+    if args.proxy:
+        proxymanager.force_proxy(args.proxy)
+    elif env:
+        try:
+            proxymanager.force_proxy(env.config.get_option("proxy"))
+        except KeyError:
+            pass  # no 'proxy' option: keep the LG_PROXY default
 
     role = None
     if args.command != "reserve" and env and env.config.get_targets():

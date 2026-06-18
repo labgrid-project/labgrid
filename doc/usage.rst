@@ -479,6 +479,10 @@ Specifies a SSH proxy host to be used for port forwards to access the
 coordinator. Network resources made available by the exporter will prefer their
 own proxy, and only fallback to LG_PROXY.
 
+This can be overridden by the ``proxy`` option in the environment config (see
+:ref:`labgrid-device-config-options`). Setting that option to an empty value
+forces a direct connection without a proxy, even when ``LG_PROXY`` is set.
+
 See also :ref:`overview-proxy-mechanism`.
 
 

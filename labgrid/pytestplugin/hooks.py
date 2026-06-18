@@ -6,6 +6,7 @@ import pytest
 from .. import Environment
 from ..consoleloggingreporter import ConsoleLoggingReporter
 from ..util.helper import processwrapper
+from ..util.proxy import proxymanager
 from ..logging import StepFormatter, StepLogger
 from ..exceptions import NoStrategyFoundError
 
@@ -89,6 +90,12 @@ def pytest_configure(config):
         env = Environment(config_file=lg_env)
         if lg_coordinator is not None:
             env.config.set_option('coordinator_address', lg_coordinator)
+        # Let the 'proxy' config option override the LG_PROXY environment
+        # variable; a present but empty/false value disables proxying.
+        try:
+            proxymanager.force_proxy(env.config.get_option("proxy"))
+        except KeyError:
+            pass  # no 'proxy' option: keep the LG_PROXY default
     config.stash[LABGRID_ENV_KEY] = env
 
     processwrapper.enable_logging()

@@ -397,6 +397,13 @@ respective proxies. This means that with :code:`LG_PROXY` and
 :code:`LG_COORDINATOR` labgrid can be used fully remotely with only a SSH
 connection as a requirement.
 
+Instead of the environment variables, the :code:`proxy` and
+:code:`coordinator_address` options can be set in the environment config (see
+:ref:`labgrid-device-config-options`). The config options take precedence over
+the corresponding environment variables. Setting the :code:`proxy` option to an
+empty value forces a direct connection without a proxy, even when
+:code:`LG_PROXY` is set.
+
 .. note::
   Labgrid prefers to connect to an exporter-defined proxy over using the
   LG_PROXY variable. This means that a correct entry for the exporter needs to

@@ -32,6 +32,8 @@ previous driver.
 For a list of available resources and drivers refer to
 https://labgrid.readthedocs.io/en/latest/configuration.html.
 
+.. _labgrid-device-config-options:
+
 OPTIONS
 -------
 The ``options:`` top key configures various options such as the coordinator_address.
@@ -42,6 +44,14 @@ OPTIONS KEYS
 ``coordinator_address``
   takes as parameter the coordinator ``HOST[:PORT]`` to connect to.
   Defaults to ``127.0.0.1:20408``.
+  Overrides the ``LG_COORDINATOR`` environment variable.
+
+``proxy``
+  takes as parameter the SSH proxy host used to tunnel connections to the
+  coordinator and to network resources.
+  Overrides the ``LG_PROXY`` environment variable.
+  Set it to an empty value (e.g. ``proxy:``) to force a direct connection
+  without a proxy, even when ``LG_PROXY`` is set.
 
 .. _labgrid-device-config-images:
 

@@ -60,6 +60,14 @@ The \fBoptions:\fP top key configures various options such as the coordinator_ad
 .B \fBcoordinator_address\fP
 takes as parameter the coordinator \fBHOST[:PORT]\fP to connect to.
 Defaults to \fB127.0.0.1:20408\fP\&.
+Overrides the \fBLG_COORDINATOR\fP environment variable.
+.TP
+.B \fBproxy\fP
+takes as parameter the SSH proxy host used to tunnel connections to the
+coordinator and to network resources.
+Overrides the \fBLG_PROXY\fP environment variable.
+Set it to an empty value (e.g. \fBproxy:\fP) to force a direct connection
+without a proxy, even when \fBLG_PROXY\fP is set.
 .UNINDENT
 .SS IMAGES
 .sp

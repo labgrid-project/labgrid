@@ -22,6 +22,11 @@ class ProxyManager:
 
     @classmethod
     def force_proxy(cls, force_proxy):
+        # A falsy value (empty string, None, False) disables proxying, even if
+        # the LG_PROXY environment variable is set.
+        if not force_proxy:
+            cls._force_proxy = None
+            return
         assert isinstance(force_proxy, str)
         cls._force_proxy = force_proxy
 

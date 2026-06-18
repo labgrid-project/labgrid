@@ -104,15 +104,29 @@ def handle_create_tun(*, address=None):
         return ("", os.fdopen(os.dup(dev_tun.fileno())))
 
 
-def handle_create_vcan(ifname, enable_fd):
-    mtu = "72" if enable_fd else "16"
+def handle_create_vcan(ifname, bitrate, dbitrate):
+    mtu = "16" if dbitrate is None else "72"
     subprocess.run(["ip", "link", "add", "dev", ifname, "type", "vcan"], check=True)
     subprocess.run(["ip", "link", "set", "dev", ifname, "up", "mtu", mtu], check=True)
+
+    # Limit the rate of the virtual can interface to mimic the bus rate on the agent
+    cmd = [
+        "tc",
+        "qdisc",
+        "add",
+        "dev", ifname,
+        "root",
+        "tbf",
+        "rate", str(dbitrate or bitrate),
+        "burst", mtu,
+        "limit", "10000",
+    ]
+    subprocess.run(cmd, check=True)
 
     with socket.socket(socket.PF_CAN, socket.SOCK_RAW | socket.SOCK_NONBLOCK, socket.CAN_RAW) as can:
         can.bind((ifname,))
 
-        if enable_fd:
+        if dbitrate is not None:
             can.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FD_FRAMES, 1)
 
         return ("", os.fdopen(os.dup(can.fileno())))

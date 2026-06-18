@@ -277,7 +277,7 @@ class CanInterfaceDriver(Driver):
         self.ns = wrapper.load("netns")
         self.ns.unshare()
 
-        _, can_fd = self.ns.create_vcan(self.iface.ifname, self.dbitrate is not None)
+        _, can_fd = self.ns.create_vcan(self.iface.ifname, self.bitrate, self.dbitrate)
 
         self.local_pipe = subprocess.Popen(
             ["labgrid-tap-fwd", str(can_fd)],

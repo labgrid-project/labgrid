@@ -273,17 +273,28 @@ class IMXUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
-        if match not in [("15a2", "0054"), ("15a2", "0061"),
+        if match not in [# Extracted from `uuu -udev` command (v. 1.5.239)
+                         ("0483", "0afb"), ("0525", "a4a5"),
+                         ("0525", "b4a4"), ("066f", "9afe"),
+                         ("066f", "9bff"), ("15a2", "003a"),
+                         ("15a2", "0054"), ("15a2", "0061"),
                          ("15a2", "0063"), ("15a2", "0071"),
-                         ("15a2", "007d"), ("15a2", "0076"),
-                         ("15a2", "0080"), ("15a2", "003a"),
-                         ("1fc9", "0128"), ("1fc9", "0126"),
-                         ("1fc9", "012b"), ("1fc9", "0134"),
+                         ("15a2", "0076"), ("15a2", "007d"),
+                         ("15a2", "0080"), ("18d1", "0d02"),
+                         ("1fc9", "0027"), ("1fc9", "0126"),
+                         ("1fc9", "0128"), ("1fc9", "0129"),
+                         ("1fc9", "012b"), ("1fc9", "012f"),
+                         ("1fc9", "0134"), ("1fc9", "0135"),
                          ("1fc9", "013e"), ("1fc9", "0146"),
-                         ("1fc9", "014e"), ("1fc9", "0129"),
-                         ("1fc9", "0159"), ("1fc9", "015d"),
-                         ("1b67", "4fff"), ("0525", "b4a4"), # SPL
-                         ("3016", "1001"),
+                         ("1fc9", "0147"), ("1fc9", "014a"),
+                         ("1fc9", "014b"), ("1fc9", "014e"),
+                         ("1fc9", "0151"), ("1fc9", "0152"),
+                         ("1fc9", "0153"), ("1fc9", "0159"),
+                         ("1fc9", "015c"), ("1fc9", "015d"),
+                         ("3016", "0001"), ("3016", "1001"),
+
+                         # Existing in previous code and not found above
+                         ("15a2", "004f"), ("1b67", "4fff"), # SPL
                          ]:
             return False
 
@@ -811,12 +822,102 @@ class USBDebugger(USBResource):
                          ("15ba", "002b"),  # Olimex ARM-USB-OCD-H
                          ("15ba", "0004"),  # Olimex ARM-USB-TINY
                          ("15ba", "002a"),  # Olimex ARM-USB-TINY-H
-                         ("1366", "0101"),  # SEGGER J-Link PLUS
+                         # SEGGER J-Link IDs extracted from udev rules as shipped by the j-link driver package
+                         # (https://www.segger.com/downloads/jlink/JLink_Linux_x86_64.tgz)
+                         ("1366", "0101"),  # SEGGER J-Link
+                         ("1366", "0102"),  # SEGGER J-Link
+                         ("1366", "0103"),  # SEGGER J-Link
+                         ("1366", "0104"),  # SEGGER J-Link
                          ("1366", "0105"),  # SEGGER J-Link
+                         ("1366", "0107"),  # SEGGER J-Link
+                         ("1366", "0108"),  # SEGGER J-Link
+                         ("1366", "1001"),  # SEGGER J-Link
+                         ("1366", "1002"),  # SEGGER J-Link
+                         ("1366", "1003"),  # SEGGER J-Link
+                         ("1366", "1004"),  # SEGGER J-Link
+                         ("1366", "1005"),  # SEGGER J-Link
+                         ("1366", "1006"),  # SEGGER J-Link
+                         ("1366", "1007"),  # SEGGER J-Link
+                         ("1366", "1008"),  # SEGGER J-Link
+                         ("1366", "1009"),  # SEGGER J-Link
+                         ("1366", "100a"),  # SEGGER J-Link
+                         ("1366", "100b"),  # SEGGER J-Link
+                         ("1366", "100c"),  # SEGGER J-Link
+                         ("1366", "100d"),  # SEGGER J-Link
+                         ("1366", "100e"),  # SEGGER J-Link
+                         ("1366", "100f"),  # SEGGER J-Link
+                         ("1366", "1010"),  # SEGGER J-Link
+                         ("1366", "1011"),  # SEGGER J-Link
+                         ("1366", "1012"),  # SEGGER J-Link
+                         ("1366", "1013"),  # SEGGER J-Link
+                         ("1366", "1014"),  # SEGGER J-Link
                          ("1366", "1015"),  # SEGGER J-Link
+                         ("1366", "1016"),  # SEGGER J-Link
+                         ("1366", "1017"),  # SEGGER J-Link
+                         ("1366", "1018"),  # SEGGER J-Link
+                         ("1366", "1019"),  # SEGGER J-Link
+                         ("1366", "101a"),  # SEGGER J-Link
+                         ("1366", "101b"),  # SEGGER J-Link
+                         ("1366", "101c"),  # SEGGER J-Link
+                         ("1366", "101d"),  # SEGGER J-Link
+                         ("1366", "101e"),  # SEGGER J-Link
+                         ("1366", "101f"),  # SEGGER J-Link
+                         ("1366", "1020"),  # SEGGER J-Link
+                         ("1366", "1021"),  # SEGGER J-Link
+                         ("1366", "1022"),  # SEGGER J-Link
+                         ("1366", "1023"),  # SEGGER J-Link
                          ("1366", "1024"),  # SEGGER J-Link
+                         ("1366", "1025"),  # SEGGER J-Link
+                         ("1366", "1026"),  # SEGGER J-Link
+                         ("1366", "1027"),  # SEGGER J-Link
+                         ("1366", "1028"),  # SEGGER J-Link
+                         ("1366", "1029"),  # SEGGER J-Link
+                         ("1366", "102a"),  # SEGGER J-Link
+                         ("1366", "102b"),  # SEGGER J-Link
+                         ("1366", "102c"),  # SEGGER J-Link
+                         ("1366", "102d"),  # SEGGER J-Link
+                         ("1366", "102e"),  # SEGGER J-Link
+                         ("1366", "102f"),  # SEGGER J-Link
+                         ("1366", "1050"),  # SEGGER J-Link
                          ("1366", "1051"),  # SEGGER J-Link
+                         ("1366", "1052"),  # SEGGER J-Link
+                         ("1366", "1053"),  # SEGGER J-Link
+                         ("1366", "1054"),  # SEGGER J-Link
+                         ("1366", "1055"),  # SEGGER J-Link
+                         ("1366", "1056"),  # SEGGER J-Link
+                         ("1366", "1057"),  # SEGGER J-Link
+                         ("1366", "1058"),  # SEGGER J-Link
+                         ("1366", "1059"),  # SEGGER J-Link
+                         ("1366", "105a"),  # SEGGER J-Link
+                         ("1366", "105b"),  # SEGGER J-Link
+                         ("1366", "105c"),  # SEGGER J-Link
+                         ("1366", "105d"),  # SEGGER J-Link
+                         ("1366", "105e"),  # SEGGER J-Link
+                         ("1366", "105f"),  # SEGGER J-Link
+                         ("1366", "1060"),  # SEGGER J-Link
                          ("1366", "1061"),  # SEGGER J-Link
+                         ("1366", "1062"),  # SEGGER J-Link
+                         ("1366", "1063"),  # SEGGER J-Link
+                         ("1366", "1064"),  # SEGGER J-Link
+                         ("1366", "1065"),  # SEGGER J-Link
+                         ("1366", "1066"),  # SEGGER J-Link
+                         ("1366", "1067"),  # SEGGER J-Link
+                         ("1366", "1068"),  # SEGGER J-Link
+                         ("1366", "1069"),  # SEGGER J-Link
+                         ("1366", "106a"),  # SEGGER J-Link
+                         ("1366", "106b"),  # SEGGER J-Link
+                         ("1366", "106c"),  # SEGGER J-Link
+                         ("1366", "106d"),  # SEGGER J-Link
+                         ("1366", "106e"),  # SEGGER J-Link
+                         ("1366", "106f"),  # SEGGER J-Link
+                         ("064b", "0617"),  # Analog Devices ICE-1000 Emulator
+                         ("064b", "2500"),  # Analog Devices ICE-1500 Emulator
+                         ("064b", "0283"),  # Analog Devices ICE-2000 Emulator
+                         ("064b", "2503"),  # Analog Devices Onboard Debug Agent
+                         ("064b", "2504"),  # Analog Devices Onboard Debug Agent
+                         ("064b", "2507"),  # Analog Devices Onboard Debug Agent
+                         ("064b", "2508"),  # Analog Devices Onboard Debug Agent
+                         ("064b", "250A"),  # Analog Devices Onboard Debug Agent
                          ]:
             return False
 

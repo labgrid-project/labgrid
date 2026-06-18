@@ -27,14 +27,17 @@ class TestExternalConsoleDriver:
         d.txchunk = 2
         d.txdelay = 0.01
         d.write(data)
+        time.sleep(0.1)
         assert d.read(len(data)) == data  # assert written data is read
 
         data = b"odd sized\ndata."
         d.write(data)
+        time.sleep(0.1)
         assert d.read(len(data)) == data  # assert written data is read
 
         data = b"odd chunk\nsize."
         d.txchunk = 3
         d.write(data)
+        time.sleep(0.1)
         assert d.read(len(data)) == data  # assert written data is read
         d.close()

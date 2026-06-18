@@ -43,6 +43,10 @@ jobs:
         cat ~/.ssh/id_ed25519.local.pub >> ~/.ssh/authorized_keys
         echo -e "Host localhost ip6-localhost\n  Hostname 127.0.0.1\n  IdentityFile ~/.ssh/id_ed25519.local\n  UserKnownHostsFile ~/.ssh/known_hosts.local" >> ~/.ssh/config
         ssh -o StrictHostKeyChecking=no localhost echo OK
+    - name: Enable unprivileged user namespaces
+      run: |
+        sudo sysctl kernel.unprivileged_userns_clone=1
+        unshare -Un true
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip virtualenv

@@ -563,3 +563,9 @@ class Target:
         self.deactivate_all_drivers()
         for res in reversed(self.resources):
             self.deactivate(res)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.cleanup()

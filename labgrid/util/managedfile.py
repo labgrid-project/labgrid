@@ -81,7 +81,9 @@ class ManagedFile:
                 # --symbolic --force --no-dereference
                 conn.run_check(f"ln -sfn {self.rpath}{os.path.basename(self.local_path)} {symlink}")
             else:
-                if os.path.exists(symlink) and not os.path.islink(symlink):
+                if os.path.islink(symlink):
+                    os.unlink(symlink)
+                elif os.path.exists(symlink):
                     raise ManagedFileError(f"Path {symlink} exists but is not a symlink.")
                 os.symlink(f"{self.rpath}{os.path.basename(self.local_path)}", symlink)
 

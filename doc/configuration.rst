@@ -804,8 +804,8 @@ Used by:
 
 RKUSBLoader
 ~~~~~~~~~~~
-An :any:`RKUSBLoader` resource describes a USB device in the *Rockchip loader
-state*.
+An :any:`RKUSBLoader` resource describes a USB device in the *Rockchip USB
+maskrom state*.
 
 .. code-block:: yaml
 
@@ -2857,7 +2857,7 @@ Arguments:
 RKUSBDriver
 ~~~~~~~~~~~
 An :any:`RKUSBDriver` is used to upload an image into a device in the *Rockchip
-USB loader state*.
+USB maskrom state*.
 This is useful to bootstrap a bootloader onto a device.
 
 Binds to:

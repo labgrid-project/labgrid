@@ -166,6 +166,145 @@ allocated before returning.
 A reservation will time out after a short time, if it is neither refreshed nor
 used by locked places.
 
+Logging Serial Traffic on the Exporter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When several developers (or CI jobs) share the same boards through a single
+coordinator, it is often useful for the lab admin to keep an independent
+record of every serial-console session.  The per-client ``--logfile`` option
+only records output for the user who set it, so it does not help the operator
+answer questions like *which commands left this board in a bad state?* after
+the fact.
+
+To enable a centralised log on the exporter host, set the
+``LG_SERIAL_TRACE_DIR`` environment variable before starting
+``labgrid-exporter``:
+
+.. code-block:: bash
+
+   $ export LG_SERIAL_TRACE_DIR=/var/log/labgrid/serial
+   $ labgrid-exporter my-config.yaml
+
+For each acquire, the exporter asks ``ser2net`` to record both sides of the
+serial connection to a file named ``<board>-<user>.log`` under that directory,
+where ``<board>`` is the resource group name (falling back to the basename of
+the device path if the resource has no group) and ``<user>`` is the host/user
+identity reported by the coordinator (slashes rewritten to underscores so the
+result is filesystem safe, or ``unknown`` for older coordinators that do not
+send a user).
+
+Because ``ser2net`` is started fresh on each acquire and stopped on release,
+the trace covers exactly one session per acquire.  Repeated acquires by the
+same user on the same board append to the same file, so a long-running
+developer ends up with a single, continuous log per board.
+
+This feature complements rather than replaces user-side logging (``--logfile``
+on the client, ``--lg-log`` on the pytest plugin, or ``ConsoleLoggingReporter``
+when using labgrid as a library): the user-side logs are what the developer
+sees in their terminal and chooses what to capture, while the exporter trace
+is the operator's independent record that the user cannot influence.
+
+A default-mode trace looks like this (user typed ``echo Me again`` at the
+U-Boot prompt; each character of the input appears twice because ``tcp`` and
+``term`` are written into the same stream, so the typed character and the
+board's local echo are interleaved)::
+
+   2026/05/13 06:58:50 OPEN (ipv6,::ffff:192.168.4.7,60208)
+   ...
+   Press SPACE to abort autoboot in 2 seconds
+    => eecchhoo  MMee  aaggaaiinn
+
+   Me again
+   => 2026/05/13 06:59:06 CLOSE netcon (network read close)
+   2026/05/13 06:59:06 CLOSE port (All users disconnected)
+
+Connection events (``OPEN`` when ser2net accepts the client connection,
+``CLOSE`` when the acquire is released) are timestamped by ser2net, giving
+the session boundary that the lab admin can use to correlate a trace with
+other audit logs.  The console traffic itself is recorded verbatim with both
+directions interleaved as they arrive, so the file reads like a transcript of
+what was on the wire.
+
+If per-line timestamps are needed (for example, when correlating to the
+millisecond against another log source), additionally set
+``LG_SERIAL_TRACE_HEXDUMP=1`` before starting ``labgrid-exporter``.  The
+exporter then enables ser2net's hexdump format for the trace, which prepends
+a timestamp and a direction tag to every line at the cost of producing
+hex+ASCII output instead of readable text.  The direction tag is ``term`` for
+bytes the board emitted and ``tcp`` for bytes the client sent.  A hex trace
+of the same ``echo Hello Again`` session looks like this — each typed
+character shows up as a ``tcp`` line immediately followed by a ``term`` line
+as the board echoes it, then the board's output appears as a single
+multi-byte ``term`` line::
+
+   2026/05/13 07:21:02 OPEN (ipv6,::ffff:192.168.4.7,44566)
+   ...
+   2026/05/13 07:21:11 tcp  65                       |e|
+   2026/05/13 07:21:11 term 65                       |e|
+   2026/05/13 07:21:11 tcp  63                       |c|
+   2026/05/13 07:21:11 term 63                       |c|
+   2026/05/13 07:21:11 tcp  68                       |h|
+   2026/05/13 07:21:11 term 68                       |h|
+   2026/05/13 07:21:11 tcp  6f                       |o|
+   2026/05/13 07:21:11 term 6f                       |o|
+   2026/05/13 07:21:11 tcp  20                       | |
+   2026/05/13 07:21:11 term 20                       | |
+   ...
+   2026/05/13 07:21:15 tcp  0a                       |.|
+   2026/05/13 07:21:15 term 0d 0a 48 65 6c 6c 6f 20  |..Hello |
+   2026/05/13 07:21:15 term 41 67 61 69 6e 0d 0a 3d  |Again..=|
+   2026/05/13 07:21:15 term 3e 20                    |> |
+   2026/05/13 07:21:16 CLOSE netcon (network read close)
+
+Setup with systemd
+^^^^^^^^^^^^^^^^^^
+
+When the exporter runs from a systemd unit, drop the variables into the
+``[Service]`` section so they survive restarts:
+
+.. code-block:: ini
+
+   [Service]
+   Environment=LG_SERIAL_TRACE_DIR=/var/log/labgrid/serial
+   # Optional, for per-line timestamps:
+   #Environment=LG_SERIAL_TRACE_HEXDUMP=1
+
+Apply with ``systemctl daemon-reload && systemctl restart labgrid-exporter``.
+Environment variables are read only when the exporter process starts, so a
+config change needs a restart, not just a reload.
+
+Permissions
+^^^^^^^^^^^
+
+Trace files are created with the exporter user's umask (typically mode
+``0600``, owned by whatever user the systemd unit runs as).  An admin reading
+them needs either ``sudo`` privileges, membership in the exporter user's
+group, or the umask widened so a known operator group can read.  Keep this in
+mind when oncall reaches for the log: ``cat`` as your normal user is not
+enough.
+
+Log rotation is intentionally not handled by the exporter itself: files live
+on the lab host where the admin already manages the filesystem, so rotation
+is best left to ``logrotate`` or an equivalent tool pointed at
+``LG_SERIAL_TRACE_DIR``.  Because ser2net opens the trace file in append mode
+on each acquire, rotating between sessions (e.g. with ``logrotate``'s
+``copytruncate`` or ``daily`` options) is safe.
+
+Privacy and disk usage
+^^^^^^^^^^^^^^^^^^^^^^
+
+The trace captures **everything** that flows on the serial console, which can
+include passwords typed at a U-Boot or login prompt, ssh keys pasted into a
+shell, and anything else the user types or that the board prints.  Treat
+``LG_SERIAL_TRACE_DIR`` as an audit log: restrict the directory's permissions,
+document its existence to users, and check the contents against your
+organisation's privacy policy before turning it on in production.
+
+Disk usage is modest in default mode (the trace is the same byte stream as
+the console, plus the OPEN/CLOSE markers) but grows roughly ten-fold in
+hexdump mode, where each byte becomes a full timestamped line.  Plan rotation
+accordingly when enabling ``LG_SERIAL_TRACE_HEXDUMP=1`` on a busy lab.
+
 Library
 -------
 labgrid can be used directly as a Python library, without the infrastructure

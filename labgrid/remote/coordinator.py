@@ -5,6 +5,8 @@ import asyncio
 import traceback
 from enum import Enum
 from functools import wraps
+from ipaddress import ip_address
+from os import environ
 import time
 from contextlib import contextmanager
 import copy
@@ -173,6 +175,20 @@ class ResourceImport(ResourceEntry):
     orphaned = attr.ib(init=False, default=False, validator=attr.validators.instance_of(bool))
 
 
+def _is_from_loopback_ip(peer: str) -> bool:
+    family, address_and_port = peer.split(":", maxsplit=1)
+    if family not in ("ipv4", "ipv6"):
+        msg = "Invalid address family found"
+        logging.warning(msg)
+        return False
+    address, _port = address_and_port.rsplit(":", maxsplit=1)
+    address = address.removeprefix("%5B").removesuffix("%5D")
+    try:
+        return ip_address(address).is_loopback
+    except ValueError:
+        return False
+
+
 def locked(func):
     @wraps(func)
     async def wrapper(self, *args, **kwargs):
@@ -180,6 +196,20 @@ def locked(func):
             return await func(self, *args, **kwargs)
 
     return wrapper
+
+
+def auth_required(func):
+    @wraps(func)
+    async def decorated(self, request, context):
+        if environ.get("AUTH") == "LOCAL_ADMIN":
+            peer = context.peer()
+            if not _is_from_loopback_ip(peer):
+                context.set_code(grpc.StatusCode.UNAUTHENTICATED)
+                context.set_details("Access was not local")
+                raise grpc.RpcError(grpc.StatusCode.UNAUTHENTICATED, "Access was not local")
+        return await func(self, request, context)
+
+    return decorated
 
 
 class ExporterCommand:
@@ -499,6 +529,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except KeyError:
                 logging.info("Never received startup from peer %s that disconnected", peer)
 
+    @auth_required
     @locked
     async def AddPlace(self, request, context):
         name = request.name
@@ -513,6 +544,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AddPlaceResponse()
 
+    @auth_required
     @locked
     async def DeletePlace(self, request, context):
         name = request.name
@@ -529,6 +561,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.DeletePlaceResponse()
 
+    @auth_required
     @locked
     async def AddPlaceAlias(self, request, context):
         placename = request.placename
@@ -543,6 +576,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AddPlaceAliasResponse()
 
+    @auth_required
     @locked
     async def DeletePlaceAlias(self, request, context):
         placename = request.placename
@@ -560,6 +594,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.DeletePlaceAliasResponse()
 
+    @auth_required
     @locked
     async def SetPlaceTags(self, request, context):
         placename = request.placename
@@ -589,6 +624,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.SetPlaceTagsResponse()
 
+    @auth_required
     @locked
     async def SetPlaceComment(self, request, context):
         placename = request.placename
@@ -603,6 +639,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.SetPlaceCommentResponse()
 
+    @auth_required
     @locked
     async def AddPlaceMatch(self, request, context):
         placename = request.placename
@@ -621,6 +658,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AddPlaceMatchResponse()
 
+    @auth_required
     @locked
     async def DeletePlaceMatch(self, request, context):
         placename = request.placename

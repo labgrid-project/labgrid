@@ -124,7 +124,7 @@ class ProcessWrapper:
                     stdin_w = None
 
             process.poll()
-            if process.returncode is not None:
+            if process.returncode is not None and len(ready_r) == 0:
                 break
 
         if stdin_w is not None:

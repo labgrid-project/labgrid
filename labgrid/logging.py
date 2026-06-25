@@ -78,7 +78,7 @@ class SerialLoggingReporter:
         return string
 
     def _create_message(self, event, data):
-        return "{source} {dirind} {data}␍␤".format(
+        return "{source} {dirind} {data}".format(
             source=event.step.source,
             dirind="<" if event.step.title == "read" else ">",
             data=data,
@@ -105,6 +105,7 @@ class SerialLoggingReporter:
                 self.lastevent = event
 
                 for part in parts:
+                    part += b"\r\n"
                     data = self.vt100_replace_cr_nl(part)
                     logger.log(logging.CONSOLE, self._create_message(event, data), extra=extra)
 

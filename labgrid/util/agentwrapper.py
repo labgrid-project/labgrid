@@ -60,8 +60,14 @@ class AgentWrapper:
                 ['rsync', '-e', ' '.join(ssh_opts), '-tq', agent,
                  f'{host}:{agent_remote}'],
             )
+            agent_python = "labgrid-python3" if not subprocess.call(ssh_opts + [host, '--', 'which', 'labgrid-python3']) else "python3"
+            if agent_python == "python3":
+                self.logger.debug(
+                    "labgrid-python3 on %s not found, using python3 which requires system installed python modules for agents",
+                    host
+                )
             self.agent = subprocess.Popen(
-                ssh_opts + [host, '--', 'python3', agent_remote],
+                ssh_opts + [host, '--', agent_python, agent_remote],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 start_new_session=True,

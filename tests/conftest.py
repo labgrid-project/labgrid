@@ -1,4 +1,5 @@
 import logging
+import os
 from signal import SIGTERM
 import sys
 import threading
@@ -12,6 +13,15 @@ from labgrid.resource import RawSerialPort, NetworkSerialPort
 from labgrid.driver.fake import FakeConsoleDriver
 
 psutil = pytest.importorskip("psutil")
+
+# gRPC is only safe to fork() if gRPC objects are created in the child after the fork. The tests do
+# the opposite: the pytest process spawns labgrid-client via pexpect (forkpty) while gRPC is
+# already initialized in it, so gRPC's pthread_atfork handler can lose a race and abort the child
+# before it execs. Set GRPC_ENABLE_FORK_SUPPORT=0 to disable the handler; the spawned clients
+# fork+exec and never reuse an inherited channel, so it is not needed anyway.
+# See also https://github.com/grpc/grpc/blob/master/doc/fork_support.md
+os.environ.setdefault("GRPC_ENABLE_FORK_SUPPORT", "0")
+
 
 @pytest.fixture(scope="session")
 def curses_init():

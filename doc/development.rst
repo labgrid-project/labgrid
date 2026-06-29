@@ -783,12 +783,3 @@ By writing these events to a file (or sqlite database) as a trace, we can
 collect data over multiple runs for later analysis.
 This would become more useful by passing recognized events (stack traces,
 crashes, ...) and benchmark results via the Step infrastructure.
-
-CommandProtocol Support for Background Processes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Currently the CommandProtocol does not support long running
-processes well.
-An implementation should start a new process,
-return a handle and forbid running other processes in the foreground.
-The handle can be used to retrieve output from a command.

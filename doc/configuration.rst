@@ -192,6 +192,9 @@ Currently available are:
 ``gude8031``
   Controls *Gude Expert Power Control 8031 PDUs* and *Gude Expert Power Control 87-1210-18 PDUs* via a simple HTTP API.
 
+``gude8210``
+  Controls *Gude Expert Power Control 8210 PDUs* via SNMP.
+
 ``gude8225``
   Controls *Gude Expert Power Control 8225 PDUs* via a simple HTTP API.
 

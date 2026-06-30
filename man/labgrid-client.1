@@ -377,6 +377,31 @@ output filename
 .B \-\-format {shell,shell\-export,json}
 output format (default: shell\-export)
 .UNINDENT
+.SS labgrid\-client extend
+.sp
+extend a lease by the coordinator default duration
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client extend [\-\-keepalive] [\-q] [token]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B token
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-keepalive
+keep extending the lease automatically using coordinator policy
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-q, \-\-quiet
+do not print lease status on each extension
+.UNINDENT
 .SS labgrid\-client fastboot
 .sp
 run fastboot
@@ -475,6 +500,22 @@ action
 .TP
 .B name
 optional resource name
+.UNINDENT
+.SS labgrid\-client lease
+.sp
+lease a place (time\-limited, requires extension)
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client lease [\-\-allow\-unmatched]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-allow\-unmatched
+allow missing resources for matches when locking the place
 .UNINDENT
 .SS labgrid\-client monitor
 .sp
@@ -1177,6 +1218,22 @@ exporter/group/cls/name, exporter is the name of the exporting machine, group is
 a name defined within the exporter, cls is the class of the exported resource
 and name is its name. Wild cards in match patterns are explicitly allowed, *
 matches anything.
+.SH LEASES
+.sp
+A lease is a time\-limited acquisition of a place.
+.sp
+Leases are always associated with a reservation. The reserved place is referenced
+using \fB\-p +\fP\&. To keep a lease active, the reservation must be extended using
+the \fBextend\fP command.
+.sp
+Use \fBlabgrid\-client extend\fP to refresh the lease once, or
+\fBlabgrid\-client extend \-\-keepalive\fP to keep it alive automatically.
+.sp
+If a lease extension fails, the coordinator cancels the lease and releases the
+place to avoid leaving the system in an inconsistent state.
+.sp
+If the reservation expires, the coordinator automatically releases the leased
+place.
 .SH ADDING NAMED RESOURCES
 .sp
 If a target contains multiple Resources of the same type, named matches need to
@@ -1217,6 +1274,36 @@ Open a console to the acquired place:
 .sp
 .EX
 $ labgrid\-client \-p <placename> console
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+Lease a place using a reservation:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+$ labgrid\-client reserve board=imx8 \-\-shell
+$ labgrid\-client wait
+$ labgrid\-client \-p + lease
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+Extend the lease to keep it alive:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+# refresh once by passing the token explicitly
+$ labgrid\-client extend ABC123
+
+# or take the token from the environment (LG_TOKEN)
+$ export LG_TOKEN=ABC123
+$ labgrid\-client extend
+
+# keep the lease alive automatically
+$ labgrid\-client extend \-\-keepalive
 .EE
 .UNINDENT
 .UNINDENT

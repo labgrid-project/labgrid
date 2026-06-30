@@ -3,7 +3,7 @@ import os
 from signal import SIGTERM
 import sys
 import threading
-
+import os
 import pytest
 import pexpect
 
@@ -152,6 +152,9 @@ class Exporter(LabgridComponent):
 
 
 class Coordinator(LabgridComponent):
+    def __init__(self, cwd, env=None):
+        super().__init__(cwd)
+        self.env = env
     def start(self):
         assert self.spawn is None
         assert self.reader is None
@@ -159,7 +162,8 @@ class Coordinator(LabgridComponent):
         self.spawn = pexpect.spawn(
             'python -m labgrid.remote.coordinator',
             logfile=Prefixer(sys.stdout.buffer, 'coordinator'),
-            cwd=self.cwd)
+            cwd=self.cwd,
+            env=self.env)
         try:
             self.spawn.expect('Coordinator ready')
         except Exception as e:
@@ -207,7 +211,12 @@ def serial_driver_no_name(target, serial_port, mocker):
 
 @pytest.fixture(scope='function')
 def coordinator(tmpdir):
-    coordinator = Coordinator(tmpdir)
+    env = os.environ.copy()
+    env["LG_DEFAULT_LEASE_DURATION"] = "5"
+    env["LG_DEFAULT_EXTEND_DURATION"] = "2"
+    env["LG_MAX_LEASE_DURATION"] = "20"
+    env["LG_COORDINATOR_POLL_INTERVAL"] = "1"
+    coordinator = Coordinator(tmpdir, env=env)
     coordinator.start()
 
     yield coordinator

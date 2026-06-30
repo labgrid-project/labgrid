@@ -117,6 +117,7 @@ can lock that place.
     timeout: 2019-08-06 12:59:11.840780
   $ labgrid-client -p +SP37P5OQRU console
 
+
 When using reservation in a CI job or to save some typing, the ``labgrid-client
 reserve`` command supports a ``--shell`` command to print code for evaluating
 in the shell.
@@ -165,6 +166,65 @@ allocated before returning.
 
 A reservation will time out after a short time, if it is neither refreshed nor
 used by locked places.
+
+Leasing a place using a reservation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After a reservation has been allocated, the reserved place can be acquired
+either indefinitely or as a lease.
+
+First, create a reservation and export the reservation token:
+
+.. code-block:: bash
+
+  $ labgrid-client reserve board=imx8 --shell
+  export LG_TOKEN=ABC123
+
+Once the reservation is allocated, the reserved place can be referenced using
+``-p +``, which expands to the place allocated to the reservation.
+
+.. code-block:: bash
+
+  $ labgrid-client -p + lease
+  leased place board-01
+
+A lease is time-limited and must be kept alive by extending the reservation.
+This is done using the ``extend`` command.
+
+To refresh the reservation once:
+
+.. code-block:: bash
+
+  $ labgrid-client extend ABC123
+
+The reservation token can also be taken from the environment variable
+``LG_TOKEN``:
+
+.. code-block:: bash
+
+  $ export LG_TOKEN=ABC123
+  $ labgrid-client extend
+
+To continuously keep the reservation alive, use the keepalive mode:
+
+.. code-block:: bash
+
+  $ labgrid-client extend --keepalive
+
+In keepalive mode, the client automatically renews the lease at a suitable interval.
+
+If a lease extension fails (for example due to exporter issues), the lease is
+cancelled and the place is released to avoid inconsistent state.
+
+To acquire the place indefinitely (unchanged behaviour), use ``lock`` or
+``acquire`` without lease mode:
+
+.. code-block:: bash
+
+  $ labgrid-client -p + lock
+  # or
+  $ labgrid-client -p + acquire
+
 
 Library
 -------

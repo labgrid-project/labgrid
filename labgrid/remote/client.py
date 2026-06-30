@@ -766,23 +766,6 @@ class ClientSession:
             await self.sync_with_coordinator()
             print(f"acquired place {place.name}")
         except grpc.aio.AioRpcError as e:
-            # check potential failure causes
-            for exporter, groups in sorted(self.resources.items()):
-                for group_name, group in sorted(groups.items()):
-                    for resource_name, resource in sorted(group.items()):
-                        resource_path = (exporter, group_name, resource.cls, resource_name)
-                        if not resource.acquired:
-                            continue
-                        match = place.getmatch(resource_path)
-                        if match is None:
-                            continue
-                        name = resource_name
-                        if match.rename:
-                            name = match.rename
-                        print(
-                            f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}) already acquired by place '{resource.acquired}'"
-                        )  # pylint: disable=line-too-long
-
             raise ServerError(e.details())
 
     async def release(self):

@@ -1,6 +1,7 @@
 import os
 import socket
 import subprocess
+import shutil
 
 import pytest
 from py.path import local
@@ -18,7 +19,7 @@ def subprocess_mock(mocker):
     agent = local(labgrid.util.agentwrapper.__file__).dirpath('agent.py')
 
     def run(args, **kwargs):
-        assert args[0] in ['rsync', 'ssh']
+        assert args[0] in ['rsync', 'ssh', 'which']
         if args[0] == 'rsync':
             src = local(args[-2])
             assert src == agent
@@ -32,10 +33,14 @@ def subprocess_mock(mocker):
             assert '--' in args
             args = args[args.index('--')+1:]
             assert len(args) == 2
-            assert args[0] == 'python3'
-            assert args[1].startswith('.labgrid_agent')
-            # we need to use the original here to get the coverage right
-            return original(['python3', str(agent)], **kwargs)
+            assert args[0] in ['labgrid-python3', 'python3', 'which']
+            if args[0] in ['python3', 'labgrid-python3']:
+                assert args[1].startswith('.labgrid_agent')
+                # we need to use the original here to get the coverage right
+                return original(['python3', str(agent)], **kwargs)
+            else:
+                lg_py3_env = 'true' if shutil.which('labgrid-python3') else 'false'
+                return original([lg_py3_env], **kwargs)
 
     mocker.patch('subprocess.Popen', run)
 

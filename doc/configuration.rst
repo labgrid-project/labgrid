@@ -694,6 +694,8 @@ A :any:`NetworkService` describes a remote SSH connection.
 
 The example describes a remote SSH connection to the computer
 ``example.computer`` with the username ``root``.
+If ``username`` is omitted, labgrid will let SSH resolve the username through
+the local SSH configuration or the default SSH user selection.
 Set the optional password password property to make SSH login with a password
 instead of the key file.
 
@@ -706,7 +708,7 @@ These and the sudo configuration needs to be prepared by the administrator.
 
 Arguments:
   - address (str): hostname of the remote system
-  - username (str): username used by SSH
+  - username (str, default=""): optional, username used by SSH
   - password (str, default=None): optional, password used by SSH
   - port (int, default=22): port used by SSH
 
@@ -2086,7 +2088,9 @@ Arguments:
     will explicitly use the SFTP protocol for file transfers instead of scp's default protocol
   - explicit_scp_mode (bool, default=False): if set to True, ``put()``, ``get()``, and ``scp()``
     will explicitly use the SCP protocol for file transfers instead of scp's default protocol
-  - username (str, default=username from `NetworkService`_): username used by SSH
+  - username (str, default=username from `NetworkService`_): optional, username used by SSH
+    If neither `SSHDriver`_ nor `NetworkService`_ specifies a username, SSH's
+    own username resolution is used.
   - password (str, default=password from `NetworkService`_): password used by SSH
 
 UBootDriver

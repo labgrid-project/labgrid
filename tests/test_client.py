@@ -76,6 +76,27 @@ def test_connect_timeout(coordinator):
         coordinator.resume_tree()
         pass
 
+def test_get_ssh_no_username(target, mocker):
+    from labgrid.remote.client import ClientSession
+    from labgrid.resource import NetworkService
+
+    driver = object()
+
+    session = object.__new__(ClientSession)
+    session.args = type("Args", (), {"name": None})()
+    session.get_acquired_place = lambda: "test-place"
+    session._get_target = lambda place: target
+    session._get_ip = lambda place: "192.0.2.10"
+    session._get_driver_or_new = mocker.MagicMock(return_value=driver)
+
+    result = session._get_ssh()
+    resource = target.get_resource(NetworkService)
+
+    assert resource.address == "192.0.2.10"
+    assert resource.username == ""
+    session._get_driver_or_new.assert_called_once_with(target, "SSHDriver", name=None)
+    assert result is driver
+
 def test_place_show(place):
     with pexpect.spawn('python -m labgrid.remote.client -p test show') as spawn:
         spawn.expect("Place 'test':")

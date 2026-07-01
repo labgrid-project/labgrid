@@ -80,6 +80,62 @@ def test_custom_tools(target, tmpdir):
     s = SSHDriver(target, "ssh")
     assert [s._ssh, s._scp, s._sshfs, s._rsync] == [f"/path/to/{t}" for t in ("ssh", "scp", "sshfs", "rsync")]
 
+def test_run_no_username(target, mocker):
+    NetworkService(target, "service", "1.2.3.4")
+    mocker.patch('os.path.exists', return_value=True)
+    mocker.patch('subprocess.call', return_value=0)
+    popen = mocker.patch('subprocess.Popen', autospec=True)
+    master = mocker.MagicMock()
+    master.wait = mocker.MagicMock(return_value=0)
+    master.communicate = mocker.MagicMock(return_value=(b"", b""))
+    keepalive = mocker.MagicMock()
+    keepalive.poll = mocker.MagicMock(return_value=None)
+    keepalive.communicate = mocker.MagicMock(return_value=("", ""))
+    run = mocker.MagicMock()
+    run.communicate = mocker.MagicMock(return_value=(b"Hello\n", b""))
+    run.returncode = 0
+    popen.side_effect = [
+        master,
+        keepalive,
+        run,
+    ]
+
+    SSHDriver(target, "ssh")
+    s = target.get_driver("SSHDriver")
+
+    assert s.networkservice.username == ""
+    assert s.run("echo Hello") == (["Hello"], [], 0)
+    for call in popen.call_args_list:
+        assert "-l" not in call.args[0]
+
+    target.deactivate(s)
+
+def test_put_get_no_username(target, mocker):
+    NetworkService(target, "service", "1.2.3.4")
+    popen = mocker.patch('subprocess.Popen', autospec=True)
+    mocker.patch('os.path.exists', return_value=True)
+    call = mocker.patch('subprocess.call', return_value=0)
+    master = mocker.MagicMock()
+    master.wait = mocker.MagicMock(return_value=0)
+    master.communicate = mocker.MagicMock(return_value=(b"", b""))
+    keepalive = mocker.MagicMock()
+    keepalive.poll = mocker.MagicMock(return_value=None)
+    keepalive.communicate = mocker.MagicMock(return_value=("", ""))
+    popen.side_effect = [master, keepalive]
+
+    SSHDriver(target, "ssh")
+    s = target.get_driver("SSHDriver")
+
+    s.put("/tmp/local-file", "/tmp/remote-file")
+    s.get("/tmp/remote-file", "/tmp/local-file")
+
+    assert call.call_args_list[0].args[0][-1] == "1.2.3.4:/tmp/remote-file"
+    assert "@" not in call.call_args_list[0].args[0][-1]
+    assert call.call_args_list[1].args[0][-2] == "1.2.3.4:/tmp/remote-file"
+    assert "@" not in call.call_args_list[1].args[0][-2]
+
+    target.deactivate(s)
+
 @pytest.fixture(scope='function')
 def ssh_localhost(target, pytestconfig):
     name = pytestconfig.getoption("--ssh-username")

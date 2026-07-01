@@ -818,6 +818,7 @@ Arguments:
 
 Used by:
   - `RKUSBDriver`_
+  - `RKBootstrapDriver`_
 
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
@@ -2856,9 +2857,14 @@ Arguments:
 
 RKUSBDriver
 ~~~~~~~~~~~
-An :any:`RKUSBDriver` is used to upload an image into a device in the *Rockchip
-USB loader state*.
-This is useful to bootstrap a bootloader onto a device.
+An :any:`RKUSBDriver` is used to write a bootloader onto a device in the
+*Rockchip USB loader state* using the ``rkdeveloptool`` tool.
+It runs ``rkdeveloptool db`` to load a first-stage bootloader into RAM,
+followed by ``rkdeveloptool wl`` to write the bootloader image to the target's
+storage (e.g. eMMC/SD).
+
+To load and execute a barebox image directly in RAM instead, use the
+`RKBootstrapDriver`_.
 
 Binds to:
   loader:
@@ -2883,9 +2889,46 @@ Implements:
 
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
-    of an image to bootstrap onto the target
+    of an image to write to the target's storage
   - usb_loader (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
-    of a first-stage bootloader image to write
+    of a first-stage bootloader image to load into RAM
+
+.. note::
+   The ``rkdeveloptool`` binary is configured under the ``rkdeveloptool`` tools
+   key. For backward compatibility, the previously used (and misnamed)
+   ``rk-usb-loader`` tools key is still honored if ``rkdeveloptool`` is not set,
+   but its use is deprecated.
+
+RKBootstrapDriver
+~~~~~~~~~~~~~~~~~
+An :any:`RKBootstrapDriver` is used to upload a combined barebox image into a
+device in the *Rockchip USB loader state* (MaskROM mode) using barebox's
+``rk-usb-loader`` tool.
+In contrast to the `RKUSBDriver`_, it loads the image into RAM and executes it,
+i.e. it performs a true bootstrap and does not modify the target's storage.
+
+Binds to:
+  loader:
+    - `RKUSBLoader`_
+    - `NetworkRKUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         RKBootstrapDriver:
+           image: 'mybootloaderkey'
+
+   images:
+     mybootloaderkey: 'path/to/barebox.img'
+
+Arguments:
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of a combined barebox image to load into RAM and execute
 
 UUUDriver
 ~~~~~~~~~

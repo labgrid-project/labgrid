@@ -35,13 +35,11 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
-        # FIXME make sure we always have an environment or config
+        self.tool = self.target.get_tool("openocd")
         if self.target.env:
-            self.tool = self.target.env.config.get_tool("openocd")
             self.config = self.target.env.config.resolve_path_str_or_list(self.config)
             self.search = self.target.env.config.resolve_path_str_or_list(self.search)
         else:
-            self.tool = "openocd"
             if isinstance(self.config, str):
                 self.config = [self.config]
             if isinstance(self.search, str):

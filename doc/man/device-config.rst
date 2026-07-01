@@ -115,8 +115,15 @@ TOOLS KEYS
     See: https://www.intel.com/content/www/us/en/docs/programmable/683039/22-3/hps-flash-programmer.html
 
 ``rk-usb-loader``
-    Path to the rk-usb-loader binary, used by the RKUSBDriver.
+    Path to the rk-usb-loader binary, used by the RKBootstrapDriver to load a
+    barebox image into RAM and execute it.
     See: https://git.pengutronix.de/cgit/barebox/tree/scripts/rk-usb-loader.c
+
+``rkdeveloptool``
+    Path to the rkdeveloptool binary, used by the RKUSBDriver. The driver
+    invokes it with rkdeveloptool's ``db`` and ``wl`` subcommands to write a
+    bootloader to the target's storage.
+    See: https://github.com/rockchip-linux/rkdeveloptool
 
 ``rsync``
     Path to the rsync binary, used by the SSHDriver.

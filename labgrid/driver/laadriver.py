@@ -34,6 +34,7 @@ class LAASerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
 
     txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
     timeout = attr.ib(default=3.0, validator=attr.validators.instance_of(float))
+    linesep = attr.ib(default="\n", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

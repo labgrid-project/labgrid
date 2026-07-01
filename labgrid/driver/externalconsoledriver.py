@@ -22,6 +22,7 @@ class ExternalConsoleDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
     cmd = attr.ib(validator=attr.validators.instance_of(str))
     txdelay = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
     txchunk = attr.ib(default=1, validator=attr.validators.instance_of(int))
+    linesep = attr.ib(default="\n", validator=attr.validators.instance_of(str))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

@@ -1316,10 +1316,20 @@ class ClientSession:
 
     def scp(self):
         drv = self._get_ssh()
-
-        res = drv.scp(src=self.args.src, dst=self.args.dst)
-        if res:
-            raise InteractiveCommandError("scp error", res)
+        import glob
+        sources = []
+        for s in self.args.src:
+            expanded = glob.glob(s)
+            if expanded:
+                sources.extend(expanded)
+            else:
+                sources.append(s)
+        for src_file in sources:
+            res = drv.scp(src=src_file, dst=self.args.dst)
+            if res:
+                exc = InteractiveCommandError("scp error", res)
+                exc.exitcode = res
+                raise exc
 
     def rsync(self):
         drv = self._get_ssh()
@@ -1329,9 +1339,15 @@ class ClientSession:
             raise InteractiveCommandError("rsync error", res)
 
     def sshfs(self):
+        if self.args.mount and self.args.unmount:
+            raise MarsError("Cannot use --mount and --unmount at the same time.")
+
+        if (self.args.path and self.args.path.startswith(':') and
+            self.args.mountpoint.startswith(':')):
+            raise ExecutionError("Ambiguous: Both path and mountpoint cannot start with ':'.")
         drv = self._get_ssh()
 
-        drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint)
+        drv.sshfs(path=self.args.path, mountpoint=self.args.mountpoint, mount=self.args.mount, unmount=self.args.unmount)
 
     def forward(self):
         if not self.args.local and not self.args.remote:
@@ -2052,7 +2068,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
     subparser = subparsers.add_parser("scp", help="transfer file via scp")
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.add_argument("src", help="source path (use :dir/file for remote side)")
+    subparser.add_argument("src", nargs='+', help="source path(s) (use :dir/file for remote side)")
     subparser.add_argument("dst", help="destination path (use :dir/file for remote side)")
     subparser.set_defaults(func=ClientSession.scp)
 
@@ -2066,7 +2082,12 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
     subparser = subparsers.add_parser("sshfs", help="mount via sshfs (blocking)")
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.add_argument("path", help="remote path on the target")
+    # create a group to make "--mount" and "--unmount" mutually exclusive
+    group = subparser.add_mutually_exclusive_group()
+    group.add_argument("--mount", action="store_true", help="mount daemonized (manual unmount required)")
+    group.add_argument("--unmount", action="store_true", help="unmount the local path")
+    # mountpoint is always needed, path is only for mounting
+    subparser.add_argument("path", nargs="?", help="remote path on the target (only for mounting)")
     subparser.add_argument("mountpoint", help="local path")
     subparser.set_defaults(func=ClientSession.sshfs)
 

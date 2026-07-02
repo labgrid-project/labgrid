@@ -43,7 +43,7 @@ service Coordinator {
 message ClientInMessage {
   oneof kind {
     Sync sync = 1;
-    StartupDone startup = 2;
+    StartupDone startup = 2 [deprecated = true];
     Subscribe subscribe = 3;
   };
 };
@@ -53,6 +53,8 @@ message Sync {
 };
 
 message StartupDone {
+  option deprecated = true;
+
   string version = 1;
   string name = 2;
 };
@@ -82,7 +84,7 @@ message UpdateResponse {
 message ExporterInMessage {
   oneof kind {
     Resource resource = 1;
-    StartupDone startup = 2;
+    StartupDone startup = 2 [deprecated = true];
     ExporterResponse response = 3;
   };
 };

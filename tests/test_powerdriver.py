@@ -295,6 +295,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.pe6216
         import labgrid.driver.power.poe_netgear_plus
         import labgrid.driver.power.rest
+        import labgrid.driver.power.rpm1521
         import labgrid.driver.power.sentry
         import labgrid.driver.power.eg_pms2_network
         import labgrid.driver.power.shelly_gen1

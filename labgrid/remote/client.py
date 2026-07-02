@@ -32,6 +32,11 @@ import grpc
 # TODO: drop if Python >= 3.11 guaranteed
 from exceptiongroup import ExceptionGroup  # pylint: disable=redefined-builtin
 
+from labgrid.remote.grpc.interceptor.client import (
+    IdentityClientStreamStreamInterceptor,
+    IdentityClientUnaryUnaryInterceptor,
+)
+
 from .common import (
     ResourceEntry,
     ResourceMatch,
@@ -120,9 +125,19 @@ class ClientSession:
             ("grpc.http2.max_pings_without_data", 0),  # no limit
         ]
 
+        identity = {
+            "username": self.getuser(),
+            "hostname": self.gethostname(),
+            "user_agent": f"labgrid-client {labgrid_version()}",
+        }
+        interceptors = [
+            IdentityClientUnaryUnaryInterceptor(**identity),
+            IdentityClientStreamStreamInterceptor(**identity),
+        ]
         self.channel = grpc.aio.insecure_channel(
             target=self.address,
             options=channel_options,
+            interceptors=interceptors,
         )
         self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
 
@@ -138,10 +153,6 @@ class ClientSession:
         self.places = {}
 
         self.pump_task = self.loop.create_task(self.message_pump())
-        msg = labgrid_coordinator_pb2.ClientInMessage()
-        msg.startup.version = labgrid_version()
-        msg.startup.name = f"{self.gethostname()}/{self.getuser()}"
-        self.out_queue.put_nowait(msg)
         msg = labgrid_coordinator_pb2.ClientInMessage()
         msg.subscribe.all_places = True
         self.out_queue.put_nowait(msg)
@@ -835,6 +846,21 @@ class ClientSession:
             raise ServerError(e.details())
 
         print(f"allowed {self.args.user} for place {place.name}")
+
+    async def unshare(self):
+        """Remove another user's access to a previously acquired place"""
+        place = self.get_acquired_place()
+        if "/" not in self.args.user:
+            raise UserError(f"user {self.args.user} must be in <host>/<username> format")
+        request = labgrid_coordinator_pb2.UnsharePlaceRequest(name=place.name, user=self.args.user)
+
+        try:
+            await self.stub.UnsharePlace(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            raise ServerError(e.details())
+
+        print(f"unshared place {place.name} with {self.args.user}")
 
     def get_target_resources(self, place):
         self._check_allowed(place)
@@ -1977,6 +2003,10 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser = subparsers.add_parser("allow", help="allow another user to access a place")
     subparser.add_argument("user", help="<host>/<username>")
     subparser.set_defaults(func=ClientSession.allow)
+
+    subparser = subparsers.add_parser("unshare", help="remove another user's access to a place")
+    subparser.add_argument("user", help="<host>/<username>")
+    subparser.set_defaults(func=ClientSession.unshare)
 
     subparser = subparsers.add_parser("env", help="generate a labgrid environment file for a place")
     subparser.set_defaults(func=ClientSession.print_env)

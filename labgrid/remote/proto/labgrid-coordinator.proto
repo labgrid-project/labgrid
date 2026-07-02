@@ -11,6 +11,8 @@ service Coordinator {
 
   rpc DeletePlace(DeletePlaceRequest) returns (DeletePlaceResponse) {}
 
+  rpc GetPlace(GetPlaceRequest) returns (GetPlaceResponse) {}
+
   rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {}
 
   rpc AddPlaceAlias(AddPlaceAliasRequest) returns (AddPlaceAliasResponse) {}
@@ -31,6 +33,8 @@ service Coordinator {
 
   rpc AllowPlace(AllowPlaceRequest) returns (AllowPlaceResponse) {}
 
+  rpc UnsharePlace(UnsharePlaceRequest) returns (UnsharePlaceResponse) {}
+
   rpc CreateReservation(CreateReservationRequest) returns (CreateReservationResponse) {}
 
   rpc CancelReservation(CancelReservationRequest) returns (CancelReservationResponse) {}
@@ -43,7 +47,7 @@ service Coordinator {
 message ClientInMessage {
   oneof kind {
     Sync sync = 1;
-    StartupDone startup = 2;
+    StartupDone startup = 2 [deprecated = true];
     Subscribe subscribe = 3;
   };
 };
@@ -53,6 +57,8 @@ message Sync {
 };
 
 message StartupDone {
+  option deprecated = true;
+
   string version = 1;
   string name = 2;
 };
@@ -82,7 +88,7 @@ message UpdateResponse {
 message ExporterInMessage {
   oneof kind {
     Resource resource = 1;
-    StartupDone startup = 2;
+    StartupDone startup = 2 [deprecated = true];
     ExporterResponse response = 3;
   };
 };
@@ -147,6 +153,14 @@ message DeletePlaceRequest {
 
 message DeletePlaceResponse {
 };
+
+message GetPlaceRequest {
+  string name = 1;
+};
+
+message GetPlaceResponse {
+  Place place = 1;
+}
 
 message GetPlacesRequest {
 };
@@ -250,6 +264,13 @@ message AllowPlaceRequest {
 message AllowPlaceResponse {
 };
 
+message UnsharePlaceRequest {
+  string name = 1;
+  string user = 2;
+};
+
+message UnsharePlaceResponse {
+};
 
 message CreateReservationRequest {
   map<string, Reservation.Filter> filters = 1;

@@ -45,3 +45,22 @@ class USBSDMuxDriver(Driver):
         cmd = self.mux.command_prefix + [self.tool, self.mux.control_path, "get"]
         proc = subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
         return proc.stdout.strip().decode()
+
+    @Driver.check_active
+    @step(title="sdmux_gpio_get", args=["gpio"])
+    def get_gpio(self, gpio):
+        if gpio not in [0, 1]:
+            raise ExecutionError(f"GPIO '{gpio}' not supported by USBSDMuxDriver")
+        cmd = self.mux.command_prefix + [self.tool, self.mux.control_path, "gpio", str(gpio), "get"]
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
+        return proc.stdout.strip().decode()
+
+    @Driver.check_active
+    @step(title="sdmux_gpio_set", args=["gpio", "value"])
+    def set_gpio(self, gpio, value):
+        if gpio not in [0, 1]:
+            raise ExecutionError(f"GPIO '{gpio}' not supported by USBSDMuxDriver")
+        if value.lower() not in ["high", "1", "low", "0"]:
+            raise ExecutionError(f"GPIO value '{value}' not supported by USBSDMuxDriver")
+        cmd = self.mux.command_prefix + [self.tool, self.mux.control_path, "gpio", str(gpio), value.lower()]
+        processwrapper.check_output(cmd)

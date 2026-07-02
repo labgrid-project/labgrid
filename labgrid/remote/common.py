@@ -1,14 +1,18 @@
 import asyncio
+import platform
+import subprocess
 import time
 import enum
 import random
 import re
 import string
 import logging
+from argparse import Namespace
 from datetime import datetime
 from fnmatch import fnmatchcase
-
+from typing import Optional
 import attr
+import grpc
 
 from .generated import labgrid_coordinator_pb2
 
@@ -56,6 +60,59 @@ def build_dict_from_map(m):
         else:
             d[k] = getattr(v, kind)
     return d
+
+
+def _fetch_root_certificates_darwin():
+    try:
+        p = subprocess.run(
+            ["security", "find-certificate", "-a", "-p"],
+            capture_output=True,
+            timeout=10,
+        )
+        if p.returncode != 0 or not p.stdout:
+            return None
+        return p.stdout
+    except Exception:
+        logging.exception("unexpected error when fetching certificates from macOS Keychain")
+
+    return None
+
+
+def _fetch_root_certificates_linux():
+    ca_bundle_path = "/etc/ssl/certs/ca-certificates.crt"
+    try:
+        # TODO: Current supports Debian/Ubuntu. Extend to support other distributions.
+        with open(ca_bundle_path, "rb") as f:
+            certs = f.read()
+        if certs:
+            return certs
+    except OSError as e:
+        logging.warning("failed to read CA bundle at %s: %s", ca_bundle_path, e)
+    except Exception:
+        logging.exception("unexpected error while reading ca certificates")
+
+    return None
+
+
+def _fetch_root_certificates():
+    if platform.system() == "Darwin":
+        return _fetch_root_certificates_darwin()
+
+    if platform.system() == "Linux":
+        return _fetch_root_certificates_linux()
+
+    return None
+
+
+def get_client_credentials(args: Namespace) -> Optional[grpc.ChannelCredentials]:
+    if not args.tls:
+        return None
+
+    if not args.cert:
+        return grpc.ssl_channel_credentials(root_certificates=_fetch_root_certificates())
+
+    with open(args.cert, "rb") as fc:
+        return grpc.ssl_channel_credentials(root_certificates=fc.read())
 
 
 @attr.s(eq=False)

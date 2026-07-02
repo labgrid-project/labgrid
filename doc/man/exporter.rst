@@ -27,6 +27,10 @@ OPTIONS
     display command line help
 -x, --coordinator
     coordinator ``HOST[:PORT]`` to connect to, defaults to ``127.0.0.1:20408``
+--tls
+    enable TLS gRPC channel
+--cert
+    path to TLS certificate (in PEM format)
 -i, --isolated
     enable isolated mode (always request SSH forwards)
 -n, --name
@@ -98,6 +102,12 @@ Same as above, but with name ``myname``:
 .. code-block:: bash
 
    $ labgrid-exporter -n myname my-config.yaml
+
+Same as above, but connecting to a ``labgrid-coordinator`` that uses TLS gRPC channels:
+
+.. code-block:: bash
+
+    $ labgrid-exporter --tls [--cert PATH] -n myname my-config.yaml
 
 SEE ALSO
 --------

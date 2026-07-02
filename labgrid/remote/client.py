@@ -1725,6 +1725,40 @@ def start_session(
     return session
 
 
+def fetch_coordinator_environment(address):
+    """Fetch the env file served by the coordinator and cache it on disk
+
+    Used when the user sets ``LG_ENV=coordinator:`` (or
+    ``--config coordinator:``) instead of pointing at a local file.
+
+    Returns the path to the cached file (under ``$XDG_CACHE_HOME`` or
+    ``~/.cache/labgrid/env.cfg``), overwritten on each call so users
+    can inspect what env the client just loaded.  Raises UserError if
+    the coordinator is not configured to serve an environment.
+    """
+    address = proxymanager.get_grpc_address(address, default_port=20408)
+    with grpc.insecure_channel(address) as channel:
+        stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(channel)
+        try:
+            response = stub.GetEnvironment(
+                labgrid_coordinator_pb2.GetEnvironmentRequest(),
+                timeout=10.0,
+            )
+        except grpc.RpcError as e:
+            # pylint: disable-next=no-member
+            raise UserError(f"failed to fetch environment from coordinator at {address}: {e.details() or e}") from e
+    if not response.config:
+        raise UserError(
+            f"coordinator at {address} has no environment configured (start coordinator with --environment <file>)"
+        )
+    cache_dir = os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")), "labgrid")
+    os.makedirs(cache_dir, exist_ok=True)
+    path = os.path.join(cache_dir, "env.cfg")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(response.config)
+    return path
+
+
 def find_role_by_place(config, place):
     for role, role_config in config.items():
         resources, _ = target_factory.normalize_config(role_config)
@@ -2304,6 +2338,17 @@ def main():
 
     if args.proxy:
         proxymanager.force_proxy(args.proxy)
+
+    if args.config == "coordinator:":
+        # Fetch the env from the coordinator.  The address can't be taken from
+        # env.config yet (no env loaded), so use the same fallback chain the
+        # rest of main() uses, minus that.
+        addr = args.coordinator or os.environ.get("LG_COORDINATOR", "127.0.0.1:20408")
+        try:
+            args.config = fetch_coordinator_environment(addr)
+        except UserError as e:
+            print(e, file=sys.stderr)
+            exit(1)
 
     env = None
     if args.config:

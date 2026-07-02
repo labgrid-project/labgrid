@@ -616,3 +616,35 @@ def test_same_name_resources(place, exporter, tmpdir):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
+
+
+def test_config_coordinator(coordinator_with_env, monkeypatch, tmpdir):
+    _, env_file = coordinator_with_env
+    env_content = (
+        "targets:\n"
+        "  main:\n"
+        "    resources:\n"
+        "      RemotePlace:\n"
+        "        name: test\n"
+    )
+    env_file.write(env_content)
+
+    cache = tmpdir.join('cache')
+    monkeypatch.setenv("XDG_CACHE_HOME", str(cache))
+
+    with pexpect.spawn('python -m labgrid.remote.client -c coordinator: places') as spawn:
+        spawn.expect(pexpect.EOF)
+    assert spawn.exitstatus == 0, spawn.before.strip()
+
+    cached = cache.join('labgrid', 'env.cfg')
+    assert cached.check(file=1), f"cache file missing: {cached}"
+    assert cached.read() == env_content
+
+
+def test_config_coordinator_unconfigured(coordinator, monkeypatch, tmpdir):
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmpdir.join('cache')))
+
+    with pexpect.spawn('python -m labgrid.remote.client -c coordinator: places') as spawn:
+        spawn.expect("no environment configured")
+        spawn.expect(pexpect.EOF)
+    assert spawn.exitstatus == 1, spawn.before.strip()

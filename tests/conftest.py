@@ -152,12 +152,15 @@ class Exporter(LabgridComponent):
 
 
 class Coordinator(LabgridComponent):
-    def start(self):
+    def start(self, args=''):
         assert self.spawn is None
         assert self.reader is None
 
+        cmd = 'python -m labgrid.remote.coordinator'
+        if args:
+            cmd = f'{cmd} {args}'
         self.spawn = pexpect.spawn(
-            'python -m labgrid.remote.coordinator',
+            cmd,
             logfile=Prefixer(sys.stdout.buffer, 'coordinator'),
             cwd=self.cwd)
         try:
@@ -211,6 +214,17 @@ def coordinator(tmpdir):
     coordinator.start()
 
     yield coordinator
+
+    coordinator.stop()
+
+@pytest.fixture(scope='function')
+def coordinator_with_env(tmpdir):
+    env_file = tmpdir.join('env.yaml')
+    env_file.write('targets:\n')
+    coordinator = Coordinator(tmpdir)
+    coordinator.start(f'--environment {env_file}')
+
+    yield coordinator, env_file
 
     coordinator.stop()
 

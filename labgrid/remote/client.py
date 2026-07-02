@@ -32,6 +32,11 @@ import grpc
 # TODO: drop if Python >= 3.11 guaranteed
 from exceptiongroup import ExceptionGroup  # pylint: disable=redefined-builtin
 
+from labgrid.remote.grpc.interceptor.client import (
+    IdentityClientStreamStreamInterceptor,
+    IdentityClientUnaryUnaryInterceptor,
+)
+
 from .common import (
     ResourceEntry,
     ResourceMatch,
@@ -120,9 +125,19 @@ class ClientSession:
             ("grpc.http2.max_pings_without_data", 0),  # no limit
         ]
 
+        identity = {
+            "username": self.getuser(),
+            "hostname": self.gethostname(),
+            "user_agent": f"labgrid-client {labgrid_version()}",
+        }
+        interceptors = [
+            IdentityClientUnaryUnaryInterceptor(**identity),
+            IdentityClientStreamStreamInterceptor(**identity),
+        ]
         self.channel = grpc.aio.insecure_channel(
             target=self.address,
             options=channel_options,
+            interceptors=interceptors,
         )
         self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
 
@@ -138,10 +153,6 @@ class ClientSession:
         self.places = {}
 
         self.pump_task = self.loop.create_task(self.message_pump())
-        msg = labgrid_coordinator_pb2.ClientInMessage()
-        msg.startup.version = labgrid_version()
-        msg.startup.name = f"{self.gethostname()}/{self.getuser()}"
-        self.out_queue.put_nowait(msg)
         msg = labgrid_coordinator_pb2.ClientInMessage()
         msg.subscribe.all_places = True
         self.out_queue.put_nowait(msg)

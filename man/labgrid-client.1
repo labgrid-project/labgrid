@@ -149,22 +149,6 @@ usage: labgrid\-client add\-named\-match PATTERN NAME
 .TP
 .B name
 .UNINDENT
-.SS labgrid\-client allow
-.sp
-allow another user to access a place
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.EX
-usage: labgrid\-client allow user
-.EE
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.TP
-.B user
-<host>/<username>
-.UNINDENT
 .SS labgrid\-client audio
 .sp
 start a audio stream
@@ -259,7 +243,7 @@ Log output to FILE
 .UNINDENT
 .SS labgrid\-client create
 .sp
-add a new place with the name specified via \-\-place or the LG_PLACE environment variable
+create a new place with the name specified via \-\-place or the LG_PLACE environment variable
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -786,6 +770,22 @@ usage: labgrid\-client set\-tags KEY=VALUE [KEY=VALUE ...]
 .B key=value
 use an empty value for deletion
 .UNINDENT
+.SS labgrid\-client share|allow
+.sp
+share a place with another user
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client share|allow user
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B user
+<host>/<username>
+.UNINDENT
 .SS labgrid\-client show
 .sp
 show a place and related resources
@@ -931,6 +931,22 @@ usage: labgrid\-client tmc screen {show,save}
 .INDENT 0.0
 .TP
 .B action
+.UNINDENT
+.SS labgrid\-client unshare
+.sp
+remove another user\(aqs access to a place
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client unshare user
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B user
+<host>/<username>
 .UNINDENT
 .SS labgrid\-client usb\-mux
 .sp

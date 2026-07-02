@@ -15,9 +15,11 @@ import signal
 import sys
 import shlex
 import shutil
+import tempfile
 import json
 import itertools
 import ipaddress
+import warnings
 from textwrap import indent
 from socket import gethostname
 from getpass import getuser
@@ -46,7 +48,7 @@ from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout
+from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout, load
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
 from ..driver import Mode, ExecutionError
@@ -853,14 +855,22 @@ class ClientSession:
         return resources
 
     def get_target_config(self, place):
+        remote_env = place.get_remote_env()
         config = {}
-        resources = config["resources"] = []
+        # resources from remote env
+        resources = config["resources"] = remote_env.get("resources", [])
+
+        # resources by match
         for (name, _), resource in self.get_target_resources(place).items():
             args = OrderedDict()
             if name != resource.cls:
                 args["name"] = name
             args.update(resource.args)
             resources.append({resource.cls: args})
+
+        # drivers from remote env
+        config["drivers"] = remote_env.get("drivers", [])
+
         return config
 
     def print_env(self):
@@ -1660,6 +1670,86 @@ class ClientSession:
     def print_version(self):
         print(labgrid_version())
 
+    async def edit_remote_env(self):
+        place = self.get_idle_place()
+        editor = os.environ.get("EDITOR", "vi")
+        remote_env = place.remote_env or ""
+        # remember last place change to be sent with SetPlaceRemoteEnvRequest for optimistic locking
+        changed = place.changed
+
+        # write current remote env to temporary file
+        with tempfile.NamedTemporaryFile(mode="w+", suffix=".tmp", delete=False, encoding="utf-8") as f:
+            path = f.name
+            f.write(remote_env)
+            f.flush()
+
+        try:
+            while True:
+                # open editor
+                subprocess.run(shlex.split(editor) + [path], check=True)
+
+                # process new config
+                with open(path, "r", encoding="utf-8") as f:
+                    new_remote_env = f.read()
+
+                    # sanity check new config
+                    try:
+                        with warnings.catch_warnings():
+                            # turn UserWarnings emitted by labgrid.util's dict/yaml into exceptions to catch them
+                            warnings.simplefilter("error", UserWarning)
+                            # parse config
+                            remote_conf = load(new_remote_env) or {}
+                            # try to instantiate resources and drivers without a target and bindings
+                            # (place is idle, resources cannot be bound, config may be incomplete)
+                            target_factory.make_resources_from_config(None, remote_conf.get("resources", {}))
+                            target_factory.make_drivers_from_config(None, remote_conf.get("drivers", {}))
+                    except Exception as e:
+                        # let user decide on errors during sanity checks
+                        if self.args.debug:
+                            traceback.print_exc(file=sys.stderr)
+                        else:
+                            print(f"Error: {e}")
+                        key = None
+                        while key is None or key.lower() not in ("", "y", "n", "q"):
+                            key = input("Save anyway? [y]es, [N]o and reopen editor, [q]uit without saving ")
+
+                        if key.lower() == "y":
+                            # continue saving
+                            pass
+                        elif key.lower() == "q":
+                            return
+                        else:
+                            # start over again
+                            continue
+
+                    # save remote env
+                    try:
+                        request = labgrid_coordinator_pb2.SetPlaceRemoteEnvRequest(
+                            placename=place.name, changed=changed, remote_env=new_remote_env
+                        )
+                        await self.stub.SetPlaceRemoteEnv(request)
+                        await self.sync_with_coordinator()
+                        return
+                    except grpc.aio.AioRpcError as e:
+                        if self.args.debug:
+                            traceback.print_exc(file=sys.stderr)
+                        else:
+                            print(f"Error: {e.details()}")
+                        while key.lower() not in ("", "y", "n"):
+                            key = input("Reopen editor? [Y]es, n[o] ")
+
+                        if key.lower() == "n":
+                            return
+                        else:
+                            # start over again
+                            continue
+        finally:
+            # clean up temporary file
+            try:
+                os.remove(path)
+            except FileNotFoundError:
+                pass
+
 
 _loop: ContextVar["asyncio.AbstractEventLoop | None"] = ContextVar("_loop", default=None)
 
@@ -2236,6 +2326,9 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
     subparser = subparsers.add_parser("version", help="show version")
     subparser.set_defaults(func=ClientSession.print_version)
+
+    subparser = subparsers.add_parser("edit", help="edit place's remote environment")
+    subparser.set_defaults(func=ClientSession.edit_remote_env)
 
     return parser
 

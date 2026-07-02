@@ -7,11 +7,19 @@ service Coordinator {
 
   rpc ExporterStream(stream ExporterInMessage) returns (stream ExporterOutMessage) {}
 
-  rpc AddPlace(AddPlaceRequest) returns (AddPlaceResponse) {}
+  rpc AddPlace(AddPlaceRequest) returns (AddPlaceResponse) {
+    option deprecated = true;
+  }
+
+  rpc CreatePlace(CreatePlaceRequest) returns (CreatePlaceResponse) {}
 
   rpc DeletePlace(DeletePlaceRequest) returns (DeletePlaceResponse) {}
 
+  rpc GetPlace(GetPlaceRequest) returns (GetPlaceResponse) {}
+
   rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {}
+
+  rpc ListPlaceResources(ListPlaceResourcesRequest) returns (ListPlaceResourcesResponse) {}
 
   rpc AddPlaceAlias(AddPlaceAliasRequest) returns (AddPlaceAliasResponse) {}
 
@@ -29,13 +37,23 @@ service Coordinator {
 
   rpc ReleasePlace(ReleasePlaceRequest) returns (ReleasePlaceResponse) {}
 
-  rpc AllowPlace(AllowPlaceRequest) returns (AllowPlaceResponse) {}
+  rpc AllowPlace(AllowPlaceRequest) returns (AllowPlaceResponse) {
+    option deprecated = true;
+  }
+
+  rpc SharePlace(SharePlaceRequest) returns (SharePlaceResponse) {}
+
+  rpc UnsharePlace(UnsharePlaceRequest) returns (UnsharePlaceResponse) {}
 
   rpc CreateReservation(CreateReservationRequest) returns (CreateReservationResponse) {}
 
   rpc CancelReservation(CancelReservationRequest) returns (CancelReservationResponse) {}
 
-  rpc PollReservation(PollReservationRequest) returns (PollReservationResponse) {}
+  rpc PollReservation(PollReservationRequest) returns (PollReservationResponse) {
+    option deprecated = true;
+  }
+
+  rpc RefreshReservation(RefreshReservationRequest) returns (RefreshReservationResponse) {}
 
   rpc GetReservations(GetReservationsRequest) returns (GetReservationsResponse) {}
 }
@@ -43,7 +61,7 @@ service Coordinator {
 message ClientInMessage {
   oneof kind {
     Sync sync = 1;
-    StartupDone startup = 2;
+    StartupDone startup = 2 [deprecated = true];
     Subscribe subscribe = 3;
   };
 };
@@ -53,6 +71,8 @@ message Sync {
 };
 
 message StartupDone {
+  option deprecated = true;
+
   string version = 1;
   string name = 2;
 };
@@ -82,7 +102,7 @@ message UpdateResponse {
 message ExporterInMessage {
   oneof kind {
     Resource resource = 1;
-    StartupDone startup = 2;
+    StartupDone startup = 2 [deprecated = true];
     ExporterResponse response = 3;
   };
 };
@@ -135,10 +155,21 @@ message ExporterSetAcquiredRequest {
 };
 
 message AddPlaceRequest {
+  option deprecated = true;
+
   string name = 1;
 };
 
 message AddPlaceResponse {
+  option deprecated = true;
+};
+
+message CreatePlaceRequest {
+  string name = 1;
+};
+
+message CreatePlaceResponse {
+  Place place = 1;
 };
 
 message DeletePlaceRequest {
@@ -148,11 +179,27 @@ message DeletePlaceRequest {
 message DeletePlaceResponse {
 };
 
+message GetPlaceRequest {
+  string name = 1;
+};
+
+message GetPlaceResponse {
+  Place place = 1;
+}
+
 message GetPlacesRequest {
 };
 
 message GetPlacesResponse {
   repeated Place places = 1;
+}
+
+message ListPlaceResourcesRequest {
+  string name = 1;
+}
+
+message ListPlaceResourcesResponse {
+  repeated Resource resources = 1;
 }
 
 message Place {
@@ -243,13 +290,31 @@ message ReleasePlaceResponse {
 };
 
 message AllowPlaceRequest {
+  option deprecated = true;
+
   string placename = 1;
   string user = 2;
 };
 
 message AllowPlaceResponse {
+  option deprecated = true;
 };
 
+message SharePlaceRequest {
+  string name = 1;
+  string user = 2;
+};
+
+message SharePlaceResponse {
+};
+
+message UnsharePlaceRequest {
+  string name = 1;
+  string user = 2;
+};
+
+message UnsharePlaceResponse {
+};
 
 message CreateReservationRequest {
   map<string, Reservation.Filter> filters = 1;
@@ -282,12 +347,24 @@ message CancelReservationResponse {
 };
 
 message PollReservationRequest {
+  option deprecated = true;
+
   string token = 1;
 };
 
 message PollReservationResponse {
+  option deprecated = true;
+
   Reservation reservation = 1;
 };
+
+message RefreshReservationRequest {
+  string reservation_id = 1;
+}
+
+message RefreshReservationResponse {
+  Reservation reservation = 1;
+}
 
 message GetReservationsResponse {
   repeated Reservation reservations = 1;

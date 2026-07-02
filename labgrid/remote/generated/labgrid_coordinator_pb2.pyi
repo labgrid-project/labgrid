@@ -1,7 +1,8 @@
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from collections.abc import Iterable as _Iterable, Mapping as _Mapping
+from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -164,6 +165,18 @@ class AddPlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class CreatePlaceRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class CreatePlaceResponse(_message.Message):
+    __slots__ = ("place",)
+    PLACE_FIELD_NUMBER: _ClassVar[int]
+    place: Place
+    def __init__(self, place: _Optional[_Union[Place, _Mapping]] = ...) -> None: ...
+
 class DeletePlaceRequest(_message.Message):
     __slots__ = ("name",)
     NAME_FIELD_NUMBER: _ClassVar[int]
@@ -174,6 +187,18 @@ class DeletePlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class GetPlaceRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class GetPlaceResponse(_message.Message):
+    __slots__ = ("place",)
+    PLACE_FIELD_NUMBER: _ClassVar[int]
+    place: Place
+    def __init__(self, place: _Optional[_Union[Place, _Mapping]] = ...) -> None: ...
+
 class GetPlacesRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
@@ -183,6 +208,18 @@ class GetPlacesResponse(_message.Message):
     PLACES_FIELD_NUMBER: _ClassVar[int]
     places: _containers.RepeatedCompositeFieldContainer[Place]
     def __init__(self, places: _Optional[_Iterable[_Union[Place, _Mapping]]] = ...) -> None: ...
+
+class ListPlaceResourcesRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class ListPlaceResourcesResponse(_message.Message):
+    __slots__ = ("resources",)
+    RESOURCES_FIELD_NUMBER: _ClassVar[int]
+    resources: _containers.RepeatedCompositeFieldContainer[Resource]
+    def __init__(self, resources: _Optional[_Iterable[_Union[Resource, _Mapping]]] = ...) -> None: ...
 
 class Place(_message.Message):
     __slots__ = ("name", "aliases", "comment", "tags", "matches", "acquired", "acquired_resources", "allowed", "created", "changed", "reservation")
@@ -348,6 +385,30 @@ class AllowPlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class SharePlaceRequest(_message.Message):
+    __slots__ = ("name", "user")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    USER_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    user: str
+    def __init__(self, name: _Optional[str] = ..., user: _Optional[str] = ...) -> None: ...
+
+class SharePlaceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class UnsharePlaceRequest(_message.Message):
+    __slots__ = ("name", "user")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    USER_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    user: str
+    def __init__(self, name: _Optional[str] = ..., user: _Optional[str] = ...) -> None: ...
+
+class UnsharePlaceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
 class CreateReservationRequest(_message.Message):
     __slots__ = ("filters", "prio")
     class FiltersEntry(_message.Message):
@@ -432,6 +493,18 @@ class PollReservationRequest(_message.Message):
     def __init__(self, token: _Optional[str] = ...) -> None: ...
 
 class PollReservationResponse(_message.Message):
+    __slots__ = ("reservation",)
+    RESERVATION_FIELD_NUMBER: _ClassVar[int]
+    reservation: Reservation
+    def __init__(self, reservation: _Optional[_Union[Reservation, _Mapping]] = ...) -> None: ...
+
+class RefreshReservationRequest(_message.Message):
+    __slots__ = ("reservation_id",)
+    RESERVATION_ID_FIELD_NUMBER: _ClassVar[int]
+    reservation_id: str
+    def __init__(self, reservation_id: _Optional[str] = ...) -> None: ...
+
+class RefreshReservationResponse(_message.Message):
     __slots__ = ("reservation",)
     RESERVATION_FIELD_NUMBER: _ClassVar[int]
     reservation: Reservation

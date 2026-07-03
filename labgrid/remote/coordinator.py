@@ -417,7 +417,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     in_msg: labgrid_coordinator_pb2.ExporterInMessage
                     logging.debug("exporter in_msg %s", in_msg)
                     kind = in_msg.WhichOneof("kind")
-                    if kind in "response":
+                    if kind == "response":
                         cmd = pending_commands.pop(0)
                         cmd.complete(in_msg.response)
                         logging.debug("Command %s is done", cmd)

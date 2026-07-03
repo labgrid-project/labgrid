@@ -237,6 +237,8 @@ class RawNetworkInterfaceDriver(Driver):
                     e.stderr = stderr
                     raise
 
+                raise ExecutionError(f"tcpdump exited before emitting 'tcpdump: listening on': {stderr}")
+
             if line.startswith(b"tcpdump: listening on"):
                 break
 

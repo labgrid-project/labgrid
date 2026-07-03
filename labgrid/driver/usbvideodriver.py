@@ -129,7 +129,7 @@ class USBVideoDriver(Driver, VideoProtocol):
         elif match == (0x0c45, 0x636b):  # LogiLink UA0379 / Microdia
             controls = controls or "focus_auto=1"
             inner = None  # just forward the jpeg frames
-        elif match == (0x0c54, 0x636d):
+        elif match == (0x0c45, 0x636d):  # AUKEY PC-LM1E
             controls = controls or "focus_auto=1"
             inner = None  # just forward the jpeg frames
         else: # fallback pipeline

@@ -126,7 +126,7 @@ class USBVideoDriver(Driver, VideoProtocol):
         elif match == (0x1d6c, 0x0103):
             controls = controls or "focus_auto=1"
             inner = "h264parse"
-        elif match == (0x0c54, 0x636b):
+        elif match == (0x0c45, 0x636b):  # LogiLink UA0379 / Microdia
             controls = controls or "focus_auto=1"
             inner = None  # just forward the jpeg frames
         elif match == (0x0c54, 0x636d):

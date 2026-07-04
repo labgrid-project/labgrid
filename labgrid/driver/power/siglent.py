@@ -1,35 +1,32 @@
-"""tested with Siglent SPD3303X-E, and should be compatible with all SPD3000X series modules"""
+""" tested with Siglent SPD3303X-E, SPD1168X and should be compatible with all SPD3000X series modules """
 
-import warnings
+import pyvisa
 
-import vxi11
-
+def _get_psu(host):
+    """Helper to initialize the raw network socket resource session via PyVISA."""
+    rm = pyvisa.ResourceManager("@py")
+    resource_string = f"TCPIP0::{host}::5025::SOCKET"
+    psu = rm.open_resource(resource_string)
+    # Siglent scopes and PSUs require explicit newline termination on raw sockets
+    psu.read_termination = "\n"
+    psu.write_termination = "\n"
+    psu.timeout = 5000  # 5 second safety timeout
+    return psu
 
 def power_set(host, port, index, value):
-    warnings.warn(
-        "siglent power backend uses vxi11 module using deprecated xdrlib module, see https://github.com/labgrid-project/labgrid/issues/1507",
-        DeprecationWarning,
-    )
-
     assert port is None
     index = int(index)
     assert 1 <= index <= 2
     value = "ON" if value else "OFF"
-    psu = vxi11.Instrument(host)
-    psu.write(f"OUTPUT CH{index},{value}")
-
+    with _get_psu(host) as psu:
+        psu.write(f"OUTPUT CH{index},{value}")
 
 def power_get(host, port, index):
-    warnings.warn(
-        "siglent power backend uses vxi11 module using deprecated xdrlib module, see https://github.com/labgrid-project/labgrid/issues/1507",
-        DeprecationWarning,
-    )
-
     assert port is None
     index = int(index)
     assert 1 <= index <= 2
-    psu = vxi11.Instrument(host)
-    state = psu.ask("SYSTEM:STATUS?")
+    with _get_psu(host) as psu:
+        state = psu.query("SYSTEM:STATUS?")
     state = int(state, 16)
     bitmask = 1 << (index + 3)
     return bool(state & bitmask)

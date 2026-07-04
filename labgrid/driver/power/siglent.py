@@ -30,3 +30,33 @@ def power_get(host, port, index):
     state = int(state, 16)
     bitmask = 1 << (index + 3)
     return bool(state & bitmask)
+
+def power_show(host, port, index):
+    assert port is None
+    index = int(index)
+    assert 1 <= index <= 2
+    with _get_psu(host) as psu:
+        v_measured = psu.query(f"MEAS:VOLT? CH{index}")
+        a_measured = psu.query(f"MEAS:CURR? CH{index}")
+        v_set = psu.query(f"CH{index}:VOLT?")
+        a_set = psu.query(f"CH{index}:CURR?")
+    return {
+        "voltage": float(v_measured),
+        "amps": float(a_measured),
+        "v_limit": float(v_set),
+        "a_limit": float(a_set)
+    }
+
+def power_voltage(host, port, index, voltage):
+    assert port is None
+    index = int(index)
+    assert 1 <= index <= 2
+    with _get_psu(host) as psu:
+        psu.write(f"CH{index}:VOLT {voltage}")
+
+def power_amps(host, port, index, amps):
+    assert port is None
+    index = int(index)
+    with _get_psu(host) as psu:
+        psu.write(f"CH{index}:CURR {amps}")
+

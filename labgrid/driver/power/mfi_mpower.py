@@ -43,7 +43,7 @@ def get_credentials(base_url: str) -> Tuple[str, dict]:
         credentials = dict(username='ubnt', password='ubnt')
     else:
         credentials = dict(username=base_url.username, password=base_url.password)
-        base_url._replace(netloc=base_url.netloc.replace(f'{base_url.username}:{base_url.password}@', ''))
+        base_url = base_url._replace(netloc=base_url.netloc.replace(f'{base_url.username}:{base_url.password}@', ''))
 
     base_url = base_url.geturl()
     return (base_url, credentials)

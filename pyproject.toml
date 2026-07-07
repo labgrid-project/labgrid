@@ -61,6 +61,10 @@ doc = [
 ]
 docker = ["docker>=5.0.2"]
 graph = ["graphviz>=0.17.0"]
+joulescope = [
+    "pyjoulescope_driver>=1.9.0",
+    "pyjls>=0.11.0",
+]
 kasa = ["python-kasa>=0.7.0"]
 laa = ["laam"]
 modbus = ["pyModbusTCP>=0.2.0"]
@@ -222,6 +226,7 @@ include = [
   "**/pyproject.toml",
   "examples/**/*.py",
   "labgrid/driver/httpvideodriver.py",
+  "labgrid/driver/joulescopedriver.py",
   "labgrid/driver/manualswitchdriver.py",
   "labgrid/driver/power/gude8031.py",
   "labgrid/driver/power/pe6216.py",
@@ -231,7 +236,9 @@ include = [
   "labgrid/protocol/**/*.py",
   "labgrid/remote/**/*.py",
   "labgrid/resource/httpvideostream.py",
+  "labgrid/resource/joulescope.py",
   "labgrid/resource/provider.py",
+  "labgrid/util/agents/joulescope.py",
   "labgrid/util/agents/network_interface.py",
   "labgrid/util/agents/usb_hid_relay.py",
   "labgrid/util/exceptions.py",

@@ -765,6 +765,39 @@ Arguments:
 Used by:
   - `SigrokDriver`_
 
+JoulescopeDevice
+~~~~~~~~~~~~~~~~
+A :any:`JoulescopeDevice` resource describes a *Joulescope* energy analyzer
+(JS110, JS220 or JS320).  It is a USB resource, so a specific device is selected
+via udev matching when more than one Joulescope is connected; with a single
+Joulescope an empty match is sufficient.  The device is then addressed through
+``pyjoulescope_driver``.
+
+.. code-block:: yaml
+
+   JoulescopeDevice:
+     match:
+       ID_SERIAL_SHORT: 'S3C8'
+
+You need to ensure proper udev permissions:
+
+.. code-block:: bash
+
+   wget https://raw.githubusercontent.com/jetperch/joulescope_driver/refs/heads/main/72-joulescope.rules
+   sudo cp 72-joulescope.rules /etc/udev/rules.d/
+   sudo udevadm control --reload-rules
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `JoulescopeDriver`_
+
+NetworkJoulescopeDevice
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkJoulescopeDevice` resource describes a `JoulescopeDevice`_ resource
+available on a remote computer.
+
 IMXUSBLoader
 ~~~~~~~~~~~~
 An :any:`IMXUSBLoader` resource describes a USB device in the imx loader state.
@@ -3190,6 +3223,50 @@ samples is an iterable of samples.
 
 This driver relies on buffering of the subprocess call.
 Reading a few samples will very likely work - but obtaining a lot of samples may stall.
+
+JoulescopeDriver
+~~~~~~~~~~~~~~~~
+The :any:`JoulescopeDriver` uses a `JoulescopeDevice`_ or
+`NetworkJoulescopeDevice`_ resource to measure current, voltage and power,
+accumulate charge and energy, capture high-rate samples to a JLS file, and switch
+downstream power by connecting/disconnecting the device current path.
+
+Binds to:
+  device:
+    - `JoulescopeDevice`_
+    - `NetworkJoulescopeDevice`_
+
+Implements:
+  - :any:`EnergyAnalyzerProtocol`
+  - :any:`PowerProtocol`
+
+.. code-block:: yaml
+
+   JoulescopeDriver:
+     frequency: 10.0
+     delay: 2.0
+
+Arguments:
+  - frequency (float, default=2.0): statistics update frequency in Hz
+  - delay (float, default=2.0): delay in seconds between off and on during a
+    power cycle
+
+The latest measurement is read with ``get_statistics()``, which returns a dict
+with ``current``, ``voltage`` and ``power`` sub-dicts (each with ``avg``,
+``std``, ``min`` and ``max``) plus the accumulated ``charge_C`` (Coulombs) and
+``energy_J`` (Joules).
+``start()`` and ``stop()`` bracket a charge/energy accumulation window;
+``stop()`` returns the accumulated ``energy_J``, ``charge_C`` and the
+``duration_s`` of the window.
+``capture(filename, signals=None, duration=..., frequency=None)`` records
+high-rate samples to a JLS file for the requested duration.  ``frequency`` (in
+Hz) sets the device sample rate and is sticky: once set it stays in effect for
+later captures on the same activated driver until changed again, rather than
+reverting to the device default.
+
+Power switching via ``on()``, ``off()`` and ``cycle()`` connects and
+disconnects the device current path, controlling downstream power to the
+device under test.
 
 USBSDMuxDriver
 ~~~~~~~~~~~~~~

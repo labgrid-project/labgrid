@@ -218,6 +218,23 @@ class NetworkSigrokUSBSerialDevice(RemoteUSBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class NetworkJoulescopeDevice(RemoteUSBResource):
+    """The NetworkJoulescopeDevice describes a remotely accessible Joulescope"""
+    serial = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+    model = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str))
+    )
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class NetworkUSBMassStorage(RemoteUSBResource):
     """The NetworkUSBMassStorage describes a remotely accessible USB storage device"""
     def __attrs_post_init__(self):

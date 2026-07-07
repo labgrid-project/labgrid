@@ -1,11 +1,12 @@
 import requests
 
 # Driver has been tested with:
-# * Gude Expert Power Control 8031()
+# * Gude Expert Power Control 8031-1
 # * Gude Expert Power Control 87-1210-18
-#   This device needs to be used in 'Basic Compatible' mode for HTTP GET
-#   to be usable. Do not turn on session authentication.
-
+#
+# This device needs to be used in 'Basic Compatible' mode for HTTP GET
+# to be usable. Do not turn on session authentication.
+#
 # HTTP-GET API is defined in the Gude EPC-HTTP-Interface specification:
 # http://wiki.gude.info/EPC_HTTP_Interface
 #
@@ -20,7 +21,8 @@ PORT = 80
 
 def power_set(host, port, index, value):
     index = int(index)
-    assert 1 <= index <= 20
+    upper_limit = count_ports(host, port)
+    assert 1 <= index <= upper_limit, f'index ({index}) out of port range (1-{upper_limit})'
     # access the web interface...
     value = 1 if value else 0
     r = requests.get(f"http://{host}:{port}/status.json?components=0&cmd=1&p={index}&s={value}")
@@ -29,12 +31,19 @@ def power_set(host, port, index, value):
 
 def power_get(host, port, index):
     index = int(index)
-    assert 1 <= index <= 20
 
     # get the component status
     r = requests.get(f"http://{host}:{port}/status.json?components=1")
     r.raise_for_status()
 
-    state = r.json()["outputs"][index - 1]["state"]
+    body = r.json()
+    assert 1 <= index <= len(body["outputs"]), f'index ({index}) out of port range (1-{len(body["outputs"])})'
+    state = body["outputs"][index - 1]["state"]
 
     return state
+
+
+def count_ports(host, port):
+    r = requests.get(f"http://{host}:{port}/status.json?components=1")
+    r.raise_for_status()
+    return len(r.json()["outputs"])

@@ -107,6 +107,20 @@ class USBResource(ManagedResource):
                 else:
                     suggestions.append({'@ID_SERIAL_SHORT': serial})
 
+        # Multi-port USB serial adapters (e.g. WCH CH34x, FTDI multi) expose
+        # several ports under one USB interface, so ID_PATH / ID_SERIAL_SHORT /
+        # ID_USB_INTERFACE_NUM are identical for every port and the suggestions
+        # above are ambiguous. The kernel's per-port `port_number` sysfs attr on
+        # an ancestor is stable across re-enumeration; fold it into each
+        # suggestion (as an `@` ancestor match) so every port is unique.
+        for ancestor in self.device.ancestors:
+            if ancestor.attributes.get('port_number') is not None:
+                port_number = ancestor.attributes.asstring('port_number')
+                for suggestion in suggestions:
+                    suggestion['@port_number'] = port_number
+                meta['port_number'] = port_number
+                break
+
         return meta, suggestions
 
     def try_match(self, device):

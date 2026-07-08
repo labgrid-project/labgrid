@@ -1493,7 +1493,7 @@ a remote computer.
 
 .. code-block:: yaml
 
-   RemoteTFTPProvider
+   RemoteTFTPProvider:
      host: 'tftphost'
      internal: '/srv/tftp/board-23/'
      external: 'board-23/'

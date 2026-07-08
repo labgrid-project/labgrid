@@ -3760,6 +3760,9 @@ Binds to:
   port:
     - `LAAUSBGadgetMassStorage`_
 
+Implements:
+  - None (yet)
+
 .. code-block:: yaml
 
    LAAUSBGadgetMassStorageDriver: {}
@@ -3775,6 +3778,9 @@ Binds to:
   port:
     - `LAAUSBPort`_
 
+Implements:
+  - None (yet)
+
 .. code-block:: yaml
 
    LAAUSBDriver: {}
@@ -3789,6 +3795,9 @@ The :any:`LAAButtonDriver` controls virtual buttons on the LAA.
 Binds to:
   port:
     - `LAAButtonPort`_
+
+Implements:
+  - None (yet)
 
 .. code-block:: yaml
 
@@ -3808,6 +3817,9 @@ Binds to:
   port:
     - `LAALed`_
 
+Implements:
+  - None (yet)
+
 .. code-block:: yaml
 
    LAALedDriver: {}
@@ -3822,6 +3834,9 @@ The :any:`LAATempDriver` reads a temperature sensor on the LAA.
 Binds to:
   port:
     - `LAATempSensor`_
+
+Implements:
+  - None (yet)
 
 .. code-block:: yaml
 
@@ -3840,6 +3855,9 @@ The :any:`LAAWattDriver` reads a power meter on the LAA.
 Binds to:
   port:
     - `LAAWattMeter`_
+
+Implements:
+  - None (yet)
 
 .. code-block:: yaml
 
@@ -3861,6 +3879,9 @@ and ``remove(name)`` deletes a file.
 Binds to:
   provider:
     - `LAAProvider`_
+
+Implements:
+  - None (yet)
 
 .. code-block:: yaml
 

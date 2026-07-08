@@ -3729,6 +3729,7 @@ Implements:
 Arguments:
   - txdelay (float, default=0.0): time in seconds to wait after each write
   - timeout (float, default=3.0): default read timeout in seconds
+  - linesep (str, default="\n"): the separator when sending complete lines
 
 LAAPowerDriver
 ++++++++++++++

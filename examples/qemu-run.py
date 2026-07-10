@@ -41,7 +41,7 @@ if __name__ == "__main__":
         "-s",
         "--state",
         default=os.environ.get("LG_STATE"),
-        help="State to transition the strategy into (alternatively provided via LG_STATE",
+        help="State to transition the strategy into (alternatively provided via LG_STATE)",
     )
     parser.add_argument(
         "-v",

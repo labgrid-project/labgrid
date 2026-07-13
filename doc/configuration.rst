@@ -229,6 +229,13 @@ Currently available are:
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/rest.py>`__
   for details.
 
+``rpm1521``
+  Controls *Minuteman RPM1521* series networked power switches (2, 4 and 8 port
+  variants) via an HTTP CGI interface.
+  See the `docstring in the module
+  <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/rpm1521.py>`__
+  for details.
+
 ``sentry``
   Controls *Sentry PDUs* via SNMP using Sentry3-MIB.
   It was tested on *CW-24VDD* and *4805-XLS-16*.

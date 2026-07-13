@@ -941,7 +941,6 @@ class ClientSession:
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
         from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
         from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
-        from ..protocol import ProgrammablePowerProtocol
 
         drv = None
         try:
@@ -989,8 +988,11 @@ class ClientSession:
         if action == "get":
             print(f"power{' ' + name if name else ''} for place {place.name} is {'on' if res else 'off'}")
         elif action == "show":
-            res = drv.show()
-            print(f"Voltage: {res['voltage']}V [{res['v_limit']}V], Current: {res['amps']}A [{res['a_limit']}A]")
+            print(
+                f"Voltage: {res['voltage']}V [{res['v_limit']}V], "
+                f"Current: {res['amps']}A [{res['a_limit']}A], "
+                f"Power: {res['watts']}W"
+            )
 
 
     def digital_io(self):

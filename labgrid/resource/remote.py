@@ -347,6 +347,33 @@ class NetworkHIDRelay(RemoteUSBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class NetworkFTDIGPIO(RemoteUSBResource):
+    """The NetworkFTDIGPIO describes a remotely accessible FTDI GPIO line"""
+    index = attr.ib(
+        default=0,
+        converter=int,
+        validator=attr.validators.and_(
+            attr.validators.instance_of(int),
+            attr.validators.ge(0),
+            attr.validators.le(7),
+        ),
+    )
+    interface = attr.ib(
+        default=1,
+        converter=int,
+        validator=attr.validators.and_(
+            attr.validators.instance_of(int),
+            attr.validators.ge(1),
+        ),
+    )
+    invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class NetworkSysfsGPIO(NetworkResource, ManagedResource):
     manager_cls = RemotePlaceManager
 

@@ -991,7 +991,10 @@ class ClientSession:
 
         drv = None
         try:
-            drv = target.get_driver("DigitalOutputProtocol", name=name)
+            if action == "get":
+                drv = target.get_driver("DigitalInputProtocol", name=name)
+            else:
+                drv = target.get_driver("DigitalOutputProtocol", name=name)
         except NoDriverFoundError:
             for resource in target.resources:
                 if name and resource.name != name:

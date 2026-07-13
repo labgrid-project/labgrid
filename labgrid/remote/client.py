@@ -1302,7 +1302,7 @@ class ClientSession:
                 ip = self._get_ip(place)
                 if not ip:
                     return
-                resource = NetworkService(target, address=str(ip), username="root")
+                resource = NetworkService(target, name=None, address=str(ip))
 
             drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name)
             return drv

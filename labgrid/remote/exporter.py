@@ -723,9 +723,14 @@ class NetworkServiceExport(ResourceExport):
 
     def _get_params(self):
         """Helper function to return parameters"""
-        return {
+        params = {
             **self.local_params,
         }
+        # Keep username string-typed on the wire so older clients can still
+        # reconstruct the resource.
+        if params.get("username") is None:
+            params["username"] = ""
+        return params
 
 
 exports["NetworkService"] = NetworkServiceExport

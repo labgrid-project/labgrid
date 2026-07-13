@@ -64,8 +64,9 @@ def configure_pytest_logging(config, plugin):
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
-    StepLogger.start()
-    config.add_cleanup(StepLogger.stop)
+    if not StepLogger.started:
+        StepLogger.start()
+        config.add_cleanup(StepLogger.stop)
 
     logging_plugin = config.pluginmanager.getplugin('logging-plugin')
     if logging_plugin:

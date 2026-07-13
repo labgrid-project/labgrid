@@ -987,7 +987,13 @@ class ClientSession:
             WaveshareModbusTCPCoil,
             Eth008DigitalOutput,
         )
-        from ..resource.remote import NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO, NetworkHIDRelay
+        from ..resource.remote import (
+            NetworkDeditecRelais8,
+            NetworkFTDIGPIO,
+            NetworkHIDRelay,
+            NetworkLXAIOBusPIO,
+            NetworkSysfsGPIO,
+        )
 
         drv = None
         try:
@@ -1010,6 +1016,8 @@ class ClientSession:
                     drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name)
                 elif isinstance(resource, NetworkSysfsGPIO):
                     drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
+                elif isinstance(resource, NetworkFTDIGPIO):
+                    drv = self._get_driver_or_new(target, "FTDIGPIODriver", name=name)
                 elif isinstance(resource, NetworkLXAIOBusPIO):
                     drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name)
                 elif isinstance(resource, NetworkHIDRelay):

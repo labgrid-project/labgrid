@@ -651,6 +651,7 @@ Arguments:
   - invert (bool, default=False): optional, whether the logic level is inverted (active-low)
 
 Used by:
+  - `GpioDigitalInputDriver`_
   - `GpioDigitalOutputDriver`_
 
 NetworkSysfsGPIO
@@ -684,6 +685,7 @@ Arguments:
   - invert (bool, default=False): optional, whether the logic level is inverted (active-low)
 
 Used by:
+  - `GpioDigitalInputDriver`_
   - `GpioDigitalOutputDriver`_
 
 NetworkService
@@ -2558,6 +2560,30 @@ Implements:
 
 Arguments:
   - delay (float, default=2.0): delay in seconds between off and on
+
+GpioDigitalInputDriver
+~~~~~~~~~~~~~~~~~~~~~~
+The :any:`GpioDigitalInputDriver` reads a digital signal from a GPIO line.
+
+This driver configures GPIO lines via
+`the sysfs kernel interface <https://www.kernel.org/doc/html/latest/gpio/sysfs.html>`__
+as an input.
+
+Binds to:
+  gpio:
+    - `SysfsGPIO`_
+    - `MatchedSysfsGPIO`_
+    - `NetworkSysfsGPIO`_
+
+Implements:
+  - :any:`DigitalInputProtocol`
+
+.. code-block:: yaml
+
+   GpioDigitalInputDriver: {}
+
+Arguments:
+  - None
 
 GpioDigitalOutputDriver
 ~~~~~~~~~~~~~~~~~~~~~~~

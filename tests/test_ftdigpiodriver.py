@@ -42,10 +42,36 @@ def test_ftdigpio_resource_filters_supported_devices(target, monkeypatch):
             },
         )
 
+    def child_device(parent):
+        return types.SimpleNamespace(
+            device_type="usb_interface",
+            find_parent=lambda subsystem, device_type: parent,
+        )
+
     assert resource.filter_match(device("0403", "6014")) is True
+    assert resource.filter_match(child_device(device("0403", "6014"))) is True
+    assert resource.filter_match(child_device(None)) is False
     assert resource.filter_match(device("0403", "6010")) is True
     assert resource.filter_match(device("0403", "6011")) is True
     assert resource.filter_match(device("0403", "6001")) is False
+
+
+def test_network_ftdigpio_resource_validates_range(target, monkeypatch):
+    monkeypatch.setattr(NetworkFTDIGPIO, "manager_cls", ResourceManager)
+    kwargs = {
+        "host": "exporter",
+        "busnum": 1,
+        "devnum": 39,
+        "path": "1-12.4.2",
+        "vendor_id": 0x0403,
+        "model_id": 0x6014,
+    }
+
+    with pytest.raises(ValueError):
+        NetworkFTDIGPIO(target, name=None, index=8, interface=1, **kwargs)
+
+    with pytest.raises(ValueError):
+        NetworkFTDIGPIO(target, name=None, index=0, interface=0, **kwargs)
 
 
 def test_ftdigpio_driver_create(target, monkeypatch):
@@ -120,6 +146,12 @@ def test_ftdigpio_driver_set_get(target, monkeypatch):
     assert driver.get() is True
 
     target.deactivate(driver)
+
+
+def test_ftdigpio_driver_release_ignores_unknown_agent():
+    ftdigpiodriver._shared_agents.clear()
+
+    ftdigpiodriver._release_agent("exporter", 1, 39, 1)
 
 
 def test_ftdigpio_agent(monkeypatch):
@@ -257,6 +289,125 @@ def test_ftdigpio_agent_rejects_empty_pin_read(monkeypatch):
 
     with pytest.raises(TimeoutError, match="no data"):
         ftdigpio.handle_get(0x0403, 0x6014, 1, 39, 1, 3)
+
+
+def test_ftdigpio_agent_configures_device_after_usb_error(monkeypatch):
+    from labgrid.util.agents import ftdigpio
+
+    class FakeEndpoint:
+        bEndpointAddress = 0x02
+
+        def write(self, data, timeout=None):
+            pass
+
+    class FakeConfig:
+        def __getitem__(self, item):
+            assert item == (0, 0)
+            return [FakeEndpoint()]
+
+    class FakeDevice:
+        bus = 1
+        address = 39
+
+        def __init__(self):
+            self.active_config_attempts = 0
+            self.configured = False
+            self.detached = []
+
+        def set_configuration(self):
+            self.configured = True
+
+        def is_kernel_driver_active(self, interface):
+            assert interface == 0
+            return True
+
+        def detach_kernel_driver(self, interface):
+            self.detached.append(interface)
+
+        def get_active_configuration(self):
+            self.active_config_attempts += 1
+            if self.active_config_attempts == 1:
+                raise ftdigpio.usb.core.USBError("not configured")
+            return FakeConfig()
+
+        def ctrl_transfer(self, request_type, request, value, index, data, timeout=None):
+            if request_type == ftdigpio.IN_REQTYPE and request == ftdigpio.SIO_READ_PINS:
+                return b"\x00"
+            return None
+
+    device = FakeDevice()
+    monkeypatch.setattr(ftdigpio.usb.core, "find", lambda **kwargs: [device])
+    monkeypatch.setattr(ftdigpio.usb.util, "claim_interface", lambda dev, interface: None)
+    monkeypatch.setattr(ftdigpio.usb.util, "release_interface", lambda dev, interface: None)
+    monkeypatch.setattr(ftdigpio.usb.util, "dispose_resources", lambda dev: None)
+
+    assert ftdigpio.handle_get(0x0403, 0x6014, 1, 39, 1, 0) is False
+    assert device.configured is True
+    assert device.detached == [0, 0]
+
+
+def test_ftdigpio_agent_rejects_missing_output_endpoint(monkeypatch):
+    from labgrid.util.agents import ftdigpio
+
+    class FakeEndpoint:
+        bEndpointAddress = 0x81
+
+    class FakeConfig:
+        def __getitem__(self, item):
+            assert item == (0, 0)
+            return [FakeEndpoint()]
+
+    class FakeDevice:
+        bus = 1
+        address = 39
+
+        def set_configuration(self):
+            pass
+
+        def is_kernel_driver_active(self, interface):
+            return False
+
+        def get_active_configuration(self):
+            return FakeConfig()
+
+    device = FakeDevice()
+    monkeypatch.setattr(ftdigpio.usb.core, "find", lambda **kwargs: [device])
+    monkeypatch.setattr(ftdigpio.usb.util, "claim_interface", lambda dev, interface: None)
+
+    with pytest.raises(ValueError, match="output endpoint"):
+        ftdigpio.FTDIGPIO(0x0403, 0x6014, 1, 39, 1)
+
+
+def test_ftdigpio_agent_close_ignores_release_error(monkeypatch):
+    from labgrid.util.agents import ftdigpio
+
+    released = []
+    disposed = []
+    device = types.SimpleNamespace()
+    gpio = object.__new__(ftdigpio.FTDIGPIO)
+    gpio._dev = device
+    gpio._interface = 0
+
+    def release_interface(dev, interface):
+        released.append((dev, interface))
+        raise ftdigpio.usb.core.USBError("already released")
+
+    monkeypatch.setattr(ftdigpio.usb.util, "release_interface", release_interface)
+    monkeypatch.setattr(ftdigpio.usb.util, "dispose_resources", lambda dev: disposed.append(dev))
+
+    gpio.close()
+
+    assert released == [(device, 0)]
+    assert disposed == [device]
+
+
+def test_ftdigpio_agent_rejects_missing_device(monkeypatch):
+    from labgrid.util.agents import ftdigpio
+
+    monkeypatch.setattr(ftdigpio.usb.core, "find", lambda **kwargs: [])
+
+    with pytest.raises(ValueError, match="not found"):
+        ftdigpio.FTDIGPIO._find_device(0x0403, 0x6014, 1, 39)
 
 
 def test_ftdigpio_agent_rejects_unsupported_index():

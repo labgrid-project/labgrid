@@ -575,6 +575,44 @@ Arguments:
 Used by:
   - `HIDRelayDriver`_
 
+FTDIGPIO
+++++++++
+An :class:`~labgrid.resource.udev.FTDIGPIO` resource describes a single FTDI
+data-bus GPIO line.
+This uses FTDI bit-bang mode for the 8-bit data bus exposed by the selected
+interface, not CBUS ``ftdi-cbus`` gpiochips or EEPROM-configured ACBUS
+functions.
+
+Supported devices are FT2232-style devices (``0403:6010``, interfaces 1..2),
+FT4232H (``0403:6011``, interfaces 1..4), and FT232H (``0403:6014``,
+interface 1). For each interface, ``index`` selects bit ``0`` to ``7`` on
+that interface's data bus.
+Writes use a read-modify-write cycle on the selected 8-bit interface to avoid
+changing unrelated bits managed by labgrid.
+
+.. code-block:: yaml
+
+   FTDIGPIO:
+     index: 0
+     interface: 1
+     invert: false
+     match:
+       ID_PATH: 'pci-0000:00:14.0-usb-0:2'
+
+Arguments:
+  - index (int): GPIO bit number to use, from ``0`` to ``7``
+  - interface (int, default=1): FTDI interface/channel number to use
+  - invert (bool, default=False): whether to invert the logical GPIO value
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `FTDIGPIODriver`_
+
+NetworkFTDIGPIO
++++++++++++++++
+A :any:`NetworkFTDIGPIO` describes an `FTDIGPIO`_ resource available on a
+remote computer.
+
 HttpDigitalOutput
 +++++++++++++++++
 An :any:`HttpDigitalOutput` resource describes a generic digital output that
@@ -2580,6 +2618,28 @@ Implements:
 .. code-block:: yaml
 
    GpioDigitalOutputDriver: {}
+
+Arguments:
+  - None
+
+FTDIGPIODriver
+~~~~~~~~~~~~~~
+The :any:`FTDIGPIODriver` controls one `FTDIGPIO`_ or `NetworkFTDIGPIO`_ line
+via FTDI bit-bang GPIO output mode.
+
+The FTDI serial kernel driver must not be bound to the same interface.
+
+Binds to:
+  gpio:
+    - `FTDIGPIO`_
+    - `NetworkFTDIGPIO`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   FTDIGPIODriver: {}
 
 Arguments:
   - None

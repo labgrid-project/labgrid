@@ -166,6 +166,44 @@ allocated before returning.
 A reservation will time out after a short time, if it is neither refreshed nor
 used by locked places.
 
+.. _usage-power:
+
+Controlling Power
+~~~~~~~~~~~~~~~~~
+
+The ``labgrid-client power`` command (short alias ``pw``) switches a place's
+power on and off:
+
+.. code-block:: bash
+
+  $ labgrid-client -p my-place power on
+  $ labgrid-client -p my-place power off
+  $ labgrid-client -p my-place power cycle
+  $ labgrid-client -p my-place power get
+
+For programmable power supplies (currently the ``siglent`` backend of
+:any:`NetworkPowerPort`), two additional actions are available.
+
+``power config`` sets the voltage and/or current limit:
+
+.. code-block:: bash
+
+  $ labgrid-client -p my-place power config --voltage 5.0 --amps 1.5
+  set voltage to 5.0V
+  set amps to 1.5A
+
+``power show`` reads back the measured voltage, current and power together with
+the configured limits (shown in square brackets):
+
+.. code-block:: bash
+
+  $ labgrid-client -p my-place power show
+  Voltage: 5.001V [5.0V], Current: 0.209A [1.5A], Power: 1.045W
+
+The power value is read directly from the device rather than being computed from
+voltage times current, so it stays accurate even though those two values are
+sampled at slightly different times.
+
 Library
 -------
 labgrid can be used directly as a Python library, without the infrastructure

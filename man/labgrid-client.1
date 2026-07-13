@@ -556,7 +556,8 @@ change (or get) a place\(aqs power status
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client power|pw [\-t DELAY] [\-\-name NAME] {on,off,cycle,get}
+usage: labgrid\-client power|pw [\-t DELAY] [\-v VOLTAGE] [\-a AMPS] [\-\-name NAME]
+                               {on,off,cycle,get,show,config}
 .EE
 .UNINDENT
 .UNINDENT
@@ -568,6 +569,16 @@ usage: labgrid\-client power|pw [\-t DELAY] [\-\-name NAME] {on,off,cycle,get}
 .TP
 .B \-t <delay>, \-\-delay <delay>
 wait time in seconds between off and on during cycle
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-v <voltage>, \-\-voltage <voltage>
+voltage value to be configured
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-a <amps>, \-\-amps <amps>
+amps value to be configured
 .UNINDENT
 .INDENT 0.0
 .TP

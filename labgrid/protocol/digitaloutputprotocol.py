@@ -1,13 +1,10 @@
 import abc
 
+from .digitalinputprotocol import DigitalInputProtocol
 
-class DigitalOutputProtocol(abc.ABC):
+
+class DigitalOutputProtocol(DigitalInputProtocol):
     """Abstract class providing the DigitalOutputProtocol interface"""
-
-    @abc.abstractmethod
-    def get(self):
-        """Implementations should return the status of the digital output."""
-        raise NotImplementedError
 
     @abc.abstractmethod
     def set(self, status):

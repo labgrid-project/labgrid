@@ -86,6 +86,17 @@ class ErrorGroup(ExceptionGroup):
         return f"{self.message}:\n{errors_combined}"
 
 
+def _get_reservation_id_from_env():
+    reservation_id = os.environ.get("LG_RESERVATION")
+    if reservation_id:
+        return reservation_id
+
+    reservation_id = os.environ.get("LG_TOKEN")
+    if reservation_id:
+        print("warning: LG_TOKEN is deprecated; use LG_RESERVATION instead", file=sys.stderr)
+    return reservation_id
+
+
 @attr.s(eq=False)
 class ClientSession:
     """The ClientSession encapsulates all the actions a Client can invoke on
@@ -443,9 +454,7 @@ class ClientSession:
         if pattern.startswith("+"):
             reservation_id = pattern[1:]
             if not reservation_id:
-                reservation_id = os.environ.get("LG_RESERVATION", None)
-            if not reservation_id:
-                reservation_id = os.environ.get("LG_TOKEN", None)  # For backwards compatibility
+                reservation_id = _get_reservation_id_from_env()
             if not reservation_id:
                 return []
             for name, place in self.places.items():
@@ -2259,9 +2268,6 @@ def main():
     state = os.environ.get("STATE", None)
     state = os.environ.get("LG_STATE", state)
     initial_state = os.environ.get("LG_INITIAL_STATE", None)
-    reservation_id = os.environ.get("LG_RESERVATION", None)
-    if reservation_id is None:
-        reservation_id = os.environ.get("LG_TOKEN", None)  # For backwards compatibility
 
     parser = get_parser()
 
@@ -2286,6 +2292,7 @@ def main():
         args.initial_state = initial_state
 
     if args.command in ["cancel-reservation", "wait"] and getattr(args, "reservation-id") is None:
+        reservation_id = _get_reservation_id_from_env()
         if reservation_id:
             setattr(args, "reservation-id", reservation_id)
         else:

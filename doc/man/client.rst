@@ -25,8 +25,8 @@ LG_PLACE
 ~~~~~~~~
 This variable can be used to specify a place without using the ``-p`` option, the ``-p`` option overrides it.
 
-LG_RESERVATION_ID (previously LG_TOKEN)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+LG_RESERVATION (previously LG_TOKEN)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This variable can be used to specify a reservation for the ``wait`` command and
 for the ``+`` place expansion.
 

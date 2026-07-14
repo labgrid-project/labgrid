@@ -361,12 +361,12 @@ def test_reservation(place_acquire, tmpdir):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
-        m = re.search(rb"^export LG_RESERVATION_ID=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
+        m = re.search(rb"^export LG_RESERVATION=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
         assert m is not None, spawn.before.strip()
         reservation_id = m.group(1)
 
     env = os.environ.copy()
-    # Use LG_TOKEN in this test to validate backwards compatibility. Other tests use LG_RESERVATION_ID.
+    # Use LG_TOKEN in this test to validate backwards compatibility. Other tests use LG_RESERVATION.
     env['LG_TOKEN'] = reservation_id.decode('ASCII')
 
     with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
@@ -569,14 +569,14 @@ def test_reservation_custom_config(place, exporter, tmpdir):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
-        m = re.search(rb"^export LG_RESERVATION_ID=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
+        m = re.search(rb"^export LG_RESERVATION=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
         s = re.search(rb"^Selected role$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
         assert m is not None, spawn.before.strip()
         assert s is None, spawn.before.strip()
         reservation_id = m.group(1)
 
     env = os.environ.copy()
-    env['LG_RESERVATION_ID'] = reservation_id.decode('ASCII')
+    env['LG_RESERVATION'] = reservation_id.decode('ASCII')
 
     with pexpect.spawn(f'python -m labgrid.remote.client -c {p} -p + lock', env=env) as spawn:
         spawn.expect("acquired place test")

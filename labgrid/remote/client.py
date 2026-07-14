@@ -443,7 +443,7 @@ class ClientSession:
         if pattern.startswith("+"):
             reservation_id = pattern[1:]
             if not reservation_id:
-                reservation_id = os.environ.get("LG_RESERVATION_ID", None)
+                reservation_id = os.environ.get("LG_RESERVATION", None)
             if not reservation_id:
                 reservation_id = os.environ.get("LG_TOKEN", None)  # For backwards compatibility
             if not reservation_id:
@@ -1574,7 +1574,7 @@ class ClientSession:
 
         res = Reservation.from_pb2(response.reservation)
         if self.args.shell:
-            print(f"export LG_RESERVATION_ID={res.id}")
+            print(f"export LG_RESERVATION={res.id}")
         else:
             print(f"Reservation '{res.id}':")
             res.show(level=1)
@@ -2259,7 +2259,7 @@ def main():
     state = os.environ.get("STATE", None)
     state = os.environ.get("LG_STATE", state)
     initial_state = os.environ.get("LG_INITIAL_STATE", None)
-    reservation_id = os.environ.get("LG_RESERVATION_ID", None)
+    reservation_id = os.environ.get("LG_RESERVATION", None)
     if reservation_id is None:
         reservation_id = os.environ.get("LG_TOKEN", None)  # For backwards compatibility
 

@@ -117,16 +117,27 @@ can lock that place.
     timeout: 2019-08-06 12:59:11.840780
   $ labgrid-client -p +SP37P5OQRU console
 
+
+.. note::
+
+   Reservation tokens are now called reservation IDs.
+   As part of this terminology change, ``LG_TOKEN`` has been renamed to
+   ``LG_RESERVATION``, and ``labgrid-client reserve --shell`` now exports
+   ``LG_RESERVATION``.
+   Command output now uses ``id`` instead of ``token``.
+   The legacy ``LG_TOKEN`` variable remains accepted as input for backwards
+   compatibility, but scripts should migrate to ``LG_RESERVATION``.
+
 When using reservation in a CI job or to save some typing, the ``labgrid-client
 reserve`` command supports a ``--shell`` command to print code for evaluating
 in the shell.
-This sets the ``LG_RESERVATION_ID`` environment variable, which is then automatically
+This sets the ``LG_RESERVATION`` environment variable, which is then automatically
 used by ``wait`` and expanded via ``-p +``.
 
 .. code-block:: bash
 
   $ eval `labgrid-client reserve --shell board=imx6-foo`
-  $ echo $LG_RESERVATION_ID
+  $ echo $LG_RESERVATION
   ZDMZJZNLBF
   $ labgrid-client wait
   owner: rettich/jlu

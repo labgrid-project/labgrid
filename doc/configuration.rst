@@ -3478,9 +3478,22 @@ Implements:
 Arguments:
   - latency (int, default=100): rtspsrc jitterbuffer size in milliseconds
 
-Although the driver can be used from Python code by calling the ``stream()``
-method, it is currently mainly useful for the ``video`` subcommand of
-``labgrid-client``.
+Besides showing the stream with the ``stream()`` method (used by the
+``video`` subcommand of ``labgrid-client``), the driver can inspect the
+stream without a display, e.g. for automated tests:
+
+- ``get_stream_info()`` decodes the stream into a fakesink and returns a
+  dict with ``width``, ``height``, ``format``, ``framerate`` (nominal, from
+  the caps), ``measured_fps`` (measured over ``measure_time`` seconds) and
+  ``caps`` (the full negotiated caps string). It additionally queries
+  ``gst-discoverer-1.0`` for ``codec`` (the encoded stream's codec string)
+  and ``depth`` (colour depth in bits per pixel), which are not part of the
+  decoded caps.
+- ``get_resolution()`` returns a ``(width, height)`` tuple.
+- ``get_framerate()`` returns the measured frame rate in frames per second.
+
+``get_resolution()`` and ``get_framerate()`` only decode the stream and do
+not run ``gst-discoverer-1.0``.
 
 ========== =========================================================
 Key        Description

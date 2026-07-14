@@ -1373,6 +1373,7 @@ class ClientSession:
         target = self._get_target(place)
         name = self.args.name
         from ..resource.httpvideostream import HTTPVideoStream
+        from ..resource.rtspvideostream import RTSPVideoStream
         from ..resource.udev import USBVideo
         from ..resource.remote import NetworkUSBVideo
 
@@ -1387,6 +1388,8 @@ class ClientSession:
                     drv = self._get_driver_or_new(target, "USBVideoDriver", name=name)
                 elif isinstance(resource, HTTPVideoStream):
                     drv = self._get_driver_or_new(target, "HTTPVideoDriver", name=name)
+                elif isinstance(resource, RTSPVideoStream):
+                    drv = self._get_driver_or_new(target, "RTSPVideoDriver", name=name)
                 if drv:
                     break
         if not drv:

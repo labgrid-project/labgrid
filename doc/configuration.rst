@@ -1387,6 +1387,21 @@ Arguments:
 Used by:
   - `HTTPVideoDriver`_
 
+RTSPVideoStream
+~~~~~~~~~~~~~~~
+An :any:`RTSPVideoStream` resource describes an IP video stream over RTSP.
+
+.. code-block:: yaml
+
+   RTSPVideoStream:
+     url: 'rtsp://192.168.110.11/stream1'
+
+Arguments:
+  - url (str): URI of the IP video stream
+
+Used by:
+  - `RTSPVideoDriver`_
+
 USBHub
 ~~~~~~
 
@@ -3443,6 +3458,25 @@ Implements:
 
 Arguments:
   - None
+
+Although the driver can be used from Python code by calling the ``stream()``
+method, it is currently mainly useful for the ``video`` subcommand of
+``labgrid-client``.
+
+RTSPVideoDriver
+~~~~~~~~~~~~~~~
+The :any:`RTSPVideoDriver` is used to show a video stream over RTSP
+from a remote IP video source in a local window.
+
+Binds to:
+  video:
+    - `RTSPVideoStream`_
+
+Implements:
+  - :any:`VideoProtocol`
+
+Arguments:
+  - latency (int, default=100): rtspsrc jitterbuffer size in milliseconds
 
 Although the driver can be used from Python code by calling the ``stream()``
 method, it is currently mainly useful for the ``video`` subcommand of

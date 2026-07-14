@@ -335,8 +335,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         async def request_task():
             name = None
             version = None
-            if peer in self.clients:
-                session = self.clients[peer]
+            session = self.clients.get(peer)
             try:
                 async for in_msg in request_iterator:
                     in_msg: labgrid_coordinator_pb2.ClientInMessage
@@ -347,11 +346,18 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         out_msg.sync.id = in_msg.sync.id
                         out_msg_queue.put_nowait(out_msg)
                     elif kind == "startup":
-                        if peer in self.clients:
-                            logging.debug("already setup, probably because identity was provided in metadata")
+                        if identity:
+                            logging.debug("ignoring legacy startup message; session initialised from metadata")
                             continue
-                        version = in_msg.startup.version
+                        if session:
+                            logging.warning("ignoring duplicate startup message from client %s", peer)
+                            continue
                         name = in_msg.startup.name
+                        version = in_msg.startup.version
+                        logging.warning(
+                            "client %s did not provide identity metadata; using deprecated startup identity",
+                            peer,
+                        )
                         session = self.clients[peer] = ClientSession(self, peer, name, out_msg_queue, version)
                         logging.debug("Received startup from %s with %s", name, version)
                         asyncio.current_task().set_name(f"client-{peer}-rx/started-{name}")
@@ -444,8 +450,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         async def request_task():
             name = None
             version = None
-            if peer in self.exporters:
-                session = self.exporters[peer]
+            session = self.exporters.get(peer)
             try:
                 async for in_msg in request_iterator:
                     in_msg: labgrid_coordinator_pb2.ExporterInMessage
@@ -456,11 +461,18 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         cmd.complete(in_msg.response)
                         logging.debug("Command %s is done", cmd)
                     elif kind == "startup":
-                        if peer in self.exporters:
-                            logging.debug("already setup, probably because identity was provided in metadata")
+                        if identity:
+                            logging.debug("ignoring legacy startup message; session initialized from metadata")
                             continue
-                        version = in_msg.startup.version
+                        if session:
+                            logging.warning("ignoring duplicate startup message from exporter %s", peer)
+                            continue
                         name = in_msg.startup.name
+                        version = in_msg.startup.version
+                        logging.warning(
+                            "exporter %s did not provide identity metadata; using deprecated startup identity",
+                            peer,
+                        )
                         if existing := self.get_exporter_by_name(name):
                             raise ExporterError(
                                 f"exporter with name '{name}' is already connected from {existing.peer}"

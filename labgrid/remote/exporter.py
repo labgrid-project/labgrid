@@ -858,6 +858,7 @@ class Exporter:
 
     async def run(self) -> None:
         self.pump_task = self.loop.create_task(self.message_pump())
+        self.send_started()
 
         config_template_env = {
             "env": os.environ,
@@ -903,6 +904,12 @@ class Exporter:
             await self.poll_task
         except asyncio.CancelledError:
             return
+
+    def send_started(self):
+        msg = labgrid_coordinator_pb2.ExporterInMessage()
+        msg.startup.version = labgrid_version()
+        msg.startup.name = self.name
+        self.out_queue.put_nowait(msg)
 
     async def message_pump(self):
         got_message = False

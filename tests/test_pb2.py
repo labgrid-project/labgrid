@@ -125,6 +125,7 @@ def test_resource_dict():
         'model_id': 2277,
         'vendor_id': 1133,
         'path': None,
+        "list": ["one", "two"]
     }
 
     resource = labgrid_coordinator_pb2.Resource()
@@ -143,6 +144,7 @@ def test_map_serialize(benchmark):
         'model_id': 2277,
         'vendor_id': 1133,
         'path': None,
+        "list": ["one", "two"]
     }
 
     def run():
@@ -158,6 +160,7 @@ def test_map_deser(benchmark):
         'model_id': 2277,
         'vendor_id': 1133,
         'path': None,
+        "list": ["one", "two"]
     }
 
     resource = labgrid_coordinator_pb2.Resource()

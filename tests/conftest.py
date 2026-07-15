@@ -3,6 +3,7 @@ import os
 from signal import SIGTERM
 import sys
 import threading
+import time
 
 import pytest
 import pexpect
@@ -58,11 +59,41 @@ class Prefixer:
         return getattr(self.__wrapped, name)
 
 
+class _LockedSpawn:
+    """
+    pexpect/ptyprocess is not thread-safe.
+    Serialize access to pexpect.spawn through a lock, so the reader thread and the main thread
+    never call into pexpect (and thus os.waitpid()) concurrently.
+    """
+
+    def __init__(self, spawn):
+        self._spawn = spawn
+        self._lock = threading.Lock()
+
+    def __getattr__(self, name):
+        with self._lock:
+            attr = getattr(self._spawn, name)
+        if callable(attr):
+            def locked(*args, **kwargs):
+                with self._lock:
+                    return attr(*args, **kwargs)
+            return locked
+        return attr
+
+
 class LabgridComponent:
     def __init__(self, cwd):
         self.cwd = str(cwd)
         self.spawn = None
         self.reader = None
+
+    @property
+    def spawn(self):
+        return self._spawn
+
+    @spawn.setter
+    def spawn(self, spawn):
+        self._spawn = _LockedSpawn(spawn) if spawn is not None else None
 
     def stop(self):
         logging.info("stopping %s pid=%s", self.__class__.__name__, self.spawn.pid)
@@ -83,15 +114,18 @@ class LabgridComponent:
         "The output from background processes must be read to avoid blocking them."
         while spawn.isalive():
             try:
-                data = spawn.read_nonblocking(size=1024, timeout=0.1)
+                data = spawn.read_nonblocking(size=1024, timeout=0)
                 if not data:
                     return
             except pexpect.TIMEOUT:
-                continue
+                pass
             except pexpect.EOF:
                 return
             except OSError:
                 return
+
+            # give external LabgridComponent.spawn users a chance to acquire the lock
+            time.sleep(0.001)
 
     def start_reader(self):
         self.reader = threading.Thread(

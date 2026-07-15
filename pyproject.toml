@@ -92,6 +92,7 @@ dev = [
     "pylint>=3.0.0",
     "ruff>=0.5.7",
     "pystuck",
+    "requests[socks]>=2.26.0",
 
     # GRPC Channelz support
     "grpcio-channelz>=1.64.1, <2.0.0",

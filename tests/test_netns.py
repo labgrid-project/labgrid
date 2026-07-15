@@ -4,6 +4,7 @@ import os
 import socket
 import subprocess
 import time
+from shutil import which
 
 import pytest
 
@@ -136,7 +137,11 @@ def test_detach(netns):
     assert netns._agent.list_sockets() == []
 
 
+@pytest.mark.skipif(not which("microsocks"), reason="microsocks not available")
 def test_socks(netns, tmp_path):
+    # installed via requests[socks]
+    pytest.importorskip("socks")
+
     with contextlib.ExitStack() as stack:
         (port, password) = stack.enter_context(netns.socks_proxy())
 

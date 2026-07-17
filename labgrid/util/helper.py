@@ -142,7 +142,7 @@ class ProcessWrapper:
         if buf:
             # process incomplete line
             res.append(buf)
-            if buf[-1] != b'\n':
+            if not buf.endswith(b'\n'):
                 buf += b'\n'
             for callback in self.callbacks:
                 callback(buf, process)

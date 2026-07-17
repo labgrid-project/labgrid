@@ -839,3 +839,49 @@ like this:
   $ labgrid-client -p example allow sirius/john
 
 To remove the allow it is currently necessary to unlock and lock the place.
+
+Simplifying USB device matching with hubs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Labs with many USB devices often use multi-port USB hubs, and the raw
+``ID_PATH`` strings needed to match each device can be long and error-prone.
+The exporter supports a ``hubs`` section in the configuration file that maps
+logical hub names and port numbers to USB paths, so that resources can be
+described more concisely.
+
+For example, instead of writing::
+
+   board1:
+     USBSerialPort:
+       match:
+         '@ID_PATH': 'pci-0000:00:14.0-usb-0:10.2.3:1.0'
+
+you can define the hub once and reference it by name::
+
+   hubs:
+     a:
+       base: 'pci-0000:00:14.0-usb-0:10'
+       ports:
+         1: '2.1'
+         2: '2.2'
+         3: '2.3'
+
+   board1:
+     USBSerialPort:
+       match:
+         hub: a
+         port: 3
+         iface: '1.0'
+
+The ``iface`` field controls both the USB interface suffix and the match
+type: when present, the result is an ``@ID_PATH`` ancestor match with the
+interface appended (for serial ports and similar multi-interface devices);
+when absent, the result is a plain ``ID_PATH`` direct match (for relays,
+USB loaders, etc.).
+
+To determine the port mapping for a hub, plug a device into each port and
+check its path with ``udevadm info``.  The ``base`` is the common prefix
+and each port's suffix is the remainder.
+
+See :ref:`USB Hub Abstraction <exporter-hub-abstraction>` in the
+configuration reference for full details.

@@ -1,4 +1,5 @@
 import logging
+import copy
 
 import attr
 
@@ -88,7 +89,7 @@ class SerialLoggingReporter:
         step = event.step
         state = event.data.get("state")
         extra = {
-            "step": step,
+            "step": copy.copy(step),
             "method": event.step.title,
         }
         if step.tag == "console":
@@ -121,7 +122,7 @@ class SerialLoggingReporter:
             return
 
         extra = {
-            "step": self.lastevent.step,
+            "step": copy.copy(self.lastevent.step),
             "method": self.lastevent.step.title,
         }
         for source, logger in self.loggers.items():
@@ -251,7 +252,7 @@ class StepLogger:
         level = logging.INFO
         extra = {
             "indent_level": event.step.level,
-            "step": event.step,
+            "step": copy.copy(event.step),
             "next_indent_level": cls.get_next_indent(event),
         }
         cls._logger.log(level, message, extra=extra)

@@ -264,9 +264,9 @@ class Target:
         >>> console = FakeConsoleDriver(target, 'console')
         >>> target.activate(console)
         >>> target[FakeConsoleDriver]
-        FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0, txchunk=1)
+        FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0, txchunk=1, linesep='\\n')
         >>> target[FakeConsoleDriver, 'console']
-        FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0, txchunk=1)
+        FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0, txchunk=1, linesep='\\n')
         """
         name = None
         if not isinstance(key, tuple):

@@ -1,7 +1,9 @@
 import logging
+import os
 from signal import SIGTERM
 import sys
 import threading
+import time
 
 import pytest
 import pexpect
@@ -12,6 +14,15 @@ from labgrid.resource import RawSerialPort, NetworkSerialPort
 from labgrid.driver.fake import FakeConsoleDriver
 
 psutil = pytest.importorskip("psutil")
+
+# gRPC is only safe to fork() if gRPC objects are created in the child after the fork. The tests do
+# the opposite: the pytest process spawns labgrid-client via pexpect (forkpty) while gRPC is
+# already initialized in it, so gRPC's pthread_atfork handler can lose a race and abort the child
+# before it execs. Set GRPC_ENABLE_FORK_SUPPORT=0 to disable the handler; the spawned clients
+# fork+exec and never reuse an inherited channel, so it is not needed anyway.
+# See also https://github.com/grpc/grpc/blob/master/doc/fork_support.md
+os.environ.setdefault("GRPC_ENABLE_FORK_SUPPORT", "0")
+
 
 @pytest.fixture(scope="session")
 def curses_init():
@@ -48,11 +59,41 @@ class Prefixer:
         return getattr(self.__wrapped, name)
 
 
+class _LockedSpawn:
+    """
+    pexpect/ptyprocess is not thread-safe.
+    Serialize access to pexpect.spawn through a lock, so the reader thread and the main thread
+    never call into pexpect (and thus os.waitpid()) concurrently.
+    """
+
+    def __init__(self, spawn):
+        self._spawn = spawn
+        self._lock = threading.Lock()
+
+    def __getattr__(self, name):
+        with self._lock:
+            attr = getattr(self._spawn, name)
+        if callable(attr):
+            def locked(*args, **kwargs):
+                with self._lock:
+                    return attr(*args, **kwargs)
+            return locked
+        return attr
+
+
 class LabgridComponent:
     def __init__(self, cwd):
         self.cwd = str(cwd)
         self.spawn = None
         self.reader = None
+
+    @property
+    def spawn(self):
+        return self._spawn
+
+    @spawn.setter
+    def spawn(self, spawn):
+        self._spawn = _LockedSpawn(spawn) if spawn is not None else None
 
     def stop(self):
         logging.info("stopping %s pid=%s", self.__class__.__name__, self.spawn.pid)
@@ -73,15 +114,18 @@ class LabgridComponent:
         "The output from background processes must be read to avoid blocking them."
         while spawn.isalive():
             try:
-                data = spawn.read_nonblocking(size=1024, timeout=0.1)
+                data = spawn.read_nonblocking(size=1024, timeout=0)
                 if not data:
                     return
             except pexpect.TIMEOUT:
-                continue
+                pass
             except pexpect.EOF:
                 return
             except OSError:
                 return
+
+            # give external LabgridComponent.spawn users a chance to acquire the lock
+            time.sleep(0.001)
 
     def start_reader(self):
         self.reader = threading.Thread(

@@ -648,9 +648,11 @@ A :any:`SysfsGPIO` resource describes a GPIO line.
 
    SysfsGPIO:
      index: 12
+     invert: False
 
 Arguments:
   - index (int): index of the GPIO line
+  - invert (bool, default=False): optional, whether the logic level is inverted (active-low)
 
 Used by:
   - `GpioDigitalOutputDriver`_
@@ -674,6 +676,7 @@ USB based gpiochips.
        '@SUBSYSTEM': 'usb'
        '@ID_SERIAL_SHORT': 'D38EJ8LF'
      pin: 0
+     invert: False
 
 The example would search for a USB gpiochip with the key ``ID_SERIAL_SHORT``
 and the value ``D38EJ8LF`` and use the pin 0 of this device.
@@ -682,6 +685,7 @@ The ``ID_SERIAL_SHORT`` property is set by the usb_id builtin helper program.
 Arguments:
   - match (dict): key and value pairs for a udev match, see `udev Matching`_
   - pin (int): gpio pin number within the matched gpiochip.
+  - invert (bool, default=False): optional, whether the logic level is inverted (active-low)
 
 Used by:
   - `GpioDigitalOutputDriver`_
@@ -1493,7 +1497,7 @@ a remote computer.
 
 .. code-block:: yaml
 
-   RemoteTFTPProvider
+   RemoteTFTPProvider:
      host: 'tftphost'
      internal: '/srv/tftp/board-23/'
      external: 'board-23/'
@@ -1978,6 +1982,7 @@ Arguments:
   - txchunk (int, default=1): number of bytes the `txdelay` should apply to
   - timeout (float, default=3.0): time in seconds to wait for a network serial port before
     an error occurs
+  - linesep (str, default="\n"): the separator when sending complete lines
 
 ModbusRTUDriver
 ~~~~~~~~~~~~~~~
@@ -2235,6 +2240,7 @@ Arguments:
   - cmd (str): command to execute and then bind to.
   - txdelay (float, default=0.0): time in seconds to wait before sending a chunk
   - txchunk (int, default=1): number of bytes the `txdelay` should apply to
+  - linesep (str, default="\n"): the separator when sending complete lines
 
 AndroidFastbootDriver
 ~~~~~~~~~~~~~~~~~~~~~
@@ -3110,6 +3116,7 @@ Arguments:
     - qemu-default: Don't override QEMU default settings
 
   - nic (str): optional, configuration string to pass to QEMU to create a network interface
+  - linesep (str, default="\n"): the separator when sending complete lines
 
 The QEMUDriver also requires the specification of:
 
@@ -3137,6 +3144,9 @@ Arguments:
 
 The driver can be used in test cases by calling its ``capture()``, ``stop()``
 and ``analyze()`` methods.
+
+To capture for a certain predetermined amount of time or number of samples,
+methods ``capture_for_time()`` and ``capture_samples()`` can be used.
 
 SigrokPowerDriver
 ~~~~~~~~~~~~~~~~~
@@ -3416,6 +3426,7 @@ Arguments:
   - script (str): optional, key in :ref:`images <labgrid-device-config-images>`
     containing the script to execute for writing of the flashable device
   - args (list of str): optional, list of arguments for flash script execution
+  - timeout (float): optional, timeout for script execution in seconds
 
 The FlashScriptDriver allows running arbitrary programs to flash a device.
 Some SoC or devices may require custom, one-off, or proprietary programs to
@@ -3729,6 +3740,7 @@ Implements:
 Arguments:
   - txdelay (float, default=0.0): time in seconds to wait after each write
   - timeout (float, default=3.0): default read timeout in seconds
+  - linesep (str, default="\n"): the separator when sending complete lines
 
 LAAPowerDriver
 ++++++++++++++
@@ -3760,6 +3772,9 @@ Binds to:
   port:
     - `LAAUSBGadgetMassStorage`_
 
+Implements:
+  - None (yet)
+
 .. code-block:: yaml
 
    LAAUSBGadgetMassStorageDriver: {}
@@ -3775,6 +3790,9 @@ Binds to:
   port:
     - `LAAUSBPort`_
 
+Implements:
+  - None (yet)
+
 .. code-block:: yaml
 
    LAAUSBDriver: {}
@@ -3789,6 +3807,9 @@ The :any:`LAAButtonDriver` controls virtual buttons on the LAA.
 Binds to:
   port:
     - `LAAButtonPort`_
+
+Implements:
+  - None (yet)
 
 .. code-block:: yaml
 
@@ -3808,6 +3829,9 @@ Binds to:
   port:
     - `LAALed`_
 
+Implements:
+  - None (yet)
+
 .. code-block:: yaml
 
    LAALedDriver: {}
@@ -3822,6 +3846,9 @@ The :any:`LAATempDriver` reads a temperature sensor on the LAA.
 Binds to:
   port:
     - `LAATempSensor`_
+
+Implements:
+  - None (yet)
 
 .. code-block:: yaml
 
@@ -3840,6 +3867,9 @@ The :any:`LAAWattDriver` reads a power meter on the LAA.
 Binds to:
   port:
     - `LAAWattMeter`_
+
+Implements:
+  - None (yet)
 
 .. code-block:: yaml
 
@@ -3861,6 +3891,9 @@ and ``remove(name)`` deletes a file.
 Binds to:
   provider:
     - `LAAProvider`_
+
+Implements:
+  - None (yet)
 
 .. code-block:: yaml
 

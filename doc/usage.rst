@@ -321,9 +321,9 @@ Active drivers can be accessed by class (any :any:`Driver <labgrid.driver>` or
   >>> console = FakeConsoleDriver(target, 'console')
   >>> target.activate(console)
   >>> target[FakeConsoleDriver]
-  FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0, txchunk=1)
+  FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0, txchunk=1, linesep='\n')
   >>> target[FakeConsoleDriver, 'console']
-  FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0, txchunk=1)
+  FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.active: 2>, txdelay=0.0, txchunk=1, linesep='\n')
 
 Driver Deactivation
 ^^^^^^^^^^^^^^^^^^^
@@ -340,7 +340,7 @@ Driver deactivation works in a similar manner:
 .. doctest:: driver-deactivation
 
   >>> target.deactivate(console)
-  [FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.bound: 1>, txdelay=0.0, txchunk=1)]
+  [FakeConsoleDriver(target=Target(name='main', env=None), name='console', state=<BindingState.bound: 1>, txdelay=0.0, txchunk=1, linesep='\n')]
 
 Drivers need to be deactivated in the following cases:
 
@@ -431,7 +431,7 @@ To access the target's console, the correct driver object can be found by using
 
   >>> cp = t.get_driver('ConsoleProtocol')
   >>> cp
-  SerialDriver(target=Target(name='example', env=Environment(config_file='example-env.yaml')), name=None, state=<BindingState.active: 2>, txdelay=0.0, txchunk=1, timeout=3.0)
+  SerialDriver(target=Target(name='example', env=Environment(config_file='example-env.yaml')), name=None, state=<BindingState.active: 2>, txdelay=0.0, txchunk=1, timeout=3.0, linesep='\n')
   >>> cp.write(b'test')
   4
 

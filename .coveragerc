@@ -1,6 +1,7 @@
 [run]
 omit =
     labgrid/remote/generated/*
+patch = subprocess
 
 [report]
 exclude_lines =

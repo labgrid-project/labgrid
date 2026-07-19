@@ -1017,14 +1017,13 @@ class ClientSession:
                 if drv:
                     break
 
-        if not drv:
-            raise UserError("target has no compatible resource available")
-        if action == "get":
-            print(f"digital IO{' ' + name if name else ''} for place {place.name} is {'high' if drv.get() else 'low'}")
-        elif action == "high":
-            drv.set(True)
-        elif action == "low":
-            drv.set(False)
+            if not drv:
+                raise UserError("target has no compatible resource available")
+
+            if action == "high":
+                drv.set(True)
+            elif action == "low":
+                drv.set(False)
 
     async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
         name = self.args.name

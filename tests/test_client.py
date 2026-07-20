@@ -387,19 +387,21 @@ def test_reservation(place_acquire, tmpdir):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
-        m = re.search(rb"^export LG_TOKEN=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
+        m = re.search(rb"^export LG_RESERVATION=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
         assert m is not None, spawn.before.strip()
-        token = m.group(1)
+        reservation_id = m.group(1)
 
     env = os.environ.copy()
-    env['LG_TOKEN'] = token.decode('ASCII')
+    env.pop('LG_RESERVATION', None)
+    # Use LG_TOKEN in this test to validate backwards compatibility. Other tests use LG_RESERVATION.
+    env['LG_TOKEN'] = reservation_id.decode('ASCII')
 
     with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
         assert b'waiting' in spawn.before, spawn.before.strip()
-        assert token in spawn.before, spawn.before.strip()
+        assert reservation_id in spawn.before, spawn.before.strip()
 
     with pexpect.spawn('python -m labgrid.remote.client -p test release') as spawn:
         spawn.expect(pexpect.EOF)
@@ -411,14 +413,14 @@ def test_reservation(place_acquire, tmpdir):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
         assert b'allocated' in spawn.before, spawn.before.strip()
-        assert token in spawn.before, spawn.before.strip()
+        assert reservation_id in spawn.before, spawn.before.strip()
 
     with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
         assert b'allocated' in spawn.before, spawn.before.strip()
-        assert token in spawn.before, spawn.before.strip()
+        assert reservation_id in spawn.before, spawn.before.strip()
 
     with pexpect.spawn('python -m labgrid.remote.client -p + acquire', env=env) as spawn:
         spawn.expect(pexpect.EOF)
@@ -428,7 +430,7 @@ def test_reservation(place_acquire, tmpdir):
     with pexpect.spawn('python -m labgrid.remote.client -p + show', env=env) as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
-        assert token in spawn.before, spawn.before.strip()
+        assert reservation_id in spawn.before, spawn.before.strip()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
     with pexpect.spawn('python -m labgrid.remote.client -p + release', env=env) as spawn:
@@ -441,7 +443,7 @@ def test_reservation(place_acquire, tmpdir):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
         assert b'allocated' in spawn.before, spawn.before.strip()
-        assert token in spawn.before, spawn.before.strip()
+        assert reservation_id in spawn.before, spawn.before.strip()
 
     with pexpect.spawn('python -m labgrid.remote.client cancel-reservation', env=env) as spawn:
         spawn.expect(pexpect.EOF)
@@ -452,7 +454,7 @@ def test_reservation(place_acquire, tmpdir):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
-        assert token not in spawn.before, spawn.before.strip()
+        assert reservation_id not in spawn.before, spawn.before.strip()
 
     with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
         spawn.expect(pexpect.EOF)
@@ -594,14 +596,14 @@ def test_reservation_custom_config(place, exporter, tmpdir):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
-        m = re.search(rb"^export LG_TOKEN=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
+        m = re.search(rb"^export LG_RESERVATION=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
         s = re.search(rb"^Selected role$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
         assert m is not None, spawn.before.strip()
         assert s is None, spawn.before.strip()
-        token = m.group(1)
+        reservation_id = m.group(1)
 
     env = os.environ.copy()
-    env['LG_TOKEN'] = token.decode('ASCII')
+    env['LG_RESERVATION'] = reservation_id.decode('ASCII')
 
     with pexpect.spawn(f'python -m labgrid.remote.client -c {p} -p + lock', env=env) as spawn:
         spawn.expect("acquired place test")

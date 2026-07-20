@@ -218,13 +218,14 @@ cancel a reservation
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client cancel\-reservation [token]
+usage: labgrid\-client cancel\-reservation [reservation\-id]
 .EE
 .UNINDENT
 .UNINDENT
 .INDENT 0.0
 .TP
-.B token
+.B reservation\-id
+the reservation id (previously called token)
 .UNINDENT
 .SS labgrid\-client console|con
 .sp
@@ -997,13 +998,14 @@ wait for a reservation to be allocated
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client wait [token]
+usage: labgrid\-client wait [reservation\-id]
 .EE
 .UNINDENT
 .UNINDENT
 .INDENT 0.0
 .TP
-.B token
+.B reservation\-id
+the reservation id (previously called token)
 .UNINDENT
 .SS labgrid\-client who
 .sp
@@ -1125,7 +1127,7 @@ Various labgrid\-client commands use the following environment variable:
 .SS LG_PLACE
 .sp
 This variable can be used to specify a place without using the \fB\-p\fP option, the \fB\-p\fP option overrides it.
-.SS LG_TOKEN
+.SS LG_RESERVATION (previously LG_TOKEN)
 .sp
 This variable can be used to specify a reservation for the \fBwait\fP command and
 for the \fB+\fP place expansion.

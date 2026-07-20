@@ -191,7 +191,7 @@ class Step:
 
     def __del__(self):
         if not self.is_done:
-            warnings.warn(f"__del__ called before {step} was done")
+            warnings.warn(f"__del__ called before {self} was done")
 
 
 def step(*, title=None, args=[], result=False, tag=None):

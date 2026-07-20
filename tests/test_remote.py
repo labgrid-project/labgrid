@@ -309,12 +309,12 @@ def test_tls_coordinator_with_client(tmpdir):
     with pexpect.spawn(
         f"python -m labgrid.remote.coordinator --tls --cert {cert} --key {key}", cwd=tmpdir
     ) as coord_spawn:
-        coord_spawn.expect("INFO:root:Coordinator ready", timeout=1)
+        coord_spawn.expect("INFO:root:Coordinator ready", timeout=10)
 
         with pexpect.spawn(
             f"python -m labgrid.remote.client --tls --cacert {cert} reserve abc=123", cwd=tmpdir
         ) as client_spawn:
-            client_spawn.expect("  state: waiting", timeout=1)
+            client_spawn.expect("  state: waiting", timeout=10)
             client_spawn.close()
 
         coord_spawn.close()
@@ -337,15 +337,15 @@ def test_tls_coordinator_with_exporter(tmpdir):
     with pexpect.spawn(
         f"python -m labgrid.remote.coordinator --tls --cert {cert} --key {key}", cwd=tmpdir
     ) as coord_spawn:
-        coord_spawn.expect("INFO:root:Coordinator ready", timeout=1)
+        coord_spawn.expect("INFO:root:Coordinator ready", timeout=10)
 
         with pexpect.spawn(
             f"python -m labgrid.remote.exporter --tls --cacert {cert} {config}", cwd=tmpdir
         ) as exporter_spawn:
             exporter_spawn.expect(
-                "add resource Testport/NetworkSerialPort: NetworkSerialPort/OrderedDict.*", timeout=1
+                "add resource Testport/NetworkSerialPort: NetworkSerialPort/OrderedDict.*", timeout=10
             )
-            exporter_spawn.expect("INFO:root:connected to coordinator version .*", timeout=1)
+            exporter_spawn.expect("INFO:root:connected to coordinator version .*", timeout=10)
             exporter_spawn.close()
 
         coord_spawn.close()

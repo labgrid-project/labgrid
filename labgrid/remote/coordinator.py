@@ -968,10 +968,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 res.state = ReservationState.expired
                 res.allocations.clear()
                 res.refresh()
-                print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+                print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
             else:
-                del self.reservations[res.token]
-                print(f"removed {res.state.name} reservation ({res.owner}/{res.token})")
+                del self.reservations[res.id]
+                print(f"removed {res.state.name} reservation ({res.owner}/{res.id})")
 
         # check which places are already allocated and handle state transitions
         allocated_places = set()
@@ -985,7 +985,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         res.state = ReservationState.invalid
                         res.allocations.clear()
                         res.refresh(300)
-                        print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+                        print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
                         break
                     if place.acquired is not None:
                         acquired_places.add(name)
@@ -995,12 +995,12 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 # an allocated place was acquired
                 res.state = ReservationState.acquired
                 res.refresh()
-                print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+                print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
             if not acquired_places and res.state is ReservationState.acquired:
                 # all allocated places were released
                 res.state = ReservationState.allocated
                 res.refresh()
-                print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+                print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
 
         # check which places are available for allocation
         available_places = set()
@@ -1027,16 +1027,16 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             place_tagsets.append(TagSet(name, tags))
         filter_tagsets = []
         for res in pending_reservations:
-            filter_tagsets.append(TagSet(res.token, set(res.filters["main"].items())))
+            filter_tagsets.append(TagSet(res.id, set(res.filters["main"].items())))
         allocation = schedule(place_tagsets, filter_tagsets)
 
         # apply allocations
-        for res_token, place_name in allocation.items():
-            res = self.reservations[res_token]
+        for res_id, place_name in allocation.items():
+            res = self.reservations[res_id]
             res.allocations = {"main": [place_name]}
             res.state = ReservationState.allocated
             res.refresh()
-            print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+            print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
 
         # update reservation property of each place and notify
         old_map = {}
@@ -1051,10 +1051,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             for group in res.allocations.values():
                 for name in group:
                     assert name not in new_map, "conflicting allocation"
-                    new_map[name] = res.token
+                    new_map[name] = res.id
                     place = self.places.get(name)
                     assert place is not None, "invalid allocation"
-                    place.reservation = res.token
+                    place.reservation = res.id
         for name in old_map.keys() | new_map.keys():
             if old_map.get(name) != new_map.get(name):
                 self._publish_place(self.places[name])
@@ -1079,28 +1079,28 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
         owner = self.clients[peer].name
         res = Reservation(owner=owner, prio=request.prio, filters=fltrs)
-        self.reservations[res.token] = res
+        self.reservations[res.id] = res
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CreateReservationResponse(reservation=res.as_pb2())
 
     @locked
     async def CancelReservation(self, request: labgrid_coordinator_pb2.CancelReservationRequest, context):
-        token = request.token
-        if not isinstance(token, str) or not token:
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid token {token}")
-        if token not in self.reservations:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {token} does not exist")
-        del self.reservations[token]
+        reservation_id = request.token
+        if not isinstance(reservation_id, str) or not reservation_id:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid id {reservation_id}")
+        if reservation_id not in self.reservations:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {reservation_id} does not exist")
+        del self.reservations[reservation_id]
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CancelReservationResponse()
 
     @locked
     async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context):
-        token = request.token
+        reservation_id = request.token
         try:
-            res = self.reservations[token]
+            res = self.reservations[reservation_id]
         except KeyError:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {token} does not exist")
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {reservation_id} does not exist")
         res.refresh()
         return labgrid_coordinator_pb2.PollReservationResponse(reservation=res.as_pb2())
 

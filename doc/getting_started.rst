@@ -435,6 +435,26 @@ Follow these instructions to install the systemd files on your machine(s):
 
       # usermod -a -G labgrid <user>
 
+Enabling gRPC connection security
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is encouraged to use TLS for gRPC channels in a production environment.
+
+This can be enabled on the ``labgrid-coordinator`` by adding the ``--tls``,
+``--cert`` and ``--key`` options.
+Refer to the ``labgrid-coordinator`` man page for details.
+
+When you are connecting with ``labgrid-client`` or ``labgrid-exporter`` to a
+``labgrid-coordinator`` that has TLS gRPC channels enabled you need to pass
+the ``--tls`` option. If ``--cacert`` is not set, labgrid uses the host CA
+certificates to verify the coordinator certificate. Use ``--cacert`` to provide
+a specific CA certificate or CA bundle instead.
+Refer to the ``labgrid-client`` and ``labgrid-exporter`` man pages for details.
+For ``RemotePlace`` connections from an environment config, set the
+``coordinator_tls`` option or ``LG_COORDINATOR_TLS``. If ``coordinator_cacert``
+is not set, labgrid uses the host CA certificates. Set ``coordinator_cacert``
+to provide a specific CA certificate or CA bundle instead.
+
 Using a Strategy
 ----------------
 

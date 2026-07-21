@@ -1,3 +1,4 @@
+from argparse import Namespace
 import copy
 import os
 import attr
@@ -16,13 +17,44 @@ class RemotePlaceManager(ResourceManager):
         self.ready = None
         self.unmanaged_resources = []
 
+    def _get_credentials(self):
+        from ..remote.common import get_client_credentials
+
+        tls = os.environ.get("LG_COORDINATOR_TLS") is not None
+        cacert = None
+
+        if self.env:
+            config = self.env.config
+            tls = config.get_option("coordinator_tls", tls)
+            if isinstance(tls, str):
+                tls = tls.strip().lower() == "true"
+            else:
+                tls = tls is True
+
+            cacert = config.get_option("coordinator_cacert", "")
+            if cacert:
+                cacert = config.resolve_path(str(cacert))
+            else:
+                cacert = None
+
+        args = Namespace(
+            tls=tls,
+            cacert=cacert,
+        )
+
+        return get_client_credentials(args)
+
     def _start(self):
         if self.session:
             return
 
         from ..remote.client import start_session
         try:
-            self.session = start_session(self.url, extra={'env': self.env})
+            self.session = start_session(
+                self.url,
+                extra={'env': self.env},
+                credentials=self._get_credentials(),
+            )
         except ConnectionRefusedError as e:
             raise ConnectionRefusedError(f"Could not connect to coordinator {self.url}") \
                 from e

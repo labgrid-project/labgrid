@@ -39,8 +39,9 @@ This is the client to control a boards status and interface with it on remote ma
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client [\-x ADDRESS] [\-c CONFIG] [\-p PLACE] [\-s STATE]
-                      [\-i INITIAL_STATE] [\-d] [\-v] [\-P PROXY]
+usage: labgrid\-client [\-x ADDRESS] [\-\-tls] [\-\-cacert CACERT] [\-c CONFIG]
+                      [\-p PLACE] [\-s STATE] [\-i INITIAL_STATE] [\-d] [\-v]
+                      [\-P PROXY]
                       COMMAND ...
 .EE
 .UNINDENT
@@ -49,6 +50,16 @@ usage: labgrid\-client [\-x ADDRESS] [\-c CONFIG] [\-p PLACE] [\-s STATE]
 .TP
 .B \-x <address>, \-\-coordinator <address>
 coordinator HOST[:PORT] (default: value from env variable LG_COORDINATOR, otherwise 127.0.0.1:20408)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-tls
+enable TLS gRPC channel
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-cacert <cacert>
+path to CA certificate or CA bundle for verifying the coordinator (in PEM format)
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1149,6 +1160,10 @@ using the \fB\-\-config\fP option, the \fB\-\-config\fP option overrides it.
 .sp
 This variable can be used to set the default coordinator in the format
 \fBHOST[:PORT]\fP (instead of using the \fB\-x\fP option).
+.SS LG_COORDINATOR_TLS
+.sp
+This variable can be set to enable TLS gRPC channels without using the
+\fB\-\-tls\fP option.
 .SS LG_PROXY
 .sp
 This variable can be used to specify a SSH proxy hostname which should be used
@@ -1227,6 +1242,16 @@ Add all resources with the group \(dqexample\-group\(dq to the place example\-pl
 .sp
 .EX
 $ labgrid\-client \-p example\-place add\-match */example\-group/*/*
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+Retrieve a list of places on a \fBlabgrid\-coordinator\fP that uses TLS gRPC channels:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+$ labgrid\-client \-\-tls [\-\-cacert PATH] places
 .EE
 .UNINDENT
 .UNINDENT

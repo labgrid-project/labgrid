@@ -60,6 +60,15 @@ The \fBoptions:\fP top key configures various options such as the coordinator_ad
 .B \fBcoordinator_address\fP
 takes as parameter the coordinator \fBHOST[:PORT]\fP to connect to.
 Defaults to \fB127.0.0.1:20408\fP\&.
+.TP
+.B \fBcoordinator_tls\fP
+enables a TLS gRPC channel for \fBRemotePlace\fP connections.
+Defaults to whether \fBLG_COORDINATOR_TLS\fP is set.
+.TP
+.B \fBcoordinator_cacert\fP
+path to a CA certificate or CA bundle in PEM format for verifying the
+coordinator in \fBRemotePlace\fP connections. If unset, the host CA certificates
+are used. Relative paths are resolved relative to the configuration file.
 .UNINDENT
 .SS IMAGES
 .sp

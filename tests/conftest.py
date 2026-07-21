@@ -86,6 +86,7 @@ class LabgridComponent:
         self.cwd = str(cwd)
         self.spawn = None
         self.reader = None
+        self.stop_reader_event = threading.Event()
 
     @property
     def spawn(self):
@@ -101,18 +102,18 @@ class LabgridComponent:
         # let coverage write its data:
         # https://coverage.readthedocs.io/en/latest/subprocess.html#process-termination
         self.spawn.kill(SIGTERM)
+        self.stop_reader()
         if not self.spawn.closed:
             self.spawn.expect(pexpect.EOF)
             self.spawn.wait()
         assert not self.spawn.isalive()
 
         self.spawn = None
-        self.stop_reader()
 
     @staticmethod
-    def keep_reading(spawn):
+    def keep_reading(spawn, stop_event):
         "The output from background processes must be read to avoid blocking them."
-        while spawn.isalive():
+        while not stop_event.is_set() and spawn.isalive():
             try:
                 data = spawn.read_nonblocking(size=1024, timeout=0)
                 if not data:
@@ -128,13 +129,15 @@ class LabgridComponent:
             time.sleep(0.001)
 
     def start_reader(self):
+        self.stop_reader_event.clear()
         self.reader = threading.Thread(
             target=LabgridComponent.keep_reading,
             name=f'{self.__class__.__name__}-reader-{self.pid}',
-            args=(self.spawn,), daemon=True)
+            args=(self.spawn, self.stop_reader_event), daemon=True)
         self.reader.start()
 
     def stop_reader(self):
+        self.stop_reader_event.set()
         self.reader.join()
 
         self.reader = None
@@ -268,6 +271,11 @@ def exporter(tmpdir, coordinator):
         NetworkService:
           address: "192.168.0.1"
           username: "root"
+    ClsNotEqualResourceName:
+        ExampleResource:
+            cls: NetworkSerialPort
+            host: 'localhost'
+            port: 4000
     """
     )
 

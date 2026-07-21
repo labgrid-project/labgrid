@@ -46,6 +46,7 @@ dependencies = [
     "PyYAML>=6.0.1",
     "requests>=2.26.0",
     "xmodem>=0.4.6",
+    "cel-python==0.5.0",
 ]
 dynamic = ["version"]  # via setuptools_scm
 
@@ -84,6 +85,7 @@ dev = [
 
     # additional dev dependencies
     "psutil>=5.8.0",
+    "pytest-asyncio==1.3.0",
     "pytest-benchmark>=4.0.0",
     "pytest-cov>=3.0.0",
     "pytest-dependency>=0.5.1",
@@ -121,6 +123,8 @@ packages = [
     "labgrid.pytestplugin",
     "labgrid.remote",
     "labgrid.remote.generated",
+    "labgrid.remote.grpc",
+    "labgrid.remote.grpc.interceptor",
     "labgrid.resource",
     "labgrid.strategy",
     "labgrid.util",

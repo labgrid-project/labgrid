@@ -38,6 +38,8 @@ service Coordinator {
   rpc PollReservation(PollReservationRequest) returns (PollReservationResponse) {}
 
   rpc GetReservations(GetReservationsRequest) returns (GetReservationsResponse) {}
+
+  rpc GetEnvironment(GetEnvironmentRequest) returns (GetEnvironmentResponse) {}
 }
 
 message ClientInMessage {
@@ -294,4 +296,14 @@ message GetReservationsResponse {
 };
 
 message GetReservationsRequest {
+};
+
+message GetEnvironmentRequest {
+};
+
+message GetEnvironmentResponse {
+  // Raw text of the lab environment file (typically YAML) curated by
+  // the lab admin and served to clients.  Empty if the coordinator was
+  // started without a configured environment file.
+  string config = 1;
 };

@@ -752,7 +752,20 @@ Then you just add a line (using ``git commit -s``) saying:
 
   Signed-off-by: Random J Developer <random@developer.example.org>
 
-using your real name (sorry, no pseudonyms or anonymous contributions).
+We follow `git's submission policy
+<https://www.kernel.org/pub/software/scm/git/docs/SubmittingPatches.html>` for
+author names:
+
+Please use a known identity in the ``Signed-off-by`` trailer, since we cannot
+accept anonymous contributions.
+It is common, but not required, to use some form of your real name.
+We realize that some contributors are not comfortable doing so or prefer to
+contribute under a pseudonym or preferred name and we can accept your patch
+either way, as long as the name and email you use are distinctive, identifying,
+and not misleading.
+
+The goal of this policy is to allow us to have sufficient information to
+contact you if questions arise about your contribution.
 
 .. _ideas:
 

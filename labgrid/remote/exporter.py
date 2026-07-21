@@ -550,6 +550,25 @@ class USBHIDRelayExport(USBGenericExport):
 
 
 @attr.s(eq=False)
+class USBFTDIGPIOExport(USBGenericExport):
+    """ResourceExport for GPIOs on FTDI data-bus bit-bang interfaces"""
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
+            "interface": self.local.interface,
+            "invert": self.local.invert,
+        }
+
+
+@attr.s(eq=False)
 class USBFlashableExport(USBGenericExport):
     """ResourceExport for Flashable USB devices"""
 
@@ -591,6 +610,7 @@ exports["SiSPMPowerPort"] = SiSPMPowerPortExport
 exports["USBPowerPort"] = USBPowerPortExport
 exports["DeditecRelais8"] = USBDeditecRelaisExport
 exports["HIDRelay"] = USBHIDRelayExport
+exports["FTDIGPIO"] = USBFTDIGPIOExport
 exports["USBFlashableDevice"] = USBFlashableExport
 exports["LXAUSBMux"] = USBGenericExport
 

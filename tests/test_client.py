@@ -5,6 +5,22 @@ import time
 import pytest
 import pexpect
 
+
+def reserve_and_get_token(args="board=123board name=test"):
+    with pexpect.spawn(f'python -m labgrid.remote.client reserve --shell {args}') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+        m = re.search(
+            rb"^export LG_TOKEN=(\S+)$",
+            spawn.before.replace(b"\r\n", b"\n"),
+            re.MULTILINE,
+        )
+        assert m is not None, spawn.before.strip()
+        return m.group(1)
+
+
 def test_startup(coordinator):
     pass
 
@@ -357,13 +373,7 @@ def test_resource_conflict(place_acquire, tmpdir):
         assert spawn.exitstatus == 0, spawn.before.strip()
 
 def test_reservation(place_acquire, tmpdir):
-    with pexpect.spawn('python -m labgrid.remote.client reserve --shell board=123board name=test') as spawn:
-        spawn.expect(pexpect.EOF)
-        spawn.close()
-        assert spawn.exitstatus == 0, spawn.before.strip()
-        m = re.search(rb"^export LG_TOKEN=(\S+)$", spawn.before.replace(b'\r\n', b'\n'), re.MULTILINE)
-        assert m is not None, spawn.before.strip()
-        token = m.group(1)
+    token = reserve_and_get_token()
 
     env = os.environ.copy()
     env['LG_TOKEN'] = token.decode('ASCII')
@@ -616,3 +626,173 @@ def test_same_name_resources(place, exporter, tmpdir):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
+
+
+def test_place_lease(place):
+    token = reserve_and_get_token()
+
+    env = os.environ.copy()
+    env["LG_TOKEN"] = token.decode("ascii")
+
+    with pexpect.spawn('python -m labgrid.remote.client -p + lease', env=env) as spawn:
+        spawn.expect("leased place test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert token in spawn.before, spawn.before.strip()
+        assert b"leased" in spawn.before, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client -p + show', env=env) as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert token in spawn.before, spawn.before.strip()
+        assert b"acquired: None" not in spawn.before
+        assert token in spawn.before
+
+def test_place_lease_timeout(place):
+    token = reserve_and_get_token()
+
+    env = os.environ.copy()
+    env["LG_TOKEN"] = token.decode("ascii")
+
+    with pexpect.spawn('python -m labgrid.remote.client -p + lease', env=env) as spawn:
+        spawn.expect("leased place test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    time.sleep(7)
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test show') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert b"acquired: None" in spawn.before, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert token in spawn.before, spawn.before.strip()
+        assert b"expired" in spawn.before, spawn.before.strip()
+
+def test_place_lease_then_release(place):
+    token = reserve_and_get_token()
+
+    env = os.environ.copy()
+    env["LG_TOKEN"] = token.decode("ascii")
+
+    with pexpect.spawn('python -m labgrid.remote.client -p + lease', env=env) as spawn:
+        spawn.expect("leased place test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client -p + release', env=env) as spawn:
+        spawn.expect("released place test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test show') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert b"acquired: None" in spawn.before, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert token in spawn.before, spawn.before.strip()
+        assert b"expired" in spawn.before, spawn.before.strip()
+
+def test_place_lease_then_cancel_reservation(place):
+    token = reserve_and_get_token()
+
+    env = os.environ.copy()
+    env["LG_TOKEN"] = token.decode("ascii")
+
+    with pexpect.spawn('python -m labgrid.remote.client -p + lease', env=env) as spawn:
+        spawn.expect("leased place test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client cancel-reservation', env=env) as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test show') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert b"acquired: None" in spawn.before, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert token not in spawn.before, spawn.before.strip()
+
+def test_place_lease_without_reservation_fails(place):
+    with pexpect.spawn('python -m labgrid.remote.client -p test lease') as spawn:
+        spawn.expect("not reserved")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus != 0, spawn.before.strip()
+
+def test_place_lease_extend_updates_timeout(place, exporter):
+    with pexpect.spawn(
+        'python -m labgrid.remote.client -p test add-match testhost/Testport/NetworkSerialPort'
+    ) as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    token = reserve_and_get_token()
+
+    env = os.environ.copy()
+    env["LG_TOKEN"] = token.decode("ascii")
+
+    with pexpect.spawn('python -m labgrid.remote.client -p + lease', env=env) as spawn:
+        spawn.expect("leased place test")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert token in spawn.before, spawn.before.strip()
+        assert b"leased" in spawn.before, spawn.before.strip()
+        m = re.search(rb"timeout: (.+)", spawn.before.replace(b'\r\n', b'\n'))
+        assert m is not None, spawn.before.strip()
+        timeout_before = m.group(1)
+
+    with pexpect.spawn('python -m labgrid.remote.client extend', env=env) as spawn:
+        spawn.expect("extended lease")
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client reservations') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert token in spawn.before, spawn.before.strip()
+        assert b"leased" in spawn.before, spawn.before.strip()
+        m = re.search(rb"timeout: (.+)", spawn.before.replace(b'\r\n', b'\n'))
+        assert m is not None, spawn.before.strip()
+        timeout_after = m.group(1)
+
+    assert timeout_after != timeout_before
+    assert timeout_after > timeout_before

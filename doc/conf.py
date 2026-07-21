@@ -200,6 +200,7 @@ autodoc_mock_imports = ['onewire',
                         'gi.repository',
                         'vxi11',
                         'pysnmp',
+                        'pysnmp.hlapi.v3arch.asyncio',
                         'kasa',
                         'kasa.iot',
                         ]

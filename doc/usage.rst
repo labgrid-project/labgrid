@@ -67,7 +67,7 @@ tags).
   $ labgrid-client reserve board=imx6-foo
   Reservation 'SP37P5OQRU':
     owner: rettich/jlu
-    token: SP37P5OQRU
+    id   : SP37P5OQRU
     state: waiting
     filters:
       main: board=imx6-foo
@@ -76,7 +76,7 @@ tags).
 
 As soon as any matching place becomes free, the reservation state will change
 from ``waiting`` to ``allocated``.
-Then, you can use the reservation token prefixed by ``+`` to refer to the
+Then, you can use the reservation id prefixed by ``+`` to refer to the
 allocated place for locking and usage.
 While a place is allocated for a reservation, only the owner of the reservation
 can lock that place.
@@ -86,7 +86,7 @@ can lock that place.
 
   $ labgrid-client wait SP37P5OQRU
   owner: rettich/jlu
-  token: SP37P5OQRU
+  id:    SP37P5OQRU
   state: waiting
   filters:
     main: board=imx6-foo
@@ -94,7 +94,7 @@ can lock that place.
   timeout: 2019-08-06 12:58:14.900621
   …
   owner: rettich/jlu
-  token: SP37P5OQRU
+  id:    SP37P5OQRU
   state: allocated
   filters:
     main: board=imx6-foo
@@ -107,7 +107,7 @@ can lock that place.
   $ labgrid-client reservations
   Reservation 'SP37P5OQRU':
     owner: rettich/jlu
-    token: SP37P5OQRU
+    id:    SP37P5OQRU
     state: acquired
     filters:
       main: board=imx6-foo
@@ -117,20 +117,31 @@ can lock that place.
     timeout: 2019-08-06 12:59:11.840780
   $ labgrid-client -p +SP37P5OQRU console
 
+
+.. note::
+
+   Reservation tokens are now called reservation IDs.
+   As part of this terminology change, ``LG_TOKEN`` has been renamed to
+   ``LG_RESERVATION``, and ``labgrid-client reserve --shell`` now exports
+   ``LG_RESERVATION``.
+   Command output now uses ``id`` instead of ``token``.
+   The legacy ``LG_TOKEN`` variable remains accepted as input for backwards
+   compatibility, but scripts should migrate to ``LG_RESERVATION``.
+
 When using reservation in a CI job or to save some typing, the ``labgrid-client
 reserve`` command supports a ``--shell`` command to print code for evaluating
 in the shell.
-This sets the ``LG_TOKEN`` environment variable, which is then automatically
+This sets the ``LG_RESERVATION`` environment variable, which is then automatically
 used by ``wait`` and expanded via ``-p +``.
 
 .. code-block:: bash
 
   $ eval `labgrid-client reserve --shell board=imx6-foo`
-  $ echo $LG_TOKEN
+  $ echo $LG_RESERVATION
   ZDMZJZNLBF
   $ labgrid-client wait
   owner: rettich/jlu
-  token: ZDMZJZNLBF
+  id:    ZDMZJZNLBF
   state: waiting
   filters:
     main: board=imx6-foo
@@ -138,7 +149,7 @@ used by ``wait`` and expanded via ``-p +``.
   timeout: 2019-08-06 13:06:44.629736
   …
   owner: rettich/jlu
-  token: ZDMZJZNLBF
+  id:    ZDMZJZNLBF
   state: allocated
   filters:
     main: board=imx6-foo

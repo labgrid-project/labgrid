@@ -86,7 +86,7 @@ def test_reservation_as_pb2():
     )
     pb2 = reservation.as_pb2()
     assert pb2.owner == "test"
-    assert pb2.token == reservation.token
+    assert pb2.token == reservation.id
     assert pb2.state == reservation.state.value
     assert pb2.filters["main"].filter == {"some": "filter"}
     assert pb2.created == reservation.created
@@ -104,7 +104,7 @@ def test_reservation_as_from_pb2():
     )
     pb2 = resold.as_pb2()
     assert pb2.owner == resold.owner
-    assert pb2.token == resold.token
+    assert pb2.token == resold.id
     assert pb2.state == resold.state.value
     assert pb2.filters["main"].filter == {"some": "filter"}
     assert pb2.created == resold.created
@@ -113,7 +113,7 @@ def test_reservation_as_from_pb2():
     resnew = Reservation.from_pb2(pb2)
 
     assert resnew.owner == resold.owner
-    assert resnew.token == resold.token
+    assert resnew.id == resold.id
     assert resnew.state == resold.state
     assert resnew.filters["main"] == resold.filters["main"]
     assert resnew.created == resold.created

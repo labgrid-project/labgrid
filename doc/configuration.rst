@@ -808,8 +808,8 @@ Used by:
 
 RKUSBLoader
 ~~~~~~~~~~~
-An :any:`RKUSBLoader` resource describes a USB device in the *Rockchip loader
-state*.
+An :any:`RKUSBLoader` resource describes a USB device in the *Rockchip USB
+maskrom state*.
 
 .. code-block:: yaml
 
@@ -822,6 +822,7 @@ Arguments:
 
 Used by:
   - `RKUSBDriver`_
+  - `RKUSBMaskromDriver`_
 
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
@@ -2863,7 +2864,7 @@ Arguments:
 RKUSBDriver
 ~~~~~~~~~~~
 An :any:`RKUSBDriver` is used to upload an image into a device in the *Rockchip
-USB loader state*.
+USB maskrom state*.
 This is useful to bootstrap a bootloader onto a device.
 
 Binds to:
@@ -2892,6 +2893,42 @@ Arguments:
     of an image to bootstrap onto the target
   - usb_loader (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of a first-stage bootloader image to write
+
+RKUSBMaskromDriver
+~~~~~~~~~~~~~~~~~~
+An :any:`RKUSBMaskromDriver` is used to upload an image into a device in the
+*Rockchip USB maskrom state*.
+This is useful to bootstrap a bootloader onto a device.
+
+Binds to:
+  loader:
+    - `RKUSBLoader`_
+    - `NetworkRKUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         RKUSBMaskromDriver:
+           initial: 'rkmaskrom471'
+           image: 'rkmaskrom472'
+
+   images:
+     rkmaskrom471: 'path/to/u-boot-rockchip-usb471.bin'
+     rkmaskrom472: 'path/to/u-boot-rockchip-usb472.bin'
+
+Arguments:
+  - initial (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of an image that typically initializes DRAM of the target
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of a bootloader image to load to start of DRAM, or to SRAM when an initial image is unused, or
+    the path to a vendor loader image typically created using the vendor boot_merger tool, or the
+    path to an idblock image typically created using the U-Boot mkimage or Barebox rkimage tools
+  - delay (float, default=0.001): delay in seconds between loading initial and secondary image
 
 UUUDriver
 ~~~~~~~~~

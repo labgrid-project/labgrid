@@ -25,6 +25,7 @@ from .qemudriver import QEMUDriver
 from .modbusdriver import ModbusCoilDriver, WaveShareModbusCoilDriver
 from .modbusrtudriver import ModbusRTUDriver
 from .sigrokdriver import SigrokDriver, SigrokPowerDriver, SigrokDmmDriver
+from .joulescopedriver import JoulescopeDriver
 from .usbstoragedriver import USBStorageDriver, Mode
 from .resetdriver import DigitalOutputResetDriver
 from .gpiodriver import GpioDigitalOutputDriver

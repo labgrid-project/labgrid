@@ -5,6 +5,7 @@ from .linuxbootprotocol import LinuxBootProtocol
 from .powerprotocol import PowerProtocol
 from .filetransferprotocol import FileTransferProtocol
 from .infoprotocol import InfoProtocol
+from .digitalinputprotocol import DigitalInputProtocol
 from .digitaloutputprotocol import DigitalOutputProtocol
 from .mmioprotocol import MMIOProtocol
 from .filesystemprotocol import FileSystemProtocol

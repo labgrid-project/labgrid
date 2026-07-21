@@ -929,8 +929,11 @@ class Exporter:
                             )
                         success = True
                     except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
-                        reason = e.args[0]
+                        reason = str(e)
                         logging.warning("set_acquired_request failed: %s", reason)
+                    except Exception as e:
+                        reason = str(e) or repr(e)
+                        logging.exception("failed to handle set_acquired_request: %s", reason)
                     finally:
                         in_message = labgrid_coordinator_pb2.ExporterInMessage()
                         in_message.response.success = success

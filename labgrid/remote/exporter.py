@@ -749,6 +749,24 @@ class HTTPVideoStreamExport(ResourceExport):
 exports["HTTPVideoStream"] = HTTPVideoStreamExport
 
 
+@attr.s
+class RTSPVideoStreamExport(ResourceExport):
+    """ResourceExport for an RTSPVideoStream"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource.rtspvideostream import RTSPVideoStream
+
+        self.data["cls"] = "RTSPVideoStream"
+        self.local = RTSPVideoStream(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return self.local_params
+
+
+exports["RTSPVideoStream"] = RTSPVideoStreamExport
+
+
 @attr.s(eq=False)
 class LXAIOBusNodeExport(ResourceExport):
     """ResourceExport for LXAIOBusNode devices accessed via the HTTP API"""

@@ -1387,6 +1387,21 @@ Arguments:
 Used by:
   - `HTTPVideoDriver`_
 
+RTSPVideoStream
+~~~~~~~~~~~~~~~
+An :any:`RTSPVideoStream` resource describes an IP video stream over RTSP.
+
+.. code-block:: yaml
+
+   RTSPVideoStream:
+     url: 'rtsp://192.168.110.11/stream1'
+
+Arguments:
+  - url (str): URI of the IP video stream
+
+Used by:
+  - `RTSPVideoDriver`_
+
 USBHub
 ~~~~~~
 
@@ -3447,6 +3462,38 @@ Arguments:
 Although the driver can be used from Python code by calling the ``stream()``
 method, it is currently mainly useful for the ``video`` subcommand of
 ``labgrid-client``.
+
+RTSPVideoDriver
+~~~~~~~~~~~~~~~
+The :any:`RTSPVideoDriver` is used to show a video stream over RTSP
+from a remote IP video source in a local window.
+
+Binds to:
+  video:
+    - `RTSPVideoStream`_
+
+Implements:
+  - :any:`VideoProtocol`
+
+Arguments:
+  - latency (int, default=100): rtspsrc jitterbuffer size in milliseconds
+
+Besides showing the stream with the ``stream()`` method (used by the
+``video`` subcommand of ``labgrid-client``), the driver can inspect the
+stream without a display, e.g. for automated tests:
+
+- ``get_stream_info()`` decodes the stream into a fakesink and returns a
+  dict with ``width``, ``height``, ``format``, ``framerate`` (nominal, from
+  the caps), ``measured_fps`` (measured over ``measure_time`` seconds) and
+  ``caps`` (the full negotiated caps string). It additionally queries
+  ``gst-discoverer-1.0`` for ``codec`` (the encoded stream's codec string)
+  and ``depth`` (colour depth in bits per pixel), which are not part of the
+  decoded caps.
+- ``get_resolution()`` returns a ``(width, height)`` tuple.
+- ``get_framerate()`` returns the measured frame rate in frames per second.
+
+``get_resolution()`` and ``get_framerate()`` only decode the stream and do
+not run ``gst-discoverer-1.0``.
 
 ========== =========================================================
 Key        Description

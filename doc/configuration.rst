@@ -247,8 +247,12 @@ Currently available are:
   for details.
 
 ``siglent``
-  Controls *Siglent SPD3000X* series modules via the `vxi11 Python module
-  <https://pypi.org/project/python-vxi11/>`_.
+  Controls *Siglent SPD3000X* series modules via the `PyVISA Python module
+  <https://pypi.org/project/PyVISA/>`_ (with the ``pyvisa-py`` backend).
+  In addition to switching the output on and off, this backend supports
+  reading and configuring the per-channel voltage and current limits and
+  reading the measured voltage, current and power (see the ``show`` and
+  ``config`` actions of ``labgrid-client power``).
 
 ``simplerest``
   This is a generic backend for PDU implementations which can be controlled via
@@ -2423,6 +2427,13 @@ Implements:
 
 Arguments:
   - delay (float, default=2.0): delay in seconds between off and on
+
+Some programmable power supplies (currently the ``siglent`` backend) additionally
+implement :any:`ProgrammablePowerProtocol`, which allows reading the measured
+voltage, current and power and configuring the voltage and current limits. These
+are exposed via the ``show`` and ``config`` actions of ``labgrid-client power``
+(see :ref:`usage-power` for details). Backends that do not implement this
+protocol simply do not provide those actions.
 
 PDUDaemonDriver
 ~~~~~~~~~~~~~~~

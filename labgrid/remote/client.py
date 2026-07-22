@@ -971,9 +971,29 @@ class ClientSession:
             raise UserError("target has no compatible resource available")
         if delay is not None:
             drv.delay = delay
+
+        if action == "config":
+            if self.args.voltage is None and self.args.amps is None:
+                raise UserError("Option config requires --voltage <float> and/or --amps <float>")
+
+            if self.args.voltage is not None:
+                drv.voltage(self.args.voltage)
+                print(f"set voltage to {self.args.voltage}V")
+            if self.args.amps is not None:
+                drv.amps(self.args.amps)
+                print(f"set amps to {self.args.amps}A")
+            return
+
         res = getattr(drv, action)()
         if action == "get":
             print(f"power{' ' + name if name else ''} for place {place.name} is {'on' if res else 'off'}")
+        elif action == "show":
+            print(
+                f"Voltage: {res['voltage']}V [{res['v_limit']}V], "
+                f"Current: {res['amps']}A [{res['a_limit']}A], "
+                f"Power: {res['watts']}W"
+            )
+
 
     def digital_io(self):
         place = self.get_acquired_place()
@@ -1982,9 +2002,15 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.set_defaults(func=ClientSession.print_env)
 
     subparser = subparsers.add_parser("power", aliases=("pw",), help="change (or get) a place's power status")
-    subparser.add_argument("action", choices=["on", "off", "cycle", "get"])
+    subparser.add_argument("action", choices=["on", "off", "cycle", "get", "show", "config"])
     subparser.add_argument(
         "-t", "--delay", type=float, default=None, help="wait time in seconds between off and on during cycle"
+    )
+    subparser.add_argument(
+        "-v", "--voltage", type=float, default=None, help="voltage value to be configured"
+    )
+    subparser.add_argument(
+        "-a", "--amps", type=float, default=None, help="amps value to be configured"
     )
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.set_defaults(func=ClientSession.power)

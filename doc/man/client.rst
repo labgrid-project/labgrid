@@ -56,8 +56,8 @@ This variable can be used to set the default coordinator in the format
 
 LG_COORDINATOR_TLS
 ~~~~~~~~~~~~~~~~~~
-This variable can be set to enable TLS gRPC channels without using the
-``--tls`` option.
+Set this variable to ``true`` or ``1`` to enable TLS gRPC channels without
+using the ``--tls`` option.
 
 LG_PROXY
 ~~~~~~~~

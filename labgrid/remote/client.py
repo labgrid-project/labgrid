@@ -1972,7 +1972,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     parser.add_argument(
         "--tls",
         action="store_true",
-        default=os.environ.get("LG_COORDINATOR_TLS") is not None,
+        default=os.environ.get("LG_COORDINATOR_TLS", "").strip().lower() in {"1", "true"},
         help="enable TLS gRPC channel",
     )
     parser.add_argument(

@@ -291,12 +291,12 @@ def _make_remote_place_config(tmpdir, options=None):
     return config
 
 
-def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_env=False):
+def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_env=None):
     monkeypatch.setattr(ResourceManager, "instances", {})
     monkeypatch.delenv("LG_COORDINATOR_TLS", raising=False)
 
-    if tls_env:
-        monkeypatch.setenv("LG_COORDINATOR_TLS", "true")
+    if tls_env is not None:
+        monkeypatch.setenv("LG_COORDINATOR_TLS", tls_env)
 
     class DummySession:
         loop = None
@@ -332,18 +332,22 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
 @pytest.mark.parametrize(
     ("options", "tls_env", "expected_tls", "expected_cacert"),
     [
-        pytest.param({}, False, False, None, id="default-no-tls"),
-        pytest.param({}, True, True, None, id="tls-env"),
+        pytest.param({}, None, False, None, id="default-no-tls"),
+        pytest.param({}, "true", True, None, id="tls-env-true"),
+        pytest.param({}, "1", True, None, id="tls-env-1"),
+        pytest.param({}, "false", False, None, id="tls-env-false"),
+        pytest.param({}, "0", False, None, id="tls-env-0"),
+        pytest.param({}, "", False, None, id="tls-env-empty"),
         pytest.param(
             {"coordinator_tls": True, "coordinator_cacert": "cert.pem"},
-            False,
+            None,
             True,
             "cert.pem",
             id="tls-config",
         ),
-        pytest.param({"coordinator_tls": "TRUE"}, False, True, None, id="tls-config-string"),
-        pytest.param({"coordinator_tls": False}, True, False, None, id="config-overrides-env"),
-        pytest.param({"coordinator_tls": "false"}, True, False, None, id="config-string-overrides-env"),
+        pytest.param({"coordinator_tls": "TRUE"}, None, True, None, id="tls-config-string"),
+        pytest.param({"coordinator_tls": False}, "true", False, None, id="config-overrides-env"),
+        pytest.param({"coordinator_tls": "false"}, "true", False, None, id="config-string-overrides-env"),
     ],
 )
 def test_remote_place_client_credentials(monkeypatch, tmpdir, options, tls_env, expected_tls, expected_cacert):
@@ -357,3 +361,35 @@ def test_remote_place_client_credentials(monkeypatch, tmpdir, options, tls_env, 
     assert captured["tls"] is expected_tls
     assert captured["cacert"] == expected_cacert
     assert captured["credentials"] == ("credentials" if expected_tls else None)
+
+
+@pytest.mark.parametrize(
+    ("tls_env", "expected_tls"),
+    [
+        pytest.param(None, False, id="tls-env-unset"),
+        pytest.param("true", True, id="tls-env-true"),
+        pytest.param("1", True, id="tls-env-1"),
+        pytest.param("false", False, id="tls-env-false"),
+        pytest.param("0", False, id="tls-env-0"),
+        pytest.param("", False, id="tls-env-empty"),
+    ],
+)
+def test_client_parser_tls_env_default(monkeypatch, tls_env, expected_tls):
+    from labgrid.remote.client import get_parser
+
+    monkeypatch.delenv("LG_COORDINATOR_TLS", raising=False)
+    if tls_env is not None:
+        monkeypatch.setenv("LG_COORDINATOR_TLS", tls_env)
+
+    args = get_parser().parse_args(["places"])
+
+    assert args.tls is expected_tls
+
+
+def test_client_parser_tls_flag_overrides_false_env(monkeypatch):
+    from labgrid.remote.client import get_parser
+
+    monkeypatch.setenv("LG_COORDINATOR_TLS", "false")
+    args = get_parser().parse_args(["--tls", "places"])
+
+    assert args.tls is True

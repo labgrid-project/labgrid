@@ -39,6 +39,7 @@ def make_coordinator_with_fake_exporter(
     on_release_command=None,
 ):
     coordinator = Coordinator.__new__(Coordinator)
+    coordinator.use_capabilities = False
     coordinator.lock = asyncio.Lock()
     coordinator.clients = {}
     coordinator.exporters = {
@@ -688,7 +689,7 @@ def test_extend_lease_failure_keeps_single_resource_lease(mocker):
             raise AbortError(details)
 
     async def run_test():
-        coordinator = Coordinator()
+        coordinator = Coordinator(False)
         try:
             coordinator.clients[client_peer] = SimpleNamespace(name="testuser")
 

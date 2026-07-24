@@ -35,6 +35,7 @@ async def instrumented_health_server():
         await servicer.set(name, health_pb2.HealthCheckResponse.SERVING)
     health_pb2_grpc.add_HealthServicer_to_server(servicer, server)
     coordinator = Coordinator.__new__(Coordinator)
+    coordinator.use_capabilities = False
     coordinator.lock = asyncio.Lock()
     coordinator.places = {}
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)

@@ -1,6 +1,7 @@
 import logging
 from typing import Optional
 
+from labgrid.remote.auth.capability import Capability
 from labgrid.remote.common import get_metadata_single_value_by_key
 
 NAME_KEY = "x-lg-name"
@@ -15,6 +16,7 @@ class ClientIdentity:
         self.name = name
         self.hostname = hostname
         self.user_agent = user_agent
+        self.capabilities = set(e for e in Capability)
 
     def __str__(self):
         return f"ClientIdentity(id={self.id}, user_agent={self.user_agent})"

@@ -1,6 +1,7 @@
 import contextvars
 import logging
 from typing import Optional
+from .auth.capability import Capability
 
 from labgrid.remote.common import get_metadata_single_value_by_key
 
@@ -19,6 +20,7 @@ class ClientIdentity:
     def __init__(self, identity_id: str, user_agent: Optional[str]):
         self.id = identity_id
         self.user_agent = user_agent
+        self.capabilities = set(e for e in Capability)
 
     def __str__(self):
         return f"ClientIdentity(id={self.id}, user_agent={self.user_agent})"

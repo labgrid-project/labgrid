@@ -22,6 +22,7 @@ class IdentityServerInterceptor(ServerInterceptor):
 
         metadata = handler_call_details.invocation_metadata
         logging.debug(metadata)
+        print(f"Server metadata: {metadata}")
 
         try:
             client_identity = ClientIdentity.from_metadata(metadata)

@@ -7,6 +7,8 @@ import string
 import logging
 from datetime import datetime
 from fnmatch import fnmatchcase
+from typing import Optional
+import warnings
 
 import attr
 
@@ -479,6 +481,21 @@ class Reservation:
             created=pb2.created,
             timeout=pb2.timeout,
         )
+
+
+def get_metadata_single_value_by_key(metadata, key: str) -> Optional[str]:
+    """Look up a single value by key in a metadata sequence of (key, value) pairs."""
+    values = [v for k, v in metadata or () if k == key]
+
+    if not values:
+        return None
+
+    if len(values) > 1:
+        warnings.warn(
+            "Multiple metadata KV pairs with the same key. The value of the first matching KV pair will be returned."
+        )
+
+    return values[0]
 
 
 async def queue_as_aiter(q):

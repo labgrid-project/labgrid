@@ -495,6 +495,7 @@ def make_coordinator_with_reserved_place():
     coordinator.places = {}
     coordinator.reservations = {}
     coordinator.save_scheduled = False
+    coordinator.require_metadata_identity = False
     coordinator.reservation_retry_cooldown = 60.0
     coordinator.reservation_place_cooldowns = {}
 

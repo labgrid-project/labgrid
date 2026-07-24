@@ -1,0 +1,25 @@
+from enum import StrEnum, auto
+
+
+class Capability(StrEnum):
+    client_stream = auto()
+    exporter_stream = auto()
+    add_place = auto()
+    delete_place = auto()
+    get_places = auto()
+    add_place_alias = auto()
+    delete_place_alias = auto()
+    set_place_tags = auto()
+    set_place_comment = auto()
+    add_place_match = auto()
+    delete_place_match = auto()
+    acquire_place = auto()
+    release_place_owned = auto()
+    release_place_any = auto()
+    allow_place_owned = auto()
+    allow_place_any = auto()
+    create_reservation = auto()
+    cancel_reservation_owned = auto()
+    cancel_reservation_any = auto()
+    poll_reservation = auto()
+    get_reservations = auto()

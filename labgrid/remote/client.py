@@ -1046,6 +1046,37 @@ class ClientSession:
         elif action == "low":
             drv.set(False)
 
+    def reset(self):
+        place = self.get_acquired_place()
+        name = self.args.name
+        target = self._get_target(place)
+        from ..resource.remote import NetworkUSBDebugger
+        from ..protocol import ResetProtocol
+
+        drv = None
+        try:
+            drv = target.get_driver(ResetProtocol, name=name)
+        except NoDriverFoundError:
+            drv = self._get_power_driver_for_resource(target, name, ResetProtocol)
+            io_drv = self._get_io_driver_for_resource(target, name, None)
+            if io_drv:
+                temp_drv = self._get_driver_or_new(target, "DigitalOutputResetDriver", name=name)
+                if temp_drv and (not drv or temp_drv.get_priority(ResetProtocol) > drv.get_priority(ResetProtocol)):
+                    drv = temp_drv
+            for resource in target.resources:
+                if name and resource.name != name:
+                    continue
+                temp_drv = None
+                if isinstance(resource, NetworkUSBDebugger):
+                    temp_drv = self._get_driver_or_new(target, "PyOCDDriver", name=name)
+                if temp_drv:
+                    if not drv or temp_drv.get_priority(ResetProtocol) > drv.get_priority(ResetProtocol):
+                        drv = temp_drv
+
+        if not drv:
+            raise UserError("target has no compatible resource available")
+        drv.reset()
+
     async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
         name = self.args.name
         from ..resource import NetworkSerialPort
@@ -2016,6 +2047,10 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     )
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.set_defaults(func=ClientSession.power)
+
+    subparser = subparsers.add_parser("reset", help="reset the target")
+    subparser.add_argument("--name", "-n", help="optional resource name")
+    subparser.set_defaults(func=ClientSession.reset)
 
     subparser = subparsers.add_parser("io", help="change (or get) a digital IO status")
     subparser.add_argument("action", choices=["high", "low", "get"], help="action")

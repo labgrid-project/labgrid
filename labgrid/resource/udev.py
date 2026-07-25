@@ -932,6 +932,7 @@ class USBDebugger(USBResource):
                          ("064b", "2507"),  # Analog Devices Onboard Debug Agent
                          ("064b", "2508"),  # Analog Devices Onboard Debug Agent
                          ("064b", "250A"),  # Analog Devices Onboard Debug Agent
+                         ("c251", "f001"),  # Keil CMSIS-DAP-Link
                          ]:
             return False
 

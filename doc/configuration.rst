@@ -1971,7 +1971,6 @@ Binds to:
 
 Implements:
   - :any:`ConsoleProtocol`
-  - :any:`ResetProtocol`
 
 Arguments:
   - txdelay (float, default=0.0): time in seconds to wait before sending a chunk

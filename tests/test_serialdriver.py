@@ -1,5 +1,6 @@
 import pytest
 
+from labgrid.binding import BindingError
 from labgrid.driver import SerialDriver
 from labgrid.exceptions import NoSupplierFoundError
 
@@ -8,6 +9,12 @@ class TestSerialDriver:
     def test_instanziation_fail_missing_port(self, target):
         with pytest.raises(NoSupplierFoundError):
             SerialDriver(target, "serial")
+
+    def test_unexpected_binding_reports_binding_error(self, target, serial_port):
+        target.set_binding_map({"port": "serial", "unexpected": "foo"})
+        with pytest.raises(BindingError) as excinfo:
+            SerialDriver(target, "serial")
+        assert "got unexpected bindings" in excinfo.value.msg
 
     def test_instanziation(self, target, serial_port, mocker):
         serial_mock = mocker.patch("serial.Serial")

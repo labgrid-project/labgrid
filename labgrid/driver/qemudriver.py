@@ -367,7 +367,10 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         return self._clientsocket.send(data)
 
     def __str__(self):
-        return f"QemuDriver({self.target.name})"
+        # self.target is None while binding is still in progress, so error
+        # messages raised during bind must not assume it is set
+        target_name = self.target.name if self.target is not None else None
+        return f"QemuDriver({target_name})"
 
     @Driver.check_active
     def interact(self):

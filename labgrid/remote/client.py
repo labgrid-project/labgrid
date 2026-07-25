@@ -932,40 +932,50 @@ class ClientSession:
                 target.activate(drv)
             return drv
 
+    def _get_power_driver_for_resource(self, target, name=None, priority_cls=None):
+        from ..resource.power import NetworkPowerPort, PDUDaemonPort
+        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
+        from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
+
+        drv = None
+        for resource in target.resources:
+            if name and resource.name != name:
+                continue
+            temp_drv = None
+            if isinstance(resource, NetworkPowerPort):
+                temp_drv = self._get_driver_or_new(target, "NetworkPowerDriver", name=name)
+            elif isinstance(resource, NetworkUSBPowerPort):
+                temp_drv = self._get_driver_or_new(target, "USBPowerDriver", name=name)
+            elif isinstance(resource, NetworkSiSPMPowerPort):
+                temp_drv = self._get_driver_or_new(target, "SiSPMPowerDriver", name=name)
+            elif isinstance(resource, PDUDaemonPort):
+                temp_drv = self._get_driver_or_new(target, "PDUDaemonDriver", name=name)
+            elif isinstance(resource, TasmotaPowerPort):
+                temp_drv = self._get_driver_or_new(target, "TasmotaPowerDriver", name=name)
+            elif isinstance(resource, NetworkYKUSHPowerPort):
+                temp_drv = self._get_driver_or_new(target, "YKUSHPowerDriver", name=name)
+            elif isinstance(resource, NetworkSysfsGPIO):
+                self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
+                temp_drv = self._get_driver_or_new(target, "DigitalOutputPowerDriver", name=name)
+            if temp_drv:
+                if not priority_cls:
+                    return temp_drv
+                if not drv or temp_drv.get_priority(priority_cls) > drv.get_priority(priority_cls):
+                    drv = temp_drv
+        return drv
+
     def power(self):
         place = self.get_acquired_place()
         action = self.args.action
         delay = self.args.delay
         name = self.args.name
         target = self._get_target(place)
-        from ..resource.power import NetworkPowerPort, PDUDaemonPort
-        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
-        from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
 
         drv = None
         try:
             drv = target.get_driver("PowerProtocol", name=name)
         except NoDriverFoundError:
-            for resource in target.resources:
-                if name and resource.name != name:
-                    continue
-                if isinstance(resource, NetworkPowerPort):
-                    drv = self._get_driver_or_new(target, "NetworkPowerDriver", name=name)
-                elif isinstance(resource, NetworkUSBPowerPort):
-                    drv = self._get_driver_or_new(target, "USBPowerDriver", name=name)
-                elif isinstance(resource, NetworkSiSPMPowerPort):
-                    drv = self._get_driver_or_new(target, "SiSPMPowerDriver", name=name)
-                elif isinstance(resource, PDUDaemonPort):
-                    drv = self._get_driver_or_new(target, "PDUDaemonDriver", name=name)
-                elif isinstance(resource, TasmotaPowerPort):
-                    drv = self._get_driver_or_new(target, "TasmotaPowerDriver", name=name)
-                elif isinstance(resource, NetworkYKUSHPowerPort):
-                    drv = self._get_driver_or_new(target, "YKUSHPowerDriver", name=name)
-                elif isinstance(resource, NetworkSysfsGPIO):
-                    self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
-                    drv = self._get_driver_or_new(target, "DigitalOutputPowerDriver", name=name)
-                if drv:
-                    break
+            drv = self._get_power_driver_for_resource(target, name, None)
 
         if not drv:
             raise UserError("target has no compatible resource available")

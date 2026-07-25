@@ -964,6 +964,46 @@ class ClientSession:
                     drv = temp_drv
         return drv
 
+    def _get_io_driver_for_resource(self, target, name=None, priority_cls=None):
+        from ..resource import (
+            ModbusTCPCoil,
+            OneWirePIO,
+            HttpDigitalOutput,
+            WaveshareModbusTCPCoil,
+            Eth008DigitalOutput,
+        )
+        from ..resource.remote import NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO, NetworkHIDRelay
+
+        drv = None
+        for resource in target.resources:
+            if name and resource.name != name:
+                continue
+            temp_drv = None
+            if isinstance(resource, WaveshareModbusTCPCoil):
+                temp_drv = self._get_driver_or_new(target, "WaveShareModbusCoilDriver", name=name)
+            elif isinstance(resource, ModbusTCPCoil):
+                temp_drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name)
+            elif isinstance(resource, Eth008DigitalOutput):
+                temp_drv = self._get_driver_or_new(target, "Eth008DigitalOutputDriver", name=name)
+            elif isinstance(resource, OneWirePIO):
+                temp_drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name)
+            elif isinstance(resource, HttpDigitalOutput):
+                temp_drv = self._get_driver_or_new(target, "HttpDigitalOutputDriver", name=name)
+            elif isinstance(resource, NetworkDeditecRelais8):
+                temp_drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name)
+            elif isinstance(resource, NetworkSysfsGPIO):
+                temp_drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
+            elif isinstance(resource, NetworkLXAIOBusPIO):
+                temp_drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name)
+            elif isinstance(resource, NetworkHIDRelay):
+                temp_drv = self._get_driver_or_new(target, "HIDRelayDriver", name=name)
+            if temp_drv:
+                if not priority_cls:
+                    return temp_drv
+                if not drv or temp_drv.get_priority(priority_cls) > drv.get_priority(priority_cls):
+                    drv = temp_drv
+        return drv
+
     def power(self):
         place = self.get_acquired_place()
         action = self.args.action
@@ -990,42 +1030,12 @@ class ClientSession:
         action = self.args.action
         name = self.args.name
         target = self._get_target(place)
-        from ..resource import (
-            ModbusTCPCoil,
-            OneWirePIO,
-            HttpDigitalOutput,
-            WaveshareModbusTCPCoil,
-            Eth008DigitalOutput,
-        )
-        from ..resource.remote import NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO, NetworkHIDRelay
 
         drv = None
         try:
             drv = target.get_driver("DigitalOutputProtocol", name=name)
         except NoDriverFoundError:
-            for resource in target.resources:
-                if name and resource.name != name:
-                    continue
-                if isinstance(resource, WaveshareModbusTCPCoil):
-                    drv = self._get_driver_or_new(target, "WaveShareModbusCoilDriver", name=name)
-                elif isinstance(resource, ModbusTCPCoil):
-                    drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name)
-                elif isinstance(resource, Eth008DigitalOutput):
-                    drv = self._get_driver_or_new(target, "Eth008DigitalOutputDriver", name=name)
-                elif isinstance(resource, OneWirePIO):
-                    drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name)
-                elif isinstance(resource, HttpDigitalOutput):
-                    drv = self._get_driver_or_new(target, "HttpDigitalOutputDriver", name=name)
-                elif isinstance(resource, NetworkDeditecRelais8):
-                    drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name)
-                elif isinstance(resource, NetworkSysfsGPIO):
-                    drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
-                elif isinstance(resource, NetworkLXAIOBusPIO):
-                    drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name)
-                elif isinstance(resource, NetworkHIDRelay):
-                    drv = self._get_driver_or_new(target, "HIDRelayDriver", name=name)
-                if drv:
-                    break
+            drv = self._get_io_driver_for_resource(target, name, None)
 
         if not drv:
             raise UserError("target has no compatible resource available")

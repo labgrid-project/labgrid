@@ -52,7 +52,8 @@ class PyOCDDriver(Driver, BootstrapProtocol, ResetProtocol):
         # FIXME make sure we always have an environment or config
         if self.target.env:
             self.tool = self.target.env.config.get_tool("pyocd")
-            self.config = self.target.env.config.resolve_path(self.config)
+            if self.config:
+                self.config = self.target.env.config.resolve_path(self.config)
         else:
             self.tool = "pyocd"
 
@@ -60,9 +61,9 @@ class PyOCDDriver(Driver, BootstrapProtocol, ResetProtocol):
         cmd = [self.tool, subcommand]
         if self.serial:
             cmd += ["--uid", self.serial]
-        if self.target_name is not None and "--target" not in commands:
+        if self.target_name is not None and (not commands or "--target" not in commands):
             cmd += ["--target", self.target_name]
-        if self.frequency is not None and "--frequency" not in commands:
+        if self.frequency is not None and (not commands or "--frequency" not in commands):
             cmd += ["--frequency", self.frequency]
 
         if self.config is not None:
@@ -75,14 +76,15 @@ class PyOCDDriver(Driver, BootstrapProtocol, ResetProtocol):
         if commands:
             cmd += commands
         processwrapper.check_output(
-            self.interface.wrap_command(cmd), print_on_silent_log=True
+            command=self.interface.wrap_command(cmd),
+            print_on_silent_log=True,
         )
 
     @Driver.check_active
     @step(args=["filename"])
     def load(self, filename=None):
 
-        if filename is None and self.image is not None:
+        if filename is None and self.image is not None and self.target.env:
             filename = self.target.env.config.get_image_path(self.image)
 
         mf = ManagedFile(filename, self.interface)

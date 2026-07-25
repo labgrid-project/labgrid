@@ -1176,8 +1176,9 @@ class ClientSession:
             NetworkIMXUSBLoader,
             NetworkRKUSBLoader,
             NetworkAlteraUSBBlaster,
+            NetworkUSBDebugger,
         )
-        from ..driver import OpenOCDDriver
+        from ..driver import OpenOCDDriver, PyOCDDriver
 
         drv = None
         try:
@@ -1198,6 +1199,13 @@ class ClientSession:
                         drv = target.get_driver("OpenOCDDriver", activate=False, name=name)
                     except NoDriverFoundError:
                         drv = OpenOCDDriver(target, name=name, **args)
+                    drv.interface.timeout = self.args.wait
+                elif isinstance(resource, NetworkUSBDebugger):
+                    args = dict(arg.split("=", 1) for arg in self.args.bootstrap_args)
+                    try:
+                        drv = target.get_driver("PyOCDDriver", activate=False, name=name)
+                    except NoDriverFoundError:
+                        drv = PyOCDDriver(target, name=name, **args)
                     drv.interface.timeout = self.args.wait
                 elif isinstance(resource, NetworkRKUSBLoader):
                     drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False, name=name)

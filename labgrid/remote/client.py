@@ -506,6 +506,17 @@ class ClientSession:
 
         return places
 
+    def get_place_names_to_operate_on(self):
+        """Returns the place names acquire/release should operate on.
+
+        An explicitly requested place (via -p/--place, LG_PLACE or PLACE) always
+        wins, even when an environment config is given. Only without one do we
+        operate on every RemotePlace of the environment.
+        """
+        if self.env and not getattr(self.args, "explicit_place", False):
+            return self.get_place_names_from_env()
+        return [self.args.place]
+
     def get_idle_place(self, place=None):
         place = self.get_place(place)
         if place.acquired:
@@ -710,7 +721,7 @@ class ClientSession:
 
     async def acquire(self):
         errors = []
-        places = self.get_place_names_from_env() if self.env else [self.args.place]
+        places = self.get_place_names_to_operate_on()
         for place in places:
             try:
                 await self._acquire_place(place)
@@ -770,7 +781,7 @@ class ClientSession:
 
     async def release(self):
         errors = []
-        places = self.get_place_names_from_env() if self.env else [self.args.place]
+        places = self.get_place_names_to_operate_on()
         for place in places:
             try:
                 await self._release_place(place)
@@ -2274,6 +2285,10 @@ def main():
 
     if args.place is None:
         args.place = place
+
+    # remember whether the user explicitly selected a place, so that env-wide
+    # commands can be restricted to it
+    args.explicit_place = args.place is not None
 
     if args.state is None:
         args.state = state

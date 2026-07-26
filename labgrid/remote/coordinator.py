@@ -229,6 +229,10 @@ class ExporterError(CoordinatorError):
     pass
 
 
+class LeaseExtendPreconditionError(CoordinatorError):
+    pass
+
+
 @attr.s(frozen=True, auto_attribs=True)
 class CoordinatorConfig:
     default_lease_duration: int = 15 * 60
@@ -885,7 +889,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
         for resource in place.acquired_resources:
             if getattr(resource, "orphaned", False):
-                continue
+                raise LeaseExtendPreconditionError(
+                    f"cannot extend lease for {place.name}: resource {resource} is orphaned"
+                )
+
+        for resource in place.acquired_resources:
             await self._notify_lease_extended_resource(place, resource, duration)
 
     async def _release_resources(self, place, resources, callback=True, releaser_identity=None):
@@ -1596,6 +1604,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
         try:
             await self._notify_lease_extended(leased_place, extend_duration)
+        except LeaseExtendPreconditionError as e:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                str(e),
+            )
         except ExporterError as e:
             try:
                 await self._release_place(leased_place)

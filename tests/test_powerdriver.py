@@ -1,3 +1,4 @@
+import subprocess
 from urllib.parse import urlparse
 
 import pytest
@@ -81,7 +82,7 @@ class TestExternalPowerDriver:
         d.on()
 
         popen.assert_called_once_with(['set', '-1', 'foo-board'], bufsize=0,
-                                      stderr=2, stdout=2)
+                                      stderr=subprocess.STDOUT, stdout=2)
 
     def test_off(self, target, mocker):
         pty = mocker.patch('pty.openpty')
@@ -107,7 +108,7 @@ class TestExternalPowerDriver:
         d.off()
 
         popen.assert_called_once_with(['set', '-0', 'foo-board'], bufsize=0,
-                                      stderr=2, stdout=2)
+                                      stderr=subprocess.STDOUT, stdout=2)
 
     def test_cycle(self, target, mocker):
         pty = mocker.patch('pty.openpty')
@@ -135,10 +136,8 @@ class TestExternalPowerDriver:
         d.cycle()
 
         assert popen.call_args_list == [
-            mocker.call(['set', '-0', 'foo-board'], bufsize=0, stderr=2,
-                        stdout=2),
-            mocker.call(['set', '-1', 'foo-board'], bufsize=0, stderr=2,
-                        stdout=2),
+            mocker.call(['set', '-0', 'foo-board'], bufsize=0, stderr=subprocess.STDOUT, stdout=2),
+            mocker.call(['set', '-1', 'foo-board'], bufsize=0, stderr=subprocess.STDOUT, stdout=2),
         ]
         m_sleep.assert_called_once_with(2.0)
 
@@ -171,7 +170,7 @@ class TestExternalPowerDriver:
         d.cycle()
 
         popen.assert_called_once_with(['set', '-c', 'foo-board'], bufsize=0,
-                                      stderr=2, stdout=2)
+                                      stderr=subprocess.STDOUT, stdout=2)
         m_sleep.assert_not_called()
 
 class TestNetworkPowerDriver:

@@ -48,6 +48,31 @@ def test_pyocd_driver_load(target, mocker):
     assert check_output_mock.call_args.kwargs["print_on_silent_log"]
 
 
+def test_pyocd_driver_multiple_load_with_load_commands(target, mocker):
+    r = USBDebugger(target, name=None, match={"sys_name": "1-12"})
+    r.avail = True
+    d = PyOCDDriver(target, name=None, load_commands=["--frequency", "100"])
+    target.activate(d)
+
+    check_output_mock = mocker.patch("labgrid.util.helper.processwrapper.check_output")
+
+    d.load(__file__)
+
+    check_output_mock.assert_called_once()
+    cmd = check_output_mock.call_args.kwargs["command"]
+    assert cmd == ["pyocd", "load", "--no-config", "--frequency", "100", __file__]
+    assert check_output_mock.call_args.kwargs["print_on_silent_log"]
+
+    check_output_mock.reset_mock()
+
+    d.load(__file__)
+
+    check_output_mock.assert_called_once()
+    cmd = check_output_mock.call_args.kwargs["command"]
+    assert cmd == ["pyocd", "load", "--no-config", "--frequency", "100", __file__]
+    assert check_output_mock.call_args.kwargs["print_on_silent_log"]
+
+
 def test_pyocd_load_error_on_missing_file(target, mocker):
     r = USBDebugger(target, name=None, match={"sys_name": "1-12"})
     r.avail = True

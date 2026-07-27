@@ -94,7 +94,7 @@ class PyOCDDriver(Driver, BootstrapProtocol, ResetProtocol):
             if isinstance(self.load_commands, str):
                 commands = self.load_commands.split()
             else:
-                commands = self.load_commands
+                commands = self.load_commands.copy()
         else:
             commands = ["-e", "sector"]
 

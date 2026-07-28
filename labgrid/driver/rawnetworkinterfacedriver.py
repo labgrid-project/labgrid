@@ -221,9 +221,11 @@ class RawNetworkInterfaceDriver(Driver):
             cmd.append(str(timeout))
         cmd = self._wrap_command(cmd)
         if filename is None:
+            self.logger.debug("running %s", cmd)
             self._record_handle = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         else:
             with open(filename, "wb") as outdata:
+                self.logger.debug("running %s", cmd)
                 self._record_handle = subprocess.Popen(cmd, stdout=outdata, stderr=subprocess.PIPE)
 
         # wait for capture start
@@ -307,10 +309,12 @@ class RawNetworkInterfaceDriver(Driver):
             mf = ManagedFile(filename, self.iface)
             mf.sync_to_resource()
             cmd = self._wrap_command([f"tcpreplay {self.iface.ifname} < {mf.get_remote_path()}"])
+            self.logger.debug("running %s", cmd)
             self._replay_handle = subprocess.Popen(cmd, stderr=subprocess.PIPE)
         else:
             cmd = self._wrap_command(["tcpreplay", self.iface.ifname])
             with open(filename, "rb") as indata:
+                self.logger.debug("running %s", cmd)
                 self._replay_handle = subprocess.Popen(cmd, stdin=indata)
 
         return self._replay_handle
@@ -389,9 +393,11 @@ class RawNetworkInterfaceDriver(Driver):
                 cmd.append(mac_address)
 
             # Start tap forward in remote namespace
+            cmd = self._wrap_command(cmd)
+            self.logger.debug("running %s", cmd)
             remote_fwd = ctx.enter_context(
                 subprocess.Popen(
-                    self._wrap_command(cmd),
+                    cmd,
                     stdout=subprocess.PIPE,
                     stdin=subprocess.PIPE,
                 )
@@ -430,9 +436,11 @@ class RawNetworkInterfaceDriver(Driver):
             link_names = [link["ifname"] for link in links]
             assert "tap0" in link_names
 
+            cmd = local_ns.get_prefix() + ["labgrid-tap-fwd", str(tun_fd.fileno())]
+            self.logger.debug("running %s", cmd)
             local_fwd = ctx.enter_context(
                 subprocess.Popen(
-                    local_ns.get_prefix() + ["labgrid-tap-fwd", str(tun_fd.fileno())],
+                    cmd,
                     stdin=remote_fwd.stdout,
                     stdout=remote_fwd.stdin,
                     pass_fds=(tun_fd.fileno(),),

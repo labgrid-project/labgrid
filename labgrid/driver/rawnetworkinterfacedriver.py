@@ -1,6 +1,7 @@
 # pylint: disable=no-member
 import contextlib
 import json
+import logging
 import subprocess
 import time
 import os
@@ -51,14 +52,28 @@ class RawNetworkInterfaceDriver(Driver):
             self._wait_state("down")
 
     def _wrap_command(self, args):
-        wrapper = ["sudo", "labgrid-raw-interface"]
+        def _wrap(args, extra_arg=None):
+            cmd = ["sudo", "labgrid-raw-interface"]
+            if extra_arg is not None:
+                cmd.append(extra_arg)
+            cmd += args
 
-        if self.iface.command_prefix:
-            # add ssh prefix, convert command passed via ssh (including wrapper) to single argument
-            return self.iface.command_prefix + [" ".join(wrapper + args)]
-        else:
-            # keep wrapper and args as-is
-            return wrapper + args
+            if self.iface.command_prefix:
+                # add ssh prefix, convert command passed via ssh (including wrapper) to single argument
+                cmd = self.iface.command_prefix + [" ".join(cmd)]
+
+            return cmd
+
+        if self.logger.isEnabledFor(logging.DEBUG):
+            try:
+                original_call = subprocess.check_output(_wrap(args, "--dry-run"), text=True).rstrip()
+                host = getattr(self.iface, "host", "localhost")
+                self.logger.debug("running '%s' on %s via labgrid-raw-interface", original_call, host)
+            except subprocess.CalledProcessError:
+                # not all sub commands support dry run
+                pass
+
+        return _wrap(args)
 
     @step(args=["state"])
     def _set_interface(self, state):

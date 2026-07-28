@@ -140,7 +140,7 @@ class RawNetworkInterfaceDriver(Driver):
         Returns Energy-Efficient Ethernet settings via ethtool of the bound network interface
         resource.
         """
-        cmd = self.iface.command_prefix + ["ethtool", "--show-eee", "--json", self.iface.ifname]
+        cmd = self.iface.command_prefix + ["ethtool", "--json", "--show-eee", self.iface.ifname]
         output = subprocess.check_output(cmd, encoding="utf-8")
         return json.loads(output)[0]
 

@@ -481,7 +481,7 @@ class Reservation:
         )
 
 
-async def queue_as_aiter(q):
+async def queue_as_aiter(q, logger=logging.getLogger()):
     try:
         while True:
             try:
@@ -493,7 +493,7 @@ async def queue_as_aiter(q):
                 return
             yield item
             q.task_done()
-            logging.debug("sent message %s", item)
+            logger.debug("sent message %s", item)
     except Exception:
-        logging.exception("error in queue_as_aiter")
+        logger.exception("error in queue_as_aiter")
         raise

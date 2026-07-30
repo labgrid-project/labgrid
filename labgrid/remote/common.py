@@ -231,6 +231,9 @@ class Place:
     changed = attr.ib(default=attr.Factory(time.time))
     reservation = attr.ib(default=None)
 
+    def __attrs_post_init__(self):
+        self.logger = logging.getLogger(f"{self}")
+
     def asdict(self):
         # in the coordinator, we have resource objects, otherwise just a path
         acquired_resources = []
@@ -354,7 +357,7 @@ class Place:
                 place.tags[key] = value
             return place
         except TypeError:
-            logging.exception("failed to convert place %s to protobuf", self)
+            self.logger.exception("failed to convert place %s to protobuf", self)
             raise
 
     @classmethod
@@ -378,6 +381,9 @@ class Place:
             changed=pb2.changed,
             reservation=pb2.reservation if pb2.HasField("reservation") else None,
         )
+
+    def __str__(self):
+        return f"Place({self.name})"
 
 
 class ReservationState(enum.Enum):

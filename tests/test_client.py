@@ -162,6 +162,32 @@ def test_place_acquire(place):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
+def test_place_who_header_stays_first(monkeypatch, place):
+    # A user name starting with an uppercase letter sorts before the "User"
+    # header when comparing strings (uppercase letters have lower code points
+    # than lowercase ones). Ensure the header still stays on the first line.
+    user = "Alice"
+    host = "test-host"
+    monkeypatch.setenv("LG_USERNAME", user)
+    monkeypatch.setenv("LG_HOSTNAME", host)
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn('python -m labgrid.remote.client who') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        lines = spawn.before.decode("utf-8").strip().splitlines()
+        assert lines[0].split()[:4] == ["User", "Host", "Place", "Changed"], lines
+
+    with pexpect.spawn('python -m labgrid.remote.client -p test release') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
 def test_place_acquire_multiple(create_place, tmpdir):
     # create multiple places
     place_names = ['test1', 'test2']

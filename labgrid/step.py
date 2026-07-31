@@ -111,6 +111,7 @@ class Step:
         self._start_ts = None
         self._stop_ts = None
         self._skipped = False
+        self._is_copy = False
 
     def __repr__(self):
         result = [f"Step(title={self.title!r}, level={self.level}, status={self.status}"]
@@ -131,6 +132,8 @@ class Step:
         if self._start_ts is None:
             return 0.0
         if self._stop_ts is None:
+            if self._is_copy:
+                return 0.0
             return monotonic() - self._start_ts
 
         return self._stop_ts - self._start_ts
@@ -157,6 +160,7 @@ class Step:
         steps.notify(event)
 
     def start(self):
+        assert not self._is_copy, "calling start() on a copy is not allowed"
         assert self._start_ts is None
         self._start_ts = monotonic()
         steps.push(self)
@@ -171,10 +175,12 @@ class Step:
         )
 
     def skip(self, reason):
+        assert not self._is_copy, "calling skip() on a copy is not allowed"
         assert self._start_ts is not None
         self._notify(StepEvent(self, {"skip": reason}))
 
     def stop(self):
+        assert not self._is_copy, "calling stop() on a copy is not allowed"
         assert self._start_ts is not None
         assert self._stop_ts is None
         self._stop_ts = monotonic()
@@ -190,8 +196,15 @@ class Step:
         steps.pop(self)
 
     def __del__(self):
-        if not self.is_done:
-            warnings.warn(f"__del__ called before {step} was done")
+        if not self.is_done and not self._is_copy:
+            warnings.warn(f"__del__ called before {self} was done")
+
+    def __copy__(self):
+        cls = self.__class__
+        new = cls.__new__(cls)
+        new.__dict__.update(self.__dict__)
+        new._is_copy = True
+        return new
 
 
 def step(*, title=None, args=[], result=False, tag=None):

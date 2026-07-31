@@ -419,7 +419,7 @@ class ClientSession:
             if self.args.show_exporters:
                 exporters = {resource_path[0] for resource_path in place.acquired_resources}
                 result[-1].append(", ".join(sorted(exporters)))
-        result.sort()
+        result[1:] = sorted(result[1:])
 
         widths = [max(map(len, c)) for c in zip(*result)]
         layout = []

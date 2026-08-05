@@ -124,15 +124,13 @@ class CanInterfaceDriver(Driver):
 
     def on_activate(self):
         if isinstance(self.iface, RemoteNetworkInterface):
-            self.can = self.setup_can_pipe()
+            self.setup_can_pipe()
+            self.can = self.setup_socket_pipe()
         else:
-            self.can = self.setup_can()
+            self.setup_can()
+            self.can = self.setup_socket()
 
-        if self.dbitrate:
-            self.can.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FD_FRAMES, 1)
-
-        self.can.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_RECV_OWN_MSGS, 0)
-        self.can.bind((self.iface.ifname,))
+        self.bind()
 
     def on_deactivate(self):
         self.can = self.can.close()
@@ -190,7 +188,14 @@ class CanInterfaceDriver(Driver):
         else:
             data = b''.join([f.to_bytes() for f in filters])
 
+        if isinstance(self.iface, RemoteNetworkInterface):
+            self.can = self.setup_socket_pipe()
+        else:
+            self.can = self.setup_socket()
+
         self.can.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FILTER, data)
+
+        self.bind()
 
     @property
     @Driver.check_active
@@ -255,6 +260,7 @@ class CanInterfaceDriver(Driver):
             if self.dbitrate is not None and "FD" not in controlmode:
                 raise RuntimeError(f"{ifname} not configured to CAN-FD")
 
+    def setup_socket(self):
         return socket.socket(socket.PF_CAN, socket.SOCK_RAW | socket.SOCK_NONBLOCK, socket.CAN_RAW)
 
     def setup_can_pipe(self):
@@ -289,9 +295,17 @@ class CanInterfaceDriver(Driver):
         self.remote_pipe.stdin.close()
         self.remote_pipe.stdout.close()
 
+    def setup_socket_pipe(self):
         # Create namespaced CAN socket to use with vcan interface
         ret, fd = self.ns.create_socket(socket.PF_CAN, socket.SOCK_RAW | socket.SOCK_NONBLOCK, socket.CAN_RAW)
         if "error" in ret:
             raise OSError(*ret["error"])
 
         return NSSocket(fileno=fd)._attach_remote_sock(ret["id"], self.ns)
+
+    def bind(self):
+        if self.dbitrate:
+            self.can.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_FD_FRAMES, 1)
+
+        self.can.setsockopt(socket.SOL_CAN_RAW, socket.CAN_RAW_RECV_OWN_MSGS, 0)
+        self.can.bind((self.iface.ifname,))

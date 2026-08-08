@@ -57,6 +57,12 @@ class RemotePlaceManager(ResourceManager):
                 self.unmanaged_resources.append(new)
             expanded.append(new)
         self.logger.debug("expanded remote resources for place %s: %s", remote_place.name, expanded)
+
+        # handle remote env
+        remote_env = place.get_remote_env()
+        target_factory.make_resources_from_config(remote_place.target, remote_env.get("resources", {}))
+        target_factory.make_drivers_from_config(remote_place.target, remote_env.get("drivers", {}))
+
         remote_place.avail = True
         remote_place.tags = copy.deepcopy(place.tags)
 

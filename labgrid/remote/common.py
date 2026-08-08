@@ -5,12 +5,14 @@ import random
 import re
 import string
 import logging
+import textwrap
 from datetime import datetime
 from fnmatch import fnmatchcase
 
 import attr
 
 from .generated import labgrid_coordinator_pb2
+from ..util.yaml import load
 
 __all__ = [
     "TAG_KEY",
@@ -230,6 +232,7 @@ class Place:
     created = attr.ib(default=attr.Factory(time.time))
     changed = attr.ib(default=attr.Factory(time.time))
     reservation = attr.ib(default=None)
+    remote_env = attr.ib(default=None)
 
     def asdict(self):
         # in the coordinator, we have resource objects, otherwise just a path
@@ -251,6 +254,7 @@ class Place:
             "created": self.created,
             "changed": self.changed,
             "reservation": self.reservation,
+            "remote_env": self.remote_env,
         }
 
     def update_from_pb2(self, place_pb2):
@@ -298,6 +302,15 @@ class Place:
         print(indent + f"changed: {datetime.fromtimestamp(self.changed)}")
         if self.reservation:
             print(indent + f"reservation: {self.reservation}")
+        if self.remote_env:
+            print(indent + "remote env:")
+            print(textwrap.indent(self.remote_env, indent + "  "))
+
+    def get_remote_env(self):
+        if self.remote_env:
+            return load(self.remote_env)
+
+        return {}
 
     def getmatch(self, resource_path):
         """Return the ResourceMatch object for the given resource path or None if not found.
@@ -350,6 +363,8 @@ class Place:
             place.created = self.created
             if self.reservation:
                 place.reservation = self.reservation
+            if self.remote_env:
+                place.remote_env = self.remote_env
             for key, value in self.tags.items():
                 place.tags[key] = value
             return place
@@ -377,6 +392,7 @@ class Place:
             created=pb2.created,
             changed=pb2.changed,
             reservation=pb2.reservation if pb2.HasField("reservation") else None,
+            remote_env=pb2.remote_env if pb2.HasField("remote_env") else None,
         )
 
 

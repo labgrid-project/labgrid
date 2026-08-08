@@ -604,6 +604,27 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         return labgrid_coordinator_pb2.SetPlaceCommentResponse()
 
     @locked
+    async def SetPlaceRemoteEnv(self, request, context):
+        placename = request.placename
+        changed = request.changed
+        remote_env = request.remote_env
+        try:
+            place = self.places[placename]
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {placename} does not exist")
+
+        if place.changed != changed:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION, "Config was changed elsewhere during during your edit"
+            )
+
+        place.remote_env = remote_env
+        place.touch()
+        self._publish_place(place)
+        self.save_later()
+        return labgrid_coordinator_pb2.SetPlaceRemoteEnvResponse()
+
+    @locked
     async def AddPlaceMatch(self, request, context):
         placename = request.placename
         pattern = request.pattern

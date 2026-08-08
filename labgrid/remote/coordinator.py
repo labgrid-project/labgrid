@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import contextvars
 import logging
 import asyncio
 import traceback
@@ -10,10 +11,14 @@ from contextlib import contextmanager
 import copy
 import random
 import signal
+from typing import Optional
 
 import attr
 import grpc
 from grpc_reflection.v1alpha import reflection
+
+from labgrid.remote.grpc.interceptor.server import IdentityServerInterceptor
+from labgrid.remote.identity import ClientIdentity, infer_peer_identity
 
 from .common import (
     ResourceEntry,
@@ -29,6 +34,10 @@ from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
+
+client_identity_context: contextvars.ContextVar[Optional[ClientIdentity]] = contextvars.ContextVar(
+    "client_identity", default=None
+)
 
 
 @contextmanager
@@ -317,9 +326,17 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         assert peer not in self.clients
         out_msg_queue = asyncio.Queue()
 
+        identity = client_identity_context.get()
+        if identity:
+            logging.debug("client identity provided in gRPC metadata")
+            logging.debug(identity)
+            self.clients[peer] = ClientSession(self, peer, identity.id, out_msg_queue, identity.user_agent)
+
         async def request_task():
             name = None
             version = None
+            if peer in self.clients:
+                session = self.clients[peer]
             try:
                 async for in_msg in request_iterator:
                     in_msg: labgrid_coordinator_pb2.ClientInMessage
@@ -330,6 +347,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         out_msg.sync.id = in_msg.sync.id
                         out_msg_queue.put_nowait(out_msg)
                     elif kind == "startup":
+                        if peer in self.clients:
+                            logging.debug("already setup, probably because identity was provided in metadata")
+                            continue
                         version = in_msg.startup.version
                         name = in_msg.startup.name
                         session = self.clients[peer] = ClientSession(self, peer, name, out_msg_queue, version)
@@ -409,9 +429,23 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         out_msg.hello.version = labgrid_version()
         yield out_msg
 
+        identity = client_identity_context.get()
+        if identity:
+            logging.debug("exporter identity provided in gRPC metadata")
+            logging.debug(identity)
+            if existing := self.get_exporter_by_name(identity.id):
+                await context.abort(
+                    grpc.StatusCode.ALREADY_EXISTS,
+                    f"startup failed: exporter with name '{identity.id}' is already connected from {existing.peer}",
+                )
+            self.exporters[peer] = ExporterSession(self, peer, identity.id, command_queue, identity.user_agent)
+            startup_done.set()
+
         async def request_task():
             name = None
             version = None
+            if peer in self.exporters:
+                session = self.exporters[peer]
             try:
                 async for in_msg in request_iterator:
                     in_msg: labgrid_coordinator_pb2.ExporterInMessage
@@ -422,6 +456,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         cmd.complete(in_msg.response)
                         logging.debug("Command %s is done", cmd)
                     elif kind == "startup":
+                        if peer in self.exporters:
+                            logging.debug("already setup, probably because identity was provided in metadata")
+                            continue
                         version = in_msg.startup.version
                         name = in_msg.startup.name
                         if existing := self.get_exporter_by_name(name):
@@ -499,8 +536,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except KeyError:
                 logging.info("Never received startup from peer %s that disconnected", peer)
 
-    @locked
-    async def AddPlace(self, request, context):
+    async def create_place(
+        self,
+        request: labgrid_coordinator_pb2.CreatePlaceRequest | labgrid_coordinator_pb2.AddPlaceRequest,
+        context,
+    ) -> Place:
         name = request.name
         if not name or not isinstance(name, str):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
@@ -511,7 +551,18 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.places[name] = place
         self._publish_place(place)
         self.save_later()
+        return place
+
+    @locked
+    async def AddPlace(self, request, context):
+        await self.create_place(request, context)
         return labgrid_coordinator_pb2.AddPlaceResponse()
+
+    @locked
+    async def CreatePlace(self, request, context):
+        logging.debug("CreatePlace name=%s", request.name)
+        place = await self.create_place(request, context)
+        return labgrid_coordinator_pb2.CreatePlaceResponse(place=place.as_pb2())
 
     @locked
     async def DeletePlace(self, request, context):
@@ -852,7 +903,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         peer = context.peer()
         name = request.placename
         try:
-            username = self.clients[peer].name
+            username = infer_peer_identity(self.clients, context, client_identity_context)
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         print(request)
@@ -916,13 +967,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         print(f"{place.name}: place released")
         return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
-    @locked
-    async def AllowPlace(self, request, context):
-        placename = request.placename
-        user = request.user
+    async def share_place(self, placename, user, context):
         peer = context.peer()
         try:
-            username = self.clients[peer].name
+            username = infer_peer_identity(self.clients, context, client_identity_context)
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         try:
@@ -939,10 +987,72 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         place.touch()
         self._publish_place(place)
         self.save_later()
+
+    @locked
+    async def AllowPlace(self, request, context):
+        await self.share_place(request.placename, request.user, context)
         return labgrid_coordinator_pb2.AllowPlaceResponse()
+
+    @locked
+    async def SharePlace(self, request, context):
+        name = request.name
+        logging.debug("SharePlace name=%s user=%s", name, request.user)
+        if not name or not isinstance(name, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+
+        await self.share_place(name, request.user, context)
+        return labgrid_coordinator_pb2.SharePlaceResponse()
+
+    @locked
+    async def UnsharePlace(self, request, context):
+        placename = request.name
+        logging.debug("UnsharePlace name=%s user=%s", placename, request.user)
+        if not placename or not isinstance(placename, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+
+        user = request.user
+        peer = context.peer()
+        try:
+            username = infer_peer_identity(self.clients, context, client_identity_context)
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
+        try:
+            place = self.places[placename]
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {placename} does not exist")
+        if not place.acquired:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired")
+        if not place.acquired == username:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired by {username}"
+            )
+        try:
+            place.allowed.remove(user)
+            place.touch()
+            self._publish_place(place)
+            self.save_later()
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not shared with {user}")
+
+        return labgrid_coordinator_pb2.UnsharePlaceResponse()
 
     def _get_places(self):
         return {k: v.asdict() for k, v in self.places.items()}
+
+    @locked
+    async def GetPlace(self, request, context):
+        name = request.name
+        logging.debug("GetPlace name=%s", name)
+        if not name or not isinstance(name, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+        try:
+            place = self.places[name]
+            return labgrid_coordinator_pb2.GetPlaceResponse(place=place.as_pb2())
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
+        except Exception:
+            logging.exception("error during get place")
+            await context.abort(grpc.StatusCode.INTERNAL, "internal error")
 
     @locked
     async def GetPlaces(self, unused_request, unused_context):
@@ -1077,7 +1187,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Value {v} is invalid")
                 fltr[k] = v
 
-        owner = self.clients[peer].name
+        try:
+            owner = infer_peer_identity(self.clients, context, client_identity_context)
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         res = Reservation(owner=owner, prio=request.prio, filters=fltrs)
         self.reservations[res.token] = res
         self.schedule_reservations()
@@ -1094,15 +1207,25 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CancelReservationResponse()
 
+    async def refresh_reservation(self, reservation_id: str, context) -> Reservation:
+        try:
+            res = self.reservations[reservation_id]
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {reservation_id} does not exist")
+        if res.state in (ReservationState.waiting, ReservationState.allocated):
+            res.refresh()
+        return res
+
     @locked
     async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context):
-        token = request.token
-        try:
-            res = self.reservations[token]
-        except KeyError:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {token} does not exist")
-        res.refresh()
+        res = await self.refresh_reservation(request.token, context)
         return labgrid_coordinator_pb2.PollReservationResponse(reservation=res.as_pb2())
+
+    @locked
+    async def RefreshReservation(self, request: labgrid_coordinator_pb2.RefreshReservationRequest, context):
+        logging.debug("RefreshReservation reservation_id=%s", request.reservation_id)
+        res = await self.refresh_reservation(request.reservation_id, context)
+        return labgrid_coordinator_pb2.RefreshReservationResponse(reservation=res.as_pb2())
 
     @locked
     async def GetReservations(self, request: labgrid_coordinator_pb2.GetReservationsRequest, context):
@@ -1127,6 +1250,7 @@ async def serve(listen, cleanup) -> None:
     ]
     server = grpc.aio.server(
         options=channel_options,
+        interceptors=[IdentityServerInterceptor(client_identity_context)],
     )
     coordinator = Coordinator()
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)

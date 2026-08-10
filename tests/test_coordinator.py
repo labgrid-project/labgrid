@@ -1,8 +1,11 @@
-import pytest
+from time import monotonic, sleep
 
 import grpc
+import pytest
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
+
+LIST_PLACE_RESOURCES_PATTERN = "testhost/ClsNotEqualResourceName/NetworkSerialPort/ExampleResource"
 
 
 @pytest.fixture(scope="function")
@@ -40,6 +43,20 @@ def coordinator_place(channel_stub):
     return channel_stub
 
 
+@pytest.fixture(scope="function")
+def coordinator_reservation(channel_stub):
+    res = channel_stub.CreateReservation(
+        labgrid_coordinator_pb2.CreateReservationRequest(
+            filters={
+                "main": labgrid_coordinator_pb2.Reservation.Filter(filter={"board": "test"}),
+            },
+            prio=1.0,
+        )
+    )
+    assert res, f"There was an error: {res}"
+    return res.reservation.token
+
+
 def test_startup(coordinator):
     pass
 
@@ -49,6 +66,37 @@ def test_coordinator_add_place(coordinator, channel_stub):
     place = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
     res = channel_stub.AddPlace(place)
     assert res, f"There was an error: {res}"
+
+
+def test_coordinator_create_place(coordinator, channel_stub):
+    name = "test"
+    place = labgrid_coordinator_pb2.CreatePlaceRequest(name=name)
+    res = channel_stub.CreatePlace(place)
+    assert res, f"There was an error: {res}"
+    assert res.place.name == name
+
+
+def test_coordinator_create_place_already_exists(coordinator, channel_stub):
+    name = "test"
+    place = labgrid_coordinator_pb2.CreatePlaceRequest(name=name)
+    res = channel_stub.CreatePlace(place)
+    assert res, f"There was an error: {res}"
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.CreatePlace(place)
+
+    assert excinfo.value.code() == grpc.StatusCode.ALREADY_EXISTS
+    assert excinfo.value.details() == "Place test already exists"
+
+
+def test_coordinator_create_place_not_provided(coordinator, channel_stub):
+    place = labgrid_coordinator_pb2.CreatePlaceRequest()
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.CreatePlace(place)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
 
 
 def test_coordinator_del_place(coordinator, channel_stub):
@@ -173,6 +221,61 @@ def test_coordinator_place_allow(coordinator, coordinator_place):
     assert res
     res = stub.AllowPlace(labgrid_coordinator_pb2.AllowPlaceRequest(placename="test", user="othertest"))
     assert res
+    res = stub.GetPlace(labgrid_coordinator_pb2.GetPlaceRequest(name="test"))
+    assert "othertest" in res.place.allowed
+
+
+def test_coordinator_place_share(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"))
+    assert res
+    res = stub.SharePlace(labgrid_coordinator_pb2.SharePlaceRequest(name="test", user="othertest"))
+    assert res
+    res = stub.GetPlace(labgrid_coordinator_pb2.GetPlaceRequest(name="test"))
+    assert "othertest" in res.place.allowed
+
+
+def test_coordinator_place_share_not_acquired(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.SharePlace(labgrid_coordinator_pb2.SharePlaceRequest(name="test", user="othertest"))
+
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+    assert excinfo.value.details() == "Place test is not acquired"
+
+
+def test_coordinator_place_share_name_not_provided(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.SharePlaceRequest(user="test")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.SharePlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_place_unshare(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"))
+    assert res
+    res = stub.AllowPlace(labgrid_coordinator_pb2.AllowPlaceRequest(placename="test", user="othertest"))
+    assert res
+    res = stub.UnsharePlace(labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest"))
+    assert res
+
+
+def test_coordinator_place_unshare_not_acquired(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(Exception, match=r".Place test is not acquired.*"):
+        stub.UnsharePlace(labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest"))
+
+
+def test_coordinator_place_unshare_not_shared(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"))
+    assert res
+    with pytest.raises(Exception, match=r".Place test is not shared with othertest.*"):
+        stub.UnsharePlace(labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest"))
 
 
 def test_coordinator_create_reservation(coordinator, coordinator_place):
@@ -191,3 +294,340 @@ def test_coordinator_create_reservation(coordinator, coordinator_place):
     assert res
     res: labgrid_coordinator_pb2.CreateReservationResponse
     assert len(res.reservation.token) > 0
+
+
+def test_coordinator_get_place(coordinator, channel_stub):
+    name = "test"
+    place = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
+    res = channel_stub.AddPlace(place)
+    assert res, f"There was an error: {res}"
+
+    request = labgrid_coordinator_pb2.GetPlaceRequest(name=name)
+    res = channel_stub.GetPlace(request)
+
+    from labgrid.remote.common import Place
+
+    place = Place.from_pb2(res.place)
+
+    assert place.name == name, f"There was an error: {res}"
+
+
+def test_coordinator_get_place_missing(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.GetPlaceRequest(name="missing")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.GetPlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "Place missing does not exist"
+
+
+def test_coordinator_get_place_not_provided(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.GetPlaceRequest()
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.GetPlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_place_unshare_name_not_provided(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.UnsharePlaceRequest(user="test")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.UnsharePlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_poll_reservation(coordinator, coordinator_place):
+    tags = {"board": "test"}
+    stub = coordinator_place
+    res = stub.SetPlaceTags(labgrid_coordinator_pb2.SetPlaceTagsRequest(placename="test", tags=tags))
+    assert res
+    res = stub.CreateReservation(
+        labgrid_coordinator_pb2.CreateReservationRequest(
+            filters={
+                "main": labgrid_coordinator_pb2.Reservation.Filter(filter=tags),
+            },
+            prio=1.0,
+        )
+    )
+    assert res
+    token = res.reservation.token
+    res = stub.PollReservation(labgrid_coordinator_pb2.PollReservationRequest(token=token))
+    assert res
+    assert res.reservation.token == token
+
+
+def test_coordinator_poll_reservation_not_found(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.PollReservation(labgrid_coordinator_pb2.PollReservationRequest(token="nonexistent"))
+
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+    assert excinfo.value.details() == "Reservation nonexistent does not exist"
+
+
+def test_coordinator_refresh_reservation(coordinator, coordinator_place):
+    tags = {"board": "test"}
+    stub = coordinator_place
+    res = stub.SetPlaceTags(labgrid_coordinator_pb2.SetPlaceTagsRequest(placename="test", tags=tags))
+    assert res
+    res = stub.CreateReservation(
+        labgrid_coordinator_pb2.CreateReservationRequest(
+            filters={
+                "main": labgrid_coordinator_pb2.Reservation.Filter(filter=tags),
+            },
+            prio=1.0,
+        )
+    )
+    assert res
+    token = res.reservation.token
+    res = stub.RefreshReservation(labgrid_coordinator_pb2.RefreshReservationRequest(reservation_id=token))
+    assert res
+    assert res.reservation.token == token
+
+
+def test_coordinator_refresh_reservation_not_found(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.RefreshReservation(labgrid_coordinator_pb2.RefreshReservationRequest(reservation_id="nonexistent"))
+
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+    assert excinfo.value.details() == "Reservation nonexistent does not exist"
+
+
+def wait_for_list_place_resources(stub, name, expected_count, timeout=5.0):
+    deadline = monotonic() + timeout
+    request = labgrid_coordinator_pb2.ListPlaceResourcesRequest(name=name)
+    while monotonic() < deadline:
+        res = stub.ListPlaceResources(request)
+        if len(res.resources) == expected_count:
+            return res
+        sleep(0.1)
+    return stub.ListPlaceResources(request)
+
+
+def wait_for_list_resources(stub, expected_count, filter_expr=None, timeout=5.0):
+    deadline = monotonic() + timeout
+    kwargs = {}
+    if filter_expr is not None:
+        kwargs["filter"] = filter_expr
+    request = labgrid_coordinator_pb2.ListResourcesRequest(**kwargs)
+    while monotonic() < deadline:
+        res = stub.ListResources(request)
+        if len(res.resources) == expected_count:
+            return res
+        sleep(0.1)
+    return stub.ListResources(request)
+
+
+def test_coordinator_list_place_resources(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = stub.AddPlaceMatch(
+        labgrid_coordinator_pb2.AddPlaceMatchRequest(placename="test", pattern=LIST_PLACE_RESOURCES_PATTERN)
+    )
+    assert res
+    res = wait_for_list_place_resources(stub, "test", 1)
+    assert len(res.resources) == 1
+    assert res.resources[0].cls == "NetworkSerialPort"
+    assert res.resources[0].path.exporter_name == "testhost"
+    assert res.resources[0].path.group_name == "ClsNotEqualResourceName"
+    assert res.resources[0].path.resource_name == "ExampleResource"
+
+
+def test_coordinator_list_place_resources_no_matches(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = stub.AddPlaceMatch(
+        labgrid_coordinator_pb2.AddPlaceMatchRequest(placename="test", pattern=LIST_PLACE_RESOURCES_PATTERN)
+    )
+    assert res
+    res = wait_for_list_place_resources(stub, "test", 1)
+    assert len(res.resources) == 1
+    res = stub.DeletePlaceMatch(
+        labgrid_coordinator_pb2.DeletePlaceMatchRequest(placename="test", pattern=LIST_PLACE_RESOURCES_PATTERN)
+    )
+    assert res
+    res = stub.ListPlaceResources(labgrid_coordinator_pb2.ListPlaceResourcesRequest(name="test"))
+    assert res
+    assert len(res.resources) == 0
+
+
+def test_coordinator_list_place_resources_place_does_not_exist(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaceResources(labgrid_coordinator_pb2.ListPlaceResourcesRequest(name="test_nonexistant_place"))
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "Place test_nonexistant_place does not exist"
+
+
+def test_coordinator_list_place_resources_name_not_provided(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaceResources(labgrid_coordinator_pb2.ListPlaceResourcesRequest())
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_list_resources(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = wait_for_list_resources(stub, 5)
+    assert len(res.resources) == 5
+
+
+def test_coordinator_list_resources_filter_on_resource_name(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = wait_for_list_resources(stub, 1, filter_expr="path.resource_name == 'ExampleResource'")
+    assert len(res.resources) == 1
+    assert res.resources[0].cls == "NetworkSerialPort"
+    assert res.resources[0].path.exporter_name == "testhost"
+    assert res.resources[0].path.group_name == "ClsNotEqualResourceName"
+    assert res.resources[0].path.resource_name == "ExampleResource"
+
+
+def test_coordinator_list_resources_pagination_not_supported(coordinator, channel_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListResources(labgrid_coordinator_pb2.ListResourcesRequest(page_size=1))
+
+    assert excinfo.value.code() == grpc.StatusCode.UNIMPLEMENTED
+    assert excinfo.value.details() == "ListResources does not yet support pagination"
+
+
+def test_coordinator_list_resources_invalid_filter(coordinator, channel_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListResources(labgrid_coordinator_pb2.ListResourcesRequest(filter="("))
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details().startswith("Invalid filter:")
+
+
+def test_coordinator_list_resources_filter_must_be_boolean(coordinator, channel_stub, exporter):
+    res = wait_for_list_resources(channel_stub, 5)
+    assert len(res.resources) == 5
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListResources(labgrid_coordinator_pb2.ListResourcesRequest(filter="path.resource_name"))
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "Filter must evaluate to a boolean"
+
+
+def test_coordinator_list_places(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest())
+    assert res
+    assert len(res.places) == 1
+    assert res.places[0].name == "test"
+
+
+def test_coordinator_list_places_pagination_not_supported(coordinator, channel_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(page_size=1))
+
+    assert excinfo.value.code() == grpc.StatusCode.UNIMPLEMENTED
+    assert excinfo.value.details() == "ListPlaces does not yet support pagination"
+
+
+def test_coordinator_list_places_filter_on_place_name(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(filter="name == 'test'"))
+    assert res
+    assert len(res.places) == 1
+    assert res.places[0].name == "test"
+
+
+def test_coordinator_list_places_filter_on_place_name_no_matches(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(filter="name == 'missing'"))
+    assert res
+    assert len(res.places) == 0
+
+
+def test_coordinator_list_places_filter_invalid_syntax(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(filter="name =="))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Invalid filter" in excinfo.value.details()
+
+
+def test_coordinator_list_places_filter_unknown_field(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(filter="missing == 'x'"))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Invalid filter" in excinfo.value.details()
+
+
+def test_coordinator_list_places_filter_must_evaluate_to_boolean(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest(filter="name"))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Filter must evaluate to a boolean" in excinfo.value.details()
+
+
+def test_coordinator_list_reservations(coordinator, coordinator_place, coordinator_reservation):
+    stub = coordinator_place
+    res = stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest())
+    assert res
+    assert len(res.reservations) == 1
+    assert res.reservations[0].token == coordinator_reservation
+
+
+def test_coordinator_list_reservations_pagination_not_supported(coordinator, channel_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(page_size=1))
+
+    assert excinfo.value.code() == grpc.StatusCode.UNIMPLEMENTED
+    assert excinfo.value.details() == "ListReservations does not yet support pagination"
+
+
+def test_coordinator_list_reservations_filter_on_token(coordinator, coordinator_place, coordinator_reservation):
+    stub = coordinator_place
+    res = stub.ListReservations(
+        labgrid_coordinator_pb2.ListReservationsRequest(filter=f"token == '{coordinator_reservation}'")
+    )
+    assert res
+    assert len(res.reservations) == 1
+    assert res.reservations[0].token == coordinator_reservation
+
+
+def test_coordinator_list_reservations_filter_on_token_no_matches(
+    coordinator, coordinator_place, coordinator_reservation
+):
+    stub = coordinator_place
+    res = stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(filter="token == '1234'"))
+    assert res
+    assert len(res.reservations) == 0
+
+
+def test_coordinator_list_reservations_filter_invalid_syntax(coordinator, coordinator_place, coordinator_reservation):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(filter="tokens =="))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Invalid filter" in excinfo.value.details()
+
+
+def test_coordinator_list_reservations_filter_unknown_field(coordinator, coordinator_place, coordinator_reservation):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(filter="missing == 'x'"))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Invalid filter" in excinfo.value.details()
+
+
+def test_coordinator_list_reservations_filter_must_evaluate_to_boolean(
+    coordinator, coordinator_place, coordinator_reservation
+):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(filter="token"))
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert "Filter must evaluate to a boolean" in excinfo.value.details()

@@ -95,6 +95,12 @@ class StreamToTapPipe(Pipe):
             except BrokenPipeError:
                 logging.debug("Tap is closed")
                 self._handle_eof()
+            except OSError as exc:
+                if exc.errno == 105:
+                    logging.warn("Dropping %d bytes for tap", len(self.frame))
+                    self.frame = b""
+                else:
+                    raise exc
 
         self.write_event.set()
 

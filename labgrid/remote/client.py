@@ -132,6 +132,8 @@ class ClientSession:
         self.sync_id = itertools.count(start=1)
         self.sync_events = {}
 
+        self.logger = logging.getLogger("ClientSession")
+
     async def start(self):
         """Starts receiving resource and place updates from the coordinator."""
         self.resources = {}
@@ -173,13 +175,13 @@ class ClientSession:
         event = self.sync_events[identifier] = asyncio.Event()
         msg = labgrid_coordinator_pb2.ClientInMessage()
         msg.sync.id = identifier
-        logging.debug("sending sync %s", identifier)
+        self.logger.debug("sending sync %s", identifier)
         self.out_queue.put_nowait(msg)
         await event.wait()
         if self.stopping.is_set():
-            logging.debug("sync %s failed", identifier)
+            self.logger.debug("sync %s failed", identifier)
         else:
-            logging.debug("received sync %s", identifier)
+            self.logger.debug("received sync %s", identifier)
         return not self.stopping.is_set()
 
     def cancel_pending_syncs(self):
@@ -188,7 +190,7 @@ class ClientSession:
         while True:
             try:
                 identifier, event = self.sync_events.popitem()
-                logging.debug("cancelling %s %s", identifier, event)
+                self.logger.debug("cancelling %s %s", identifier, event)
                 event.set()
             except KeyError:
                 break
@@ -197,11 +199,11 @@ class ClientSession:
         """Task for receiving resource and place updates."""
         got_message = False
         try:
-            self.stream_call = call = self.stub.ClientStream(queue_as_aiter(self.out_queue))
+            self.stream_call = call = self.stub.ClientStream(queue_as_aiter(self.out_queue, self.logger))
             async for out_msg in call:
                 out_msg: labgrid_coordinator_pb2.ClientOutMessage
                 got_message = True
-                logging.debug("out_msg from coordinator: %s", out_msg)
+                self.logger.debug("out_msg from coordinator: %s", out_msg)
                 for update in out_msg.updates:
                     update_kind = update.WhichOneof("kind")
                     if update_kind == "resource":
@@ -224,20 +226,20 @@ class ClientSession:
                         place_name = update.del_place
                         await self.on_place_deleted(place_name)
                     else:
-                        logging.warning("unknown update from coordinator! %s", update_kind)
+                        self.logger.warning("unknown update from coordinator! %s", update_kind)
                 if out_msg.HasField("sync"):
                     event = self.sync_events.pop(out_msg.sync.id)
                     event.set()
         except grpc.aio.AioRpcError as e:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 if got_message:
-                    logging.error("coordinator became unavailable: %s", e.details())
+                    self.logger.error("coordinator became unavailable: %s", e.details())
                 else:
-                    logging.error("coordinator is unavailable: %s", e.details())
+                    self.logger.error("coordinator is unavailable: %s", e.details())
             else:
-                logging.exception("unexpected grpc error in coordinator message pump task")
+                self.logger.exception("unexpected grpc error in coordinator message pump task")
         except Exception:
-            logging.exception("error in coordinator message pump task")
+            self.logger.exception("error in coordinator message pump task")
         finally:
             self.stopping.set()
             self.out_queue.put_nowait(None)  # let the sender side exit gracefully
@@ -1065,13 +1067,13 @@ class ClientSession:
         else:
             call = ["telnet", host, str(port)]
 
-            logging.info("microcom not available, using telnet instead")
+            self.logger.info("microcom not available, using telnet instead")
 
             if listen_only:
-                logging.warning("--listenonly option not supported by telnet, ignoring")
+                self.logger.warning("--listenonly option not supported by telnet, ignoring")
 
             if logfile:
-                logging.warning("--logfile option not supported by telnet, ignoring")
+                self.logger.warning("--logfile option not supported by telnet, ignoring")
 
         print(f"connecting to {resource} calling {' '.join(call)}")
         try:

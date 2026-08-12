@@ -17,14 +17,17 @@ from pathlib import Path
 from typing import Dict, Type
 from socket import gethostname, getfqdn
 import pathlib
+from opentelemetry import trace
 
 import attr
 import grpc
+from opentelemetry.trace import StatusCode
 
 from labgrid.remote.grpc.interceptor.client import (
     IdentityClientStreamStreamInterceptor,
     IdentityClientUnaryUnaryInterceptor,
 )
+from labgrid.remote.otel_exporter import setup_otel_sdk_if_available, start_span_from_metadata
 
 from .config import ResourceConfig
 from .common import ResourceEntry, get_client_credentials, queue_as_aiter
@@ -34,6 +37,8 @@ from ..util import get_free_port, labgrid_version
 
 exports: Dict[str, Type[ResourceEntry]] = {}
 reexec = False
+
+tracer = trace.get_tracer("labgrid-exporter")
 
 
 class ExporterError(Exception):
@@ -1051,121 +1056,160 @@ class Exporter:
         got_message = False
         try:
             async for out_message in self.stub.ExporterStream(queue_as_aiter(self.out_queue)):
-                got_message = True
-                logging.debug("received message %s", out_message)
-                kind = out_message.WhichOneof("kind")
-                if kind == "hello":
-                    print("Exporter ready", flush=True)
-                    logging.info("connected to coordinator version %s", out_message.hello.version)
-                elif kind == "set_acquired_request":
-                    logging.debug("acquire request")
-                    success = False
-                    reason = None
-                    try:
-                        if out_message.set_acquired_request.place_name:
-                            await self.acquire(
-                                out_message.set_acquired_request.group_name,
-                                out_message.set_acquired_request.resource_name,
-                                out_message.set_acquired_request.place_name,
-                            )
-                        else:
-                            await self.release(
-                                out_message.set_acquired_request.group_name,
-                                out_message.set_acquired_request.resource_name,
-                            )
-                        success = True
-                    except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
-                        reason = str(e)
-                        logging.warning("set_acquired_request failed: %s", reason)
-                    except Exception as e:
-                        reason = str(e) or repr(e)
-                        logging.exception("failed to handle set_acquired_request: %s", reason)
-                    finally:
-                        in_message = labgrid_coordinator_pb2.ExporterInMessage()
-                        in_message.response.success = success
-                        if success:
-                            if out_message.set_acquired_request.place_name:
-                                logging.info(
-                                    "%s/%s acquired by %s",
-                                    out_message.set_acquired_request.group_name,
-                                    out_message.set_acquired_request.resource_name,
-                                    out_message.set_acquired_request.acquirer_identity,
+                with start_span_from_metadata(out_message, tracer) as request_span:
+                    got_message = True
+                    logging.debug("received message %s", out_message)
+                    kind = out_message.WhichOneof("kind")
+                    request_span.set_attribute("labgrid.exporter.outmessage.kind", kind)
+                    if kind == "hello":
+                        print("Exporter ready", flush=True)
+                        logging.info("connected to coordinator version %s", out_message.hello.version)
+                    elif kind == "set_acquired_request":
+                        with tracer.start_as_current_span(
+                            "set_acquired_request",
+                            attributes={
+                                "labgrid.resource.group_name": out_message.set_acquired_request.group_name,
+                                "labgrid.resource.resource_name": out_message.set_acquired_request.resource_name,
+                                "labgrid.resource.place_name": out_message.set_acquired_request.place_name,
+                                "labgrid.acquirer_identity": out_message.set_acquired_request.acquirer_identity,
+                            },
+                        ) as req:
+                            logging.debug("acquire request")
+                            success = False
+                            reason = None
+                            try:
+                                if out_message.set_acquired_request.place_name:
+                                    await self.acquire(
+                                        out_message.set_acquired_request.group_name,
+                                        out_message.set_acquired_request.resource_name,
+                                        out_message.set_acquired_request.place_name,
+                                    )
+                                else:
+                                    await self.release(
+                                        out_message.set_acquired_request.group_name,
+                                        out_message.set_acquired_request.resource_name,
+                                    )
+                                success = True
+                            except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
+                                reason = str(e)
+                                logging.warning("set_acquired_request failed: %s", reason)
+                            except Exception as e:
+                                reason = str(e) or repr(e)
+                                logging.exception("failed to handle set_acquired_request: %s", reason)
+                            finally:
+                                in_message = labgrid_coordinator_pb2.ExporterInMessage()
+                                in_message.response.success = success
+                                if success:
+                                    if out_message.set_acquired_request.place_name:
+                                        logging.info(
+                                            "%s/%s acquired by %s",
+                                            out_message.set_acquired_request.group_name,
+                                            out_message.set_acquired_request.resource_name,
+                                            out_message.set_acquired_request.acquirer_identity,
+                                        )
+                                    else:
+                                        logging.info(
+                                            "%s/%s released by %s",
+                                            out_message.set_acquired_request.group_name,
+                                            out_message.set_acquired_request.resource_name,
+                                            out_message.set_acquired_request.acquirer_identity,
+                                        )
+                                if reason:
+                                    in_message.response.reason = reason
+                                logging.debug("queuing %s", in_message)
+                                self.out_queue.put_nowait(in_message)
+                                logging.debug("queued %s", in_message)
+                                req.set_status(StatusCode.OK if success else StatusCode.ERROR)
+                                if reason:
+                                    req.set_attribute("labgrid.exporter.set_acquired_request.reason", reason)
+                    elif kind == "lease_started_request":
+                        with tracer.start_as_current_span(
+                            "lease_started_request",
+                            attributes={
+                                "labgrid.resource.group_name": out_message.lease_started_request.group_name,
+                                "labgrid.resource.resource_name": out_message.lease_started_request.resource_name,
+                                "labgrid.resource.place_name": out_message.lease_started_request.place_name,
+                                "labgrid.lease_duration": out_message.lease_started_request.duration,
+                                "labgrid.leaser_identity": out_message.lease_started_request.leaser_identity,
+                            },
+                        ) as req:
+                            logging.debug("lease started request")
+                            success = False
+                            reason = None
+                            try:
+                                await self.lease_started(
+                                    out_message.lease_started_request.group_name,
+                                    out_message.lease_started_request.resource_name,
+                                    out_message.lease_started_request.place_name,
+                                    out_message.lease_started_request.duration,
                                 )
-                            else:
-                                logging.info(
-                                    "%s/%s released by %s",
-                                    out_message.set_acquired_request.group_name,
-                                    out_message.set_acquired_request.resource_name,
-                                    out_message.set_acquired_request.acquirer_identity,
+                                success = True
+                            except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
+                                reason = str(e)
+                                logging.warning("lease_started_request failed: %s", reason)
+                            except Exception as e:
+                                reason = str(e) or repr(e)
+                                logging.exception("failed to handle lease_started_request: %s", reason)
+                            finally:
+                                in_message = labgrid_coordinator_pb2.ExporterInMessage()
+                                in_message.response.success = success
+                                if success:
+                                    logging.info(
+                                        "%s/%s leased by %s",
+                                        out_message.lease_started_request.group_name,
+                                        out_message.lease_started_request.resource_name,
+                                        out_message.lease_started_request.leaser_identity,
+                                    )
+                                if reason:
+                                    in_message.response.reason = reason
+                                logging.debug("queuing %s", in_message)
+                                self.out_queue.put_nowait(in_message)
+                                logging.debug("queued %s", in_message)
+                                req.set_status(StatusCode.OK if success else StatusCode.ERROR)
+                                if reason:
+                                    req.set_attribute("labgrid.exporter.lease_started_request.reason", reason)
+                    elif kind == "lease_extended_request":
+                        with tracer.start_as_current_span(
+                            "lease_extended_request",
+                            attributes={
+                                "labgrid.resource.group_name": out_message.lease_extended_request.group_name,
+                                "labgrid.resource.resource_name": out_message.lease_extended_request.resource_name,
+                                "labgrid.resource.place_name": out_message.lease_extended_request.place_name,
+                                "labgrid.lease_duration": out_message.lease_extended_request.duration,
+                            },
+                        ) as req:
+                            logging.debug("lease extended request")
+                            success = False
+                            reason = None
+                            try:
+                                await self.lease_extended(
+                                    out_message.lease_extended_request.group_name,
+                                    out_message.lease_extended_request.resource_name,
+                                    out_message.lease_extended_request.place_name
+                                    if out_message.lease_extended_request.HasField("place_name")
+                                    else None,
+                                    out_message.lease_extended_request.duration,
                                 )
-                        if reason:
-                            in_message.response.reason = reason
-                        logging.debug("queuing %s", in_message)
-                        self.out_queue.put_nowait(in_message)
-                        logging.debug("queued %s", in_message)
-                elif kind == "lease_started_request":
-                    logging.debug("lease started request")
-                    success = False
-                    reason = None
-                    try:
-                        await self.lease_started(
-                            out_message.lease_started_request.group_name,
-                            out_message.lease_started_request.resource_name,
-                            out_message.lease_started_request.place_name,
-                            out_message.lease_started_request.duration,
-                        )
-                        success = True
-                    except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
-                        reason = str(e)
-                        logging.warning("lease_started_request failed: %s", reason)
-                    except Exception as e:
-                        reason = str(e) or repr(e)
-                        logging.exception("failed to handle lease_started_request: %s", reason)
-                    finally:
-                        in_message = labgrid_coordinator_pb2.ExporterInMessage()
-                        in_message.response.success = success
-                        if success:
-                            logging.info(
-                                "%s/%s leased by %s",
-                                out_message.lease_started_request.group_name,
-                                out_message.lease_started_request.resource_name,
-                                out_message.lease_started_request.leaser_identity,
-                            )
-                        if reason:
-                            in_message.response.reason = reason
-                        logging.debug("queuing %s", in_message)
-                        self.out_queue.put_nowait(in_message)
-                        logging.debug("queued %s", in_message)
-                elif kind == "lease_extended_request":
-                    logging.debug("lease extended request")
-                    success = False
-                    reason = None
-                    try:
-                        await self.lease_extended(
-                            out_message.lease_extended_request.group_name,
-                            out_message.lease_extended_request.resource_name,
-                            out_message.lease_extended_request.place_name
-                            if out_message.lease_extended_request.HasField("place_name")
-                            else None,
-                            out_message.lease_extended_request.duration,
-                        )
-                        success = True
-                    except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
-                        reason = str(e)
-                        logging.warning("lease_extended_request failed: %s", reason)
-                    except Exception as e:
-                        reason = str(e) or repr(e)
-                        logging.exception("failed to handle lease_extended_request: %s", reason)
-                    finally:
-                        in_message = labgrid_coordinator_pb2.ExporterInMessage()
-                        in_message.response.success = success
-                        if reason:
-                            in_message.response.reason = reason
-                        logging.debug("queuing %s", in_message)
-                        self.out_queue.put_nowait(in_message)
-                        logging.debug("queued %s", in_message)
-                else:
-                    logging.debug("unknown request: %s", kind)
+                                success = True
+                            except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
+                                reason = str(e)
+                                logging.warning("lease_extended_request failed: %s", reason)
+                            except Exception as e:
+                                reason = str(e) or repr(e)
+                                logging.exception("failed to handle lease_extended_request: %s", reason)
+                            finally:
+                                in_message = labgrid_coordinator_pb2.ExporterInMessage()
+                                in_message.response.success = success
+                                if reason:
+                                    in_message.response.reason = reason
+                                logging.debug("queuing %s", in_message)
+                                self.out_queue.put_nowait(in_message)
+                                logging.debug("queued %s", in_message)
+                                req.set_status(StatusCode.OK if success else StatusCode.ERROR)
+                                if reason:
+                                    req.set_attribute("labgrid.exporter.lease_extended_request.reason", reason)
+                    else:
+                        logging.debug("unknown request: %s", kind)
         except grpc.aio.AioRpcError as e:
             self.out_queue.put_nowait(None)  # let the sender side exit gracefully
             if e.code() == grpc.StatusCode.UNAVAILABLE:
@@ -1402,6 +1446,8 @@ def main():
     print(f"exporter name: {config['name']}")
     print(f"exporter hostname: {config['hostname']}")
     print(f"resource config file: {config['resources']}")
+
+    setup_otel_sdk_if_available()
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

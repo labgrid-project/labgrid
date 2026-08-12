@@ -35,6 +35,7 @@ from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
+from .otel import setup_otel_sdk_if_available
 
 
 @contextmanager
@@ -1924,6 +1925,8 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
+
+    setup_otel_sdk_if_available(Coordinator)
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

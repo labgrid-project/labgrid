@@ -15,6 +15,12 @@ RUN apt update -q=2 && \
     cd /opt/labgrid && \
     SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir .
 
+FROM labgrid-base AS labgrid-base-otel
+ARG VERSION=0.0.0
+
+RUN cd /opt/labgrid && \
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir .[otel]
+
 #
 # Client
 #
@@ -32,6 +38,20 @@ CMD ["/bin/bash"]
 # Coordinator
 #
 FROM labgrid-base AS labgrid-coordinator
+ARG VERSION
+
+VOLUME /opt/coordinator
+
+EXPOSE 20408
+
+WORKDIR /opt/coordinator
+
+CMD ["/usr/local/bin/labgrid-coordinator"]
+
+#
+# Coordinator with OTEL
+#
+FROM labgrid-base-otel AS labgrid-coordinator-otel
 ARG VERSION
 
 VOLUME /opt/coordinator

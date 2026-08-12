@@ -99,6 +99,11 @@ ModbusRTU
 Modbus support requires an additional package ``minimalmodbus``. It is included in
 the ``modbusrtu`` extra.
 
+OpenTelemetry
++++++++++++++
+Tracing and metrics can be emitted from the Labgrid Coordinator when the OpenTelemetry SDK is installed.
+It is included in the ``otel`` extra.
+
 Running Your First Test
 -----------------------
 
@@ -463,6 +468,23 @@ For ``RemotePlace`` connections from an environment config, set the
 ``coordinator_cacert`` is not set, labgrid uses the host CA certificates. Set
 ``coordinator_cacert`` to provide a specific CA certificate or CA bundle
 instead.
+
+Collecting OpenTelemetry Traces and Metrics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the ``otel`` extra is installed, Labgrid Coordinator will emit traces and
+metrics over OTLP using gRPC.
+By default, telemetry will be sent to ``http://localhost:4317``.
+
+You can customise the endpoint to send telemetry to by setting the
+``OTEL_EXPORTER_OTLP_ENDPOINT`` environment variable.
+Environment variable usage is described in:
+<https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/>.
+
+For testing collecting telemetry, use
+`Grafana OTEL LGTM <https://github.com/grafana/docker-otel-lgtm/>`.
+For production telemetry collection, refer to the
+`OpenTelemetry Documentation <https://opentelemetry.io/>` for available tools.
 
 Using a Strategy
 ----------------

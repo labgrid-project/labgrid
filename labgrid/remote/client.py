@@ -1627,6 +1627,8 @@ class ClientSession:
                 print("Waiting for allocation...")
             await self._wait_reservation(res.id, verbose=False)
 
+        return res.id
+
     async def cancel_reservation(self):
         reservation_id: str = self.args.reservation_id
 

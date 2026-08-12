@@ -1,11 +1,21 @@
 import logging
 from functools import wraps
 
-from opentelemetry import trace
+from opentelemetry import context, propagate, trace
 
 OTEL_SDK_INSTALLED = False
 
 LOGGER = logging.getLogger("otel")
+
+
+def _monkeypatch_ExporterCommand_init(exportercommand):
+    old_init = exportercommand.__init__
+
+    def new_init(self, *k, **kw):
+        old_init(self, *k, **kw)
+        self._otel_context = context.get_current()
+
+    exportercommand.__init__ = new_init
 
 
 def instrument_rpc(old_rpc, metadata):
@@ -120,7 +130,7 @@ def _monkeypatch_add_rpc_metadata(coordinator):
         )
 
 
-def setup_otel_sdk_if_available(coordinator):
+def setup_otel_sdk_if_available(coordinator, exportercommand):
     """
     Setup gRPC AIO Server instrumentation and OTEL Span exporting over OTLP.
 
@@ -140,6 +150,7 @@ def setup_otel_sdk_if_available(coordinator):
         grpc_server_instrumentor = GrpcAioInstrumentorServer()
         grpc_server_instrumentor.instrument()
 
+        _monkeypatch_ExporterCommand_init(exportercommand)
         _monkeypatch_add_rpc_metadata(coordinator)
 
         LOGGER.debug("SDK installed and setup")
@@ -149,3 +160,20 @@ def setup_otel_sdk_if_available(coordinator):
         LOGGER.debug("No SDK installed")
 
         OTEL_SDK_INSTALLED = False
+
+
+def set_traceparent_in_metadata(out_msg, cmd):
+    """
+    Inject the `traceparent` and `tracestate` into an `ExporterOutMessage`'s
+    `metatdata` field.
+
+    Relies on `_monkeypatch_ExporterCommand_init` having been run by
+    `setup_otel_sdk_if_available`.
+    """
+    LOGGER.debug("set_traceparent_in_metadata")
+    if OTEL_SDK_INSTALLED:
+        headers = {}
+        propagate.inject(headers, context=cmd._otel_context)
+
+        out_msg.metadata.traceparent = headers.get("traceparent", "")
+        out_msg.metadata.tracestate = headers.get("tracestate", "")

@@ -159,6 +159,11 @@ message Hello {
   string version = 1;
 }
 
+message Metadata {
+  string traceparent = 1;
+  string tracestate = 2;
+}
+
 message ExporterOutMessage {
   oneof kind {
     Hello hello = 1;
@@ -166,6 +171,7 @@ message ExporterOutMessage {
     ExporterLeaseStartedRequest lease_started_request = 3;
     ExporterLeaseExtendedRequest lease_extended_request = 4;
   };
+  Metadata metadata = 5;
 };
 
 message ExporterSetAcquiredRequest {

@@ -137,17 +137,27 @@ class Hello(_message.Message):
     version: str
     def __init__(self, version: _Optional[str] = ...) -> None: ...
 
+class Metadata(_message.Message):
+    __slots__ = ("traceparent", "tracestate")
+    TRACEPARENT_FIELD_NUMBER: _ClassVar[int]
+    TRACESTATE_FIELD_NUMBER: _ClassVar[int]
+    traceparent: str
+    tracestate: str
+    def __init__(self, traceparent: _Optional[str] = ..., tracestate: _Optional[str] = ...) -> None: ...
+
 class ExporterOutMessage(_message.Message):
-    __slots__ = ("hello", "set_acquired_request", "lease_started_request", "lease_extended_request")
+    __slots__ = ("hello", "set_acquired_request", "lease_started_request", "lease_extended_request", "metadata")
     HELLO_FIELD_NUMBER: _ClassVar[int]
     SET_ACQUIRED_REQUEST_FIELD_NUMBER: _ClassVar[int]
     LEASE_STARTED_REQUEST_FIELD_NUMBER: _ClassVar[int]
     LEASE_EXTENDED_REQUEST_FIELD_NUMBER: _ClassVar[int]
+    METADATA_FIELD_NUMBER: _ClassVar[int]
     hello: Hello
     set_acquired_request: ExporterSetAcquiredRequest
     lease_started_request: ExporterLeaseStartedRequest
     lease_extended_request: ExporterLeaseExtendedRequest
-    def __init__(self, hello: _Optional[_Union[Hello, _Mapping]] = ..., set_acquired_request: _Optional[_Union[ExporterSetAcquiredRequest, _Mapping]] = ..., lease_started_request: _Optional[_Union[ExporterLeaseStartedRequest, _Mapping]] = ..., lease_extended_request: _Optional[_Union[ExporterLeaseExtendedRequest, _Mapping]] = ...) -> None: ...
+    metadata: Metadata
+    def __init__(self, hello: _Optional[_Union[Hello, _Mapping]] = ..., set_acquired_request: _Optional[_Union[ExporterSetAcquiredRequest, _Mapping]] = ..., lease_started_request: _Optional[_Union[ExporterLeaseStartedRequest, _Mapping]] = ..., lease_extended_request: _Optional[_Union[ExporterLeaseExtendedRequest, _Mapping]] = ..., metadata: _Optional[_Union[Metadata, _Mapping]] = ...) -> None: ...
 
 class ExporterSetAcquiredRequest(_message.Message):
     __slots__ = ("group_name", "resource_name", "place_name", "acquirer_identity")

@@ -35,7 +35,7 @@ from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
-from .otel import setup_otel_sdk_if_available
+from .otel import setup_otel_sdk_if_available, set_traceparent_in_metadata
 
 
 @contextmanager
@@ -580,6 +580,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             async for cmd in queue_as_aiter(command_queue):
                 logging.debug("exporter cmd %s", cmd)
                 out_msg = labgrid_coordinator_pb2.ExporterOutMessage()
+                set_traceparent_in_metadata(out_msg, cmd)
                 if cmd.kind == "set_acquired_request":
                     out_msg.set_acquired_request.CopyFrom(cmd.request)
                 elif cmd.kind == "lease_started_request":
@@ -1926,7 +1927,7 @@ def main():
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
-    setup_otel_sdk_if_available(Coordinator)
+    setup_otel_sdk_if_available(Coordinator, ExporterCommand)
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

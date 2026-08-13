@@ -191,11 +191,15 @@ def locked(func):
 
     return wrapper
 
+
 async def check_capability(cls, identity, capability, context):
     if not identity and cls.use_capabilities == True:
         await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities")
     if identity and (capability not in identity.capabilities):
-        await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Capability {req_cap} not in client capabilities {ctx.capabilities}")
+        await context.abort(
+            grpc.StatusCode.PERMISSION_DENIED, f"Capability {req_cap} not in client capabilities {ctx.capabilities}"
+        )
+
 
 def require_capability(req_cap):
     def decorator(func):
@@ -206,6 +210,7 @@ def require_capability(req_cap):
             return await func(self, request, context)
 
         return wrapper
+
     return decorator
 
 
@@ -985,7 +990,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         fromuser = request.fromuser if request.HasField("fromuser") else None
 
         if fromuser and self.use_capabilities and not Capability.release_place_any in identity.capabilities:
-                await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Capability {Capability.release_place_any} not in client capabilities {identity.capabilities}")
+            await context.abort(
+                grpc.StatusCode.PERMISSION_DENIED,
+                f"Capability {Capability.release_place_any} not in client capabilities {identity.capabilities}",
+            )
 
         try:
             place = self.places[name]
@@ -1001,18 +1009,30 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         try:
             username = infer_peer_identity(self.clients, context, client_identity_context)
         except KeyError:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
-
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION, f"Peer {context.peer()} does not have a valid session"
+            )
 
         if self.use_capabilities:
             if not identity:
-                await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities")
+                await context.abort(
+                    grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities"
+                )
 
             owned = username == place.acquired
-            if owned and not (Capability.release_place_owned in identity.capabilities or Capability.release_place_any in identity.capabilities):
-                await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Capability {Capability.release_place_owned} not in client capabilities {identity.capabilities}")
+            if owned and not (
+                Capability.release_place_owned in identity.capabilities
+                or Capability.release_place_any in identity.capabilities
+            ):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {Capability.release_place_owned} not in client capabilities {identity.capabilities}",
+                )
             elif not owned and not Capability.release_place_any in identity.capabilities:
-                await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Capability {Capability.release_place_any} not in client capabilities {identity.capabilities}")
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {Capability.release_place_any} not in client capabilities {identity.capabilities}",
+                )
 
         await self._release_resources(place, place.acquired_resources)
 
@@ -1051,11 +1071,22 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
         if self.use_capabilities:
             if not identity:
-                await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities")
-            if owned and not Capability.allow_place_owned in identity.capabilities:
-                await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Capability {Capability.allow_place_owned} not in client capabilities {identity.capabilities}")
+                await context.abort(
+                    grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities"
+                )
+            if owned and not (
+                Capability.allow_place_owned in identity.capabilities
+                or Capability.allow_place_any in identity.capabilities
+            ):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {Capability.allow_place_owned} not in client capabilities {identity.capabilities}",
+                )
             elif not owned and not Capability.allow_place_any in identity.capabilities:
-                await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Capability {Capability.allow_place_any} not in client capabilities {identity.capabilities}")
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {Capability.allow_place_any} not in client capabilities {identity.capabilities}",
+                )
 
         place.allowed.add(user)
         place.touch()
@@ -1222,16 +1253,29 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         try:
             owner = infer_peer_identity(self.clients, context, client_identity_context)
         except KeyError:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION, f"Peer {context.peer} does not have a valid session"
+            )
 
         owned = self.reservations[token].owner == owner
         if self.use_capabilities:
             if not identity:
-                await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities")
-            if owned and not Capability.cancel_reservation_owned in identity.capabilities:
-                await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Capability {Capability.cancel_reservation_any} not in client capabilities {identity.capabilities}")
+                await context.abort(
+                    grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities"
+                )
+            if owned and not (
+                Capability.cancel_reservation_owned in identity.capabilities
+                or Capability.cancel_reservation_any in identity.capabilities
+            ):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {Capability.cancel_reservation_any} not in client capabilities {identity.capabilities}",
+                )
             elif not owned and not Capability.cancel_reservation_any in identity.capabilities:
-                await context.abort(grpc.StatusCode.PERMISSION_DENIED, f"Capability {Capability.cancel_reservation_any} not in client capabilities {identity.capabilities}")
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {Capability.cancel_reservation_any} not in client capabilities {identity.capabilities}",
+                )
 
         del self.reservations[token]
         self.schedule_reservations()
@@ -1337,7 +1381,12 @@ def main():
     parser.add_argument(
         "--pystuck-port", metavar="PORT", type=int, default=6666, help="use a different pystuck port than 6666"
     )
-    parser.add_argument("--capabilities", action="store_true", default=False, help="enable using capabilities, which also enforces client identities")
+    parser.add_argument(
+        "--capabilities",
+        action="store_true",
+        default=False,
+        help="enable using capabilities, which also enforces client identities",
+    )
 
     args = parser.parse_args()
 

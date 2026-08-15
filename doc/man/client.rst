@@ -49,6 +49,15 @@ LG_ENV
 This variable can be used to specify the configuration file to use without
 using the ``--config`` option, the ``--config`` option overrides it.
 
+The special value ``coordinator:`` (or ``--config coordinator:``) tells the
+client to fetch the environment from the coordinator over the ``GetEnvironment``
+RPC instead of reading a local file, which is useful when working from a remote
+machine that does not have the lab env file available locally.  The fetched
+YAML is cached under ``$XDG_CACHE_HOME/labgrid/env.cfg`` (or
+``~/.cache/labgrid/env.cfg``) so it can be inspected after the fact.  The
+coordinator must have been started with ``--environment``; see
+``labgrid-coordinator``\(1).
+
 LG_COORDINATOR
 ~~~~~~~~~~~~~~
 This variable can be used to set the default coordinator in the format

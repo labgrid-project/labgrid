@@ -166,6 +166,37 @@ allocated before returning.
 A reservation will time out after a short time, if it is neither refreshed nor
 used by locked places.
 
+Fetching the Environment from the Coordinator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When several developers (or CI jobs) share a lab, distributing the env file out
+of band - via a shared filesystem, git checkout or scp - is awkward duplication.
+``labgrid-coordinator`` can serve a curated env to clients on demand, so a
+remote user only needs network access to the coordinator and a labgrid install.
+
+Start the coordinator with ``--environment`` pointing at a YAML file:
+
+.. code-block:: bash
+
+   $ labgrid-coordinator --environment /etc/labgrid/lab.cfg
+
+On the client side, set ``LG_ENV=coordinator:`` (or ``--config coordinator:``)
+to fetch the env via the ``GetEnvironment`` RPC instead of reading a local file.
+The returned YAML is cached under ``$XDG_CACHE_HOME/labgrid/env.cfg`` (or
+``~/.cache/labgrid/env.cfg``), overwritten on each fetch so a user can inspect
+what env the client just loaded.
+
+.. code-block:: bash
+
+   $ export LG_COORDINATOR=lab-host:20408
+   $ export LG_ENV=coordinator:
+   $ labgrid-client console -p <board>
+
+Per-user paths inside the served env (build dirs, log dirs, source trees) are
+still resolvable via the existing ``LG_*`` template substitution, so individual
+clients can override only the few values that matter to them without forking the
+env file.
+
 Library
 -------
 labgrid can be used directly as a Python library, without the infrastructure

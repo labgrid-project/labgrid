@@ -210,11 +210,12 @@ class ExporterError(Exception):
 
 
 class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
-    def __init__(self) -> None:
+    def __init__(self, environment_file: str | None = None) -> None:
         self.places: dict[str, Place] = {}
         self.reservations = {}
         self.poll_tasks = []
         self.save_scheduled = False
+        self.environment_file = environment_file
 
         self.lock = asyncio.Lock()
         self.exporters: dict[str, ExporterSession] = {}
@@ -1109,8 +1110,17 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         reservations = [x.as_pb2() for x in self.reservations.values()]
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
 
+    async def GetEnvironment(self, request: labgrid_coordinator_pb2.GetEnvironmentRequest, context):
+        if not self.environment_file:
+            return labgrid_coordinator_pb2.GetEnvironmentResponse(config="")
+        try:
+            with open(self.environment_file, encoding="utf-8") as f:
+                return labgrid_coordinator_pb2.GetEnvironmentResponse(config=f.read())
+        except OSError as e:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"cannot read environment file: {e}")
 
-async def serve(listen, cleanup) -> None:
+
+async def serve(listen, cleanup, environment_file=None) -> None:
     asyncio.current_task().set_name("coordinator-serve")
     # It seems since https://github.com/grpc/grpc/pull/34647, the
     # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
@@ -1128,7 +1138,7 @@ async def serve(listen, cleanup) -> None:
     server = grpc.aio.server(
         options=channel_options,
     )
-    coordinator = Coordinator()
+    coordinator = Coordinator(environment_file=environment_file)
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
     # enable reflection for use with grpcurl
     reflection.enable_server_reflection(
@@ -1186,6 +1196,15 @@ def main():
         default="[::]:20408",
         help="coordinator listening host and port",
     )
+    parser.add_argument(
+        "-e",
+        "--environment",
+        metavar="FILE",
+        type=str,
+        default=None,
+        help="path to a YAML environment file to serve to clients via "
+        "GetEnvironment (LG_ENV=coordinator: on the client side)",
+    )
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
     parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
     parser.add_argument(
@@ -1215,7 +1234,7 @@ def main():
     cleanup = []
     loop.set_debug(True)
     try:
-        loop.run_until_complete(serve(args.listen, cleanup))
+        loop.run_until_complete(serve(args.listen, cleanup, environment_file=args.environment))
     finally:
         if cleanup:
             loop.run_until_complete(*cleanup)

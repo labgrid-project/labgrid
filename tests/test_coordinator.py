@@ -4,6 +4,8 @@ import grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
 
+from conftest import Coordinator
+
 
 @pytest.fixture(scope="function")
 def channel_stub():
@@ -191,3 +193,40 @@ def test_coordinator_create_reservation(coordinator, coordinator_place):
     assert res
     res: labgrid_coordinator_pb2.CreateReservationResponse
     assert len(res.reservation.token) > 0
+
+
+def test_coordinator_get_environment_default(coordinator, channel_stub):
+    res = channel_stub.GetEnvironment(labgrid_coordinator_pb2.GetEnvironmentRequest())
+    assert res.config == ""
+
+
+def test_coordinator_get_environment_serves_file(coordinator_with_env, channel_stub):
+    _, env_file = coordinator_with_env
+    env_file.write("targets:\n  main: {}\n")
+    res = channel_stub.GetEnvironment(labgrid_coordinator_pb2.GetEnvironmentRequest())
+    assert res.config == "targets:\n  main: {}\n"
+
+
+def test_coordinator_get_environment_refreshes(coordinator_with_env, channel_stub):
+    _, env_file = coordinator_with_env
+    env_file.write("targets:\n  first: {}\n")
+    res = channel_stub.GetEnvironment(labgrid_coordinator_pb2.GetEnvironmentRequest())
+    assert res.config == "targets:\n  first: {}\n"
+
+    env_file.write("targets:\n  second: {}\n")
+    res = channel_stub.GetEnvironment(labgrid_coordinator_pb2.GetEnvironmentRequest())
+    assert res.config == "targets:\n  second: {}\n"
+
+
+def test_coordinator_get_environment_missing_file(tmpdir):
+    coordinator = Coordinator(tmpdir)
+    missing = tmpdir.join("nope.yaml")
+    coordinator.start(f"--environment {missing}")
+    try:
+        with grpc.insecure_channel("127.0.0.1:20408") as channel:
+            stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(channel)
+            with pytest.raises(grpc.RpcError) as excinfo:
+                stub.GetEnvironment(labgrid_coordinator_pb2.GetEnvironmentRequest())
+            assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+    finally:
+        coordinator.stop()

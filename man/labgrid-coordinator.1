@@ -51,9 +51,23 @@ display command line help
 .BI \-l \ ADDRESS\fR,\fB \ \-\-listen \ ADDRESS
 make coordinator listen on host and port
 .TP
+.BI \-e \ FILE\fR,\fB \ \-\-environment \ FILE
+serve the given YAML env file to clients via the \fBGetEnvironment\fP RPC.
+Clients opt in by setting \fBLG_ENV=coordinator:\fP (see
+\fBlabgrid\-client\fP(1))
+.TP
 .B  \-d\fP,\fB  \-\-debug
 enable debug mode
 .UNINDENT
+.SS \-e / \-\-environment
+.sp
+When this option is set the coordinator reads the file fresh on each
+\fBGetEnvironment\fP request and returns its contents verbatim to the client.
+This means a remote user no longer needs a local copy of the env file \- they
+only need network access to the coordinator.
+.sp
+The default (no \fB\-\-environment\fP) is unchanged: \fBGetEnvironment\fP returns an
+empty string and clients keep loading env from a local file as before.
 .SS SEE ALSO
 .sp
 \fBlabgrid\-client\fP(1), \fBlabgrid\-exporter\fP(1)

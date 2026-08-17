@@ -109,18 +109,26 @@ class Resource(_message.Message):
     def __init__(self, path: _Optional[_Union[Resource.Path, _Mapping]] = ..., cls: _Optional[str] = ..., params: _Optional[_Mapping[str, MapValue]] = ..., extra: _Optional[_Mapping[str, MapValue]] = ..., acquired: _Optional[str] = ..., avail: bool = ...) -> None: ...
 
 class MapValue(_message.Message):
-    __slots__ = ("bool_value", "int_value", "uint_value", "float_value", "string_value")
+    __slots__ = ("bool_value", "int_value", "uint_value", "float_value", "string_value", "array_value")
     BOOL_VALUE_FIELD_NUMBER: _ClassVar[int]
     INT_VALUE_FIELD_NUMBER: _ClassVar[int]
     UINT_VALUE_FIELD_NUMBER: _ClassVar[int]
     FLOAT_VALUE_FIELD_NUMBER: _ClassVar[int]
     STRING_VALUE_FIELD_NUMBER: _ClassVar[int]
+    ARRAY_VALUE_FIELD_NUMBER: _ClassVar[int]
     bool_value: bool
     int_value: int
     uint_value: int
     float_value: float
     string_value: str
-    def __init__(self, bool_value: bool = ..., int_value: _Optional[int] = ..., uint_value: _Optional[int] = ..., float_value: _Optional[float] = ..., string_value: _Optional[str] = ...) -> None: ...
+    array_value: MapValueArray
+    def __init__(self, bool_value: bool = ..., int_value: _Optional[int] = ..., uint_value: _Optional[int] = ..., float_value: _Optional[float] = ..., string_value: _Optional[str] = ..., array_value: _Optional[_Union[MapValueArray, _Mapping]] = ...) -> None: ...
+
+class MapValueArray(_message.Message):
+    __slots__ = ("values",)
+    VALUES_FIELD_NUMBER: _ClassVar[int]
+    values: _containers.RepeatedCompositeFieldContainer[MapValue]
+    def __init__(self, values: _Optional[_Iterable[_Union[MapValue, _Mapping]]] = ...) -> None: ...
 
 class ExporterResponse(_message.Message):
     __slots__ = ("success", "reason")

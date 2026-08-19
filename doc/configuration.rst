@@ -2187,7 +2187,7 @@ Arguments:
 SSHDriver
 ~~~~~~~~~
 An :any:`SSHDriver` requires a `NetworkService`_ resource and allows the
-execution of commands and file upload via network.
+execution of commands, file upload and TCP port forwarding via network.
 It uses SSH's ``ServerAliveInterval`` option to detect failed connections.
 
 If a shared SSH connection to the target is already open, it will reuse it when
@@ -2202,6 +2202,7 @@ Binds to:
 Implements:
   - :any:`CommandProtocol`
   - :any:`FileTransferProtocol`
+  - :any:`PortForwardProtocol`
 
 .. code-block:: yaml
 

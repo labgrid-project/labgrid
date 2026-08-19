@@ -1345,11 +1345,11 @@ class ClientSession:
 
         with contextlib.ExitStack() as stack:
             for local, remote in self.args.local:
-                localport = stack.enter_context(drv.forward_local_port(remote, localport=local))
+                localport = stack.enter_context(drv.local_forward(remote, local_port=local or 0))
                 print(f"Forwarding local port {localport:d} to remote port {remote:d}")
 
             for local, remote in self.args.remote:
-                stack.enter_context(drv.forward_remote_port(remote, local))
+                stack.enter_context(drv.remote_forward(local, remote_port=remote))
                 print(f"Forwarding remote port {remote:d} to local port {local:d}")
 
             try:

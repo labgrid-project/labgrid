@@ -3,6 +3,7 @@ import os
 import attr
 
 from ..factory import target_factory
+from ..exceptions import InvalidConfigError
 from .common import NetworkResource, ManagedResource, ResourceManager
 
 
@@ -47,8 +48,13 @@ class RemotePlaceManager(ResourceManager):
         resource_entries = self.session.get_target_resources(place)  # pylint: disable=no-member
         expanded = []
         for (resource_name, _), resource_entry in resource_entries.items():
-            new = target_factory.make_resource(
-                remote_place.target, resource_entry.cls, resource_name, resource_entry.args)
+            try:
+                new = target_factory.make_resource(
+                    remote_place.target, resource_entry.cls, resource_name, resource_entry.args)
+            except InvalidConfigError:
+                self.logger.warning("unknown resource cls: %s, name: %s", resource_entry.cls, resource_name)
+                continue
+
             new.parent = remote_place
             new.avail = resource_entry.avail
             new.extra = resource_entry.extra

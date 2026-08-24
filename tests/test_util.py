@@ -39,6 +39,12 @@ def sshmanager_fix():
     yield sshmanager
     sshmanager.close_all()
 
+@pytest.fixture
+def proxymanager_fix():
+    force_proxy = proxymanager._force_proxy
+    yield proxymanager
+    type(proxymanager)._force_proxy = force_proxy
+
 def test_diff_dict():
     dict_a = {"a": 1,
               "b": 2}
@@ -304,6 +310,38 @@ def test_proxymanager_no_proxy(target):
     nr.proxy_required = False
 
     assert (host, port) == proxymanager.get_host_and_port(nr)
+
+@pytest.mark.localsshmanager
+@pytest.mark.parametrize("force_proxy, required, uses_proxy", [
+    (None, False, False),
+    ("ip6-localhost", False, True),
+    ("nosuchhost.notavailable", True, False),
+])
+def test_proxymanager_forward(target, sshmanager_fix, proxymanager_fix, force_proxy, required, uses_proxy):
+    nr = NetworkResource(target, None, "localhost")
+    nr.extra = {"proxy": "localhost", "proxy_required": required}
+    type(proxymanager_fix)._force_proxy = force_proxy
+    test_string = "Hello World"
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        server_socket.bind(("127.0.0.1", 0))
+        server_socket.listen(1)
+        server_socket.settimeout(5)
+        port = server_socket.getsockname()[1]
+        for forward in (proxymanager_fix.local_forward(nr, "localhost", port),
+                        proxymanager_fix.remote_forward(nr, port)):
+            with forward as forwarded_port:
+                with socket.create_connection(("127.0.0.1", forwarded_port), timeout=5) as send_socket:
+                    send_socket.sendall(test_string.encode("utf-8"))
+                    client_socket, _ = server_socket.accept()
+                    with client_socket:
+                        client_socket.settimeout(5)
+                        assert client_socket.recv(16).decode("utf-8") == test_string
+
+    connection = proxymanager_fix._get_connection(nr)
+    assert bool(connection.extra_options) == uses_proxy
+    assert connection._l_forwards == {}
+    assert connection._r_forwards == {}
 
 @pytest.mark.localsshmanager
 def test_proxymanager_remote_forced_proxy(target):

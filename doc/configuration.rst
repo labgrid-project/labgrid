@@ -3923,10 +3923,13 @@ method removes a file by name.
 
 ADBDriver
 ~~~~~~~~~
-The :any:`ADBDriver` allows interaction with ADB devices. It allows the 
-execution of commands, transfer of files, and rebooting of the device.
+The :any:`ADBDriver` allows interaction with ADB devices. It allows the
+execution of commands, transfer of files, TCP port forwarding and rebooting of
+the device.
 
 It can interact with both USB and TCP adb devices.
+Port forwarding with a :any:`RemoteUSBADBDevice` requires SSH port forwarding
+access to the exporter.
 
 Binds to:
   iface:
@@ -3937,6 +3940,7 @@ Binds to:
 Implements:
   - :any:`CommandProtocol`
   - :any:`FileTransferProtocol`
+  - :any:`PortForwardProtocol`
   - :any:`ResetProtocol`
 
 .. _conf-strategies:

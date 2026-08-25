@@ -1310,6 +1310,16 @@ class ClientSession:
             drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name)
             return drv
 
+    def _get_port_forward(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+
+        try:
+            return target.get_driver("PortForwardProtocol", name=self.args.name)
+        except NoDriverFoundError:
+            self.logger.warning("no PortForwardProtocol driver found, falling back to implicit SSH port forwarding")
+            return self._get_ssh()
+
     def ssh(self):
         drv = self._get_ssh()
 
@@ -1341,7 +1351,7 @@ class ClientSession:
             print("Nothing to forward", file=sys.stderr)
             return
 
-        drv = self._get_ssh()
+        drv = self._get_port_forward()
 
         with contextlib.ExitStack() as stack:
             for local, remote in self.args.local:
@@ -1349,8 +1359,8 @@ class ClientSession:
                 print(f"Forwarding local port {localport:d} to remote port {remote:d}")
 
             for local, remote in self.args.remote:
-                stack.enter_context(drv.remote_forward(local, remote_port=remote))
-                print(f"Forwarding remote port {remote:d} to local port {local:d}")
+                allocated = stack.enter_context(drv.remote_forward(local, remote_port=remote))
+                print(f"Forwarding remote port {allocated:d} to local port {local:d}")
 
             try:
                 print("Waiting for CTRL+C...")

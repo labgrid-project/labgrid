@@ -699,6 +699,20 @@ For this example, you should get a report similar to this:
 
   ========================== 3 passed in 29.77 seconds ===========================
 
+.. warning::
+
+  Do not build higher level fixtures on top of fixtures that modify board
+  state:
+  Each fixture is executed at most once per test.
+  Requesting a fixture that modifies board state again only returns its cached
+  return value without touching the board.
+  Together with fixture execution order, conflicting state requirements and
+  teardown order, this makes such setups hard or even impossible to get right.
+  Instead, request passive fixtures in higher level fixtures and modify board
+  state there directly, e.g. via ``strategy.transition()``.
+  Also consider putting common code that modifies board state into helper
+  functions and calling them from the test rather than implementing fixtures.
+
 .. _usage_pytestplugin_mark_lg_feature:
 
 @pytest.mark.lg_feature()

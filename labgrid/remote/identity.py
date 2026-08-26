@@ -1,4 +1,3 @@
-import contextvars
 import logging
 from typing import Optional
 from .auth.capability import Capability
@@ -52,13 +51,12 @@ class ClientIdentity:
         return cls(hostname, user_agent)
 
 
-def infer_peer_identity(clients, context, identity_contextvar: contextvars.ContextVar[Optional[ClientIdentity]]):
+def infer_peer_identity(clients, context, identity):
     logger = logging.getLogger("infer_peer_identity")
 
-    user = identity_contextvar.get()
-    if user:
+    if identity:
         logger.debug("identity sourced from metadata")
-        return user.id
+        return identity.id
 
     try:
         logger.debug("identity sourced from self.clients")

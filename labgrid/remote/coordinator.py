@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-import contextvars
 import logging
 import asyncio
 import traceback
@@ -17,7 +16,6 @@ import attr
 import grpc
 from grpc_reflection.v1alpha import reflection
 
-from labgrid.remote.grpc.interceptor.server import IdentityServerInterceptor
 from labgrid.remote.identity import ClientIdentity, infer_peer_identity
 from .auth.capability import Capability
 
@@ -35,10 +33,6 @@ from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
-
-client_identity_context: contextvars.ContextVar[Optional[ClientIdentity]] = contextvars.ContextVar(
-    "client_identity", default=None
-)
 
 
 @contextmanager
@@ -193,7 +187,7 @@ def locked(func):
 
 
 async def check_capability(cls, identity, capability, context):
-    if not identity and cls.use_capabilities == True:
+    if not identity and cls.use_capabilities:
         await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities")
     if identity and (capability not in identity.capabilities):
         await context.abort(
@@ -205,9 +199,10 @@ def require_capability(req_cap):
     def decorator(func):
         @wraps(func)
         async def wrapper(self, request, context):
-            ctx = client_identity_context.get()
-            await check_capability(self, ctx, req_cap, context)
-            return await func(self, request, context)
+            identity = ClientIdentity.from_metadata(context.invocation_metadata())
+            print(f"Decorator {identity=}")
+            await check_capability(self, identity, req_cap, context)
+            return await func(self, request, context, identity=identity)
 
         return wrapper
 
@@ -350,7 +345,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         assert peer not in self.clients
         out_msg_queue = asyncio.Queue()
 
-        identity = client_identity_context.get()
+        identity = ClientIdentity.from_metadata(context.invocation_metadata())
         print(f"Stream identity: {identity}")
         if self.use_capabilities:
             await check_capability(self, identity, Capability.client_stream, context)
@@ -455,7 +450,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         logging.info("exporter connected: %s", peer)
         assert peer not in self.exporters
 
-        identity = client_identity_context.get()
+        identity = ClientIdentity.from_metadata(context.invocation_metadata())
         if self.use_capabilities:
             await check_capability(self, identity, Capability.exporter_stream, context)
 
@@ -468,7 +463,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         out_msg.hello.version = labgrid_version()
         yield out_msg
 
-        identity = client_identity_context.get()
+        identity = ClientIdentity.from_metadata(context.invocation_metadata())
         if identity:
             logging.debug("exporter identity provided in gRPC metadata")
             logging.debug(identity)
@@ -583,7 +578,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.add_place)
     @locked
-    async def AddPlace(self, request, context):
+    async def AddPlace(self, request, context, *, identity):
         name = request.name
         if not name or not isinstance(name, str):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
@@ -598,7 +593,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.delete_place)
     @locked
-    async def DeletePlace(self, request, context):
+    async def DeletePlace(self, request, context, *, identity):
         name = request.name
         if not name or not isinstance(name, str):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
@@ -615,7 +610,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.add_place_alias)
     @locked
-    async def AddPlaceAlias(self, request, context):
+    async def AddPlaceAlias(self, request, context, *, identity):
         placename = request.placename
         alias = request.alias
         try:
@@ -630,7 +625,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.delete_place_alias)
     @locked
-    async def DeletePlaceAlias(self, request, context):
+    async def DeletePlaceAlias(self, request, context, *, identity):
         placename = request.placename
         alias = request.alias
         try:
@@ -648,7 +643,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.set_place_tags)
     @locked
-    async def SetPlaceTags(self, request, context):
+    async def SetPlaceTags(self, request, context, *, identity):
         placename = request.placename
         tags = dict(request.tags)
         try:
@@ -678,7 +673,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.set_place_comment)
     @locked
-    async def SetPlaceComment(self, request, context):
+    async def SetPlaceComment(self, request, context, *, identity):
         placename = request.placename
         comment = request.comment
         try:
@@ -693,7 +688,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.add_place_match)
     @locked
-    async def AddPlaceMatch(self, request, context):
+    async def AddPlaceMatch(self, request, context, *, identity):
         placename = request.placename
         pattern = request.pattern
         rename = request.rename if request.HasField("rename") else None
@@ -712,7 +707,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.delete_place_match)
     @locked
-    async def DeletePlaceMatch(self, request, context):
+    async def DeletePlaceMatch(self, request, context, *, identity):
         placename = request.placename
         pattern = request.pattern
         rename = request.rename if request.HasField("rename") else None
@@ -939,11 +934,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.acquire_place)
     @locked
-    async def AcquirePlace(self, request, context):
+    async def AcquirePlace(self, request, context, *, identity):
         peer = context.peer()
         name = request.placename
         try:
-            username = infer_peer_identity(self.clients, context, client_identity_context)
+            username = infer_peer_identity(self.clients, context, identity)
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         print(request)
@@ -982,7 +977,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @locked
     async def ReleasePlace(self, request, context):
-        identity = client_identity_context.get()
+        identity = ClientIdentity.from_metadata(context.invocation_metadata())
         if self.use_capabilities and not identity:
             await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities")
 
@@ -1007,7 +1002,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
         try:
-            username = infer_peer_identity(self.clients, context, client_identity_context)
+            username = infer_peer_identity(self.clients, context, identity)
         except KeyError:
             await context.abort(
                 grpc.StatusCode.FAILED_PRECONDITION, f"Peer {context.peer()} does not have a valid session"
@@ -1051,10 +1046,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         user = request.user
         peer = context.peer()
 
-        identity = client_identity_context.get()
+        identity = ClientIdentity.from_metadata(context.invocation_metadata())
 
         try:
-            username = infer_peer_identity(self.clients, context, client_identity_context)
+            username = infer_peer_identity(self.clients, context, identity)
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         try:
@@ -1099,7 +1094,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.get_places)
     @locked
-    async def GetPlaces(self, unused_request, unused_context):
+    async def GetPlaces(self, unused_request, unused_context, *, identity):
         logging.debug("GetPlaces")
         try:
             return labgrid_coordinator_pb2.GetPlacesResponse(places=[x.as_pb2() for x in self.places.values()])
@@ -1215,7 +1210,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.create_reservation)
     @locked
-    async def CreateReservation(self, request: labgrid_coordinator_pb2.CreateReservationRequest, context):
+    async def CreateReservation(self, request: labgrid_coordinator_pb2.CreateReservationRequest, context, *, identity):
         peer = context.peer()
 
         fltrs = {}
@@ -1233,7 +1228,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 fltr[k] = v
 
         try:
-            owner = infer_peer_identity(self.clients, context, client_identity_context)
+            owner = infer_peer_identity(self.clients, context, identity)
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         res = Reservation(owner=owner, prio=request.prio, filters=fltrs)
@@ -1243,7 +1238,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @locked
     async def CancelReservation(self, request: labgrid_coordinator_pb2.CancelReservationRequest, context):
-        identity = client_identity_context.get()
+        identity = ClientIdentity.from_metadata(context.invocation_metadata())
         token = request.token
         if not isinstance(token, str) or not token:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid token {token}")
@@ -1251,7 +1246,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {token} does not exist")
 
         try:
-            owner = infer_peer_identity(self.clients, context, client_identity_context)
+            owner = infer_peer_identity(self.clients, context, identity)
         except KeyError:
             await context.abort(
                 grpc.StatusCode.FAILED_PRECONDITION, f"Peer {context.peer} does not have a valid session"
@@ -1283,7 +1278,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.poll_reservation)
     @locked
-    async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context):
+    async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context, *, identity):
         token = request.token
         try:
             res = self.reservations[token]
@@ -1294,7 +1289,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @require_capability(Capability.get_reservations)
     @locked
-    async def GetReservations(self, request: labgrid_coordinator_pb2.GetReservationsRequest, context):
+    async def GetReservations(self, request: labgrid_coordinator_pb2.GetReservationsRequest, context, *, identity):
         reservations = [x.as_pb2() for x in self.reservations.values()]
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
 
@@ -1316,7 +1311,6 @@ async def serve(listen, cleanup, capabilities) -> None:
     ]
     server = grpc.aio.server(
         options=channel_options,
-        interceptors=[IdentityServerInterceptor(client_identity_context)],
     )
     coordinator = Coordinator(capabilities)
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)

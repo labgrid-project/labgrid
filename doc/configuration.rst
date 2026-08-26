@@ -3142,9 +3142,9 @@ Implements:
 
 Arguments:
   - qemu_bin (str): reference to the tools key for the QEMU binary
-  - machine (str): QEMU machine type
-  - cpu (str): QEMU cpu type
   - memory (str): QEMU memory size (ends with M or G)
+  - machine (str): optional, QEMU machine type (defaults to default machine of ``qemu_bin``)
+  - cpu (str): optional, QEMU cpu type (defaults to default cpu type of ``qemu_bin``)
   - extra_args (str): optional, extra QEMU arguments, they are passed directly to the QEMU binary
   - boot_args (str): optional, additional kernel boot argument
   - kernel (str): optional, reference to the images key for the kernel

@@ -54,6 +54,11 @@ LG_COORDINATOR
 This variable can be used to set the default coordinator in the format
 ``HOST[:PORT]`` (instead of using the ``-x`` option).
 
+LG_COORDINATOR_TLS
+~~~~~~~~~~~~~~~~~~
+This variable can be set to enable TLS gRPC channels without using the
+``--tls`` option.
+
 LG_PROXY
 ~~~~~~~~
 This variable can be used to specify a SSH proxy hostname which should be used
@@ -127,6 +132,12 @@ Add all resources with the group "example-group" to the place example-place:
 .. code-block:: bash
 
    $ labgrid-client -p example-place add-match */example-group/*/*
+
+Retrieve a list of places on a ``labgrid-coordinator`` that uses TLS gRPC channels:
+
+.. code-block:: bash
+
+    $ labgrid-client --tls [--cacert PATH] places
 
 See Also
 --------

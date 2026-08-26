@@ -88,6 +88,22 @@ class ErrorGroup(ExceptionGroup):
         return f"{self.message}:\n{errors_combined}"
 
 
+def _get_reservation_id_from_env():
+    reservation_id = os.environ.get("LG_RESERVATION")
+    legacy_reservation_id = os.environ.get("LG_TOKEN")
+    if reservation_id:
+        if legacy_reservation_id and legacy_reservation_id != reservation_id:
+            print(
+                "warning: LG_RESERVATION and deprecated LG_TOKEN are set to different values; using LG_RESERVATION",
+                file=sys.stderr,
+            )
+        return reservation_id
+
+    if legacy_reservation_id:
+        print("warning: LG_TOKEN is deprecated; use LG_RESERVATION instead", file=sys.stderr)
+    return legacy_reservation_id
+
+
 @attr.s(eq=False)
 class ClientSession:
     """The ClientSession encapsulates all the actions a Client can invoke on
@@ -455,19 +471,19 @@ class ClientSession:
         """
         result = set()
 
-        # reservation token lookup
-        token = None
+        # reservation id lookup
+        reservation_id = None
         if pattern.startswith("+"):
-            token = pattern[1:]
-            if not token:
-                token = os.environ.get("LG_TOKEN", None)
-            if not token:
+            reservation_id = pattern[1:]
+            if not reservation_id:
+                reservation_id = _get_reservation_id_from_env()
+            if not reservation_id:
                 return []
             for name, place in self.places.items():
-                if place.reservation == token:
+                if place.reservation == reservation_id:
                     result.add(name)
             if not result:
-                raise UserError(f"reservation token {token} matches nothing")
+                raise UserError(f"reservation id {reservation_id} matches nothing")
             return list(result)
 
         # name and alias lookup
@@ -1592,28 +1608,30 @@ class ClientSession:
 
         res = Reservation.from_pb2(response.reservation)
         if self.args.shell:
-            print(f"export LG_TOKEN={res.token}")
+            print(f"export LG_RESERVATION={res.id}")
+            # TODO: remove the deprecated LG_TOKEN export after one release.
+            print(f"export LG_TOKEN={res.id}")
         else:
-            print(f"Reservation '{res.token}':")
+            print(f"Reservation '{res.id}':")
             res.show(level=1)
         if self.args.wait:
             if not self.args.shell:
                 print("Waiting for allocation...")
-            await self._wait_reservation(res.token, verbose=False)
+            await self._wait_reservation(res.id, verbose=False)
 
     async def cancel_reservation(self):
-        token: str = self.args.token
+        reservation_id: str = self.args.reservation_id
 
-        request = labgrid_coordinator_pb2.CancelReservationRequest(token=token)
+        request = labgrid_coordinator_pb2.CancelReservationRequest(token=reservation_id)
 
         try:
             await self.stub.CancelReservation(request)
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
 
-    async def _wait_reservation(self, token: str, verbose=True):
+    async def _wait_reservation(self, reservation_id: str, verbose=True):
         while True:
-            request = labgrid_coordinator_pb2.PollReservationRequest(token=token)
+            request = labgrid_coordinator_pb2.PollReservationRequest(token=reservation_id)
 
             try:
                 response: labgrid_coordinator_pb2.PollReservationResponse = await self.stub.PollReservation(request)
@@ -1629,8 +1647,8 @@ class ClientSession:
                 break
 
     async def wait_reservation(self):
-        token = self.args.token
-        await self._wait_reservation(token)
+        reservation_id = self.args.reservation_id
+        await self._wait_reservation(reservation_id)
 
     async def print_reservations(self):
         request = labgrid_coordinator_pb2.GetReservationsRequest()
@@ -1642,7 +1660,7 @@ class ClientSession:
             raise ServerError(e.details())
 
         for res in sorted(reservations, key=lambda x: (-x.prio, x.created)):
-            print(f"Reservation '{res.token}':")
+            print(f"Reservation '{res.id}':")
             res.show(level=1)
 
     async def export(self, place, target):
@@ -2342,11 +2360,23 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.set_defaults(func=ClientSession.create_reservation)
 
     subparser = subparsers.add_parser("cancel-reservation", help="cancel a reservation")
-    subparser.add_argument("token", type=str, nargs="?")
+    subparser.add_argument(
+        "reservation_id",
+        type=str,
+        nargs="?",
+        help="the reservation id (previously called token)",
+        metavar="reservation-id",
+    )
     subparser.set_defaults(func=ClientSession.cancel_reservation)
 
     subparser = subparsers.add_parser("wait", help="wait for a reservation to be allocated")
-    subparser.add_argument("token", type=str, nargs="?")
+    subparser.add_argument(
+        "reservation_id",
+        type=str,
+        nargs="?",
+        help="the reservation id (previously called token)",
+        metavar="reservation-id",
+    )
     subparser.set_defaults(func=ClientSession.wait_reservation)
 
     subparser = subparsers.add_parser("reservations", help="list current reservations")
@@ -2401,7 +2431,6 @@ def main():
     state = os.environ.get("STATE", None)
     state = os.environ.get("LG_STATE", state)
     initial_state = os.environ.get("LG_INITIAL_STATE", None)
-    token = os.environ.get("LG_TOKEN", None)
 
     parser = get_parser()
 
@@ -2425,11 +2454,12 @@ def main():
     if args.initial_state is None:
         args.initial_state = initial_state
 
-    if args.command in ["cancel-reservation", "wait"] and args.token is None:
-        if token:
-            args.token = token
+    if args.command in ["cancel-reservation", "wait"] and args.reservation_id is None:
+        reservation_id = _get_reservation_id_from_env()
+        if reservation_id:
+            args.reservation_id = reservation_id
         else:
-            print("Please provide a token", file=sys.stderr)
+            print("Please provide a reservation id (previously called token)", file=sys.stderr)
             exit(1)
 
     if args.verbose:

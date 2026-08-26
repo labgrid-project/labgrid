@@ -55,6 +55,14 @@ class OpenOCDDriver(Driver, BootstrapProtocol):
         cmd = [self.tool]
         cmd += chain.from_iterable(("--search", path) for path in self.search)
         cmd += self._get_usb_path_cmd()
+        cmd += [
+            "--command",
+            "gdb_port disabled",
+            "--command",
+            "telnet_port disabled",
+            "--command",
+            "tcl_port disabled",
+        ]
 
         managed_configs = []
         for config in self.config:

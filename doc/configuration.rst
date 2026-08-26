@@ -2318,6 +2318,12 @@ OpenOCDDriver
 An :any:`OpenOCDDriver` controls *OpenOCD* to bootstrap a target with a
 bootloader.
 
+The driver disables OpenOCD's GDB, telnet and TCL server ports. It does not
+provide a lifecycle to expose or stop these server interfaces, and disabling
+them allows multiple bootstrap operations to run concurrently on one exporter.
+Configurations which require a server interface can re-enable it with an
+appropriate command before ``init``.
+
 Note that OpenOCD supports specifying USB paths since
 `a1b308ab <https://sourceforge.net/p/openocd/code/ci/a1b308ab/>`_ which was released with v0.11.
 The OpenOCDDriver passes the resource's USB path.

@@ -25,13 +25,8 @@ class QuartusHPSDriver(Driver):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
-        # FIXME make sure we always have an environment or config
-        if self.target.env:
-            self.tool = self.target.env.config.get_tool("quartus_hps")
-            self.jtag_tool = self.target.env.config.get_tool("jtagconfig")
-        else:
-            self.tool = "quartus_hps"
-            self.jtag_tool = "jtagconfig"
+        self.tool = self.target.get_tool("quartus_hps")
+        self.jtag_tool = self.target.get_tool("jtagconfig")
 
     def _get_cable_number(self):
         """

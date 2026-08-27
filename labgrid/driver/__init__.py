@@ -40,6 +40,7 @@ from .flashscriptdriver import FlashScriptDriver
 from .usbaudiodriver import USBAudioInputDriver
 from .usbvideodriver import USBVideoDriver
 from .httpvideodriver import HTTPVideoDriver
+from .rtspvideodriver import RTSPVideoDriver
 from .networkinterfacedriver import NetworkInterfaceDriver
 from .provider import HTTPProviderDriver, NFSProviderDriver, TFTPProviderDriver
 from .rawnetworkinterfacedriver import RawNetworkInterfaceDriver

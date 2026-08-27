@@ -99,6 +99,7 @@ class RKUSBDriver(Driver, BootstrapProtocol):
 
     image = attr.ib(default=None)
     usb_loader = attr.ib(default=None)
+    offset = attr.ib(default=0x40)
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -145,7 +146,7 @@ class RKUSBDriver(Driver, BootstrapProtocol):
             try:
                 processwrapper.check_output(
                     self.loader.command_prefix +
-                    [self.tool, 'wl', '0x40', mf.get_remote_path()],
+                    [self.tool, 'wl', hex(int(self.offset)), mf.get_remote_path()],
                     print_on_silent_log=True
                 )
                 break

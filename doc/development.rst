@@ -160,6 +160,24 @@ The minimum requirement is a call to :code:`super().__attrs_post_init__()`.
 All that's left now is to implement the functionality described by the used
 protocol, by using the API of the bound drivers and resources.
 
+Programmable Power Supplies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Simple power drivers only implement :any:`PowerProtocol` (``on``, ``off``,
+``cycle`` and ``get``). Power supplies that can additionally report and
+configure their output implement :any:`ProgrammablePowerProtocol`, which
+extends :any:`PowerProtocol` with three methods:
+
+- ``show()`` returns a dict with the measured ``voltage``, ``amps`` and
+  ``watts`` as well as the configured ``v_limit`` and ``a_limit``.
+- ``voltage(value)`` sets the output voltage.
+- ``amps(value)`` sets the output current limit.
+
+For the :any:`NetworkPowerDriver`, these are dispatched to the configured
+backend module, which has to provide matching ``power_show``,
+``power_voltage`` and ``power_amps`` functions (see
+``labgrid/driver/power/siglent.py`` for a reference implementation).
+
 Writing a Resource
 -------------------
 

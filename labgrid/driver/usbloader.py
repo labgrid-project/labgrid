@@ -238,3 +238,175 @@ class BDIMXUSBDriver(Driver, BootstrapProtocol):
             ],
             print_on_silent_log=True
         )
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class SunxiUSBDriver(Driver, BootstrapProtocol):
+    bindings = {
+        "loader": {"SunxiUSBLoader", "NetworkSunxiUSBLoader"},
+    }
+
+    loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    image = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('sunxi-fel')
+        else:
+            self.tool = 'sunxi-fel'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    def _run_tool(self, *part):
+        """Run sunxi-fel against the loader's USB device
+
+        Args:
+            part: Arguments to pass to the tool
+        """
+        args = ['-d', '%s:%s' % (self.loader.busnum, self.loader.devnum)]
+        cmd = ['sunxi-fel'] + args + list(part)
+
+        processwrapper.check_output(
+            self.loader.command_prefix + cmd,
+            print_on_silent_log=True
+        )
+
+    @Driver.check_active
+    @step(args=['filename', 'phase'])
+    def load(self, filename=None, phase=None):
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        pathname = mf.get_remote_path()
+        if phase == 'spl':
+            self._run_tool('spl', pathname)
+        else:
+            self._run_tool('write', '%#x' % self.loadaddr, pathname)
+
+    @Driver.check_active
+    @step()
+    def execute(self):
+        """Start executing the loaded image at the load address"""
+        self._run_tool('exe', '%#x' % self.loadaddr)
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class TegraUSBDriver(Driver, BootstrapProtocol):
+    bindings = {
+        'loader': {'TegraUSBLoader', 'NetworkTegraUSBLoader'},
+    }
+
+    loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    image = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('tegrarcm')
+        else:
+            self.tool = 'tegrarcm'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    @Driver.check_active
+    @step(args=['filename'])
+    def load(self, filename=None, phase=None):
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        pathname = mf.get_remote_path()
+        bct = ManagedFile(self.target.env.config.get_image_path('bct'),
+                          self.loader)
+        bct.sync_to_resource()
+        args = [self.tool, '--bct=' + bct.get_remote_path(),
+               f'--bootloader={pathname}',
+               f'--loadaddr={self.loadaddr:#08x}',
+               '--usb-port-path', self.loader.path]
+
+        processwrapper.check_output(
+            self.loader.command_prefix + args,
+            print_on_silent_log=True
+        )
+
+    @Driver.check_active
+    @step()
+    def execute(self):
+        """Nothing to do: the boot ROM runs each piece as it arrives"""
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class SamsungUSBDriver(Driver, BootstrapProtocol):
+    bindings = {
+        'loader': {'SamsungUSBLoader', 'NetworkSamsungUSBLoader'},
+    }
+
+    bl1_loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    spl_loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    image = attr.ib(default=None)
+    bl1_image = attr.ib(default='bl1',
+                        validator=attr.validators.instance_of(str))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('smdk-usbdl')
+        else:
+            self.tool = 'smdk-usbdl'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    @Driver.check_active
+    @step(args=['filename'])
+    def load(self, filename=None, phase=None):
+        if filename is None and phase == 'bl1':
+            filename = self.target.env.config.get_image_path(self.bl1_image)
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        if phase == 'bl1':
+            addr = self.bl1_loadaddr
+        elif phase == 'spl':
+            addr = self.spl_loadaddr
+        elif phase in (None, 'u-boot'):
+            addr = self.loadaddr
+        else:
+            raise ValueError(f"Unknown phase '{phase}'")
+        pathname = mf.get_remote_path()
+
+        args = [self.tool, '-a', f'{addr:x}',
+                '-b', f'{self.loader.busnum:03d}',
+                '-d', f'{self.loader.devnum:03d}',
+                '-f', pathname]
+
+        processwrapper.check_output(self.loader.command_prefix + args)
+
+    @Driver.check_active
+    @step()
+    def execute(self):
+        """Nothing to do: the boot ROM runs each piece as it arrives"""

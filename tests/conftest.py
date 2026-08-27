@@ -203,12 +203,12 @@ class Exporter(LabgridComponent):
 
 
 class Coordinator(LabgridComponent):
-    def start(self):
+    def start(self, *args):
         assert self.spawn is None
         assert self.reader is None
 
         self.spawn = pexpect.spawn(
-            'python -m labgrid.remote.coordinator',
+            ' '.join(['python -m labgrid.remote.coordinator', *args]),
             logfile=Prefixer(sys.stdout.buffer, 'coordinator'),
             cwd=self.cwd)
         try:
@@ -260,6 +260,15 @@ def serial_driver_no_name(target, serial_port, mocker):
 def coordinator(tmpdir):
     coordinator = Coordinator(tmpdir)
     coordinator.start()
+
+    yield coordinator
+
+    coordinator.stop()
+
+@pytest.fixture(scope='function')
+def coordinator_with_capabilities(tmpdir):
+    coordinator = Coordinator(tmpdir)
+    coordinator.start('--capabilities')
 
     yield coordinator
 

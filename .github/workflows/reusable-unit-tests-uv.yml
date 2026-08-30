@@ -1,0 +1,51 @@
+name: reusable unit tests (uv)
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        type: string
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    continue-on-error: false
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.branch }}
+    - name: Install uv
+      uses: astral-sh/setup-uv@v10.0.1
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+    - name: Install system dependencies
+      run: |
+        sudo apt-get install -yq libow-dev openssh-server openssh-client graphviz openocd
+        sudo mkdir -p /var/cache/labgrid/runner && sudo chown runner /var/cache/labgrid/runner
+    - name: Prepare local SSH
+      run: |
+        # the default of 777 is too open for SSH
+        chmod 755 ~
+        ssh-keygen -f ~/.ssh/id_ed25519.local -t ed25519 -N ""
+        cat ~/.ssh/id_ed25519.local.pub >> ~/.ssh/authorized_keys
+        echo -e "Host localhost ip6-localhost\n  Hostname 127.0.0.1\n  IdentityFile ~/.ssh/id_ed25519.local\n  UserKnownHostsFile ~/.ssh/known_hosts.local" >> ~/.ssh/config
+        ssh -o StrictHostKeyChecking=no localhost echo OK
+    - name: Enable unprivileged user namespaces
+      run: |
+        sudo sysctl kernel.unprivileged_userns_clone=1
+        unshare -Un true
+    - name: Install labgrid with uv
+      run: |
+        uv sync --extra dev --locked
+    - name: Lint with pylint
+      run: |
+        uv run pylint --list-msgs-enabled
+        uv run pylint labgrid
+    - name: Format with ruff
+      run: |
+        uv run ruff format --check --diff
+    - name: Test with pytest
+      run: |
+        uv run pytest -r a --local-sshmanager --ssh-username runner -k "not test_docker_with_daemon"

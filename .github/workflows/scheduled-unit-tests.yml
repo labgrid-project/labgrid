@@ -28,3 +28,12 @@ jobs:
     uses: ./.github/workflows/reusable-unit-tests-docker.yml
     with:
       branch: ${{ matrix.branch }}
+  scheduled-unit-tests-uv:
+    name: scheduled unit tests (uv)
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ['master']
+    uses: ./.github/workflows/reusable-unit-tests-uv.yml
+    with:
+      branch: ${{ matrix.branch }}

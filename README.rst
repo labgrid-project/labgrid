@@ -26,6 +26,8 @@ It includes a remote control layer to control boards connected to other hosts.
 
   * `Install Development State <#install-development-state>`_
 
+  * `Install Development State with uv <#install-development-state-with-uv>`_
+
 Getting started
 ---------------
 There is a tutorial series on the Pengutronix Youtube channel you can follow to
@@ -140,6 +142,36 @@ To install sphinx and the dependencies needed for generating man pages and docum
 .. code-block:: bash
 
    venv $ pip install '.[doc]'
+
+Install Development State with uv
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+As an alternative to the ``virtualenv``/``pip`` workflow above, install `uv
+<https://docs.astral.sh/uv/>`_ and clone the git repository:
+
+.. code-block:: bash
+
+   $ git clone https://github.com/labgrid-project/labgrid
+   $ cd labgrid
+
+Create the virtualenv and install labgrid in editable mode with the development
+dependencies pinned in ``uv.lock``:
+
+.. code-block:: bash
+
+   $ uv sync --extra dev
+
+Commands can then be run with ``uv run``:
+
+.. code-block:: bash
+
+   $ uv run pytest --lg-env <config>
+
+To include the dependencies needed for generating man pages and documentation,
+sync the ``doc`` extra as well:
+
+.. code-block:: bash
+
+   $ uv sync --extra dev --extra doc
 
 .. |license| image:: https://img.shields.io/badge/license-LGPLv2.1-blue.svg
     :alt: LGPLv2.1

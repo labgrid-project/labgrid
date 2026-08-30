@@ -17,6 +17,9 @@ jobs:
   push-pr-unit-tests-docker:
     name: Docker Unit Tests
     uses: ./.github/workflows/reusable-unit-tests-docker.yml
+  push-pr-unit-tests-uv:
+    name: unit tests (uv)
+    uses: ./.github/workflows/reusable-unit-tests-uv.yml
   build-and-release:
     name: Release to Pypi
     needs: push-pr-unit-tests

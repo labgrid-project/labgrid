@@ -243,3 +243,9 @@ include = [
 
 [tool.ruff.lint]
 select = ["B", "E", "F", "I", "SIM", "UP"]
+
+[tool.uv]
+# xenavalkyrie (xena extra) pins pypacker==4.9, whose sdist has invalid
+# packaging metadata (python_requires='>=3.3.*') and fails to build under
+# modern setuptools. Override to the first release with valid metadata.
+override-dependencies = ["pypacker>=5.4"]

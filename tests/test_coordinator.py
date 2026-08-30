@@ -1,8 +1,13 @@
-import pytest
+import asyncio
+import logging
+from unittest.mock import AsyncMock, MagicMock
 
 import grpc
-import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
+import pytest
+
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
+import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
+from labgrid.remote.coordinator import Coordinator, ExporterError, ExporterSession, warn_if_slow
 
 
 @pytest.fixture(scope="function")
@@ -191,3 +196,75 @@ def test_coordinator_create_reservation(coordinator, coordinator_place):
     assert res
     res: labgrid_coordinator_pb2.CreateReservationResponse
     assert len(res.reservation.token) > 0
+
+
+def test_warn_if_slow_logs_over_limit(caplog):
+    with caplog.at_level(logging.WARNING):
+        with warn_if_slow("op", limit=0.0):
+            pass
+    assert "op: real" in caplog.text
+
+
+async def _aiter(messages):
+    for msg in messages:
+        yield msg
+
+
+def test_exporterstream_duplicate_name_aborts(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    async def run():
+        coordinator = Coordinator()
+        try:
+            coordinator.exporters["existing-peer"] = ExporterSession(
+                coordinator, "existing-peer", "dup", asyncio.Queue(), "1.0.0"
+            )
+
+            msg = labgrid_coordinator_pb2.ExporterInMessage()
+            msg.startup.version = "2.0.0"
+            msg.startup.name = "dup"
+
+            context = MagicMock()
+            context.peer.return_value = "new-peer"
+            context.abort = AsyncMock()
+
+            stream = coordinator.ExporterStream(_aiter([msg]), context)
+            with pytest.raises(ExporterError, match="already connected"):
+                async for _ in stream:
+                    pass
+
+            context.abort.assert_awaited_once()
+        finally:
+            for task in coordinator.poll_tasks:
+                task.cancel()
+
+    asyncio.run(run())
+
+
+def test_exporterstream_times_out_during_startup(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    async def fake_wait(fs, **kwargs):
+        return set(), set(fs)
+
+    monkeypatch.setattr(asyncio, "wait", fake_wait)
+
+    async def hanging_aiter():
+        await asyncio.Future()
+        yield  # pragma: no cover
+
+    async def run():
+        coordinator = Coordinator()
+        try:
+            context = MagicMock()
+            context.peer.return_value = "new-peer"
+
+            stream = coordinator.ExporterStream(hanging_aiter(), context)
+            with pytest.raises(ExporterError, match="timed out during startup"):
+                async for _ in stream:
+                    pass
+        finally:
+            for task in coordinator.poll_tasks:
+                task.cancel()
+
+    asyncio.run(run())

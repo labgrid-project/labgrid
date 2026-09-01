@@ -619,8 +619,27 @@ class ProviderGenericExport(ResourceExport):
 
 
 exports["TFTPProvider"] = ProviderGenericExport
-exports["NFSProvider"] = ProviderGenericExport
 exports["HTTPProvider"] = ProviderGenericExport
+
+
+@attr.s(eq=False)
+class NFSProviderExport(ResourceExport):
+    """ResourceExport for the NFSProvider (no internal/external paths)"""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        from ..resource import provider
+
+        self.data["cls"] = "RemoteNFSProvider"
+        self.local = provider.NFSProvider(target=None, name=None, **self.local_params)
+
+    def _get_params(self):
+        return {
+            "host": self.host,
+        }
+
+
+exports["NFSProvider"] = NFSProviderExport
 
 
 @attr.s

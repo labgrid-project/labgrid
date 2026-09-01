@@ -58,6 +58,22 @@ def test_exporter_coordinator_becomes_unreachable(coordinator, exporter):
     coordinator.resume_tree()
 
 
+def test_exporter_nfs_provider_export():
+    # Regression test: NFSProvider has no internal/external attrs (unlike
+    # TFTPProvider/HTTPProvider), so it must not be mapped to
+    # ProviderGenericExport or _get_params() raises an AttributeError.
+    from labgrid.remote.exporter import exports
+
+    export_cls = exports["NFSProvider"]
+    resource = export_cls({"cls": "NFSProvider", "params": {}}, host="exporterhost")
+
+    resource.poll()
+
+    assert resource.params["host"] == "exporterhost"
+    assert "internal" not in resource.params
+    assert "external" not in resource.params
+
+
 def setup_tmp_cert_key(tmpdir):
     cert = "cert.pem"
     cert_file = tmpdir.join(cert)

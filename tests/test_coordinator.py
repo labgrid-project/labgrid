@@ -1,6 +1,9 @@
-import pytest
+import os
+import signal
 
 import grpc
+import pexpect
+import pytest
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
 
@@ -191,3 +194,86 @@ def test_coordinator_create_reservation(coordinator, coordinator_place):
     assert res
     res: labgrid_coordinator_pb2.CreateReservationResponse
     assert len(res.reservation.token) > 0
+
+
+def test_coordinator_propagate_identity_on_lock(coordinator, channel_stub, tmpdir):
+    with open(tmpdir / "exports.yaml", "w") as f:
+        f.write(
+            """
+        Example:
+            NetworkService:
+              address: "192.168.0.1"
+              username: "root"
+        """
+        )
+
+    stub = channel_stub
+
+    assert stub.AddPlace(labgrid_coordinator_pb2.AddPlaceRequest(name="place1"))
+    assert stub.AddPlaceMatch(
+        labgrid_coordinator_pb2.AddPlaceMatchRequest(
+            placename="place1", pattern="testexporter/Example/NetworkService"
+        )
+    )
+
+    with pexpect.spawn("python -m labgrid.remote.exporter --name testexporter exports.yaml", cwd=tmpdir) as spawn:
+        spawn.expect("Exporter ready")
+
+        with pexpect.spawn(
+            "python -m labgrid.remote.client -p place1 lock",
+            cwd=tmpdir,
+            env=os.environ | {"LG_HOSTNAME": "somehost", "LG_USERNAME": "someuser"},
+        ) as spawn_acquire:
+            spawn_acquire.expect("acquired place place1")
+            spawn_acquire.expect(pexpect.EOF)
+
+        spawn.expect("INFO:root:Example/NetworkService acquired by somehost/someuser")
+
+        spawn.kill(signal.SIGTERM)
+        spawn.expect(pexpect.EOF)
+
+
+def test_coordinator_propagate_identity_on_lease(coordinator, channel_stub, tmpdir):
+    with open(tmpdir / "exports.yaml", "w") as f:
+        f.write(
+            """
+        Example:
+            NetworkService:
+              address: "192.168.0.1"
+              username: "root"
+        """
+        )
+
+    stub = channel_stub
+
+    assert stub.AddPlace(labgrid_coordinator_pb2.AddPlaceRequest(name="place1"))
+    assert stub.AddPlaceMatch(
+        labgrid_coordinator_pb2.AddPlaceMatchRequest(
+            placename="place1", pattern="testexporter/Example/NetworkService"
+        )
+    )
+
+    with pexpect.spawn("python -m labgrid.remote.exporter --name testexporter exports.yaml", cwd=tmpdir) as spawn:
+        spawn.expect("Exporter ready")
+
+        with pexpect.spawn(
+            "python -m labgrid.remote.client reserve name=place1 --wait",
+            cwd=tmpdir,
+            env=os.environ | {"LG_HOSTNAME": "somehost", "LG_USERNAME": "someuser"},
+        ) as spawn_acquire:
+            spawn_acquire.expect(r"Reservation '([^']+)':", timeout=1)
+            reservation_id = spawn_acquire.match.group(1).decode()
+            spawn_acquire.expect(pexpect.EOF)
+
+        with pexpect.spawn(
+            f"python -m labgrid.remote.client -p +{reservation_id} lease",
+            cwd=tmpdir,
+            env=os.environ | {"LG_HOSTNAME": "somehost", "LG_USERNAME": "someuser"},
+        ) as spawn_acquire:
+            spawn_acquire.expect("leased place place1", timeout=1)
+            spawn_acquire.expect(pexpect.EOF)
+
+        spawn.expect("INFO:root:Example/NetworkService leased by somehost/someuser", timeout=1)
+
+        spawn.kill(signal.SIGTERM)
+        spawn.expect(pexpect.EOF)

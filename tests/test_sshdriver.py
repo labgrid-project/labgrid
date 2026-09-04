@@ -165,7 +165,7 @@ def test_local_port_forward(ssh_localhost, tmpdir):
     remoteport = get_free_port()
     test_string = "Hello World"
 
-    with ssh_localhost.forward_local_port(remoteport) as localport:
+    with ssh_localhost.local_forward(remoteport) as localport:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as send_socket:
                 server_socket.bind(("127.0.0.1", remoteport))
@@ -179,13 +179,23 @@ def test_local_port_forward(ssh_localhost, tmpdir):
 
                 assert client_socket.recv(16).decode("utf-8") == test_string
 
+def test_deprecated_local_port_forward(ssh_driver_mocked_and_activated, mocker):
+    s = ssh_driver_mocked_and_activated
+    s.local_forward = mocker.MagicMock()
+    s.local_forward.return_value.__enter__.return_value = 42000
+
+    with pytest.warns(DeprecationWarning, match="use local_forward"):
+        with s.forward_local_port(remoteport=1234, localport=None) as local_port:
+            assert local_port == 42000
+    s.local_forward.assert_called_once_with(1234, local_port=0)
+
 @pytest.mark.sshusername
-def test_local_remote_forward(ssh_localhost, tmpdir):
+def test_remote_port_forward(ssh_localhost, tmpdir):
     remoteport = get_free_port()
     localport = get_free_port()
     test_string = "Hello World"
 
-    with ssh_localhost.forward_remote_port(remoteport, localport):
+    with ssh_localhost.remote_forward(localport, remote_port=remoteport):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as send_socket:
                 server_socket.bind(("127.0.0.1", localport))
@@ -198,6 +208,34 @@ def test_local_remote_forward(ssh_localhost, tmpdir):
                 send_socket.send(test_string.encode('utf-8'))
 
                 assert client_socket.recv(16).decode("utf-8") == test_string
+
+@pytest.mark.sshusername
+def test_remote_port_forward_auto_allocation(ssh_localhost, tmpdir):
+    localport = get_free_port()
+    test_string = "Hello World"
+
+    with ssh_localhost.remote_forward(localport) as remoteport:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as send_socket:
+                server_socket.bind(("127.0.0.1", localport))
+                server_socket.listen(1)
+
+                send_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                send_socket.connect(("127.0.0.1", remoteport))
+
+                client_socket, address = server_socket.accept()
+                send_socket.send(test_string.encode('utf-8'))
+
+                assert client_socket.recv(16).decode("utf-8") == test_string
+
+def test_deprecated_remote_port_forward(ssh_driver_mocked_and_activated, mocker):
+    s = ssh_driver_mocked_and_activated
+    s.remote_forward = mocker.MagicMock()
+
+    with pytest.warns(DeprecationWarning, match="use remote_forward"):
+        with s.forward_remote_port(remoteport=42000, localport=1234) as result:
+            assert result is None
+    s.remote_forward.assert_called_once_with(1234, remote_port=42000)
 
 
 @pytest.mark.sshusername

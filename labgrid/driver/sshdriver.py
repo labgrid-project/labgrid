@@ -1,4 +1,4 @@
-"""The SSHDriver uses SSH as a transport to implement CommandProtocol and FileTransferProtocol"""
+"""The SSHDriver uses SSH as a transport to implement CommandProtocol, FileTransferProtocol and PortForwardProtocol"""
 import contextlib
 import os
 import re
@@ -8,12 +8,13 @@ import shutil
 import subprocess
 import tempfile
 import time
+import warnings
 from functools import cached_property
 
 import attr
 
 from ..factory import target_factory
-from ..protocol import CommandProtocol, FileTransferProtocol
+from ..protocol import CommandProtocol, FileTransferProtocol, PortForwardProtocol
 from .commandmixin import CommandMixin
 from .common import Driver
 from ..step import step
@@ -26,10 +27,10 @@ from ..util.ssh import get_ssh_connect_timeout
 
 @target_factory.reg_driver
 @attr.s(eq=False)
-class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
+class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, PortForwardProtocol):
     """SSHDriver - Driver to execute commands via SSH"""
     bindings = {"networkservice": "NetworkService", }
-    priorities = {CommandProtocol: 10, FileTransferProtocol: 10}
+    priorities = {CommandProtocol: 10, FileTransferProtocol: 10, PortForwardProtocol: 10}
     keyfile = attr.ib(default="", validator=attr.validators.instance_of(str))
     stderr_merge = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     connection_timeout = attr.ib(default=float(get_ssh_connect_timeout()), validator=attr.validators.instance_of(float))
@@ -267,9 +268,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                self.networkservice.address
                ]
         self.logger.debug("Running command: %s", cmd)
-        subprocess.run(cmd, check=True)
+        result = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, text=True)
         try:
-            yield
+            yield result.stdout
         finally:
             cmd = [self._ssh, *self.ssh_prefix,
                    "-O", "cancel", forward,
@@ -282,7 +283,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
 
     @Driver.check_active
     @contextlib.contextmanager
-    def forward_local_port(self, remoteport, localport=None):
+    def local_forward(self, remote_port, *, local_port=0):
         """Forward a local port to a remote port on the target
 
         A context manager that keeps a local port forwarded to a remote port as
@@ -291,43 +292,71 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         on the target device
 
         usage:
-            with ssh.forward_local_port(8080) as localport:
-                # Use localhost:localport here to connect to port 8080 on the
+            with ssh.local_forward(8080) as local_port:
+                # Use localhost:local_port here to connect to port 8080 on the
                 # target
 
         returns:
-        localport
+        local_port
         """
         if not self._check_keepalive():
             raise ExecutionError("Keepalive no longer running")
 
-        if localport is None:
-            localport = get_free_port()
+        # OpenSSH does not support dynamic port allocation for local forwards.
+        if local_port == 0:
+            local_port = get_free_port()
 
-        forward = f"-L{localport:d}:localhost:{remoteport:d}"
+        forward = f"-L{local_port:d}:localhost:{remote_port:d}"
         with self._forward(forward):
-            yield localport
+            yield local_port
+
+    @Driver.check_active
+    @contextlib.contextmanager
+    def forward_local_port(self, remoteport, localport=None):
+        warnings.warn(
+            "SSHDriver.forward_local_port() is deprecated, use local_forward() instead",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        local_port = 0 if localport is None else localport
+        with self.local_forward(remoteport, local_port=local_port) as local_port:
+            yield local_port
+
+    @Driver.check_active
+    @contextlib.contextmanager
+    def remote_forward(self, local_port, *, remote_port=0):
+        """Forward a remote port on the target to a local port
+
+        A context manager that keeps a remote port forwarded to a local port as
+        long as the context remains valid. Connections to the returned port on
+        the target device are forwarded to the local port on localhost.
+
+        usage:
+            with ssh.remote_forward(8081, remote_port=8080) as remote_port:
+                # Connections to port 8080 on the target will be redirected to
+                # localhost:8081
+
+        returns:
+        remote_port
+        """
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        forward = f"-R{remote_port:d}:localhost:{local_port:d}"
+        with self._forward(forward) as stdout:
+            if remote_port == 0:
+                remote_port = int(stdout.strip())
+            yield remote_port
 
     @Driver.check_active
     @contextlib.contextmanager
     def forward_remote_port(self, remoteport, localport):
-        """Forward a remote port on the target to a local port
-
-        A context manager that keeps a remote port forwarded to a local port as
-        long as the context remains valid. A connection can be made to the
-        remote on the target device will be forwarded to the returned local
-        port on localhost
-
-        usage:
-            with ssh.forward_remote_port(8080, 8081) as localport:
-                # Connections to port 8080 on the target will be redirected to
-                # localhost:8081
-        """
-        if not self._check_keepalive():
-            raise ExecutionError("Keepalive no longer running")
-
-        forward = f"-R{remoteport:d}:localhost:{localport:d}"
-        with self._forward(forward):
+        warnings.warn(
+            "SSHDriver.forward_remote_port() is deprecated, use remote_forward() instead",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        with self.remote_forward(localport, remote_port=remoteport):
             yield
 
     @Driver.check_active

@@ -139,7 +139,7 @@ class SSHConnection:
         validator=attr.validators.instance_of(str)
     )
     _l_forwards = attr.ib(init=False, default=attr.Factory(dict))
-    _r_forwards = attr.ib(init=False, default=attr.Factory(set))
+    _r_forwards = attr.ib(init=False, default=attr.Factory(dict))
 
     def __attrs_post_init__(self):
         self._logger = logging.getLogger(f"{self}")
@@ -185,11 +185,11 @@ class SSHConnection:
                 complete_cmd.append(item)
         complete_cmd.append(self.host)
         self._logger.debug("Running control command: %s", " ".join(complete_cmd))
-        subprocess.check_call(
+        return subprocess.check_output(
             complete_cmd,
             stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.PIPE,
+            text=True,
             timeout=2,
         )
 
@@ -381,8 +381,16 @@ class SSHConnection:
 
         forward = f"-R{remote_bind}:{remote_port:d}:localhost:{local_port:d}"
 
-        self._run_socket_command("forward", [forward])
-        self._r_forwards.add(forward)
+        stdout = self._run_socket_command("forward", [forward])
+        if remote_port == 0:
+            try:
+                remote_port = int(stdout.strip())
+            except ValueError:
+                self._run_socket_command("cancel", [forward])
+                raise
+
+        self._r_forwards[remote_port, local_port, remote_bind] = forward
+        return remote_port
 
     @_check_connected
     def remove_remote_port_forward(self, remote_port, local_port, remote_bind=None):
@@ -390,9 +398,7 @@ class SSHConnection:
         if remote_bind is None:
             remote_bind = "*"
 
-        forward = f"-R{remote_bind}:{remote_port:d}:localhost:{local_port:d}"
-
-        self._r_forwards.remove(forward)
+        forward = self._r_forwards.pop((remote_port, local_port, remote_bind))
         self._run_socket_command("cancel", [forward])
 
     def connect(self):
@@ -536,7 +542,7 @@ class SSHConnection:
                 self._run_socket_command("cancel", [f"-L{local_port}:{destination}"])
             self._l_forwards.clear()
             # cancel remote forwards
-            for forward in self._r_forwards:
+            for forward in self._r_forwards.values():
                 self._run_socket_command("cancel", [forward])
             self._r_forwards.clear()
             self.disconnect()

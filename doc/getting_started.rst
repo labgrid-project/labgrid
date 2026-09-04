@@ -451,9 +451,10 @@ certificates to verify the coordinator certificate. Use ``--cacert`` to provide
 a specific CA certificate or CA bundle instead.
 Refer to the ``labgrid-client`` and ``labgrid-exporter`` man pages for details.
 For ``RemotePlace`` connections from an environment config, set the
-``coordinator_tls`` option or ``LG_COORDINATOR_TLS``. If ``coordinator_cacert``
-is not set, labgrid uses the host CA certificates. Set ``coordinator_cacert``
-to provide a specific CA certificate or CA bundle instead.
+``coordinator_tls`` option or set ``LG_COORDINATOR_TLS=true`` (or ``1``). If
+``coordinator_cacert`` is not set, labgrid uses the host CA certificates. Set
+``coordinator_cacert`` to provide a specific CA certificate or CA bundle
+instead.
 
 Using a Strategy
 ----------------

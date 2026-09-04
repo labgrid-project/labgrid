@@ -19,7 +19,7 @@ class RemotePlaceManager(ResourceManager):
     def _get_credentials(self):
         from ..remote.common import get_client_credentials
 
-        tls = os.environ.get("LG_COORDINATOR_TLS") is not None
+        tls = os.environ.get("LG_COORDINATOR_TLS", "").strip().lower() in {"1", "true"}
         cacert = None
 
         if self.env:

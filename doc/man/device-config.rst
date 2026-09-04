@@ -45,7 +45,7 @@ OPTIONS KEYS
 
 ``coordinator_tls``
   enables a TLS gRPC channel for ``RemotePlace`` connections.
-  Defaults to whether ``LG_COORDINATOR_TLS`` is set.
+  Defaults to whether ``LG_COORDINATOR_TLS`` is set to ``true`` or ``1``.
 
 ``coordinator_cacert``
   path to a CA certificate or CA bundle in PEM format for verifying the

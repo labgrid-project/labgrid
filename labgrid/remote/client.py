@@ -949,40 +949,90 @@ class ClientSession:
                 target.activate(drv)
             return drv
 
+    def _get_power_driver_for_resource(self, target, name=None, priority_cls=None):
+        from ..resource.power import NetworkPowerPort, PDUDaemonPort
+        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
+        from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
+
+        drv = None
+        for resource in target.resources:
+            if name and resource.name != name:
+                continue
+            temp_drv = None
+            if isinstance(resource, NetworkPowerPort):
+                temp_drv = self._get_driver_or_new(target, "NetworkPowerDriver", name=name)
+            elif isinstance(resource, NetworkUSBPowerPort):
+                temp_drv = self._get_driver_or_new(target, "USBPowerDriver", name=name)
+            elif isinstance(resource, NetworkSiSPMPowerPort):
+                temp_drv = self._get_driver_or_new(target, "SiSPMPowerDriver", name=name)
+            elif isinstance(resource, PDUDaemonPort):
+                temp_drv = self._get_driver_or_new(target, "PDUDaemonDriver", name=name)
+            elif isinstance(resource, TasmotaPowerPort):
+                temp_drv = self._get_driver_or_new(target, "TasmotaPowerDriver", name=name)
+            elif isinstance(resource, NetworkYKUSHPowerPort):
+                temp_drv = self._get_driver_or_new(target, "YKUSHPowerDriver", name=name)
+            elif isinstance(resource, NetworkSysfsGPIO):
+                self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
+                temp_drv = self._get_driver_or_new(target, "DigitalOutputPowerDriver", name=name)
+            if temp_drv:
+                if not priority_cls:
+                    return temp_drv
+                if not drv or temp_drv.get_priority(priority_cls) > drv.get_priority(priority_cls):
+                    drv = temp_drv
+        return drv
+
+    def _get_io_driver_for_resource(self, target, name=None, priority_cls=None):
+        from ..resource import (
+            ModbusTCPCoil,
+            OneWirePIO,
+            HttpDigitalOutput,
+            WaveshareModbusTCPCoil,
+            Eth008DigitalOutput,
+        )
+        from ..resource.remote import NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO, NetworkHIDRelay
+
+        drv = None
+        for resource in target.resources:
+            if name and resource.name != name:
+                continue
+            temp_drv = None
+            if isinstance(resource, WaveshareModbusTCPCoil):
+                temp_drv = self._get_driver_or_new(target, "WaveShareModbusCoilDriver", name=name)
+            elif isinstance(resource, ModbusTCPCoil):
+                temp_drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name)
+            elif isinstance(resource, Eth008DigitalOutput):
+                temp_drv = self._get_driver_or_new(target, "Eth008DigitalOutputDriver", name=name)
+            elif isinstance(resource, OneWirePIO):
+                temp_drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name)
+            elif isinstance(resource, HttpDigitalOutput):
+                temp_drv = self._get_driver_or_new(target, "HttpDigitalOutputDriver", name=name)
+            elif isinstance(resource, NetworkDeditecRelais8):
+                temp_drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name)
+            elif isinstance(resource, NetworkSysfsGPIO):
+                temp_drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
+            elif isinstance(resource, NetworkLXAIOBusPIO):
+                temp_drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name)
+            elif isinstance(resource, NetworkHIDRelay):
+                temp_drv = self._get_driver_or_new(target, "HIDRelayDriver", name=name)
+            if temp_drv:
+                if not priority_cls:
+                    return temp_drv
+                if not drv or temp_drv.get_priority(priority_cls) > drv.get_priority(priority_cls):
+                    drv = temp_drv
+        return drv
+
     def power(self):
         place = self.get_acquired_place()
         action = self.args.action
         delay = self.args.delay
         name = self.args.name
         target = self._get_target(place)
-        from ..resource.power import NetworkPowerPort, PDUDaemonPort
-        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
-        from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
 
         drv = None
         try:
             drv = target.get_driver("PowerProtocol", name=name)
         except NoDriverFoundError:
-            for resource in target.resources:
-                if name and resource.name != name:
-                    continue
-                if isinstance(resource, NetworkPowerPort):
-                    drv = self._get_driver_or_new(target, "NetworkPowerDriver", name=name)
-                elif isinstance(resource, NetworkUSBPowerPort):
-                    drv = self._get_driver_or_new(target, "USBPowerDriver", name=name)
-                elif isinstance(resource, NetworkSiSPMPowerPort):
-                    drv = self._get_driver_or_new(target, "SiSPMPowerDriver", name=name)
-                elif isinstance(resource, PDUDaemonPort):
-                    drv = self._get_driver_or_new(target, "PDUDaemonDriver", name=name)
-                elif isinstance(resource, TasmotaPowerPort):
-                    drv = self._get_driver_or_new(target, "TasmotaPowerDriver", name=name)
-                elif isinstance(resource, NetworkYKUSHPowerPort):
-                    drv = self._get_driver_or_new(target, "YKUSHPowerDriver", name=name)
-                elif isinstance(resource, NetworkSysfsGPIO):
-                    self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
-                    drv = self._get_driver_or_new(target, "DigitalOutputPowerDriver", name=name)
-                if drv:
-                    break
+            drv = self._get_power_driver_for_resource(target, name, None)
 
         if not drv:
             raise UserError("target has no compatible resource available")
@@ -997,14 +1047,6 @@ class ClientSession:
         action = self.args.action
         name = self.args.name
         target = self._get_target(place)
-        from ..resource import (
-            ModbusTCPCoil,
-            OneWirePIO,
-            HttpDigitalOutput,
-            WaveshareModbusTCPCoil,
-            Eth008DigitalOutput,
-        )
-        from ..resource.remote import NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO, NetworkHIDRelay
 
         drv = None
         try:
@@ -1013,29 +1055,7 @@ class ClientSession:
             else:
                 drv = target.get_driver("DigitalOutputProtocol", name=name)
         except NoDriverFoundError:
-            for resource in target.resources:
-                if name and resource.name != name:
-                    continue
-                if isinstance(resource, WaveshareModbusTCPCoil):
-                    drv = self._get_driver_or_new(target, "WaveShareModbusCoilDriver", name=name)
-                elif isinstance(resource, ModbusTCPCoil):
-                    drv = self._get_driver_or_new(target, "ModbusCoilDriver", name=name)
-                elif isinstance(resource, Eth008DigitalOutput):
-                    drv = self._get_driver_or_new(target, "Eth008DigitalOutputDriver", name=name)
-                elif isinstance(resource, OneWirePIO):
-                    drv = self._get_driver_or_new(target, "OneWirePIODriver", name=name)
-                elif isinstance(resource, HttpDigitalOutput):
-                    drv = self._get_driver_or_new(target, "HttpDigitalOutputDriver", name=name)
-                elif isinstance(resource, NetworkDeditecRelais8):
-                    drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name)
-                elif isinstance(resource, NetworkSysfsGPIO):
-                    drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
-                elif isinstance(resource, NetworkLXAIOBusPIO):
-                    drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name)
-                elif isinstance(resource, NetworkHIDRelay):
-                    drv = self._get_driver_or_new(target, "HIDRelayDriver", name=name)
-                if drv:
-                    break
+            drv = self._get_io_driver_for_resource(target, name, None)
 
         if not drv:
             raise UserError("target has no compatible resource available")
@@ -1045,6 +1065,37 @@ class ClientSession:
             drv.set(True)
         elif action == "low":
             drv.set(False)
+
+    def reset(self):
+        place = self.get_acquired_place()
+        name = self.args.name
+        target = self._get_target(place)
+        from ..resource.remote import NetworkUSBDebugger
+        from ..protocol import ResetProtocol
+
+        drv = None
+        try:
+            drv = target.get_driver(ResetProtocol, name=name)
+        except NoDriverFoundError:
+            drv = self._get_power_driver_for_resource(target, name, ResetProtocol)
+            io_drv = self._get_io_driver_for_resource(target, name, None)
+            if io_drv:
+                temp_drv = self._get_driver_or_new(target, "DigitalOutputResetDriver", name=name)
+                if temp_drv and (not drv or temp_drv.get_priority(ResetProtocol) > drv.get_priority(ResetProtocol)):
+                    drv = temp_drv
+            for resource in target.resources:
+                if name and resource.name != name:
+                    continue
+                temp_drv = None
+                if isinstance(resource, NetworkUSBDebugger):
+                    temp_drv = self._get_driver_or_new(target, "PyOCDDriver", name=name)
+                if temp_drv:
+                    if not drv or temp_drv.get_priority(ResetProtocol) > drv.get_priority(ResetProtocol):
+                        drv = temp_drv
+
+        if not drv:
+            raise UserError("target has no compatible resource available")
+        drv.reset()
 
     async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
         name = self.args.name
@@ -1196,8 +1247,9 @@ class ClientSession:
             NetworkIMXUSBLoader,
             NetworkRKUSBLoader,
             NetworkAlteraUSBBlaster,
+            NetworkUSBDebugger,
         )
-        from ..driver import OpenOCDDriver
+        from ..driver import OpenOCDDriver, PyOCDDriver
 
         drv = None
         try:
@@ -1218,6 +1270,13 @@ class ClientSession:
                         drv = target.get_driver("OpenOCDDriver", activate=False, name=name)
                     except NoDriverFoundError:
                         drv = OpenOCDDriver(target, name=name, **args)
+                    drv.interface.timeout = self.args.wait
+                elif isinstance(resource, NetworkUSBDebugger):
+                    args = dict(arg.split("=", 1) for arg in self.args.bootstrap_args)
+                    try:
+                        drv = target.get_driver("PyOCDDriver", activate=False, name=name)
+                    except NoDriverFoundError:
+                        drv = PyOCDDriver(target, name=name, **args)
                     drv.interface.timeout = self.args.wait
                 elif isinstance(resource, NetworkRKUSBLoader):
                     drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False, name=name)
@@ -2120,6 +2179,10 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     )
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.set_defaults(func=ClientSession.power)
+
+    subparser = subparsers.add_parser("reset", help="reset the target")
+    subparser.add_argument("--name", "-n", help="optional resource name")
+    subparser.set_defaults(func=ClientSession.reset)
 
     subparser = subparsers.add_parser("io", help="change (or get) a digital IO status")
     subparser.add_argument("action", choices=["high", "low", "get"], help="action")

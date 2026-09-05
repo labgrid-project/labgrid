@@ -1000,6 +1000,7 @@ Arguments:
 
 Used by:
   - `OpenOCDDriver`_
+  - `PyOCDDriver`_
 
 NetworkUSBDebugger
 ~~~~~~~~~~~~~~~~~~
@@ -2005,7 +2006,6 @@ Binds to:
 
 Implements:
   - :any:`ConsoleProtocol`
-  - :any:`ResetProtocol`
 
 Arguments:
   - txdelay (float, default=0.0): time in seconds to wait before sending a chunk
@@ -2370,6 +2370,40 @@ Arguments:
   - interface_config (str): optional, interface config in the ``openocd/scripts/interface/`` directory
   - board_config (str): optional, board config in the ``openocd/scripts/board/`` directory
   - load_commands (list of str): optional, load commands to use instead of ``init``, ``bootstrap {filename}``, ``shutdown``
+
+PyOCDDriver
+~~~~~~~~~~~~~
+An :any:`PyOCDDriver` controls *PyOCD* to bootstrap a target with a bootloader.
+
+Binds to:
+  interface:
+    - `USBDebugger`_
+    - `NetworkUSBDebugger`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+  - :any:`ResetProtocol`
+
+.. code-block:: yaml
+
+   PyOCDDriver:
+     image: 'bitstream'
+     target_name: 'nrf52832'
+     frequency: "400khz"
+     config: 'pyocd.yaml'
+     serial: '1234567890'
+     load_commands:
+     - 'init'
+     - 'svf -quiet {filename}'
+     - 'exit'
+
+Arguments:
+  - image (str): optional, name of the image to bootstrap onto the device
+  - target_name (str): optional, set the target type. Should be one of the targets listed by 'pyocd list --targets'.
+  - frequency (str): optional, SWD/JTAG clock frequency in Hz
+  - config (str): optional, PyOCD configuration file
+  - serial (str): optional, USB-Serial to identify device if multiple are present.
+  - load_commands (list of str): optional, additional command line parameters for load to use instead of ``-e``, ``sector``
 
 QuartusHPSDriver
 ~~~~~~~~~~~~~~~~

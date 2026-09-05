@@ -38,6 +38,24 @@ Tests can now be run via:
 
    python -m pytest
 
+Using uv
+~~~~~~~~
+
+As an alternative to the ``virtualenv``/``pip`` workflow above, `uv
+<https://docs.astral.sh/uv/>`_ can be used to set up the development
+environment:
+
+.. code-block:: bash
+
+   uv sync --extra dev
+
+This creates a ``.venv`` and installs labgrid in editable mode, using the
+versions pinned in the committed ``uv.lock``.
+Every contributor and CI run therefore resolves the exact same dependency
+versions, and repeat installs are served from uv's local cache, which is
+typically much faster than a cold ``pip install``.
+Commands can then be run with ``uv run``, e.g. ``uv run pytest``.
+
 Writing a Driver
 ----------------
 

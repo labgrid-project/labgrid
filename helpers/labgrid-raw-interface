@@ -9,6 +9,7 @@
 
 import argparse
 import os
+import shlex
 import string
 import sys
 import subprocess
@@ -194,7 +195,14 @@ def main(program, options):
             args.extend(options.ethtool_pause_args)
 
     elif program == "ns-macvtap":
+        if options.dry_run:
+            raise NotImplementedError("ns-macvtap does not support dry run")
+
         handle_ns_macvtap(options)
+        return
+
+    if options.dry_run:
+        print(shlex.join(args))
         return
 
     try:
@@ -206,6 +214,7 @@ def main(program, options):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
+    parser.add_argument("--dry-run", action="store_true", default=False, help="shows what command would be executed")
     subparsers = parser.add_subparsers(dest="program", help="program to run")
 
     # tcpdump

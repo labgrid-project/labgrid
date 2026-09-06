@@ -495,8 +495,8 @@ or set ``OTEL_METRICS_EXPORTER=prometheus,otlp`` to enable both outputs.
 Unsupported values, and combining ``none`` with another value, cause a runtime
 error.
 
-To configure the providers used for coordinator traces and metrics, start the
-coordinator with the OpenTelemetry launcher:
+To configure the providers used for coordinator or exporter traces and metrics,
+start the relevant process with the OpenTelemetry launcher:
 
 .. code-block:: bash
 
@@ -506,17 +506,19 @@ coordinator with the OpenTelemetry launcher:
         OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317 \
         opentelemetry-instrument labgrid-coordinator
 
+For an exporter, replace both occurrences of ``labgrid-coordinator`` with
+``labgrid-exporter`` and include its normal arguments.
+
 The launcher creates the ``TracerProvider`` and ``MeterProvider`` before
 Labgrid starts. Labgrid reuses those providers instead of adding its default
 OTLP span processor or creating its default metric readers and Prometheus
 server.
 
-For advanced use, applications that start the coordinator from Python can
-register standard OpenTelemetry SDK providers directly with
+For advanced use, applications that start the coordinator or exporter from
+Python can register standard OpenTelemetry SDK providers directly with
 ``opentelemetry.trace.set_tracer_provider()`` and
-``opentelemetry.metrics.set_meter_provider()`` before starting the coordinator
-in the same Python process. Other provider implementations are not currently
-supported.
+``opentelemetry.metrics.set_meter_provider()`` before starting it in the same
+Python process. Other provider implementations are not currently supported.
 
 When Labgrid creates its default ``MeterProvider``, each Coordinator and
 Exporter process exposes its own metrics server at

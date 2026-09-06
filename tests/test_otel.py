@@ -1,3 +1,4 @@
+import importlib
 import queue
 from time import sleep
 
@@ -20,19 +21,19 @@ def otel_env(monkeypatch):
     monkeypatch.setenv("OTEL_TRACES_EXPORTER", "none")
 
 
-def test_parse_exporters():
-    from labgrid.remote.otel import _parse_exporters
-
+@pytest.mark.parametrize("module_name", ["labgrid.remote.otel", "labgrid.remote.otel_exporter"])
+def test_parse_exporters(module_name):
+    parse_exporters = importlib.import_module(module_name)._parse_exporters
     supported = {"prometheus", "otlp"}
 
-    assert _parse_exporters("", default=supported, supported=supported) == supported
-    assert _parse_exporters(" Prometheus, OTLP ", default=set(), supported=supported) == supported
-    assert _parse_exporters("none", default=supported, supported=supported) == set()
+    assert parse_exporters("", default=supported, supported=supported) == supported
+    assert parse_exporters(" Prometheus, OTLP ", default=set(), supported=supported) == supported
+    assert parse_exporters("none", default=supported, supported=supported) == set()
 
     with pytest.raises(RuntimeError, match="Unsupported OTel exporters"):
-        _parse_exporters("prometheus,invalid", default=set(), supported=supported)
+        parse_exporters("prometheus,invalid", default=set(), supported=supported)
     with pytest.raises(RuntimeError, match="Unsupported OTel exporters"):
-        _parse_exporters("none,otlp", default=set(), supported=supported)
+        parse_exporters("none,otlp", default=set(), supported=supported)
 
 
 @pytest.fixture(autouse=True)

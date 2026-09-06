@@ -11,11 +11,33 @@ RESOURCE_COMMANDS_COUNTER = None
 LOGGER = logging.getLogger("otel")
 
 
+def _parse_exporters(value, *, default, supported):
+    """
+    Parse and validate an OpenTelemetry exporter setting.
+
+    Optional Values:  ``prometheus``, ``otlp``, or ``none``.
+    The supplied default is used when the setting is empty.
+    """
+    if not value.strip():
+        return default
+
+    selected = {item.strip().lower() for item in value.split(",")}
+    if selected == {"none"}:
+        return set()
+
+    unknown = selected - supported
+    if unknown or "none" in selected:
+        raise RuntimeError(f"Unsupported OTel exporters: {sorted(unknown or selected)}")
+
+    return selected
+
+
 def setup_otel_sdk_if_available():
     """
     Setup gRPC tracing and metrics over OTLP, and metrics over Prometheus.
 
     These are only setup when the OpenTelemetry SDK modules are available.
+    Existing TracerProvider and MeterProvider instances are reused instead of replaced.
     """
     global OTEL_SDK_INSTALLED
     if environ.get("OTEL_SDK_DISABLED", "").lower().strip() == "true":
@@ -23,8 +45,6 @@ def setup_otel_sdk_if_available():
         return
 
     try:
-        from opentelemetry.sdk.trace import TracerProvider, Resource
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor
         from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
         from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
         from opentelemetry.exporter.prometheus import PrometheusMetricReader
@@ -34,26 +54,48 @@ def setup_otel_sdk_if_available():
         )
         from opentelemetry.sdk.metrics import MeterProvider
         from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+        from opentelemetry.sdk.trace import Resource, TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
         from prometheus_client import start_http_server
 
         resource = Resource.create({"service.name": "labgrid-exporter"})
-        if environ.get("OTEL_TRACES_EXPORTER", "").lower().strip() != "none":
-            trace.set_tracer_provider(TracerProvider(resource=resource))
-            trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+        if not isinstance(trace.get_tracer_provider(), TracerProvider):
+            trace_exporters = _parse_exporters(
+                environ.get("OTEL_TRACES_EXPORTER", ""),
+                default={"otlp"},
+                supported={"otlp"},
+            )
+            if trace_exporters:
+                tracer_provider = TracerProvider(resource=resource)
+                trace.set_tracer_provider(tracer_provider)
+                if trace.get_tracer_provider() is not tracer_provider:
+                    raise RuntimeError("Only the standard OpenTelemetry SDK TracerProvider is supported")
+                tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
 
-        if environ.get("OTEL_METRICS_EXPORTER", "").lower().strip() != "none":
-            prometheus_metric_reader = PrometheusMetricReader()
-            otlp_metric_reader = PeriodicExportingMetricReader(OTLPMetricExporter())
-            metrics.set_meter_provider(
-                MeterProvider(
+        if not isinstance(metrics.get_meter_provider(), MeterProvider):
+            metrics_exporters = _parse_exporters(
+                environ.get("OTEL_METRICS_EXPORTER", ""),
+                default={"prometheus"},
+                supported={"prometheus", "otlp"},
+            )
+            if metrics_exporters:
+                metric_readers = []
+                if "prometheus" in metrics_exporters:
+                    metric_readers.append(PrometheusMetricReader())
+                if "otlp" in metrics_exporters:
+                    metric_readers.append(PeriodicExportingMetricReader(OTLPMetricExporter()))
+                meter_provider = MeterProvider(
                     resource=resource,
-                    metric_readers=[prometheus_metric_reader, otlp_metric_reader],
+                    metric_readers=metric_readers,
                 )
-            )
-            start_http_server(
-                addr=environ.get(OTEL_EXPORTER_PROMETHEUS_HOST, "localhost"),
-                port=int(environ.get(OTEL_EXPORTER_PROMETHEUS_PORT, "9464")),
-            )
+                metrics.set_meter_provider(meter_provider)
+                if metrics.get_meter_provider() is not meter_provider:
+                    raise RuntimeError("Only the standard OpenTelemetry SDK MeterProvider is supported")
+                if "prometheus" in metrics_exporters:
+                    start_http_server(
+                        addr=environ.get(OTEL_EXPORTER_PROMETHEUS_HOST, "localhost"),
+                        port=int(environ.get(OTEL_EXPORTER_PROMETHEUS_PORT, "9464")),
+                    )
 
         LOGGER.debug("SDK installed and setup")
 

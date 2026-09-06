@@ -1,5 +1,5 @@
 import queue
-from time import monotonic, sleep
+from time import sleep
 
 import grpc
 import pytest
@@ -45,7 +45,20 @@ def prometheus_endpoint(monkeypatch):
 
 
 @pytest.fixture
-def channel_stub():
+def exporter_metrics_endpoint(coordinator, monkeypatch, request):
+    """Start the shared exporter with a metrics port separate from the coordinator."""
+    host = "127.0.0.1"
+    port = get_free_port()
+    monkeypatch.setenv("OTEL_EXPORTER_PROMETHEUS_HOST", host)
+    monkeypatch.setenv("OTEL_EXPORTER_PROMETHEUS_PORT", str(port))
+
+    # Start the exporter after changing the environment inherited by its subprocess.
+    request.getfixturevalue("exporter")
+    return f"http://{host}:{port}/metrics"
+
+
+@pytest.fixture
+def channel_stub(coordinator):
     messages = queue.Queue()
     channel = grpc.insecure_channel("127.0.0.1:20408")
     stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(channel)
@@ -65,13 +78,13 @@ def channel_stub():
     channel.close()
 
 
-def scrape_sample(endpoint, name):
+def scrape_sample(endpoint, name, operation=None):
     response = requests.get(endpoint, timeout=5)
     response.raise_for_status()
 
     for family in prometheus_parser.text_string_to_metric_families(response.text):
         for sample in family.samples:
-            if sample.name == name:
+            if sample.name == name and (operation is None or sample.labels.get("operation") == operation):
                 return sample
 
     pytest.fail(f"Prometheus sample {name!r} was not found")
@@ -151,23 +164,61 @@ def test_coordinator_metrics(coordinator, channel_stub, prometheus_endpoint):
     assert scrape_sample(prometheus_endpoint, available_metric).value == 0
 
 
-def test_coordinator_exporter_metrics(coordinator, exporter, prometheus_endpoint):
-    with grpc.insecure_channel("127.0.0.1:20408") as channel:
-        stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(channel)
-        deadline = monotonic() + 10
-        request = labgrid_coordinator_pb2.ListResourcesRequest()
-        resources = []
-        while monotonic() < deadline:
-            try:
-                resources = stub.ListResources(request, timeout=1).resources
-            except grpc.RpcError as error:
-                if error.code() is not grpc.StatusCode.DEADLINE_EXCEEDED:
-                    raise
-                continue
-            if len(resources) == 5:
-                break
-            sleep(0.1)
+def test_coordinator_exporter_metrics(exporter_metrics_endpoint, prometheus_endpoint):
+    for _ in range(100):
+        resources = scrape_sample(
+            prometheus_endpoint,
+            "labgrid_coordinator_resources_registered",
+        )
+        if resources.value == 5:
+            break
+        sleep(0.1)
 
-    assert len(resources) == 5
+    assert resources.value == 5
     assert scrape_sample(prometheus_endpoint, "labgrid_coordinator_exporters_connected").value == 1
-    assert scrape_sample(prometheus_endpoint, "labgrid_coordinator_resources_registered").value == 5
+
+
+def test_exporter_metrics(exporter_metrics_endpoint):
+    target = scrape_sample(exporter_metrics_endpoint, "target_info")
+    assert target.labels["service_name"] == "labgrid-exporter"
+
+    for name in (
+        "labgrid_exporter_resources_configured",
+        "labgrid_exporter_resources_free",
+        "labgrid_exporter_resources_unavailable",
+        "labgrid_exporter_resources_acquired",
+        "labgrid_exporter_resources_broken",
+    ):
+        metric = scrape_sample(exporter_metrics_endpoint, name)
+        assert metric.labels["otel_scope_name"] == "labgrid.remote.exporter"
+        assert metric.labels["resource_class"]
+
+
+def test_exporter_resource_command_metrics(exporter_metrics_endpoint, channel_stub):
+    command_metric = "labgrid_exporter_resource_commands_total"
+
+    channel_stub.CreatePlace(labgrid_coordinator_pb2.CreatePlaceRequest(name="test"))
+    channel_stub.AddPlaceMatch(labgrid_coordinator_pb2.AddPlaceMatchRequest(placename="test", pattern="*/Testport/*"))
+
+    channel_stub.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"))
+    metric = scrape_sample(exporter_metrics_endpoint, command_metric, "acquire")
+    assert metric.labels["outcome"] == "success"
+    assert metric.value == 1
+
+    channel_stub.ReleasePlace(labgrid_coordinator_pb2.ReleasePlaceRequest(placename="test"))
+    metric = scrape_sample(exporter_metrics_endpoint, command_metric, "release")
+    assert metric.labels["outcome"] == "success"
+    assert metric.value == 1
+
+    tags = {"board": "test"}
+    channel_stub.SetPlaceTags(labgrid_coordinator_pb2.SetPlaceTagsRequest(placename="test", tags=tags))
+    token = create_reservation(channel_stub, tags)
+    channel_stub.LeasePlace(labgrid_coordinator_pb2.LeasePlaceRequest(placename="test"))
+    metric = scrape_sample(exporter_metrics_endpoint, command_metric, "lease_start")
+    assert metric.labels["outcome"] == "success"
+    assert metric.value == 1
+
+    channel_stub.ExtendLease(labgrid_coordinator_pb2.ExtendLeaseRequest(token=token))
+    metric = scrape_sample(exporter_metrics_endpoint, command_metric, "lease_extend")
+    assert metric.labels["outcome"] == "success"
+    assert metric.value == 1

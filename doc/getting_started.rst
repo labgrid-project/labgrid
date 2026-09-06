@@ -101,7 +101,7 @@ the ``modbusrtu`` extra.
 
 OpenTelemetry
 +++++++++++++
-Tracing and metrics can be emitted from the Labgrid Coordinator when the OpenTelemetry SDK is installed.
+Tracing and metrics can be emitted from the Labgrid Coordinator and Exporter when the OpenTelemetry SDK is installed.
 It is included in the ``otel`` extra.
 
 Running Your First Test
@@ -472,12 +472,12 @@ instead.
 Collecting OpenTelemetry Traces and Metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When the ``otel`` extra is installed, the Labgrid Coordinator sends traces over
-OTLP using gRPC and exposes a Prometheus-compatible metrics endpoint by default.
-Metrics can also be exported over OTLP. OTLP telemetry is sent to
+When the ``otel`` extra is installed, the Labgrid Coordinator and Exporter send
+traces over OTLP using gRPC and expose Prometheus-compatible metrics endpoints
+by default. Metrics can also be exported over OTLP. OTLP telemetry is sent to
 ``http://localhost:4317``.
 
-You can customise the OTLP endpoint by setting the
+You can customise the OTLP endpoint for each process by setting the
 ``OTEL_EXPORTER_OTLP_ENDPOINT`` environment variable.
 To send metrics to a different endpoint, set
 ``OTEL_EXPORTER_OTLP_METRICS_ENDPOINT``. OTLP metrics are exported every 60
@@ -518,18 +518,26 @@ register standard OpenTelemetry SDK providers directly with
 in the same Python process. Other provider implementations are not currently
 supported.
 
-When Labgrid creates its default ``MeterProvider``, metrics are available at
-``http://localhost:9464/metrics`` by default.
-The metrics endpoint host and port can be configured with the
+When Labgrid creates its default ``MeterProvider``, each Coordinator and
+Exporter process exposes its own metrics server at
+``http://localhost:9464/metrics`` by default. The metrics endpoint host and port
+can be configured for each process with the
 ``OTEL_EXPORTER_PROMETHEUS_HOST`` and ``OTEL_EXPORTER_PROMETHEUS_PORT``
 environment variables. To access the endpoint from another host or container,
 set ``OTEL_EXPORTER_PROMETHEUS_HOST`` to a reachable bind address such as
 ``0.0.0.0``.
 
-The coordinator exposes the following metrics:
+When a Coordinator and Exporter run on the same host, assign them different
+ports, for example ``9464`` for the Coordinator and ``9465`` for the Exporter.
+Keep the Coordinator on its default and start the Exporter with
+``OTEL_EXPORTER_PROMETHEUS_PORT=9465 labgrid-exporter ...``.
+Port conflicts fail at startup; there is no automatic fallback.
+Configure each endpoint as a separate Prometheus scrape target.
+
+The Coordinator exposes the following metrics:
 
 - ``labgrid_coordinator_places_registered``: places registered with the
-  coordinator.
+  Coordinator.
 - ``labgrid_coordinator_places_acquired``: places currently acquired.
 - ``labgrid_coordinator_places_available``: places currently available for
   scheduler allocation.
@@ -539,10 +547,25 @@ The coordinator exposes the following metrics:
   time from reservation creation until first allocation.
 - ``labgrid_coordinator_reservations_allocated``: reservations holding one or
   more place allocations.
-- ``labgrid_coordinator_exporters_connected``: exporter sessions connected to
-  the coordinator.
+- ``labgrid_coordinator_exporters_connected``: Exporter sessions connected to
+  the Coordinator.
 - ``labgrid_coordinator_resources_registered``: resources registered by
-  connected exporters.
+  connected Exporters.
+
+The Exporter exposes the following resource gauges, grouped by the
+``resource_class`` label:
+
+- ``labgrid_exporter_resources_configured``: all configured resources.
+- ``labgrid_exporter_resources_free``: available, unacquired resources which
+  are not permanently broken.
+- ``labgrid_exporter_resources_unavailable``: unavailable resources which are
+  not permanently broken, whether acquired or not.
+- ``labgrid_exporter_resources_acquired``: resources acquired by a place which
+  are not permanently broken.
+- ``labgrid_exporter_resources_broken``: permanently broken resources.
+
+- ``labgrid_exporter_resource_commands_total``: resource command results,
+  grouped by the ``operation`` and ``outcome`` labels.
 
 For testing collecting telemetry, use
 `Grafana OTEL LGTM <https://github.com/grafana/docker-otel-lgtm/>`.

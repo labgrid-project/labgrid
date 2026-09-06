@@ -23,6 +23,11 @@ psutil = pytest.importorskip("psutil")
 # See also https://github.com/grpc/grpc/blob/master/doc/fork_support.md
 os.environ.setdefault("GRPC_ENABLE_FORK_SUPPORT", "0")
 
+# Coordinators and exporters normally use the same default Prometheus port,
+# Use OS-assigned ports in tests to avoid collisions;
+# OTel specific tests override this when scraping metrics.
+os.environ["OTEL_EXPORTER_PROMETHEUS_PORT"] = "0"
+
 
 @pytest.fixture(scope="session")
 def curses_init():

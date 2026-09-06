@@ -27,7 +27,12 @@ from labgrid.remote.grpc.interceptor.client import (
     IdentityClientStreamStreamInterceptor,
     IdentityClientUnaryUnaryInterceptor,
 )
-from labgrid.remote.otel_exporter import setup_otel_sdk_if_available, start_span_from_metadata
+from labgrid.remote.otel_exporter import (
+    record_resource_command,
+    setup_otel_metrics,
+    setup_otel_sdk_if_available,
+    start_span_from_metadata,
+)
 
 from .config import ResourceConfig
 from .common import ResourceEntry, get_client_credentials, queue_as_aiter
@@ -1075,6 +1080,7 @@ class Exporter:
                             },
                         ) as req:
                             logging.debug("acquire request")
+                            operation = "acquire" if out_message.set_acquired_request.place_name else "release"
                             success = False
                             reason = None
                             try:
@@ -1097,6 +1103,7 @@ class Exporter:
                                 reason = str(e) or repr(e)
                                 logging.exception("failed to handle set_acquired_request: %s", reason)
                             finally:
+                                record_resource_command(operation, success)
                                 in_message = labgrid_coordinator_pb2.ExporterInMessage()
                                 in_message.response.success = success
                                 if success:
@@ -1151,6 +1158,7 @@ class Exporter:
                                 reason = str(e) or repr(e)
                                 logging.exception("failed to handle lease_started_request: %s", reason)
                             finally:
+                                record_resource_command("lease_start", success)
                                 in_message = labgrid_coordinator_pb2.ExporterInMessage()
                                 in_message.response.success = success
                                 if success:
@@ -1198,6 +1206,7 @@ class Exporter:
                                 reason = str(e) or repr(e)
                                 logging.exception("failed to handle lease_extended_request: %s", reason)
                             finally:
+                                record_resource_command("lease_extend", success)
                                 in_message = labgrid_coordinator_pb2.ExporterInMessage()
                                 in_message.response.success = success
                                 if reason:
@@ -1368,6 +1377,7 @@ class Exporter:
 
 async def amain(config) -> bool:
     exporter = Exporter(config)
+    setup_otel_metrics(exporter)
 
     if inspect:
         inspect.exporter = exporter

@@ -35,7 +35,12 @@ from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
-from .otel import setup_otel_metrics, setup_otel_sdk_if_available, set_traceparent_in_metadata
+from .otel import (
+    record_reservation_wait_duration,
+    setup_otel_metrics,
+    setup_otel_sdk_if_available,
+    set_traceparent_in_metadata,
+)
 
 
 @contextmanager
@@ -1585,6 +1590,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             res = self.reservations[res_id]
             res.allocations = {"main": [place_name]}
             res.state = ReservationState.allocated
+            record_reservation_wait_duration(self, time.time() - res.created)
             res.refresh()
             print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
 

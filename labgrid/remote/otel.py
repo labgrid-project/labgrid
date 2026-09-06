@@ -246,6 +246,12 @@ def setup_otel_metrics(coordinator_instance):
 
     meter = metrics.get_meter("labgrid.remote.coordinator")
 
+    coordinator_instance.reservation_wait_duration = meter.create_histogram(
+        "labgrid_coordinator_reservation_wait_duration_seconds",
+        unit="s",
+        description="Time from reservation creation until first allocation.",
+    )
+
     def observe_registered_places(_options):
         yield Observation(len(coordinator_instance.places))
 
@@ -321,6 +327,13 @@ def setup_otel_metrics(coordinator_instance):
         unit="1",
         description="Number of resources currently registered by connected exporters.",
     )
+
+
+def record_reservation_wait_duration(coordinator_instance, duration):
+    if not OTEL_SDK_INSTALLED:
+        return
+
+    coordinator_instance.reservation_wait_duration.record(max(0.0, duration))
 
 
 def set_traceparent_in_metadata(out_msg, cmd):

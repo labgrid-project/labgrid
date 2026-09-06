@@ -535,6 +535,8 @@ The coordinator exposes the following metrics:
   scheduler allocation.
 - ``labgrid_coordinator_reservations_waiting``: reservations waiting for a
   matching place.
+- ``labgrid_coordinator_reservation_wait_duration_seconds``: histogram of the
+  time from reservation creation until first allocation.
 - ``labgrid_coordinator_reservations_allocated``: reservations holding one or
   more place allocations.
 - ``labgrid_coordinator_exporters_connected``: exporter sessions connected to

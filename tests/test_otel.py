@@ -95,6 +95,7 @@ def test_coordinator_metrics(coordinator, channel_stub, prometheus_endpoint):
     acquired_metric = "labgrid_coordinator_places_acquired"
     available_metric = "labgrid_coordinator_places_available"
     waiting_metric = "labgrid_coordinator_reservations_waiting"
+    wait_duration_metric = "labgrid_coordinator_reservation_wait_duration_seconds"
     allocated_metric = "labgrid_coordinator_reservations_allocated"
     exporters_metric = "labgrid_coordinator_exporters_connected"
     resources_metric = "labgrid_coordinator_resources_registered"
@@ -133,6 +134,8 @@ def test_coordinator_metrics(coordinator, channel_stub, prometheus_endpoint):
     allocated_token = create_reservation(channel_stub, tags)
     assert scrape_sample(prometheus_endpoint, waiting_metric).value == 1
     assert scrape_sample(prometheus_endpoint, allocated_metric).value == 1
+    assert scrape_sample(prometheus_endpoint, f"{wait_duration_metric}_count").value == 1
+    assert scrape_sample(prometheus_endpoint, f"{wait_duration_metric}_sum").value >= 0
     assert scrape_sample(prometheus_endpoint, available_metric).value == 0
 
     channel_stub.CancelReservation(labgrid_coordinator_pb2.CancelReservationRequest(token=allocated_token))

@@ -81,7 +81,7 @@ vxi11 = ["python-vxi11>=0.9"]
 xena = ["xenavalkyrie>=3.0.1"]
 deb = ["labgrid[modbus,onewire,snmp]"]
 dev = [
-    "labgrid[doc,docker,graph,kasa,modbus,modbusrtu,mqtt,netgear,onewire,pyvisa,snmp,vxi11]",
+    "labgrid[doc,docker,graph,kasa,modbus,modbusrtu,mqtt,netgear,onewire,otel,pyvisa,snmp,vxi11]",
 
     # additional dev dependencies
     "psutil>=5.8.0",
@@ -101,6 +101,7 @@ dev = [
 ]
 otel = [
     "opentelemetry-exporter-otlp==1.44.0",
+    "opentelemetry-exporter-prometheus==0.65b0",
     "opentelemetry-instrumentation-grpc==0.65b0",
 ]
 

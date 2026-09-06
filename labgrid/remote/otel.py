@@ -1,7 +1,9 @@
 import logging
 from functools import wraps
+from os import environ
 
-from opentelemetry import context, propagate, trace
+from opentelemetry import context, metrics, propagate, trace
+from opentelemetry.metrics import Observation
 
 OTEL_SDK_INSTALLED = False
 
@@ -132,20 +134,45 @@ def _monkeypatch_add_rpc_metadata(coordinator):
 
 def setup_otel_sdk_if_available(coordinator, exportercommand):
     """
-    Setup gRPC AIO Server instrumentation and OTEL Span exporting over OTLP.
+    Setup gRPC tracing over OTLP and coordinator metrics over Prometheus and OTLP.
 
     These are only setup when the OpenTelemetry SDK modules are available.
     """
     global OTEL_SDK_INSTALLED
+    if environ.get("OTEL_SDK_DISABLED", "").lower().strip() == "true":
+        OTEL_SDK_INSTALLED = False
+        return
+
     try:
         from opentelemetry.instrumentation.grpc import GrpcAioInstrumentorServer
         from opentelemetry.sdk.trace import TracerProvider, Resource
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
         from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        from opentelemetry.exporter.prometheus import PrometheusMetricReader
+        from opentelemetry.sdk.environment_variables import (
+            OTEL_EXPORTER_PROMETHEUS_HOST,
+            OTEL_EXPORTER_PROMETHEUS_PORT,
+        )
+        from opentelemetry.sdk.metrics import MeterProvider
+        from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+        from prometheus_client import start_http_server
 
         resource = Resource.create({"service.name": "labgrid-coordinator"})
-        trace.set_tracer_provider(TracerProvider(resource=resource))
-        trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+        if environ.get("OTEL_TRACES_EXPORTER", "").lower().strip() != "none":
+            trace.set_tracer_provider(TracerProvider(resource=resource))
+            trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+
+        if environ.get("OTEL_METRICS_EXPORTER", "").lower().strip() != "none":
+            prometheus_metric_reader = PrometheusMetricReader()
+            otlp_metric_reader = PeriodicExportingMetricReader(OTLPMetricExporter())
+            metrics.set_meter_provider(
+                MeterProvider(resource=resource, metric_readers=[prometheus_metric_reader, otlp_metric_reader])
+            )
+            start_http_server(
+                addr=environ.get(OTEL_EXPORTER_PROMETHEUS_HOST, "localhost"),
+                port=int(environ.get(OTEL_EXPORTER_PROMETHEUS_PORT, "9464")),
+            )
 
         grpc_server_instrumentor = GrpcAioInstrumentorServer()
         grpc_server_instrumentor.instrument()
@@ -160,6 +187,94 @@ def setup_otel_sdk_if_available(coordinator, exportercommand):
         LOGGER.debug("No SDK installed")
 
         OTEL_SDK_INSTALLED = False
+
+
+def setup_otel_metrics(coordinator_instance):
+    """
+    Register observable gauges for the coordinator state.
+
+    The callbacks read the current state when Prometheus scrapes the metrics endpoint.
+    """
+    if not OTEL_SDK_INSTALLED:
+        return
+
+    meter = metrics.get_meter("labgrid.remote.coordinator")
+
+    def observe_registered_places(_options):
+        yield Observation(len(coordinator_instance.places))
+
+    meter.create_observable_gauge(
+        "labgrid_coordinator_places_registered",
+        callbacks=[observe_registered_places],
+        unit="1",
+        description="Number of places registered with the coordinator.",
+    )
+
+    def observe_acquired_places(_options):
+        places = list(coordinator_instance.places.values())
+        yield Observation(sum(place.acquired is not None for place in places))
+
+    meter.create_observable_gauge(
+        "labgrid_coordinator_places_acquired",
+        callbacks=[observe_acquired_places],
+        unit="1",
+        description="Number of places currently acquired from the coordinator.",
+    )
+
+    def observe_available_places(_options):
+        places = list(coordinator_instance.places.values())
+        yield Observation(sum(place.acquired is None and place.reservation is None for place in places))
+
+    meter.create_observable_gauge(
+        "labgrid_coordinator_places_available",
+        callbacks=[observe_available_places],
+        unit="1",
+        description="Number of places currently available for scheduler allocation.",
+    )
+
+    def observe_waiting_reservations(_options):
+        reservations = list(coordinator_instance.reservations.values())
+        yield Observation(sum(reservation.state.name == "waiting" for reservation in reservations))
+
+    meter.create_observable_gauge(
+        "labgrid_coordinator_reservations_waiting",
+        callbacks=[observe_waiting_reservations],
+        unit="1",
+        description="Number of reservations currently waiting for a matching place.",
+    )
+
+    def observe_allocated_reservations(_options):
+        reservations = list(coordinator_instance.reservations.values())
+        yield Observation(sum(bool(reservation.allocations) for reservation in reservations))
+
+    meter.create_observable_gauge(
+        "labgrid_coordinator_reservations_allocated",
+        callbacks=[observe_allocated_reservations],
+        unit="1",
+        description="Number of reservations currently holding one or more place allocations.",
+    )
+
+    def observe_connected_exporters(_options):
+        yield Observation(len(coordinator_instance.exporters))
+
+    meter.create_observable_gauge(
+        "labgrid_coordinator_exporters_connected",
+        callbacks=[observe_connected_exporters],
+        unit="1",
+        description="Number of exporter sessions currently connected to the coordinator.",
+    )
+
+    def observe_registered_resources(_options):
+        exporters = list(coordinator_instance.exporters.values())
+        groups = [group for exporter in exporters for group in list(exporter.groups.values())]
+        yield Observation(sum(len(group) for group in groups))
+
+    meter.create_observable_gauge(
+        "labgrid_coordinator_resources_registered",
+        callbacks=[observe_registered_resources],
+        unit="1",
+        description="Number of resources currently registered by connected exporters.",
+    )
 
 
 def set_traceparent_in_metadata(out_msg, cmd):

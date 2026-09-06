@@ -247,7 +247,12 @@ def serial_driver_no_name(target, serial_port, mocker):
     return s
 
 @pytest.fixture(scope='function')
-def coordinator(tmpdir):
+def otel_env(monkeypatch):
+    """Disable telemetry in irrelevant tests"""
+    monkeypatch.setenv("OTEL_SDK_DISABLED", "true")
+
+@pytest.fixture(scope='function')
+def coordinator(tmpdir, otel_env):
     env = os.environ.copy()
     env["LG_DEFAULT_LEASE_DURATION"] = "5"
     env["LG_DEFAULT_EXTEND_DURATION"] = "2"

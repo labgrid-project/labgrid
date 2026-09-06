@@ -35,7 +35,7 @@ from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
-from .otel import setup_otel_sdk_if_available, set_traceparent_in_metadata
+from .otel import setup_otel_metrics, setup_otel_sdk_if_available, set_traceparent_in_metadata
 
 
 @contextmanager
@@ -1841,6 +1841,7 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
         options=channel_options,
     )
     coordinator = Coordinator()
+    setup_otel_metrics(coordinator)
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
     # enable reflection for use with grpcurl
     reflection.enable_server_reflection(

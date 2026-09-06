@@ -1,4 +1,5 @@
 import logging
+from os import environ
 
 from opentelemetry import context, propagate, trace
 
@@ -14,6 +15,10 @@ def setup_otel_sdk_if_available():
     These are only setup when the OpenTelemetry SDK modules are available.
     """
     global OTEL_SDK_INSTALLED
+    if environ.get("OTEL_SDK_DISABLED", "").lower().strip() == "true":
+        OTEL_SDK_INSTALLED = False
+        return
+
     try:
         from opentelemetry.sdk.trace import TracerProvider, Resource
         from opentelemetry.sdk.trace.export import BatchSpanProcessor

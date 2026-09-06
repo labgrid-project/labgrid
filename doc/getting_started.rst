@@ -473,13 +473,45 @@ Collecting OpenTelemetry Traces and Metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When the ``otel`` extra is installed, Labgrid Coordinator will emit traces and
-metrics over OTLP using gRPC.
-By default, telemetry will be sent to ``http://localhost:4317``.
+metrics over OTLP using gRPC and also expose metrics in Prometheus format.
+By default, OTLP telemetry will be sent to ``http://localhost:4317``.
 
-You can customise the endpoint to send telemetry to by setting the
+You can customise the endpoint for traces and metrics by setting the
 ``OTEL_EXPORTER_OTLP_ENDPOINT`` environment variable.
+To send metrics to a different endpoint, set
+``OTEL_EXPORTER_OTLP_METRICS_ENDPOINT``. Metrics are exported every 60 seconds
+by default; set ``OTEL_METRIC_EXPORT_INTERVAL`` to change the interval in
+milliseconds.
 Environment variable usage is described in:
 <https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/>.
+
+Set ``OTEL_TRACES_EXPORTER=none`` to disable tracing while keeping metrics
+enabled. Set ``OTEL_METRICS_EXPORTER=none`` to disable metrics while keeping
+tracing enabled.
+
+Independently of OTLP export, metrics are available at
+``http://localhost:9464/metrics`` by default.
+The metrics endpoint host and port can be configured with the
+``OTEL_EXPORTER_PROMETHEUS_HOST`` and ``OTEL_EXPORTER_PROMETHEUS_PORT``
+environment variables. To access the endpoint from another host or container,
+set ``OTEL_EXPORTER_PROMETHEUS_HOST`` to a reachable bind address such as
+``0.0.0.0``.
+
+The coordinator exposes the following metrics:
+
+- ``labgrid_coordinator_places_registered``: places registered with the
+  coordinator.
+- ``labgrid_coordinator_places_acquired``: places currently acquired.
+- ``labgrid_coordinator_places_available``: places currently available for
+  scheduler allocation.
+- ``labgrid_coordinator_reservations_waiting``: reservations waiting for a
+  matching place.
+- ``labgrid_coordinator_reservations_allocated``: reservations holding one or
+  more place allocations.
+- ``labgrid_coordinator_exporters_connected``: exporter sessions connected to
+  the coordinator.
+- ``labgrid_coordinator_resources_registered``: resources registered by
+  connected exporters.
 
 For testing collecting telemetry, use
 `Grafana OTEL LGTM <https://github.com/grafana/docker-otel-lgtm/>`.

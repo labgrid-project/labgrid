@@ -472,24 +472,53 @@ instead.
 Collecting OpenTelemetry Traces and Metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When the ``otel`` extra is installed, Labgrid Coordinator will emit traces and
-metrics over OTLP using gRPC and also expose metrics in Prometheus format.
-By default, OTLP telemetry will be sent to ``http://localhost:4317``.
+When the ``otel`` extra is installed, the Labgrid Coordinator sends traces over
+OTLP using gRPC and exposes a Prometheus-compatible metrics endpoint by default.
+Metrics can also be exported over OTLP. OTLP telemetry is sent to
+``http://localhost:4317``.
 
-You can customise the endpoint for traces and metrics by setting the
+You can customise the OTLP endpoint by setting the
 ``OTEL_EXPORTER_OTLP_ENDPOINT`` environment variable.
 To send metrics to a different endpoint, set
-``OTEL_EXPORTER_OTLP_METRICS_ENDPOINT``. Metrics are exported every 60 seconds
-by default; set ``OTEL_METRIC_EXPORT_INTERVAL`` to change the interval in
-milliseconds.
+``OTEL_EXPORTER_OTLP_METRICS_ENDPOINT``. OTLP metrics are exported every 60
+seconds by default; set ``OTEL_METRIC_EXPORT_INTERVAL`` to change the interval
+in milliseconds.
 Environment variable usage is described in:
 <https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/>.
 
 Set ``OTEL_TRACES_EXPORTER=none`` to disable tracing while keeping metrics
 enabled. Set ``OTEL_METRICS_EXPORTER=none`` to disable metrics while keeping
 tracing enabled.
+By default, when Labgrid creates its ``MeterProvider``, metrics are exposed only
+through Prometheus. Set ``OTEL_METRICS_EXPORTER=otlp`` to export only over OTLP,
+or set ``OTEL_METRICS_EXPORTER=prometheus,otlp`` to enable both outputs.
+Unsupported values, and combining ``none`` with another value, cause a runtime
+error.
 
-Independently of OTLP export, metrics are available at
+To configure the providers used for coordinator traces and metrics, start the
+coordinator with the OpenTelemetry launcher:
+
+.. code-block:: bash
+
+    $ python -m pip install opentelemetry-distro
+    $ OTEL_SERVICE_NAME=labgrid-coordinator \
+        OTEL_METRICS_EXPORTER=otlp \
+        OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317 \
+        opentelemetry-instrument labgrid-coordinator
+
+The launcher creates the ``TracerProvider`` and ``MeterProvider`` before
+Labgrid starts. Labgrid reuses those providers instead of adding its default
+OTLP span processor or creating its default metric readers and Prometheus
+server.
+
+For advanced use, applications that start the coordinator from Python can
+register standard OpenTelemetry SDK providers directly with
+``opentelemetry.trace.set_tracer_provider()`` and
+``opentelemetry.metrics.set_meter_provider()`` before starting the coordinator
+in the same Python process. Other provider implementations are not currently
+supported.
+
+When Labgrid creates its default ``MeterProvider``, metrics are available at
 ``http://localhost:9464/metrics`` by default.
 The metrics endpoint host and port can be configured with the
 ``OTEL_EXPORTER_PROMETHEUS_HOST`` and ``OTEL_EXPORTER_PROMETHEUS_PORT``

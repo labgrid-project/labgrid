@@ -16,6 +16,23 @@ prometheus_parser = pytest.importorskip("prometheus_client.parser")
 def otel_env(monkeypatch):
     """Enable telemetry for otel tests"""
     monkeypatch.setenv("OTEL_SDK_DISABLED", "false")
+    monkeypatch.setenv("OTEL_METRICS_EXPORTER", "prometheus")
+    monkeypatch.setenv("OTEL_TRACES_EXPORTER", "none")
+
+
+def test_parse_exporters():
+    from labgrid.remote.otel import _parse_exporters
+
+    supported = {"prometheus", "otlp"}
+
+    assert _parse_exporters("", default=supported, supported=supported) == supported
+    assert _parse_exporters(" Prometheus, OTLP ", default=set(), supported=supported) == supported
+    assert _parse_exporters("none", default=supported, supported=supported) == set()
+
+    with pytest.raises(RuntimeError, match="Unsupported OTel exporters"):
+        _parse_exporters("prometheus,invalid", default=set(), supported=supported)
+    with pytest.raises(RuntimeError, match="Unsupported OTel exporters"):
+        _parse_exporters("none,otlp", default=set(), supported=supported)
 
 
 @pytest.fixture(autouse=True)

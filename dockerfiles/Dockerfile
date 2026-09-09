@@ -56,7 +56,7 @@ ARG VERSION
 
 VOLUME /opt/coordinator
 
-EXPOSE 20408
+EXPOSE 20408 9464
 
 WORKDIR /opt/coordinator
 

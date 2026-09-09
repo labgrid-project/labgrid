@@ -7,6 +7,8 @@ for the 3 different components of a Labgrid distributed infrastructure.
 - **labgrid-coordinator**
   An image with the Labgrid coordinator.
   a Labgrid coordinator instance.
+- **labgrid-coordinator-otel**
+  The Labgrid coordinator with the optional OpenTelemetry dependencies installed.
 - **labgrid-coordinator-statsd**
   An image with a statsd reporter for the Labgrid coordinator.
 - **labgrid-client**
@@ -57,7 +59,7 @@ e.g. `linux/arm64` as an additional argument.
 Usage
 -----
 
-All 3 images are to be considered base images
+All images are to be considered base images
 with the required software installed.
 No policy or configuration is done.
 
@@ -78,6 +80,15 @@ so you can restart the service without losing state.
 
    $ docker run -t -p 20408:20408 -v $HOME/coordinator:/opt/coordinator \
 	 docker.io/labgrid/coordinator
+
+
+labgrid-coordinator-otel usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The labgrid-coordinator-otel image runs the same coordinator with the optional
+OpenTelemetry dependencies installed. In addition to the coordinator port, it
+exposes the default Prometheus metrics port, 9464. Configure telemetry using
+the OpenTelemetry environment variables described in the main documentation.
 
 
 labgrid-coordinator-statsd usage

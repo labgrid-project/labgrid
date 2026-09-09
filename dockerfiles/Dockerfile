@@ -79,6 +79,24 @@ VOLUME /opt/conf
 CMD ["/entrypoint.sh"]
 
 #
+# Exporter with OTEL
+#
+FROM labgrid-base-otel AS labgrid-exporter-otel
+ARG VERSION
+
+COPY dockerfiles/exporter/entrypoint.sh /entrypoint.sh
+
+RUN apt update -q=2 && \
+    apt install -q=2 --yes --no-install-recommends ser2net && \
+    rm -rf /var/lib/apt/lists/*
+
+VOLUME /opt/conf
+
+EXPOSE 9464
+
+CMD ["/entrypoint.sh"]
+
+#
 # Coordinator statsd
 #
 FROM labgrid-base AS labgrid-coordinator-statsd

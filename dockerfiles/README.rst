@@ -15,6 +15,8 @@ for the 3 different components of a Labgrid distributed infrastructure.
   An image with the Labgrid client tools and pytest integration.
 - **labgrid-exporter**
   An image with the Labgrid exporter tools.
+- **labgrid-exporter-otel**
+  The Labgrid exporter with the optional OpenTelemetry dependencies installed.
 
 
 Build
@@ -146,6 +148,16 @@ Start it with something like:
 If using ser2net or if "exporting" e.g. a serial device, the devices needed must be added to Docker container
 (``docker run --device`` option).
 Moreover, if using udev this must be mounted in as well: ``docker run -v run/udev:/run/udev:ro``.
+
+
+labgrid-exporter-otel usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The labgrid-exporter-otel image runs the same exporter with the optional
+OpenTelemetry dependencies installed. It exposes the default Prometheus metrics
+port, 9464. Configure telemetry using the OpenTelemetry environment variables
+described in the main documentation.
+
 
 Staging
 -------

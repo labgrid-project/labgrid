@@ -712,34 +712,43 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
         resources = resources.copy()  # we may modify the list
 
-        for resource in resources:
-            try:
-                place.acquired_resources.remove(resource)
-            except ValueError:
-                pass
-
         failure = None
         for resource in resources:
-            if resource.orphaned:
+            if resource.orphaned or resource.acquired == "<broken>":
+                try:
+                    place.acquired_resources.remove(resource)
+                except ValueError:
+                    pass
                 continue
             try:
                 # this triggers an update from the exporter which is published
                 # to the clients
                 if callback:
+                    exporter = self.get_exporter_by_name(resource.path[0])
+                    if exporter is None:
+                        try:
+                            place.acquired_resources.remove(resource)
+                        except ValueError:
+                            pass
+                        continue
                     request = labgrid_coordinator_pb2.ExporterSetAcquiredRequest()
                     request.group_name = resource.path[1]
                     request.resource_name = resource.path[3]
                     # request.place_name is left unset to indicate release
                     cmd = ExporterCommand(request)
-                    self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
+                    exporter.queue.put_nowait(cmd)
                     try:
                         await cmd.wait()
                     except asyncio.TimeoutError as e:
                         raise ExporterError("timed out waiting for exporter while releasing resource") from e
-                    if not cmd.response.success:
+                    if cmd.response is not None and not cmd.response.success:
                         raise ExporterError(cmd.response.reason or "exporter returned failure without a reason")
                     if resource.acquired:
                         logging.warning("resource %s still acquired after release request", resource)
+                try:
+                    place.acquired_resources.remove(resource)
+                except ValueError:
+                    pass
             except ExporterError as e:
                 if failure is None:
                     failure = e

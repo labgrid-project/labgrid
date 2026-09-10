@@ -942,6 +942,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         try:
             await self._release_resources(place, place.acquired_resources)
         except CoordinatorError as e:
+            place.touch()
+            self._publish_place(place)
+            self.save_later()
             message = f"Failed to release resources for place {name}"
             if str(e):
                 message += f": {e}"

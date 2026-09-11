@@ -171,6 +171,11 @@ volume. It adds tracing of acquire/release commands, using context sent by an
 instrumented coordinator. Configure ``OTEL_EXPORTER_OTLP_ENDPOINT`` for the
 exporter container as well as the coordinator.
 
+Exporter metrics are available on port 9464 on all container interfaces.
+When publishing both coordinator and exporter ports on one host, use different
+host ports, for example ``-p 9465:9464`` for the exporter. Each container can
+also be scraped directly at its own address on port 9464.
+
 .. code-block:: bash
 
    $ docker build --target labgrid-exporter-otel -t labgrid/exporter-otel -f dockerfiles/Dockerfile .

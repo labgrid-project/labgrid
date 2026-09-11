@@ -76,6 +76,9 @@ CMD ["/entrypoint.sh"]
 FROM labgrid-exporter AS labgrid-exporter-otel
 ARG VERSION=0.0.0
 
+ENV OTEL_EXPORTER_PROMETHEUS_HOST=0.0.0.0
+EXPOSE 9464
+
 RUN cd /opt/labgrid && \
     SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir '.[otel]'
 

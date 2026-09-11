@@ -492,7 +492,7 @@ OpenTelemetry tracer provider is reused with its own exporter configuration.
 Collecting OpenTelemetry metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The coordinator exposes metrics when the ``otel`` extra is installed.
+The coordinator and exporter expose metrics when the ``otel`` extra is installed.
 ``OTEL_METRICS_EXPORTER`` selects ``prometheus`` (the default), ``otlp``,
 ``prometheus,otlp``, or ``none``. Trace and metric exporting can be configured
 independently; ``OTEL_SDK_DISABLED=true`` disables both. An existing SDK
@@ -500,7 +500,7 @@ independently; ``OTEL_SDK_DISABLED=true`` disables both. An existing SDK
 
 Prometheus metrics are served at ``http://localhost:9464/metrics`` by default.
 Set ``OTEL_EXPORTER_PROMETHEUS_HOST`` and ``OTEL_EXPORTER_PROMETHEUS_PORT`` to
-change the listener. The coordinator OTEL Docker image listens on all container
+change the listener. The OTEL Docker images listen on all container
 interfaces; publish port 9464 to scrape it from the host. OTLP metrics use the
 same standard endpoint configuration as traces, including the signal-specific
 ``OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`` override.
@@ -519,6 +519,17 @@ The coordinator reports these metrics:
 
 Prometheus may append unit suffixes to the exposed gauge names. Labels describe
 aggregate state and do not include individual place names or reservation tokens.
+
+The exporter reports ``labgrid_exporter_resources_configured``,
+``labgrid_exporter_resources_free``, ``labgrid_exporter_resources_unavailable``,
+``labgrid_exporter_resources_acquired`` and ``labgrid_exporter_resources_broken``
+gauges, grouped by ``resource_class``. It also exposes
+``labgrid_exporter_resource_commands_total``, with ``operation`` (``acquire`` or
+``release``) and ``outcome`` (``success`` or ``failure``) labels.
+
+Give each process a different ``OTEL_EXPORTER_PROMETHEUS_PORT`` when running
+multiple coordinators or exporters on the same host. Separate containers can
+use the same internal port.
 
 .. code-block:: bash
 

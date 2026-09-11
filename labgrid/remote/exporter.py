@@ -28,6 +28,7 @@ from .common import ResourceEntry, get_client_credentials, queue_as_aiter
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from .otel import setup_otel
 from .otel_exporter import start_span_from_metadata
+from .otel_exporter_metrics import record_resource_command, setup_exporter_metrics
 from ..util import get_free_port, labgrid_version
 
 
@@ -1030,6 +1031,7 @@ class Exporter:
     async def _handle_set_acquired_request(self, out_message):
         with start_span_from_metadata(out_message, tracer) as span:
             request = out_message.set_acquired_request
+            operation = "acquire" if request.place_name else "release"
             logging.debug("acquire request")
             success = False
             reason = None
@@ -1046,6 +1048,7 @@ class Exporter:
                 span.record_exception(e)
                 span.set_status(StatusCode.ERROR, reason)
             finally:
+                record_resource_command(self, operation, success)
                 in_message = labgrid_coordinator_pb2.ExporterInMessage()
                 in_message.response.success = success
                 if reason:
@@ -1153,6 +1156,7 @@ class Exporter:
 
 async def amain(config) -> bool:
     exporter = Exporter(config)
+    setup_exporter_metrics(exporter)
 
     if inspect:
         inspect.exporter = exporter
@@ -1232,7 +1236,7 @@ def main():
     print(f"exporter hostname: {config['hostname']}")
     print(f"resource config file: {config['resources']}")
 
-    setup_otel("labgrid-exporter")
+    setup_otel("labgrid-exporter", with_metrics=True)
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

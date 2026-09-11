@@ -15,6 +15,8 @@ for the 3 different components of a Labgrid distributed infrastructure.
   An image with the Labgrid client tools and pytest integration.
 - **labgrid-exporter**
   An image with the Labgrid exporter tools.
+- **labgrid-exporter-otel**
+  The exporter with the optional OpenTelemetry dependencies installed.
 
 
 Build
@@ -155,6 +157,21 @@ Start it with something like:
 If using ser2net or if "exporting" e.g. a serial device, the devices needed must be added to Docker container
 (``docker run --device`` option).
 Moreover, if using udev this must be mounted in as well: ``docker run -v run/udev:/run/udev:ro``.
+
+labgrid-exporter-otel usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This image inherits the exporter entrypoint, ser2net support and configuration
+volume. It adds tracing of acquire/release commands, using context sent by an
+instrumented coordinator. Configure ``OTEL_EXPORTER_OTLP_ENDPOINT`` for the
+exporter container as well as the coordinator.
+
+.. code-block:: bash
+
+   $ docker build --target labgrid-exporter-otel -t labgrid/exporter-otel -f dockerfiles/Dockerfile .
+   $ docker run -e LG_COORDINATOR=coordinator:20408 \
+       -e OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317 \
+       -v /path/to/exporter-conf:/opt/conf labgrid/exporter-otel
 
 Staging
 -------

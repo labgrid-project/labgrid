@@ -15,6 +15,7 @@ from typing import Optional
 import attr
 import grpc
 from grpc_reflection.v1alpha import reflection
+from opentelemetry import context as otel_context
 
 from .common import (
     ResourceEntry,
@@ -30,6 +31,7 @@ from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
 from .otel import instrument_grpc_server, instrument_rpc, setup_otel
+from .otel_exporter import inject_trace_context
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
 
 
@@ -187,6 +189,9 @@ def locked(func):
 class ExporterCommand:
     def __init__(self, request) -> None:
         self.request = request
+        # The stream sends this command from a different task than the RPC
+        # which created it, so retain that RPC's context at the queue boundary.
+        self.trace_context = otel_context.get_current()
         self.response = None
         self.completed = asyncio.Event()
         self.expired = False
@@ -481,6 +486,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 logging.debug("exporter cmd %s", cmd)
                 out_msg = labgrid_coordinator_pb2.ExporterOutMessage()
                 out_msg.set_acquired_request.CopyFrom(cmd.request)
+                inject_trace_context(out_msg, cmd.trace_context)
                 pending_commands.append(cmd)
                 yield out_msg
         except asyncio.exceptions.CancelledError:

@@ -93,6 +93,11 @@ Set ``OTEL_EXPORTER_OTLP_ENDPOINT`` to the address of your collector, for exampl
 ``http://collector:4317``. The default is ``http://localhost:4317`` inside the
 container. Set ``OTEL_SDK_DISABLED=true`` to disable telemetry.
 
+The image also exposes coordinator metrics on port 9464, listening on all
+container interfaces. Publish that port or scrape it directly on your container
+network. Use ``OTEL_METRICS_EXPORTER=otlp`` for OTLP metrics without a scrape
+listener, or ``none`` to disable metrics.
+
 Build and run it with:
 
 .. code-block:: bash

@@ -22,8 +22,8 @@ def _parse_exporters(value, *, default, supported):
     return selected
 
 
-def setup_otel(service_name):
-    """Configure tracing when the optional ``otel`` dependencies are installed.
+def setup_otel(service_name, *, with_metrics=False):
+    """Configure telemetry when the optional ``otel`` dependencies are installed.
 
     Return whether the SDK is available and enabled, including when exporting is
     disabled with ``OTEL_TRACES_EXPORTER=none``. An existing provider belongs to
@@ -41,6 +41,7 @@ def setup_otel(service_name):
         LOGGER.debug("OpenTelemetry SDK not installed")
         return False
 
+    resource = Resource.create({"service.name": service_name}).merge(OTELResourceDetector().detect())
     if isinstance(trace.get_tracer_provider(), trace.ProxyTracerProvider):
         exporters = _parse_exporters(os.environ.get("OTEL_TRACES_EXPORTER", ""), default={"otlp"}, supported={"otlp"})
         if exporters:
@@ -55,10 +56,14 @@ def setup_otel(service_name):
             # defaults to localhost:4317. Environment resource attributes take
             # precedence over the component's default service name.
             exporter = OTLPSpanExporter()
-            resource = Resource.create({"service.name": service_name}).merge(OTELResourceDetector().detect())
             provider = TracerProvider(resource=resource)
             provider.add_span_processor(BatchSpanProcessor(exporter))
             trace.set_tracer_provider(provider)
+
+    if with_metrics:
+        from .otel_metrics import setup_metrics
+
+        setup_metrics(resource)
 
     _enabled = True
     return True

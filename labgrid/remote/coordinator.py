@@ -35,6 +35,7 @@ from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
 from .otel import instrument_grpc_server, instrument_rpc, setup_otel
 from .otel_exporter import inject_trace_context
+from .otel_metrics import record_reservation_wait_duration, setup_coordinator_metrics
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
 
 
@@ -1173,6 +1174,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             res = self.reservations[res_id]
             res.allocations = {"main": [place_name]}
             res.state = ReservationState.allocated
+            record_reservation_wait_duration(self, res, time.time() - res.created)
             res.refresh()
             print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
 
@@ -1274,6 +1276,7 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
         options=channel_options,
     )
     coordinator = Coordinator()
+    setup_coordinator_metrics(coordinator)
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
     # enable reflection for use with grpcurl
     reflection.enable_server_reflection(
@@ -1360,7 +1363,7 @@ def main():
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
-    setup_otel("labgrid-coordinator")
+    setup_otel("labgrid-coordinator", with_metrics=True)
     instrument_grpc_server()
 
     loop = asyncio.new_event_loop()

@@ -9,6 +9,8 @@ for the 3 different components of a Labgrid distributed infrastructure.
   a Labgrid coordinator instance.
 - **labgrid-coordinator-statsd**
   An image with a statsd reporter for the Labgrid coordinator.
+- **labgrid-coordinator-otel**
+  The coordinator with the optional OpenTelemetry dependencies installed.
 - **labgrid-client**
   An image with the Labgrid client tools and pytest integration.
 - **labgrid-exporter**
@@ -57,7 +59,7 @@ e.g. `linux/arm64` as an additional argument.
 Usage
 -----
 
-All 3 images are to be considered base images
+All images are to be considered base images
 with the required software installed.
 No policy or configuration is done.
 
@@ -78,6 +80,24 @@ so you can restart the service without losing state.
 
    $ docker run -t -p 20408:20408 -v $HOME/coordinator:/opt/coordinator \
 	 docker.io/labgrid/coordinator
+
+
+labgrid-coordinator-otel usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This image runs the same coordinator with OpenTelemetry tracing enabled.
+It inherits the coordinator's command, ports and state directory.
+Set ``OTEL_EXPORTER_OTLP_ENDPOINT`` to the address of your collector, for example
+``http://collector:4317``. The default is ``http://localhost:4317`` inside the
+container. Set ``OTEL_SDK_DISABLED=true`` to disable telemetry.
+
+Build and run it with:
+
+.. code-block:: bash
+
+   $ docker build --target labgrid-coordinator-otel -t labgrid/coordinator-otel -f dockerfiles/Dockerfile .
+   $ docker run -p 20408:20408 -e OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317 \
+       labgrid/coordinator-otel
 
 
 labgrid-coordinator-statsd usage

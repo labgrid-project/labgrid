@@ -43,6 +43,15 @@ WORKDIR /opt/coordinator
 CMD ["/usr/local/bin/labgrid-coordinator"]
 
 #
+# Coordinator with OpenTelemetry
+#
+FROM labgrid-coordinator AS labgrid-coordinator-otel
+ARG VERSION=0.0.0
+
+RUN cd /opt/labgrid && \
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir '.[otel]'
+
+#
 # Exporter
 #
 FROM labgrid-base AS labgrid-exporter

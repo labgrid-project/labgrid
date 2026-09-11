@@ -29,6 +29,7 @@ from .common import (
 from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
+from .otel import instrument_grpc_server, instrument_rpc, setup_otel
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
 
 
@@ -500,6 +501,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             except KeyError:
                 logging.info("Never received startup from peer %s that disconnected", peer)
 
+    @instrument_rpc({"labgrid.place.name": "name"})
     @locked
     async def AddPlace(self, request, context):
         name = request.name
@@ -514,6 +516,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AddPlaceResponse()
 
+    @instrument_rpc({"labgrid.place.name": "name"})
     @locked
     async def DeletePlace(self, request, context):
         name = request.name
@@ -530,6 +533,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.DeletePlaceResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.place.alias": "alias"})
     @locked
     async def AddPlaceAlias(self, request, context):
         placename = request.placename
@@ -544,6 +548,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AddPlaceAliasResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.place.alias": "alias"})
     @locked
     async def DeletePlaceAlias(self, request, context):
         placename = request.placename
@@ -561,6 +566,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.DeletePlaceAliasResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.place.tags": "tags"})
     @locked
     async def SetPlaceTags(self, request, context):
         placename = request.placename
@@ -590,6 +596,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.SetPlaceTagsResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.place.comment": "comment"})
     @locked
     async def SetPlaceComment(self, request, context):
         placename = request.placename
@@ -604,6 +611,13 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.SetPlaceCommentResponse()
 
+    @instrument_rpc(
+        {
+            "labgrid.place.name": "placename",
+            "labgrid.place.match.pattern": "pattern",
+            "labgrid.place.match.rename": "rename",
+        }
+    )
     @locked
     async def AddPlaceMatch(self, request, context):
         placename = request.placename
@@ -622,6 +636,13 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AddPlaceMatchResponse()
 
+    @instrument_rpc(
+        {
+            "labgrid.place.name": "placename",
+            "labgrid.place.match.pattern": "pattern",
+            "labgrid.place.match.rename": "rename",
+        }
+    )
     @locked
     async def DeletePlaceMatch(self, request, context):
         placename = request.placename
@@ -848,6 +869,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             idx = place.acquired_resources.index(oldresource)
             place.acquired_resources[idx] = newresource
 
+    @instrument_rpc({"labgrid.place.name": "placename"})
     @locked
     async def AcquirePlace(self, request, context):
         peer = context.peer()
@@ -890,6 +912,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         print(f"{place.name}: place acquired by {place.acquired}")
         return labgrid_coordinator_pb2.AcquirePlaceResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.fromuser": "fromuser"})
     @locked
     async def ReleasePlace(self, request, context):
         name = request.placename
@@ -917,6 +940,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         print(f"{place.name}: place released")
         return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.place.share.user": "user"})
     @locked
     async def AllowPlace(self, request, context):
         placename = request.placename
@@ -1060,6 +1084,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             if old_map.get(name) != new_map.get(name):
                 self._publish_place(self.places[name])
 
+    @instrument_rpc({"labgrid.reservation.filters": "filters", "labgrid.reservation.priority": "prio"})
     @locked
     async def CreateReservation(self, request: labgrid_coordinator_pb2.CreateReservationRequest, context):
         peer = context.peer()
@@ -1084,6 +1109,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CreateReservationResponse(reservation=res.as_pb2())
 
+    @instrument_rpc({"labgrid.reservation.id": "token"})
     @locked
     async def CancelReservation(self, request: labgrid_coordinator_pb2.CancelReservationRequest, context):
         token = request.token
@@ -1095,6 +1121,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CancelReservationResponse()
 
+    @instrument_rpc({"labgrid.reservation.id": "token"})
     @locked
     async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context):
         token = request.token
@@ -1215,6 +1242,9 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
+
+    setup_otel("labgrid-coordinator")
+    instrument_grpc_server()
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

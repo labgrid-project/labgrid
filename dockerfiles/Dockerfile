@@ -68,6 +68,15 @@ VOLUME /opt/conf
 CMD ["/entrypoint.sh"]
 
 #
+# Exporter with OpenTelemetry
+#
+FROM labgrid-exporter AS labgrid-exporter-otel
+ARG VERSION=0.0.0
+
+RUN cd /opt/labgrid && \
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir '.[otel]'
+
+#
 # Coordinator statsd
 #
 FROM labgrid-base AS labgrid-coordinator-statsd

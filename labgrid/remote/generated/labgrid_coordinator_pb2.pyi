@@ -136,13 +136,23 @@ class Hello(_message.Message):
     version: str
     def __init__(self, version: _Optional[str] = ...) -> None: ...
 
+class Metadata(_message.Message):
+    __slots__ = ("traceparent", "tracestate")
+    TRACEPARENT_FIELD_NUMBER: _ClassVar[int]
+    TRACESTATE_FIELD_NUMBER: _ClassVar[int]
+    traceparent: str
+    tracestate: str
+    def __init__(self, traceparent: _Optional[str] = ..., tracestate: _Optional[str] = ...) -> None: ...
+
 class ExporterOutMessage(_message.Message):
-    __slots__ = ("hello", "set_acquired_request")
+    __slots__ = ("hello", "set_acquired_request", "metadata")
     HELLO_FIELD_NUMBER: _ClassVar[int]
     SET_ACQUIRED_REQUEST_FIELD_NUMBER: _ClassVar[int]
+    METADATA_FIELD_NUMBER: _ClassVar[int]
     hello: Hello
     set_acquired_request: ExporterSetAcquiredRequest
-    def __init__(self, hello: _Optional[_Union[Hello, _Mapping]] = ..., set_acquired_request: _Optional[_Union[ExporterSetAcquiredRequest, _Mapping]] = ...) -> None: ...
+    metadata: Metadata
+    def __init__(self, hello: _Optional[_Union[Hello, _Mapping]] = ..., set_acquired_request: _Optional[_Union[ExporterSetAcquiredRequest, _Mapping]] = ..., metadata: _Optional[_Union[Metadata, _Mapping]] = ...) -> None: ...
 
 class ExporterSetAcquiredRequest(_message.Message):
     __slots__ = ("group_name", "resource_name", "place_name")

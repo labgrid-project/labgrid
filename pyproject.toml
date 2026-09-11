@@ -99,6 +99,7 @@ dev = [
 ]
 otel = [
     "opentelemetry-exporter-otlp-proto-grpc==1.44.0",
+    "opentelemetry-exporter-prometheus==0.65b0",
     "opentelemetry-instrumentation-grpc==0.65b0",
 ]
 

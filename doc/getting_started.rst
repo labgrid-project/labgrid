@@ -489,6 +489,42 @@ OpenTelemetry tracer provider is reused with its own exporter configuration.
 
    $ OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317 labgrid-coordinator
 
+Collecting OpenTelemetry metrics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The coordinator exposes metrics when the ``otel`` extra is installed.
+``OTEL_METRICS_EXPORTER`` selects ``prometheus`` (the default), ``otlp``,
+``prometheus,otlp``, or ``none``. Trace and metric exporting can be configured
+independently; ``OTEL_SDK_DISABLED=true`` disables both. An existing SDK
+``MeterProvider`` is reused without adding readers or starting a scrape server.
+
+Prometheus metrics are served at ``http://localhost:9464/metrics`` by default.
+Set ``OTEL_EXPORTER_PROMETHEUS_HOST`` and ``OTEL_EXPORTER_PROMETHEUS_PORT`` to
+change the listener. The coordinator OTEL Docker image listens on all container
+interfaces; publish port 9464 to scrape it from the host. OTLP metrics use the
+same standard endpoint configuration as traces, including the signal-specific
+``OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`` override.
+
+The coordinator reports these metrics:
+
+* ``labgrid_coordinator_places_registered``: number of registered places.
+* ``labgrid_coordinator_places_acquired``: number of acquired places.
+* ``labgrid_coordinator_places_available``: unacquired, unreserved places.
+* ``labgrid_coordinator_reservations_waiting``: reservations awaiting allocation.
+* ``labgrid_coordinator_reservations_allocated``: reservations holding allocations.
+* ``labgrid_coordinator_exporters_connected``: connected exporter sessions.
+* ``labgrid_coordinator_resources_registered``: resources registered by exporters.
+* ``labgrid_coordinator_reservation_wait_duration_seconds``: histogram of time
+  from creation to the first allocation of each reservation.
+
+Prometheus may append unit suffixes to the exposed gauge names. Labels describe
+aggregate state and do not include individual place names or reservation tokens.
+
+.. code-block:: bash
+
+   $ OTEL_TRACES_EXPORTER=none OTEL_METRICS_EXPORTER=prometheus \
+       OTEL_EXPORTER_PROMETHEUS_HOST=0.0.0.0 labgrid-coordinator
+
 Using a Strategy
 ----------------
 

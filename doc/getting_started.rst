@@ -99,6 +99,12 @@ ModbusRTU
 Modbus support requires an additional package ``minimalmodbus``. It is included in
 the ``modbusrtu`` extra.
 
+OpenTelemetry
++++++++++++++
+The ``otel`` extra installs the optional OpenTelemetry SDK and OTLP exporter
+used to trace coordinator requests. The normal installation includes only the
+OpenTelemetry API and does not export telemetry.
+
 Running Your First Test
 -----------------------
 
@@ -455,6 +461,26 @@ For ``RemotePlace`` connections from an environment config, set the
 ``coordinator_cacert`` is not set, labgrid uses the host CA certificates. Set
 ``coordinator_cacert`` to provide a specific CA certificate or CA bundle
 instead.
+
+Collecting OpenTelemetry traces
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Install ``labgrid[otel]`` or use the ``labgrid-coordinator-otel`` Docker image
+to enable tracing of coordinator gRPC requests. Spans include request attributes
+such as the place name, aliases and reservation filters.
+
+The default service name is ``labgrid-coordinator``. Traces are exported using
+OTLP over gRPC to ``http://localhost:4317``. Configure your collector with
+``OTEL_EXPORTER_OTLP_ENDPOINT``; endpoint, TLS and authentication options use
+the standard OpenTelemetry environment variables.
+
+Set ``OTEL_TRACES_EXPORTER=none`` to disable trace export, or
+``OTEL_SDK_DISABLED=true`` to disable telemetry entirely. An existing
+OpenTelemetry tracer provider is reused with its own exporter configuration.
+
+.. code-block:: bash
+
+   $ OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317 labgrid-coordinator
 
 Using a Strategy
 ----------------

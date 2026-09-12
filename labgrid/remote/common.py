@@ -7,9 +7,11 @@ import random
 import re
 import string
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fnmatch import fnmatchcase
 from typing import Optional
+
+from google.protobuf import timestamp_pb2  # pylint: disable=no-name-in-module
 import attr
 import grpc
 
@@ -112,6 +114,16 @@ def get_client_credentials(tls: bool, cacert=None) -> Optional[grpc.ChannelCrede
 
     with open(cacert, "rb") as fc:
         return grpc.ssl_channel_credentials(root_certificates=fc.read())
+
+
+def timestamp_from_float(value: float):
+    ts = timestamp_pb2.Timestamp()  # pylint: disable=no-member
+    ts.FromDatetime(datetime.fromtimestamp(value, tz=timezone.utc))
+    return ts
+
+
+def float_from_timestamp(ts) -> float:
+    return ts.ToDatetime(tzinfo=timezone.utc).timestamp()
 
 
 @attr.s(eq=False)
@@ -327,7 +339,7 @@ class Place:
                 continue
             setattr(self, k, v)
 
-    def show(self, level=0):
+    def show(self, level=0, reservation=None):
         indent = "  " * level
         if self.aliases:
             print(indent + f"aliases: {', '.join(sorted(self.aliases))}")
@@ -357,6 +369,11 @@ class Place:
         print(indent + f"changed: {datetime.fromtimestamp(self.changed)}")
         if self.reservation:
             print(indent + f"reservation: {self.reservation}")
+
+        if reservation is not None:
+            print(indent + f"lease timeout: {datetime.fromtimestamp(reservation.timeout)}")
+            if reservation.state is ReservationState.leased:
+                print(indent + f"lease started: {datetime.fromtimestamp(reservation.lease_start_time)}")
 
     def getmatch(self, resource_path):
         """Return the ResourceMatch object for the given resource path or None if not found.
@@ -448,6 +465,7 @@ class ReservationState(enum.Enum):
     acquired = 2
     expired = 3
     invalid = 4
+    leased = 5
 
 
 @attr.s(eq=False)
@@ -468,6 +486,7 @@ class Reservation:
     allocations = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
     created = attr.ib(default=attr.Factory(time.time))
     timeout = attr.ib(default=attr.Factory(lambda: time.time() + 60))
+    lease_start_time = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
 
     def asdict(self):
         return {
@@ -478,6 +497,7 @@ class Reservation:
             "allocations": self.allocations,
             "created": self.created,
             "timeout": self.timeout,
+            "lease_start_time": self.lease_start_time,
         }
 
     def refresh(self, delta=60):
@@ -521,6 +541,8 @@ class Reservation:
             res.allocations.update({"main": allocation[0]})
         res.created = self.created
         res.timeout = self.timeout
+        if self.lease_start_time > 0:
+            res.lease_start_time.CopyFrom(timestamp_from_float(self.lease_start_time))
         return res
 
     @classmethod
@@ -540,6 +562,7 @@ class Reservation:
             allocations=allocations,
             created=pb2.created,
             timeout=pb2.timeout,
+            lease_start_time=float_from_timestamp(pb2.lease_start_time) if pb2.HasField("lease_start_time") else 0.0,
         )
 
 

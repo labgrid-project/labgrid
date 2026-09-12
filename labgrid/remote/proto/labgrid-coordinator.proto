@@ -121,11 +121,17 @@ message Hello {
   string version = 1;
 }
 
+message Metadata {
+  string traceparent = 1;
+  string tracestate = 2;
+}
+
 message ExporterOutMessage {
   oneof kind {
     Hello hello = 1;
     ExporterSetAcquiredRequest set_acquired_request = 2;
   };
+  Metadata metadata = 5;
 };
 
 message ExporterSetAcquiredRequest {

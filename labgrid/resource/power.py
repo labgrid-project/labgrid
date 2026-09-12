@@ -12,11 +12,11 @@ class NetworkPowerPort(Resource):
     Args:
         model (str): model of the external power switch
         host (str): host to connect to
-        index (str): index of the power port on the external switch
+        index (str): optional, index of the power port on the external switch
     """
     model = attr.ib(validator=attr.validators.instance_of(str))
     host = attr.ib(validator=attr.validators.instance_of(str))
-    index = attr.ib(validator=attr.validators.instance_of(str),
+    index = attr.ib(default="0", validator=attr.validators.instance_of(str),
                     converter=lambda x: str(int(x)))
 
 

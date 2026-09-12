@@ -8,7 +8,7 @@ from labgrid.resource import NetworkService
 from labgrid.util.helper import get_free_port
 
 @pytest.fixture(scope='function')
-def ssh_driver_mocked_and_activated(target, mocker):
+def ssh_driver_mocked(target, mocker):
     NetworkService(target, "service", "1.2.3.4", "root")
     call = mocker.patch('subprocess.call')
     call.return_value = 0
@@ -19,30 +19,37 @@ def ssh_driver_mocked_and_activated(target, mocker):
     popen.return_value = instance_mock
     instance_mock.wait = mocker.MagicMock(return_value=0)
     instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
-    SSHDriver(target, "ssh")
-    s = target.get_driver("SSHDriver")
-    return s
+    return SSHDriver(target, "ssh")
 
 def test_create_fail_missing_resource(target):
     with pytest.raises(NoResourceFoundError):
         SSHDriver(target, "ssh")
 
-def test_create(target, mocker):
-    NetworkService(target, "service", "1.2.3.4", "root")
-    call = mocker.patch('subprocess.call')
-    call.return_value = 0
-    popen = mocker.patch('subprocess.Popen', autospec=True)
-    path = mocker.patch('os.path.exists')
-    path.return_value = True
-    instance_mock = mocker.MagicMock()
-    popen.return_value = instance_mock
-    instance_mock.wait = mocker.MagicMock(return_value=0)
-    instance_mock.communicate = mocker.MagicMock(return_value=(b"", b""))
-    s = SSHDriver(target, "ssh")
-    assert isinstance(s, SSHDriver)
+def test_create(ssh_driver_mocked):
+    assert isinstance(ssh_driver_mocked, SSHDriver)
 
-def test_run_check(target, ssh_driver_mocked_and_activated, mocker):
-    s = ssh_driver_mocked_and_activated
+def test_extra_options_str(target, ssh_driver_mocked):
+    s = ssh_driver_mocked
+    s.extra_options = "-o HostKeyAlgorithms=+ssh-rsa"
+    target.activate(s)
+    assert "HostKeyAlgorithms=+ssh-rsa" in s.ssh_prefix
+
+def test_extra_options_list(target, ssh_driver_mocked):
+    ssh_driver_mocked.extra_options = [
+        "-o", "HostKeyAlgorithms=+ssh-rsa",
+        "-o", "HostKeyAlgorithms=+ssh-dsa",
+    ]
+    target.activate(ssh_driver_mocked)
+    assert "HostKeyAlgorithms=+ssh-rsa" in ssh_driver_mocked.ssh_prefix
+    assert "HostKeyAlgorithms=+ssh-dsa" in ssh_driver_mocked.ssh_prefix
+
+def test_extra_options_empty(target, ssh_driver_mocked):
+    target.activate(ssh_driver_mocked)
+    assert "" not in ssh_driver_mocked.ssh_prefix
+
+def test_run_check(target, ssh_driver_mocked, mocker):
+    s = ssh_driver_mocked
+    target.activate(s)
     s._run = mocker.MagicMock(return_value=(['success'], [], 0))
     res = s.run_check("test")
     assert res == ['success']
@@ -50,8 +57,9 @@ def test_run_check(target, ssh_driver_mocked_and_activated, mocker):
     assert res == (['success'], [], 0)
     target.deactivate(s)
 
-def test_run_check_raise(target, ssh_driver_mocked_and_activated, mocker):
-    s = ssh_driver_mocked_and_activated
+def test_run_check_raise(target, ssh_driver_mocked, mocker):
+    s = ssh_driver_mocked
+    target.activate(s)
     s._run = mocker.MagicMock(return_value=(['error'], [], 1))
     with pytest.raises(ExecutionError):
         res = s.run_check("test")

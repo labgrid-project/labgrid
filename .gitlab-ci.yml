@@ -6,7 +6,7 @@ docker:
     entrypoint: [""]
   variables:
     DOCKERFILE: "dockerfiles/Dockerfile"
-    TARGETS: "labgrid-client labgrid-coordinator labgrid-exporter"
+    TARGETS: "labgrid-client labgrid-coordinator labgrid-coordinator-otel labgrid-exporter labgrid-exporter-otel"
   before_script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" > /kaniko/.docker/config.json

@@ -43,6 +43,7 @@ You can also look at :ref:`ideas` for enhancements which are not yet implemented
    usage
    man
    configuration
+   use_cases
    development
    design_decisions
    changes

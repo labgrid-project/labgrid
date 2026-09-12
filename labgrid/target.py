@@ -19,6 +19,8 @@ from .factory import target_factory
 class Target:
     name = attr.ib(validator=attr.validators.instance_of(str))
     env = attr.ib(default=None)
+    features = attr.ib(default=set())
+    options = attr.ib(default=set())
 
     def __attrs_post_init__(self):
         self.log = logging.getLogger(f"target({self.name})")

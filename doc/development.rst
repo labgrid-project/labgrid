@@ -38,6 +38,9 @@ Tests can now be run via:
 
    python -m pytest
 
+The development dependencies include the optional OpenTelemetry SDK so the
+tracing tests run as part of the suite.
+
 Writing a Driver
 ----------------
 

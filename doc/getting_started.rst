@@ -99,6 +99,12 @@ ModbusRTU
 Modbus support requires an additional package ``minimalmodbus``. It is included in
 the ``modbusrtu`` extra.
 
+OpenTelemetry
++++++++++++++
+The ``otel`` extra installs the optional OpenTelemetry SDK and OTLP exporter
+used to trace coordinator requests and exporter commands. The normal
+installation includes only the OpenTelemetry API and does not export telemetry.
+
 Running Your First Test
 -----------------------
 
@@ -455,6 +461,69 @@ For ``RemotePlace`` connections from an environment config, set the
 ``coordinator_cacert`` is not set, labgrid uses the host CA certificates. Set
 ``coordinator_cacert`` to provide a specific CA certificate or CA bundle
 instead.
+
+Collecting OpenTelemetry traces
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Install ``labgrid[otel]`` or use the ``labgrid-coordinator-otel`` Docker image
+to enable tracing of coordinator gRPC requests. Spans include request attributes
+such as the place name, aliases and reservation filters.
+
+The exporter also supports tracing when ``labgrid[otel]`` is installed, or via
+the ``labgrid-exporter-otel`` image. Acquire/release command spans continue the
+coordinator request's trace across the exporter stream and record command
+failures. A peer without tracing support can still communicate normally;
+exporters receiving commands without trace metadata start independent traces.
+
+The default service names are ``labgrid-coordinator`` and ``labgrid-exporter``.
+Traces are exported using
+OTLP over gRPC to ``http://localhost:4317``. Configure your collector with
+``OTEL_EXPORTER_OTLP_ENDPOINT``; endpoint, TLS and authentication options use
+the standard OpenTelemetry environment variables.
+
+Set ``OTEL_TRACES_EXPORTER=none`` to disable trace export, or
+``OTEL_SDK_DISABLED=true`` to disable telemetry entirely. An existing
+OpenTelemetry tracer provider is reused with its own exporter configuration.
+
+.. code-block:: bash
+
+   $ OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317 labgrid-coordinator
+
+Collecting OpenTelemetry metrics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The coordinator exposes metrics when the ``otel`` extra is installed.
+``OTEL_METRICS_EXPORTER`` selects ``prometheus`` (the default), ``otlp``,
+``prometheus,otlp``, or ``none``. Trace and metric exporting can be configured
+independently; ``OTEL_SDK_DISABLED=true`` disables both. An existing SDK
+``MeterProvider`` is reused without adding readers or starting a scrape server.
+
+Prometheus metrics are served at ``http://localhost:9464/metrics`` by default.
+Set ``OTEL_EXPORTER_PROMETHEUS_HOST`` and ``OTEL_EXPORTER_PROMETHEUS_PORT`` to
+change the listener. The coordinator OTEL Docker image listens on all container
+interfaces; publish port 9464 to scrape it from the host. OTLP metrics use the
+same standard endpoint configuration as traces, including the signal-specific
+``OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`` override.
+
+The coordinator reports these metrics:
+
+* ``labgrid_coordinator_places_registered``: number of registered places.
+* ``labgrid_coordinator_places_acquired``: number of acquired places.
+* ``labgrid_coordinator_places_available``: unacquired, unreserved places.
+* ``labgrid_coordinator_reservations_waiting``: reservations awaiting allocation.
+* ``labgrid_coordinator_reservations_allocated``: reservations holding allocations.
+* ``labgrid_coordinator_exporters_connected``: connected exporter sessions.
+* ``labgrid_coordinator_resources_registered``: resources registered by exporters.
+* ``labgrid_coordinator_reservation_wait_duration_seconds``: histogram of time
+  from creation to the first allocation of each reservation.
+
+Prometheus may append unit suffixes to the exposed gauge names. Labels describe
+aggregate state and do not include individual place names or reservation tokens.
+
+.. code-block:: bash
+
+   $ OTEL_TRACES_EXPORTER=none OTEL_METRICS_EXPORTER=prometheus \
+       OTEL_EXPORTER_PROMETHEUS_HOST=0.0.0.0 labgrid-coordinator
 
 Using a Strategy
 ----------------

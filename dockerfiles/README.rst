@@ -9,10 +9,14 @@ for the 3 different components of a Labgrid distributed infrastructure.
   a Labgrid coordinator instance.
 - **labgrid-coordinator-statsd**
   An image with a statsd reporter for the Labgrid coordinator.
+- **labgrid-coordinator-otel**
+  The coordinator with the optional OpenTelemetry dependencies installed.
 - **labgrid-client**
   An image with the Labgrid client tools and pytest integration.
 - **labgrid-exporter**
   An image with the Labgrid exporter tools.
+- **labgrid-exporter-otel**
+  The exporter with the optional OpenTelemetry dependencies installed.
 
 
 Build
@@ -57,7 +61,7 @@ e.g. `linux/arm64` as an additional argument.
 Usage
 -----
 
-All 3 images are to be considered base images
+All images are to be considered base images
 with the required software installed.
 No policy or configuration is done.
 
@@ -78,6 +82,29 @@ so you can restart the service without losing state.
 
    $ docker run -t -p 20408:20408 -v $HOME/coordinator:/opt/coordinator \
 	 docker.io/labgrid/coordinator
+
+
+labgrid-coordinator-otel usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This image runs the same coordinator with OpenTelemetry tracing enabled.
+It inherits the coordinator's command, ports and state directory.
+Set ``OTEL_EXPORTER_OTLP_ENDPOINT`` to the address of your collector, for example
+``http://collector:4317``. The default is ``http://localhost:4317`` inside the
+container. Set ``OTEL_SDK_DISABLED=true`` to disable telemetry.
+
+The image also exposes coordinator metrics on port 9464, listening on all
+container interfaces. Publish that port or scrape it directly on your container
+network. Use ``OTEL_METRICS_EXPORTER=otlp`` for OTLP metrics without a scrape
+listener, or ``none`` to disable metrics.
+
+Build and run it with:
+
+.. code-block:: bash
+
+   $ docker build --target labgrid-coordinator-otel -t labgrid/coordinator-otel -f dockerfiles/Dockerfile .
+   $ docker run -p 20408:20408 -e OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317 \
+       labgrid/coordinator-otel
 
 
 labgrid-coordinator-statsd usage
@@ -135,6 +162,21 @@ Start it with something like:
 If using ser2net or if "exporting" e.g. a serial device, the devices needed must be added to Docker container
 (``docker run --device`` option).
 Moreover, if using udev this must be mounted in as well: ``docker run -v run/udev:/run/udev:ro``.
+
+labgrid-exporter-otel usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This image inherits the exporter entrypoint, ser2net support and configuration
+volume. It adds tracing of acquire/release commands, using context sent by an
+instrumented coordinator. Configure ``OTEL_EXPORTER_OTLP_ENDPOINT`` for the
+exporter container as well as the coordinator.
+
+.. code-block:: bash
+
+   $ docker build --target labgrid-exporter-otel -t labgrid/exporter-otel -f dockerfiles/Dockerfile .
+   $ docker run -e LG_COORDINATOR=coordinator:20408 \
+       -e OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317 \
+       -v /path/to/exporter-conf:/opt/conf labgrid/exporter-otel
 
 Staging
 -------

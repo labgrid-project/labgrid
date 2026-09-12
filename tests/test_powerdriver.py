@@ -310,12 +310,84 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.tplink
 
     def test_import_backend_siglent(self):
-        pytest.importorskip("vxi11")
+        pytest.importorskip("pyvisa")
         import labgrid.driver.power.siglent
 
     def test_import_backend_poe_mib(self):
         pytest.importorskip("pysnmp")
         import labgrid.driver.power.poe_mib
+
+    def _mock_siglent_psu(self, mocker, responses=None):
+        rm = mocker.patch("pyvisa.ResourceManager")
+        psu = rm.return_value.open_resource.return_value
+        # `with _get_psu(...) as psu` must yield the same mock we configure
+        psu.__enter__.return_value = psu
+        if responses is not None:
+            psu.query.side_effect = lambda cmd: responses[cmd]
+        return psu
+
+    def _activate_siglent_driver(self, target):
+        NetworkPowerPort(target, "power", model="siglent", host="192.0.2.1", index="1")
+        d = NetworkPowerDriver(target, "power")
+        target.activate(d)
+        return d
+
+    def test_siglent_on_off_get(self, target, mocker):
+        pytest.importorskip("pyvisa")
+
+        # CH1 output state is reported in bit 4 of the hex SYSTEM:STATUS? value
+        psu = self._mock_siglent_psu(mocker, {"SYSTEM:STATUS?": "0x0010"})
+        d = self._activate_siglent_driver(target)
+
+        d.on()
+        psu.write.assert_called_with("OUTPUT CH1,ON")
+        d.off()
+        psu.write.assert_called_with("OUTPUT CH1,OFF")
+
+        assert d.get() is True
+        psu.query.side_effect = lambda cmd: {"SYSTEM:STATUS?": "0x0000"}[cmd]
+        assert d.get() is False
+
+    def test_siglent_show(self, target, mocker):
+        pytest.importorskip("pyvisa")
+
+        self._mock_siglent_psu(mocker, {
+            "MEAS:VOLT? CH1": "5.001",
+            "MEAS:CURR? CH1": "0.209",
+            "MEAS:POWE? CH1": "1.045",
+            "CH1:VOLT?": "5.0",
+            "CH1:CURR?": "1.5",
+        })
+        d = self._activate_siglent_driver(target)
+
+        assert d.show() == {
+            "voltage": 5.001,
+            "amps": 0.209,
+            "watts": 1.045,
+            "v_limit": 5.0,
+            "a_limit": 1.5,
+        }
+
+    def test_siglent_voltage_amps(self, target, mocker):
+        pytest.importorskip("pyvisa")
+
+        psu = self._mock_siglent_psu(mocker)
+        d = self._activate_siglent_driver(target)
+
+        d.voltage(5.0)
+        psu.write.assert_called_with("CH1:VOLT 5.0")
+        d.amps(1.5)
+        psu.write.assert_called_with("CH1:CURR 1.5")
+
+    def test_siglent_power_watts(self, mocker):
+        pytest.importorskip("pyvisa")
+        from labgrid.driver.power import siglent
+
+        psu = self._mock_siglent_psu(mocker, {"MEAS:POWE? CH2": "2.5"})
+
+        # power is read from the device, not derived from voltage * current
+        assert siglent.power_watts("192.0.2.1", None, 2) == 2.5
+        psu.query.assert_called_once_with("MEAS:POWE? CH2")
 
 class TestYKUSHPowerDriver:
     YKUSH_FAKE_SERIAL = "YK12345"

@@ -128,6 +128,7 @@ packages = [
     "labgrid.protocol",
     "labgrid.pytestplugin",
     "labgrid.remote",
+    "labgrid.remote.auth",
     "labgrid.remote.generated",
     "labgrid.remote.grpc",
     "labgrid.remote.grpc.interceptor",

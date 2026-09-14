@@ -207,6 +207,11 @@ class ShellDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             raise
 
     def _inject_run(self):
+        # Disable the shell's line editing so long commands echo as plain
+        # tty output instead of wrap-redraws that duplicate characters in
+        # raw console logs.
+        self.console.sendline("set +o emacs 2>/dev/null; set +o vi 2>/dev/null")
+        self.console.expect(self.prompt)
         self.console.sendline(
             '''run() { echo -n "$MARKER"; sh -c "$@"; echo "$MARKER $?"; }'''
         )

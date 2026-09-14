@@ -15,16 +15,20 @@ async def coordinator():
     coordinator = Coordinator(True)
     server = grpc.aio.server()
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
-    server.add_insecure_port("[::]:20408")
+    port = server.add_insecure_port("127.0.0.1:0")
     await server.start()
-    yield coordinator
-    await server.stop(5)
+    yield coordinator, port
+    await server.stop(None)
+    for task in coordinator.poll_tasks:
+        task.cancel()
+    await asyncio.gather(*coordinator.poll_tasks, return_exceptions=True)
 
 
 @pytest_asyncio.fixture(loop_scope="function")
-async def client():
+async def client(coordinator):
+    _, port = coordinator
     loop = asyncio.get_running_loop()
-    client = ClientSession("127.0.0.1:20408", loop=loop)
+    client = ClientSession(f"127.0.0.1:{port}", loop=loop)
     await client.start()
     yield client
     await client.stop()
@@ -36,7 +40,7 @@ async def test_cap_add_place(coordinator, client):
     args.place = "testplace"
     args.allow_unmatched = False
     client.args = args
-    await client.add_place()
+    await client.create_place()
     place = client.get_place("testplace")
     assert place is not None
 
@@ -47,7 +51,7 @@ async def test_cap_acquire_place(coordinator, client):
     args.place = "testplace"
     args.allow_unmatched = False
     client.args = args
-    await client.add_place()
+    await client.create_place()
 
     await client.acquire()
     place = client.get_place("testplace")
@@ -60,7 +64,7 @@ async def test_cap_release_place(coordinator, client):
     args.place = "testplace"
     args.allow_unmatched = False
     client.args = args
-    await client.add_place()
+    await client.create_place()
 
     await client.acquire()
     place = client.get_place("testplace")
@@ -77,7 +81,7 @@ async def test_cap_delete_place(coordinator, client):
     args.place = "testplace"
     args.allow_unmatched = False
     client.args = args
-    await client.add_place()
+    await client.create_place()
 
     await client.del_place()
 
@@ -89,7 +93,7 @@ async def test_cap_add_place_alias(coordinator, client):
     args.allow_unmatched = False
     args.alias = "testalias"
     client.args = args
-    await client.add_place()
+    await client.create_place()
 
     await client.add_alias()
 
@@ -101,7 +105,7 @@ async def test_cap_del_place_alias(coordinator, client):
     args.allow_unmatched = False
     args.alias = "testalias"
     client.args = args
-    await client.add_place()
+    await client.create_place()
 
     await client.add_alias()
 
@@ -115,7 +119,7 @@ async def test_cap_add_place_match(coordinator, client):
     args.allow_unmatched = False
     args.patterns = ["my/test/pattern/"]
     client.args = args
-    await client.add_place()
+    await client.create_place()
 
     await client.add_match()
 
@@ -130,7 +134,7 @@ async def test_cap_del_place_match(coordinator, client):
     args.allow_unmatched = False
     args.patterns = ["my/test/pattern/"]
     client.args = args
-    await client.add_place()
+    await client.create_place()
 
     await client.add_match()
 
@@ -152,7 +156,7 @@ async def test_cap_create_reservation(coordinator, client):
     args.wait = False
     client.args = args
     args.filters = ["name=someplace"]
-    await client.add_place()
+    await client.create_place()
 
     await client.create_reservation()
 
@@ -167,11 +171,11 @@ async def test_cap_cancel_reservation(coordinator, client):
     args.wait = False
     client.args = args
     args.filters = ["name=someplace"]
-    await client.add_place()
+    await client.create_place()
 
     token = await client.create_reservation()
 
-    client.args.token = token
+    client.args.reservation_id = token
 
     await client.cancel_reservation()
 
@@ -186,7 +190,7 @@ async def test_cap_print_reservation(coordinator, client):
     args.wait = False
     client.args = args
     args.filters = ["name=someplace"]
-    await client.add_place()
+    await client.create_place()
 
     token = await client.create_reservation()
 

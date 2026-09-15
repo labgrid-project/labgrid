@@ -20,6 +20,7 @@ class Capability(StrEnum):
     release_place_any = auto()
     allow_place_owned = auto()
     allow_place_any = auto()
+    list_resources = auto()
     create_reservation = auto()
     cancel_reservation_owned = auto()
     cancel_reservation_any = auto()

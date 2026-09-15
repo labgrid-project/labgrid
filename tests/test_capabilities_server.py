@@ -95,6 +95,14 @@ async def GetPlace_setup(coordinator):
 # endregion
 
 
+# region ListResources
+async def ListResources(coordinator):
+    await coordinator.ListResources(labgrid_coordinator_pb2.ListResourcesRequest(), RpcContext())
+
+
+# endregion
+
+
 @pytest.mark.parametrize(
     [
         "capabilities_enabled",  # Should the Coordinator have Capabilities enabled
@@ -106,12 +114,18 @@ async def GetPlace_setup(coordinator):
         "identity_id",  # The id of the Identity
     ],
     [
+        # CreatePlace
         (True, {Capability.create_place}, None, None, CreatePlace, CreatePlace_success, "testhost/testuser"),
         (True, set(), grpc.StatusCode.PERMISSION_DENIED, None, CreatePlace, CreatePlace_fail, "testhost/testuser"),
         (False, set(), None, None, CreatePlace, CreatePlace_success, "testhost/testuser"),
+        # GetPlace
         (True, {Capability.get_place}, None, GetPlace_setup, GetPlace, None, "testhost/testuser"),
         (True, set(), grpc.StatusCode.PERMISSION_DENIED, GetPlace_setup, GetPlace, None, "testhost/testuser"),
         (False, set(), None, GetPlace_setup, GetPlace, None, "testhost/testuser"),
+        # ListResources
+        (True, {Capability.list_resources}, None, None, ListResources, None, "testhost/testuser"),
+        (True, set(), grpc.StatusCode.PERMISSION_DENIED, None, ListResources, None, "testhost/testuser"),
+        (False, set(), None, None, ListResources, None, "testhost/testuser"),
     ],
 )
 def test_capability_behaviour(

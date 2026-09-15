@@ -1576,8 +1576,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
         return labgrid_coordinator_pb2.ListPlacesResponse(places=places)
 
+    @require_capability(Capability.list_resources)
     @locked
-    async def ListResources(self, request, context):
+    async def ListResources(self, request, context, *, identity):
         logging.debug("ListResources")
 
         if request.page_size != 0 or request.page_token != "":

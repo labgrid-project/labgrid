@@ -128,6 +128,32 @@ async def ListPlaceResources_setup_and_lock_and_share(coordinator):
 # endregion
 
 
+# region UnsharePlace
+async def UnsharePlace(coordinator):
+    await coordinator.UnsharePlace(
+        labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="sharedhost/shareduser"), RpcContext()
+    )
+
+
+def UnsharePlace_fail(coordinator):
+    assert "sharedhost/shareduser" in coordinator.places["test"].allowed
+
+
+def UnsharePlace_success(coordinator):
+    assert "sharedhost/shareduser" not in coordinator.places["test"].allowed
+
+
+async def UnsharePlace_setup(coordinator):
+    await coordinator.CreatePlace(labgrid_coordinator_pb2.CreatePlaceRequest(name="test"), RpcContext())
+    await coordinator.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"), RpcContext())
+    await coordinator.SharePlace(
+        labgrid_coordinator_pb2.SharePlaceRequest(name="test", user="sharedhost/shareduser"), RpcContext()
+    )
+
+
+# endregion
+
+
 @pytest.mark.parametrize(
     [
         "capabilities_enabled",  # Should the Coordinator have Capabilities enabled
@@ -216,6 +242,35 @@ async def ListPlaceResources_setup_and_lock_and_share(coordinator):
             "sharedhost/shareduser",
         ),
         (False, set(), None, ListPlaceResources_setup, ListPlaceResources, None, "testhost/testuser"),
+        # UnsharePlace
+        (
+            True,
+            {Capability.unshare_place_owned},
+            None,
+            UnsharePlace_setup,
+            UnsharePlace,
+            UnsharePlace_success,
+            "test-host/test-user",
+        ),
+        (
+            True,
+            {Capability.unshare_place_any},
+            None,
+            UnsharePlace_setup,
+            UnsharePlace,
+            UnsharePlace_success,
+            "testhost/testuser",
+        ),
+        (
+            True,
+            set(),
+            grpc.StatusCode.PERMISSION_DENIED,
+            UnsharePlace_setup,
+            UnsharePlace,
+            UnsharePlace_fail,
+            "test-host/test-user",
+        ),
+        (False, set(), None, UnsharePlace_setup, UnsharePlace, UnsharePlace_success, "test-host/test-user"),
     ],
 )
 def test_capability_behaviour(

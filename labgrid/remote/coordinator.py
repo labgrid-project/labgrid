@@ -1497,10 +1497,19 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {placename} does not exist")
         if not place.acquired:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired")
-        if not place.acquired == username:
-            await context.abort(
-                grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired by {username}"
-            )
+        if self.use_capabilities:
+            if not (
+                Capability.unshare_place_any in identity.capabilities
+                or (place.acquired == username and Capability.unshare_place_owned in identity.capabilities)
+            ):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED, f"Insufficient permissions to unshare Place {placename}"
+                )
+        else:
+            if not place.acquired == username:
+                await context.abort(
+                    grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired by {username}"
+                )
         try:
             place.allowed.remove(user)
             place.touch()

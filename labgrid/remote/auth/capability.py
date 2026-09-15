@@ -20,6 +20,8 @@ class Capability(StrEnum):
     release_place_any = auto()
     allow_place_owned = auto()
     allow_place_any = auto()
+    unshare_place_owned = auto()
+    unshare_place_any = auto()
     list_resources = auto()
     list_place_resources_owned = auto()
     list_place_resources_any = auto()

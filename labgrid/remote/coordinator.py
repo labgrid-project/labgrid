@@ -670,8 +670,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         await self.create_place(request, context)
         return labgrid_coordinator_pb2.AddPlaceResponse()
 
+    @require_capability(Capability.create_place)
     @locked
-    async def CreatePlace(self, request, context):
+    async def CreatePlace(self, request, context, *, identity):
         logging.debug("CreatePlace name=%s", request.name)
         place = await self.create_place(request, context)
         return labgrid_coordinator_pb2.CreatePlaceResponse(place=place.as_pb2())

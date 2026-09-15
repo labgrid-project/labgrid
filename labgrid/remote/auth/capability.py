@@ -5,6 +5,7 @@ class Capability(StrEnum):
     client_stream = auto()
     exporter_stream = auto()
     add_place = auto()
+    create_place = auto()
     delete_place = auto()
     get_places = auto()
     add_place_alias = auto()

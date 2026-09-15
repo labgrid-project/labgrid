@@ -66,6 +66,23 @@ def capability_coordinator(tmp_path, monkeypatch):
         loop.run_until_complete(loop.shutdown_asyncgens())
         loop.close()
 
+
+# region CreatePlace
+async def CreatePlace(coordinator):
+    await coordinator.CreatePlace(labgrid_coordinator_pb2.CreatePlaceRequest(name="test"), RpcContext())
+
+
+def CreatePlace_fail(coordinator):
+    assert "test" not in coordinator.places
+
+
+def CreatePlace_success(coordinator):
+    assert "test" in coordinator.places
+
+
+# endregion
+
+
 @pytest.mark.parametrize(
     [
         "capabilities_enabled",  # Should the Coordinator have Capabilities enabled
@@ -77,7 +94,10 @@ def capability_coordinator(tmp_path, monkeypatch):
         "identity_id",  # The id of the Identity
     ],
     [
-    ]
+        (True, {Capability.create_place}, None, None, CreatePlace, CreatePlace_success, "testhost/testuser"),
+        (True, set(), grpc.StatusCode.PERMISSION_DENIED, None, CreatePlace, CreatePlace_fail, "testhost/testuser"),
+        (False, set(), None, None, CreatePlace, CreatePlace_success, "testhost/testuser"),
+    ],
 )
 def test_capability_behaviour(
     capability_coordinator,

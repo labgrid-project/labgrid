@@ -1623,16 +1623,33 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     resources.append(serialised)
         return labgrid_coordinator_pb2.ListResourcesResponse(resources=resources)
 
+    @add_identity
     @locked
-    async def ListPlaceResources(self, request, context):
+    async def ListPlaceResources(self, request, context, *, identity):
         name = request.name
-        logging.debug("ListPlaceResources name=%s", name)
         if not name or not isinstance(name, str):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+        logging.debug("ListPlaceResources name=%s", name)
+
         try:
             place = self.places[name]
         except KeyError:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
+
+        if self.use_capabilities:
+            if not identity:
+                await context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Identity required when using capabilities")
+            if not (
+                Capability.list_place_resources_any in identity.capabilities
+                or (
+                    (place.acquired == identity.id or identity.id in place.allowed)
+                    and Capability.list_place_resources_owned in identity.capabilities
+                )
+            ):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED, f"Insufficient permissions to list Resources for Place {name}"
+                )
+
         resources = []
         for _, session in sorted(self.exporters.items()):
             for _, group in sorted(session.groups.items()):

@@ -103,6 +103,31 @@ async def ListResources(coordinator):
 # endregion
 
 
+# region ListPlaceResources
+async def ListPlaceResources(coordinator):
+    await coordinator.ListPlaceResources(labgrid_coordinator_pb2.ListPlaceResourcesRequest(name="test"), RpcContext())
+
+
+async def ListPlaceResources_setup(coordinator):
+    await coordinator.CreatePlace(labgrid_coordinator_pb2.CreatePlaceRequest(name="test"), RpcContext())
+
+
+async def ListPlaceResources_setup_and_lock(coordinator):
+    await coordinator.CreatePlace(labgrid_coordinator_pb2.CreatePlaceRequest(name="test"), RpcContext())
+    await coordinator.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"), RpcContext())
+
+
+async def ListPlaceResources_setup_and_lock_and_share(coordinator):
+    await coordinator.CreatePlace(labgrid_coordinator_pb2.CreatePlaceRequest(name="test"), RpcContext())
+    await coordinator.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"), RpcContext())
+    await coordinator.SharePlace(
+        labgrid_coordinator_pb2.SharePlaceRequest(name="test", user="sharedhost/shareduser"), RpcContext()
+    )
+
+
+# endregion
+
+
 @pytest.mark.parametrize(
     [
         "capabilities_enabled",  # Should the Coordinator have Capabilities enabled
@@ -126,6 +151,71 @@ async def ListResources(coordinator):
         (True, {Capability.list_resources}, None, None, ListResources, None, "testhost/testuser"),
         (True, set(), grpc.StatusCode.PERMISSION_DENIED, None, ListResources, None, "testhost/testuser"),
         (False, set(), None, None, ListResources, None, "testhost/testuser"),
+        # ListPlaceResources
+        (
+            True,
+            {Capability.list_place_resources_any},
+            None,
+            ListPlaceResources_setup,
+            ListPlaceResources,
+            None,
+            "testhost/testuser",
+        ),
+        (
+            True,
+            {Capability.list_place_resources_owned},
+            grpc.StatusCode.PERMISSION_DENIED,
+            ListPlaceResources_setup,
+            ListPlaceResources,
+            None,
+            "testhost/testuser",
+        ),
+        (
+            True,
+            set(),
+            grpc.StatusCode.PERMISSION_DENIED,
+            ListPlaceResources_setup,
+            ListPlaceResources,
+            None,
+            "testhost/testuser",
+        ),
+        (
+            True,
+            {Capability.list_place_resources_owned},
+            None,
+            ListPlaceResources_setup_and_lock,
+            ListPlaceResources,
+            None,
+            "test-host/test-user",
+        ),
+        (
+            True,
+            set(),
+            grpc.StatusCode.PERMISSION_DENIED,
+            ListPlaceResources_setup_and_lock,
+            ListPlaceResources,
+            None,
+            "test-host/test-user",
+        ),
+        (
+            True,
+            {Capability.list_place_resources_owned},
+            None,
+            ListPlaceResources_setup_and_lock_and_share,
+            ListPlaceResources,
+            None,
+            "sharedhost/shareduser",
+        ),
+        (
+            True,
+            set(),
+            grpc.StatusCode.PERMISSION_DENIED,
+            ListPlaceResources_setup_and_lock_and_share,
+            ListPlaceResources,
+            None,
+            "sharedhost/shareduser",
+        ),
+        (False, set(), None, ListPlaceResources_setup, ListPlaceResources, None, "testhost/testuser"),
     ],
 )
 def test_capability_behaviour(

@@ -1514,8 +1514,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     def _get_places(self):
         return {k: v.asdict() for k, v in self.places.items()}
 
+    @require_capability(Capability.get_place)
     @locked
-    async def GetPlace(self, request, context):
+    async def GetPlace(self, request, context, *, identity):
         name = request.name
         logging.debug("GetPlace name=%s", name)
         if not name or not isinstance(name, str):

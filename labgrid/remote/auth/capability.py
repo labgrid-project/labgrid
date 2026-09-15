@@ -7,6 +7,7 @@ class Capability(StrEnum):
     add_place = auto()
     create_place = auto()
     delete_place = auto()
+    get_place = auto()
     get_places = auto()
     add_place_alias = auto()
     delete_place_alias = auto()

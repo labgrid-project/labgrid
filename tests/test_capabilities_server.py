@@ -83,6 +83,18 @@ def CreatePlace_success(coordinator):
 # endregion
 
 
+# region GetPlace
+async def GetPlace(coordinator):
+    await coordinator.GetPlace(labgrid_coordinator_pb2.GetPlaceRequest(name="test"), RpcContext())
+
+
+async def GetPlace_setup(coordinator):
+    await coordinator.CreatePlace(labgrid_coordinator_pb2.CreatePlaceRequest(name="test"), RpcContext())
+
+
+# endregion
+
+
 @pytest.mark.parametrize(
     [
         "capabilities_enabled",  # Should the Coordinator have Capabilities enabled
@@ -97,6 +109,9 @@ def CreatePlace_success(coordinator):
         (True, {Capability.create_place}, None, None, CreatePlace, CreatePlace_success, "testhost/testuser"),
         (True, set(), grpc.StatusCode.PERMISSION_DENIED, None, CreatePlace, CreatePlace_fail, "testhost/testuser"),
         (False, set(), None, None, CreatePlace, CreatePlace_success, "testhost/testuser"),
+        (True, {Capability.get_place}, None, GetPlace_setup, GetPlace, None, "testhost/testuser"),
+        (True, set(), grpc.StatusCode.PERMISSION_DENIED, GetPlace_setup, GetPlace, None, "testhost/testuser"),
+        (False, set(), None, GetPlace_setup, GetPlace, None, "testhost/testuser"),
     ],
 )
 def test_capability_behaviour(

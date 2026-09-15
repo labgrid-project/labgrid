@@ -1,9 +1,13 @@
 import asyncio
 from contextlib import contextmanager
+from typing import Optional, Callable
 
+import grpc
 import pytest
 
 import labgrid.remote.coordinator as coordinator_module
+from labgrid.remote.auth.capability import Capability
+from labgrid.remote.generated import labgrid_coordinator_pb2
 from labgrid.remote.identity import ClientIdentity
 
 
@@ -61,3 +65,50 @@ def capability_coordinator(tmp_path, monkeypatch):
         loop.run_until_complete(asyncio.gather(*coordinator.poll_tasks, return_exceptions=True))
         loop.run_until_complete(loop.shutdown_asyncgens())
         loop.close()
+
+@pytest.mark.parametrize(
+    [
+        "capabilities_enabled",  # Should the Coordinator have Capabilities enabled
+        "identity_capability_set",  # The Capabilities to include in the identity making the test request
+        "expected_error_status",  # The error to expect, if applicable
+        "setup_func",  # The function to setup the Coordinator for the test
+        "request_func",  # The function to call the request
+        "verifier_func",  # The function to verify the Coordinator state after the request_func,
+        "identity_id",  # The id of the Identity
+    ],
+    [
+    ]
+)
+def test_capability_behaviour(
+    capability_coordinator,
+    request_identity,
+    capabilities_enabled: bool,
+    identity_capability_set: set[Capability],
+    expected_error_status: Optional[grpc.StatusCode],
+    setup_func: Callable,
+    request_func: Callable,
+    verifier_func: Callable,
+    identity_id: str,
+):
+    coordinator, loop = capability_coordinator
+
+    if setup_func:
+        with request_identity(capabilities={member.value for member in Capability}):
+            loop.run_until_complete(setup_func(coordinator))
+
+    coordinator.use_capabilities = capabilities_enabled
+
+    if expected_error_status:
+        with (
+            request_identity(capabilities=identity_capability_set, identity_id=identity_id),
+            pytest.raises(RpcAbort) as exc_info,
+        ):
+            loop.run_until_complete(request_func(coordinator))
+
+        assert exc_info.value.code == expected_error_status
+    else:
+        with request_identity(capabilities=identity_capability_set, identity_id=identity_id):
+            loop.run_until_complete(request_func(coordinator))
+
+    if verifier_func:
+        verifier_func(coordinator)

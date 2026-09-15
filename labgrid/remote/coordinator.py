@@ -198,9 +198,11 @@ def locked(func):
 
 
 async def check_capability(cls, identity, capability, context):
-    if not identity and cls.use_capabilities:
+    if not cls.use_capabilities:
+        return
+    if not identity:
         await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities")
-    if identity and (capability not in identity.capabilities):
+    if capability not in identity.capabilities:
         await context.abort(
             grpc.StatusCode.PERMISSION_DENIED,
             f"Capability {capability} not in client capabilities {identity.capabilities}",

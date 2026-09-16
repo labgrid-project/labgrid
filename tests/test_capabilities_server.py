@@ -128,6 +128,29 @@ async def ListPlaceResources_setup_and_lock_and_share(coordinator):
 # endregion
 
 
+# region SharePlace
+async def SharePlace(coordinator):
+    await coordinator.SharePlace(
+        labgrid_coordinator_pb2.SharePlaceRequest(name="test", user="sharedhost/shareduser"), RpcContext()
+    )
+
+
+def SharePlace_fail(coordinator):
+    assert "sharedhost/shareduser" not in coordinator.places["test"].allowed
+
+
+def SharePlace_success(coordinator):
+    assert "sharedhost/shareduser" in coordinator.places["test"].allowed
+
+
+async def SharePlace_setup(coordinator):
+    await coordinator.CreatePlace(labgrid_coordinator_pb2.CreatePlaceRequest(name="test"), RpcContext())
+    await coordinator.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"), RpcContext())
+
+
+# endregion
+
+
 # region UnsharePlace
 async def UnsharePlace(coordinator):
     await coordinator.UnsharePlace(
@@ -254,6 +277,35 @@ async def ListPlaces_setup(coordinator):
             "sharedhost/shareduser",
         ),
         (False, set(), None, ListPlaceResources_setup, ListPlaceResources, None, "testhost/testuser"),
+        # SharePlace
+        (
+            True,
+            {Capability.share_place_owned},
+            None,
+            SharePlace_setup,
+            SharePlace,
+            SharePlace_success,
+            "test-host/test-user",
+        ),
+        (
+            True,
+            {Capability.share_place_any},
+            None,
+            SharePlace_setup,
+            SharePlace,
+            SharePlace_success,
+            "testhost/testuser",
+        ),
+        (
+            True,
+            set(),
+            grpc.StatusCode.PERMISSION_DENIED,
+            SharePlace_setup,
+            SharePlace,
+            SharePlace_fail,
+            "test-host/test-user",
+        ),
+        (False, set(), None, SharePlace_setup, SharePlace, SharePlace_success, "test-host/test-user"),
         # UnsharePlace
         (
             True,

@@ -1395,34 +1395,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         print(f"{place.name}: place released")
 
-    async def share_place(self, placename, user, context, *, identity):
-        peer = context.peer()
-
-        try:
-            username = infer_peer_identity(self.clients, context, identity)
-        except KeyError:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
-        try:
-            place = self.places[placename]
-        except KeyError:
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {placename} does not exist")
-        if not place.acquired:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired")
-        if place.acquired != username:
-            await context.abort(
-                grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired by {username}"
-            )
-
-        place.allowed.add(user)
-        place.touch()
-        self._publish_place(place)
-        self.save_later()
-
-    @add_identity
-    @locked
-    async def AllowPlace(self, request, context, *, identity):
-        placename = request.placename
-        user = request.user
+    async def share_place(self, placename, user, context, identity, capability_owned, capability_any):
         peer = context.peer()
 
         try:
@@ -1446,24 +1419,33 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 await context.abort(
                     grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities"
                 )
-            if owned and not (
-                Capability.allow_place_owned in identity.capabilities
-                or Capability.allow_place_any in identity.capabilities
-            ):
+            if owned and not (capability_owned in identity.capabilities or capability_any in identity.capabilities):
                 await context.abort(
                     grpc.StatusCode.PERMISSION_DENIED,
-                    f"Capability {Capability.allow_place_owned} not in client capabilities {identity.capabilities}",
+                    f"Capability {capability_owned} not in client capabilities {identity.capabilities}",
                 )
-            elif not owned and not Capability.allow_place_any in identity.capabilities:
+            elif not owned and not capability_any in identity.capabilities:
                 await context.abort(
                     grpc.StatusCode.PERMISSION_DENIED,
-                    f"Capability {Capability.allow_place_any} not in client capabilities {identity.capabilities}",
+                    f"Capability {capability_any} not in client capabilities {identity.capabilities}",
                 )
 
         place.allowed.add(user)
         place.touch()
         self._publish_place(place)
         self.save_later()
+
+    @add_identity
+    @locked
+    async def AllowPlace(self, request, context, *, identity):
+        await self.share_place(
+            request.placename,
+            request.user,
+            context,
+            identity,
+            Capability.allow_place_owned,
+            Capability.allow_place_any,
+        )
         return labgrid_coordinator_pb2.AllowPlaceResponse()
 
     @add_identity
@@ -1474,7 +1456,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         if not name or not isinstance(name, str):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
 
-        await self.share_place(name, request.user, context, identity=identity)
+        await self.share_place(
+            name, request.user, context, identity, Capability.share_place_owned, Capability.share_place_any
+        )
         return labgrid_coordinator_pb2.SharePlaceResponse()
 
     @add_identity

@@ -1904,8 +1904,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         reservations = [x.as_pb2() for x in self.reservations.values()]
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
 
+    @require_capability(Capability.list_reservations)
     @locked
-    async def ListReservations(self, request, context):
+    async def ListReservations(self, request, context, *, identity):
         if request.page_size != 0 or request.page_token != "":
             await context.abort(grpc.StatusCode.UNIMPLEMENTED, "ListReservations does not yet support pagination")
 

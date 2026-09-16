@@ -207,6 +207,21 @@ async def RefreshReservation_setup(coordinator):
 # endregion
 
 
+# region ListReservations
+async def ListReservations(coordinator):
+    await coordinator.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(), RpcContext())
+
+
+async def ListReservations_setup(coordinator):
+    await coordinator.CreateReservation(
+        labgrid_coordinator_pb2.CreateReservationRequest(filters={"main": {"filter": {"name": "test"}}}),
+        RpcContext(),
+    )
+
+
+# endregion
+
+
 @pytest.mark.parametrize(
     [
         "capabilities_enabled",  # Should the Coordinator have Capabilities enabled
@@ -377,6 +392,26 @@ async def RefreshReservation_setup(coordinator):
             "testhost/testuser",
         ),
         (False, set(), None, RefreshReservation_setup, RefreshReservation, None, "testhost/testuser"),
+        # ListReservations
+        (
+            True,
+            {Capability.list_reservations},
+            None,
+            ListReservations_setup,
+            ListReservations,
+            None,
+            "testhost/testuser",
+        ),
+        (
+            True,
+            set(),
+            grpc.StatusCode.PERMISSION_DENIED,
+            ListReservations_setup,
+            ListReservations,
+            None,
+            "testhost/testuser",
+        ),
+        (False, set(), None, ListReservations_setup, ListReservations, None, "testhost/testuser"),
     ],
 )
 def test_capability_behaviour(

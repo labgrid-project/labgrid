@@ -1548,8 +1548,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         except Exception:
             logging.exception("error during get places")
 
+    @require_capability(Capability.list_places)
     @locked
-    async def ListPlaces(self, request, context):
+    async def ListPlaces(self, request, context, *, identity):
         logging.debug("ListPlaces")
 
         if request.page_size != 0 or request.page_token != "":

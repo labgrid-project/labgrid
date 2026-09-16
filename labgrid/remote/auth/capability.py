@@ -32,4 +32,5 @@ class Capability(StrEnum):
     cancel_reservation_owned = auto()
     cancel_reservation_any = auto()
     poll_reservation = auto()
+    refresh_reservation = auto()
     get_reservations = auto()

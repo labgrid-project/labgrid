@@ -1889,8 +1889,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         res = await self.refresh_reservation(request.token, context)
         return labgrid_coordinator_pb2.PollReservationResponse(reservation=res.as_pb2())
 
+    @require_capability(Capability.refresh_reservation)
     @locked
-    async def RefreshReservation(self, request: labgrid_coordinator_pb2.RefreshReservationRequest, context):
+    async def RefreshReservation(
+        self, request: labgrid_coordinator_pb2.RefreshReservationRequest, context, *, identity
+    ):
         logging.debug("RefreshReservation reservation_id=%s", request.reservation_id)
         res = await self.refresh_reservation(request.reservation_id, context)
         return labgrid_coordinator_pb2.RefreshReservationResponse(reservation=res.as_pb2())

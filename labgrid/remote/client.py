@@ -4,75 +4,68 @@ coordinator, acquire a place and interact with the connected resources"""
 import argparse
 import asyncio
 import contextlib
-from contextvars import ContextVar
 import enum
+import ipaddress
+import json
+import logging
 import os
 import pathlib
-import subprocess
-import traceback
-import logging
-import signal
-import sys
 import shlex
 import shutil
-import json
-import itertools
-import ipaddress
-from textwrap import indent
-from socket import gethostname, gethostbyname
-from getpass import getuser
-from collections import defaultdict, OrderedDict
+import signal
+import subprocess
+import sys
+import traceback
+from collections import OrderedDict, defaultdict
 from datetime import datetime
 from pprint import pformat
-from typing import Any, Dict
+from socket import gethostbyname
+from textwrap import indent
 
 import attr
-import grpc
 
-# TODO: drop if Python >= 3.11 guaranteed
-from exceptiongroup import ExceptionGroup  # pylint: disable=redefined-builtin
-
-from .common import (
-    ResourceEntry,
-    ResourceMatch,
-    Place,
-    Reservation,
-    ReservationState,
-    TAG_KEY,
-    TAG_VAL,
-    queue_as_aiter,
-    get_client_credentials,
-)
 from .. import Environment, Target, target_factory
-from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
-from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
-from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout
+from ..driver import ExecutionError, Mode
+from ..exceptions import InvalidConfigError, NoDriverFoundError, NoResourceFoundError
+from ..logging import StepLogger, basicConfig
+from ..resource.remote import RemotePlace
+from ..util import Timeout, atomic_replace, diff_dict, dump, flat_dict, labgrid_version
+from ..util.helper import processwrapper
 from ..util.proxy import proxymanager
 from ..util.ssh import sshmanager
-from ..util.helper import processwrapper
-from ..driver import Mode, ExecutionError
-from ..logging import basicConfig, StepLogger
+from .common import (
+    TAG_KEY,
+    TAG_VAL,
+    ReservationState,
+    ResourceMatch,
+    get_client_credentials,
+)
+from .session import (
+    ClientSession as ClientSession,
+)
+from .session import (
+    Error,
+    ErrorGroup,
+    MissingPlaceNameError,
+    PlaceHostMismatchError,
+    PlaceReleasePermissionError,
+    PlaceUserMismatchError,
+    ReservationFilter,
+    ResourceChanged,
+    ServerError,
+    Tag,
+    UserError,
+)
+from .session import (
+    ensure_event_loop as ensure_event_loop,
+)
+from .session import (
+    start_session as start_library_session,
+)
 
-# This is a workround for the gRPC issue
-# https://github.com/grpc/grpc/issues/38679.
-# Since Python 3.12, an empty exception message is printed from gRPC
-# during shutdown, although nothing seems to go wrong. As this is
-# confusing for users, suppress the message by adding an indirection.
+# This is a workaround for https://github.com/grpc/grpc/issues/38679.
+# Since Python 3.12, gRPC can print an empty exception during shutdown.
 sys.excepthook = lambda type, value, traceback: sys.__excepthook__(type, value, traceback)
-
-
-class Error(Exception):
-    def __str__(self):
-        return f"Error: {' '.join(self.args)}"
-
-
-class UserError(Error):
-    pass
-
-
-class ServerError(Error):
-    pass
 
 
 class InteractiveCommandError(Error):
@@ -81,196 +74,22 @@ class InteractiveCommandError(Error):
         self.exitcode = exitcode
 
 
-class ErrorGroup(ExceptionGroup):
-    def __str__(self):
-        # TODO: drop pylint disable once https://github.com/pylint-dev/pylint/issues/8985 is fixed
-        errors_combined = "\n".join(f"- {' '.join(e.args)}" for e in self.exceptions)  # pylint: disable=not-an-iterable
-        return f"{self.message}:\n{errors_combined}"
-
-
 @attr.s(eq=False)
-class ClientSession:
-    """The ClientSession encapsulates all the actions a Client can invoke on
-    the coordinator."""
+class ClientCommands:
+    """Command-line parsing adapters, presenters and interactive commands."""
 
-    address = attr.ib(validator=attr.validators.instance_of(str))
-    credentials = attr.ib(
-        default=None,
-        kw_only=True,
-        validator=attr.validators.optional(attr.validators.instance_of(grpc.ChannelCredentials)),
-    )
-    loop = attr.ib(validator=attr.validators.instance_of(asyncio.BaseEventLoop))
-    env = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(Environment)))
-    role = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
-    prog = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
-    args = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(argparse.Namespace)))
-    monitor = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    session = attr.ib()
+    args = attr.ib()
+    prog = attr.ib(default=None)
 
-    def gethostname(self):
-        return os.environ.get("LG_HOSTNAME", gethostname())
+    def __getattr__(self, name):
+        return getattr(self.session, name)
 
-    def getuser(self):
-        return os.environ.get("LG_USERNAME", getuser())
-
-    def __attrs_post_init__(self):
-        """Actions which are executed if a connection is successfully opened."""
-        self.stopping = asyncio.Event()
-
-        # It seems since https://github.com/grpc/grpc/pull/34647, the
-        # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
-        # so set it as well.
-        # Use GRPC_VERBOSITY=DEBUG GRPC_TRACE=http_keepalive for debugging.
-        channel_options = [
-            ("grpc.keepalive_time_ms", 7500),  # 7.5 seconds
-            ("grpc.keepalive_timeout_ms", 10000),  # 10 seconds
-            ("grpc.http2.ping_timeout_ms", 10000),  # 10 seconds
-            ("grpc.http2.max_pings_without_data", 0),  # no limit
-        ]
-
-        if self.credentials:
-            self.channel = grpc.aio.secure_channel(
-                target=self.address,
-                credentials=self.credentials,
-                options=channel_options,
-            )
-        else:
-            self.channel = grpc.aio.insecure_channel(
-                target=self.address,
-                options=channel_options,
-            )
-
-        self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
-
-        self.out_queue = asyncio.Queue()
-        self.stream_call = None
-        self.pump_task = None
-        self.sync_id = itertools.count(start=1)
-        self.sync_events = {}
-
-        self.logger = logging.getLogger("ClientSession")
-
-    async def start(self):
-        """Starts receiving resource and place updates from the coordinator."""
-        self.resources = {}
-        self.places = {}
-
-        self.pump_task = self.loop.create_task(self.message_pump())
-        msg = labgrid_coordinator_pb2.ClientInMessage()
-        msg.startup.version = labgrid_version()
-        msg.startup.name = f"{self.gethostname()}/{self.getuser()}"
-        self.out_queue.put_nowait(msg)
-        msg = labgrid_coordinator_pb2.ClientInMessage()
-        msg.subscribe.all_places = True
-        self.out_queue.put_nowait(msg)
-        msg = labgrid_coordinator_pb2.ClientInMessage()
-        msg.subscribe.all_resources = True
-        self.out_queue.put_nowait(msg)
-        await self.sync_with_coordinator()
-        if self.stopping.is_set():
-            raise ServerError("Could not connect to coordinator")
-
-    async def stop(self):
-        """Stops stream for resource and place updates started with ClientSession.start()."""
-        self.out_queue.put_nowait(None)  # let the sender side exit gracefully
-        if self.stream_call:
-            self.stream_call.cancel()
-        try:
-            await self.pump_task
-        except asyncio.CancelledError:
-            pass
-        self.cancel_pending_syncs()
-
-    async def close(self):
-        """Closes the channel to the coordinator."""
-        await self.channel.close()
-
-    async def sync_with_coordinator(self):
-        """Wait for coordinator to process all previous messages in stream."""
-        identifier = next(self.sync_id)
-        event = self.sync_events[identifier] = asyncio.Event()
-        msg = labgrid_coordinator_pb2.ClientInMessage()
-        msg.sync.id = identifier
-        self.logger.debug("sending sync %s", identifier)
-        self.out_queue.put_nowait(msg)
-        await event.wait()
-        if self.stopping.is_set():
-            self.logger.debug("sync %s failed", identifier)
-        else:
-            self.logger.debug("received sync %s", identifier)
-        return not self.stopping.is_set()
-
-    def cancel_pending_syncs(self):
-        """Cancel all pending ClientSession.sync_with_coordinator() calls."""
-        assert self.stopping.is_set()  # only call when something has gone wrong
-        while True:
-            try:
-                identifier, event = self.sync_events.popitem()
-                self.logger.debug("cancelling %s %s", identifier, event)
-                event.set()
-            except KeyError:
-                break
-
-    async def message_pump(self):
-        """Task for receiving resource and place updates."""
-        got_message = False
-        try:
-            self.stream_call = call = self.stub.ClientStream(queue_as_aiter(self.out_queue, self.logger))
-            async for out_msg in call:
-                out_msg: labgrid_coordinator_pb2.ClientOutMessage
-                got_message = True
-                self.logger.debug("out_msg from coordinator: %s", out_msg)
-                for update in out_msg.updates:
-                    update_kind = update.WhichOneof("kind")
-                    if update_kind == "resource":
-                        resource: labgrid_coordinator_pb2.Resource = update.resource
-                        await self.on_resource_changed(
-                            resource.path.exporter_name,
-                            resource.path.group_name,
-                            resource.path.resource_name,
-                            ResourceEntry.data_from_pb2(resource),
-                        )
-                    elif update_kind == "del_resource":
-                        resource_path: labgrid_coordinator_pb2.Resource.Path = update.del_resource
-                        await self.on_resource_changed(
-                            resource_path.exporter_name, resource_path.group_name, resource_path.resource_name, {}
-                        )
-                    elif update_kind == "place":
-                        place = update.place
-                        await self.on_place_changed(place)
-                    elif update_kind == "del_place":
-                        place_name = update.del_place
-                        await self.on_place_deleted(place_name)
-                    else:
-                        self.logger.warning("unknown update from coordinator! %s", update_kind)
-                if out_msg.HasField("sync"):
-                    event = self.sync_events.pop(out_msg.sync.id)
-                    event.set()
-        except grpc.aio.AioRpcError as e:
-            if e.code() == grpc.StatusCode.UNAVAILABLE:
-                if got_message:
-                    self.logger.error("coordinator became unavailable: %s", e.details())
-                else:
-                    self.logger.error("coordinator is unavailable: %s", e.details())
-            else:
-                self.logger.exception("unexpected grpc error in coordinator message pump task")
-        except Exception:
-            self.logger.exception("error in coordinator message pump task")
-        finally:
-            self.stopping.set()
-            self.out_queue.put_nowait(None)  # let the sender side exit gracefully
-            self.cancel_pending_syncs()
-
-    async def on_resource_changed(self, exporter, group_name, resource_name, resource):
-        group = self.resources.setdefault(exporter, {}).setdefault(group_name, {})
-        # Do not replace the ResourceEntry object, as other components may keep
-        # a reference to it and want to see changes.
-        if resource_name not in group:
-            old = None
-            group[resource_name] = ResourceEntry(resource)
-        else:
-            old = group[resource_name].data
-            group[resource_name].data = resource
-        if self.monitor:
+    def _print_event(self, event):
+        if isinstance(event, ResourceChanged):
+            exporter, group_name, resource_name = event.exporter, event.group, event.name
+            resource = event.current.data if event.current else {}
+            old = event.previous.data if event.previous else None
             if "cls" in resource and not old:
                 print(f"Resource {exporter}/{group_name}/{resource['cls']}/{resource_name} created: {resource}")
             elif "cls" in resource and old:
@@ -279,32 +98,21 @@ class ClientSession:
                     print(f"  {k}: {v_old} -> {v_new}")
             else:
                 print(f"Resource {exporter}/{group_name}/???/{resource_name} deleted")
-
-    async def on_place_changed(self, place_pb2: labgrid_coordinator_pb2.Place):
-        name = place_pb2.name
-
-        if name not in self.places:
-            self.places[name] = Place.from_pb2(place_pb2)
-            if self.monitor:
-                print(f"Place {name} created: {place_pb2}")
+        elif event.current is None:
+            print(f"Place {event.name} deleted")
+        elif event.previous is None:
+            print(f"Place {event.name} created: {event.description}")
         else:
-            place = self.places[name]
-            old = flat_dict(place.asdict())
-            place.update_from_pb2(place_pb2)
-            new = flat_dict(place.asdict())
-            if self.monitor:
-                print(f"Place {name} changed:")
-                for k, v_old, v_new in diff_dict(old, new):
-                    print(f"  {k}: {v_old} -> {v_new}")
-
-    async def on_place_deleted(self, name: str):
-        del self.places[name]
-        if self.monitor:
-            print(f"Place {name} deleted")
+            print(f"Place {event.name} changed:")
+            for k, v_old, v_new in diff_dict(flat_dict(event.previous.asdict()), flat_dict(event.current.asdict())):
+                print(f"  {k}: {v_old} -> {v_new}")
 
     async def do_monitor(self):
-        self.monitor = True
-        await self.stopping.wait()
+        self.session.subscribe(self._print_event)
+        try:
+            await self.stopping.wait()
+        finally:
+            self.session.unsubscribe(self._print_event)
 
     async def complete(self):
         if self.args.type == "resources":
@@ -447,96 +255,23 @@ class ClientSession:
         for entry in result:
             print(layout.format(*entry))
 
-    def _match_places(self, pattern):
-        """search for substring matches of pattern in place names and aliases
-
-        Aliases in the format "namespace:alias" only match if the namespace is
-        the current user name.
-        """
-        result = set()
-
-        # reservation token lookup
-        token = None
-        if pattern.startswith("+"):
-            token = pattern[1:]
-            if not token:
-                token = os.environ.get("LG_TOKEN", None)
-            if not token:
-                return []
-            for name, place in self.places.items():
-                if place.reservation == token:
-                    result.add(name)
-            if not result:
-                raise UserError(f"reservation token {token} matches nothing")
-            return list(result)
-
-        # name and alias lookup
-        for name, place in self.places.items():
-            if pattern in name:
-                result.add(name)
-            for alias in place.aliases:
-                if ":" in alias:
-                    namespace, alias = alias.split(":", 1)
-                    if namespace != self.getuser():
-                        continue
-                    if alias == pattern:  # prefer user namespace
-                        return [name]
-                if pattern in alias:
-                    result.add(name)
-        return list(result)
-
-    def _check_allowed(self, place):
-        if not place.acquired:
-            raise UserError(f"place {place.name} is not acquired")
-        if f"{self.gethostname()}/{self.getuser()}" not in place.allowed:
-            host, user = place.acquired.split("/")
-            if user != self.getuser():
-                raise UserError(
-                    f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}"
-                )
-            if host != self.gethostname():
-                raise UserError(
-                    f"place {place.name} is not acquired on this computer, acquired on {host}. To allow this host, use labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()} on the other host"
-                )
-
     def get_place(self, place=None):
-        pattern = place or self.args.place
-        if pattern is None:
-            raise UserError("place pattern not specified")
-        places = self._match_places(pattern)
-        if not places:
-            raise UserError(f"place pattern {pattern} matches nothing")
-        if pattern in places:
-            return self.places[pattern]
-        if len(places) > 1:
-            raise UserError(f"pattern {pattern} matches multiple places ({', '.join(places)})")
-        return self.places[places[0]]
-
-    def get_place_names_from_env(self):
-        """Returns a list of RemotePlace names found in the environment config."""
-        places = []
-        for role_config in self.env.config.get_targets().values():
-            resources, _ = target_factory.normalize_config(role_config)
-            remote_places = resources.get("RemotePlace", [])
-            for place in remote_places:
-                places.append(place)
-
-        return places
+        return self.session.get_place(place or self.args.place)
 
     def get_idle_place(self, place=None):
-        place = self.get_place(place)
-        if place.acquired:
-            err = "This operation requires the place to be idle."
-            if place.acquired == self.gethostname() + "/" + self.getuser():
-                raise UserError(f"{err} Please release {place.name}.")
-            else:
-                raise UserError(f"{err} Place {place.name} is acquired by {place.acquired}.")
-        return place
+        return self.session.get_idle_place(place or self.args.place)
 
     def get_acquired_place(self, place=None):
         place = self.get_place(place)
-        self._check_allowed(place)
-        return place
+        try:
+            return self.session.get_acquired_place(place)
+        except (PlaceUserMismatchError, PlaceHostMismatchError) as exc:
+            command = f"labgrid-client -p {exc.place_name} allow {self.gethostname()}/{self.getuser()}"
+            if isinstance(exc, PlaceUserMismatchError):
+                hint = f"To work simultaneously, {exc.owner_user} can execute {command}"
+            else:
+                hint = f"To allow this host, use {command} on the other host"
+            raise UserError(f"{exc.args[0]} {hint}") from None
 
     async def print_place(self):
         """Print out the current place and related resources"""
@@ -573,71 +308,27 @@ class ClientSession:
                         print(indent(pformat(resource.asdict()), prefix="  "))
 
     async def add_place(self):
-        """Add a place to the coordinator"""
-        name = self.args.place
-        if not name:
-            raise UserError("missing place name. Set with -p <place> or via env var LG_PLACE")
-
-        request = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
         try:
-            await self.stub.AddPlace(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+            await self.session.add_place(self.args.place)
+        except MissingPlaceNameError as exc:
+            raise UserError(f"{exc.args[0]}. Set with -p <place> or via env var LG_PLACE") from None
 
     async def del_place(self):
-        """Delete a place from the coordinator"""
-        place = self.get_idle_place()
-        request = labgrid_coordinator_pb2.DeletePlaceRequest(name=place.name)
-        try:
-            await self.stub.DeletePlace(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self.session.del_place(self.get_idle_place())
 
     async def add_alias(self):
-        """Add an alias for a place on the coordinator"""
-        place = self.get_idle_place()
-        alias = self.args.alias
-
-        request = labgrid_coordinator_pb2.AddPlaceAliasRequest(placename=place.name, alias=alias)
-
-        try:
-            await self.stub.AddPlaceAlias(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self.session.add_alias(self.get_idle_place(), self.args.alias)
 
     async def del_alias(self):
-        """Delete an alias for a place from the coordinator"""
-        place = self.get_idle_place()
-        alias = self.args.alias
-
-        request = labgrid_coordinator_pb2.DeletePlaceAliasRequest(placename=place.name, alias=alias)
-
-        try:
-            await self.stub.DeletePlaceAlias(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self.session.del_alias(self.get_idle_place(), self.args.alias)
 
     async def set_comment(self):
-        """Set the comment on a place"""
-        place = self.get_place()
-        comment = " ".join(self.args.comment)
-
-        request = labgrid_coordinator_pb2.SetPlaceCommentRequest(placename=place.name, comment=comment)
-
-        try:
-            await self.stub.SetPlaceComment(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self.session.set_comment(self.get_place(), " ".join(self.args.comment))
 
     async def set_tags(self):
         """Set the tags on a place"""
         place = self.get_place()
-        tags = {}
+        tags = []
         for pair in self.args.tags:
             try:
                 k, v = pair.split("=")
@@ -647,15 +338,9 @@ class ClientSession:
                 raise UserError(f"tag key '{k}' needs to match the rexex '{TAG_KEY.pattern}'")
             if not TAG_VAL.match(v):
                 raise UserError(f"tag value '{v}' needs to match the rexex '{TAG_VAL.pattern}'")
-            tags[k] = v
+            tags.append(Tag(k, v))
 
-        request = labgrid_coordinator_pb2.SetPlaceTagsRequest(placename=place.name, tags=tags)
-
-        try:
-            await self.stub.SetPlaceTags(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self.session.set_tags(place, tags)
 
     async def add_match(self):
         """Add a match for a place, making fuzzy matching available to the
@@ -668,13 +353,7 @@ class ClientSession:
                 print(f"pattern '{pattern}' exists, skipping", file=sys.stderr)
                 continue
 
-            request = labgrid_coordinator_pb2.AddPlaceMatchRequest(placename=place.name, pattern=pattern)
-
-            try:
-                await self.stub.AddPlaceMatch(request)
-                await self.sync_with_coordinator()
-            except grpc.aio.AioRpcError as e:
-                raise ServerError(e.details())
+            await self.session.add_match(place, ResourceMatch.fromstr(pattern))
 
     async def del_match(self):
         """Delete a match for a place"""
@@ -685,13 +364,7 @@ class ClientSession:
             if not place.hasmatch(pattern.split("/")):
                 print(f"pattern '{pattern}' not found, skipping", file=sys.stderr)
 
-            request = labgrid_coordinator_pb2.DeletePlaceMatchRequest(placename=place.name, pattern=pattern)
-
-            try:
-                await self.stub.DeletePlaceMatch(request)
-                await self.sync_with_coordinator()
-            except grpc.aio.AioRpcError as e:
-                raise ServerError(e.details())
+            await self.session.del_match(place, ResourceMatch.fromstr(pattern))
 
     async def add_named_match(self):
         """Add a named match for a place.
@@ -705,25 +378,9 @@ class ClientSession:
         if "*" in pattern:
             raise UserError(f"invalid pattern '{pattern}' ('*' not allowed for named matches)")
 
-        request = labgrid_coordinator_pb2.AddPlaceMatchRequest(placename=place.name, pattern=pattern, rename=name)
-
-        try:
-            await self.stub.AddPlaceMatch(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
-
-    def check_matches(self, place):
-        resources = []
-        for exporter, groups in self.resources.items():
-            for group_name, group in groups.items():
-                for resource_name, resource in group.items():
-                    resource_path = (exporter, group_name, resource.cls, resource_name)
-                    resources.append(resource_path)
-
-        match = place.unmatched(resources)
-        if match:
-            raise UserError(f"Match {match} has no matching remote resource")
+        match = ResourceMatch.fromstr(pattern)
+        match.rename = name
+        await self.session.add_match(place, match)
 
     async def acquire(self):
         errors = []
@@ -740,32 +397,22 @@ class ClientSession:
             raise ErrorGroup("Multiple errors occurred during acquire", errors)
 
     async def _acquire_place(self, place):
-        """Acquire a place, marking it unavailable for other clients"""
         place = self.get_place(place)
-        if place.acquired:
-            host, user = place.acquired.split("/")
-            allowhelp = f"'labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}' on {host}."
-            if self.getuser() == user:
-                if self.gethostname() == host:
-                    raise UserError(f"You have already acquired place {place.name}.")
-                else:
-                    raise UserError(
-                        f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {allowhelp}"
-                    )
-            else:
-                raise UserError(
-                    f"Place {place.name} is already acquired by {place.acquired}. To work simultaneously, {user} can execute {allowhelp}"
-                )
-        if not self.args.allow_unmatched:
-            self.check_matches(place)
-
-        request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name)
-
         try:
-            await self.stub.AcquirePlace(request)
-            await self.sync_with_coordinator()
+            await self.session.acquire_place(place, allow_unmatched=self.args.allow_unmatched)
             print(f"acquired place {place.name}")
-        except grpc.aio.AioRpcError as e:
+        except (PlaceUserMismatchError, PlaceHostMismatchError) as exc:
+            command = (
+                f"'labgrid-client -p {exc.place_name} allow {self.gethostname()}/{self.getuser()}' "
+                f"on {exc.owner_host}."
+            )
+            hint = "To work simultaneously, "
+            hint += (
+                f"execute {command}" if isinstance(exc, PlaceHostMismatchError)
+                else f"{exc.owner_user} can execute {command}"
+            )
+            raise UserError(f"{exc.args[0]} {hint}") from None
+        except ServerError:
             # check potential failure causes
             for exporter, groups in sorted(self.resources.items()):
                 for group_name, group in sorted(groups.items()):
@@ -783,7 +430,7 @@ class ClientSession:
                             f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}) already acquired by place '{resource.acquired}'"
                         )  # pylint: disable=line-too-long
 
-            raise ServerError(e.details())
+            raise
 
     async def release(self):
         errors = []
@@ -802,77 +449,29 @@ class ClientSession:
     async def _release_place(self, place):
         """Release a previously acquired place"""
         place = self.get_place(place)
-        if not place.acquired:
-            raise UserError(f"place {place.name} is not acquired")
-        _, user = place.acquired.split("/")
-        if user != self.getuser():
-            if not self.args.kick:
-                raise UserError(
-                    f"place {place.name} is acquired by a different user ({place.acquired}), use --kick if you are sure"
-                )  # pylint: disable=line-too-long
+        if place.acquired and self.args.kick and place.acquired.split("/")[1] != self.getuser():
             print(f"warning: kicking user ({place.acquired})")
 
-        request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
-
         try:
-            await self.stub.ReleasePlace(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
-
+            await self.session.release_place(place, kick=self.args.kick)
+        except PlaceReleasePermissionError as exc:
+            raise UserError(f"{exc.args[0]}, use --kick if you are sure") from None
         print(f"released place {place.name}")
 
     async def release_from(self):
-        """Release a place, but only if acquired by a specific user"""
-        place = self.get_place()
-        if not place.acquired:
-            raise UserError(f"place {place.name} is not acquired")
-
-        request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name, fromuser=self.args.acquired)
-
-        try:
-            await self.stub.ReleasePlace(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
-
+        place = await self.session.release_from(self.get_place(), self.args.acquired)
         print(f"{self.args.acquired} has released place {place.name}")
 
     async def allow(self):
-        """Allow another use access to a previously acquired place"""
         place = self.get_acquired_place()
-        if "/" not in self.args.user:
-            raise UserError(f"user {self.args.user} must be in <host>/<username> format")
-        request = labgrid_coordinator_pb2.AllowPlaceRequest(placename=place.name, user=self.args.user)
-
-        try:
-            await self.stub.AllowPlace(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
-
+        await self.session.allow(place, self.args.user)
         print(f"allowed {self.args.user} for place {place.name}")
-
-    def get_target_resources(self, place):
-        self._check_allowed(place)
-        resources = {}
-        for resource_path in place.acquired_resources:
-            match = place.getmatch(resource_path)
-            (exporter, group_name, cls, resource_name) = resource_path
-            name = resource_name
-            if match.rename:
-                name = match.rename
-            try:
-                resources[(name, cls)] = self.resources[exporter][group_name][resource_name]
-            except KeyError:
-                raise ServerError(f"place {place} has an orphaned resource (exporter {exporter} disconnected?)")
-
-        return resources
 
     def get_target_config(self, place):
         config = {}
         resources = config["resources"] = []
-        for (name, _), resource in self.get_target_resources(place).items():
+        for binding in self.session.get_target_resources(place):
+            name, resource = binding.name, binding.resource
             args = OrderedDict()
             if name != resource.cls:
                 args["name"] = name
@@ -885,20 +484,15 @@ class ClientSession:
         env = {"targets": {place.name: self.get_target_config(place)}}
         print(dump(env))
 
-    def _prepare_manager(self):
-        manager = RemotePlaceManager.get()
-        manager.session = self
-        manager.loop = self.loop
-
     def _get_target(self, place):
-        self._prepare_manager()
+        self.session._prepare_manager()
         target = None
         if self.env:
-            if self.role is None:
-                self.role = find_role_by_place(self.env.config.get_targets(), place.name)
-                if self.role is not None:
-                    print(f"Selected role {self.role} from configuration file")
-            target = self.env.get_target(self.role)
+            if self.session.role is None:
+                self.session.role = find_role_by_place(self.env.config.get_targets(), place.name)
+                if self.session.role is not None:
+                    print(f"Selected role {self.session.role} from configuration file")
+            target = self.env.get_target(self.session.role)
         if target:
             if self.args.state:
                 strategy = target.get_driver("Strategy")
@@ -955,9 +549,9 @@ class ClientSession:
         delay = self.args.delay
         name = self.args.name
         target = self._get_target(place)
+        from ..resource import NetworkYKUSHPowerPort, TasmotaPowerPort
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
-        from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
-        from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
+        from ..resource.remote import NetworkSiSPMPowerPort, NetworkSysfsGPIO, NetworkUSBPowerPort
 
         drv = None
         try:
@@ -998,13 +592,13 @@ class ClientSession:
         name = self.args.name
         target = self._get_target(place)
         from ..resource import (
+            Eth008DigitalOutput,
+            HttpDigitalOutput,
             ModbusTCPCoil,
             OneWirePIO,
-            HttpDigitalOutput,
             WaveshareModbusTCPCoil,
-            Eth008DigitalOutput,
         )
-        from ..resource.remote import NetworkDeditecRelais8, NetworkSysfsGPIO, NetworkLXAIOBusPIO, NetworkHIDRelay
+        from ..resource.remote import NetworkDeditecRelais8, NetworkHIDRelay, NetworkLXAIOBusPIO, NetworkSysfsGPIO
 
         drv = None
         try:
@@ -1134,8 +728,6 @@ class ClientSession:
                 break
             await asyncio.sleep(1.0)
 
-    console.needs_target = True
-
     def dfu(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
@@ -1191,13 +783,13 @@ class ClientSession:
         place = self.get_acquired_place()
         target = self._get_target(place)
         name = self.args.name
-        from ..resource.remote import (
-            NetworkMXSUSBLoader,
-            NetworkIMXUSBLoader,
-            NetworkRKUSBLoader,
-            NetworkAlteraUSBBlaster,
-        )
         from ..driver import OpenOCDDriver
+        from ..resource.remote import (
+            NetworkAlteraUSBBlaster,
+            NetworkIMXUSBLoader,
+            NetworkMXSUSBLoader,
+            NetworkRKUSBLoader,
+        )
 
         drv = None
         try:
@@ -1235,7 +827,7 @@ class ClientSession:
         action = self.args.action
         target = self._get_target(place)
         name = self.args.name
-        from ..resource.remote import NetworkUSBSDMuxDevice, NetworkUSBSDWireDevice, NetworkUSBSDWire3Device
+        from ..resource.remote import NetworkUSBSDMuxDevice, NetworkUSBSDWire3Device, NetworkUSBSDWireDevice
 
         drv = None
         for resource in target.resources:
@@ -1393,8 +985,8 @@ class ClientSession:
         target = self._get_target(place)
         name = self.args.name
         from ..resource.httpvideostream import HTTPVideoStream
-        from ..resource.udev import USBVideo
         from ..resource.remote import NetworkUSBVideo
+        from ..resource.udev import USBVideo
 
         drv = None
         try:
@@ -1567,7 +1159,7 @@ class ClientSession:
     async def create_reservation(self):
         prio = self.args.prio
 
-        fltr = {}
+        tags = []
         for pair in self.args.filters:
             try:
                 k, v = pair.split("=")
@@ -1577,20 +1169,9 @@ class ClientSession:
                 raise UserError(f"Key '{k}' in filter '{pair}' is invalid")
             if not TAG_VAL.match(v):
                 raise UserError(f"Value '{v}' in filter '{pair}' is invalid")
-            fltr[k] = v
+            tags.append(Tag(k, v))
 
-        fltrs = {
-            "main": labgrid_coordinator_pb2.Reservation.Filter(filter=fltr),
-        }
-
-        request = labgrid_coordinator_pb2.CreateReservationRequest(filters=fltrs, prio=prio)
-
-        try:
-            response: labgrid_coordinator_pb2.CreateReservationResponse = await self.stub.CreateReservation(request)
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
-
-        res = Reservation.from_pb2(response.reservation)
+        res = await self.session.create_reservation((ReservationFilter("main", tuple(tags)),), prio)
         if self.args.shell:
             print(f"export LG_TOKEN={res.token}")
         else:
@@ -1602,25 +1183,11 @@ class ClientSession:
             await self._wait_reservation(res.token, verbose=False)
 
     async def cancel_reservation(self):
-        token: str = self.args.token
-
-        request = labgrid_coordinator_pb2.CancelReservationRequest(token=token)
-
-        try:
-            await self.stub.CancelReservation(request)
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self.session.cancel_reservation(self.args.token)
 
     async def _wait_reservation(self, token: str, verbose=True):
         while True:
-            request = labgrid_coordinator_pb2.PollReservationRequest(token=token)
-
-            try:
-                response: labgrid_coordinator_pb2.PollReservationResponse = await self.stub.PollReservation(request)
-            except grpc.aio.AioRpcError as e:
-                raise ServerError(e.details())
-
-            res = Reservation.from_pb2(response.reservation)
+            res = await self.session.poll_reservation(token)
             if verbose:
                 res.show()
             if res.state is ReservationState.waiting:
@@ -1633,13 +1200,7 @@ class ClientSession:
         await self._wait_reservation(token)
 
     async def print_reservations(self):
-        request = labgrid_coordinator_pb2.GetReservationsRequest()
-
-        try:
-            response: labgrid_coordinator_pb2.GetReservationsResponse = await self.stub.GetReservations(request)
-            reservations = [Reservation.from_pb2(x) for x in response.reservations]
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        reservations = await self.session.list_reservations()
 
         for res in sorted(reservations, key=lambda x: (-x.prio, x.created)):
             print(f"Reservation '{res.token}':")
@@ -1675,8 +1236,6 @@ class ClientSession:
         except GeneratorExit:
             print("Exiting...\n", file=sys.stderr)
 
-    export.needs_target = True
-
     def print_version(self):
         print(labgrid_version())
 
@@ -1686,7 +1245,7 @@ class ClientSession:
         name = self.args.name
         adb_cmd = ["adb"]
 
-        from ..resource.adb import RemoteUSBADBDevice, NetworkADBDevice
+        from ..resource.adb import NetworkADBDevice, RemoteUSBADBDevice
 
         for resource in target.resources:
             if name and resource.name != name:
@@ -1721,7 +1280,7 @@ class ClientSession:
         scrcpy_cmd = ["scrcpy"]
         env_var = os.environ.copy()
 
-        from ..resource.adb import RemoteUSBADBDevice, NetworkADBDevice
+        from ..resource.adb import NetworkADBDevice, RemoteUSBADBDevice
 
         for resource in target.resources:
             if name and resource.name != name:
@@ -1775,75 +1334,20 @@ class ClientSession:
         subprocess.run(scrcpy_cmd, env=env_var, check=True)
 
 
-_loop: ContextVar["asyncio.AbstractEventLoop | None"] = ContextVar("_loop", default=None)
+
+ClientCommands.console.needs_target = True
+ClientCommands.export.needs_target = True
 
 
-def ensure_event_loop(external_loop=None):
-    """Get the event loop for this thread, or create a new event loop."""
-    # get stashed loop
-    loop = _loop.get()
-
-    # ignore closed stashed loop
-    if loop and loop.is_closed():
-        loop = None
-
-    if external_loop:
-        # if a loop is stashed, expect it to be the same as the external one
-        if loop:
-            assert loop is external_loop
-        _loop.set(external_loop)
-        return external_loop
-
-    # return stashed loop
-    if loop:
-        return loop
-
-    try:
-        # if called from async code, try to get current's thread loop
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        # no previous, external or running loop found, create a new one
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    # stash it
-    _loop.set(loop)
-    return loop
-
-
-def start_session(
-    address: str,
-    *,
-    extra: Dict[str, Any] = None,
-    credentials: grpc.ChannelCredentials = None,
-    debug: bool = False,
-    loop: "asyncio.AbstractEventLoop | None" = None,
-):
-    """
-    Starts a ClientSession.
-
-    Args:
-        address: coordinator address as HOST[:PORT], PORT defaults to 20408
-        extra: additional kwargs for ClientSession
-        credentials: optional gRPC channel credentials; when None, use an
-              insecure channel
-        debug: set debug mode of the event loop
-        loop: explicit event loop to use (otherwise a previously stashed loop,
-              if retrievable the current thread's loop or a new loop is used)
-    """
-    loop = ensure_event_loop(loop)
-
-    if extra is None:
-        extra = {}
-
-    if debug:
-        loop.set_debug(True)
-
-    address = proxymanager.get_grpc_address(address, default_port=20408)
-
-    session = ClientSession(address, loop, credentials=credentials, **extra)
-    loop.run_until_complete(session.start())
-    return session
+def start_session(address, *, extra=None, credentials=None, debug=False, loop=None):
+    """Compatibility connection helper; new library callers use remote.session."""
+    options = dict(extra or {})
+    options.pop("args", None)
+    options.pop("prog", None)
+    options.setdefault("username", os.environ.get("LG_USERNAME"))
+    options.setdefault("hostname", os.environ.get("LG_HOSTNAME"))
+    options.setdefault("token", os.environ.get("LG_TOKEN"))
+    return start_library_session(address, credentials=credentials, debug=debug, loop=loop, **options)
 
 
 def find_role_by_place(config, place):
@@ -2016,10 +1520,10 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
         subparser = subparsers.add_parser("complete")
         subparser.add_argument("type", choices=["resources", "places", "matches", "match-names"])
-        subparser.set_defaults(func=ClientSession.complete)
+        subparser.set_defaults(func=ClientCommands.complete)
 
     subparser = subparsers.add_parser("monitor", help="monitor events from the coordinator")
-    subparser.set_defaults(func=ClientSession.do_monitor)
+    subparser.set_defaults(func=ClientCommands.do_monitor)
 
     subparser = subparsers.add_parser("resources", aliases=("r",), help="list available resources")
     subparser.add_argument("-a", "--acquired", action="store_true")
@@ -2030,72 +1534,72 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         help="sort by matched place's changed date (oldest first) and show place and date",
     )  # pylint: disable=line-too-long
     subparser.add_argument("match", nargs="?")
-    subparser.set_defaults(func=ClientSession.print_resources)
+    subparser.set_defaults(func=ClientCommands.print_resources)
 
     subparser = subparsers.add_parser("places", aliases=("p",), help="list available places")
     subparser.add_argument("-a", "--acquired", action="store_true")
     subparser.add_argument("-r", "--released", action="store_true")
     subparser.add_argument("--sort-last-changed", action="store_true", help="sort by last changed date (oldest first)")
-    subparser.set_defaults(func=ClientSession.print_places)
+    subparser.set_defaults(func=ClientCommands.print_places)
 
     subparser = subparsers.add_parser("who", help="list acquired places by user")
     subparser.add_argument(
         "-e", "--show-exporters", action="store_true", help="show exporters currently used by each place"
     )
-    subparser.set_defaults(func=ClientSession.print_who)
+    subparser.set_defaults(func=ClientCommands.print_who)
 
     subparser = subparsers.add_parser("show", help="show a place and related resources")
-    subparser.set_defaults(func=ClientSession.print_place)
+    subparser.set_defaults(func=ClientCommands.print_place)
 
     subparser = subparsers.add_parser(
         "create",
         help="add a new place with the name specified via --place or the LG_PLACE environment variable",
     )
-    subparser.set_defaults(func=ClientSession.add_place)
+    subparser.set_defaults(func=ClientCommands.add_place)
 
     subparser = subparsers.add_parser("delete", help="delete an existing place")
-    subparser.set_defaults(func=ClientSession.del_place)
+    subparser.set_defaults(func=ClientCommands.del_place)
 
     subparser = subparsers.add_parser("add-alias", help="add an alias to a place")
     subparser.add_argument("alias")
-    subparser.set_defaults(func=ClientSession.add_alias)
+    subparser.set_defaults(func=ClientCommands.add_alias)
 
     subparser = subparsers.add_parser("del-alias", help="delete an alias from a place")
     subparser.add_argument("alias")
-    subparser.set_defaults(func=ClientSession.del_alias)
+    subparser.set_defaults(func=ClientCommands.del_alias)
 
     subparser = subparsers.add_parser("set-comment", help="update the place comment")
     subparser.add_argument("comment", nargs="+")
-    subparser.set_defaults(func=ClientSession.set_comment)
+    subparser.set_defaults(func=ClientCommands.set_comment)
 
     subparser = subparsers.add_parser("set-tags", help="update the place tags")
     subparser.add_argument("tags", metavar="KEY=VALUE", nargs="+", help="use an empty value for deletion")
-    subparser.set_defaults(func=ClientSession.set_tags)
+    subparser.set_defaults(func=ClientCommands.set_tags)
 
     subparser = subparsers.add_parser("add-match", help="add one (or multiple) match pattern(s) to a place")
     subparser.add_argument("patterns", metavar="PATTERN", nargs="+")
-    subparser.set_defaults(func=ClientSession.add_match)
+    subparser.set_defaults(func=ClientCommands.add_match)
 
     subparser = subparsers.add_parser("del-match", help="delete one (or multiple) match pattern(s) from a place")
     subparser.add_argument("patterns", metavar="PATTERN", nargs="+")
-    subparser.set_defaults(func=ClientSession.del_match)
+    subparser.set_defaults(func=ClientCommands.del_match)
 
     subparser = subparsers.add_parser("add-named-match", help="add one match pattern with a name to a place")
     subparser.add_argument("pattern", metavar="PATTERN")
     subparser.add_argument("name", metavar="NAME")
-    subparser.set_defaults(func=ClientSession.add_named_match)
+    subparser.set_defaults(func=ClientCommands.add_named_match)
 
     subparser = subparsers.add_parser("acquire", aliases=("lock",), help="acquire a place")
     subparser.add_argument(
         "--allow-unmatched", action="store_true", help="allow missing resources for matches when locking the place"
     )
-    subparser.set_defaults(func=ClientSession.acquire)
+    subparser.set_defaults(func=ClientCommands.acquire)
 
     subparser = subparsers.add_parser("release", aliases=("unlock",), help="release a place")
     subparser.add_argument(
         "-k", "--kick", action="store_true", help="release a place even if it is acquired by a different user"
     )
-    subparser.set_defaults(func=ClientSession.release)
+    subparser.set_defaults(func=ClientCommands.release)
 
     subparser = subparsers.add_parser(
         "release-from",
@@ -2104,14 +1608,14 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         "meaning it may be acquired by another user or not at all.",
     )
     subparser.add_argument("acquired", metavar="HOST/USER", help="User and host to match against when releasing")
-    subparser.set_defaults(func=ClientSession.release_from)
+    subparser.set_defaults(func=ClientCommands.release_from)
 
     subparser = subparsers.add_parser("allow", help="allow another user to access a place")
     subparser.add_argument("user", help="<host>/<username>")
-    subparser.set_defaults(func=ClientSession.allow)
+    subparser.set_defaults(func=ClientCommands.allow)
 
     subparser = subparsers.add_parser("env", help="generate a labgrid environment file for a place")
-    subparser.set_defaults(func=ClientSession.print_env)
+    subparser.set_defaults(func=ClientCommands.print_env)
 
     subparser = subparsers.add_parser("power", aliases=("pw",), help="change (or get) a place's power status")
     subparser.add_argument("action", choices=["on", "off", "cycle", "get"])
@@ -2119,12 +1623,12 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         "-t", "--delay", type=float, default=None, help="wait time in seconds between off and on during cycle"
     )
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.set_defaults(func=ClientSession.power)
+    subparser.set_defaults(func=ClientCommands.power)
 
     subparser = subparsers.add_parser("io", help="change (or get) a digital IO status")
     subparser.add_argument("action", choices=["high", "low", "get"], help="action")
     subparser.add_argument("name", help="optional resource name", nargs="?")
-    subparser.set_defaults(func=ClientSession.digital_io)
+    subparser.set_defaults(func=ClientCommands.digital_io)
 
     subparser = subparsers.add_parser("console", aliases=("con",), help="connect to the console")
     subparser.add_argument(
@@ -2135,7 +1639,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     )
     subparser.add_argument("name", help="optional resource name", nargs="?")
     subparser.add_argument("--logfile", metavar="FILE", help="Log output to FILE", default=None)
-    subparser.set_defaults(func=ClientSession.console)
+    subparser.set_defaults(func=ClientCommands.console)
 
     subparser = subparsers.add_parser("dfu", help="communicate with device in DFU mode")
     subparser.add_argument("action", choices=["download", "detach", "list"], help="action")
@@ -2143,36 +1647,36 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument("filename", help="file to write into device (download only)", nargs="?")
     subparser.add_argument("--wait", type=float, default=10.0)
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.set_defaults(func=ClientSession.dfu)
+    subparser.set_defaults(func=ClientCommands.dfu)
 
     subparser = subparsers.add_parser("fastboot", help="run fastboot")
     subparser.add_argument("fastboot_args", metavar="ARG", nargs=argparse.REMAINDER, help="fastboot arguments")
     subparser.add_argument("--wait", type=float, default=10.0)
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.set_defaults(func=ClientSession.fastboot)
+    subparser.set_defaults(func=ClientCommands.fastboot)
 
     subparser = subparsers.add_parser("flashscript", help="Run arbitrary script with arguments to flash device")
     subparser.add_argument("script", help="Flashing script")
     subparser.add_argument("script_args", metavar="ARG", nargs=argparse.REMAINDER, help="script arguments")
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.set_defaults(func=ClientSession.flashscript)
+    subparser.set_defaults(func=ClientCommands.flashscript)
 
     subparser = subparsers.add_parser("bootstrap", help="start a bootloader")
     subparser.add_argument("-w", "--wait", type=float, default=10.0)
     subparser.add_argument("filename", help="filename to boot on the target")
     subparser.add_argument("bootstrap_args", metavar="ARG", nargs=argparse.REMAINDER, help="extra bootstrap arguments")
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.set_defaults(func=ClientSession.bootstrap)
+    subparser.set_defaults(func=ClientCommands.bootstrap)
 
     subparser = subparsers.add_parser("sd-mux", help="switch USB SD Muxer or get current mode")
     subparser.add_argument("action", choices=["dut", "host", "off", "client", "get"])
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.set_defaults(func=ClientSession.sd_mux)
+    subparser.set_defaults(func=ClientCommands.sd_mux)
 
     subparser = subparsers.add_parser("usb-mux", help="switch USB Muxer")
     subparser.add_argument("links", choices=["off", "dut-device", "host-dut", "host-device", "host-dut+host-device"])
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.set_defaults(func=ClientSession.usb_mux)
+    subparser.set_defaults(func=ClientCommands.usb_mux)
 
     subparser = subparsers.add_parser(
         "ssh",
@@ -2180,13 +1684,13 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         epilog="Additional arguments are passed to the ssh subprocess.",
     )
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.set_defaults(func=ClientSession.ssh)
+    subparser.set_defaults(func=ClientCommands.ssh)
 
     subparser = subparsers.add_parser("scp", help="transfer file via scp")
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.add_argument("src", help="source path (use :dir/file for remote side)")
     subparser.add_argument("dst", help="destination path (use :dir/file for remote side)")
-    subparser.set_defaults(func=ClientSession.scp)
+    subparser.set_defaults(func=ClientCommands.scp)
 
     subparser = subparsers.add_parser(
         "rsync", help="transfer files via rsync", epilog="Additional arguments are passed to the rsync subprocess."
@@ -2194,13 +1698,13 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.add_argument("src", help="source path (use :dir/file for remote side)")
     subparser.add_argument("dst", help="destination path (use :dir/file for remote side)")
-    subparser.set_defaults(func=ClientSession.rsync)
+    subparser.set_defaults(func=ClientCommands.rsync)
 
     subparser = subparsers.add_parser("sshfs", help="mount via sshfs (blocking)")
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.add_argument("path", help="remote path on the target")
     subparser.add_argument("mountpoint", help="local path")
-    subparser.set_defaults(func=ClientSession.sshfs)
+    subparser.set_defaults(func=ClientCommands.sshfs)
 
     subparser = subparsers.add_parser("forward", help="forward local port to remote target")
     subparser.add_argument("--name", "-n", help="optional resource name")
@@ -2218,10 +1722,10 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         action=RemotePort,
         help="Forward remote port REMOTE to local port LOCAL",
     )
-    subparser.set_defaults(func=ClientSession.forward)
+    subparser.set_defaults(func=ClientCommands.forward)
 
     subparser = subparsers.add_parser("telnet", help="connect via telnet")
-    subparser.set_defaults(func=ClientSession.telnet)
+    subparser.set_defaults(func=ClientCommands.telnet)
 
     subparser = subparsers.add_parser("video", help="start a video stream")
     subparser.add_argument("-q", "--quality", type=str, help="select a video quality (use 'list' to show options)")
@@ -2229,11 +1733,11 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         "-c", "--controls", type=str, help="configure v4l controls (such as 'focus_auto=0,focus_absolute=40')"
     )
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.set_defaults(func=ClientSession.video)
+    subparser.set_defaults(func=ClientCommands.video)
 
     subparser = subparsers.add_parser("audio", help="start a audio stream")
     subparser.add_argument("--name", "-n", help="optional resource name")
-    subparser.set_defaults(func=ClientSession.audio)
+    subparser.set_defaults(func=ClientCommands.audio)
 
     subparser = subparsers.add_parser("netns", help="start a network namespace with access to NetworkInterface")
     subparser.add_argument("--name", "-n", help="optional resource name")
@@ -2257,7 +1761,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument(
         "cmd", nargs=argparse.REMAINDER, help="command to execute in the namespace. If unspecified, $SHELL is invoked"
     )
-    subparser.set_defaults(func=ClientSession.netns)
+    subparser.set_defaults(func=ClientCommands.netns)
 
     tmc_parser = subparsers.add_parser("tmc", help="control a USB TMC device")
     tmc_parser.add_argument("--name", "-n", help="optional resource name")
@@ -2270,20 +1774,20 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
     tmc_subparser = tmc_subparsers.add_parser("cmd", aliases=("c",), help="execute raw command")
     tmc_subparser.add_argument("command", nargs="+")
-    tmc_subparser.set_defaults(func=ClientSession.tmc_command)
+    tmc_subparser.set_defaults(func=ClientCommands.tmc_command)
 
     tmc_subparser = tmc_subparsers.add_parser("query", aliases=("q",), help="execute raw query")
     tmc_subparser.add_argument("query", nargs="+")
-    tmc_subparser.set_defaults(func=ClientSession.tmc_query)
+    tmc_subparser.set_defaults(func=ClientCommands.tmc_query)
 
     tmc_subparser = tmc_subparsers.add_parser("screen", help="show or save a screenshot")
     tmc_subparser.add_argument("action", choices=["show", "save"])
-    tmc_subparser.set_defaults(func=ClientSession.tmc_screen)
+    tmc_subparser.set_defaults(func=ClientCommands.tmc_screen)
 
     tmc_subparser = tmc_subparsers.add_parser("channel", help="use a channel")
     tmc_subparser.add_argument("channel", type=int)
     tmc_subparser.add_argument("action", choices=["info", "values"])
-    tmc_subparser.set_defaults(func=ClientSession.tmc_channel)
+    tmc_subparser.set_defaults(func=ClientCommands.tmc_channel)
 
     subparser = subparsers.add_parser(
         "write-files",
@@ -2313,7 +1817,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.add_argument("SOURCE", type=pathlib.PurePath, nargs="+", help="source file(s) to copy")
     subparser.add_argument("DEST", type=pathlib.PurePath, nargs="?", help="destination file name for SOURCE")
-    subparser.set_defaults(func=ClientSession.write_files, parser=subparser)
+    subparser.set_defaults(func=ClientCommands.write_files, parser=subparser)
 
     subparser = subparsers.add_parser("write-image", help="write an image onto mass storage")
     subparser.add_argument("-w", "--wait", type=float, default=10.0)
@@ -2330,7 +1834,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     )
     subparser.add_argument("--name", "-n", help="optional resource name")
     subparser.add_argument("filename", help="filename to boot on the target")
-    subparser.set_defaults(func=ClientSession.write_image)
+    subparser.set_defaults(func=ClientCommands.write_image)
 
     subparser = subparsers.add_parser("reserve", help="create a reservation")
     subparser.add_argument("--wait", action="store_true", help="wait until the reservation is allocated")
@@ -2339,18 +1843,18 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         "--prio", type=float, default=0.0, help="priority relative to other reservations (default 0)"
     )
     subparser.add_argument("filters", metavar="KEY=VALUE", nargs="+", help="required tags")
-    subparser.set_defaults(func=ClientSession.create_reservation)
+    subparser.set_defaults(func=ClientCommands.create_reservation)
 
     subparser = subparsers.add_parser("cancel-reservation", help="cancel a reservation")
     subparser.add_argument("token", type=str, nargs="?")
-    subparser.set_defaults(func=ClientSession.cancel_reservation)
+    subparser.set_defaults(func=ClientCommands.cancel_reservation)
 
     subparser = subparsers.add_parser("wait", help="wait for a reservation to be allocated")
     subparser.add_argument("token", type=str, nargs="?")
-    subparser.set_defaults(func=ClientSession.wait_reservation)
+    subparser.set_defaults(func=ClientCommands.wait_reservation)
 
     subparser = subparsers.add_parser("reservations", help="list current reservations")
-    subparser.set_defaults(func=ClientSession.print_reservations)
+    subparser.set_defaults(func=ClientCommands.print_reservations)
 
     subparser = subparsers.add_parser(
         "export", help="export driver information to a file (needs environment with drivers)"
@@ -2364,22 +1868,22 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         help="output format (default: %(default)s)",
     )
     subparser.add_argument("filename", help="output filename")
-    subparser.set_defaults(func=ClientSession.export)
+    subparser.set_defaults(func=ClientCommands.export)
 
     subparser = subparsers.add_parser("version", help="show version")
-    subparser.set_defaults(func=ClientSession.print_version)
+    subparser.set_defaults(func=ClientCommands.print_version)
 
     adb_subparser = subparsers.add_parser("adb", help="Run Android Debug Bridge")
     adb_subparser.add_argument("--name", "-n", help="optional resource name")
     adb_subparser.add_argument(
         "adb_args", nargs=argparse.REMAINDER, help="adb command to execute (e.g. 'shell', 'devices', etc.)"
     )
-    adb_subparser.set_defaults(func=ClientSession.adb)
+    adb_subparser.set_defaults(func=ClientCommands.adb)
 
     adb_subparsers = adb_subparser.add_subparsers(dest="adb_command")
     scrcpy_subparser = adb_subparsers.add_parser("scrcpy", help="Run scrcpy to remote control an android device")
     scrcpy_subparser.add_argument("--name", "-n", help="optional resource name")
-    scrcpy_subparser.set_defaults(func=ClientSession.scrcpy)
+    scrcpy_subparser.set_defaults(func=ClientCommands.scrcpy)
 
     return parser
 
@@ -2512,18 +2016,19 @@ def main():
                 loop=loop,
             )
             logging.debug("Started session")
+            commands = ClientCommands(session, args, parser.prog)
 
             try:
                 if inspect.iscoroutinefunction(args.func):
                     if getattr(args.func, "needs_target", False):
-                        place = session.get_acquired_place()
-                        target = session._get_target(place)
-                        coro = args.func(session, place, target)
+                        place = commands.get_acquired_place()
+                        target = commands._get_target(place)
+                        coro = args.func(commands, place, target)
                     else:
-                        coro = args.func(session)
+                        coro = args.func(commands)
                     session.loop.run_until_complete(coro)
                 else:
-                    args.func(session)
+                    args.func(commands)
             finally:
                 logging.debug("Stopping session")
                 session.loop.run_until_complete(session.stop())

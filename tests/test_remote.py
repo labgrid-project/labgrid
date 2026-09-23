@@ -321,7 +321,7 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
             return argparse.Namespace(tags={}, acquired_resources=[])
 
         def get_target_resources(self, place):
-            return {}
+            return ()
 
     captured = {}
 
@@ -335,7 +335,7 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
         return DummySession()
 
     monkeypatch.setattr("labgrid.remote.common.get_client_credentials", get_client_credentials)
-    monkeypatch.setattr("labgrid.remote.client.start_session", start_session)
+    monkeypatch.setattr("labgrid.remote.session.start_session", start_session)
 
     config = _make_remote_place_config(tmpdir, options=options)
     env = Environment(str(config))

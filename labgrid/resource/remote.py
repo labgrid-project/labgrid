@@ -42,12 +42,15 @@ class RemotePlaceManager(ResourceManager):
         if self.session:
             return
 
-        from ..remote.client import start_session
+        from ..remote.session import start_session
         try:
             self.session = start_session(
                 self.url,
-                extra={'env': self.env},
+                env=self.env,
                 credentials=self._get_credentials(),
+                username=os.environ.get("LG_USERNAME"),
+                hostname=os.environ.get("LG_HOSTNAME"),
+                token=os.environ.get("LG_TOKEN"),
             )
         except ConnectionRefusedError as e:
             raise ConnectionRefusedError(f"Could not connect to coordinator {self.url}") \
@@ -72,7 +75,8 @@ class RemotePlaceManager(ResourceManager):
         place = self.session.get_place(remote_place.name)  # pylint: disable=no-member
         resource_entries = self.session.get_target_resources(place)  # pylint: disable=no-member
         expanded = []
-        for (resource_name, _), resource_entry in resource_entries.items():
+        for binding in resource_entries:
+            resource_name, resource_entry = binding.name, binding.resource
             new = target_factory.make_resource(
                 remote_place.target, resource_entry.cls, resource_name, resource_entry.args)
             new.parent = remote_place

@@ -6,8 +6,7 @@ NetworkPowerPort:
     index: 0
 
 Will do a GET request to http://192.168.0.42/relay/0 to get the current
-relay state, and a POST request to http://192.168.0.42/relay/0 with request
-data of 'turn=off' or 'turn=on' to change the relay state.
+relay state or set it with parameters of 'turn=off' or 'turn=on'.
 
 Also, see the official Gen 1 Device API documentation:
 https://shelly-api-docs.shelly.cloud/gen1/
@@ -22,7 +21,7 @@ import requests
 def power_set(host: str, port: int, index: int = 0, value: bool = True):
     assert not port
     turn = "on" if value else "off"
-    r = requests.post(f"{host}/relay/{index}", data={"turn": turn})
+    r = requests.get(f"{host}/relay/{index}", params={"turn": turn})
     r.raise_for_status()
 
 

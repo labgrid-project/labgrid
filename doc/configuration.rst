@@ -494,6 +494,8 @@ A :any:`DeditecRelais8` describes a *Deditec USB GPO module* with 8 relays.
      match:
        ID_PATH: 'pci-0000:00:14.0-usb-0:2:1.0'
 
+Symlink ``labgrid-python3`` in ``PATH`` to the labgrid virtualenv's ``bin/python3``.
+
 Arguments:
   - index (int): number of the relay to use
   - invert (bool, default=False): whether the logic level is inverted
@@ -573,6 +575,8 @@ It currently supports the widely used *dcttech USBRelay* and *lctech LCUS*
      invert: false
      match:
        ID_PATH: 'pci-0000:00:14.0-usb-0:2:1.0'
+
+Symlink ``labgrid-python3`` in ``PATH`` to the labgrid virtualenv's ``bin/python3``.
 
 Arguments:
   - index (int, default=1): number of the relay to use

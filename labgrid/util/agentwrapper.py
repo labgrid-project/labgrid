@@ -4,6 +4,7 @@ import json
 import os.path
 import socket
 import subprocess
+import sys
 import traceback
 import logging
 
@@ -73,7 +74,7 @@ class AgentWrapper:
                 env = os.environ.copy()
                 env["LG_FDPASS"] = str(remote_fdpass.fileno())
                 self.agent = subprocess.Popen(
-                    ['python3', agent],
+                    [sys.executable, agent],
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     env=env,

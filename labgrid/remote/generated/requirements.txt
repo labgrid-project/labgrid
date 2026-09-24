@@ -8,7 +8,7 @@ grpcio==1.64.1
     # via grpcio-tools
 grpcio-tools==1.62.2
     # via -r requirements.in
-protobuf==4.25.3
+protobuf==4.25.8
     # via grpcio-tools
 
 # The following packages are considered to be unsafe in a requirements file:

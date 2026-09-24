@@ -1314,8 +1314,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         await self.share_place(name, request.user, context, identity=identity)
         return labgrid_coordinator_pb2.SharePlaceResponse()
 
+    @add_identity
     @locked
-    async def UnsharePlace(self, request, context):
+    async def UnsharePlace(self, request, context, *, identity):
         placename = request.name
         logging.debug("UnsharePlace name=%s user=%s", placename, request.user)
         if not placename or not isinstance(placename, str):
@@ -1324,7 +1325,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         user = request.user
         peer = context.peer()
         try:
-            username = infer_peer_identity(self.clients, context, client_identity_context)
+            username = infer_peer_identity(self.clients, context, identity)
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         try:

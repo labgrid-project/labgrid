@@ -1,4 +1,6 @@
 import logging
+import math
+import time
 from functools import wraps
 from os import environ
 
@@ -271,6 +273,35 @@ def setup_otel_metrics(coordinator_instance):
         callbacks=[observe_acquired_places],
         unit="1",
         description="Number of places currently acquired from the coordinator.",
+    )
+
+    def observe_lease_max_duration_remaining(_options):
+        places = list(coordinator_instance.places.values())
+        reservations = dict(coordinator_instance.reservations)
+        now = time.time()
+
+        for place in places:
+            reservation = reservations.get(place.reservation)
+            if (
+                reservation is None
+                or reservation.state.name != "leased"
+                or place.acquired != reservation.owner
+                or not math.isfinite(reservation.lease_start_time)
+                or reservation.lease_start_time <= 0
+            ):
+                continue
+
+            remaining = max(
+                0.0,
+                reservation.lease_start_time + coordinator_instance.max_lease_duration - now,
+            )
+            yield Observation(remaining, {"place_name": place.name})
+
+    meter.create_observable_gauge(
+        "labgrid_coordinator_lease_max_duration_remaining_seconds",
+        callbacks=[observe_lease_max_duration_remaining],
+        unit="s",
+        description="Seconds remaining until each leased place reaches the maximum total lease duration.",
     )
 
     def observe_available_places(_options):

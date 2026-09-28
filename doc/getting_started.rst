@@ -541,6 +541,9 @@ The Coordinator exposes the following metrics:
 - ``labgrid_coordinator_places_registered``: places registered with the
   Coordinator.
 - ``labgrid_coordinator_places_acquired``: places currently acquired.
+- ``labgrid_coordinator_lease_max_duration_remaining_seconds``: seconds until each
+  leased place reaches the maximum total lease duration, labelled by ``place_name``.
+  Extending a lease does not reset the countdown.
 - ``labgrid_coordinator_places_available``: places currently available for
   scheduler allocation.
 - ``labgrid_coordinator_reservations_waiting``: reservations waiting for a

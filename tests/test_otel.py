@@ -1,6 +1,6 @@
 import importlib
 import queue
-from time import sleep
+from time import sleep, time
 
 import grpc
 import pytest
@@ -79,14 +79,21 @@ def channel_stub(coordinator):
     channel.close()
 
 
-def scrape_sample(endpoint, name, operation=None):
+def scrape_samples(endpoint, name):
     response = requests.get(endpoint, timeout=5)
     response.raise_for_status()
-
+    samples = []
     for family in prometheus_parser.text_string_to_metric_families(response.text):
         for sample in family.samples:
-            if sample.name == name and (operation is None or sample.labels.get("operation") == operation):
-                return sample
+            if sample.name == name:
+                samples.append(sample)
+    return samples
+
+
+def scrape_sample(endpoint, name, operation=None):
+    for sample in scrape_samples(endpoint, name):
+        if operation is None or sample.labels.get("operation") == operation:
+            return sample
 
     pytest.fail(f"Prometheus sample {name!r} was not found")
 
@@ -163,6 +170,88 @@ def test_coordinator_metrics(coordinator, channel_stub, prometheus_endpoint):
     channel_stub.DeletePlace(request)
     assert scrape_sample(prometheus_endpoint, registered_metric).value == 0
     assert scrape_sample(prometheus_endpoint, available_metric).value == 0
+
+
+def test_coordinator_lease_max_duration_remaining_lifecycle(coordinator, channel_stub, prometheus_endpoint):
+    metric_name = "labgrid_coordinator_lease_max_duration_remaining_seconds"
+    max_lease_duration = 20
+    place_names = ("lease-one", "lease-two")
+    tokens = {}
+
+    for place_name in place_names:
+        channel_stub.CreatePlace(labgrid_coordinator_pb2.CreatePlaceRequest(name=place_name))
+        channel_stub.SetPlaceTags(
+            labgrid_coordinator_pb2.SetPlaceTagsRequest(
+                placename=place_name,
+                tags={"board": place_name},
+            )
+        )
+        tokens[place_name] = create_reservation(channel_stub, {"board": place_name})
+
+    assert scrape_samples(prometheus_endpoint, metric_name) == []
+
+    reservations = {}
+    for place_name in place_names:
+        channel_stub.LeasePlace(labgrid_coordinator_pb2.LeasePlaceRequest(placename=place_name))
+        reservations[place_name] = channel_stub.PollReservation(
+            labgrid_coordinator_pb2.PollReservationRequest(token=tokens[place_name])
+        ).reservation
+
+    initial_scrape_started = time()
+    initial_samples = scrape_samples(prometheus_endpoint, metric_name)
+    initial_scrape_finished = time()
+    assert len(initial_samples) == len(place_names)
+    assert {sample.labels["place_name"] for sample in initial_samples} == set(place_names)
+    initial_by_place = {sample.labels["place_name"]: sample for sample in initial_samples}
+
+    def lease_start(reservation):
+        return reservation.lease_start_time.seconds + reservation.lease_start_time.nanos / 1e9
+
+    clock_tolerance = 0.02
+    for place_name, reservation in reservations.items():
+        deadline = lease_start(reservation) + max_lease_duration
+        earliest_remaining = max(0, deadline - initial_scrape_finished)
+        latest_remaining = max(0, deadline - initial_scrape_started)
+        assert earliest_remaining - clock_tolerance <= initial_by_place[place_name].value
+        assert initial_by_place[place_name].value <= latest_remaining + clock_tolerance
+
+    initial_countdown = initial_by_place["lease-one"].value
+    initial_deadline = lease_start(reservations["lease-one"]) + max_lease_duration
+    initial_earliest_remaining = max(0, initial_deadline - initial_scrape_finished)
+    extension_capacity = initial_deadline - reservations["lease-one"].timeout
+    assert extension_capacity < initial_earliest_remaining - clock_tolerance
+
+    sleep(0.6)
+    later_samples = scrape_samples(prometheus_endpoint, metric_name)
+    later_by_place = {sample.labels["place_name"]: sample for sample in later_samples}
+    assert later_by_place["lease-one"].value < initial_countdown - 0.3
+
+    extended = channel_stub.ExtendLease(
+        labgrid_coordinator_pb2.ExtendLeaseRequest(token=tokens["lease-one"])
+    ).reservation
+    assert extended.timeout > reservations["lease-one"].timeout
+
+    extended_scrape_started = time()
+    extended_samples = scrape_samples(prometheus_endpoint, metric_name)
+    extended_scrape_finished = time()
+    extended_by_place = {sample.labels["place_name"]: sample for sample in extended_samples}
+    extended_countdown = extended_by_place["lease-one"].value
+    assert extended_countdown <= later_by_place["lease-one"].value
+    extended_deadline = lease_start(extended) + max_lease_duration
+    earliest_remaining = max(0, extended_deadline - extended_scrape_finished)
+    latest_remaining = max(0, extended_deadline - extended_scrape_started)
+    assert earliest_remaining - clock_tolerance <= extended_countdown
+    assert extended_countdown <= latest_remaining + clock_tolerance
+    extension_capacity = extended_deadline - extended.timeout
+    assert extension_capacity < earliest_remaining - clock_tolerance
+
+    channel_stub.ReleasePlace(labgrid_coordinator_pb2.ReleasePlaceRequest(placename="lease-one"))
+    remaining_samples = scrape_samples(prometheus_endpoint, metric_name)
+    assert len(remaining_samples) == 1
+    assert remaining_samples[0].labels["place_name"] == "lease-two"
+
+    channel_stub.ReleasePlace(labgrid_coordinator_pb2.ReleasePlaceRequest(placename="lease-two"))
+    assert scrape_samples(prometheus_endpoint, metric_name) == []
 
 
 def test_coordinator_exporter_metrics(exporter_metrics_endpoint, prometheus_endpoint):

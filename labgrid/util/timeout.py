@@ -7,7 +7,7 @@ import attr
 class Timeout:
     """Reperents a timeout (as a deadline)"""
     timeout = attr.ib(
-        default=120.0, validator=attr.validators.instance_of(float)
+        default=120.0, validator=attr.validators.instance_of((float, int))
     )
 
     def __attrs_post_init__(self):

@@ -44,6 +44,7 @@ from .pyvisa import PyVISADevice
 from .provider import TFTPProvider, NFSProvider, HTTPProvider
 from .mqtt import TasmotaPowerPort
 from .httpvideostream import HTTPVideoStream
+from .rtspvideostream import RTSPVideoStream
 from .dediprogflasher import DediprogFlasher, NetworkDediprogFlasher
 from .httpdigitalout import HttpDigitalOutput
 from .sigrok import SigrokDevice

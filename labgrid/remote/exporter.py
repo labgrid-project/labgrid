@@ -187,8 +187,15 @@ class ResourceExport(ResourceEntry):
     def release(self, *args, **kwargs):
         if self.broken:
             raise BrokenResourceError(f"cannot release broken resource (original reason): {self.broken}")
+        acquired = self.acquired
         super().release(*args, **kwargs)
-        self.poll()
+        try:
+            self.poll()
+        except Exception:
+            # Preserve a state set by poll(), for example "<broken>".
+            if self.acquired is None:
+                self.data["acquired"] = acquired
+            raise
 
 
 @attr.s(eq=False)
@@ -1047,8 +1054,11 @@ class Exporter:
                             )
                         success = True
                     except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
-                        reason = e.args[0]
+                        reason = str(e)
                         logging.warning("set_acquired_request failed: %s", reason)
+                    except Exception as e:
+                        reason = str(e) or repr(e)
+                        logging.exception("failed to handle set_acquired_request: %s", reason)
                     finally:
                         in_message = labgrid_coordinator_pb2.ExporterInMessage()
                         in_message.response.success = success
@@ -1101,11 +1111,9 @@ class Exporter:
         if resource is None:
             raise UnknownResourceError(f"release request for unknown resource {group_name}/{resource_name}")
 
-        if not resource.acquired:
-            raise InvalidResourceRequestError(f"Resource {group_name}/{resource_name} is not acquired")
-
         try:
-            resource.release()
+            if resource.acquired is not None:
+                resource.release()
         finally:
             await self.update_resource(group_name, resource_name)
 

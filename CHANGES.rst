@@ -48,6 +48,13 @@ New Features in 26.0
 - Labgrid has gained support for network namespace forwarding from exporters
   to clients. This allows accessing a network as if it is locally connected.
 - HTTPVideoDrivers now optionally allow the specification of a port.
+- The new `RKBootstrapDriver` uploads a combined barebox image into a Rockchip
+  SoC in MaskROM mode using barebox's ``rk-usb-loader`` tool, loading it into
+  RAM and executing it. In contrast, the existing `RKUSBDriver` uses
+  ``rkdeveloptool`` to write a bootloader to the target's storage. The
+  ``rkdeveloptool`` binary is now configured under the ``rkdeveloptool`` tools
+  key; the previously used ``rk-usb-loader`` key is deprecated but still honored
+  for backward compatibility.
 
 Breaking changes in 26.0
 ~~~~~~~~~~~~~~~~~~~~~~~~

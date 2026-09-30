@@ -47,6 +47,7 @@ from .httpvideostream import HTTPVideoStream
 from .dediprogflasher import DediprogFlasher, NetworkDediprogFlasher
 from .httpdigitalout import HttpDigitalOutput
 from .sigrok import SigrokDevice
+from .joulescope import JoulescopeDevice
 from .fastboot import AndroidNetFastboot
 from .eth008 import Eth008DigitalOutput
 from .laa import LAASerialPort, LAAPowerPort, LAAUSBGadgetMassStorage, \

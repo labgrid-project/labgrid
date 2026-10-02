@@ -23,7 +23,7 @@ class DFUDriver(Driver):
             self.tool = "dfu-util"
 
     def _get_dfu_prefix(self):
-        return self.dfu.command_prefix + [
+        return [
             self.tool,
             "-p",
             self.dfu.path,
@@ -37,19 +37,30 @@ class DFUDriver(Driver):
 
     @Driver.check_active
     @step(args=["altsetting", "filename"])
-    def download(self, altsetting, filename):
+    def download(self, altsetting, filename, *, reset=False, wait=False):
         mf = ManagedFile(filename, self.dfu)
         mf.sync_to_resource()
 
+        command = self._get_dfu_prefix()
+        if wait:
+            command.append("--wait")
+        if reset:
+            command.append("--reset")
+        command += ["--alt", str(altsetting), "--download", mf.get_remote_path()]
         processwrapper.check_output(
-            self._get_dfu_prefix() + ["--alt", str(altsetting), "--download", mf.get_remote_path()],
+            self.dfu.wrap_command(command),
             print_on_silent_log=True,
         )
 
     @step()
     def detach(self, altsetting):
-        processwrapper.check_output(self._get_dfu_prefix() + ["--alt", str(altsetting), "--detach"])
+        processwrapper.check_output(
+            self.dfu.wrap_command(self._get_dfu_prefix() + ["--alt", str(altsetting), "--detach"])
+        )
 
     @step()
     def list(self):
-        processwrapper.check_output(self._get_dfu_prefix() + ["--list"], print_on_silent_log=True)
+        processwrapper.check_output(
+            self.dfu.wrap_command(self._get_dfu_prefix() + ["--list"]),
+            print_on_silent_log=True,
+        )

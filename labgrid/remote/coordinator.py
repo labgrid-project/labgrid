@@ -188,7 +188,7 @@ def locked(func):
 
 
 async def check_capability(cls, identity, capability, context):
-    if not identity and cls.use_capabilities:
+    if not identity:
         await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities")
     if identity and (capability not in identity.capabilities):
         await context.abort(
@@ -202,7 +202,8 @@ def require_capability(req_cap):
         @wraps(func)
         async def wrapper(self, request, context):
             identity = ClientIdentity.from_metadata(context.invocation_metadata())
-            await check_capability(self, identity, req_cap, context)
+            if self.use_capabilities:
+                await check_capability(self, identity, req_cap, context)
             return await func(self, request, context, identity=identity)
 
         return wrapper
@@ -937,7 +938,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             idx = place.acquired_resources.index(oldresource)
             place.acquired_resources[idx] = newresource
 
-    @add_identity
+    @require_capability(Capability.acquire_place)
     @locked
     async def AcquirePlace(self, request, context, *, identity):
         peer = context.peer()

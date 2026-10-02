@@ -799,6 +799,48 @@ class HIDRelay(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class FTDIGPIO(USBResource):
+    """This resource describes a single GPIO line on an FTDI bit-bang interface."""
+
+    index = attr.ib(
+        default=0,
+        converter=int,
+        validator=attr.validators.and_(
+            attr.validators.instance_of(int),
+            attr.validators.ge(0),
+            attr.validators.le(7),
+        ),
+    )
+    interface = attr.ib(
+        default=1,
+        converter=int,
+        validator=attr.validators.and_(
+            attr.validators.instance_of(int),
+            attr.validators.ge(1),
+        ),
+    )
+    invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    direction = attr.ib(default="out", validator=attr.validators.in_(("in", "out")))
+
+    def __attrs_post_init__(self):
+        self.match["DEVTYPE"] = "usb_device"
+        super().__attrs_post_init__()
+
+    def filter_match(self, device):
+        match = (
+            device.properties.get("ID_VENDOR_ID"),
+            device.properties.get("ID_MODEL_ID"),
+        )
+        if match not in [("0403", "6010"),  # FT2232C/D/H Dual UART/FIFO IC
+                         ("0403", "6011"),  # FT4232H Quad UART/MPSSE IC
+                         ("0403", "6014"),  # FT232HL/Q
+                         ]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class USBFlashableDevice(USBResource):
     @property
     def devnode(self):

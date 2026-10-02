@@ -406,6 +406,26 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             if exporter.name == name:
                 return exporter
 
+    async def _cleanup_exporter(self, peer, request_task):
+        request_task.cancel()
+        try:
+            await request_task
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            logging.exception("error in exporter request task during cleanup")
+
+        session = self.exporters.pop(peer, None)
+        if session is None:
+            logging.info("Never received startup from peer %s that disconnected", peer)
+            return
+
+        for groupname, group in session.groups.items():
+            for resourcename in group.copy():
+                session.set_resource(groupname, resourcename, None)
+
+        logging.debug("exporter aborted %s", peer)
+
     def _publish_place(self, place):
         msg = labgrid_coordinator_pb2.ClientOutMessage()
         msg.updates.add().place.CopyFrom(place.as_pb2())
@@ -502,28 +522,26 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         asyncio.current_task().set_name(f"exporter-{peer}-tx")
         running_request_task = self.loop.create_task(request_task(), name=f"exporter-{peer}-rx/init")
 
-        startup_done_task = self.loop.create_task(startup_done.wait())
-        done, _ = await asyncio.wait(
-            {startup_done_task, running_request_task},
-            timeout=3,
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-        # clean up event task
-        startup_done.set()
-        await startup_done_task
-        if running_request_task in done:
-            # we probably had an exception during startup
-            try:
-                await running_request_task
-            except ExporterError as e:
-                await context.abort(grpc.StatusCode.ALREADY_EXISTS, f"startup failed: {e}")
-                raise
-        elif startup_done_task in done:
-            await startup_done_task
-        else:
-            raise ExporterError(f"exporter connection from {peer} timed out during startup")
-
         try:
+            startup_done_task = self.loop.create_task(startup_done.wait())
+            done, _ = await asyncio.wait(
+                {startup_done_task, running_request_task},
+                timeout=3,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            # clean up event task
+            startup_done.set()
+            await startup_done_task
+            if running_request_task in done:
+                # we probably had an exception during startup
+                try:
+                    await running_request_task
+                except ExporterError as e:
+                    await context.abort(grpc.StatusCode.ALREADY_EXISTS, f"startup failed: {e}")
+                    raise
+            elif startup_done_task not in done:
+                raise ExporterError(f"exporter connection from {peer} timed out during startup")
+
             async for cmd in queue_as_aiter(command_queue):
                 logging.debug("exporter cmd %s", cmd)
                 out_msg = labgrid_coordinator_pb2.ExporterOutMessage()
@@ -534,19 +552,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             logging.info("exporter disconnected %s", context.peer())
         except Exception:
             logging.exception("error in exporter command handler")
+            raise
         finally:
-            running_request_task.cancel()
-            await running_request_task
-
-            try:
-                session = self.exporters.pop(peer)
-                for groupname, group in session.groups.items():
-                    for resourcename in group.copy():
-                        session.set_resource(groupname, resourcename, None)
-
-                logging.debug("exporter aborted %s, cancelled: %s", context.peer(), context.cancelled())
-            except KeyError:
-                logging.info("Never received startup from peer %s that disconnected", peer)
+            await self._cleanup_exporter(peer, running_request_task)
 
     @locked
     async def AddPlace(self, request, context):

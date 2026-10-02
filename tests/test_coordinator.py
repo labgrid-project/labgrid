@@ -1,6 +1,10 @@
+import asyncio
+from types import SimpleNamespace
+
 import pytest
 
 import grpc
+from labgrid.remote.coordinator import Coordinator
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
 
@@ -105,6 +109,30 @@ def test_coordinator_exporter_session(coordinator, channel_stub):
             queue.task_done()
 
     coordinator = channel_stub.ExporterStream(generate_startup(queue), wait_for_ready=True)
+
+
+def test_cleanup_exporter_ignores_request_task_error():
+    async def run():
+        coordinator = object.__new__(Coordinator)
+        removed = []
+        coordinator.exporters = {
+            "peer": SimpleNamespace(
+                groups={"group": {"resource": object()}},
+                set_resource=lambda *args: removed.append(args),
+            ),
+        }
+
+        async def request_task():
+            raise RuntimeError("request task failed")
+
+        task = asyncio.create_task(request_task())
+        await asyncio.sleep(0)
+        await coordinator._cleanup_exporter("peer", task)
+
+        assert "peer" not in coordinator.exporters
+        assert removed == [("group", "resource", None)]
+
+    asyncio.run(run())
 
 
 def test_coordinator_place_acquire(coordinator, coordinator_place):

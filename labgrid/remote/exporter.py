@@ -218,7 +218,7 @@ class SerialPortExport(ResourceExport):
                 self.ser2net_bin = "/usr/bin/ser2net"
 
     def __del__(self):
-        if self.child is not None:
+        if getattr(self, "child", None) is not None:
             self.stop()
 
     def _get_start_params(self):
@@ -849,7 +849,7 @@ class ADBExport(ResourceExport):
         self.port = None
 
     def __del__(self):
-        if self.child is not None:
+        if getattr(self, "child", None) is not None:
             self.stop()
 
     def _get_params(self):
@@ -1071,13 +1071,11 @@ class Exporter:
                 reexec = True
             else:
                 logging.exception("unexpected grpc error in coordinator message pump task")
+                raise
         except Exception:
             self.out_queue.put_nowait(None)  # let the sender side exit gracefully
             logging.exception("error in coordinator message pump")
-
-            # only send command response when the other updates have left the queue
-            # perhaps with queue join/task_done
-            # this should be a command from the coordinator
+            raise
 
     async def acquire(self, group_name, resource_name, place_name):
         resource = self.groups.get(group_name, {}).get(resource_name)

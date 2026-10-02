@@ -55,3 +55,4 @@ from .laadriver import LAASerialDriver, LAAPowerDriver, \
                        LAAButtonDriver, LAALedDriver, LAATempDriver, LAAWattDriver, \
                        LAAProviderDriver
 from .adb import ADBDriver
+from .wavesharerturelaisdriver import WaveshareRTURelaisDriver

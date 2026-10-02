@@ -1618,6 +1618,8 @@ class ClientSession:
                 print("Waiting for allocation...")
             await self._wait_reservation(res.token, verbose=False)
 
+        return res.token
+
     async def cancel_reservation(self):
         token: str = self.args.token
 

@@ -1,3 +1,4 @@
+import contextlib
 import os
 
 from urllib.parse import urlsplit, urlunsplit, urlparse
@@ -24,6 +25,46 @@ class ProxyManager:
     def force_proxy(cls, force_proxy):
         assert isinstance(force_proxy, str)
         cls._force_proxy = force_proxy
+
+    @classmethod
+    @contextlib.contextmanager
+    def local_forward(cls, res, remote_host, remote_port, *, local_port=0):
+        assert isinstance(res, Resource)
+
+        extra = getattr(res, "extra", {})
+        host = extra.get("proxy") if extra.get("proxy_required") else res.host
+        connection = sshmanager.get(host)
+        local_port = connection.add_port_forward(
+            remote_host,
+            remote_port,
+            None if local_port == 0 else local_port,
+        )
+        try:
+            yield local_port
+        finally:
+            connection.remove_port_forward(remote_host, remote_port)
+
+    @classmethod
+    @contextlib.contextmanager
+    def remote_forward(cls, res, local_port, *, remote_port=0):
+        assert isinstance(res, Resource)
+
+        extra = getattr(res, "extra", {})
+        host = extra.get("proxy") if extra.get("proxy_required") else res.host
+        connection = sshmanager.get(host)
+        remote_port = connection.add_remote_port_forward(
+            remote_port,
+            local_port,
+            "localhost",
+        )
+        try:
+            yield remote_port
+        finally:
+            connection.remove_remote_port_forward(
+                remote_port,
+                local_port,
+                "localhost",
+            )
 
     @classmethod
     def get_host_and_port(cls, res, *, default_port=None, force_port=None):

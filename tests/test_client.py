@@ -642,3 +642,45 @@ def test_same_name_resources(place, exporter, tmpdir):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
+
+def test_forward(place, tmpdir):
+    # Port forwarding requires an acquired place.
+    with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    adb = tmpdir.join('adb')
+    adb.write(
+        """#!/bin/sh
+echo 42000
+"""
+    )
+    adb.chmod(0o755)
+
+    config = tmpdir.join('config.yaml')
+    config.write(
+        f"""
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: test
+      NetworkADBDevice:
+        host: localhost
+        port: 5555
+    drivers:
+      ADBDriver: {{}}
+tools:
+  adb: "{adb}"
+"""
+    )
+
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {config} -p test forward -L 8080') as spawn:
+        spawn.expect('Forwarding local port 42000 to remote port 8080')
+        spawn.expect(r'Waiting for CTRL\+C...')
+        spawn.sendcontrol('c')
+        spawn.expect('Exiting...')
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()

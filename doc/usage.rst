@@ -832,6 +832,15 @@ resources.
 See :doc:`man/client`, :doc:`man/device-config` and :doc:`man/exporter` for
 more information.
 
+Exporter port range
+~~~~~~~~~~~~~~~~~~~
+
+On networks with a fixed set of allowed TCP ports, the exporter option ``--port-range=4000-5000``
+restricts automatic port allocation to that inclusive range.
+The range applies to serial exports and ADB servers, rather than an individual resource.
+It must contain at least 1000 ports, which are tried in random order on each allocation.
+See :doc:`man/exporter` for details.
+
 Advanced CLI features
 ~~~~~~~~~~~~~~~~~~~~~
 

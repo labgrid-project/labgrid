@@ -29,7 +29,7 @@ from labgrid.remote.grpc.interceptor.client import (
 from .config import ResourceConfig
 from .common import ResourceEntry, get_client_credentials, queue_as_aiter
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
-from ..util import get_free_port, labgrid_version
+from ..util import get_free_port, helper, labgrid_version
 
 
 exports: Dict[str, Type[ResourceEntry]] = {}
@@ -1190,6 +1190,18 @@ async def amain(config) -> bool:
     await exporter.run()
 
 
+def parse_port_range(value):
+    try:
+        start, end = (int(port) for port in value.split("-"))
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("expected START-END") from exc
+    if not 1 <= start <= end <= 65535:
+        raise argparse.ArgumentTypeError("ports must satisfy 1 <= START <= END <= 65535")
+    if end - start + 1 < 1000:
+        raise argparse.ArgumentTypeError("port range must contain at least 1000 ports")
+    return range(start, end + 1)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -1234,11 +1246,18 @@ def main():
     )
     parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
     parser.add_argument(
+        "--port-range",
+        metavar="START-END",
+        type=parse_port_range,
+        help="allocate TCP ports from this inclusive range (at least 1000 ports)",
+    )
+    parser.add_argument(
         "--pystuck-port", metavar="PORT", type=int, default=6667, help="use a different pystuck port than 6667"
     )
     parser.add_argument("resources", metavar="RESOURCES", type=str, help="resource config file name")
 
     args = parser.parse_args()
+    helper.set_port_range(args.port_range)
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 

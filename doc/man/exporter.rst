@@ -41,6 +41,8 @@ OPTIONS
     use fully qualified domain name as default for hostname
 -d, --debug
     enable debug mode
+--port-range START-END
+    allocate TCP ports from this inclusive range of at least 1000 ports
 
 -i / --isolated
 ~~~~~~~~~~~~~~~
@@ -71,6 +73,15 @@ override this default with another name (or an IP address).
 In some networks the fully qualified domain name may be needed to reach resources
 on an exporter. This option changes the default to fqdn when no --hostname is
 explicitly set.
+
+--port-range
+~~~~~~~~~~~~
+Limit automatic TCP port allocation to an inclusive range, for example ``--port-range=4000-5000``.
+This applies to all calls to ``get_free_port()`` in the exporter process, including ser2net and ADB servers.
+The range must contain at least 1000 ports between 1 and 65535.
+Ports are tried in random order, and occupied ports are skipped.
+Allocation fails if no port in the range is available.
+Without this option, the operating system chooses an available port.
 
 CONFIGURATION
 -------------

@@ -71,6 +71,9 @@ use fully qualified domain name as default for hostname
 .TP
 .B  \-d\fP,\fB  \-\-debug
 enable debug mode
+.TP
+.BI \-\-port\-range \ START\-END
+allocate TCP ports from this inclusive range of at least 1000 ports
 .UNINDENT
 .SS \-i / \-\-isolated
 .sp
@@ -98,6 +101,14 @@ override this default with another name (or an IP address).
 In some networks the fully qualified domain name may be needed to reach resources
 on an exporter. This option changes the default to fqdn when no \-\-hostname is
 explicitly set.
+.SS \-\-port\-range
+.sp
+Limit automatic TCP port allocation to an inclusive range, for example \fB\-\-port\-range=4000\-5000\fP\&.
+This applies to all calls to \fBget_free_port()\fP in the exporter process, including ser2net and ADB servers.
+The range must contain at least 1000 ports between 1 and 65535.
+Ports are tried in random order, and occupied ports are skipped.
+Allocation fails if no port in the range is available.
+Without this option, the operating system chooses an available port.
 .SS CONFIGURATION
 .sp
 The exporter uses a YAML configuration file which defines groups of related

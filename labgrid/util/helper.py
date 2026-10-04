@@ -3,6 +3,7 @@ import fcntl
 import logging
 import os
 import pty
+import random
 import re
 import select
 import subprocess
@@ -15,11 +16,33 @@ from ..step import step
 from .timeout import Timeout
 
 re_vt100 = re.compile(r"(\x1b\[|\x9b)[^@-_a-z]*[@-_a-z]|\x1b[@-_a-z]")
+_port_range = None
+
+
+def set_port_range(port_range):
+    """Set the default range used when allocating free TCP ports."""
+    global _port_range
+    _port_range = port_range
+
 
 def get_free_port():
     """Helper function to always return an unused port."""
     with closing(socket(AF_INET, SOCK_STREAM)) as s:
-        s.bind(('', 0))
+        if _port_range is not None:
+            ports = random.sample(_port_range, len(_port_range))
+            while ports:
+                port = ports.pop()
+                try:
+                    s.bind(('', port))
+                except OSError as exc:
+                    if exc.errno != errno.EADDRINUSE:
+                        raise
+                else:
+                    break
+            else:
+                raise OSError(errno.EADDRINUSE, "No free ports in the configured port range")
+        else:
+            s.bind(('', 0))
         return s.getsockname()[1]
 
 

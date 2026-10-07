@@ -2,11 +2,12 @@ import atexit
 import tempfile
 import logging
 import shutil
+import shlex
 import subprocess
 import os
 from select import select
 from functools import wraps
-from typing import Dict
+from typing import Dict, Tuple
 
 import attr
 from ..driver.exception import ExecutionError
@@ -25,7 +26,7 @@ class SSHConnectionManager:
     should not be directly instantiated, use the exported sshmanager from this
     module instead.
     """
-    _connections: 'Dict[str, SSHConnection]' = attr.ib(
+    _connections: 'Dict[Tuple[str, Tuple[str, ...]], SSHConnection]' = attr.ib(
         default=attr.Factory(dict),
         init=False,
         validator=attr.validators.optional(attr.validators.instance_of(dict))
@@ -35,20 +36,23 @@ class SSHConnectionManager:
         self.logger = logging.getLogger(f"{self}")
         atexit.register(self.close_all)
 
-    def get(self, host: str):
+    def get(self, host: str, *, extra_options=()):
         """Retrieve or create a new connection to a given host
 
         Arguments:
             host (str): host to retrieve the connection for
+            extra_options (list, optional): extra SSH configuration options
+                passed with ``-o``
 
         Returns:
             :obj:`SSHConnection`: the SSHConnection for the host"""
-        instance = self._connections.get(host)
+        key = (host, tuple(extra_options))
+        instance = self._connections.get(key)
         if instance is None:
             self.logger.debug("Creating SSHConnection for %s", host)
-            instance = SSHConnection(host)
+            instance = SSHConnection(host, extra_options=list(extra_options))
             instance.connect()
-            self._connections[host] = instance
+            self._connections[key] = instance
         return instance
 
     def add_connection(self, connection):
@@ -60,17 +64,19 @@ class SSHConnectionManager:
             connection (:obj:`SSHConnection`): SSHconnection to add to the manager
         """
         assert isinstance(connection, SSHConnection)
-        if connection.host not in self._connections:
-            self._connections[connection.host] = connection
+        key = (connection.host, tuple(connection.extra_options))
+        if key not in self._connections:
+            self._connections[key] = connection
 
     def remove_connection(self, connection):
         assert isinstance(connection, SSHConnection)
         if connection.isconnected():
             raise ExecutionError("Can't remove connected connection")
-        del self._connections[connection.host]
+        key = (connection.host, tuple(connection.extra_options))
+        del self._connections[key]
 
     def remove_by_name(self, name):
-        del self._connections[name]
+        del self._connections[name, ()]
 
     def open(self, host):
         return self.get(host)
@@ -98,12 +104,11 @@ class SSHConnectionManager:
 
     def close_all(self):
         """Close all open connections and remove them from the manager """
-        for name, connection in self._connections.items():
+        # Newer connections may depend on older connections to reach their host.
+        for connection in reversed(self._connections.values()):
             if connection.isconnected():
                 connection.disconnect()
-        names = self._connections.copy().keys()
-        for name in names:
-            self.remove_by_name(name)
+        self._connections.clear()
 
 
 def _check_connected(func):
@@ -128,8 +133,17 @@ class SSHConnection:
     infrastructure to tunnel multiple connections over one SSH link.
 
     A public identity infrastructure is assumed, no extra username or passwords
-    are supported."""
+    are supported.
+
+    Args:
+        host (str): SSH destination
+        extra_options (list): extra SSH configuration options passed with ``-o``
+    """
     host = attr.ib(validator=attr.validators.instance_of(str))
+    extra_options = attr.ib(
+        default=attr.Factory(list), kw_only=True,
+        validator=attr.validators.instance_of(list)
+    )
     _connected = attr.ib(
         default=False, init=False, validator=attr.validators.instance_of(bool)
     )
@@ -148,9 +162,11 @@ class SSHConnection:
         self._keepalive = None
         atexit.register(self.cleanup)
 
-    @staticmethod
-    def _get_ssh_base_args():
-        return ["-x", "-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
+    def _get_ssh_base_args(self):
+        args = ["-x", "-o", "LogLevel=ERROR", "-o", "PasswordAuthentication=no"]
+        for option in self.extra_options:
+            args += ["-o", option]
+        return args
 
     def _get_ssh_control_args(self):
         if self._socket:
@@ -161,14 +177,15 @@ class SSHConnection:
         return []
 
     def _get_ssh_args(self):
-        args = SSHConnection._get_ssh_base_args()
+        args = self._get_ssh_base_args()
         args += self._get_ssh_control_args()
         return args
 
     def _open_connection(self):
         """Internal function which appends the control socket and checks if the
         connection is already open"""
-        if self._check_external_master():
+        # An external master may not honor the explicit SSH options.
+        if not self.extra_options and self._check_external_master():
             self._logger.info("Using existing SSH connection to %s", self.host)
         else:
             self._start_own_master()
@@ -323,7 +340,7 @@ class SSHConnection:
     def put_file(self, local_file, remote_path):
         """Put a file onto the remote host"""
         complete_cmd = ["rsync", "--compress", "--sparse", "--copy-links", "--verbose", "--progress", "--times", "-e",
-                        " ".join(['ssh'] + self._get_ssh_args())]
+                        shlex.join(['ssh'] + self._get_ssh_args())]
         complete_cmd += [
             f"{local_file}",
             f"{self.host}:{remote_path}"
@@ -438,7 +455,7 @@ class SSHConnection:
         connect_timeout = get_ssh_connect_timeout()
 
         self._logger.debug("ControlSocket: %s", control)
-        args = ["ssh"] + SSHConnection._get_ssh_base_args()
+        args = ["ssh"] + self._get_ssh_base_args()
         args += [
             "-n", "-MN",
             "-o", f"ConnectTimeout={connect_timeout}",

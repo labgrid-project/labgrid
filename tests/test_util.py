@@ -235,6 +235,15 @@ def test_sshmanager_open(sshmanager_fix):
     assert isinstance(con, SSHConnection)
 
 @pytest.mark.localsshmanager
+def test_sshmanager_extra_options(sshmanager_fix):
+    extra_options = ["ConnectTimeout=3"]
+    con = sshmanager_fix.get("localhost", extra_options=extra_options)
+
+    assert con is not sshmanager_fix.get("localhost")
+    assert sshmanager_fix.get("localhost", extra_options=tuple(extra_options)) is con
+    assert con.run_check("echo Hello World") == ["Hello World"]
+
+@pytest.mark.localsshmanager
 def test_sshmanager_add_forward(sshmanager_fix):
     port = sshmanager_fix.request_forward("localhost", 'localhost', 3000)
 
@@ -266,9 +275,9 @@ def test_sshmanager_add_duplicate(sshmanager_fix):
     host = 'localhost'
     con = SSHConnection(host)
     sshmanager_fix.add_connection(con)
-    con_there = sshmanager_fix._connections[host]
+    con_there = sshmanager_fix._connections[host, ()]
     sshmanager_fix.add_connection(con)
-    con_now = sshmanager_fix._connections[host]
+    con_now = sshmanager_fix._connections[host, ()]
 
     assert con_now == con_there
 
@@ -277,7 +286,7 @@ def test_sshmanager_add_new(sshmanager_fix):
     host = 'other_host'
     con = SSHConnection(host)
     sshmanager_fix.add_connection(con)
-    con_now = sshmanager_fix._connections[host]
+    con_now = sshmanager_fix._connections[host, ()]
 
     assert con_now == con
 

@@ -1,4 +1,5 @@
 import logging
+import warnings
 from typing import Optional
 
 from labgrid.remote.auth.capability import Capability
@@ -37,6 +38,8 @@ class ClientIdentity:
             ``hostname`` if no username is present) and (optional) user_agent
             or None if no metadata is supplied.
         """
+        warnings.warn("ClientIdentity.from_metadata is deprecated.", DeprecationWarning)
+
         name = get_metadata_single_value_by_key(metadata, NAME_KEY)
         hostname = get_metadata_single_value_by_key(metadata, HOSTNAME_KEY)
         user_agent = get_metadata_single_value_by_key(metadata, USER_AGENT_KEY)

@@ -41,7 +41,7 @@ class QuartusHPSDriver(Driver):
         """
         timeout = Timeout(10.0)
         while not timeout.expired:
-            cmd = self.interface.command_prefix + [self.jtag_tool]
+            cmd = self.interface.wrap_command([self.jtag_tool])
             jtagconfig_process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
             stdout, _ = jtagconfig_process.communicate()
 
@@ -74,20 +74,20 @@ class QuartusHPSDriver(Driver):
         assert isinstance(address, int)
 
         cable_number = self._get_cable_number()
-        cmd = self.interface.command_prefix + [self.tool]
+        cmd = [self.tool]
         cmd += [
             f"--cable={cable_number}",
             f"--addr=0x{address:X}",
             f"--operation=P {mf.get_remote_path()}",
         ]
-        processwrapper.check_output(cmd)
+        processwrapper.check_wrapped_output(self.interface, cmd)
 
     @Driver.check_active
     @step(args=["address", "size"])
     def erase(self, address=None, size=None):
 
         cable_number = self._get_cable_number()
-        cmd = self.interface.command_prefix + [self.tool]
+        cmd = [self.tool]
         cmd += [
             f"--cable={cable_number}",
             "--operation=E",
@@ -96,4 +96,4 @@ class QuartusHPSDriver(Driver):
             cmd += [f"--addr=0x{address:X}"]
         if size:
             cmd += [f"--size=0x{size:X}"]
-        processwrapper.check_output(cmd)
+        processwrapper.check_wrapped_output(self.interface, cmd)

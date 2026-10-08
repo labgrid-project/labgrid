@@ -36,12 +36,12 @@ class USBSDMuxDriver(Driver):
     def set_mode(self, mode):
         if not mode.lower() in ["dut", "host", "off", "client"]:
             raise ExecutionError(f"Setting mode '{mode}' not supported by USBSDMuxDriver")
-        cmd = self.mux.command_prefix + [self.tool, self.mux.control_path, mode.lower()]
-        processwrapper.check_output(cmd)
+        cmd = [self.tool, self.mux.control_path, mode.lower()]
+        processwrapper.check_wrapped_output(self.mux, cmd)
 
     @Driver.check_active
     @step(title="sdmux_get")
     def get_mode(self):
-        cmd = self.mux.command_prefix + [self.tool, self.mux.control_path, "get"]
+        cmd = self.mux.wrap_command([self.tool, self.mux.control_path, "get"])
         proc = subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
         return proc.stdout.strip().decode()

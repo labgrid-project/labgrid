@@ -1,9 +1,7 @@
 import logging
-import warnings
 from typing import Optional
 
 from labgrid.remote.auth.capability import Capability
-from labgrid.remote.common import get_metadata_single_value_by_key
 
 NAME_KEY = "x-lg-name"
 HOSTNAME_KEY = "x-lg-hostname"
@@ -25,29 +23,6 @@ class ClientIdentity:
     @property
     def id(self):
         return f"{self.hostname}/{self.name}" if self.name else self.hostname
-
-    @classmethod
-    def from_metadata(cls, metadata: tuple):
-        """Construct a ClientIdentity from gRPC request metadata.
-
-        Args:
-            metadata: A sequence of (key, value) pairs from the gRPC context.
-
-        Returns:
-            A ClientIdentity with id set to ``hostname/username`` (or just
-            ``hostname`` if no username is present) and (optional) user_agent
-            or None if no metadata is supplied.
-        """
-        warnings.warn("ClientIdentity.from_metadata is deprecated.", DeprecationWarning)
-
-        name = get_metadata_single_value_by_key(metadata, NAME_KEY)
-        hostname = get_metadata_single_value_by_key(metadata, HOSTNAME_KEY)
-        user_agent = get_metadata_single_value_by_key(metadata, USER_AGENT_KEY)
-
-        if not hostname:
-            return None
-
-        return cls(name, hostname, user_agent)
 
 
 def infer_peer_identity(clients, context, identity):

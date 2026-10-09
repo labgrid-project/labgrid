@@ -39,9 +39,9 @@ This is the client to control a boards status and interface with it on remote ma
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client [\-x ADDRESS] [\-\-tls] [\-\-cacert CACERT] [\-c CONFIG]
-                      [\-p PLACE] [\-s STATE] [\-i INITIAL_STATE] [\-d] [\-v]
-                      [\-P PROXY]
+usage: labgrid\-client [\-x ADDRESS] [\-\-auth\-plugin AUTH_PLUGIN] [\-\-tls]
+                      [\-\-cacert CACERT] [\-c CONFIG] [\-p PLACE] [\-s STATE]
+                      [\-i INITIAL_STATE] [\-d] [\-v] [\-P PROXY]
                       COMMAND ...
 .EE
 .UNINDENT
@@ -50,6 +50,11 @@ usage: labgrid\-client [\-x ADDRESS] [\-\-tls] [\-\-cacert CACERT] [\-c CONFIG]
 .TP
 .B \-x <address>, \-\-coordinator <address>
 coordinator HOST[:PORT] (default: value from env variable LG_COORDINATOR, otherwise 127.0.0.1:20408)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-auth\-plugin <auth_plugin>
+the name of the client authentication plugin
 .UNINDENT
 .INDENT 0.0
 .TP

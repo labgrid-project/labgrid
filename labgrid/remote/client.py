@@ -36,7 +36,7 @@ from labgrid.remote.grpc.interceptor.client import (
     IdentityClientStreamStreamInterceptor,
     IdentityClientUnaryUnaryInterceptor,
 )
-from labgrid.remote.auth.plugin import DefaultClientAuthPlugin, ClientAuthPlugin
+from labgrid.remote.auth.plugin import get_client_auth_plugin
 
 from .common import (
     ResourceEntry,
@@ -149,12 +149,12 @@ class ClientSession:
             ("grpc.http2.max_pings_without_data", 0),  # no limit
         ]
 
-        identity = {
-            "username": self.getuser(),
-            "hostname": self.gethostname(),
-            "user_agent": f"labgrid-client {labgrid_version()}",
-        }
-        auth_plugin = DefaultClientAuthPlugin(**identity)
+        auth_plugin = get_client_auth_plugin(
+            self.getuser(),
+            self.gethostname(),
+            f"labgrid-client {labgrid_version()}",
+            self.args.auth_plugin if self.args else None,
+        )
         interceptors = [
             IdentityClientUnaryUnaryInterceptor(auth_plugin),
             IdentityClientStreamStreamInterceptor(auth_plugin),
@@ -2143,6 +2143,12 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         metavar="ADDRESS",
         type=str,
         help="coordinator HOST[:PORT] (default: value from env variable LG_COORDINATOR, otherwise 127.0.0.1:20408)",
+    )
+    parser.add_argument(
+        "--auth-plugin",
+        default=os.environ.get("LG_CLIENT_AUTH_PLUGIN", None),
+        type=str,
+        help="the name of the client authentication plugin",
     )
     parser.add_argument(
         "--tls",

@@ -20,7 +20,8 @@ import grpc
 from grpc_health.v1 import health, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
-from labgrid.remote.identity import ClientIdentity, infer_peer_identity
+from labgrid.remote.identity import infer_peer_identity
+from labgrid.remote.auth.plugin import DefaultCoordinatorAuthPlugin, CoordinatorAuthPlugin, clientidentity_from_plugin
 from .auth.capability import Capability
 
 from .common import (
@@ -213,7 +214,7 @@ def require_capability(req_cap):
     def decorator(func):
         @wraps(func)
         async def wrapper(self, request, context):
-            identity = ClientIdentity.from_metadata(context.invocation_metadata())
+            identity = clientidentity_from_plugin(self.auth_plugin, context.invocation_metadata())
             await check_capability(self, identity, req_cap, context)
             return await func(self, request, context, identity=identity)
 
@@ -225,7 +226,7 @@ def require_capability(req_cap):
 def add_identity(func):
     @wraps(func)
     async def wrapper(self, request, context):
-        identity = ClientIdentity.from_metadata(context.invocation_metadata())
+        identity = clientidentity_from_plugin(self.auth_plugin, context.invocation_metadata())
         return await func(self, request, context, identity=identity)
 
     return wrapper
@@ -268,8 +269,9 @@ class LeaseExtendPreconditionError(CoordinatorError):
 
 
 class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
-    def __init__(self, use_capabilities) -> None:
+    def __init__(self, use_capabilities, auth_plugin: CoordinatorAuthPlugin = DefaultCoordinatorAuthPlugin()) -> None:
         self.use_capabilities = use_capabilities
+        self.auth_plugin = auth_plugin
         self.places: dict[str, Place] = {}
         self.reservations = {}
         self.poll_tasks = []
@@ -404,7 +406,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         assert peer not in self.clients
         out_msg_queue = asyncio.Queue()
 
-        identity = ClientIdentity.from_metadata(context.invocation_metadata())
+        identity = clientidentity_from_plugin(self.auth_plugin, context.invocation_metadata())
         print(f"Stream identity: {identity}")
         if self.use_capabilities:
             await check_capability(self, identity, Capability.client_stream, context)
@@ -527,7 +529,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         logging.info("exporter connected: %s", peer)
         assert peer not in self.exporters
 
-        identity = ClientIdentity.from_metadata(context.invocation_metadata())
+        identity = clientidentity_from_plugin(self.auth_plugin, context.invocation_metadata())
         if self.use_capabilities:
             await check_capability(self, identity, Capability.exporter_stream, context)
 
@@ -540,7 +542,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         out_msg.hello.version = labgrid_version()
         yield out_msg
 
-        identity = ClientIdentity.from_metadata(context.invocation_metadata())
+        identity = clientidentity_from_plugin(self.auth_plugin, context.invocation_metadata())
         if identity:
             logging.debug("exporter identity provided in gRPC metadata: %s", identity)
             if existing := self.get_exporter_by_name(identity.id):
@@ -2044,7 +2046,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         return labgrid_coordinator_pb2.ExtendLeaseResponse(reservation=reservation.as_pb2())
 
 
-async def serve(listen, cleanup, capabilities, server_credentials=None) -> None:
+async def serve(listen, cleanup, capabilities, auth_plugin, server_credentials=None) -> None:
     asyncio.current_task().set_name("coordinator-serve")
     # It seems since https://github.com/grpc/grpc/pull/34647, the
     # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
@@ -2062,7 +2064,7 @@ async def serve(listen, cleanup, capabilities, server_credentials=None) -> None:
     server = grpc.aio.server(
         options=channel_options,
     )
-    coordinator = Coordinator(capabilities)
+    coordinator = Coordinator(capabilities, auth_plugin)
     setup_otel_metrics(coordinator)
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
     coordinator_service_name = labgrid_coordinator_pb2.DESCRIPTOR.services_by_name["Coordinator"].full_name
@@ -2186,7 +2188,9 @@ def main():
     loop.set_debug(True)
     try:
         server_credentials = get_server_credentials(args)
-        loop.run_until_complete(serve(args.listen, cleanup, args.capabilities, server_credentials))
+        auth_plugin = DefaultCoordinatorAuthPlugin()
+
+        loop.run_until_complete(serve(args.listen, cleanup, args.capabilities, auth_plugin, server_credentials))
     finally:
         if cleanup:
             loop.run_until_complete(*cleanup)

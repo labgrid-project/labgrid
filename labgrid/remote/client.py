@@ -36,6 +36,7 @@ from labgrid.remote.grpc.interceptor.client import (
     IdentityClientStreamStreamInterceptor,
     IdentityClientUnaryUnaryInterceptor,
 )
+from labgrid.remote.auth.plugin import DefaultClientAuthPlugin, ClientAuthPlugin
 
 from .common import (
     ResourceEntry,
@@ -153,9 +154,10 @@ class ClientSession:
             "hostname": self.gethostname(),
             "user_agent": f"labgrid-client {labgrid_version()}",
         }
+        auth_plugin = DefaultClientAuthPlugin(**identity)
         interceptors = [
-            IdentityClientUnaryUnaryInterceptor(**identity),
-            IdentityClientStreamStreamInterceptor(**identity),
+            IdentityClientUnaryUnaryInterceptor(auth_plugin),
+            IdentityClientStreamStreamInterceptor(auth_plugin),
         ]
 
         if self.credentials:

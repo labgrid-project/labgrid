@@ -13,6 +13,7 @@ from grpc_reflection.v1alpha import reflection_pb2, reflection_pb2_grpc
 
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
+from labgrid.remote.auth.plugin import DefaultCoordinatorAuthPlugin
 from labgrid.remote.common import Place, Reservation, ReservationState
 from labgrid.remote.coordinator import Coordinator, CoordinatorError, ExporterError, ResourceImport
 
@@ -40,6 +41,7 @@ def make_coordinator_with_fake_exporter(
 ):
     coordinator = Coordinator.__new__(Coordinator)
     coordinator.use_capabilities = False
+    coordinator.auth_plugin = DefaultCoordinatorAuthPlugin()
     coordinator.lock = asyncio.Lock()
     coordinator.clients = {}
     coordinator.exporters = {
@@ -1145,6 +1147,7 @@ class ReservationAcquireContext:
 
 def make_coordinator_with_reserved_place():
     coordinator = Coordinator.__new__(Coordinator)
+    coordinator.auth_plugin = DefaultCoordinatorAuthPlugin()
     coordinator.lock = asyncio.Lock()
     coordinator.clients = {"test-peer": SimpleNamespace(name="testuser", queue=asyncio.Queue())}
     coordinator.exporters = {}

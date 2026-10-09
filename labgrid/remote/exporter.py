@@ -33,6 +33,7 @@ from labgrid.remote.otel_exporter import (
     setup_otel_sdk_if_available,
     start_span_from_metadata,
 )
+from labgrid.remote.auth.plugin import DefaultClientAuthPlugin
 
 from .config import ResourceConfig
 from .common import ResourceEntry, get_client_credentials, queue_as_aiter
@@ -976,10 +977,15 @@ class Exporter:
         if urlsplit(f"//{config['coordinator']}").port is None:
             config["coordinator"] += ":20408"
 
-        identity = (None, self.name, f"labgrid-exporter {labgrid_version()}")
+        identity = {
+            "username": None,
+            "hostname": self.name,
+            "user_agent": f"labgrid-exporter {labgrid_version()}",
+        }
+        auth_plugin = DefaultClientAuthPlugin(**identity)
         interceptors = [
-            IdentityClientUnaryUnaryInterceptor(*identity),
-            IdentityClientStreamStreamInterceptor(*identity),
+            IdentityClientUnaryUnaryInterceptor(auth_plugin),
+            IdentityClientStreamStreamInterceptor(auth_plugin),
         ]
         if config["credentials"]:
             self.channel = grpc.aio.secure_channel(

@@ -1,7 +1,8 @@
 from typing import List, Mapping, Protocol, Optional, runtime_checkable
+
 from labgrid.remote.identity import ClientIdentity
 
-USERNAME_KEY = "x-lg-username"
+NAME_KEY = "x-lg-name"
 HOSTNAME_KEY = "x-lg-hostname"
 USER_AGENT_KEY = "x-lg-user-agent"
 
@@ -25,7 +26,7 @@ class DefaultClientAuthPlugin(ClientAuthPlugin):
             HOSTNAME_KEY: [self.hostname],
         }
         if self.username:
-            metadata[USERNAME_KEY] = [self.username]
+            metadata[NAME_KEY] = [self.username]
         if self.user_agent:
             metadata[USER_AGENT_KEY] = [self.user_agent]
         return metadata
@@ -77,7 +78,7 @@ class DefaultCoordinatorAuthPlugin(CoordinatorAuthPlugin):
         Raises:
             NoIdentityPresent: If the hostname key is missing from metadata.
         """
-        username = self.get_single_value_metadata(metadata, USERNAME_KEY)
+        username = self.get_single_value_metadata(metadata, NAME_KEY)
         hostname = self.get_single_value_metadata(metadata, HOSTNAME_KEY)
         user_agent = self.get_single_value_metadata(metadata, USER_AGENT_KEY)
 

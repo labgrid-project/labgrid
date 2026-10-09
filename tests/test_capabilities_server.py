@@ -33,15 +33,14 @@ class RpcContext:
 def request_identity(monkeypatch):
     @contextmanager
     def set_request_identity(capabilities=None, identity_id="test-host/test-user"):
-        hostname, _, name = identity_id.partition("/")
-        identity = ClientIdentity(name, hostname, "pytest")
-        identity.capabilities = capabilities
+        identity = ClientIdentity(identity_id, user_agent="pytest", capabilities=capabilities)
 
         with monkeypatch.context() as request_patch:
             request_patch.setattr(
-                coordinator_module.ClientIdentity,
-                "from_metadata",
-                classmethod(lambda cls, metadata: identity),
+                coordinator_module, # monkeypatch in labgrid.remote.coordinator instead of labgrid.remote.auth.plugin as
+                                    # the function has been imported in labgrid.remote.coordinator
+                "clientidentity_from_plugin",
+                lambda _, __: identity,
             )
             yield identity
 

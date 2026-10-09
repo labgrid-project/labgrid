@@ -10,6 +10,7 @@ import pytest_asyncio
 import requests
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 
+from labgrid.remote.auth.plugin import DefaultCoordinatorAuthPlugin
 from labgrid.remote.coordinator import Coordinator
 from labgrid.remote.grpc.health import HealthServicer
 from labgrid.remote.generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
@@ -36,6 +37,7 @@ async def instrumented_health_server():
     health_pb2_grpc.add_HealthServicer_to_server(servicer, server)
     coordinator = Coordinator.__new__(Coordinator)
     coordinator.use_capabilities = False
+    coordinator.auth_plugin = DefaultCoordinatorAuthPlugin()
     coordinator.lock = asyncio.Lock()
     coordinator.places = {}
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)

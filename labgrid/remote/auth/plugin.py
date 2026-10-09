@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 import warnings
 from importlib.metadata import entry_points
 from typing import List, Mapping, Protocol, Optional, runtime_checkable
@@ -131,9 +132,21 @@ def get_coordinator_auth_plugin(plugin_name: Optional[str]) -> CoordinatorAuthPl
     return auth_plugin
 
 
-def clientidentity_from_plugin(plugin: CoordinatorAuthPlugin, metadata: tuple) -> ClientIdentity:
-    identity = plugin.authenticate(metadata)
-    return identity
+def metadata_to_mapping(metadata) -> Mapping[str, List[str]]:
+    result = defaultdict(list)
+
+    for key, value in metadata:
+        result[key].append(value)
+
+    return dict(result)
+
+
+def clientidentity_from_plugin(plugin: CoordinatorAuthPlugin, metadata: tuple) -> Optional[ClientIdentity]:
+    try:
+        return plugin.authenticate(metadata_to_mapping(metadata))
+    except IdentityError as e:
+        logging.warning("Authentication error", exc_info=e)
+        return None
 
 
 class DefaultCoordinatorAuthPlugin(CoordinatorAuthPlugin):

@@ -11,23 +11,7 @@ The ``MICRO`` number for stable releases starts at 1.
 - `Fixes <https://github.com/labgrid-project/labgrid/pulls?q=label%3Afix>`_
 - `Fixes for stable <https://github.com/labgrid-project/labgrid/issues?q=label%3A%22fix+for+stable%22>`_
 
-2. Update CHANGES.rst
-=====================
-
-Update the `CHANGES.rst` file.
-Ensure that no incompatibilities are unlisted and that all major features are
-described in a separate section.
-It's best to compare against the git log.
-
-Add new sections including the version number for the release in `CHANGES.rst`
-(if not already done).
-Set the release date.
-
-If you are bumping the ``MINOR`` number, import the changes from the latest stable
-branch and add a new (unreleased) section for the next release.
-Also add a new section into ``debian/changelog``.
-
-3. Create a tag
+2. Create a tag
 ===============
 
 Wait for the CI to succeed on the commit you are about to tag.
@@ -51,14 +35,14 @@ If you're happy with it, push it:
 The CI should take care of the rest.
 Make sure it succeeds and the new release is available on PyPi.
 
-4. Draft a release
+3. Draft a release
 ==================
 
 On GitHub, draft a new release, add the changes in Markdown format and create a
 discussion for the release:
 https://github.com/labgrid-project/labgrid/releases/new
 
-5. Create new stable branch
+4. Create new stable branch
 ===========================
 
 If you are bumping the ``MINOR`` number, push a new stable branch

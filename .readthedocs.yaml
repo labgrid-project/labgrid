@@ -14,3 +14,8 @@ build:
   os: "ubuntu-24.04"
   tools:
     python: "3.13"
+  jobs:
+    post_checkout:
+      # reno requires full repo
+      - git fetch --unshallow || true
+      - git fetch --all --tags || true

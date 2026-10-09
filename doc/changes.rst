@@ -4,7 +4,10 @@
 
 .. _changes:
 
-Changes
-=======
+Release Notes
+=============
+
+.. release-notes::
+   :unreleased-version-title: In Development
 
 .. include:: ../CHANGES.rst

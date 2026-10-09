@@ -22,3 +22,8 @@ class CoordinatorAuthPlugin(Protocol):
         """Consumes the gRPC metadata, performs identity provider-specific
         validation and, if successful, emits a populated ClientIdentity."""
         ...
+
+
+def clientidentity_from_plugin(plugin: CoordinatorAuthPlugin, metadata: tuple) -> ClientIdentity:
+    identity = plugin.authenticate(metadata)
+    return identity

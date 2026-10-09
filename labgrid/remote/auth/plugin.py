@@ -1,3 +1,6 @@
+import logging
+import warnings
+from importlib.metadata import entry_points
 from typing import List, Mapping, Protocol, Optional, runtime_checkable
 
 from labgrid.remote.identity import ClientIdentity
@@ -12,6 +15,48 @@ class ClientAuthPlugin(Protocol):
     def metadata(self) -> Mapping[str, List[str]]:
         """Produces the gRPC metadata pairs to add to each RPC call's metadata."""
         ...
+
+
+def get_client_auth_plugin_names():
+    try:
+        auth_plugins = entry_points(group="labgrid.auth.plugin.client")
+        auth_plugin_names = ["default"] + [i.name for i in auth_plugins]
+
+        if len(auth_plugin_names) != len(set(auth_plugin_names)):
+            warnings.warn("Duplicate auth plugin names. Please ensure that plugin names are unique.", UserWarning)
+    except Exception:
+        return ["default"]
+
+    return auth_plugin_names
+
+
+def get_client_auth_plugin(
+    username: Optional[str], hostname: str, user_agent: str, plugin_name: Optional[str]
+) -> ClientAuthPlugin:
+    identity = {
+        "username": username,
+        "hostname": hostname,
+        "user_agent": user_agent,
+    }
+    auth_plugin = DefaultClientAuthPlugin(**identity)
+
+    if plugin_name:
+        if plugin_name == "default":
+            return auth_plugin
+
+        logging.debug("Desired auth plugin: %s", plugin_name)
+        auth_plugins = entry_points(group="labgrid.auth.plugin.client")
+
+        try:
+            logging.debug("Possible auth plugins: %s", auth_plugins)
+            plugin_cls = auth_plugins[plugin_name].load()
+            if not issubclass(plugin_cls, ClientAuthPlugin):
+                raise Exception("Plugin does not conform to ClientAuthPlugin Protocol")
+            auth_plugin = plugin_cls()
+        except Exception as e:
+            raise PluginLoadException("Unable to load client plugin") from e
+
+    return auth_plugin
 
 
 class DefaultClientAuthPlugin(ClientAuthPlugin):
@@ -45,6 +90,45 @@ class CoordinatorAuthPlugin(Protocol):
         """Consumes the gRPC metadata, performs identity provider-specific
         validation and, if successful, emits a populated ClientIdentity."""
         ...
+
+
+class PluginLoadException(Exception):
+    pass
+
+
+def get_coordinator_auth_plugin_names():
+    try:
+        auth_plugins = entry_points(group="labgrid.auth.plugin.coordinator")
+        auth_plugin_names = ["default"] + [i.name for i in auth_plugins]
+
+        if len(auth_plugin_names) != len(set(auth_plugin_names)):
+            warnings.warn("Duplicate auth plugin names. Please ensure that plugin names are unique.", UserWarning)
+    except Exception:
+        return ["default"]
+
+    return auth_plugin_names
+
+
+def get_coordinator_auth_plugin(plugin_name: Optional[str]) -> CoordinatorAuthPlugin:
+    auth_plugin = DefaultCoordinatorAuthPlugin()
+
+    if plugin_name:
+        if plugin_name == "default":
+            return auth_plugin
+
+        logging.debug("Desired auth plugin: %s", plugin_name)
+        auth_plugins = entry_points(group="labgrid.auth.plugin.coordinator")
+
+        try:
+            logging.debug("Possible auth plugins: %s", auth_plugins)
+            plugin_cls = auth_plugins[plugin_name].load()
+            if not issubclass(plugin_cls, CoordinatorAuthPlugin):
+                raise Exception("Plugin does not conform to CoordinatorAuthPlugin Protocol")
+            auth_plugin = plugin_cls()
+        except Exception as e:
+            raise PluginLoadException("Unable to load Coordinator plugin") from e
+
+    return auth_plugin
 
 
 def clientidentity_from_plugin(plugin: CoordinatorAuthPlugin, metadata: tuple) -> ClientIdentity:

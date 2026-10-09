@@ -31,6 +31,8 @@ OPTIONS
     path to server TLS certificate (in PEM format)
 --key
     path to TLS key (in PEM format)
+--auth-plugin
+    name of the Coordinator authentication plugin
 -d, --debug
     enable debug mode
 

@@ -21,7 +21,13 @@ from grpc_health.v1 import health, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
 from labgrid.remote.identity import infer_peer_identity
-from labgrid.remote.auth.plugin import DefaultCoordinatorAuthPlugin, CoordinatorAuthPlugin, clientidentity_from_plugin
+from labgrid.remote.auth.plugin import (
+    CoordinatorAuthPlugin,
+    clientidentity_from_plugin,
+    get_coordinator_auth_plugin,
+    DefaultCoordinatorAuthPlugin,
+    get_coordinator_auth_plugin_names,
+)
 from .auth.capability import Capability
 
 from .common import (
@@ -2150,6 +2156,12 @@ def main():
     parser.add_argument("--tls", action="store_true", default=False, help="enable TLS gRPC channel")
     parser.add_argument("--cert", type=pathlib.PurePath, help="path to server TLS certificate (in PEM format)")
     parser.add_argument("--key", type=pathlib.PurePath, help="path to TLS key (in PEM format)")
+    parser.add_argument(
+        "--auth-plugin",
+        default=os.environ.get("LG_COORDINATOR_AUTH_PLUGIN", None),
+        type=str,
+        help=f"name of the Coordinator authentication plugin (options: {get_coordinator_auth_plugin_names()})",
+    )
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
     parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
     parser.add_argument(
@@ -2188,7 +2200,7 @@ def main():
     loop.set_debug(True)
     try:
         server_credentials = get_server_credentials(args)
-        auth_plugin = DefaultCoordinatorAuthPlugin()
+        auth_plugin = get_coordinator_auth_plugin(args.auth_plugin)
 
         loop.run_until_complete(serve(args.listen, cleanup, args.capabilities, auth_plugin, server_credentials))
     finally:

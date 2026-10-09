@@ -33,7 +33,7 @@ from labgrid.remote.otel_exporter import (
     setup_otel_sdk_if_available,
     start_span_from_metadata,
 )
-from labgrid.remote.auth.plugin import DefaultClientAuthPlugin
+from labgrid.remote.auth.plugin import get_client_auth_plugin, get_client_auth_plugin_names
 
 from .config import ResourceConfig
 from .common import ResourceEntry, get_client_credentials, queue_as_aiter
@@ -977,12 +977,12 @@ class Exporter:
         if urlsplit(f"//{config['coordinator']}").port is None:
             config["coordinator"] += ":20408"
 
-        identity = {
-            "username": None,
-            "hostname": self.name,
-            "user_agent": f"labgrid-exporter {labgrid_version()}",
-        }
-        auth_plugin = DefaultClientAuthPlugin(**identity)
+        auth_plugin = get_client_auth_plugin(
+            None,
+            self.name,
+            f"labgrid-exporter {labgrid_version()}",
+            self.config["auth_plugin_name"],
+        )
         interceptors = [
             IdentityClientUnaryUnaryInterceptor(auth_plugin),
             IdentityClientStreamStreamInterceptor(auth_plugin),
@@ -1408,6 +1408,12 @@ def main():
         default=os.environ.get("LG_COORDINATOR", "127.0.0.1:20408"),
         help="coordinator host and port",
     )
+    parser.add_argument(
+        "--auth-plugin",
+        default=os.environ.get("LG_CLIENT_AUTH_PLUGIN", None),
+        type=str,
+        help=f"the name of the client authentication plugin (options: {get_client_auth_plugin_names()})",
+    )
     parser.add_argument("--tls", action="store_true", default=False, help="enable TLS gRPC channel")
     parser.add_argument(
         "--cacert",
@@ -1457,6 +1463,7 @@ def main():
         "coordinator": args.coordinator,
         "credentials": get_client_credentials(args.tls, args.cacert),
         "isolated": args.isolated,
+        "auth_plugin_name": args.auth_plugin,
     }
 
     print(f"exporter name: {config['name']}")

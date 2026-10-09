@@ -1,5 +1,9 @@
-from typing import List, Mapping, Protocol, runtime_checkable
+from typing import List, Mapping, Protocol, Optional, runtime_checkable
 from labgrid.remote.identity import ClientIdentity
+
+USERNAME_KEY = "x-lg-username"
+HOSTNAME_KEY = "x-lg-hostname"
+USER_AGENT_KEY = "x-lg-user-agent"
 
 
 @runtime_checkable
@@ -7,6 +11,24 @@ class ClientAuthPlugin(Protocol):
     def metadata(self) -> Mapping[str, List[str]]:
         """Produces the gRPC metadata pairs to add to each RPC call's metadata."""
         ...
+
+
+class DefaultClientAuthPlugin(ClientAuthPlugin):
+    def __init__(self, username: Optional[str], hostname: str, user_agent: Optional[str]):
+        super().__init__()
+        self.username = username
+        self.hostname = hostname
+        self.user_agent = user_agent
+
+    def metadata(self) -> Mapping[str, List[str]]:
+        metadata = {
+            HOSTNAME_KEY: [self.hostname],
+        }
+        if self.username:
+            metadata[USERNAME_KEY] = [self.username]
+        if self.user_agent:
+            metadata[USER_AGENT_KEY] = [self.user_agent]
+        return metadata
 
 
 class IdentityError(Exception):
@@ -27,3 +49,42 @@ class CoordinatorAuthPlugin(Protocol):
 def clientidentity_from_plugin(plugin: CoordinatorAuthPlugin, metadata: tuple) -> ClientIdentity:
     identity = plugin.authenticate(metadata)
     return identity
+
+
+class DefaultCoordinatorAuthPlugin(CoordinatorAuthPlugin):
+    def get_single_value_metadata(self, metadata: Mapping[str, List[str]], key: str) -> Optional[str]:
+        values = metadata.get(key)
+
+        if not values:
+            return None
+
+        if len(values) != 1:
+            return None
+
+        return values[0]
+
+    def authenticate(self, metadata: Mapping[str, List[str]]) -> ClientIdentity:
+        """Construct a ClientIdentity from gRPC request metadata.
+
+        Args:
+            metadata: A sequence of (key, value) pairs from the gRPC context.
+
+        Returns:
+            A ClientIdentity with id set to ``hostname/username`` (or just
+            ``hostname`` if no username is present) and (optional) user_agent
+            or None if no metadata is supplied.
+
+        Raises:
+            NoIdentityPresent: If the hostname key is missing from metadata.
+        """
+        username = self.get_single_value_metadata(metadata, USERNAME_KEY)
+        hostname = self.get_single_value_metadata(metadata, HOSTNAME_KEY)
+        user_agent = self.get_single_value_metadata(metadata, USER_AGENT_KEY)
+
+        if not hostname:
+            return None
+
+        if username:
+            return ClientIdentity(f"{hostname}/{username}", user_agent)
+
+        return ClientIdentity(hostname, user_agent)

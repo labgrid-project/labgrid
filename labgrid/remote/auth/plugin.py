@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from importlib.metadata import entry_points
 from typing import List, Mapping, Protocol, Optional, runtime_checkable
 
@@ -36,8 +37,8 @@ def get_client_auth_plugin(
             if not issubclass(plugin_cls, ClientAuthPlugin):
                 raise Exception("Plugin does not conform to ClientAuthPlugin Protocol")
             auth_plugin = plugin_cls()
-        except:
-            logging.warning("Unable to load auth plugin, falling back to default plugin")
+        except Exception as e:
+            logging.warning("Unable to load auth plugin, falling back to default plugin", exc_info=e)
 
     return auth_plugin
 
@@ -88,15 +89,27 @@ def get_coordinator_auth_plugin(plugin_name: Optional[str]) -> CoordinatorAuthPl
             if not issubclass(plugin_cls, CoordinatorAuthPlugin):
                 raise Exception("Plugin does not conform to CoordinatorAuthPlugin Protocol")
             auth_plugin = plugin_cls()
-        except:
-            logging.warning("Unable to load auth plugin, falling back to default plugin")
+        except Exception as e:
+            logging.warning("Unable to load auth plugin, falling back to default plugin", exc_info=e)
 
     return auth_plugin
 
 
-def clientidentity_from_plugin(plugin: CoordinatorAuthPlugin, metadata: tuple) -> ClientIdentity:
-    identity = plugin.authenticate(metadata)
-    return identity
+def metadata_to_mapping(metadata) -> Mapping[str, List[str]]:
+    result = defaultdict(list)
+
+    for key, value in metadata:
+        result[key].append(value)
+
+    return dict(result)
+
+
+def clientidentity_from_plugin(plugin: CoordinatorAuthPlugin, metadata: tuple) -> Optional[ClientIdentity]:
+    try:
+        return plugin.authenticate(metadata_to_mapping(metadata))
+    except IdentityError as e:
+        logging.warning("Authentication error", exc_info=e)
+        return None
 
 
 class DefaultCoordinatorAuthPlugin(CoordinatorAuthPlugin):

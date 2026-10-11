@@ -1285,8 +1285,11 @@ Use \fBlabgrid\-client extend\fP to refresh the lease once, or
 \fBlabgrid\-client extend \-\-keepalive\fP to keep it alive automatically.
 Keepalive is capped by \fBLG_MAX_LEASE_DURATION\fP, which defaults to 2 hours.
 .sp
-If a lease extension fails, the coordinator cancels the lease and releases the
-place to avoid leaving the system in an inconsistent state.
+If a lease extension fails for a place with one acquired resource, the lease is
+kept unchanged. For places with multiple acquired resources, the coordinator
+cancels the lease and releases the place to avoid leaving the system in an
+inconsistent state, since some resources may already have accepted the extension
+while a later resource failed.
 .sp
 If the lease expires, the coordinator automatically releases the leased
 place.

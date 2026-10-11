@@ -228,8 +228,11 @@ In keepalive mode, the client automatically renews the lease at a suitable inter
 The total lease duration is capped by ``LG_MAX_LEASE_DURATION``, which defaults
 to 2 hours.
 
-If a lease extension fails (for example due to exporter issues), the lease is
-cancelled and the place is released to avoid inconsistent state.
+If a lease extension fails (for example due to exporter issues) for a place with
+one acquired resource, the lease is kept unchanged. For places with multiple
+acquired resources, the lease is cancelled and the place is released to avoid
+inconsistent state, since some resources may already have accepted the extension
+while a later resource failed.
 
 To acquire the place indefinitely (unchanged behaviour), use ``lock`` or
 ``acquire`` without lease mode:

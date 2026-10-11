@@ -1576,6 +1576,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 str(e),
             )
         except ExporterError as e:
+            if len(leased_place.acquired_resources) == 1:
+                await context.abort(
+                    grpc.StatusCode.FAILED_PRECONDITION,
+                    f"Lease extension failed and the lease was kept: {e}",
+                )
             try:
                 await self._release_place(leased_place)
                 await self.schedule_reservations()

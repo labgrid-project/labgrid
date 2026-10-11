@@ -55,6 +55,14 @@ class Environment:
         return self.config.get_features()
 
     def get_target_features(self):
+        warn(
+            "use get_all_features instead. For target features, use target.features instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return get_all_features()
+
+    def get_all_features(self):
         flags = set()
         for value in self.config.get_targets().values():
             flags = flags | set(value.get('features', {}))

@@ -199,6 +199,12 @@ class Config:
                 configuration, or if the target can not be found in the
                 configuration.
         """
+        warn(
+            "get_target_option is deprecated, access the options on the target directly.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         if target not in self.data['targets']:
             raise KeyError(f"No target '{target}' found in configuration")
 
@@ -224,6 +230,11 @@ class Config:
             KeyError: if the requested target can not be found in the
                 configuration
         """
+        warn(
+            "set_target_option is deprecated, use the YAML configuration instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         assert isinstance(target, str)
         assert isinstance(name, str)
 

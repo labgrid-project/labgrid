@@ -11,7 +11,7 @@ import pytest
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
 from labgrid.remote.common import Place, Reservation, ReservationState
-from labgrid.remote.coordinator import Coordinator, CoordinatorError, ExporterError, ResourceImport
+from labgrid.remote.coordinator import Coordinator, CoordinatorConfig, CoordinatorError, ExporterError, ResourceImport
 
 
 class FakeExporterCommandQueue:
@@ -183,7 +183,7 @@ def test_coordinator_get_places(coordinator, channel_stub):
     request = labgrid_coordinator_pb2.GetPlacesRequest()
     res = channel_stub.GetPlaces(request)
 
-    from labgrid.remote.common import Place
+    from labgrid.remote.common import Place, Reservation, ReservationState
 
     places = set()
     names = set()
@@ -871,3 +871,74 @@ def test_coordinator_place_set_remote_place_config_changed(coordinator, coordina
     with pytest.raises(grpc.RpcError) as excinfo:
         stub.SetPlaceRemotePlaceConfig(request)
     assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+
+
+def test_extend_lease_failure_keeps_single_resource_lease(mocker):
+    class AbortError(Exception):
+        pass
+
+    client_peer = "test-peer"
+
+    class FakeContext:
+        def peer(self):
+            return client_peer
+
+        def invocation_metadata(self):
+            return ()
+
+        async def abort(self, code, details):
+            raise AbortError(details)
+
+    async def run_test():
+        coordinator = Coordinator(CoordinatorConfig())
+        try:
+            coordinator.clients[client_peer] = SimpleNamespace(name="testuser")
+
+            reservation = Reservation(
+                owner="testuser",
+                id="reservation-id",
+            )
+            reservation.start_lease(10)
+            old_timeout = reservation.timeout
+            coordinator.reservations[reservation.id] = reservation
+
+            resource = ResourceImport(
+                {
+                    "cls": "NetworkSerialPort",
+                    "params": {"extra": {}},
+                    "acquired": "test",
+                    "avail": True,
+                },
+                path=("testhost", "Testport", "NetworkSerialPort", "NetworkSerialPort"),
+            )
+            place = Place(
+                "test",
+                acquired="testuser",
+                acquired_resources=[resource],
+                reservation=reservation.id,
+            )
+            coordinator.places[place.name] = place
+
+            mocker.patch.object(
+                coordinator,
+                "_notify_lease_extended",
+                side_effect=ExporterError("extend failed"),
+            )
+
+            with pytest.raises(AbortError, match="lease was kept"):
+                await coordinator.ExtendLease(
+                    labgrid_coordinator_pb2.ExtendLeaseRequest(token=reservation.id),
+                    FakeContext(),
+                )
+
+            assert reservation.state is ReservationState.leased
+            assert reservation.timeout == old_timeout
+            assert place.acquired == "testuser"
+            assert place.acquired_resources == [resource]
+            assert place.reservation == reservation.id
+        finally:
+            for task in coordinator.poll_tasks:
+                task.cancel()
+            await asyncio.gather(*coordinator.poll_tasks, return_exceptions=True)
+
+    asyncio.run(run_test())

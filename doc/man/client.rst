@@ -111,8 +111,11 @@ Use ``labgrid-client extend`` to refresh the lease once, or
 ``labgrid-client extend --keepalive`` to keep it alive automatically.
 Keepalive is capped by ``LG_COORDINATOR_MAX_LEASE_DURATION``.
 
-If a lease extension fails, the coordinator cancels the lease and releases the
-place to avoid leaving the system in an inconsistent state.
+If a lease extension fails for a place with one acquired resource, the lease is
+kept unchanged. For places with multiple acquired resources, the coordinator
+cancels the lease and releases the place to avoid leaving the system in an
+inconsistent state, since some resources may already have accepted the extension
+while a later resource failed.
 
 If the lease expires, the coordinator automatically releases the leased
 place.

@@ -1,12 +1,65 @@
 import asyncio
 from types import SimpleNamespace
 
-import pytest
-
 import grpc
-from labgrid.remote.coordinator import Coordinator
+import pytest
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
+from labgrid.remote.common import Place
+from labgrid.remote.coordinator import Coordinator, ExporterError, ResourceImport
+
+
+class FakeExporterCommandQueue:
+    def __init__(self, *, success, reason="release failed", on_command=None):
+        self.success = success
+        self.reason = reason
+        self.on_command = on_command
+
+    def put_nowait(self, command):
+        if self.on_command:
+            self.on_command(command)
+        response = labgrid_coordinator_pb2.ExporterResponse(success=self.success)
+        if not self.success:
+            response.reason = self.reason
+        command.complete(response)
+
+
+def make_coordinator_with_fake_exporter(
+    *,
+    release_success,
+    release_reason="release failed",
+    on_release_command=None,
+):
+    coordinator = Coordinator.__new__(Coordinator)
+    coordinator.lock = asyncio.Lock()
+    coordinator.clients = {}
+    coordinator.exporters = {
+        "peer": SimpleNamespace(
+            name="testhost",
+            queue=FakeExporterCommandQueue(
+                success=release_success,
+                reason=release_reason,
+                on_command=on_release_command,
+            ),
+        )
+    }
+    return coordinator
+
+
+def make_place_with_acquired_resource():
+    place = Place("test")
+    place.acquired = "testclient"
+    resource = ResourceImport(
+        data={
+            "cls": "NetworkSerialPort",
+            "params": {},
+            "acquired": place.name,
+            "avail": True,
+        },
+        path=("testhost", "Testport", "NetworkSerialPort", "NetworkSerialPort"),
+    )
+    place.acquired_resources.append(resource)
+    return place, resource
 
 
 @pytest.fixture(scope="function")
@@ -147,6 +200,33 @@ def test_coordinator_place_acquire_release(coordinator, coordinator_place):
     assert res
     res = stub.ReleasePlace(labgrid_coordinator_pb2.ReleasePlaceRequest(placename="test"))
     assert res
+
+
+def test_coordinator_release_resources_removes_resource_on_success():
+    coordinator = make_coordinator_with_fake_exporter(release_success=True)
+    place, resource = make_place_with_acquired_resource()
+
+    async def release_resources():
+        async with coordinator.lock:
+            await coordinator._release_resources(place, [resource])
+
+    asyncio.run(release_resources())
+
+    assert resource not in place.acquired_resources
+
+
+def test_coordinator_release_resources_keeps_resource_on_exporter_failure():
+    coordinator = make_coordinator_with_fake_exporter(release_success=False)
+    place, resource = make_place_with_acquired_resource()
+
+    async def release_resources():
+        async with coordinator.lock:
+            await coordinator._release_resources(place, [resource])
+
+    with pytest.raises(ExporterError, match="release failed"):
+        asyncio.run(release_resources())
+
+    assert resource in place.acquired_resources
 
 
 def test_coordinator_place_add_alias(coordinator, coordinator_place):

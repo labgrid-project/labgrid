@@ -261,7 +261,7 @@ def test_place_acquire_broken(place, exporter):
         assert spawn.exitstatus == 0, spawn.before.strip()
 
     with pexpect.spawn('python -m labgrid.remote.client -p test acquire') as spawn:
-        spawn.expect('Failed to acquire resources for place test')
+        spawn.expect('Failed to acquire resources for place test: Failed to start resource')
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 1, spawn.before.strip()
@@ -373,6 +373,10 @@ def test_resource_conflict(place_acquire, tmpdir):
         assert spawn.exitstatus == 0, spawn.before.strip()
 
     with pexpect.spawn('python -m labgrid.remote.client -p test2 acquire') as spawn:
+        spawn.expect(
+            "Failed to acquire resources for place test2: "
+            "Resource testhost/Testport/NetworkSerialPort is already acquired by place 'test'"
+        )
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus != 0, spawn.before.strip()

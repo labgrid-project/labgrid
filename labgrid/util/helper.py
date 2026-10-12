@@ -42,12 +42,23 @@ class ProcessWrapper:
 
     @step(args=['command'], result=True, tag='process')
     def check_output(
-        self, command, *, print_on_silent_log=False, input=None, stdin=None, stderr=subprocess.STDOUT, timeout=None
+        self,
+        command,
+        *,
+        print_on_silent_log=False,
+        input=None,
+        stdin=None,
+        stderr=subprocess.STDOUT,
+        timeout=None,
+        loglevel=None,
     ):  # pylint: disable=redefined-builtin
         """Run a command and supply the output to callback functions"""
 
         if stderr not in (None, subprocess.STDOUT, subprocess.DEVNULL):
             raise NotImplementedError(f"{stderr=} not supported")
+
+        if loglevel is None:
+            loglevel = ProcessWrapper.loglevel
 
         logger = logging.getLogger("Process")
         res = []
@@ -67,13 +78,13 @@ class ProcessWrapper:
 
         process = subprocess.Popen(command, stderr=stderr, stdout=sfd, bufsize=0, **kwargs)
 
-        logger.log(ProcessWrapper.loglevel, "[%d] command: %s", process.pid, " ".join(command))
+        logger.log(loglevel, "[%d] command: %s", process.pid, " ".join(command))
 
         # do not register/unregister already registered print_callback
         if ProcessWrapper.print_callback in self.callbacks:
             print_on_silent_log = False
 
-        if print_on_silent_log and logger.getEffectiveLevel() > ProcessWrapper.loglevel:
+        if print_on_silent_log and logger.getEffectiveLevel() > loglevel:
             self.enable_print()
 
         if stdin_r is not None:
@@ -112,7 +123,7 @@ class ProcessWrapper:
                     res.extend(parts)
                     for part in parts:
                         for callback in self.callbacks:
-                            callback(part, process)
+                            callback(part, process, loglevel)
 
             if stdin_w in ready_w:
                 if input:
@@ -151,9 +162,9 @@ class ProcessWrapper:
             if not buf.endswith(b'\n'):
                 buf += b'\n'
             for callback in self.callbacks:
-                callback(buf, process)
+                callback(buf, process, loglevel)
 
-        if print_on_silent_log and logger.getEffectiveLevel() > ProcessWrapper.loglevel:
+        if print_on_silent_log and logger.getEffectiveLevel() > loglevel:
             self.disable_print()
 
         if timeout is not None and timeout.expired:
@@ -182,15 +193,15 @@ class ProcessWrapper:
         self.callbacks.remove(callback)
 
     @staticmethod
-    def log_callback(message, process):
+    def log_callback(message, process, loglevel):
         """Logs process output message along with its pid."""
         logger = logging.getLogger("Process")
         message = message.decode(encoding="utf-8", errors="replace").strip("\n")
         if message:
-            logger.log(ProcessWrapper.loglevel, "[%d] %s", process.pid, message)
+            logger.log(loglevel, "[%d] %s", process.pid, message)
 
     @staticmethod
-    def print_callback(message, _):
+    def print_callback(message, _process, _loglevel):
         """Prints process output message."""
         message = message.decode(encoding="utf-8", errors="replace")
         print(f"\r{message}", end='')

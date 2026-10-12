@@ -101,7 +101,7 @@ class RawNetworkInterfaceDriver(Driver):
             return if_state
 
         cmd = self.iface.command_prefix + ["cat", f"/sys/class/net/{self.iface.ifname}/operstate"]
-        output = processwrapper.check_output(cmd).decode("ascii")
+        output = processwrapper.check_output(cmd, loglevel=logging.DEBUG).decode("ascii")
         if_state = output.strip()
         return if_state
 
@@ -373,7 +373,7 @@ class RawNetworkInterfaceDriver(Driver):
         Returns basic interface statistics of bound network interface resource.
         """
         cmd = self.iface.command_prefix + ["ip", "--json", "-stats", "-stats", "link", "show", self.iface.ifname]
-        output = processwrapper.check_output(cmd)
+        output = processwrapper.check_output(cmd, loglevel=logging.DEBUG)
         return json.loads(output)[0]
 
     @Driver.check_active

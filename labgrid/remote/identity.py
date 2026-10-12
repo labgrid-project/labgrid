@@ -1,28 +1,29 @@
 import logging
-from typing import Optional
+from typing import Optional, Set
 
 from labgrid.remote.auth.capability import Capability
 
 NAME_KEY = "x-lg-name"
 HOSTNAME_KEY = "x-lg-hostname"
 USER_AGENT_KEY = "x-lg-user-agent"
+ALL_CAPABILITIES = frozenset(e for e in Capability)
 
 
 class ClientIdentity:
     """Represents the identity of a connected client, derived from gRPC metadata."""
 
-    def __init__(self, name: str, hostname: str, user_agent: Optional[str]):
-        self.name = name
-        self.hostname = hostname
+    def __init__(
+        self,
+        identity_id: str,
+        user_agent: Optional[str] = None,
+        capabilities: Set[Capability] = ALL_CAPABILITIES,
+    ) -> None:
+        self.id = identity_id
         self.user_agent = user_agent
-        self.capabilities = set(e for e in Capability)
+        self.capabilities = capabilities
 
     def __str__(self):
         return f"ClientIdentity(id={self.id}, user_agent={self.user_agent})"
-
-    @property
-    def id(self):
-        return f"{self.hostname}/{self.name}" if self.name else self.hostname
 
 
 def infer_peer_identity(clients, context, identity):

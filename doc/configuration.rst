@@ -4049,6 +4049,9 @@ Implements:
   - :any:`FileTransferProtocol`
   - :any:`ResetProtocol`
 
+Arguments:
+  - None
+
 .. _conf-strategies:
 
 Strategies

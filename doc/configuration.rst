@@ -4039,7 +4039,7 @@ execution of commands, transfer of files, and rebooting of the device.
 It can interact with both USB and TCP adb devices.
 
 Binds to:
-  iface:
+  device:
     - `USBADBDevice`_
     - `RemoteUSBADBDevice`_
     - `NetworkADBDevice`_

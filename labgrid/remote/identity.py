@@ -25,6 +25,12 @@ class ClientIdentity:
     def __str__(self):
         return f"ClientIdentity(id={self.id}, user_agent={self.user_agent})"
 
+    def __eq__(self, value: object, /) -> bool:
+        if value is None or not isinstance(value, ClientIdentity):
+            return False
+
+        return self.id == value.id and self.user_agent == value.user_agent and self.capabilities == value.capabilities
+
 
 def infer_peer_identity(clients, context, identity):
     logger = logging.getLogger("infer_peer_identity")

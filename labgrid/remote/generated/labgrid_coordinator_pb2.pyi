@@ -162,16 +162,18 @@ class ExporterSetAcquiredRequest(_message.Message):
     def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., acquirer_identity: _Optional[str] = ...) -> None: ...
 
 class ExporterLeaseStartedRequest(_message.Message):
-    __slots__ = ("group_name", "resource_name", "place_name", "duration")
+    __slots__ = ("group_name", "resource_name", "place_name", "duration", "leaser_identity")
     GROUP_NAME_FIELD_NUMBER: _ClassVar[int]
     RESOURCE_NAME_FIELD_NUMBER: _ClassVar[int]
     PLACE_NAME_FIELD_NUMBER: _ClassVar[int]
     DURATION_FIELD_NUMBER: _ClassVar[int]
+    LEASER_IDENTITY_FIELD_NUMBER: _ClassVar[int]
     group_name: str
     resource_name: str
     place_name: str
     duration: int
-    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., duration: _Optional[int] = ...) -> None: ...
+    leaser_identity: str
+    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., duration: _Optional[int] = ..., leaser_identity: _Optional[str] = ...) -> None: ...
 
 class ExporterLeaseExtendedRequest(_message.Message):
     __slots__ = ("group_name", "resource_name", "place_name", "duration")

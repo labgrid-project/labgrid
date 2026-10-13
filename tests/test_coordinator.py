@@ -994,3 +994,49 @@ def test_coordinator_list_reservations_filter_must_evaluate_to_boolean(
         stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest(filter="token"))
     assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
     assert "Filter must evaluate to a boolean" in excinfo.value.details()
+
+
+def test_coordinator_propagate_identity_on_lease(coordinator, channel_stub, tmpdir):
+    with open(tmpdir / "exports.yaml", "w") as f:
+        f.write(
+            """
+        Example:
+            NetworkService:
+              address: "192.168.0.1"
+              username: "root"
+        """
+        )
+
+    stub = channel_stub
+
+    assert stub.AddPlace(labgrid_coordinator_pb2.AddPlaceRequest(name="place1"))
+    assert stub.AddPlaceMatch(
+        labgrid_coordinator_pb2.AddPlaceMatchRequest(
+            placename="place1", pattern="testexporter/Example/NetworkService"
+        )
+    )
+
+    with pexpect.spawn("python -m labgrid.remote.exporter --name testexporter exports.yaml", cwd=tmpdir) as spawn:
+        spawn.expect("Exporter ready")
+
+        with pexpect.spawn(
+            "python -m labgrid.remote.client reserve name=place1 --wait",
+            cwd=tmpdir,
+            env=os.environ | {"LG_HOSTNAME": "somehost", "LG_USERNAME": "someuser"},
+        ) as spawn_acquire:
+            spawn_acquire.expect(r"Reservation '([^']+)':")
+            reservation_id = spawn_acquire.match.group(1).decode()
+            spawn_acquire.expect(pexpect.EOF)
+
+        with pexpect.spawn(
+            f"python -m labgrid.remote.client -p +{reservation_id} lease",
+            cwd=tmpdir,
+            env=os.environ | {"LG_HOSTNAME": "somehost", "LG_USERNAME": "someuser"},
+        ) as spawn_acquire:
+            spawn_acquire.expect("leased place place1")
+            spawn_acquire.expect(pexpect.EOF)
+
+        spawn.expect("INFO:root:Example/NetworkService leased by somehost/someuser")
+
+        spawn.kill(signal.SIGTERM)
+        spawn.expect(pexpect.EOF)

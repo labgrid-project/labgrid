@@ -180,6 +180,7 @@ message ExporterLeaseStartedRequest {
   string resource_name = 2;
   string place_name = 3;
   uint64 duration = 4;
+  string leaser_identity = 5;
 }
 
 message ExporterLeaseExtendedRequest {

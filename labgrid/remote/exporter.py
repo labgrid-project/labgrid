@@ -1124,6 +1124,13 @@ class Exporter:
                     finally:
                         in_message = labgrid_coordinator_pb2.ExporterInMessage()
                         in_message.response.success = success
+                        if success:
+                            logging.info(
+                                "%s/%s leased by %s",
+                                out_message.lease_started_request.group_name,
+                                out_message.lease_started_request.resource_name,
+                                out_message.lease_started_request.leaser_identity,
+                            )
                         if reason:
                             in_message.response.reason = reason
                         logging.debug("queuing %s", in_message)
@@ -1203,7 +1210,7 @@ class Exporter:
 
         if resource.acquired:
             raise InvalidResourceRequestError(
-                f"Resource {group_name}/{resource_name} is already acquired by {resource.acquired}"
+                f"Resource {group_name}/{resource_name} is already in use by {resource.acquired}"
             )
 
         logging.info(
@@ -1238,7 +1245,7 @@ class Exporter:
 
         if place_name is not None and resource.acquired != place_name:
             raise InvalidResourceRequestError(
-                f"Resource {group_name}/{resource_name} is acquired by {resource.acquired}, not {place_name}"
+                f"Resource {group_name}/{resource_name} is in use by {resource.acquired}, not {place_name}"
             )
 
         logging.info(

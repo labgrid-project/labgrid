@@ -233,6 +233,21 @@ class NetworkPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     def get(self):
         return self.backend.power_get(self._host, self._port, self.port.index)
 
+    @Driver.check_active
+    @step()
+    def show(self):
+        return self.backend.power_show(self._host, self._port, self.port.index)
+
+    @Driver.check_active
+    @step(args=['voltage'])
+    def voltage(self, voltage):
+        return self.backend.power_voltage(self._host, self._port, self.port.index, voltage)
+
+    @Driver.check_active
+    @step(args=['amps'])
+    def amps(self, amps):
+        return self.backend.power_amps(self._host, self._port, self.port.index, amps)
+
 @target_factory.reg_driver
 @attr.s(eq=False)
 class DigitalOutputPowerDriver(Driver, PowerResetMixin, PowerProtocol):

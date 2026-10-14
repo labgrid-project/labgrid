@@ -149,15 +149,15 @@ class ClientSession:
             ("grpc.http2.max_pings_without_data", 0),  # no limit
         ]
 
-        auth_plugin = get_client_auth_plugin(
+        self.auth_plugin = get_client_auth_plugin(
             self.getuser(),
             self.gethostname(),
             f"labgrid-client {labgrid_version()}",
             self.args.auth_plugin if self.args else None,
         )
         interceptors = [
-            IdentityClientUnaryUnaryInterceptor(auth_plugin),
-            IdentityClientStreamStreamInterceptor(auth_plugin),
+            IdentityClientUnaryUnaryInterceptor(self.auth_plugin),
+            IdentityClientStreamStreamInterceptor(self.auth_plugin),
         ]
 
         if self.credentials:
@@ -536,16 +536,11 @@ class ClientSession:
     def _check_allowed(self, place):
         if not place.acquired:
             raise UserError(f"place {place.name} is not acquired")
-        if f"{self.gethostname()}/{self.getuser()}" not in place.allowed:
-            host, user = place.acquired.split("/")
-            if user != self.getuser():
-                raise UserError(
-                    f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()}"
-                )
-            if host != self.gethostname():
-                raise UserError(
-                    f"place {place.name} is not acquired on this computer, acquired on {host}. To share with this host, use labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()} on the other host"
-                )
+        identity_id = self.auth_plugin.identity_id()
+        if identity_id not in place.allowed and place.acquired != identity_id:
+            raise UserError(
+                f"place {place.name} is not acquired by your identity, acquired by {place.acquired}. To share with this host, use labgrid-client -p {place.name} share {identity_id} on the other host"
+            )
 
     def get_place(self, place=None):
         pattern = place or self.args.place
@@ -575,7 +570,8 @@ class ClientSession:
         place = self.get_place(place)
         if place.acquired:
             err = "This operation requires the place to be idle."
-            if place.acquired == self.gethostname() + "/" + self.getuser():
+            identity_id = self.auth_plugin.identity_id()
+            if place.acquired == identity_id:
                 raise UserError(f"{err} Please release {place.name}.")
             else:
                 raise UserError(f"{err} Place {place.name} is acquired by {place.acquired}.")
@@ -810,18 +806,13 @@ class ClientSession:
         """Acquire a place, marking it unavailable for other clients"""
         place = self.get_place(place)
         if place.acquired:
-            host, user = place.acquired.split("/")
-            sharehelp = f"'labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()}' on {host}."
-            if self.getuser() == user:
-                if self.gethostname() == host:
-                    raise UserError(f"You have already acquired place {place.name}.")
-                else:
-                    raise UserError(
-                        f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {sharehelp}"
-                    )
+            identity_id = self.auth_plugin.identity_id()
+            sharehelp = f"'labgrid-client -p {place.name} share {identity_id}' as {place.acquired}."
+            if place.acquired == identity_id:
+                raise UserError(f"You have already acquired place {place.name}.")
             else:
                 raise UserError(
-                    f"Place {place.name} is already acquired by {place.acquired}. To work simultaneously, {user} can execute {sharehelp}"
+                    f"Place {place.name} is already acquired by {place.acquired}. To work simultaneously, {identity_id} can execute {sharehelp}"
                 )
         if not self.args.allow_unmatched:
             self.check_matches(place)
@@ -840,20 +831,15 @@ class ClientSession:
         place = self.get_place(place)
 
         if place.acquired:
-            host, user = place.acquired.split("/")
-            sharehelp = f"'labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()}' on {host}."
+            identity_id = self.auth_plugin.identity_id()
+            sharehelp = f"'labgrid-client -p {place.name} share {identity_id}' as {place.acquired}."
 
-            if self.getuser() != user:
-                raise UserError(
-                    f"Place {place.name} is already acquired by {place.acquired}. "
-                    f"To work simultaneously, {user} can execute {sharehelp}"
-                )
-
-            if self.gethostname() == host:
+            if place.acquired == identity_id:
                 raise UserError(f"You have already acquired place {place.name}.")
 
             raise UserError(
-                f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {sharehelp}"
+                f"Place {place.name} is already acquired by {place.acquired}. "
+                f"To work simultaneously, {place.acquired} can execute {sharehelp}"
             )
 
         if not self.args.allow_unmatched:

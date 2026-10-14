@@ -16,6 +16,11 @@ class ClientAuthPlugin(Protocol):
         """Produces the gRPC metadata pairs to add to each RPC call's metadata."""
         ...
 
+    def identity_id(self) -> str:
+        """Produces the same identity_id as the corresponding Coordinator plugin. Used by the Client code for
+        client-side checks (eg. is a Place acquired by this user)."""
+        ...
+
 
 def get_client_auth_plugin(
     username: Optional[str], hostname: str, user_agent: str, plugin_name: Optional[str]
@@ -59,6 +64,12 @@ class DefaultClientAuthPlugin(ClientAuthPlugin):
         if self.user_agent:
             metadata[USER_AGENT_KEY] = [self.user_agent]
         return metadata
+
+    def identity_id(self) -> str:
+        if self.username:
+            return f"{self.hostname}/{self.username}"
+
+        return self.hostname
 
 
 class IdentityError(Exception):

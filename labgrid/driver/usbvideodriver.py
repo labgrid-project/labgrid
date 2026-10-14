@@ -5,7 +5,9 @@ import attr
 from ..exceptions import InvalidConfigError
 from ..factory import target_factory
 from ..protocol import VideoProtocol
+from ..util.helper import processwrapper
 from .common import Driver
+
 
 
 @target_factory.reg_driver
@@ -106,16 +108,19 @@ class USBVideoDriver(Driver, VideoProtocol):
             f"Unknown video format {variant} for device {self.video.vendor_id:04x}:{self.video.model_id:04x}"  # pylint: disable=line-too-long
         )
 
-    def get_pipeline(self, path, caps, controls=None):
+    def get_pipeline(self, path, caps, controls=None, new_controls=False):
+
+        autofocus = "focus_automatic_continuous=1" if new_controls else "focus_auto=1"
+
         match = (self.video.vendor_id, self.video.model_id)
         if match == (0x046d, 0x082d):
-            controls = controls or "focus_auto=1"
+            controls = controls or autofocus
             inner = "h264parse"
         elif match == (0x046d, 0x0892):
-            controls = controls or "focus_auto=1"
+            controls = controls or autofocus
             inner = None
         elif match == (0x046d, 0x08e5):
-            controls = controls or "focus_auto=1"
+            controls = controls or autofocus
             inner = None
         elif match == (0x1224, 0x2825): # LogiLink UA0371
             inner = None  # just forward the jpeg frames
@@ -124,13 +129,13 @@ class USBVideoDriver(Driver, VideoProtocol):
         elif match == (0x534d, 0x2109):
             inner = None  # just forward the jpeg frames
         elif match == (0x1d6c, 0x0103):
-            controls = controls or "focus_auto=1"
+            controls = controls or autofocus
             inner = "h264parse"
         elif match == (0x0c45, 0x636b):  # LogiLink UA0379 / Microdia
-            controls = controls or "focus_auto=1"
+            controls = controls or autofocus
             inner = None  # just forward the jpeg frames
         elif match == (0x0c45, 0x636d):  # AUKEY PC-LM1E
-            controls = controls or "focus_auto=1"
+            controls = controls or autofocus
             inner = None  # just forward the jpeg frames
         else: # fallback pipeline
             inner = None  # just forward the jpeg frames
@@ -147,7 +152,23 @@ class USBVideoDriver(Driver, VideoProtocol):
     @Driver.check_active
     def stream(self, caps_hint=None, controls=None):
         caps = self.select_caps(caps_hint)
-        pipeline = self.get_pipeline(self.video.path, caps, controls)
+        new_controls = False
+
+        kernel_string = processwrapper.check_output(self.video.wrap_command("uname -r"))
+        versions = kernel_string.strip().decode("utf-8").split(".")
+        if len(versions) == 2:
+            major, minor = versions
+        if len(versions) == 3:
+            major, minor, _ = versions
+        else:
+            raise InvalidConfigError(
+                f"Invalid kernel version {versions}"
+            )
+
+        if major > 5 or (major == 5 and minor > 15):
+            new_controls = True
+
+        pipeline = self.get_pipeline(self.video.path, caps, controls, new_controls)
 
         tx_cmd = self.video.command_prefix + ["gst-launch-1.0", "-q"]
         tx_cmd += pipeline.split()

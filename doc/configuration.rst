@@ -308,11 +308,12 @@ PDUDaemon configuration file needs to be specified.
 
 The example describes port ``1`` on the PDU configured as
 ``apc-snmpv3-noauth``, with PDUDaemon running on the host ``pduserver``.
+Non-numeric port identifiers supported by PDUDaemon can be used as well.
 
 Arguments:
   - host (str): name of the host running the PDUDaemon
   - pdu (str): name of the PDU in the configuration file
-  - index (int): index of the power port on the PDU
+  - index (str): identifier of the power port on the PDU
 
 Used by:
   - `PDUDaemonDriver`_

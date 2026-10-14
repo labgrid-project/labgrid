@@ -5,7 +5,7 @@ import pytest
 
 from labgrid.driver import ExecutionError
 from labgrid.driver.power.poe_netgear_plus import _get_hostname_and_password
-from labgrid.resource import NetworkPowerPort, YKUSHPowerPort
+from labgrid.resource import NetworkPowerPort, PDUDaemonPort, YKUSHPowerPort
 from labgrid.driver.powerdriver import (
     ExternalPowerDriver,
     ManualPowerDriver,
@@ -320,6 +320,23 @@ class TestNetworkPowerDriver:
     def test_import_backend_poe_mib(self):
         pytest.importorskip("pysnmp")
         import labgrid.driver.power.poe_mib
+
+
+class TestPDUDaemonPort:
+    @pytest.mark.parametrize(
+        ("index", "expected"),
+        (
+            (1, "1"),
+            ("outlet-a", "outlet-a"),
+        ),
+    )
+    def test_index(self, target, index, expected):
+        resource = PDUDaemonPort(
+            target, "power", host="pduserver", pdu="pdu", index=index
+        )
+
+        assert resource.index == expected
+
 
 class TestYKUSHPowerDriver:
     YKUSH_FAKE_SERIAL = "YK12345"

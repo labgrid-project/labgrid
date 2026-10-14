@@ -28,8 +28,8 @@ class PDUDaemonPort(Resource):
     Args:
         host (str): name of the host running the PDUDaemon
         pdu (str): name of the PDU in the configuration file
-        index (int): index of the power port on the PDU
+        index (str): identifier of the power port on the PDU
     """
     host = attr.ib(validator=attr.validators.instance_of(str))
     pdu = attr.ib(validator=attr.validators.instance_of(str))
-    index = attr.ib(validator=attr.validators.instance_of(int), converter=int)
+    index = attr.ib(validator=attr.validators.instance_of(str), converter=str)

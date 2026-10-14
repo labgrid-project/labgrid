@@ -46,7 +46,7 @@ class AndroidFastbootDriver(Driver):
         else:
             option = f"{self.fastboot.protocol}:{self.fastboot.address}:{self.fastboot.port}"
 
-        prefix = self.fastboot.command_prefix + [ self.tool, "-s", option ]
+        prefix = [self.tool, "-s", option]
 
         if self.sparse_size is not None:
             prefix += ["-S", self.sparse_size]
@@ -70,7 +70,8 @@ class AndroidFastbootDriver(Driver):
     @Driver.check_active
     @step(title='call', args=['args'])
     def __call__(self, *args):
-        processwrapper.check_output(
+        processwrapper.check_wrapped_output(
+            self.fastboot,
             self._get_fastboot_prefix() + list(args),
             print_on_silent_log=True
         )
@@ -132,7 +133,7 @@ class AndroidFastbootDriver(Driver):
             raise NotImplementedError('Retrieving a list of all variables is not supported yet')
 
         cmd = ['getvar', var]
-        output = processwrapper.check_output(self._get_fastboot_prefix() + cmd)
+        output = processwrapper.check_wrapped_output(self.fastboot, self._get_fastboot_prefix() + cmd)
         values = AndroidFastbootDriver._filter_fastboot_output(
             output, f'{var}: '
         )
@@ -144,7 +145,7 @@ class AndroidFastbootDriver(Driver):
     def oem_getenv(self, var):
         """Return barebox environment variable value via 'fastboot oem getenv <var>'."""
         cmd = ['oem', 'getenv', var]
-        output = processwrapper.check_output(self._get_fastboot_prefix() + cmd)
+        output = processwrapper.check_wrapped_output(self.fastboot, self._get_fastboot_prefix() + cmd)
         values = AndroidFastbootDriver._filter_fastboot_output(output)
         assert len(values) == 1, 'fastboot did not return exactly one line'
         return values[0]

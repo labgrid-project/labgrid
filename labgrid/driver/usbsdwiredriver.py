@@ -32,22 +32,22 @@ class USBSDWireDriver(Driver):
     def set_mode(self, mode):
         if not mode.lower() in ["dut", "host"]:
             raise ExecutionError(f"Setting mode '{mode}' not supported by USBSDWireDriver")
-        cmd = self.mux.command_prefix + [
+        cmd = [
             self.tool,
             "--dut" if mode.lower() == "dut" else "--ts",
             "-e",
             self.mux.control_serial,
         ]
-        processwrapper.check_output(cmd)
+        processwrapper.check_wrapped_output(self.mux, cmd)
 
     @Driver.check_active
     @step(title="sdmux_get")
     def get_mode(self):
-        cmd = self.mux.command_prefix + [
+        cmd = [
             self.tool,
             "-e",
             self.mux.control_serial,
             "-u",
         ]
-        result = processwrapper.check_output(cmd)
+        result = processwrapper.check_wrapped_output(self.mux, cmd)
         return result.split(b": ", maxsplit=1)[1].strip().decode()

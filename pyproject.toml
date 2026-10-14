@@ -28,6 +28,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
 dependencies = [
     "attrs>=21.4.0",
@@ -191,7 +192,7 @@ signature-mutators = ["labgrid.step.step"]
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py311, py312, py313, py314
+envlist = py311, py312, py313, py314, py315
 isolated_build = true
 
 [testenv]

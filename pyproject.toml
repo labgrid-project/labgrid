@@ -71,10 +71,7 @@ pyvisa = [
     "pyvisa>=1.11.3",
     "PyVISA-py>=0.5.2",
 ]
-snmp = [
-    "pysnmp>=4.4.12, <6",
-    "pyasn1<0.6.1",
-]
+snmp = ["pysnmp>=6"]
 vxi11 = ["python-vxi11>=0.9"]
 xena = ["xenavalkyrie>=3.0.1"]
 deb = ["labgrid[modbus,onewire,snmp]"]

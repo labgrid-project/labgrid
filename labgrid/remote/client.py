@@ -28,9 +28,6 @@ from typing import Any, Dict
 import attr
 import grpc
 
-# TODO: drop if Python >= 3.11 guaranteed
-from exceptiongroup import ExceptionGroup  # pylint: disable=redefined-builtin
-
 from labgrid.remote.grpc.interceptor.client import (
     IdentityClientStreamStreamInterceptor,
     IdentityClientUnaryUnaryInterceptor,

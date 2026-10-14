@@ -1,6 +1,7 @@
 # pylint: disable=no-member
 import contextlib
 import json
+import logging
 import subprocess
 import time
 import os
@@ -51,21 +52,37 @@ class RawNetworkInterfaceDriver(Driver):
             self._wait_state("down")
 
     def _wrap_command(self, args):
-        wrapper = ["sudo", "labgrid-raw-interface"]
+        def _wrap(args, extra_arg=None):
+            cmd = ["sudo", "labgrid-raw-interface"]
+            if extra_arg is not None:
+                cmd.append(extra_arg)
+            cmd += args
 
-        if self.iface.command_prefix:
-            # add ssh prefix, convert command passed via ssh (including wrapper) to single argument
-            return self.iface.command_prefix + [" ".join(wrapper + args)]
-        else:
-            # keep wrapper and args as-is
-            return wrapper + args
+            if self.iface.command_prefix:
+                # add ssh prefix, convert command passed via ssh (including wrapper) to single argument
+                cmd = self.iface.command_prefix + [" ".join(cmd)]
+
+            return cmd
+
+        if self.logger.isEnabledFor(logging.DEBUG):
+            try:
+                original_call = subprocess.check_output(
+                    _wrap(args, "--dry-run"), text=True, stderr=subprocess.DEVNULL
+                ).rstrip()
+                host = getattr(self.iface, "host", "localhost")
+                self.logger.debug("running '%s' on %s via labgrid-raw-interface", original_call, host)
+            except subprocess.CalledProcessError:
+                # not all sub commands support dry run
+                pass
+
+        return _wrap(args)
 
     @step(args=["state"])
     def _set_interface(self, state):
         """Set interface to given state."""
         cmd = ["ip", self.iface.ifname, state]
         cmd = self._wrap_command(cmd)
-        subprocess.check_call(cmd)
+        processwrapper.check_output(cmd, loglevel=logging.DEBUG)
 
     @Driver.check_active
     def set_interface_up(self):
@@ -84,7 +101,7 @@ class RawNetworkInterfaceDriver(Driver):
             return if_state
 
         cmd = self.iface.command_prefix + ["cat", f"/sys/class/net/{self.iface.ifname}/operstate"]
-        output = processwrapper.check_output(cmd).decode("ascii")
+        output = processwrapper.check_output(cmd, loglevel=logging.DEBUG).decode("ascii")
         if_state = output.strip()
         return if_state
 
@@ -118,7 +135,8 @@ class RawNetworkInterfaceDriver(Driver):
         Returns settings via ethtool of the bound network interface resource.
         """
         cmd = self.iface.command_prefix + ["ethtool", "--json", self.iface.ifname]
-        output = subprocess.check_output(cmd, encoding="utf-8")
+        # ignore netlink error: Operation not permitted, relevant info is still emitted
+        output = processwrapper.check_output(cmd, stderr=None, loglevel=logging.DEBUG).decode("utf-8")
         return json.loads(output)[0]
 
     @Driver.check_active
@@ -132,7 +150,7 @@ class RawNetworkInterfaceDriver(Driver):
         cmd = ["ethtool", "change", self.iface.ifname]
         cmd += [item.replace("_", "-") for pair in settings.items() for item in pair]
         cmd = self._wrap_command(cmd)
-        subprocess.check_call(cmd)
+        processwrapper.check_output(cmd, loglevel=logging.DEBUG)
 
     @Driver.check_active
     def get_ethtool_eee_settings(self):
@@ -141,7 +159,7 @@ class RawNetworkInterfaceDriver(Driver):
         resource.
         """
         cmd = self.iface.command_prefix + ["ethtool", "--json", "--show-eee", self.iface.ifname]
-        output = subprocess.check_output(cmd, encoding="utf-8")
+        output = processwrapper.check_output(cmd, stderr=None, loglevel=logging.DEBUG).decode("utf-8")
         return json.loads(output)[0]
 
     @Driver.check_active
@@ -156,7 +174,7 @@ class RawNetworkInterfaceDriver(Driver):
         cmd = ["ethtool", "set-eee", self.iface.ifname]
         cmd += [item.replace("_", "-") for pair in settings.items() for item in pair]
         cmd = self._wrap_command(cmd)
-        subprocess.check_call(cmd)
+        processwrapper.check_output(cmd, loglevel=logging.DEBUG)
 
     @Driver.check_active
     def get_ethtool_pause_settings(self):
@@ -164,7 +182,7 @@ class RawNetworkInterfaceDriver(Driver):
         Returns pause parameters via ethtool of the bound network interface resource.
         """
         cmd = self.iface.command_prefix + ["ethtool", "--json", "--show-pause", self.iface.ifname]
-        output = subprocess.check_output(cmd, encoding="utf-8")
+        output = processwrapper.check_output(cmd, stderr=None, loglevel=logging.DEBUG).decode("utf-8")
         return json.loads(output)[0]
 
     @Driver.check_active
@@ -178,7 +196,7 @@ class RawNetworkInterfaceDriver(Driver):
         cmd = ["ethtool", "pause", self.iface.ifname]
         cmd += [item for pair in settings.items() for item in pair]
         cmd = self._wrap_command(cmd)
-        subprocess.check_call(cmd)
+        processwrapper.check_output(cmd, loglevel=logging.DEBUG)
 
     def _stop(self, proc, *, timeout=None):
         assert proc is not None
@@ -220,9 +238,11 @@ class RawNetworkInterfaceDriver(Driver):
             cmd.append(str(timeout))
         cmd = self._wrap_command(cmd)
         if filename is None:
+            self.logger.debug("running %s", cmd)
             self._record_handle = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         else:
             with open(filename, "wb") as outdata:
+                self.logger.debug("running %s", cmd)
                 self._record_handle = subprocess.Popen(cmd, stdout=outdata, stderr=subprocess.PIPE)
 
         # wait for capture start
@@ -306,10 +326,12 @@ class RawNetworkInterfaceDriver(Driver):
             mf = ManagedFile(filename, self.iface)
             mf.sync_to_resource()
             cmd = self._wrap_command([f"tcpreplay {self.iface.ifname} < {mf.get_remote_path()}"])
+            self.logger.debug("running %s", cmd)
             self._replay_handle = subprocess.Popen(cmd, stderr=subprocess.PIPE)
         else:
             cmd = self._wrap_command(["tcpreplay", self.iface.ifname])
             with open(filename, "rb") as indata:
+                self.logger.debug("running %s", cmd)
                 self._replay_handle = subprocess.Popen(cmd, stdin=indata)
 
         return self._replay_handle
@@ -351,7 +373,7 @@ class RawNetworkInterfaceDriver(Driver):
         Returns basic interface statistics of bound network interface resource.
         """
         cmd = self.iface.command_prefix + ["ip", "--json", "-stats", "-stats", "link", "show", self.iface.ifname]
-        output = processwrapper.check_output(cmd)
+        output = processwrapper.check_output(cmd, loglevel=logging.DEBUG)
         return json.loads(output)[0]
 
     @Driver.check_active
@@ -388,9 +410,11 @@ class RawNetworkInterfaceDriver(Driver):
                 cmd.append(mac_address)
 
             # Start tap forward in remote namespace
+            cmd = self._wrap_command(cmd)
+            self.logger.debug("running %s", cmd)
             remote_fwd = ctx.enter_context(
                 subprocess.Popen(
-                    self._wrap_command(cmd),
+                    cmd,
                     stdout=subprocess.PIPE,
                     stdin=subprocess.PIPE,
                 )
@@ -429,9 +453,11 @@ class RawNetworkInterfaceDriver(Driver):
             link_names = [link["ifname"] for link in links]
             assert "tap0" in link_names
 
+            cmd = local_ns.get_prefix() + ["labgrid-tap-fwd", str(tun_fd.fileno())]
+            self.logger.debug("running %s", cmd)
             local_fwd = ctx.enter_context(
                 subprocess.Popen(
-                    local_ns.get_prefix() + ["labgrid-tap-fwd", str(tun_fd.fileno())],
+                    cmd,
                     stdin=remote_fwd.stdout,
                     stdout=remote_fwd.stdin,
                     pass_fds=(tun_fd.fileno(),),

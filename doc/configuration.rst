@@ -246,7 +246,7 @@ Currently available are:
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/shelly_gen1.py>`__
   for details.
 
-  ``shelly_gen2``
+``shelly_gen2``
   Controls relays of *Shelly* devices using the
   `Gen2+ API <https://shelly-api-docs.shelly.cloud/gen2/General/RPCProtocol/>`__.
   See the `docstring in the module

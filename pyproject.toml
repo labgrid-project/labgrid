@@ -16,7 +16,7 @@ description = "embedded systems control library for development, testing and ins
 readme = "README.rst"
 license = "LGPL-2.1-or-later"
 license-files = ["LICENSE"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Intended Audience :: Developers",
     "Development Status :: 5 - Production/Stable",
@@ -24,7 +24,6 @@ classifiers = [
     "Topic :: Software Development :: Testing",
     "Framework :: Pytest",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -193,7 +192,7 @@ signature-mutators = ["labgrid.step.step"]
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py39, py310, py311, py312, py313, py314
+envlist = py311, py312, py313, py314
 isolated_build = true
 
 [testenv]

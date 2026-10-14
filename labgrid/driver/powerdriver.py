@@ -9,7 +9,9 @@ from ..exceptions import InvalidConfigError
 from ..factory import target_factory
 from ..protocol import PowerProtocol, DigitalOutputProtocol, ResetProtocol
 from ..resource import NetworkPowerPort
+from ..resource.remote import NetworkLinkPiSmartHUBPowerPort
 from ..step import step
+from ..util.agentwrapper import AgentWrapper
 from ..util.proxy import proxymanager
 from ..util.helper import processwrapper
 from .common import Driver
@@ -56,6 +58,53 @@ class ManualPowerDriver(Driver, PowerResetMixin, PowerProtocol):
         self.target.interact(
             f"CYCLE the target {self.target.name} and press enter"
         )
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class LinkPiSmartHUBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
+    bindings = {"port": {"LinkPiSmartHUBPowerPort", NetworkLinkPiSmartHUBPowerPort}, }
+    delay = attr.ib(default=2.0, validator=attr.validators.instance_of(float))
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self.wrapper = None
+
+    def on_activate(self):
+        if isinstance(self.port, NetworkLinkPiSmartHUBPowerPort):
+            host = self.port.host
+        else:
+            host = None
+        self.wrapper = AgentWrapper(host)
+        self.proxy = self.wrapper.load('linkpismarthub')
+
+    def on_deactivate(self):
+        self.proxy = None
+        if self.wrapper:
+            self.wrapper.close()
+        self.wrapper = None
+
+    @Driver.check_active
+    @step()
+    def on(self):
+        self.proxy.set(self.port.path, self.port.index, 1)
+
+    @Driver.check_active
+    @step()
+    def off(self):
+        self.proxy.set(self.port.path, self.port.index, 0)
+
+    @Driver.check_active
+    @step()
+    def cycle(self):
+        self.off()
+        time.sleep(self.delay)
+        self.on()
+
+    @Driver.check_active
+    @step()
+    def get(self):
+        return self.proxy.get(self.port.path, self.port.index)
 
 
 @target_factory.reg_driver

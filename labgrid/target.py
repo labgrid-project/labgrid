@@ -203,7 +203,8 @@ class Target:
             else:
                 raise NoDriverFoundError(
                     "multiple {active}drivers matching {cls} found in {target} with the same priorities".format(  # pylint: disable=line-too-long
-                        active="active " if active else "", cls=cls.__name__, target=self)
+                        active="active " if active else "", cls=cls.__name__, target=self),
+                    found=prio_found
                 )
         if activate:
             self.activate(found[0])

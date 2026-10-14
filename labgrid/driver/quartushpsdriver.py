@@ -78,7 +78,8 @@ class QuartusHPSDriver(Driver):
         cmd += [
             f"--cable={cable_number}",
             f"--addr=0x{address:X}",
-            f"--operation=P {mf.get_remote_path()}",
+            "--operation=P",
+            mf.get_remote_path()
         ]
         processwrapper.check_wrapped_output(self.interface, cmd)
 

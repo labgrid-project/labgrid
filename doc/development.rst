@@ -643,6 +643,17 @@ Usage:
    >>> host, port = proxymanager.get_host_and_port(your_resource)
 
 
+Using the coordinator session
+-----------------------------
+
+Python integrations can use ``labgrid.remote.session.ClientSession``
+to manage places, reservations, and resource updates
+without command-line argument parsing or terminal output.
+
+See :doc:`client-session` for connection lifecycle examples,
+API usage, error handling, and migration instructions.
+
+
 .. _contributing:
 
 Contributing

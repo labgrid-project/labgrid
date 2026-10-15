@@ -1,6 +1,7 @@
 import contextlib
 import errno
 import functools
+import json
 import logging
 import os
 import random
@@ -12,6 +13,7 @@ import tempfile
 
 from . import get_free_port
 from .agent import py2s, s2py
+from .helper import processwrapper
 
 
 class NSSocket(socket.socket):
@@ -99,12 +101,21 @@ class NetNamespace:
         netns.create_tun(address=mac_address)
         return cls(netns)
 
+    @classmethod
+    def default(cls, intf="lo"):
+        netns = cls(None)
+        netns.intf = intf
+        return netns
+
     def __init__(self, agent):
         self.logger = logging.getLogger(self.__class__.__name__)
         self._agent = agent
 
     @functools.cached_property
     def prefix(self):
+        if self._agent is None:
+            return []
+
         return self._agent.get_prefix()
 
     @functools.cached_property
@@ -112,16 +123,21 @@ class NetNamespace:
         return self._agent.get_intf()
 
     def ifindex(self):
-        links = self._agent.get_links()
+        links = self.get_links()
         for intf in links:
             if intf["ifname"] == self.intf:
                 return intf["ifindex"]
         raise KeyError(f"Interface {self.intf} not found")
 
     def get_links(self):
+        if self._agent is None:
+            return json.loads(processwrapper.check_output(["ip", "-j", "link"]))
         return self._agent.get_links()
 
     def _get_cmd(self, command):
+        if not self.prefix:
+            return ["/bin/sh", "-c", command] if isinstance(command, str) else command
+
         if isinstance(command, str):
             return self.prefix + ["--wd=" + os.getcwd(), "--", "/bin/sh", "-c", command]
         return self.prefix + ["--wd=" + os.getcwd(), "--"] + command
@@ -155,29 +171,46 @@ class NetNamespace:
                 yield p
 
     def socket(self, *args, **kwargs):
+        if self._agent is None:
+            return socket.socket(*args, **kwargs)
+
         ret, fd = self._agent.create_socket(*args, **kwargs)
         if "error" in ret:
             raise OSError(*ret["error"])
         return NSSocket(fileno=fd)._attach_remote_sock(ret["id"], self._agent)
 
     def getaddrinfo(self, *args, **kwargs):
+        if self._agent is None:
+            return socket.getaddrinfo(*args, **kwargs)
+
         err, result = self._agent.getaddrinfo(*args, **kwargs)
         if err:
             raise OSError(*err)
         return result
 
     @contextlib.contextmanager
-    def socks_proxy(self):
-        port = get_free_port()
+    def _microsocks_proxy(self, port=1080):
         password = "".join(random.choice(string.ascii_letters + string.digits) for i in range(10))
 
+        with self.Popen(
+            ["microsocks", "-u", "labgrid", "-P", password, "-i", "127.0.0.1", "-p", str(port)],
+        ) as proxy:
+            try:
+                yield password
+            finally:
+                proxy.terminate()
+
+    @contextlib.contextmanager
+    def socks_proxy(self):
+        port = get_free_port()
+
+        if not self.prefix:
+            with self._microsocks_proxy(port) as password:
+                yield (port, password)
+            return
+
         with contextlib.ExitStack() as stack:
-            proxy = stack.enter_context(
-                self.Popen(
-                    ["microsocks", "-u", "labgrid", "-P", password, "-i", "127.0.0.1"],
-                )
-            )
-            stack.callback(lambda: proxy.terminate())
+            password = stack.enter_context(self._microsocks_proxy())
             s = stack.enter_context(socket.socket())
             s.bind(("127.0.0.1", port))
             s.listen()

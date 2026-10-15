@@ -276,6 +276,8 @@ class ClientSession:
 
     async def sync_with_coordinator(self) -> bool:
         """Wait for coordinator to process all previous messages in stream."""
+        if self.stopping.is_set():
+            return False
         identifier = next(self.sync_id)
         event = self.sync_events[identifier] = asyncio.Event()
         msg = labgrid_coordinator_pb2.ClientInMessage()
@@ -370,7 +372,8 @@ class ClientSession:
 
     async def _on_resource_changed(self, exporter, group_name, resource_name, resource):
         group = self.resources.setdefault(exporter, {}).setdefault(group_name, {})
-        old = copy.deepcopy(group.get(resource_name))
+        previous = group.get(resource_name)
+        old = copy.deepcopy(previous) if previous is not None and "cls" in previous.data else None
         if resource_name not in group:
             group[resource_name] = ResourceEntry(resource)
         else:
@@ -451,7 +454,12 @@ class ClientSession:
 
     def get_place(self, place: str | Place) -> Place:
         """Resolve a name, alias, reservation selector, or existing place."""
-        pattern = place.name if isinstance(place, Place) else place
+        if isinstance(place, Place):
+            try:
+                return self.places[place.name]
+            except KeyError:
+                raise PlaceNotFoundError(f"place {place.name} no longer exists") from None
+        pattern = place
         if pattern is None:
             raise MissingPlacePatternError("place pattern not specified")
         places = self._match_places(pattern)
@@ -510,11 +518,7 @@ class ClientSession:
             raise MissingPlaceNameError("missing place name")
 
         request = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
-        try:
-            await self.stub.AddPlace(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self._mutation(self.stub.AddPlace, request)
 
         return self.places[name]
 
@@ -522,11 +526,7 @@ class ClientSession:
         """Delete a place from the coordinator"""
         place = self.get_idle_place(place)
         request = labgrid_coordinator_pb2.DeletePlaceRequest(name=place.name)
-        try:
-            await self.stub.DeletePlace(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self._mutation(self.stub.DeletePlace, request)
 
     async def add_alias(self, place: Place, alias: str) -> None:
         """Add an alias for a place on the coordinator"""
@@ -534,11 +534,7 @@ class ClientSession:
 
         request = labgrid_coordinator_pb2.AddPlaceAliasRequest(placename=place.name, alias=alias)
 
-        try:
-            await self.stub.AddPlaceAlias(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self._mutation(self.stub.AddPlaceAlias, request)
 
     async def del_alias(self, place: Place, alias: str) -> None:
         """Delete an alias for a place from the coordinator"""
@@ -546,11 +542,7 @@ class ClientSession:
 
         request = labgrid_coordinator_pb2.DeletePlaceAliasRequest(placename=place.name, alias=alias)
 
-        try:
-            await self.stub.DeletePlaceAlias(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self._mutation(self.stub.DeletePlaceAlias, request)
 
     async def set_comment(self, place: Place, comment: str) -> None:
         """Set the comment on a place"""
@@ -558,11 +550,7 @@ class ClientSession:
 
         request = labgrid_coordinator_pb2.SetPlaceCommentRequest(placename=place.name, comment=comment)
 
-        try:
-            await self.stub.SetPlaceComment(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self._mutation(self.stub.SetPlaceComment, request)
 
     async def release_from(self, place: Place, acquired: str) -> Place:
         """Release a place, but only if acquired by a specific user"""
@@ -572,11 +560,7 @@ class ClientSession:
 
         request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name, fromuser=acquired)
 
-        try:
-            await self.stub.ReleasePlace(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self._mutation(self.stub.ReleasePlace, request)
 
         return place
 
@@ -587,11 +571,7 @@ class ClientSession:
             raise InvalidClientIdentityError(f"user {user} must be in <host>/<username> format")
         request = labgrid_coordinator_pb2.AllowPlaceRequest(placename=place.name, user=user)
 
-        try:
-            await self.stub.AllowPlace(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self._mutation(self.stub.AllowPlace, request)
 
     async def set_tags(self, place: Place, tags: Sequence[Tag]) -> None:
         """Set or remove place tags (an empty value removes a tag)."""
@@ -610,7 +590,8 @@ class ClientSession:
     async def _mutation(self, operation, request) -> None:
         try:
             await operation(request)
-            await self.sync_with_coordinator()
+            if not await self.sync_with_coordinator():
+                raise ServerError("Could not synchronize place mutation with coordinator")
         except grpc.aio.AioRpcError as exc:
             raise ServerError(exc.details()) from exc
 
@@ -618,14 +599,15 @@ class ClientSession:
         """Add a match; return False when an unnamed match already exists."""
         place = self.get_idle_place(place)
         pattern = repr(match)
-        if match.rename is not None:
+        rename = match.rename or None
+        if rename is not None:
             if "*" in pattern:
                 raise InvalidResourceMatchError(f"invalid pattern '{pattern}' ('*' not allowed for named matches)")
         elif place.hasmatch(pattern.split("/")):
             return False
         await self._mutation(
             self.stub.AddPlaceMatch,
-            labgrid_coordinator_pb2.AddPlaceMatchRequest(placename=place.name, pattern=pattern, rename=match.rename),
+            labgrid_coordinator_pb2.AddPlaceMatchRequest(placename=place.name, pattern=pattern, rename=rename),
         )
         return True
 
@@ -654,11 +636,7 @@ class ClientSession:
 
         request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name)
 
-        try:
-            await self.stub.AcquirePlace(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as exc:
-            raise ServerError(exc.details()) from exc
+        await self._mutation(self.stub.AcquirePlace, request)
         return place
 
     async def release_place(self, place: Place, kick: bool = False) -> Place:
@@ -674,11 +652,7 @@ class ClientSession:
 
         request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
 
-        try:
-            await self.stub.ReleasePlace(request)
-            await self.sync_with_coordinator()
-        except grpc.aio.AioRpcError as e:
-            raise ServerError(e.details())
+        await self._mutation(self.stub.ReleasePlace, request)
 
         return place
 
@@ -721,10 +695,12 @@ class ClientSession:
         return Reservation.from_pb2(response.reservation)
 
     async def wait_reservation(self, reservation: Reservation | str) -> Reservation:
-        """Poll until a reservation leaves the waiting state."""
+        """Poll until a reservation leaves the waiting state, then synchronize the place cache."""
         while True:
             current = await self.poll_reservation(reservation)
             if current.state is not ReservationState.waiting:
+                if not await self.sync_with_coordinator():
+                    raise ServerError("Could not synchronize reservation with coordinator")
                 return current
             await asyncio.sleep(1.0)
 
@@ -763,13 +739,14 @@ class ClientSession:
         self._prepare_manager()
         target = None
         if self.env:
-            if self.role is None:
+            selected_role = self.role
+            if selected_role is None:
                 for role, config in self.env.config.get_targets().items():
                     resources, _ = target_factory.normalize_config(config)
                     if resources.get("RemotePlace", {}).get(place.name):
-                        self.role = role
+                        selected_role = role
                         break
-            target = self.env.get_target(self.role)
+            target = self.env.get_target(selected_role)
         if target is None:
             target = Target(place.name, env=self.env)
             RemotePlace(target, name=place.name)

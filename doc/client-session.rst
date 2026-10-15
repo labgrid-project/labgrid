@@ -70,11 +70,17 @@ structured inputs that previously required nested maps:
 ``poll_reservation`` refreshes the reservation's timeout and returns its latest
 state; ``wait_reservation`` polls until it leaves the waiting state. Waiting can
 also finish with an expired or invalid reservation, so callers must inspect the
-returned state. Wrap waiting in ``asyncio.wait_for`` when a deadline is needed.
+returned state. Before returning, it synchronizes the place cache so an allocated
+reservation can be looked up by token immediately. Synchronization failure raises
+``ServerError``. Wrap waiting in ``asyncio.wait_for`` when a deadline is needed.
 
 Place lookup and mutation methods return live cached ``Place`` instances.
+Passing a ``Place`` resolves its exact name in the cache without alias or
+substring matching; a removed place raises ``PlaceNotFoundError``.
 Acquisition and release synchronize the cache before returning. Do not mutate
-these objects yourself. Reservation responses are separate snapshots.
+these objects yourself. Place mutations raise ``ServerError`` if synchronization
+fails. The coordinator may already have applied the mutation, so check its state
+after reconnecting before retrying. Reservation responses are separate snapshots.
 ``get_target_resources(place)`` returns a tuple of ``TargetResource`` bindings;
 each binding has a local ``name`` and a live ``ResourceEntry`` in ``resource``.
 The existing domain objects retain their internal maps (such as ``Place.tags``);

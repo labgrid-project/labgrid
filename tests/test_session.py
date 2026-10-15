@@ -8,11 +8,14 @@ from unittest.mock import AsyncMock, MagicMock
 import grpc
 import pytest
 
+from labgrid import Environment
 from labgrid.remote import client
 from labgrid.remote import session as session_module
 from labgrid.remote.common import Place, Reservation, ReservationState, ResourceEntry, ResourceMatch
 from labgrid.remote.generated import labgrid_coordinator_pb2 as pb2
 from labgrid.remote.session import ClientSession, ReservationFilter, ServerError, Tag, UserError
+from labgrid.resource.common import ResourceManager
+from labgrid.resource.remote import RemotePlace
 
 
 @pytest.fixture
@@ -253,6 +256,7 @@ def test_acquire_and_release_return_synchronized_live_place(session, capsys):
 
     async def sync():
         place.acquired = "testhost/tester" if place.acquired is None else None
+        return True
 
     session.sync_with_coordinator.side_effect = sync
     assert run(session, session.acquire_place(place)) is place
@@ -260,6 +264,101 @@ def test_acquire_and_release_return_synchronized_live_place(session, capsys):
     assert run(session, session.release_place(place)) is place
     assert place.acquired is None
     assert capsys.readouterr() == ("", "")
+
+
+@pytest.mark.parametrize("via_cli", [False, True], ids=["session", "cli"])
+def test_acquire_resolved_place_ignores_conflicting_alias(session, via_cli):
+    place = session.places["bench"]
+    place.aliases.add("shortcut")
+    session.places["other"] = Place("other", aliases={"tester:bench"})
+    resolved = session.get_place("shortcut")
+    assert resolved is place
+
+    if via_cli:
+        cli = commands(session, "acquire")
+        run(session, cli._acquire_place("shortcut"))
+    else:
+        run(session, session.acquire_place(resolved))
+
+    session.stub.AcquirePlace.assert_awaited_once_with(pb2.AcquirePlaceRequest(placename="bench"))
+
+
+def test_resolved_deleted_place_does_not_match_another_place(session):
+    deleted = session.places.pop("bench")
+    session.places["bench2"] = Place("bench2")
+    with pytest.raises(session_module.PlaceNotFoundError):
+        session.get_place(deleted)
+
+
+@pytest.mark.parametrize("operation", ["acquire", "create", "release", "tags"])
+def test_place_mutation_reports_stream_loss_before_cache_update(session, operation):
+    # Exercise real synchronization after the update stream ends while the
+    # independent mutation RPC is still in flight.
+    session.sync_with_coordinator = ClientSession.sync_with_coordinator.__get__(session)
+
+    async def stream():
+        yield pb2.ClientOutMessage()
+
+    session.stub.ClientStream.return_value = stream()
+
+    async def finish_rpc_after_stream_loss(request):
+        await session._message_pump()
+        assert session.stopping.is_set()
+
+    if operation == "acquire":
+        rpc = session.stub.AcquirePlace
+        mutation = session.acquire_place(session.places["bench"])
+    elif operation == "create":
+        rpc = session.stub.AddPlace
+        mutation = session.add_place("new-bench")
+    elif operation == "release":
+        session.places["bench"].acquired = "testhost/tester"
+        rpc = session.stub.ReleasePlace
+        mutation = session.release_place(session.places["bench"])
+    else:
+        rpc = session.stub.SetPlaceTags
+        mutation = session.set_tags(session.places["bench"], [Tag("board", "test")])
+    rpc.side_effect = finish_rpc_after_stream_loss
+
+    with pytest.raises(ServerError):
+        run(session, asyncio.wait_for(mutation, timeout=1.0))
+
+    rpc.assert_awaited_once()
+
+
+def test_place_mutation_reports_stream_loss_while_waiting_for_sync(session):
+    session.sync_with_coordinator = ClientSession.sync_with_coordinator.__get__(session)
+    pending = []
+
+    class Stream:
+        def cancel(self):
+            pass
+
+        async def __aiter__(self):
+            yield pb2.ClientOutMessage()
+            message = await session.out_queue.get()
+            if message is not None and message.HasField("sync"):
+                event = session.sync_events[message.sync.id]
+                pending.append((event, event.is_set()))
+            # End the stream without acknowledging the synchronization request.
+
+    session.stub.ClientStream.return_value = Stream()
+
+    async def exercise():
+        session.pump_task = session.loop.create_task(session._message_pump())
+        try:
+            with pytest.raises(ServerError, match="Could not synchronize place mutation"):
+                await asyncio.wait_for(session.acquire_place(session.places["bench"]), timeout=1.0)
+            (event, was_set), = pending
+            assert not was_set
+            assert event.is_set()
+            assert session.stopping.is_set()
+            assert not session.sync_events
+            session.stub.AcquirePlace.assert_awaited_once_with(pb2.AcquirePlaceRequest(placename="bench"))
+        finally:
+            await asyncio.wait_for(session.stop(), timeout=1.0)
+
+    run(session, exercise())
 
 
 def test_reservation_domain_results(session, capsys):
@@ -292,6 +391,92 @@ def test_wait_reservation_polls_waiting_state(session, monkeypatch):
     monkeypatch.setattr(session_module.asyncio, "sleep", sleep)
     assert run(session, session.wait_reservation("test-token")).state is ReservationState.allocated
     sleep.assert_awaited_once_with(1.0)
+
+
+def test_wait_reservation_synchronizes_pending_place_updates(session):
+    session.sync_with_coordinator = ClientSession.sync_with_coordinator.__get__(session)
+    session.stub.PollReservation.return_value = pb2.PollReservationResponse(reservation=reservation_message())
+    allocated_place = session.places["bench"].as_pb2()
+    allocated_place.reservation = "test-token"
+
+    class Stream:
+        def cancel(self):
+            pass
+
+        async def __aiter__(self):
+            while True:
+                message = await session.out_queue.get()
+                if message is None:
+                    return
+                response = pb2.ClientOutMessage()
+                response.updates.add().place.CopyFrom(allocated_place)
+                response.sync.id = message.sync.id
+                yield response
+
+    session.stub.ClientStream.return_value = Stream()
+
+    async def exercise():
+        session.pump_task = session.loop.create_task(session._message_pump())
+        try:
+            result = await session.wait_reservation("test-token")
+            assert result.state is ReservationState.allocated
+            assert session.get_place("+" + result.token) is session.places["bench"]
+        finally:
+            await session.stop()
+
+    run(session, asyncio.wait_for(exercise(), timeout=1.0))
+
+
+def test_wait_reservation_reports_failed_synchronization(session):
+    session.stub.PollReservation.return_value = pb2.PollReservationResponse(reservation=reservation_message())
+    session.sync_with_coordinator.return_value = False
+    with pytest.raises(ServerError):
+        run(session, session.wait_reservation("test-token"))
+
+
+def test_wait_reservation_reports_stream_stopping_during_poll(session):
+    session.sync_with_coordinator = ClientSession.sync_with_coordinator.__get__(session)
+
+    class Stream:
+        def cancel(self):
+            pass
+
+        async def __aiter__(self):
+            yield pb2.ClientOutMessage()
+
+    session.stub.ClientStream.return_value = Stream()
+
+    async def poll(request):
+        # The update stream ends while the independent unary RPC is in flight.
+        await session._message_pump()
+        return pb2.PollReservationResponse(reservation=reservation_message())
+
+    session.stub.PollReservation.side_effect = poll
+    with pytest.raises(ServerError, match="Could not synchronize reservation"):
+        run(session, asyncio.wait_for(session.wait_reservation("test-token"), timeout=1.0))
+
+    assert session.stopping.is_set()
+    assert not session.sync_events
+    assert session.out_queue.get_nowait() is None
+    assert session.out_queue.empty()
+
+
+@pytest.mark.parametrize("pattern", ["*/group/SerialPort", "exporter/group/SerialPort"])
+def test_add_match_reuses_unnamed_cached_matches(session, pattern):
+    session.places["source"] = Place.from_pb2(
+        pb2.Place(name="source", matches=[ResourceMatch.fromstr(pattern).as_pb2()])
+    )
+    match = session.get_place("source").matches[0]
+    place = session.places["bench"]
+
+    assert run(session, session.add_match(place, match)) is True
+    request = session.stub.AddPlaceMatch.call_args.args[0]
+    assert request.pattern == pattern
+    assert not request.HasField("rename")
+
+    place.matches.append(match)
+    assert run(session, session.add_match(place, match)) is False
+    session.stub.AddPlaceMatch.assert_awaited_once()
 
 
 def test_tags_and_matches_use_domain_inputs(session):
@@ -335,6 +520,61 @@ def test_typed_target_resources_keep_live_entries(session):
     (binding,) = session.get_target_resources(place)
     assert binding.name == "console"
     assert binding.resource is resource
+
+
+def test_get_target_resolves_each_places_configured_role(session, tmp_path, monkeypatch):
+    monkeypatch.setattr(ResourceManager, "instances", {})
+    config = tmp_path / "environment.yaml"
+    config.write_text(
+        "targets:\n"
+        "  first:\n"
+        "    resources:\n"
+        "      RemotePlace:\n"
+        "        name: bench\n"
+        "  second:\n"
+        "    resources:\n"
+        "      RemotePlace:\n"
+        "        name: bench2\n"
+    )
+    session.env = Environment(str(config))
+    first_place = session.places["bench"]
+    second_place = session.places["bench2"] = Place("bench2")
+    for place in (first_place, second_place):
+        place.acquired = "testhost/tester"
+
+    first_target = session.get_target(first_place)
+    assert first_target.name == "first"
+    assert first_target.get_resource(RemotePlace).name == "bench"
+
+    second_target = session.get_target(second_place)
+    assert second_target.name == "second"
+    assert second_target.get_resource(RemotePlace).name == "bench2"
+    assert second_target is not first_target
+    assert session.role is None
+
+    session.role = "first"
+    assert session.get_target(second_place) is first_target
+
+
+def test_recreated_resource_event_has_no_previous_snapshot(session):
+    events = []
+    session.subscribe(events.append)
+    data = {"cls": "SerialPort", "params": {}, "avail": True}
+
+    run(session, session._on_resource_changed("exporter", "group", "port", data.copy()))
+    live = session.resources["exporter"]["group"]["port"]
+    run(session, session._on_resource_changed("exporter", "group", "port", {}))
+    run(session, session._on_resource_changed("exporter", "group", "port", data.copy()))
+
+    created, deleted, recreated = events
+    assert created.previous is None
+    assert deleted.previous.cls == "SerialPort"
+    assert deleted.current is None
+    assert recreated.current.cls == "SerialPort"
+    assert recreated.previous is None
+    assert session.resources["exporter"]["group"]["port"] is live
+    assert live.cls == "SerialPort"
+    assert recreated.current is not live
 
 
 def test_update_events_preserve_cache_identity_and_snapshots(session, capsys):
@@ -436,13 +676,15 @@ def test_cli_main_dispatch_and_exit_status(session, monkeypatch, capsys):
     monkeypatch.setattr(client, "start_session", lambda *args, **kwargs: session)
     monkeypatch.setattr(client.signal, "signal", lambda *args: None)
     monkeypatch.setattr(client.asyncio, "new_event_loop", lambda: session.loop)
-    monkeypatch.setattr(session.loop, "close", lambda: None)
     session.stop = AsyncMock()
     monkeypatch.setattr(client.sys, "argv", ["labgrid-client", "-p", "bench", "acquire"])
     for name in ("LG_ENV", "LG_STATE", "STATE", "LG_INITIAL_STATE"):
         monkeypatch.delenv(name, raising=False)
-    with pytest.raises(SystemExit) as result:
-        client.main()
+    with monkeypatch.context() as cli_patches:
+        # Keep the fixture's loop usable until teardown, then restore real close.
+        cli_patches.setattr(session.loop, "close", lambda: None)
+        with pytest.raises(SystemExit) as result:
+            client.main()
     assert result.value.code == 0
     assert capsys.readouterr() == ("acquired place bench\n", "")
     session.stop.assert_awaited_once()
@@ -483,12 +725,18 @@ def test_start_stream_sync_and_shutdown_without_network(session):
                     yield response
 
     session.stub.ClientStream.return_value = Stream()
-    run(session, session.start())
-    assert sent[0].startup.name == "testhost/tester"
-    assert sent[1].subscribe.all_places
-    assert sent[2].subscribe.all_resources
-    assert session.sync_events == {}
-    run(session, session.stop())
+
+    async def exercise():
+        try:
+            await asyncio.wait_for(session.start(), timeout=1.0)
+            assert sent[0].startup.name == "testhost/tester"
+            assert sent[1].subscribe.all_places
+            assert sent[2].subscribe.all_resources
+            assert session.sync_events == {}
+        finally:
+            await asyncio.wait_for(session.stop(), timeout=1.0)
+
+    run(session, exercise())
     assert session.pump_task.done()
     assert session.stopping.is_set()
 

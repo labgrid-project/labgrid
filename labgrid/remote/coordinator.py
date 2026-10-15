@@ -768,7 +768,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         request.group_name = resource.path[1]
         request.resource_name = resource.path[3]
         request.place_name = place.name
-        request.acquirer_identity = place.acquired
+        request.client_identity.id = place.acquired
         cmd = ExporterCommand("set_acquired_request", request)
         self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
         try:
@@ -790,7 +790,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         request.resource_name = resource.path[3]
         request.place_name = place.name
         request.duration = duration
-        request.leaser_identity = place.acquired
+        request.client_identity.id = place.acquired
         cmd = ExporterCommand("lease_started_request", request)
         self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
         try:
@@ -945,7 +945,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     request = labgrid_coordinator_pb2.ExporterSetAcquiredRequest()
                     request.group_name = resource.path[1]
                     request.resource_name = resource.path[3]
-                    request.acquirer_identity = acquirer_identity
+                    request.client_identity.id = acquirer_identity
                     # request.place_name is left unset to indicate release
                     cmd = ExporterCommand("set_acquired_request", request)
                     exporter.queue.put_nowait(cmd)

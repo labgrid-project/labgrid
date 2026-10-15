@@ -533,8 +533,8 @@ def test_coordinator_propagate_release_identity(
         coordinator._publish_resource.assert_called_once_with(resource)
 
     assert len(requests) == 1
-    assert requests[0].acquirer_identity == expected_identity
-    assert requests[0].acquirer_identity != owner
+    assert requests[0].client_identity.id == expected_identity
+    assert requests[0].client_identity.id != owner
     assert not requests[0].HasField("place_name")
     coordinator._publish_place.assert_called_once_with(place)
     coordinator.save_later.assert_called_once_with()
@@ -554,7 +554,7 @@ def test_coordinator_cleanup_release_has_empty_identity():
     asyncio.run(release_resources())
 
     assert len(requests) == 1
-    assert requests[0].acquirer_identity == ""
+    assert requests[0].client_identity.id == ""
     assert not requests[0].HasField("place_name")
 
 

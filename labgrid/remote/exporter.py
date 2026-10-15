@@ -1076,7 +1076,7 @@ class Exporter:
                                 "labgrid.resource.group_name": out_message.set_acquired_request.group_name,
                                 "labgrid.resource.resource_name": out_message.set_acquired_request.resource_name,
                                 "labgrid.resource.place_name": out_message.set_acquired_request.place_name,
-                                "labgrid.acquirer_identity": out_message.set_acquired_request.acquirer_identity,
+                                "labgrid.acquirer_identity": out_message.set_acquired_request.client_identity.id,
                             },
                         ) as req:
                             logging.debug("acquire request")
@@ -1112,14 +1112,14 @@ class Exporter:
                                             "%s/%s acquired by %s",
                                             out_message.set_acquired_request.group_name,
                                             out_message.set_acquired_request.resource_name,
-                                            out_message.set_acquired_request.acquirer_identity,
+                                            out_message.set_acquired_request.client_identity.id,
                                         )
                                     else:
                                         logging.info(
                                             "%s/%s released by %s",
                                             out_message.set_acquired_request.group_name,
                                             out_message.set_acquired_request.resource_name,
-                                            out_message.set_acquired_request.acquirer_identity,
+                                            out_message.set_acquired_request.client_identity.id,
                                         )
                                 if reason:
                                     in_message.response.reason = reason
@@ -1137,7 +1137,7 @@ class Exporter:
                                 "labgrid.resource.resource_name": out_message.lease_started_request.resource_name,
                                 "labgrid.resource.place_name": out_message.lease_started_request.place_name,
                                 "labgrid.lease_duration": out_message.lease_started_request.duration,
-                                "labgrid.leaser_identity": out_message.lease_started_request.leaser_identity,
+                                "labgrid.leaser_identity": out_message.lease_started_request.client_identity.id,
                             },
                         ) as req:
                             logging.debug("lease started request")
@@ -1166,7 +1166,7 @@ class Exporter:
                                         "%s/%s leased by %s",
                                         out_message.lease_started_request.group_name,
                                         out_message.lease_started_request.resource_name,
-                                        out_message.lease_started_request.leaser_identity,
+                                        out_message.lease_started_request.client_identity.id,
                                     )
                                 if reason:
                                     in_message.response.reason = reason

@@ -159,31 +159,37 @@ class ExporterOutMessage(_message.Message):
     metadata: Metadata
     def __init__(self, hello: _Optional[_Union[Hello, _Mapping]] = ..., set_acquired_request: _Optional[_Union[ExporterSetAcquiredRequest, _Mapping]] = ..., lease_started_request: _Optional[_Union[ExporterLeaseStartedRequest, _Mapping]] = ..., lease_extended_request: _Optional[_Union[ExporterLeaseExtendedRequest, _Mapping]] = ..., metadata: _Optional[_Union[Metadata, _Mapping]] = ...) -> None: ...
 
+class ClientIdentity(_message.Message):
+    __slots__ = ("id",)
+    ID_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    def __init__(self, id: _Optional[str] = ...) -> None: ...
+
 class ExporterSetAcquiredRequest(_message.Message):
-    __slots__ = ("group_name", "resource_name", "place_name", "acquirer_identity")
+    __slots__ = ("group_name", "resource_name", "place_name", "client_identity")
     GROUP_NAME_FIELD_NUMBER: _ClassVar[int]
     RESOURCE_NAME_FIELD_NUMBER: _ClassVar[int]
     PLACE_NAME_FIELD_NUMBER: _ClassVar[int]
-    ACQUIRER_IDENTITY_FIELD_NUMBER: _ClassVar[int]
+    CLIENT_IDENTITY_FIELD_NUMBER: _ClassVar[int]
     group_name: str
     resource_name: str
     place_name: str
-    acquirer_identity: str
-    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., acquirer_identity: _Optional[str] = ...) -> None: ...
+    client_identity: ClientIdentity
+    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., client_identity: _Optional[_Union[ClientIdentity, _Mapping]] = ...) -> None: ...
 
 class ExporterLeaseStartedRequest(_message.Message):
-    __slots__ = ("group_name", "resource_name", "place_name", "duration", "leaser_identity")
+    __slots__ = ("group_name", "resource_name", "place_name", "duration", "client_identity")
     GROUP_NAME_FIELD_NUMBER: _ClassVar[int]
     RESOURCE_NAME_FIELD_NUMBER: _ClassVar[int]
     PLACE_NAME_FIELD_NUMBER: _ClassVar[int]
     DURATION_FIELD_NUMBER: _ClassVar[int]
-    LEASER_IDENTITY_FIELD_NUMBER: _ClassVar[int]
+    CLIENT_IDENTITY_FIELD_NUMBER: _ClassVar[int]
     group_name: str
     resource_name: str
     place_name: str
     duration: int
-    leaser_identity: str
-    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., duration: _Optional[int] = ..., leaser_identity: _Optional[str] = ...) -> None: ...
+    client_identity: ClientIdentity
+    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., duration: _Optional[int] = ..., client_identity: _Optional[_Union[ClientIdentity, _Mapping]] = ...) -> None: ...
 
 class ExporterLeaseExtendedRequest(_message.Message):
     __slots__ = ("group_name", "resource_name", "place_name", "duration")

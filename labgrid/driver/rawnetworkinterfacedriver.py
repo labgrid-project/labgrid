@@ -16,8 +16,9 @@ from ..util.agentwrapper import AgentWrapper
 from ..util.helper import processwrapper
 from ..util.managedfile import ManagedFile
 from ..util.timeout import Timeout
-from ..util.netns import NetNamespace
+from ..util.netns import DefaultNetNamespace, NetNamespace
 from ..resource.common import NetworkResource
+from ..resource.remote import RemoteNetworkInterface
 
 
 @target_factory.reg_driver
@@ -395,105 +396,108 @@ class RawNetworkInterfaceDriver(Driver):
     @step()
     @contextlib.contextmanager
     def setup_netns(self, mac_address=None):
-        with contextlib.ExitStack() as ctx:
-            remote_ns = ctx.enter_context(self._netns(self.iface.host))
-            local_ns = ctx.enter_context(self._netns(None))
+        if isinstance(self.iface, RemoteNetworkInterface):
+            with contextlib.ExitStack() as ctx:
+                remote_ns = ctx.enter_context(self._netns(self.iface.host))
+                local_ns = ctx.enter_context(self._netns(None))
 
-            cmd = [
-                "-d",
-                "ns-macvtap",
-                self.iface.ifname,
-                str(remote_ns.get_pid()),
-            ]
-            if mac_address:
-                cmd.append("--mac-address")
-                cmd.append(mac_address)
+                cmd = [
+                    "-d",
+                    "ns-macvtap",
+                    self.iface.ifname,
+                    str(remote_ns.get_pid()),
+                ]
+                if mac_address:
+                    cmd.append("--mac-address")
+                    cmd.append(mac_address)
 
-            # Start tap forward in remote namespace
-            cmd = self._wrap_command(cmd)
-            self.logger.debug("running %s", cmd)
-            remote_fwd = ctx.enter_context(
-                subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stdin=subprocess.PIPE,
-                )
-            )
-            ctx.callback(lambda: remote_fwd.terminate())
-            self.logger.debug("Started remote tap forward '%s'", " ".join(remote_fwd.args))
-
-            r_macaddr = None
-            to = Timeout(30.0)
-            while True:
-                if to.expired:
-                    raise TimeoutError("Timeout waiting for remote macvtap to be established")
-
-                links = remote_ns.get_links()
-                for link in links:
-                    if link["ifname"] == "macvtap0":
-                        r_macaddr = link["address"]
-                        break
-
-                if r_macaddr is not None:
-                    break
-
-                if remote_fwd.poll() is not None:
-                    raise ExecutionError(
-                        f"Remote tap forward {remote_fwd.pid} died with {remote_fwd.returncode} during setup"
+                # Start tap forward in remote namespace
+                cmd = self._wrap_command(cmd)
+                self.logger.debug("running %s", cmd)
+                remote_fwd = ctx.enter_context(
+                    subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stdin=subprocess.PIPE,
                     )
-
-                time.sleep(0.1)
-
-            self.logger.debug("Remote macvtap MAC address is %s", r_macaddr)
-
-            _, fd = local_ns.create_tun(address=r_macaddr)
-            tun_fd = ctx.enter_context(os.fdopen(fd))
-
-            links = local_ns.get_links()
-            link_names = [link["ifname"] for link in links]
-            assert "tap0" in link_names
-
-            cmd = local_ns.get_prefix() + ["labgrid-tap-fwd", str(tun_fd.fileno())]
-            self.logger.debug("running %s", cmd)
-            local_fwd = ctx.enter_context(
-                subprocess.Popen(
-                    cmd,
-                    stdin=remote_fwd.stdout,
-                    stdout=remote_fwd.stdin,
-                    pass_fds=(tun_fd.fileno(),),
                 )
-            )
-            ctx.callback(lambda: local_fwd.terminate())
-            self.logger.debug("Started local tap forward '%s'", " ".join(local_fwd.args))
+                ctx.callback(lambda: remote_fwd.terminate())
+                self.logger.debug("Started remote tap forward '%s'", " ".join(remote_fwd.args))
 
-            # Close local pipes for the remote forward, now that the local forward is running
-            remote_fwd.stdin.close()
-            remote_fwd.stdout.close()
+                r_macaddr = None
+                to = Timeout(30.0)
+                while True:
+                    if to.expired:
+                        raise TimeoutError("Timeout waiting for remote macvtap to be established")
 
-            ns = NetNamespace(local_ns)
+                    links = remote_ns.get_links()
+                    for link in links:
+                        if link["ifname"] == "macvtap0":
+                            r_macaddr = link["address"]
+                            break
 
-            # Wait for IPv6 address negotiation to finish
-            to = Timeout(30.0)
-            while True:
-                if to.expired:
-                    raise TimeoutError("Timeout waiting for IPv6 address negotiation to finish")
-
-                data = json.loads(
-                    ns.run(["ip", "-j", "addr", "show", "dev", ns.intf], check=True, stdout=subprocess.PIPE).stdout
-                )
-                for addr in data[0].get("addr_info", []):
-                    if addr.get("tentative", False):
+                    if r_macaddr is not None:
                         break
-                else:
-                    # No tentative addresses
-                    break
 
-                if remote_fwd.poll() is not None:
-                    raise ExecutionError(f"Remote tap forward {remote_fwd.pid} died with {remote_fwd.returncode}")
+                    if remote_fwd.poll() is not None:
+                        raise ExecutionError(
+                            f"Remote tap forward {remote_fwd.pid} died with {remote_fwd.returncode} during setup"
+                        )
 
-                if local_fwd.poll() is not None:
-                    raise ExecutionError(f"Local tap forward {local_fwd.pid} died with {local_fwd.returncode}")
+                    time.sleep(0.1)
 
-                time.sleep(0.1)
+                self.logger.debug("Remote macvtap MAC address is %s", r_macaddr)
 
-            yield ns
+                _, fd = local_ns.create_tun(address=r_macaddr)
+                tun_fd = ctx.enter_context(os.fdopen(fd))
+
+                links = local_ns.get_links()
+                link_names = [link["ifname"] for link in links]
+                assert "tap0" in link_names
+
+                cmd = local_ns.get_prefix() + ["labgrid-tap-fwd", str(tun_fd.fileno())]
+                self.logger.debug("running %s", cmd)
+                local_fwd = ctx.enter_context(
+                    subprocess.Popen(
+                        cmd,
+                        stdin=remote_fwd.stdout,
+                        stdout=remote_fwd.stdin,
+                        pass_fds=(tun_fd.fileno(),),
+                    )
+                )
+                ctx.callback(lambda: local_fwd.terminate())
+                self.logger.debug("Started local tap forward '%s'", " ".join(local_fwd.args))
+
+                # Close local pipes for the remote forward, now that the local forward is running
+                remote_fwd.stdin.close()
+                remote_fwd.stdout.close()
+
+                ns = NetNamespace(local_ns)
+
+                # Wait for IPv6 address negotiation to finish
+                to = Timeout(30.0)
+                while True:
+                    if to.expired:
+                        raise TimeoutError("Timeout waiting for IPv6 address negotiation to finish")
+
+                    data = json.loads(
+                        ns.run(["ip", "-j", "addr", "show", "dev", ns.intf], check=True, stdout=subprocess.PIPE).stdout
+                    )
+                    for addr in data[0].get("addr_info", []):
+                        if addr.get("tentative", False):
+                            break
+                    else:
+                        # No tentative addresses
+                        break
+
+                    if remote_fwd.poll() is not None:
+                        raise ExecutionError(f"Remote tap forward {remote_fwd.pid} died with {remote_fwd.returncode}")
+
+                    if local_fwd.poll() is not None:
+                        raise ExecutionError(f"Local tap forward {local_fwd.pid} died with {local_fwd.returncode}")
+
+                    time.sleep(0.1)
+
+                yield ns
+        else:
+            yield DefaultNetNamespace(intf=self.iface.ifname)

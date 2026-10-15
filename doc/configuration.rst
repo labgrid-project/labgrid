@@ -246,7 +246,7 @@ Currently available are:
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/shelly_gen1.py>`__
   for details.
 
-  ``shelly_gen2``
+``shelly_gen2``
   Controls relays of *Shelly* devices using the
   `Gen2+ API <https://shelly-api-docs.shelly.cloud/gen2/General/RPCProtocol/>`__.
   See the `docstring in the module
@@ -262,6 +262,14 @@ Currently available are:
   HTTP GET requests (both set and get).
   See the `docstring in the module
   <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/simplerest.py>`__
+  for details.
+
+``tapo``
+  Controls *Tapo power strips and single socket devices* via `python-kasa
+  <https://github.com/python-kasa/python-kasa>`_.
+  Requires valid TP-Link/TAPO cloud credentials to work.
+  See the `docstring in the module
+  <https://github.com/labgrid-project/labgrid/blob/master/labgrid/driver/power/tapo.py>`__
   for details.
 
 ``tinycontrol``
@@ -300,11 +308,12 @@ PDUDaemon configuration file needs to be specified.
 
 The example describes port ``1`` on the PDU configured as
 ``apc-snmpv3-noauth``, with PDUDaemon running on the host ``pduserver``.
+Non-numeric port identifiers supported by PDUDaemon can be used as well.
 
 Arguments:
   - host (str): name of the host running the PDUDaemon
   - pdu (str): name of the PDU in the configuration file
-  - index (int): index of the power port on the PDU
+  - index (str): identifier of the power port on the PDU
 
 Used by:
   - `PDUDaemonDriver`_
@@ -494,6 +503,8 @@ A :any:`DeditecRelais8` describes a *Deditec USB GPO module* with 8 relays.
      match:
        ID_PATH: 'pci-0000:00:14.0-usb-0:2:1.0'
 
+Symlink ``labgrid-python3`` in ``PATH`` to the labgrid virtualenv's ``bin/python3``.
+
 Arguments:
   - index (int): number of the relay to use
   - invert (bool, default=False): whether the logic level is inverted
@@ -574,6 +585,8 @@ It currently supports the widely used *dcttech USBRelay* and *lctech LCUS*
      match:
        ID_PATH: 'pci-0000:00:14.0-usb-0:2:1.0'
 
+Symlink ``labgrid-python3`` in ``PATH`` to the labgrid virtualenv's ``bin/python3``.
+
 Arguments:
   - index (int, default=1): number of the relay to use
   - invert (bool, default=False): whether to invert the relay
@@ -581,6 +594,46 @@ Arguments:
 
 Used by:
   - `HIDRelayDriver`_
+
+FTDIGPIO
+++++++++
+An :class:`~labgrid.resource.udev.FTDIGPIO` resource describes a single FTDI
+data-bus GPIO line.
+This uses FTDI bit-bang mode for the 8-bit data bus exposed by the selected
+interface, not CBUS ``ftdi-cbus`` gpiochips or EEPROM-configured ACBUS
+functions.
+
+Supported devices are FT2232-style devices (``0403:6010``, interfaces 1..2),
+FT4232H (``0403:6011``, interfaces 1..4), and FT232H (``0403:6014``,
+interface 1). For each interface, ``index`` selects bit ``0`` to ``7`` on
+that interface's data bus.
+Writes use a read-modify-write cycle on the selected 8-bit interface to avoid
+changing unrelated bits managed by labgrid.
+
+.. code-block:: yaml
+
+   FTDIGPIO:
+     index: 0
+     interface: 1
+     direction: out
+     invert: false
+     match:
+       ID_PATH: 'pci-0000:00:14.0-usb-0:2'
+
+Arguments:
+  - index (int, default=0): GPIO bit number to use, from ``0`` to ``7``
+  - interface (int, default=1): FTDI interface/channel number to use
+  - direction (str, default="out"): GPIO direction, either ``in`` or ``out``
+  - invert (bool, default=False): whether to invert the logical GPIO value
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `FTDIGPIODriver`_
+
+NetworkFTDIGPIO
++++++++++++++++
+A :any:`NetworkFTDIGPIO` describes an `FTDIGPIO`_ resource available on a
+remote computer.
 
 HttpDigitalOutput
 +++++++++++++++++
@@ -2127,6 +2180,8 @@ Arguments:
     will explicitly use the SCP protocol for file transfers instead of scp's default protocol
   - username (str, default=username from `NetworkService`_): username used by SSH
   - password (str, default=password from `NetworkService`_): password used by SSH
+  - extra_options (list or str): optional, extra options required for the SSH connection, e.g.
+    defining host key algorithms
 
 UBootDriver
 ~~~~~~~~~~~
@@ -2644,6 +2699,34 @@ Implements:
 .. code-block:: yaml
 
    GpioDigitalOutputDriver: {}
+
+Arguments:
+  - None
+
+FTDIGPIODriver
+~~~~~~~~~~~~~~
+The :any:`FTDIGPIODriver` controls one `FTDIGPIO`_ or `NetworkFTDIGPIO`_ line
+via FTDI bit-bang GPIO mode. The available data-bus lines depend on the
+underlying FTDI device. Each line's direction is fixed by the resource's
+``direction`` option (``in`` or ``out``, default ``out``): when the driver is
+activated the interface is switched into async bit-bang mode and the line is
+programmed accordingly. Calling ``set`` on a line configured as ``in`` is
+rejected.
+
+If the FTDI serial kernel driver is bound to the selected interface, the agent
+detaches it automatically before accessing the GPIOs.
+
+Binds to:
+  gpio:
+    - `FTDIGPIO`_
+    - `NetworkFTDIGPIO`_
+
+Implements:
+  - :any:`DigitalOutputProtocol`
+
+.. code-block:: yaml
+
+   FTDIGPIODriver: {}
 
 Arguments:
   - None
@@ -3967,7 +4050,7 @@ execution of commands, transfer of files, and rebooting of the device.
 It can interact with both USB and TCP adb devices.
 
 Binds to:
-  iface:
+  device:
     - `USBADBDevice`_
     - `RemoteUSBADBDevice`_
     - `NetworkADBDevice`_
@@ -3976,6 +4059,9 @@ Implements:
   - :any:`CommandProtocol`
   - :any:`FileTransferProtocol`
   - :any:`ResetProtocol`
+
+Arguments:
+  - None
 
 .. _conf-strategies:
 

@@ -21,6 +21,11 @@ import pathlib
 import attr
 import grpc
 
+from labgrid.remote.grpc.interceptor.client import (
+    IdentityClientStreamStreamInterceptor,
+    IdentityClientUnaryUnaryInterceptor,
+)
+
 from .config import ResourceConfig
 from .common import ResourceEntry, get_client_credentials, queue_as_aiter
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
@@ -182,8 +187,15 @@ class ResourceExport(ResourceEntry):
     def release(self, *args, **kwargs):
         if self.broken:
             raise BrokenResourceError(f"cannot release broken resource (original reason): {self.broken}")
+        acquired = self.acquired
         super().release(*args, **kwargs)
-        self.poll()
+        try:
+            self.poll()
+        except Exception:
+            # Preserve a state set by poll(), for example "<broken>".
+            if self.acquired is None:
+                self.data["acquired"] = acquired
+            raise
 
 
 @attr.s(eq=False)
@@ -213,7 +225,7 @@ class SerialPortExport(ResourceExport):
                 self.ser2net_bin = "/usr/bin/ser2net"
 
     def __del__(self):
-        if self.child is not None:
+        if getattr(self, "child", None) is not None:
             self.stop()
 
     def _get_start_params(self):
@@ -551,6 +563,26 @@ class USBHIDRelayExport(USBGenericExport):
 
 
 @attr.s(eq=False)
+class USBFTDIGPIOExport(USBGenericExport):
+    """ResourceExport for GPIOs on FTDI data-bus bit-bang interfaces"""
+
+    def _get_params(self):
+        """Helper function to return parameters"""
+        return {
+            "host": self.host,
+            "busnum": self.local.busnum,
+            "devnum": self.local.devnum,
+            "path": self.local.path,
+            "vendor_id": self.local.vendor_id,
+            "model_id": self.local.model_id,
+            "index": self.local.index,
+            "interface": self.local.interface,
+            "invert": self.local.invert,
+            "direction": self.local.direction,
+        }
+
+
+@attr.s(eq=False)
 class USBFlashableExport(USBGenericExport):
     """ResourceExport for Flashable USB devices"""
 
@@ -592,6 +624,7 @@ exports["SiSPMPowerPort"] = SiSPMPowerPortExport
 exports["USBPowerPort"] = USBPowerPortExport
 exports["DeditecRelais8"] = USBDeditecRelaisExport
 exports["HIDRelay"] = USBHIDRelayExport
+exports["FTDIGPIO"] = USBFTDIGPIOExport
 exports["USBFlashableDevice"] = USBFlashableExport
 exports["LXAUSBMux"] = USBGenericExport
 
@@ -844,7 +877,7 @@ class ADBExport(ResourceExport):
         self.port = None
 
     def __del__(self):
-        if self.child is not None:
+        if getattr(self, "child", None) is not None:
             self.stop()
 
     def _get_params(self):
@@ -933,16 +966,23 @@ class Exporter:
         if urlsplit(f"//{config['coordinator']}").port is None:
             config["coordinator"] += ":20408"
 
+        identity = (None, self.name, f"labgrid-exporter {labgrid_version()}")
+        interceptors = [
+            IdentityClientUnaryUnaryInterceptor(*identity),
+            IdentityClientStreamStreamInterceptor(*identity),
+        ]
         if config["credentials"]:
             self.channel = grpc.aio.secure_channel(
                 target=config["coordinator"],
                 credentials=config["credentials"],
                 options=channel_options,
+                interceptors=interceptors,
             )
         else:
             self.channel = grpc.aio.insecure_channel(
                 target=config["coordinator"],
                 options=channel_options,
+                interceptors=interceptors,
             )
         self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
         self.out_queue = asyncio.Queue()
@@ -1035,8 +1075,11 @@ class Exporter:
                             )
                         success = True
                     except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
-                        reason = e.args[0]
+                        reason = str(e)
                         logging.warning("set_acquired_request failed: %s", reason)
+                    except Exception as e:
+                        reason = str(e) or repr(e)
+                        logging.exception("failed to handle set_acquired_request: %s", reason)
                     finally:
                         in_message = labgrid_coordinator_pb2.ExporterInMessage()
                         in_message.response.success = success
@@ -1059,13 +1102,11 @@ class Exporter:
                 reexec = True
             else:
                 logging.exception("unexpected grpc error in coordinator message pump task")
+                raise
         except Exception:
             self.out_queue.put_nowait(None)  # let the sender side exit gracefully
             logging.exception("error in coordinator message pump")
-
-            # only send command response when the other updates have left the queue
-            # perhaps with queue join/task_done
-            # this should be a command from the coordinator
+            raise
 
     async def acquire(self, group_name, resource_name, place_name):
         resource = self.groups.get(group_name, {}).get(resource_name)
@@ -1089,11 +1130,9 @@ class Exporter:
         if resource is None:
             raise UnknownResourceError(f"release request for unknown resource {group_name}/{resource_name}")
 
-        if not resource.acquired:
-            raise InvalidResourceRequestError(f"Resource {group_name}/{resource_name} is not acquired")
-
         try:
-            resource.release()
+            if resource.acquired is not None:
+                resource.release()
         finally:
             await self.update_resource(group_name, resource_name)
 

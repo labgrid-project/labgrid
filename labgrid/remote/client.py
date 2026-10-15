@@ -68,6 +68,22 @@ class InteractiveCommandError(Error):
         self.exitcode = exitcode
 
 
+def _get_reservation_id_from_env():
+    reservation_id = os.environ.get("LG_RESERVATION")
+    legacy_reservation_id = os.environ.get("LG_TOKEN")
+    if reservation_id:
+        if legacy_reservation_id and legacy_reservation_id != reservation_id:
+            print(
+                "warning: LG_RESERVATION and deprecated LG_TOKEN are set to different values; using LG_RESERVATION",
+                file=sys.stderr,
+            )
+        return reservation_id
+
+    if legacy_reservation_id:
+        print("warning: LG_TOKEN is deprecated; use LG_RESERVATION instead", file=sys.stderr)
+    return legacy_reservation_id
+
+
 @attr.s(eq=False)
 class ClientCommands:
     """Command-line parsing adapters, presenters and interactive commands."""
@@ -407,25 +423,6 @@ class ClientCommands:
                 else f"{exc.owner_user} can execute {command}"
             )
             raise UserError(f"{exc.args[0]} {hint}") from None
-        except ServerError:
-            # check potential failure causes
-            for exporter, groups in sorted(self.resources.items()):
-                for group_name, group in sorted(groups.items()):
-                    for resource_name, resource in sorted(group.items()):
-                        resource_path = (exporter, group_name, resource.cls, resource_name)
-                        if not resource.acquired:
-                            continue
-                        match = place.getmatch(resource_path)
-                        if match is None:
-                            continue
-                        name = resource_name
-                        if match.rename:
-                            name = match.rename
-                        print(
-                            f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}) already acquired by place '{resource.acquired}'"
-                        )  # pylint: disable=line-too-long
-
-            raise
 
     async def release(self):
         errors = []
@@ -593,7 +590,13 @@ class ClientCommands:
             OneWirePIO,
             WaveshareModbusTCPCoil,
         )
-        from ..resource.remote import NetworkDeditecRelais8, NetworkHIDRelay, NetworkLXAIOBusPIO, NetworkSysfsGPIO
+        from ..resource.remote import (
+            NetworkDeditecRelais8,
+            NetworkFTDIGPIO,
+            NetworkHIDRelay,
+            NetworkLXAIOBusPIO,
+            NetworkSysfsGPIO,
+        )
 
         drv = None
         try:
@@ -619,6 +622,8 @@ class ClientCommands:
                     drv = self._get_driver_or_new(target, "DeditecRelaisDriver", name=name)
                 elif isinstance(resource, NetworkSysfsGPIO):
                     drv = self._get_driver_or_new(target, "GpioDigitalOutputDriver", name=name)
+                elif isinstance(resource, NetworkFTDIGPIO):
+                    drv = self._get_driver_or_new(target, "FTDIGPIODriver", name=name)
                 elif isinstance(resource, NetworkLXAIOBusPIO):
                     drv = self._get_driver_or_new(target, "LXAIOBusPIODriver", name=name)
                 elif isinstance(resource, NetworkHIDRelay):
@@ -1168,21 +1173,23 @@ class ClientCommands:
 
         res = await self.session.create_reservation((ReservationFilter("main", tuple(tags)),), prio)
         if self.args.shell:
-            print(f"export LG_TOKEN={res.token}")
+            print(f"export LG_RESERVATION={res.id}")
+            # TODO: remove the deprecated LG_TOKEN export after one release.
+            print(f"export LG_TOKEN={res.id}")
         else:
-            print(f"Reservation '{res.token}':")
+            print(f"Reservation '{res.id}':")
             res.show(level=1)
         if self.args.wait:
             if not self.args.shell:
                 print("Waiting for allocation...")
-            await self._wait_reservation(res.token, verbose=False)
+            await self._wait_reservation(res.id, verbose=False)
 
     async def cancel_reservation(self):
-        await self.session.cancel_reservation(self.args.token)
+        await self.session.cancel_reservation(self.args.reservation_id)
 
-    async def _wait_reservation(self, token: str, verbose=True):
+    async def _wait_reservation(self, reservation_id: str, verbose=True):
         while True:
-            res = await self.session.poll_reservation(token)
+            res = await self.session.poll_reservation(reservation_id)
             if verbose:
                 res.show()
             if res.state is ReservationState.waiting:
@@ -1191,14 +1198,14 @@ class ClientCommands:
                 break
 
     async def wait_reservation(self):
-        token = self.args.token
-        await self._wait_reservation(token)
+        reservation_id = self.args.reservation_id
+        await self._wait_reservation(reservation_id)
 
     async def print_reservations(self):
         reservations = await self.session.list_reservations()
 
         for res in sorted(reservations, key=lambda x: (-x.prio, x.created)):
-            print(f"Reservation '{res.token}':")
+            print(f"Reservation '{res.id}':")
             res.show(level=1)
 
     async def export(self, place, target):
@@ -1340,7 +1347,8 @@ def start_session(address, *, extra=None, credentials=None, debug=False, loop=No
     options.pop("prog", None)
     options.setdefault("username", os.environ.get("LG_USERNAME"))
     options.setdefault("hostname", os.environ.get("LG_HOSTNAME"))
-    options.setdefault("token", os.environ.get("LG_TOKEN"))
+    if "reservation_id" not in options and "token" not in options:
+        options["reservation_id"] = _get_reservation_id_from_env()
     return start_library_session(address, credentials=credentials, debug=debug, loop=loop, **options)
 
 
@@ -1840,11 +1848,23 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.set_defaults(func=ClientCommands.create_reservation)
 
     subparser = subparsers.add_parser("cancel-reservation", help="cancel a reservation")
-    subparser.add_argument("token", type=str, nargs="?")
+    subparser.add_argument(
+        "reservation_id",
+        type=str,
+        nargs="?",
+        help="the reservation id (previously called token)",
+        metavar="reservation-id",
+    )
     subparser.set_defaults(func=ClientCommands.cancel_reservation)
 
     subparser = subparsers.add_parser("wait", help="wait for a reservation to be allocated")
-    subparser.add_argument("token", type=str, nargs="?")
+    subparser.add_argument(
+        "reservation_id",
+        type=str,
+        nargs="?",
+        help="the reservation id (previously called token)",
+        metavar="reservation-id",
+    )
     subparser.set_defaults(func=ClientCommands.wait_reservation)
 
     subparser = subparsers.add_parser("reservations", help="list current reservations")
@@ -1899,7 +1919,6 @@ def main():
     state = os.environ.get("STATE", None)
     state = os.environ.get("LG_STATE", state)
     initial_state = os.environ.get("LG_INITIAL_STATE", None)
-    token = os.environ.get("LG_TOKEN", None)
 
     parser = get_parser()
 
@@ -1923,11 +1942,12 @@ def main():
     if args.initial_state is None:
         args.initial_state = initial_state
 
-    if args.command in ["cancel-reservation", "wait"] and args.token is None:
-        if token:
-            args.token = token
+    if args.command in ["cancel-reservation", "wait"] and args.reservation_id is None:
+        reservation_id = _get_reservation_id_from_env()
+        if reservation_id:
+            args.reservation_id = reservation_id
         else:
-            print("Please provide a token", file=sys.stderr)
+            print("Please provide a reservation id (previously called token)", file=sys.stderr)
             exit(1)
 
     if args.verbose:

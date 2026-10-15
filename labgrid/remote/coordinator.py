@@ -12,9 +12,12 @@ import random
 import signal
 import pathlib
 from typing import Optional
+
 import attr
 import grpc
 from grpc_reflection.v1alpha import reflection
+
+from labgrid.remote.identity import ClientIdentity, infer_peer_identity
 
 from .common import (
     ResourceEntry,
@@ -183,6 +186,15 @@ def locked(func):
     return wrapper
 
 
+def add_identity(func):
+    @wraps(func)
+    async def wrapper(self, request, context):
+        identity = ClientIdentity.from_metadata(context.invocation_metadata())
+        return await func(self, request, context, identity=identity)
+
+    return wrapper
+
+
 class ExporterCommand:
     def __init__(self, request) -> None:
         self.request = request
@@ -206,7 +218,11 @@ class ExporterCommand:
                 self.expired = True
 
 
-class ExporterError(Exception):
+class CoordinatorError(Exception):
+    pass
+
+
+class ExporterError(CoordinatorError):
     pass
 
 
@@ -318,9 +334,15 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         assert peer not in self.clients
         out_msg_queue = asyncio.Queue()
 
+        identity = ClientIdentity.from_metadata(context.invocation_metadata())
+        if identity:
+            logging.debug("client identity provided in gRPC metadata: %s", identity)
+            self.clients[peer] = ClientSession(self, peer, identity.id, out_msg_queue, identity.user_agent)
+
         async def request_task():
             name = None
             version = None
+            session = self.clients.get(peer)
             try:
                 async for in_msg in request_iterator:
                     in_msg: labgrid_coordinator_pb2.ClientInMessage
@@ -331,8 +353,17 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         out_msg.sync.id = in_msg.sync.id
                         out_msg_queue.put_nowait(out_msg)
                     elif kind == "startup":
-                        version = in_msg.startup.version
+                        if session:
+                            logging.debug("ignoring legacy startup message from client %s", peer)
+                            name = session.name
+                            version = identity.user_agent
+                            continue
                         name = in_msg.startup.name
+                        version = in_msg.startup.version
+                        logging.warning(
+                            "client %s did not provide identity metadata; using deprecated startup identity",
+                            peer,
+                        )
                         session = self.clients[peer] = ClientSession(self, peer, name, out_msg_queue, version)
                         logging.debug("Received startup from %s with %s", name, version)
                         asyncio.current_task().set_name(f"client-{peer}-rx/started-{name}")
@@ -379,6 +410,26 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             if exporter.name == name:
                 return exporter
 
+    async def _cleanup_exporter(self, peer, request_task):
+        request_task.cancel()
+        try:
+            await request_task
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            logging.exception("error in exporter request task during cleanup")
+
+        session = self.exporters.pop(peer, None)
+        if session is None:
+            logging.info("Never received startup from peer %s that disconnected", peer)
+            return
+
+        for groupname, group in session.groups.items():
+            for resourcename in group.copy():
+                session.set_resource(groupname, resourcename, None)
+
+        logging.debug("exporter aborted %s", peer)
+
     def _publish_place(self, place):
         msg = labgrid_coordinator_pb2.ClientOutMessage()
         msg.updates.add().place.CopyFrom(place.as_pb2())
@@ -410,9 +461,21 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         out_msg.hello.version = labgrid_version()
         yield out_msg
 
+        identity = ClientIdentity.from_metadata(context.invocation_metadata())
+        if identity:
+            logging.debug("exporter identity provided in gRPC metadata: %s", identity)
+            if existing := self.get_exporter_by_name(identity.id):
+                await context.abort(
+                    grpc.StatusCode.ALREADY_EXISTS,
+                    f"startup failed: exporter with name '{identity.id}' is already connected from {existing.peer}",
+                )
+            self.exporters[peer] = ExporterSession(self, peer, identity.id, command_queue, identity.user_agent)
+            startup_done.set()
+
         async def request_task():
             name = None
             version = None
+            session = self.exporters.get(peer)
             try:
                 async for in_msg in request_iterator:
                     in_msg: labgrid_coordinator_pb2.ExporterInMessage
@@ -423,8 +486,17 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         cmd.complete(in_msg.response)
                         logging.debug("Command %s is done", cmd)
                     elif kind == "startup":
-                        version = in_msg.startup.version
+                        if session:
+                            logging.debug("ignoring legacy startup message from exporter %s", peer)
+                            name = session.name
+                            version = identity.user_agent
+                            continue
                         name = in_msg.startup.name
+                        version = in_msg.startup.version
+                        logging.warning(
+                            "exporter %s did not provide identity metadata; using deprecated startup identity",
+                            peer,
+                        )
                         if existing := self.get_exporter_by_name(name):
                             raise ExporterError(
                                 f"exporter with name '{name}' is already connected from {existing.peer}"
@@ -454,28 +526,26 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         asyncio.current_task().set_name(f"exporter-{peer}-tx")
         running_request_task = self.loop.create_task(request_task(), name=f"exporter-{peer}-rx/init")
 
-        startup_done_task = self.loop.create_task(startup_done.wait())
-        done, _ = await asyncio.wait(
-            {startup_done_task, running_request_task},
-            timeout=3,
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-        # clean up event task
-        startup_done.set()
-        await startup_done_task
-        if running_request_task in done:
-            # we probably had an exception during startup
-            try:
-                await running_request_task
-            except ExporterError as e:
-                await context.abort(grpc.StatusCode.ALREADY_EXISTS, f"startup failed: {e}")
-                raise
-        elif startup_done_task in done:
-            await startup_done_task
-        else:
-            raise ExporterError(f"exporter connection from {peer} timed out during startup")
-
         try:
+            startup_done_task = self.loop.create_task(startup_done.wait())
+            done, _ = await asyncio.wait(
+                {startup_done_task, running_request_task},
+                timeout=3,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            # clean up event task
+            startup_done.set()
+            await startup_done_task
+            if running_request_task in done:
+                # we probably had an exception during startup
+                try:
+                    await running_request_task
+                except ExporterError as e:
+                    await context.abort(grpc.StatusCode.ALREADY_EXISTS, f"startup failed: {e}")
+                    raise
+            elif startup_done_task not in done:
+                raise ExporterError(f"exporter connection from {peer} timed out during startup")
+
             async for cmd in queue_as_aiter(command_queue):
                 logging.debug("exporter cmd %s", cmd)
                 out_msg = labgrid_coordinator_pb2.ExporterOutMessage()
@@ -486,19 +556,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             logging.info("exporter disconnected %s", context.peer())
         except Exception:
             logging.exception("error in exporter command handler")
+            raise
         finally:
-            running_request_task.cancel()
-            await running_request_task
-
-            try:
-                session = self.exporters.pop(peer)
-                for groupname, group in session.groups.items():
-                    for resourcename in group.copy():
-                        session.set_resource(groupname, resourcename, None)
-
-                logging.debug("exporter aborted %s, cancelled: %s", context.peer(), context.cancelled())
-            except KeyError:
-                logging.info("Never received startup from peer %s that disconnected", peer)
+            await self._cleanup_exporter(peer, running_request_task)
 
     @locked
     async def AddPlace(self, request, context):
@@ -652,9 +712,12 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         request.place_name = place.name
         cmd = ExporterCommand(request)
         self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
-        await cmd.wait()
+        try:
+            await cmd.wait()
+        except asyncio.TimeoutError as e:
+            raise ExporterError("timed out waiting for exporter while acquiring resource") from e
         if not cmd.response.success:
-            raise ExporterError(f"failed to acquire {resource} ({cmd.response.reason})")
+            raise ExporterError(cmd.response.reason or "exporter returned failure without a reason")
         if resource.acquired != place.name:
             logging.warning("resource %s not acquired by this place after acquire request", resource)
 
@@ -665,7 +728,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         # all resources need to be free
         for resource in resources:
             if resource.acquired:
-                return False
+                raise CoordinatorError(
+                    f"Resource {resource.path[0]}/{resource.path[1]}/{resource.path[3]} "
+                    f"is already acquired by place '{resource.acquired}'"
+                )
 
             for otherplace in self.places.values():
                 for oldres in otherplace.acquired_resources:
@@ -673,7 +739,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         logging.info(
                             "Conflicting orphaned resource %s for acquire request for place %s", oldres, place.name
                         )
-                        return False
+                        raise CoordinatorError(
+                            f"conflicting orphaned resource {oldres} for acquire request for place {place.name}"
+                        )
 
         # acquire resources
         acquired = []
@@ -681,53 +749,73 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             for resource in resources:
                 await self._acquire_resource(place, resource)
                 acquired.append(resource)
-        except Exception:
+        except Exception as e:
             logging.exception("failed to acquire %s", resource)
             # cleanup
-            await self._release_resources(place, acquired)
-            return False
+            try:
+                await self._release_resources(place, acquired)
+            except CoordinatorError:
+                logging.exception("failed to release acquired resources during acquire cleanup")
+            if isinstance(e, CoordinatorError):
+                raise
+            raise CoordinatorError(f"failed to acquire {resource}") from e
 
         for resource in resources:
             place.acquired_resources.append(resource)
-
-        return True
 
     async def _release_resources(self, place, resources, callback=True):
         assert self.lock.locked()
 
         resources = resources.copy()  # we may modify the list
 
+        failure = None
         for resource in resources:
-            try:
-                place.acquired_resources.remove(resource)
-            except ValueError:
-                pass
-
-        for resource in resources:
-            if resource.orphaned:
+            if resource.orphaned or resource.acquired == "<broken>":
+                try:
+                    place.acquired_resources.remove(resource)
+                except ValueError:
+                    pass
                 continue
             try:
                 # this triggers an update from the exporter which is published
                 # to the clients
                 if callback:
+                    exporter = self.get_exporter_by_name(resource.path[0])
+                    if exporter is None:
+                        try:
+                            place.acquired_resources.remove(resource)
+                        except ValueError:
+                            pass
+                        continue
                     request = labgrid_coordinator_pb2.ExporterSetAcquiredRequest()
                     request.group_name = resource.path[1]
                     request.resource_name = resource.path[3]
                     # request.place_name is left unset to indicate release
                     cmd = ExporterCommand(request)
-                    self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
-                    await cmd.wait()
+                    exporter.queue.put_nowait(cmd)
+                    try:
+                        await cmd.wait()
+                    except asyncio.TimeoutError as e:
+                        raise ExporterError("timed out waiting for exporter while releasing resource") from e
                     if not cmd.response.success:
-                        raise ExporterError(f"failed to release {resource} ({cmd.response.reason})")
+                        raise ExporterError(cmd.response.reason or "exporter returned failure without a reason")
                     if resource.acquired:
                         logging.warning("resource %s still acquired after release request", resource)
-            except (ExporterError, TimeoutError):
+                try:
+                    place.acquired_resources.remove(resource)
+                except ValueError:
+                    pass
+            except ExporterError as e:
+                if failure is None:
+                    failure = e
                 logging.exception("failed to release %s", resource)
                 # at leaset try to notify the clients
                 try:
                     self._publish_resource(resource)
                 except:
                     logging.exception("failed to publish released resource %s", resource)
+        if failure is not None:
+            raise failure
 
     async def _synchronize_resources(self):
         assert self.lock.locked()
@@ -848,12 +936,13 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             idx = place.acquired_resources.index(oldresource)
             place.acquired_resources[idx] = newresource
 
+    @add_identity
     @locked
-    async def AcquirePlace(self, request, context):
+    async def AcquirePlace(self, request, context, *, identity):
         peer = context.peer()
         name = request.placename
         try:
-            username = self.clients[peer].name
+            username = infer_peer_identity(self.clients, context, identity)
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         print(request)
@@ -879,10 +968,18 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     if not place.hasmatch(resource.path):
                         continue
                     resources.append(resource)
-        if not await self._acquire_resources(place, resources):
+        try:
+            await self._acquire_resources(place, resources)
+        except CoordinatorError as e:
             # revert earlier change
             place.acquired = None
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Failed to acquire resources for place {name}")
+            message = f"Failed to acquire resources for place {name}"
+            if str(e):
+                message += f": {e}"
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                message,
+            )
         place.touch()
         self._publish_place(place)
         self.save_later()
@@ -906,7 +1003,16 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         if fromuser and place.acquired != fromuser:
             return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
-        await self._release_resources(place, place.acquired_resources)
+        try:
+            await self._release_resources(place, place.acquired_resources)
+        except CoordinatorError as e:
+            place.touch()
+            self._publish_place(place)
+            self.save_later()
+            message = f"Failed to release resources for place {name}"
+            if str(e):
+                message += f": {e}"
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, message)
 
         place.acquired = None
         place.allowed = set()
@@ -917,13 +1023,14 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         print(f"{place.name}: place released")
         return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
+    @add_identity
     @locked
-    async def AllowPlace(self, request, context):
+    async def AllowPlace(self, request, context, *, identity):
         placename = request.placename
         user = request.user
         peer = context.peer()
         try:
-            username = self.clients[peer].name
+            username = infer_peer_identity(self.clients, context, identity)
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         try:
@@ -969,10 +1076,10 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 res.state = ReservationState.expired
                 res.allocations.clear()
                 res.refresh()
-                print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+                print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
             else:
-                del self.reservations[res.token]
-                print(f"removed {res.state.name} reservation ({res.owner}/{res.token})")
+                del self.reservations[res.id]
+                print(f"removed {res.state.name} reservation ({res.owner}/{res.id})")
 
         # check which places are already allocated and handle state transitions
         allocated_places = set()
@@ -986,7 +1093,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         res.state = ReservationState.invalid
                         res.allocations.clear()
                         res.refresh(300)
-                        print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+                        print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
                         break
                     if place.acquired is not None:
                         acquired_places.add(name)
@@ -996,12 +1103,12 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 # an allocated place was acquired
                 res.state = ReservationState.acquired
                 res.refresh()
-                print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+                print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
             if not acquired_places and res.state is ReservationState.acquired:
                 # all allocated places were released
                 res.state = ReservationState.allocated
                 res.refresh()
-                print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+                print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
 
         # check which places are available for allocation
         available_places = set()
@@ -1028,16 +1135,16 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             place_tagsets.append(TagSet(name, tags))
         filter_tagsets = []
         for res in pending_reservations:
-            filter_tagsets.append(TagSet(res.token, set(res.filters["main"].items())))
+            filter_tagsets.append(TagSet(res.id, set(res.filters["main"].items())))
         allocation = schedule(place_tagsets, filter_tagsets)
 
         # apply allocations
-        for res_token, place_name in allocation.items():
-            res = self.reservations[res_token]
+        for res_id, place_name in allocation.items():
+            res = self.reservations[res_id]
             res.allocations = {"main": [place_name]}
             res.state = ReservationState.allocated
             res.refresh()
-            print(f"reservation ({res.owner}/{res.token}) is now {res.state.name}")
+            print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
 
         # update reservation property of each place and notify
         old_map = {}
@@ -1052,16 +1159,17 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             for group in res.allocations.values():
                 for name in group:
                     assert name not in new_map, "conflicting allocation"
-                    new_map[name] = res.token
+                    new_map[name] = res.id
                     place = self.places.get(name)
                     assert place is not None, "invalid allocation"
-                    place.reservation = res.token
+                    place.reservation = res.id
         for name in old_map.keys() | new_map.keys():
             if old_map.get(name) != new_map.get(name):
                 self._publish_place(self.places[name])
 
+    @add_identity
     @locked
-    async def CreateReservation(self, request: labgrid_coordinator_pb2.CreateReservationRequest, context):
+    async def CreateReservation(self, request: labgrid_coordinator_pb2.CreateReservationRequest, context, *, identity):
         peer = context.peer()
 
         fltrs = {}
@@ -1078,30 +1186,33 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Value {v} is invalid")
                 fltr[k] = v
 
-        owner = self.clients[peer].name
+        try:
+            owner = infer_peer_identity(self.clients, context, identity)
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         res = Reservation(owner=owner, prio=request.prio, filters=fltrs)
-        self.reservations[res.token] = res
+        self.reservations[res.id] = res
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CreateReservationResponse(reservation=res.as_pb2())
 
     @locked
     async def CancelReservation(self, request: labgrid_coordinator_pb2.CancelReservationRequest, context):
-        token = request.token
-        if not isinstance(token, str) or not token:
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid token {token}")
-        if token not in self.reservations:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {token} does not exist")
-        del self.reservations[token]
+        reservation_id = request.token
+        if not isinstance(reservation_id, str) or not reservation_id:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid id {reservation_id}")
+        if reservation_id not in self.reservations:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {reservation_id} does not exist")
+        del self.reservations[reservation_id]
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CancelReservationResponse()
 
     @locked
     async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context):
-        token = request.token
+        reservation_id = request.token
         try:
-            res = self.reservations[token]
+            res = self.reservations[reservation_id]
         except KeyError:
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {token} does not exist")
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {reservation_id} does not exist")
         res.refresh()
         return labgrid_coordinator_pb2.PollReservationResponse(reservation=res.as_pb2())
 

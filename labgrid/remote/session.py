@@ -7,18 +7,17 @@ import copy
 import itertools
 import logging
 from collections.abc import Callable, Sequence
-from contextvars import ContextVar
 from dataclasses import dataclass
 from getpass import getuser
 from socket import gethostname
 
 import attr
 import grpc
-from exceptiongroup import ExceptionGroup  # pylint: disable=redefined-builtin
 
 from .. import Environment, Target, target_factory
 from ..resource.remote import RemotePlace, RemotePlaceManager
 from ..util import labgrid_version
+from ..util.loop import ensure_event_loop as ensure_event_loop
 from ..util.proxy import proxymanager
 from .common import (
     TAG_KEY,
@@ -31,6 +30,7 @@ from .common import (
     queue_as_aiter,
 )
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
+from .grpc.interceptor.client import IdentityClientStreamStreamInterceptor, IdentityClientUnaryUnaryInterceptor
 
 
 class Error(Exception):
@@ -51,7 +51,7 @@ class MissingPlacePatternError(UserError):
 
 
 class PlaceNotFoundError(UserError):
-    """The selector or reservation token does not match a place."""
+    """The selector or reservation ID does not match a place."""
 
 
 class AmbiguousPlaceError(UserError):
@@ -187,6 +187,7 @@ class ClientSession:
     role: str | None = attr.ib(default=None)
     username: str | None = attr.ib(default=None, kw_only=True)
     hostname: str | None = attr.ib(default=None, kw_only=True)
+    reservation_id: str | None = attr.ib(default=None, kw_only=True)
     token: str | None = attr.ib(default=None, kw_only=True)
 
     def gethostname(self) -> str:
@@ -215,16 +216,28 @@ class ClientSession:
             ("grpc.http2.max_pings_without_data", 0),  # no limit
         ]
 
+        identity = {
+            "username": self.getuser(),
+            "hostname": self.gethostname(),
+            "user_agent": f"labgrid-client {labgrid_version()}",
+        }
+        interceptors = [
+            IdentityClientUnaryUnaryInterceptor(**identity),
+            IdentityClientStreamStreamInterceptor(**identity),
+        ]
+
         if self.credentials:
             self.channel = grpc.aio.secure_channel(
                 target=self.address,
                 credentials=self.credentials,
                 options=channel_options,
+                interceptors=interceptors,
             )
         else:
             self.channel = grpc.aio.insecure_channel(
                 target=self.address,
                 options=channel_options,
+                interceptors=interceptors,
             )
 
         self.stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(self.channel)
@@ -408,19 +421,19 @@ class ClientSession:
         """
         result = set()
 
-        # reservation token lookup
-        token = None
+        # reservation id lookup
+        reservation_id = None
         if pattern.startswith("+"):
-            token = pattern[1:]
-            if not token:
-                token = self.token
-            if not token:
+            reservation_id = pattern[1:]
+            if not reservation_id:
+                reservation_id = self.reservation_id if self.reservation_id is not None else self.token
+            if not reservation_id:
                 return []
             for name, place in self.places.items():
-                if place.reservation == token:
+                if place.reservation == reservation_id:
                     result.add(name)
             if not result:
-                raise PlaceNotFoundError(f"reservation token {token} matches nothing")
+                raise PlaceNotFoundError(f"reservation id {reservation_id} matches nothing")
             return list(result)
 
         # name and alias lookup
@@ -678,8 +691,8 @@ class ClientSession:
         return Reservation.from_pb2(response.reservation)
 
     async def cancel_reservation(self, reservation: Reservation | str) -> None:
-        """Cancel a reservation identified by object or token."""
-        token = reservation.token if isinstance(reservation, Reservation) else reservation
+        """Cancel a reservation identified by object or ID."""
+        token = reservation.id if isinstance(reservation, Reservation) else reservation
         try:
             await self.stub.CancelReservation(labgrid_coordinator_pb2.CancelReservationRequest(token=token))
         except grpc.aio.AioRpcError as exc:
@@ -687,7 +700,7 @@ class ClientSession:
 
     async def poll_reservation(self, reservation: Reservation | str) -> Reservation:
         """Refresh a reservation and return its current state."""
-        token = reservation.token if isinstance(reservation, Reservation) else reservation
+        token = reservation.id if isinstance(reservation, Reservation) else reservation
         try:
             response = await self.stub.PollReservation(labgrid_coordinator_pb2.PollReservationRequest(token=token))
         except grpc.aio.AioRpcError as exc:
@@ -753,42 +766,6 @@ class ClientSession:
         return target
 
 
-_loop: ContextVar[asyncio.AbstractEventLoop | None] = ContextVar("_loop", default=None)
-
-
-def ensure_event_loop(external_loop: asyncio.AbstractEventLoop | None = None) -> asyncio.AbstractEventLoop:
-    """Get the event loop for this thread, or create a new event loop."""
-    # get stashed loop
-    loop = _loop.get()
-
-    # ignore closed stashed loop
-    if loop and loop.is_closed():
-        loop = None
-
-    if external_loop:
-        # if a loop is stashed, expect it to be the same as the external one
-        if loop:
-            assert loop is external_loop
-        _loop.set(external_loop)
-        return external_loop
-
-    # return stashed loop
-    if loop:
-        return loop
-
-    try:
-        # if called from async code, try to get current's thread loop
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        # no previous, external or running loop found, create a new one
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    # stash it
-    _loop.set(loop)
-    return loop
-
-
 def start_session(
     address: str,
     *,
@@ -799,6 +776,7 @@ def start_session(
     loop: asyncio.AbstractEventLoop | None = None,
     username: str | None = None,
     hostname: str | None = None,
+    reservation_id: str | None = None,
     token: str | None = None,
 ) -> ClientSession:
     """Start a session synchronously using explicit connection settings."""
@@ -807,7 +785,15 @@ def start_session(
         loop.set_debug(True)
     address = proxymanager.get_grpc_address(address, default_port=20408)
     session = ClientSession(
-        address, loop, credentials=credentials, env=env, role=role, username=username, hostname=hostname, token=token
+        address,
+        loop,
+        credentials=credentials,
+        env=env,
+        role=role,
+        username=username,
+        hostname=hostname,
+        reservation_id=reservation_id,
+        token=token,
     )
     try:
         loop.run_until_complete(session.start())

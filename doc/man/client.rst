@@ -25,8 +25,8 @@ LG_PLACE
 ~~~~~~~~
 This variable can be used to specify a place without using the ``-p`` option, the ``-p`` option overrides it.
 
-LG_TOKEN
-~~~~~~~~
+LG_RESERVATION (previously LG_TOKEN)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This variable can be used to specify a reservation for the ``wait`` command and
 for the ``+`` place expansion.
 
@@ -64,6 +64,12 @@ LG_PROXY
 This variable can be used to specify a SSH proxy hostname which should be used
 to connect to the coordinator and any resources which are normally accessed
 directly.
+
+Note: this proxy is only used to connect to the coordinator.
+Additional steps may be required to connect to resources.
+See <https://labgrid.readthedocs.io/en/latest/overview.html#proxy-mechanism>
+(or the file ``doc/overview.rst`` in the labgrid source tree)
+for more information.
 
 LG_HOSTNAME
 ~~~~~~~~~~~

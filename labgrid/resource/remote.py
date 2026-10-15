@@ -51,7 +51,7 @@ class RemotePlaceManager(ResourceManager):
                 credentials=self._get_credentials(),
                 username=os.environ.get("LG_USERNAME"),
                 hostname=os.environ.get("LG_HOSTNAME"),
-                token=os.environ.get("LG_TOKEN"),
+                reservation_id=os.environ.get("LG_RESERVATION") or os.environ.get("LG_TOKEN"),
             )
         except ConnectionRefusedError as e:
             raise ConnectionRefusedError(f"Could not connect to coordinator {self.url}") \
@@ -371,6 +371,34 @@ class NetworkHIDRelay(RemoteUSBResource):
     """The NetworkHIDRelay describes a remotely accessible USB relay port"""
     index = attr.ib(default=1, validator=attr.validators.instance_of(int))
     invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkFTDIGPIO(RemoteUSBResource):
+    """The NetworkFTDIGPIO describes a remotely accessible FTDI GPIO line"""
+    index = attr.ib(
+        default=0,
+        converter=int,
+        validator=attr.validators.and_(
+            attr.validators.instance_of(int),
+            attr.validators.ge(0),
+            attr.validators.le(7),
+        ),
+    )
+    interface = attr.ib(
+        default=1,
+        converter=int,
+        validator=attr.validators.and_(
+            attr.validators.instance_of(int),
+            attr.validators.ge(1),
+        ),
+    )
+    invert = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    direction = attr.ib(default="out", validator=attr.validators.in_(("in", "out")))
     def __attrs_post_init__(self):
         self.timeout = 10.0
         super().__attrs_post_init__()

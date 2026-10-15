@@ -10,6 +10,8 @@ import logging
 from datetime import datetime
 from fnmatch import fnmatchcase
 from typing import Optional
+import warnings
+
 import attr
 import grpc
 
@@ -453,7 +455,7 @@ class ReservationState(enum.Enum):
 @attr.s(eq=False)
 class Reservation:
     owner = attr.ib(validator=attr.validators.instance_of(str))
-    token = attr.ib(
+    id = attr.ib(
         default=attr.Factory(lambda: "".join(random.choice(string.ascii_uppercase + string.digits) for i in range(10)))
     )
     state = attr.ib(
@@ -490,7 +492,7 @@ class Reservation:
     def show(self, level=0):
         indent = "  " * level
         print(indent + f"owner: {self.owner}")
-        print(indent + f"token: {self.token}")
+        print(indent + f"id:    {self.id}")
         print(indent + f"state: {self.state.name}")
         if self.prio:
             print(indent + f"prio: {self.prio}")
@@ -507,7 +509,7 @@ class Reservation:
     def as_pb2(self):
         res = labgrid_coordinator_pb2.Reservation()
         res.owner = self.owner
-        res.token = self.token
+        res.token = self.id
         res.state = self.state.value
         res.prio = self.prio
         for name, fltr in self.filters.items():
@@ -533,7 +535,7 @@ class Reservation:
             allocations[fltr_name] = [place_name]
         return cls(
             owner=pb2.owner,
-            token=pb2.token,
+            id=pb2.token,
             state=ReservationState(pb2.state),
             prio=pb2.prio,
             filters=filters,
@@ -541,6 +543,21 @@ class Reservation:
             created=pb2.created,
             timeout=pb2.timeout,
         )
+
+
+def get_metadata_single_value_by_key(metadata, key: str) -> Optional[str]:
+    """Look up a single value by key in a metadata sequence of (key, value) pairs."""
+    values = [v for k, v in metadata or () if k == key]
+
+    if not values:
+        return None
+
+    if len(values) > 1:
+        warnings.warn(
+            "Multiple metadata KV pairs with the same key. The value of the first matching KV pair will be returned."
+        )
+
+    return values[0]
 
 
 async def queue_as_aiter(q, logger=logging.getLogger()):

@@ -28,9 +28,10 @@ In asynchronous code, supply the running loop and manage the session explicitly:
 
 ``ClientSession`` accepts an explicit address (including the port),
 optional gRPC ``credentials``, ``env``, ``role``, ``username``, ``hostname``,
-and reservation ``token``.
+and ``reservation_id``.
+The legacy ``token`` argument remains an alias when ``reservation_id`` is not supplied.
 Identity defaults to the local OS user and hostname.
-It does not read CLI environment defaults such as ``LG_TOKEN`` or ``LG_USERNAME``;
+It does not read CLI environment defaults such as ``LG_RESERVATION``, ``LG_TOKEN``, or ``LG_USERNAME``;
 applications should resolve their settings and pass the values explicitly.
 TLS credentials can be constructed with ``labgrid.remote.common.get_client_credentials``.
 
@@ -61,7 +62,7 @@ Existing classes include ``Place``, ``Reservation``, ``ResourceMatch``, and ``Ta
    )
    reservation = await session.wait_reservation(reservation)
    # Inspect reservation.state and allocations before acquiring a place.
-   place = session.get_place("+" + reservation.token)
+   place = session.get_place("+" + reservation.id)
    place = await session.acquire_place(place, allow_unmatched=False)
    try:
        target = session.get_target(place)
@@ -75,7 +76,7 @@ Existing classes include ``Place``, ``Reservation``, ``ResourceMatch``, and ``Ta
 Waiting can also finish with an expired or invalid reservation,
 so callers must inspect the returned state.
 Before returning, it synchronizes the place cache
-so an allocated reservation can be looked up by token immediately.
+so an allocated reservation can be looked up by ID immediately.
 Synchronization failure raises ``ServerError``.
 Wrap waiting in ``asyncio.wait_for`` when a deadline is needed.
 
@@ -138,6 +139,8 @@ A compatibility import remains in ``labgrid.remote.client``,
 along with its legacy ``start_session`` helper for existing connection callers.
 The legacy helper still accepts ``extra`` for connection settings
 and resolves the CLI environment defaults.
+It prefers ``LG_RESERVATION`` over the deprecated ``LG_TOKEN``.
+Reservation objects expose their identifier as ``id`` rather than ``token``.
 New integrations should use explicit parameters with the session module helper.
 
 Replace fake ``argparse.Namespace`` objects and CLI method overrides with calls

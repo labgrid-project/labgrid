@@ -3,6 +3,7 @@
 import asyncio
 import inspect
 import traceback
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import grpc
@@ -16,6 +17,7 @@ from labgrid.remote.generated import labgrid_coordinator_pb2 as pb2
 from labgrid.remote.session import ClientSession, ReservationFilter, ServerError, Tag, UserError
 from labgrid.resource.common import ResourceManager
 from labgrid.resource.remote import RemotePlace
+from labgrid.util.loop import ensure_event_loop
 
 
 @pytest.fixture
@@ -71,6 +73,32 @@ def test_public_session_contract():
     assert client.ClientSession is ClientSession
     assert client.ClientCommands.console.needs_target
     assert client.ClientCommands.export.needs_target
+    assert session_module.ensure_event_loop is ensure_event_loop
+    assert client.ensure_event_loop is ensure_event_loop
+
+
+@pytest.mark.parametrize("secure", [False, True])
+def test_session_channel_sends_explicit_identity(session, monkeypatch, secure):
+    channel = MagicMock(close=AsyncMock())
+    factory = MagicMock(return_value=channel)
+    monkeypatch.setattr(session_module.grpc.aio, "secure_channel" if secure else "insecure_channel", factory)
+    credentials = grpc.ssl_channel_credentials() if secure else None
+    connection = ClientSession(
+        "unused:20408", session.loop, credentials=credentials, username="alice", hostname="benchpc"
+    )
+    try:
+        interceptors = factory.call_args.kwargs["interceptors"]
+        assert len(interceptors) == 2
+        assert isinstance(interceptors[0], grpc.aio.UnaryUnaryClientInterceptor)
+        assert isinstance(interceptors[1], grpc.aio.StreamStreamClientInterceptor)
+        for interceptor in interceptors:
+            details = SimpleNamespace(metadata=grpc.aio.Metadata())
+            interceptor._inject(details)
+            assert details.metadata["x-lg-name"] == "alice"
+            assert details.metadata["x-lg-hostname"] == "benchpc"
+            assert details.metadata["x-lg-user-agent"].startswith("labgrid-client ")
+    finally:
+        run(session, connection.close())
 
 
 def test_missing_place_name_has_separate_cli_guidance(session):
@@ -237,6 +265,7 @@ def test_explicit_lookup_and_identity(session, monkeypatch):
     monkeypatch.setenv("LG_USERNAME", "other")
     monkeypatch.setenv("LG_HOSTNAME", "other")
     monkeypatch.setenv("LG_TOKEN", "wrong")
+    monkeypatch.setenv("LG_RESERVATION", "wrong")
     place = session.places["bench"]
     place.aliases.add("tester:mine")
     place.reservation = "test-token"
@@ -249,6 +278,15 @@ def test_explicit_lookup_and_identity(session, monkeypatch):
     assert session.list_places() == (place,)
     assert session.list_places(acquired=True) == ()
     assert session.list_places(released=True) == (place,)
+
+
+def test_reservation_id_takes_precedence_over_legacy_token(session):
+    place = session.places["bench"]
+    place.reservation = "current-id"
+    session.places["other"] = Place("other", reservation="legacy-id")
+    session.reservation_id = "current-id"
+    session.token = "legacy-id"
+    assert session.get_place("+") is place
 
 
 def test_acquire_and_release_return_synchronized_live_place(session, capsys):
@@ -368,12 +406,12 @@ def test_reservation_domain_results(session, capsys):
     session.stub.GetReservations.return_value = pb2.GetReservationsResponse(reservations=[message])
     result = run(session, session.create_reservation((ReservationFilter("main", (Tag("board", "test"),)),), 2.0))
     assert isinstance(result, Reservation)
-    assert result.token == message.token
+    assert result.id == message.token
     request = session.stub.CreateReservation.call_args.args[0]
     assert dict(request.filters["main"].filter) == {"board": "test"}
     assert request.prio == 2.0
     assert run(session, session.poll_reservation(result)).state is ReservationState.allocated
-    assert run(session, session.wait_reservation(result)).token == message.token
+    assert run(session, session.wait_reservation(result)).id == message.token
     assert isinstance(run(session, session.list_reservations())[0], Reservation)
     assert run(session, session.cancel_reservation(result)) is None
     assert session.stub.CancelReservation.call_args.args[0].token == message.token
@@ -420,7 +458,7 @@ def test_wait_reservation_synchronizes_pending_place_updates(session):
         try:
             result = await session.wait_reservation("test-token")
             assert result.state is ReservationState.allocated
-            assert session.get_place("+" + result.token) is session.places["bench"]
+            assert session.get_place("+" + result.id) is session.places["bench"]
         finally:
             await session.stop()
 
@@ -654,7 +692,16 @@ def test_cli_shell_reservation_output(session, capsys):
     session.stub.CreateReservation.return_value = pb2.CreateReservationResponse(reservation=reservation_message())
     cli = commands(session, "reserve", "--shell", "board=test")
     run(session, cli.create_reservation())
-    assert capsys.readouterr() == ("export LG_TOKEN=test-token\n", "")
+    assert capsys.readouterr() == ("export LG_RESERVATION=test-token\nexport LG_TOKEN=test-token\n", "")
+
+
+@pytest.mark.parametrize("command", ["wait", "cancel-reservation"])
+def test_cli_reservation_commands_forward_reservation_id(session, command):
+    session.stub.PollReservation.return_value = pb2.PollReservationResponse(reservation=reservation_message())
+    cli = commands(session, command, "current-id")
+    run(session, cli.args.func(cli))
+    rpc = session.stub.PollReservation if command == "wait" else session.stub.CancelReservation
+    assert rpc.await_args.args[0].token == "current-id"
 
 
 @pytest.mark.parametrize(
@@ -813,6 +860,7 @@ def test_failed_start_closes_channel(session, monkeypatch):
 
 
 def test_legacy_connection_helper_resolves_cli_defaults(monkeypatch):
+    monkeypatch.delenv("LG_RESERVATION", raising=False)
     monkeypatch.setenv("LG_USERNAME", "tester")
     monkeypatch.setenv("LG_HOSTNAME", "testhost")
     monkeypatch.setenv("LG_TOKEN", "test-token")
@@ -822,7 +870,17 @@ def test_legacy_connection_helper_resolves_cli_defaults(monkeypatch):
     options = start.call_args.kwargs
     assert options["username"] == "tester"
     assert options["hostname"] == "testhost"
-    assert options["token"] == "test-token"
+    assert options["reservation_id"] == "test-token"
     assert options["role"] == "main"
     assert "args" not in options
     assert "prog" not in options
+
+
+def test_legacy_connection_helper_prefers_reservation_id(monkeypatch, capsys):
+    monkeypatch.setenv("LG_RESERVATION", "current-id")
+    monkeypatch.setenv("LG_TOKEN", "legacy-id")
+    start = MagicMock()
+    monkeypatch.setattr(client, "start_library_session", start)
+    client.start_session("unused")
+    assert start.call_args.kwargs["reservation_id"] == "current-id"
+    assert "LG_RESERVATION and deprecated LG_TOKEN are set to different values" in capsys.readouterr().err

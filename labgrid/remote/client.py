@@ -40,9 +40,7 @@ from .common import (
     ResourceMatch,
     get_client_credentials,
 )
-from .session import (
-    ClientSession as ClientSession,
-)
+from .session import ClientSession as ClientSession  # pylint: disable=unused-import
 from .session import (
     Error,
     ErrorGroup,
@@ -56,12 +54,8 @@ from .session import (
     Tag,
     UserError,
 )
-from .session import (
-    ensure_event_loop as ensure_event_loop,
-)
-from .session import (
-    start_session as start_library_session,
-)
+from .session import ensure_event_loop as ensure_event_loop  # pylint: disable=unused-import
+from .session import start_session as start_library_session
 
 # This is a workaround for https://github.com/grpc/grpc/issues/38679.
 # Since Python 3.12, gRPC can print an empty exception during shutdown.
@@ -408,7 +402,8 @@ class ClientCommands:
             )
             hint = "To work simultaneously, "
             hint += (
-                f"execute {command}" if isinstance(exc, PlaceHostMismatchError)
+                f"execute {command}"
+                if isinstance(exc, PlaceHostMismatchError)
                 else f"{exc.owner_user} can execute {command}"
             )
             raise UserError(f"{exc.args[0]} {hint}") from None
@@ -1332,7 +1327,6 @@ class ClientCommands:
 
         scrcpy_cmd += self.args.leftover
         subprocess.run(scrcpy_cmd, env=env_var, check=True)
-
 
 
 ClientCommands.console.needs_target = True

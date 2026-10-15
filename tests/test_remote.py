@@ -1,9 +1,11 @@
 import argparse
+
 import pexpect
 import pytest
+
 from labgrid import Environment, Target
-from labgrid.remote.coordinator import get_server_credentials
 from labgrid.remote.common import get_client_credentials
+from labgrid.remote.coordinator import get_server_credentials
 from labgrid.resource import RemotePlace
 from labgrid.resource.common import ResourceManager
 from labgrid.util.yaml import dump

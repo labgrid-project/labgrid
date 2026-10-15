@@ -14,7 +14,7 @@ from socket import gethostname
 
 import attr
 import grpc
-from exceptiongroup import ExceptionGroup
+from exceptiongroup import ExceptionGroup  # pylint: disable=redefined-builtin
 
 from .. import Environment, Target, target_factory
 from ..resource.remote import RemotePlace, RemotePlaceManager

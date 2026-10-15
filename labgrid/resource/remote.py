@@ -1,9 +1,10 @@
 import copy
 import os
+
 import attr
 
 from ..factory import target_factory
-from .common import NetworkResource, ManagedResource, ResourceManager
+from .common import ManagedResource, NetworkResource, ResourceManager
 
 
 @attr.s(eq=False)

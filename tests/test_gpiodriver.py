@@ -3,9 +3,9 @@ import types
 import labgrid.driver.gpiodriver as gpiodriver
 from labgrid.driver.gpiodriver import GpioDigitalInputDriver, GpioDigitalOutputDriver
 from labgrid.remote.client import ClientCommands
+from labgrid.resource import SysfsGPIO
 from labgrid.resource.common import ResourceManager
 from labgrid.resource.remote import NetworkSysfsGPIO
-from labgrid.resource import SysfsGPIO
 
 
 class FakeWrapper:

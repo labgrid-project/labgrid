@@ -1,3 +1,18 @@
+Release 27.0 (Unreleased)
+-------------------------
+
+New Features in 27.0
+~~~~~~~~~~~~~~~~~~~~~~
+
+- Support for the Joulescope energy analyzer was added via the new
+  ``JoulescopeDriver`` and ``JoulescopeDevice``, which implement the new
+  ``EnergyAnalyzerProtocol`` (statistics, charge/energy accumulation and
+  high-rate sample capture) as well as the ``PowerProtocol``. Install the
+  optional dependency with ``pip install labgrid[joulescope]``. A Joulescope can
+  be shared over the distributed infrastructure: exporting a ``JoulescopeDevice``
+  makes it available to clients as a ``NetworkJoulescopeDevice``, with
+  ``pyjoulescope_driver`` running on the exporting host via the labgrid agent.
+
 Release 26.0 (Released Jun 06, 2026)
 ------------------------------------
 Sponsored by: Analog Devices GmbH

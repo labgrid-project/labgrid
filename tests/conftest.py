@@ -285,6 +285,8 @@ def pytest_addoption(parser):
                      help="Run SSHManager tests against localhost")
     parser.addoption("--ssh-username", default=None,
                      help="SSH username to use for SSHDriver testing")
+    parser.addoption("--joulescope", action="store_true",
+                     help="Run Joulescope tests against a connected device (16d0:*)")
 
 def pytest_configure(config):
     # register an additional marker
@@ -296,6 +298,8 @@ def pytest_configure(config):
                             "sshusername: test SSHDriver against Localhost")
     config.addinivalue_line("markers",
                             "coordinator: test against local coordinator")
+    config.addinivalue_line("markers",
+                            "joulescope: enable tests against a connected Joulescope")
 
 def pytest_runtest_setup(item):
     envmarker = item.get_closest_marker("sigrokusb")
@@ -310,3 +314,7 @@ def pytest_runtest_setup(item):
     if envmarker is not None:
         if item.config.getoption("--ssh-username") is None:
             pytest.skip("SSHDriver tests against localhost not enabled (enable with --ssh-username <username>)")
+    envmarker = item.get_closest_marker("joulescope")
+    if envmarker is not None:
+        if item.config.getoption("--joulescope") is False:
+            pytest.skip("Joulescope tests not enabled (enable with --joulescope)")

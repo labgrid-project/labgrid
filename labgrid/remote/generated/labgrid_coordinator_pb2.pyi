@@ -144,15 +144,23 @@ class ExporterOutMessage(_message.Message):
     set_acquired_request: ExporterSetAcquiredRequest
     def __init__(self, hello: _Optional[_Union[Hello, _Mapping]] = ..., set_acquired_request: _Optional[_Union[ExporterSetAcquiredRequest, _Mapping]] = ...) -> None: ...
 
+class ClientIdentity(_message.Message):
+    __slots__ = ("id",)
+    ID_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    def __init__(self, id: _Optional[str] = ...) -> None: ...
+
 class ExporterSetAcquiredRequest(_message.Message):
-    __slots__ = ("group_name", "resource_name", "place_name")
+    __slots__ = ("group_name", "resource_name", "place_name", "client_identity")
     GROUP_NAME_FIELD_NUMBER: _ClassVar[int]
     RESOURCE_NAME_FIELD_NUMBER: _ClassVar[int]
     PLACE_NAME_FIELD_NUMBER: _ClassVar[int]
+    CLIENT_IDENTITY_FIELD_NUMBER: _ClassVar[int]
     group_name: str
     resource_name: str
     place_name: str
-    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ...) -> None: ...
+    client_identity: ClientIdentity
+    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., client_identity: _Optional[_Union[ClientIdentity, _Mapping]] = ...) -> None: ...
 
 class AddPlaceRequest(_message.Message):
     __slots__ = ("name",)

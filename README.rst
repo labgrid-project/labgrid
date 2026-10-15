@@ -77,6 +77,12 @@ Documentation
 -------------
 labgrid's documentation is hosted on `Read the Docs <http://labgrid.readthedocs.io/en/latest/>`_.
 
+Python integrations can use ``labgrid.remote.session.ClientSession`` directly
+for typed coordinator operations without command-line arguments or terminal
+output. See `the session API guide <doc/client-session.rst>`_ for connection,
+reservation, event, and migration examples. The ``labgrid-client`` command-line
+interface continues to use the same commands and output.
+
 Contributing
 ------------
 See our `Development Docs <http://labgrid.readthedocs.io/en/latest/development.html>`_.

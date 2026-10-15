@@ -23,6 +23,10 @@ psutil = pytest.importorskip("psutil")
 # See also https://github.com/grpc/grpc/blob/master/doc/fork_support.md
 os.environ.setdefault("GRPC_ENABLE_FORK_SUPPORT", "0")
 
+# Most integration tests start coordinator/exporter subprocesses without a
+# collector. Telemetry-specific tests enable the SDK explicitly when needed.
+os.environ.setdefault("OTEL_SDK_DISABLED", "true")
+
 
 @pytest.fixture(scope="session")
 def curses_init():

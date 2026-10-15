@@ -1089,7 +1089,7 @@ class Exporter:
                                 out_message.set_acquired_request.group_name,
                                 out_message.set_acquired_request.resource_name,
                                 "acquired" if out_message.set_acquired_request.place_name else "released",
-                                out_message.set_acquired_request.acquirer_identity,
+                                out_message.set_acquired_request.client_identity.id,
                             )
                         if reason:
                             in_message.response.reason = reason

@@ -1,5 +1,15 @@
+Release 26.0.2 (Unreleased)
+---------------------------
+
+Bug fixes in 26.0.2
+~~~~~~~~~~~~~~~~~~~
+
 Release 26.0.1 (Released Oct 14, 2026)
 --------------------------------------
+- Fix ability to use the ``RawNetworkInterfaceDriver``'s network namespace
+  with a non-remote ``NetworkInterfaces`` instance by updating
+  ``RawNetworkInterfaceDriver`` to return a ``DefaultNetNamespace`` object
+  in such cases.
 
 Bug fixes in 26.0.1
 ~~~~~~~~~~~~~~~~~~~

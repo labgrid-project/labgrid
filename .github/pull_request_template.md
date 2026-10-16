@@ -15,7 +15,18 @@ This checklist roughly outlines the steps for new features, remove and add tasks
 --->
 **Checklist**
 - [ ] Documentation for the feature
-- [ ] Tests for the feature 
+- [ ] Tests for the feature
+<!--
+Release notes are managed using reno. To make a release note template for your
+PR, run the command:
+
+    reno new SLUG
+
+Where `SLUG` is a descriptive-title-for-your-change (e.g.
+"add-new-foo-driver"). Then open the releasenotes/notes/SLUG-*.yaml file that
+is generated and follow the instructions inside it to create the release notes.
+-->
+- [ ] Release notes added
 <!---
 If you add a driver/resource or modify one:
 --->

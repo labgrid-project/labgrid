@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Release notes are now managed using `reno <https://docs.openstack.org/reno/latest/user/index.html>`__
+
+    To create release notes with your PR, use ``reno new <SLUG>``

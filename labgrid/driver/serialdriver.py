@@ -82,7 +82,10 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
         reading = max(size, self.serial.in_waiting)
         if max_size:  # limit reading to max_size if provided
             reading = min(reading, max_size)
-        self.serial.timeout = timeout
+        # TODO: remove check once pyserial includes https://github.com/pyserial/pyserial/pull/382
+        # in a release
+        if self.serial.timeout != timeout:
+            self.serial.timeout = timeout
         res = self.serial.read(reading)
         if not res:
             raise TIMEOUT(f"Timeout of {timeout:.2f} seconds exceeded or connection closed by peer")

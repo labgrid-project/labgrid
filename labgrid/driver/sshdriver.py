@@ -9,8 +9,10 @@ import subprocess
 import tempfile
 import time
 from functools import cached_property
+from contextlib import contextmanager
 
 import attr
+import pexpect
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, FileTransferProtocol
@@ -22,6 +24,126 @@ from ..util.helper import get_free_port
 from ..util.proxy import proxymanager
 from ..util.timeout import Timeout
 from ..util.ssh import get_ssh_connect_timeout
+
+
+class SSHDriverProcess:
+    def __init__(self, sub):
+        self._sub = sub
+
+    @property
+    def exitcode(self):
+        if self._sub.isalive():
+            return None
+
+        if self._sub.exitstatus is None:
+            return -self._sub.signalstatus
+        return self._sub.exitstatus
+
+    def read(self, size=1, timeout=-1):
+        return self._sub.read_nonblocking(size, timeout)
+
+    def read_full(self, size=-1, *, timeout=30):
+        """
+        Reads bytes until either size bytes have been read, timeout seconds
+        have elapsed, or EOF is encountered. Returns as many bytes as were read
+        until that happens.
+
+        If size is -1, read as much data as possible until either the timeout
+        or EOF is encountered.
+        """
+        t = Timeout(timeout)
+        buf = b""
+
+        while not t.expired:
+            read_size = size - len(buf) if size >= 0 else 64
+            if read_size <= 0:
+                break
+
+            try:
+                buf += self.read(read_size, t.remaining)
+            except pexpect.EOF:
+                break
+            except pexpect.TIMEOUT:
+                pass
+
+        return buf
+
+    def read_to_end(self, *, timeout=30):
+        """
+        Read until EOF is encountered and return the resulting data. If the
+        timeout expires before EOF, a TIMEOUT error is raised
+
+        If an exception is raised, any data read is lost
+        """
+        t = Timeout(timeout)
+        buf = b""
+
+        while True:
+            try:
+                buf += self.read(64, t.remaining)
+            except pexpect.EOF:
+                break
+
+        return buf
+
+    def read_exact(self, size, *, timeout=30):
+        """
+        Read exactly size bytes. If the timeout elapses before size bytes are
+        read, a pexpect.TIMEOUT error is raised. If EOF is encountered before
+        size bytes are read, an pexpect.EOF error is raised
+
+        If an exception is raised, any data read is lost
+        """
+        t = Timeout(timeout)
+        buf = b""
+
+        while len(buf) < size:
+            buf += self.read(size - len(buf), t.remaining)
+
+        return buf
+
+    @step(args=["data"])
+    def write(self, data):
+        self._sub.write(data)
+
+    @step(result=True)
+    def poll(self):
+        return self.exitcode
+
+    @step(result=True)
+    def stop(self):
+        """
+        Stops the running command, which will receive a SIGHUP
+
+        Note that not all processes will terminate on SIGHUP, specially if the
+        fork or daemonize.
+        """
+        self._sub.close(True)
+
+    @step(args=["pattern", "timeout"], result=True)
+    def expect(self, pattern, *, timeout=-1):
+        index = self._sub.expect(pattern, timeout=timeout)
+        return index, self._sub.before, self._sub.match, self._sub.after
+
+    @step(result=True)
+    def wait(self):
+        """
+        Waits for the process to terminate and returns the exit code
+
+        Note that if the process never exits, this will wait forever
+        """
+        return self._sub.wait()
+
+    @step(args=["char"])
+    def sendcontrol(self, char):
+        self._sub.sendcontrol(char)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, typ, value, traceback):
+        self.stop()
+        return False
 
 
 @target_factory.reg_driver
@@ -46,6 +168,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._scp = self._get_tool("scp")
         self._sshfs = self._get_tool("sshfs")
         self._rsync = self._get_tool("rsync")
+        self._processes = []
 
     def _get_tool(self, name):
         if self.target.env:
@@ -87,6 +210,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
         self._start_keepalive()
 
     def on_deactivate(self):
+        assert not self._processes, "Deactivating while a command process is running is not allowed"
         try:
             self._stop_keepalive()
         finally:
@@ -249,6 +373,39 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
             stderr.pop()
         return (stdout, stderr, sub.returncode)
 
+    @Driver.check_active
+    @step(args=['cmd'])
+    @contextmanager
+    def start_process(self, cmd: str):
+        """Execute ``cmd`` on the target as a process in a pseudo-terminal (PTY)
+
+        The pseudo-terminal used by SSH merges stdout and stderr into a
+        single output stream.
+        """
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        cmd = f"stty -echo; {cmd}"
+        complete_cmd = [self._ssh, "-o", "LogLevel=QUIET", "-x", *self.ssh_prefix,
+                        "-p", str(self.networkservice.port), "-l", self._get_username(),
+                        self.networkservice.address, "-tt", "--", '/bin/sh -c {}'.format(shlex.quote(cmd)),
+                        ]
+        self.logger.debug("Sending command: %s", complete_cmd)
+
+        try:
+            sub = pexpect.spawn(complete_cmd[0], complete_cmd[1:], echo=False)
+        except:
+            raise ExecutionError(
+                "error executing command: {}".format(complete_cmd)
+            )
+
+        with SSHDriverProcess(sub) as p:
+            self._processes.append(p)
+            try:
+                yield p
+            finally:
+                self._processes.remove(p)
+
     def interact(self, cmd=None):
         assert cmd is None or isinstance(cmd, list)
 
@@ -384,7 +541,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
                 "-o", f"ControlPath={self.control.replace('%', '%%')}",
                 src, dst,
         ]
-        
+
         if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
             complete_cmd.insert(1, "-s")
         if self.explicit_scp_mode and self._scp_supports_explicit_scp_mode():

@@ -973,7 +973,9 @@ class USBDebugger(USBResource):
                          ("064b", "2504"),  # Analog Devices Onboard Debug Agent
                          ("064b", "2507"),  # Analog Devices Onboard Debug Agent
                          ("064b", "2508"),  # Analog Devices Onboard Debug Agent
-                         ("064b", "250A"),  # Analog Devices Onboard Debug Agent
+                         ("064b", "250a"),  # Analog Devices Onboard Debug Agent
+                         ("064b", "250c"),  # Analog Devices Onboard Debug Agent
+                         ("064b", "250d"),  # Analog Devices Onboard Debug Agent
                          ]:
             return False
 

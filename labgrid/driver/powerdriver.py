@@ -75,7 +75,7 @@ class SiSPMPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             self.tool = 'sispmctl'
 
     def _get_sispmctl_prefix(self):
-        return self.port.command_prefix + [
+        return [
             self.tool,
             "-U", f"{self.port.busnum:03d}:{self.port.devnum:03d}",
         ]
@@ -84,13 +84,13 @@ class SiSPMPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     @step()
     def on(self):
         cmd = ['-o', str(self.port.index)]
-        processwrapper.check_output(self._get_sispmctl_prefix() + cmd)
+        processwrapper.check_wrapped_output(self.port, self._get_sispmctl_prefix() + cmd)
 
     @Driver.check_active
     @step()
     def off(self):
         cmd = ['-f', str(self.port.index)]
-        processwrapper.check_output(self._get_sispmctl_prefix() + cmd)
+        processwrapper.check_wrapped_output(self.port, self._get_sispmctl_prefix() + cmd)
 
     @Driver.check_active
     @step()
@@ -103,7 +103,7 @@ class SiSPMPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     @step()
     def get(self):
         cmd = ['-q', '-g', str(self.port.index)]
-        output = processwrapper.check_output(self._get_sispmctl_prefix() + cmd)
+        output = processwrapper.check_wrapped_output(self.port, self._get_sispmctl_prefix() + cmd)
         if output.strip() == b"on":
             return True
         if output.strip() == b"off":
@@ -287,12 +287,12 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
     def on_activate(self):
         # Search for the model of the YKUSH device
         for model in ["ykush", "ykushxs", "ykush3"]:
-            cmd = self.port.command_prefix + [
+            cmd = [
                 self.tool,
                 model,
                 "-l"
             ]
-            output = processwrapper.check_output(cmd)
+            output = processwrapper.check_wrapped_output(self.port, cmd)
             if self.port.serial in output.decode("utf-8"):
                 self.model = model
                 break
@@ -308,7 +308,7 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             "-s", f"{self.port.serial}",
             "-u", f"{self.port.index}"
         ]
-        processwrapper.check_output(self.port.command_prefix + cmd)
+        processwrapper.check_wrapped_output(self.port, cmd)
 
     @Driver.check_active
     @step()
@@ -319,7 +319,7 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             "-s", f"{self.port.serial}",
             "-d", f"{self.port.index}"
         ]
-        processwrapper.check_output(self.port.command_prefix + cmd)
+        processwrapper.check_wrapped_output(self.port, cmd)
 
     @Driver.check_active
     @step()
@@ -336,7 +336,7 @@ class YKUSHPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             "-s", f"{self.port.serial}",
             "-g", f"{self.port.index}"
         ]
-        res = processwrapper.check_output(self.port.command_prefix + cmd)
+        res = processwrapper.check_wrapped_output(self.port, cmd)
         res = res.decode("utf-8")
 
         # the example of ykushcmd -g like below:
@@ -368,14 +368,14 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
             self.tool = 'uhubctl'
 
     def _switch(self, cmd):
-        cmd = self.hub.command_prefix + [
+        cmd = [
             self.tool,
             "-l", self.hub.path,
             "-p", str(self.hub.index),
             "-r", "100", # use 100 retries for now
             "-a", cmd,
         ]
-        processwrapper.check_output(cmd)
+        processwrapper.check_wrapped_output(self.hub, cmd)
 
     @Driver.check_active
     @step()
@@ -396,12 +396,12 @@ class USBPowerDriver(Driver, PowerResetMixin, PowerProtocol):
 
     @Driver.check_active
     def get(self):
-        cmd = self.hub.command_prefix + [
+        cmd = [
             self.tool,
             "-l", self.hub.path,
             "-p", str(self.hub.index),
         ]
-        output = processwrapper.check_output(cmd)
+        output = processwrapper.check_wrapped_output(self.hub, cmd)
         for line in output.splitlines():
             if not line or not line.startswith(b' '):
                 continue

@@ -1,10 +1,15 @@
 import asyncio
+import signal
+from time import monotonic, sleep
 from types import SimpleNamespace
 
 import grpc
 import pytest
-import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
+from grpc_health.v1 import health, health_pb2, health_pb2_grpc
+from grpc_reflection.v1alpha import reflection_pb2, reflection_pb2_grpc
+
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
+import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 from labgrid.remote.common import Place
 from labgrid.remote.coordinator import Coordinator, ExporterError, ResourceImport
 
@@ -97,8 +102,91 @@ def coordinator_place(channel_stub):
     return channel_stub
 
 
+@pytest.fixture(scope="function")
+def health_stub(coordinator):
+    with grpc.insecure_channel("127.0.0.1:20408") as channel:
+        yield health_pb2_grpc.HealthStub(channel)
+
+
 def test_startup(coordinator):
     pass
+
+
+@pytest.mark.parametrize("service_name", ["", "labgrid.Coordinator"])
+def test_coordinator_health_check(health_stub, channel_stub, service_name):
+    request = health_pb2.HealthCheckRequest(service=service_name)
+    assert health_stub.Check(request, timeout=5).status == health_pb2.HealthCheckResponse.SERVING
+    # Ordinary RPCs remain available without requiring an exporter or devices.
+    channel_stub.AddPlace(labgrid_coordinator_pb2.AddPlaceRequest(name="health-test"), timeout=5)
+    assert health_stub.Check(request, timeout=5).status == health_pb2.HealthCheckResponse.SERVING
+
+
+def test_coordinator_health_check_unknown_service(health_stub):
+    with pytest.raises(grpc.RpcError) as excinfo:
+        health_stub.Check(health_pb2.HealthCheckRequest(service="missing"), timeout=5)
+    assert excinfo.value.code() == grpc.StatusCode.NOT_FOUND
+
+
+@pytest.mark.parametrize(
+    "service_name, expected_status",
+    [
+        ("", health_pb2.HealthCheckResponse.SERVING),
+        ("labgrid.Coordinator", health_pb2.HealthCheckResponse.SERVING),
+        ("missing", health_pb2.HealthCheckResponse.SERVICE_UNKNOWN),
+    ],
+)
+def test_coordinator_health_watch(health_stub, service_name, expected_status):
+    stream = health_stub.Watch(health_pb2.HealthCheckRequest(service=service_name), timeout=5)
+    try:
+        assert next(stream).status == expected_status
+        assert stream.is_active()
+    finally:
+        stream.cancel()
+    with pytest.raises(grpc.RpcError) as excinfo:
+        next(stream)
+    assert excinfo.value.code() == grpc.StatusCode.CANCELLED
+    assert not stream.is_active()
+
+
+@pytest.mark.parametrize("service_name", ["", "labgrid.Coordinator"])
+def test_coordinator_health_watch_shutdown(coordinator, health_stub, service_name):
+    stream = health_stub.Watch(health_pb2.HealthCheckRequest(service=service_name), timeout=10)
+    try:
+        assert next(stream).status == health_pb2.HealthCheckResponse.SERVING
+        coordinator.spawn.kill(signal.SIGTERM)
+        assert next(stream).status == health_pb2.HealthCheckResponse.NOT_SERVING
+        # Keep the Watch open to exercise the server's bounded grace period.
+        with pytest.raises(grpc.RpcError) as excinfo:
+            next(stream)
+        assert excinfo.value.code() == grpc.StatusCode.UNAVAILABLE
+    finally:
+        stream.cancel()
+
+    deadline = monotonic() + 5
+    while coordinator.isalive() and monotonic() < deadline:
+        sleep(0.1)
+    assert not coordinator.isalive()
+    assert coordinator.exitstatus == 0
+    # A stopped server gives a transport error, not a health response.
+    with grpc.insecure_channel("127.0.0.1:20408") as channel:
+        stub = health_pb2_grpc.HealthStub(channel)
+        with pytest.raises(grpc.RpcError) as excinfo:
+            stub.Check(health_pb2.HealthCheckRequest(service=service_name), timeout=2)
+        assert excinfo.value.code() == grpc.StatusCode.UNAVAILABLE
+
+
+def test_coordinator_health_reflection(coordinator):
+    with grpc.insecure_channel("127.0.0.1:20408") as channel:
+        stub = reflection_pb2_grpc.ServerReflectionStub(channel)
+        stream = stub.ServerReflectionInfo(iter([reflection_pb2.ServerReflectionRequest(list_services="")]), timeout=5)
+        try:
+            response = next(stream)
+            assert response.HasField("list_services_response")
+            services = {service.name for service in response.list_services_response.service}
+            assert health.SERVICE_NAME in services
+            assert "labgrid.Coordinator" in services
+        finally:
+            stream.cancel()
 
 
 def test_coordinator_add_place(coordinator, channel_stub):

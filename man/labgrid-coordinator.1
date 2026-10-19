@@ -63,6 +63,37 @@ path to TLS key (in PEM format)
 .B  \-d\fP,\fB  \-\-debug
 enable debug mode
 .UNINDENT
+.SS HEALTH CHECKING
+.sp
+The \fBgrpc.health.v1.Health\fP service reports the same status for both the
+\fB\(dq\(dq\fP and \fBlabgrid.Coordinator\fP services.
+\fBSERVING\fP means the Coordinator is ready to service RPCs.
+\fBNOT_SERVING\fP means the Coordinator is in the process of startup or graceful shutdown.
+.sp
+Check a plaintext listener with \X'tty: link https://github.com/fullstorydev/grpcurl'\fI\%grpcurl\fP\X'tty: link':
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+$ grpcurl \-plaintext \-d \(aq{\(dqservice\(dq:\(dq\(dq}\(aq 127.0.0.1:20408 grpc.health.v1.Health/Check
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+Watch status changes on a plaintext listener:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+$ grpcurl \-plaintext \-d \(aq{\(dqservice\(dq:\(dq\(dq}\(aq 127.0.0.1:20408 grpc.health.v1.Health/Watch
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+For TLS, replace \fB\-plaintext\fP with the appropriate TLS options.
+\fBCheck\fP returns the current status; \fBWatch\fP streams the initial status and
+changes. Unknown names return gRPC \fBNOT_FOUND\fP from \fBCheck\fP or
+\fBSERVICE_UNKNOWN\fP from \fBWatch\fP, which stays open.
 .SS TLS WITH A REVERSE PROXY
 .sp
 Instead of enabling TLS in \fBlabgrid\-coordinator\fP directly, a reverse proxy can

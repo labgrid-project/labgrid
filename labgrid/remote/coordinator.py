@@ -17,6 +17,7 @@ import os
 import attr
 import cel
 import grpc
+from grpc_health.v1 import health, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
 from labgrid.remote.identity import ClientIdentity, infer_peer_identity
@@ -34,6 +35,7 @@ from .common import (
 from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
+from .grpc.health import HealthServicer
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
 from .otel import (
     record_reservation_wait_duration,
@@ -1850,10 +1852,15 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
     coordinator = Coordinator()
     setup_otel_metrics(coordinator)
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
+    coordinator_service_name = labgrid_coordinator_pb2.DESCRIPTOR.services_by_name["Coordinator"].full_name
+    # the empty name is explicitly maintained server liveness
+    health_servicer = await HealthServicer.create(("", coordinator_service_name))
+    health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
     # enable reflection for use with grpcurl
     reflection.enable_server_reflection(
         (
-            labgrid_coordinator_pb2.DESCRIPTOR.services_by_name["Coordinator"].full_name,
+            coordinator_service_name,
+            health.SERVICE_NAME,
             reflection.SERVICE_NAME,
         ),
         server,
@@ -1880,6 +1887,7 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
 
     async def server_graceful_shutdown():
         logging.info("Starting graceful shutdown...")
+        await health_servicer.enter_graceful_shutdown()
         # Shuts down the server with 0 seconds of grace period. During the
         # grace period, the server won't accept new connections and allow
         # existing RPCs to continue within the grace period.
@@ -1892,6 +1900,8 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
     loop = asyncio.get_event_loop()
     loop.add_signal_handler(signal.SIGINT, callback)
     loop.add_signal_handler(signal.SIGTERM, callback)
+    # SERVING reports RPC availability, not exporter or device readiness.
+    await health_servicer.mark_serving()
     logging.info("Coordinator ready")
     host, sep, port = listen.rpartition(":")
     if not sep or not port.isdigit():

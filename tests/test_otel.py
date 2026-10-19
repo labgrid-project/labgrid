@@ -1,16 +1,125 @@
+import asyncio
 import importlib
 import queue
 from time import sleep, time
+from types import SimpleNamespace
 
 import grpc
 import pytest
+import pytest_asyncio
 import requests
+from grpc_health.v1 import health_pb2, health_pb2_grpc
 
+from labgrid.remote.coordinator import Coordinator
+from labgrid.remote.grpc.health import HealthServicer
 from labgrid.remote.generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from labgrid.util import get_free_port
 
 pytest.importorskip("opentelemetry.exporter.prometheus")
 prometheus_parser = pytest.importorskip("prometheus_client.parser")
+
+
+@pytest_asyncio.fixture
+async def instrumented_health_server():
+    from opentelemetry.instrumentation.grpc import aio_server_interceptor
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+    provider = TracerProvider()
+    exporter = InMemorySpanExporter()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    server = grpc.aio.server(interceptors=[aio_server_interceptor(tracer_provider=provider)])
+    servicer = HealthServicer()
+    for name in ("", "labgrid.Coordinator"):
+        await servicer.set(name, health_pb2.HealthCheckResponse.SERVING)
+    health_pb2_grpc.add_HealthServicer_to_server(servicer, server)
+    coordinator = Coordinator.__new__(Coordinator)
+    coordinator.lock = asyncio.Lock()
+    coordinator.places = {}
+    labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
+    port = server.add_insecure_port("127.0.0.1:0")
+    try:
+        await server.start()
+        async with grpc.aio.insecure_channel(f"127.0.0.1:{port}") as channel:
+            yield SimpleNamespace(
+                server=server,
+                servicer=servicer,
+                health=health_pb2_grpc.HealthStub(channel),
+                coordinator=labgrid_coordinator_pb2_grpc.CoordinatorStub(channel),
+                exporter=exporter,
+            )
+    finally:
+        await server.stop(0)
+        provider.shutdown()
+
+
+async def wait_for_rpc_spans(exporter, *methods):
+    # The client can observe termination before the interceptor exports its span.
+    async def wait():
+        while not set(methods) <= {span.attributes.get("rpc.method") for span in exporter.get_finished_spans()}:
+            await asyncio.sleep(0.01)
+
+    await asyncio.wait_for(wait(), timeout=2)
+
+
+@pytest.mark.asyncio
+async def test_health_and_coordinator_rpcs_with_grpc_instrumentation(instrumented_health_server):
+    service = instrumented_health_server
+    response = await service.health.Check(health_pb2.HealthCheckRequest(), timeout=2)
+    assert response.status == health_pb2.HealthCheckResponse.SERVING
+    places = await service.coordinator.GetPlaces(labgrid_coordinator_pb2.GetPlacesRequest(), timeout=2)
+    assert not places.places
+    await wait_for_rpc_spans(service.exporter, "Check", "GetPlaces")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("service_name", ["", "labgrid.Coordinator", "missing"])
+async def test_health_watch_with_grpc_instrumentation(instrumented_health_server, service_name):
+    service = instrumented_health_server
+    stream = service.health.Watch(health_pb2.HealthCheckRequest(service=service_name), timeout=5)
+    expected = (
+        health_pb2.HealthCheckResponse.SERVICE_UNKNOWN
+        if service_name == "missing"
+        else health_pb2.HealthCheckResponse.SERVING
+    )
+    assert (await stream.read()).status == expected
+    if service_name == "missing":
+        await service.servicer.set(service_name, health_pb2.HealthCheckResponse.SERVING)
+        assert (await stream.read()).status == health_pb2.HealthCheckResponse.SERVING
+    await service.servicer.enter_graceful_shutdown()
+    assert (await stream.read()).status == health_pb2.HealthCheckResponse.NOT_SERVING
+    stopping = asyncio.create_task(service.server.stop(0.2))
+    try:
+        with pytest.raises(grpc.aio.AioRpcError) as excinfo:
+            await stream.read()
+        assert excinfo.value.code() == grpc.StatusCode.UNAVAILABLE
+    finally:
+        await stopping
+    await wait_for_rpc_spans(service.exporter, "Watch")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("service_name", ["", "labgrid.Coordinator", "missing"])
+@pytest.mark.parametrize("termination", ["cancel", "deadline"])
+async def test_health_watch_termination_with_grpc_instrumentation(
+    instrumented_health_server, service_name, termination
+):
+    service = instrumented_health_server
+    stream = service.health.Watch(
+        health_pb2.HealthCheckRequest(service=service_name), timeout=0.5 if termination == "deadline" else 5
+    )
+    # Establish the stream before cancelling it or waiting for its deadline.
+    await stream.read()
+    if termination == "cancel":
+        stream.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await stream.read()
+    else:
+        with pytest.raises(grpc.aio.AioRpcError) as excinfo:
+            await stream.read()
+        assert excinfo.value.code() == grpc.StatusCode.DEADLINE_EXCEEDED
+    await wait_for_rpc_spans(service.exporter, "Watch")
 
 
 @pytest.fixture

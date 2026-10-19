@@ -1,12 +1,13 @@
 import asyncio
+import time
 from types import SimpleNamespace
 
 import grpc
 import pytest
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
-from labgrid.remote.common import Place
-from labgrid.remote.coordinator import Coordinator, ExporterError, ResourceImport
+from labgrid.remote.common import Place, Reservation, ReservationState
+from labgrid.remote.coordinator import Coordinator, CoordinatorError, ExporterError, ResourceImport
 
 
 class FakeExporterCommandQueue:
@@ -299,3 +300,73 @@ def test_coordinator_create_reservation(coordinator, coordinator_place):
     assert res
     res: labgrid_coordinator_pb2.CreateReservationResponse
     assert len(res.reservation.token) > 0
+
+
+class ReservationAcquireAbortError(Exception):
+    pass
+
+
+class ReservationAcquireContext:
+    def peer(self):
+        return "test-peer"
+
+    def invocation_metadata(self):
+        return ()
+
+    async def abort(self, code, details):
+        raise ReservationAcquireAbortError(details)
+
+
+def make_coordinator_with_reserved_place():
+    coordinator = Coordinator.__new__(Coordinator)
+    coordinator.lock = asyncio.Lock()
+    coordinator.clients = {"test-peer": SimpleNamespace(name="testuser", queue=asyncio.Queue())}
+    coordinator.exporters = {}
+    coordinator.places = {}
+    coordinator.reservations = {}
+    coordinator.save_scheduled = False
+    coordinator.reservation_retry_cooldown = 60.0
+    coordinator.reservation_place_cooldowns = {}
+
+    reservation = Reservation(
+        owner="testuser",
+        id="reservation-id",
+        state=ReservationState.allocated,
+        filters={"main": {"board": "test"}},
+        allocations={"main": ["test"]},
+        timeout=time.time() + 60,
+    )
+    place = Place("test", tags={"board": "test"}, reservation=reservation.id)
+    coordinator.reservations[reservation.id] = reservation
+    coordinator.places[place.name] = place
+    return coordinator, reservation, place
+
+
+def test_acquire_failure_returns_reservation_to_waiting_and_cools_place():
+    async def fail_acquire(_place, _resources):
+        raise CoordinatorError("acquire failed")
+
+    async def run_test():
+        coordinator, reservation, place = make_coordinator_with_reserved_place()
+        coordinator._acquire_resources = fail_acquire
+
+        with pytest.raises(ReservationAcquireAbortError, match="Failed to acquire resources"):
+            await coordinator.AcquirePlace(
+                labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name),
+                ReservationAcquireContext(),
+            )
+
+        assert reservation.state is ReservationState.waiting
+        assert reservation.allocations == {}
+        assert place.reservation is None
+        assert place.acquired is None
+        assert place.name in coordinator.reservation_place_cooldowns
+
+        async with coordinator.lock:
+            coordinator.schedule_reservations()
+
+        assert reservation.state is ReservationState.waiting
+        assert reservation.allocations == {}
+        assert place.reservation is None
+
+    asyncio.run(run_test())

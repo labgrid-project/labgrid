@@ -6,6 +6,7 @@ from jwcrypto import jwk
 from jwt import PyJWK
 from pydantic import BaseModel
 
+from labgrid.remote.auth.plugin import USER_AGENT_KEY, clientidentity_from_plugin
 from labgrid.remote.auth.capability import Capability
 from labgrid.remote.auth.coordinator import ServerConfig, OAuth2JWTClaims
 from labgrid.remote.auth.coordinator.jwt import JWTKeyFetcher
@@ -30,6 +31,13 @@ class _StaticKeyFetcher(JWTKeyFetcher):
 
     def __call__(self, jwt: str) -> PyJWK:
         return self.signing_key
+
+
+class CoordinatorAuthPluginStub:
+    def authenticate(self, metadata):
+        assert metadata["identity"] == ["test-user"]
+        assert USER_AGENT_KEY in metadata
+        return ClientIdentity("test-user")
 
 
 def test_oauth2_plugin_supports_alternative_claims_mapping() -> None:
@@ -105,3 +113,13 @@ def test_oauth2_plugin_default_claims_mapping() -> None:
         identity_id="default-user",
         capabilities=set(e for e in Capability),
     )
+
+def test_clientidentity_from_plugin_adds_user_agent():
+    metadata = (
+        ("identity", "test-user"),
+        (USER_AGENT_KEY, "labgrid-client test-version"),
+    )
+
+    identity = clientidentity_from_plugin(CoordinatorAuthPluginStub(), metadata)
+
+    assert identity.user_agent == "labgrid-client test-version"

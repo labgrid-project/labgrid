@@ -15,6 +15,12 @@ RUN apt update -q=2 && \
     cd /opt/labgrid && \
     SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir .
 
+FROM labgrid-base AS labgrid-base-otel
+ARG VERSION=0.0.0
+
+RUN cd /opt/labgrid && \
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir .[otel]
+
 #
 # Client
 #
@@ -43,6 +49,20 @@ WORKDIR /opt/coordinator
 CMD ["/usr/local/bin/labgrid-coordinator"]
 
 #
+# Coordinator with OTEL
+#
+FROM labgrid-base-otel AS labgrid-coordinator-otel
+ARG VERSION
+
+VOLUME /opt/coordinator
+
+EXPOSE 20408 9464
+
+WORKDIR /opt/coordinator
+
+CMD ["/usr/local/bin/labgrid-coordinator"]
+
+#
 # Exporter
 #
 FROM labgrid-base AS labgrid-exporter
@@ -55,6 +75,24 @@ RUN apt update -q=2 && \
     rm -rf /var/lib/apt/lists/*
 
 VOLUME /opt/conf
+
+CMD ["/entrypoint.sh"]
+
+#
+# Exporter with OTEL
+#
+FROM labgrid-base-otel AS labgrid-exporter-otel
+ARG VERSION
+
+COPY dockerfiles/exporter/entrypoint.sh /entrypoint.sh
+
+RUN apt update -q=2 && \
+    apt install -q=2 --yes --no-install-recommends ser2net && \
+    rm -rf /var/lib/apt/lists/*
+
+VOLUME /opt/conf
+
+EXPOSE 9464
 
 CMD ["/entrypoint.sh"]
 

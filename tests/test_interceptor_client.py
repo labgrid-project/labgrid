@@ -1,5 +1,6 @@
 import pytest
 
+from labgrid.remote.auth.plugin import DefaultClientAuthPlugin
 from labgrid.remote.grpc.interceptor.client import (
     BaseIdentityClientInterceptor,
     IdentityClientUnaryUnaryInterceptor,
@@ -22,19 +23,19 @@ class DummyClientCallDetails:
 
 
 def test_base_identity_client_interceptor_injects_all_fields():
-    interceptor = BaseIdentityClientInterceptor(
+    interceptor = BaseIdentityClientInterceptor(DefaultClientAuthPlugin(
         username="test_username",
         hostname="test_hostname",
         user_agent="test_agent",
-    )
+    ))
 
     client_call_details = DummyClientCallDetails()
 
     interceptor._inject(client_call_details)
-
+    print(client_call_details.metadata)
     assert client_call_details.metadata.items == [
-        (NAME_KEY, "test_username"),
         (HOSTNAME_KEY, "test_hostname"),
+        (NAME_KEY, "test_username"),
         (USER_AGENT_KEY, "test_agent"),
     ]
 
@@ -48,7 +49,7 @@ def test_base_identity_client_interceptor_injects_all_fields():
     ],
 )
 async def test_client_interceptor_implementations(impl, method):
-    interceptor = impl("test_username", "test_hostname", "test_agent")
+    interceptor = impl(DefaultClientAuthPlugin("test_username", "test_hostname", "test_agent"))
 
     client_call_details = DummyClientCallDetails()
     request_or_iterator = object()
@@ -67,7 +68,7 @@ async def test_client_interceptor_implementations(impl, method):
     assert result is sentinel_response
     assert received["ccd"] is client_call_details
     assert client_call_details.metadata.items == [
-        (NAME_KEY, "test_username"),
         (HOSTNAME_KEY, "test_hostname"),
+        (NAME_KEY, "test_username"),
         (USER_AGENT_KEY, "test_agent"),
     ]

@@ -1,48 +1,35 @@
 import logging
-from typing import Optional
+from typing import Optional, Set
 
-from labgrid.remote.common import get_metadata_single_value_by_key
+from labgrid.remote.auth.capability import Capability
 
 NAME_KEY = "x-lg-name"
 HOSTNAME_KEY = "x-lg-hostname"
 USER_AGENT_KEY = "x-lg-user-agent"
+ALL_CAPABILITIES = set(e for e in Capability)
 
 
 class ClientIdentity:
     """Represents the identity of a connected client, derived from gRPC metadata."""
 
-    def __init__(self, name: str, hostname: str, user_agent: Optional[str]):
-        self.name = name
-        self.hostname = hostname
+    def __init__(
+        self,
+        identity_id: str,
+        user_agent: Optional[str] = None,
+        capabilities: Set[Capability] = ALL_CAPABILITIES,
+    ) -> None:
+        self.id = identity_id
         self.user_agent = user_agent
+        self.capabilities = capabilities
 
     def __str__(self):
         return f"ClientIdentity(id={self.id}, user_agent={self.user_agent})"
 
-    @property
-    def id(self):
-        return f"{self.hostname}/{self.name}" if self.name else self.hostname
+    def __eq__(self, value: object, /) -> bool:
+        if value is None or not isinstance(value, ClientIdentity):
+            return False
 
-    @classmethod
-    def from_metadata(cls, metadata: tuple):
-        """Construct a ClientIdentity from gRPC request metadata.
-
-        Args:
-            metadata: A sequence of (key, value) pairs from the gRPC context.
-
-        Returns:
-            A ClientIdentity with id set to ``hostname/username`` (or just
-            ``hostname`` if no username is present) and (optional) user_agent
-            or None if no metadata is supplied.
-        """
-        name = get_metadata_single_value_by_key(metadata, NAME_KEY)
-        hostname = get_metadata_single_value_by_key(metadata, HOSTNAME_KEY)
-        user_agent = get_metadata_single_value_by_key(metadata, USER_AGENT_KEY)
-
-        if not hostname:
-            return None
-
-        return cls(name, hostname, user_agent)
+        return self.id == value.id and self.user_agent == value.user_agent and self.capabilities == value.capabilities
 
 
 def infer_peer_identity(clients, context, identity):

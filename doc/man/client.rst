@@ -99,6 +99,27 @@ a name defined within the exporter, cls is the class of the exported resource
 and name is its name. Wild cards in match patterns are explicitly allowed, *
 matches anything.
 
+Leases
+------
+A lease is a time-limited acquisition of a place.
+
+Leases are always associated with a reservation. The reserved place is referenced
+using ``-p +``. To keep a lease active, the reservation must be extended using
+the ``extend`` command.
+
+Use ``labgrid-client extend`` to refresh the lease once, or
+``labgrid-client extend --keepalive`` to keep it alive automatically.
+Keepalive is capped by ``LG_MAX_LEASE_DURATION``, which defaults to 2 hours.
+
+If a lease extension fails for a place with one acquired resource, the lease is
+kept unchanged. For places with multiple acquired resources, the coordinator
+cancels the lease and releases the place to avoid leaving the system in an
+inconsistent state, since some resources may already have accepted the extension
+while a later resource failed.
+
+If the reservation expires, the coordinator automatically releases the leased
+place.
+
 Adding Named Resources
 ----------------------
 If a target contains multiple Resources of the same type, named matches need to
@@ -132,6 +153,28 @@ Open a console to the acquired place:
 .. code-block:: bash
 
    $ labgrid-client -p <placename> console
+
+Lease a place using a reservation:
+
+.. code-block:: bash
+
+   $ eval "$(labgrid-client reserve board=imx8 --shell)"
+   $ labgrid-client wait
+   $ labgrid-client -p + lease
+
+Extend the lease to keep it alive:
+
+.. code-block:: bash
+
+   # refresh once by passing the reservation id explicitly
+   $ labgrid-client extend ABC123
+
+   # or take the reservation id from the environment (LG_RESERVATION)
+   $ export LG_RESERVATION=ABC123
+   $ labgrid-client extend
+
+   # keep the lease alive automatically
+   $ labgrid-client extend --keepalive
 
 Add all resources with the group "example-group" to the place example-place:
 

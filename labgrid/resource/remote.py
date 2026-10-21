@@ -1,5 +1,8 @@
+import argparse
 import copy
 import os
+import types
+
 import attr
 
 from ..factory import target_factory
@@ -42,11 +45,22 @@ class RemotePlaceManager(ResourceManager):
         if self.session:
             return
 
+        auth_plugin = None
+        if self.env:
+            # default is a workaround because Config.get_option does not permit None as a default value
+            default = types.SimpleNamespace()
+            auth_plugin = self.env.config.get_option("auth_plugin", default)
+            if auth_plugin == default:
+                auth_plugin = None
+
         from ..remote.client import start_session
         try:
             self.session = start_session(
                 self.url,
-                extra={'env': self.env},
+                extra={
+                    'env': self.env,
+                    'args': argparse.Namespace(auth_plugin=auth_plugin) if auth_plugin else None,
+                },
                 credentials=self._get_credentials(),
             )
         except ConnectionRefusedError as e:

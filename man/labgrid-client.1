@@ -39,9 +39,9 @@ This is the client to control a boards status and interface with it on remote ma
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client [\-x ADDRESS] [\-\-tls] [\-\-cacert CACERT] [\-c CONFIG]
-                      [\-p PLACE] [\-s STATE] [\-i INITIAL_STATE] [\-d] [\-v]
-                      [\-P PROXY]
+usage: labgrid\-client [\-x ADDRESS] [\-\-auth\-plugin AUTH_PLUGIN] [\-\-tls]
+                      [\-\-cacert CACERT] [\-c CONFIG] [\-p PLACE] [\-s STATE]
+                      [\-i INITIAL_STATE] [\-d] [\-v] [\-P PROXY]
                       COMMAND ...
 .EE
 .UNINDENT
@@ -50,6 +50,11 @@ usage: labgrid\-client [\-x ADDRESS] [\-\-tls] [\-\-cacert CACERT] [\-c CONFIG]
 .TP
 .B \-x <address>, \-\-coordinator <address>
 coordinator HOST[:PORT] (default: value from env variable LG_COORDINATOR, otherwise 127.0.0.1:20408)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-auth\-plugin <auth_plugin>
+the name of the client authentication plugin
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -197,22 +202,6 @@ usage: labgrid\-client add\-named\-match PATTERN NAME
 .TP
 .B name
 .UNINDENT
-.SS labgrid\-client allow
-.sp
-allow another user to access a place
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.EX
-usage: labgrid\-client allow user
-.EE
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.TP
-.B user
-<host>/<username>
-.UNINDENT
 .SS labgrid\-client audio
 .sp
 start a audio stream
@@ -308,7 +297,7 @@ Log output to FILE
 .UNINDENT
 .SS labgrid\-client create
 .sp
-add a new place with the name specified via \-\-place or the LG_PLACE environment variable
+create a new place with the name specified via \-\-place or the LG_PLACE environment variable
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -426,6 +415,32 @@ output filename
 .B \-\-format {shell,shell\-export,json}
 output format (default: shell\-export)
 .UNINDENT
+.SS labgrid\-client extend
+.sp
+extend a lease by the coordinator default duration
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client extend [\-\-keepalive] [\-q] [reservation\-id]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B reservation\-id
+the reservation id (previously called token)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-keepalive
+keep extending the lease automatically using coordinator policy
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-q, \-\-quiet
+do not print lease status on each extension
+.UNINDENT
 .SS labgrid\-client fastboot
 .sp
 run fastboot
@@ -524,6 +539,22 @@ action
 .TP
 .B name
 optional resource name
+.UNINDENT
+.SS labgrid\-client lease
+.sp
+lease a place (time\-limited, requires extension)
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client lease [\-\-allow\-unmatched]
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-allow\-unmatched
+allow missing resources for matches when locking the place
 .UNINDENT
 .SS labgrid\-client monitor
 .sp
@@ -835,6 +866,22 @@ usage: labgrid\-client set\-tags KEY=VALUE [KEY=VALUE ...]
 .B key=value
 use an empty value for deletion
 .UNINDENT
+.SS labgrid\-client share|allow
+.sp
+share a place with another user
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client share|allow user
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B user
+<host>/<username>
+.UNINDENT
 .SS labgrid\-client show
 .sp
 show a place and related resources
@@ -980,6 +1027,22 @@ usage: labgrid\-client tmc screen {show,save}
 .INDENT 0.0
 .TP
 .B action
+.UNINDENT
+.SS labgrid\-client unshare
+.sp
+remove another user\(aqs access to a place
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client unshare user
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B user
+<host>/<username>
 .UNINDENT
 .SS labgrid\-client usb\-mux
 .sp
@@ -1237,6 +1300,26 @@ exporter/group/cls/name, exporter is the name of the exporting machine, group is
 a name defined within the exporter, cls is the class of the exported resource
 and name is its name. Wild cards in match patterns are explicitly allowed, *
 matches anything.
+.SH LEASES
+.sp
+A lease is a time\-limited acquisition of a place.
+.sp
+Leases are always associated with a reservation. The reserved place is referenced
+using \fB\-p +\fP\&. To keep a lease active, the reservation must be extended using
+the \fBextend\fP command.
+.sp
+Use \fBlabgrid\-client extend\fP to refresh the lease once, or
+\fBlabgrid\-client extend \-\-keepalive\fP to keep it alive automatically.
+Keepalive is capped by \fBLG_MAX_LEASE_DURATION\fP, which defaults to 2 hours.
+.sp
+If a lease extension fails for a place with one acquired resource, the lease is
+kept unchanged. For places with multiple acquired resources, the coordinator
+cancels the lease and releases the place to avoid leaving the system in an
+inconsistent state, since some resources may already have accepted the extension
+while a later resource failed.
+.sp
+If the reservation expires, the coordinator automatically releases the leased
+place.
 .SH ADDING NAMED RESOURCES
 .sp
 If a target contains multiple Resources of the same type, named matches need to
@@ -1277,6 +1360,36 @@ Open a console to the acquired place:
 .sp
 .EX
 $ labgrid\-client \-p <placename> console
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+Lease a place using a reservation:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+$ eval \(dq$(labgrid\-client reserve board=imx8 \-\-shell)\(dq
+$ labgrid\-client wait
+$ labgrid\-client \-p + lease
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+Extend the lease to keep it alive:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+# refresh once by passing the reservation id explicitly
+$ labgrid\-client extend ABC123
+
+# or take the reservation id from the environment (LG_RESERVATION)
+$ export LG_RESERVATION=ABC123
+$ labgrid\-client extend
+
+# keep the lease alive automatically
+$ labgrid\-client extend \-\-keepalive
 .EE
 .UNINDENT
 .UNINDENT

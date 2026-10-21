@@ -23,6 +23,11 @@ psutil = pytest.importorskip("psutil")
 # See also https://github.com/grpc/grpc/blob/master/doc/fork_support.md
 os.environ.setdefault("GRPC_ENABLE_FORK_SUPPORT", "0")
 
+# Coordinators and exporters normally use the same default Prometheus port,
+# Use OS-assigned ports in tests to avoid collisions;
+# OTel specific tests override this when scraping metrics.
+os.environ["OTEL_EXPORTER_PROMETHEUS_PORT"] = "0"
+
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch):
@@ -103,6 +108,7 @@ class LabgridComponent:
         self.cwd = str(cwd)
         self.spawn = None
         self.reader = None
+        self.stop_reader_event = threading.Event()
 
     @property
     def spawn(self):
@@ -118,18 +124,18 @@ class LabgridComponent:
         # let coverage write its data:
         # https://coverage.readthedocs.io/en/latest/subprocess.html#process-termination
         self.spawn.kill(SIGTERM)
+        self.stop_reader()
         if not self.spawn.closed:
             self.spawn.expect(pexpect.EOF)
             self.spawn.wait()
         assert not self.spawn.isalive()
 
         self.spawn = None
-        self.stop_reader()
 
     @staticmethod
-    def keep_reading(spawn):
+    def keep_reading(spawn, stop_event):
         "The output from background processes must be read to avoid blocking them."
-        while spawn.isalive():
+        while not stop_event.is_set() and spawn.isalive():
             try:
                 data = spawn.read_nonblocking(size=1024, timeout=0)
                 if not data:
@@ -145,13 +151,15 @@ class LabgridComponent:
             time.sleep(0.001)
 
     def start_reader(self):
+        self.stop_reader_event.clear()
         self.reader = threading.Thread(
             target=LabgridComponent.keep_reading,
             name=f'{self.__class__.__name__}-reader-{self.pid}',
-            args=(self.spawn,), daemon=True)
+            args=(self.spawn, self.stop_reader_event), daemon=True)
         self.reader.start()
 
     def stop_reader(self):
+        self.stop_reader_event.set()
         self.reader.join()
 
         self.reader = None
@@ -203,6 +211,9 @@ class Exporter(LabgridComponent):
 
 
 class Coordinator(LabgridComponent):
+    def __init__(self, cwd, env=None):
+        super().__init__(cwd)
+        self.env = env
     def start(self):
         assert self.spawn is None
         assert self.reader is None
@@ -210,7 +221,8 @@ class Coordinator(LabgridComponent):
         self.spawn = pexpect.spawn(
             'python -m labgrid.remote.coordinator',
             logfile=Prefixer(sys.stdout.buffer, 'coordinator'),
-            cwd=self.cwd)
+            cwd=self.cwd,
+            env=self.env)
         try:
             self.spawn.expect('Coordinator ready')
         except Exception as e:
@@ -257,8 +269,18 @@ def serial_driver_no_name(target, serial_port, mocker):
     return s
 
 @pytest.fixture(scope='function')
-def coordinator(tmpdir):
-    coordinator = Coordinator(tmpdir)
+def otel_env(monkeypatch):
+    """Disable telemetry in irrelevant tests"""
+    monkeypatch.setenv("OTEL_SDK_DISABLED", "true")
+
+@pytest.fixture(scope='function')
+def coordinator(tmpdir, otel_env):
+    env = os.environ.copy()
+    env["LG_DEFAULT_LEASE_DURATION"] = "5"
+    env["LG_DEFAULT_EXTEND_DURATION"] = "2"
+    env["LG_MAX_LEASE_DURATION"] = "20"
+    env["LG_COORDINATOR_POLL_INTERVAL"] = "1"
+    coordinator = Coordinator(tmpdir, env=env)
     coordinator.start()
 
     yield coordinator
@@ -285,6 +307,11 @@ def exporter(tmpdir, coordinator):
         NetworkService:
           address: "192.168.0.1"
           username: "root"
+    ClsNotEqualResourceName:
+        ExampleResource:
+            cls: NetworkSerialPort
+            host: 'localhost'
+            port: 4000
     """
     )
 

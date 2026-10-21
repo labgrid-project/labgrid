@@ -7,12 +7,16 @@ for the 3 different components of a Labgrid distributed infrastructure.
 - **labgrid-coordinator**
   An image with the Labgrid coordinator.
   a Labgrid coordinator instance.
+- **labgrid-coordinator-otel**
+  The Labgrid coordinator with the optional OpenTelemetry dependencies installed.
 - **labgrid-coordinator-statsd**
   An image with a statsd reporter for the Labgrid coordinator.
 - **labgrid-client**
   An image with the Labgrid client tools and pytest integration.
 - **labgrid-exporter**
   An image with the Labgrid exporter tools.
+- **labgrid-exporter-otel**
+  The Labgrid exporter with the optional OpenTelemetry dependencies installed.
 
 
 Build
@@ -57,7 +61,7 @@ e.g. `linux/arm64` as an additional argument.
 Usage
 -----
 
-All 3 images are to be considered base images
+All images are to be considered base images
 with the required software installed.
 No policy or configuration is done.
 
@@ -78,6 +82,15 @@ so you can restart the service without losing state.
 
    $ docker run -t -p 20408:20408 -v $HOME/coordinator:/opt/coordinator \
 	 docker.io/labgrid/coordinator
+
+
+labgrid-coordinator-otel usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The labgrid-coordinator-otel image runs the same coordinator with the optional
+OpenTelemetry dependencies installed. In addition to the coordinator port, it
+exposes the default Prometheus metrics port, 9464. Configure telemetry using
+the OpenTelemetry environment variables described in the main documentation.
 
 
 labgrid-coordinator-statsd usage
@@ -135,6 +148,16 @@ Start it with something like:
 If using ser2net or if "exporting" e.g. a serial device, the devices needed must be added to Docker container
 (``docker run --device`` option).
 Moreover, if using udev this must be mounted in as well: ``docker run -v run/udev:/run/udev:ro``.
+
+
+labgrid-exporter-otel usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The labgrid-exporter-otel image runs the same exporter with the optional
+OpenTelemetry dependencies installed. It exposes the default Prometheus metrics
+port, 9464. Configure telemetry using the OpenTelemetry environment variables
+described in the main documentation.
+
 
 Staging
 -------

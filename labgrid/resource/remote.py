@@ -17,7 +17,7 @@ class RemotePlaceManager(ResourceManager):
         self.loop = None
         self.session = None
         self.ready = None
-        self.unmanaged_resources = []
+        self.expanded_resources = []
         self.last_sync = 0.0
 
     def _get_credentials(self):
@@ -83,9 +83,8 @@ class RemotePlaceManager(ResourceManager):
             new.avail = resource_entry.avail
             new.extra = resource_entry.extra
             new._remote_entry = resource_entry
-            if not isinstance(new, ManagedResource):
-                self.unmanaged_resources.append(new)
             expanded.append(new)
+        self.expanded_resources.extend(expanded)
         self.logger.debug("expanded remote resources for place %s: %s", remote_place.name, expanded)
         remote_place.avail = True
         remote_place.tags = copy.deepcopy(place.tags)
@@ -103,9 +102,7 @@ class RemotePlaceManager(ResourceManager):
             except asyncio.TimeoutError:
                 self.logger.warning("coordinator did not respond in time, continuing with possibly outdated resources")
             self.last_sync = time.monotonic()
-        for resource in self.resources + self.unmanaged_resources:
-            if isinstance(resource, RemotePlace):
-                continue
+        for resource in self.expanded_resources:
             # coordinator dropped resource
             if not resource._remote_entry.data:
                 raise NoResourceFoundError(

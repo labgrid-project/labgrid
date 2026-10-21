@@ -116,11 +116,19 @@ def metadata_to_mapping(metadata) -> Mapping[str, List[str]]:
 
 
 def clientidentity_from_plugin(plugin: CoordinatorAuthPlugin, metadata: tuple) -> Optional[ClientIdentity]:
+    metadata_mapping = metadata_to_mapping(metadata)
+
     try:
-        return plugin.authenticate(metadata_to_mapping(metadata))
+        identity = plugin.authenticate(metadata_mapping)
     except IdentityError as e:
         logging.warning("Authentication error", exc_info=e)
         return None
+
+    if identity:
+        user_agents = metadata_mapping.get(USER_AGENT_KEY, [])
+        identity.user_agent = user_agents[0] if len(user_agents) == 1 else None
+
+    return identity
 
 
 class DefaultCoordinatorAuthPlugin(CoordinatorAuthPlugin):

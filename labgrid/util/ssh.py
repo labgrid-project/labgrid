@@ -185,10 +185,9 @@ class SSHConnection:
                 complete_cmd.append(item)
         complete_cmd.append(self.host)
         self._logger.debug("Running control command: %s", " ".join(complete_cmd))
-        subprocess.check_call(
+        return subprocess.check_output(
             complete_cmd,
             stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             timeout=2,
         )
@@ -381,8 +380,12 @@ class SSHConnection:
 
         forward = f"-R{remote_bind}:{remote_port:d}:localhost:{local_port:d}"
 
-        self._run_socket_command("forward", [forward])
+        output = self._run_socket_command("forward", [forward])
+        if remote_port == 0:
+            remote_port = int(output.strip())
+            forward = f"-R{remote_bind}:{remote_port:d}:localhost:{local_port:d}"
         self._r_forwards.add(forward)
+        return remote_port
 
     @_check_connected
     def remove_remote_port_forward(self, remote_port, local_port, remote_bind=None):
@@ -392,8 +395,10 @@ class SSHConnection:
 
         forward = f"-R{remote_bind}:{remote_port:d}:localhost:{local_port:d}"
 
-        self._r_forwards.remove(forward)
+        if forward not in self._r_forwards:
+            raise KeyError(forward)
         self._run_socket_command("cancel", [forward])
+        self._r_forwards.remove(forward)
 
     def connect(self):
         if not self._connected:

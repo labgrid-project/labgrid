@@ -14,7 +14,7 @@ class RemotePlaceManager(ResourceManager):
         self.loop = None
         self.session = None
         self.ready = None
-        self.unmanaged_resources = []
+        self.expanded_resources = []
 
     def _get_credentials(self):
         from ..remote.common import get_client_credentials
@@ -79,9 +79,8 @@ class RemotePlaceManager(ResourceManager):
             new.avail = resource_entry.avail
             new.extra = resource_entry.extra
             new._remote_entry = resource_entry
-            if not isinstance(new, ManagedResource):
-                self.unmanaged_resources.append(new)
             expanded.append(new)
+        self.expanded_resources.extend(expanded)
         self.logger.debug("expanded remote resources for place %s: %s", remote_place.name, expanded)
         remote_place.avail = True
         remote_place.tags = copy.deepcopy(place.tags)
@@ -90,9 +89,7 @@ class RemotePlaceManager(ResourceManager):
         import asyncio
         if not self.loop.is_running():
             self.loop.run_until_complete(asyncio.sleep(0.1))
-        for resource in self.resources + self.unmanaged_resources:
-            if isinstance(resource, RemotePlace):
-                continue
+        for resource in self.expanded_resources:
             attrs = resource._remote_entry.args.copy()
             attrs['avail'] = resource._remote_entry.avail
             # TODO allow the resource to do the update itself?

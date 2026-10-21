@@ -145,6 +145,19 @@ Retrieve a list of places on a ``labgrid-coordinator`` that uses TLS gRPC channe
 
     $ labgrid-client --tls [--cacert PATH] places
 
+Write an image to the acquired place's USB storage without caching the image on
+its exporter:
+
+.. code-block:: bash
+
+   $ labgrid-client -p <placename> write-image --mode bmaptool-streaming image.wic.gz
+
+The filename refers to a local file on the client. This mode runs ``bmaptool``
+on the exporter, fetching the image from a temporary HTTP server through a
+reverse SSH tunnel. The exporter must have ``bmaptool`` installed and permit
+remote TCP forwarding with a loopback binding. An adjacent ``.bmap`` file is
+transferred separately if found; otherwise ``bmaptool`` runs with ``--nobmap``.
+
 See Also
 --------
 

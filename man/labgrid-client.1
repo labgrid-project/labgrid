@@ -1126,7 +1126,8 @@ write an image onto mass storage
 .sp
 .EX
 usage: labgrid\-client write\-image [\-w WAIT] [\-p PARTITION] [\-\-skip SKIP]
-                                  [\-\-seek SEEK] [\-\-mode {dd,bmaptool}]
+                                  [\-\-seek SEEK]
+                                  [\-\-mode {dd,bmaptool,bmaptool\-streaming}]
                                   [\-\-name NAME]
                                   filename
 .EE
@@ -1158,7 +1159,7 @@ skip n 512\-sized blocks at start of output
 .UNINDENT
 .INDENT 0.0
 .TP
-.B \-\-mode {dd,bmaptool}
+.B \-\-mode {dd,bmaptool,bmaptool\-streaming}
 Choose tool for writing images (default: dd)
 .UNINDENT
 .INDENT 0.0
@@ -1300,6 +1301,23 @@ $ labgrid\-client \-\-tls [\-\-cacert PATH] places
 .EE
 .UNINDENT
 .UNINDENT
+.sp
+Write an image to the acquired place\(aqs USB storage without caching the image on
+its exporter:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+$ labgrid\-client \-p <placename> write\-image \-\-mode bmaptool\-streaming image.wic.gz
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+The filename refers to a local file on the client. This mode runs \fBbmaptool\fP on
+the exporter, fetching the image from a temporary client HTTP server through a
+reverse SSH tunnel. The exporter must have \fBbmaptool\fP installed and permit
+remote TCP forwarding with a loopback binding. An adjacent \fB\&.bmap\fP file is
+transferred separately if found; otherwise \fBbmaptool\fP runs with \fB\-\-nobmap\fP\&.
 .SH SEE ALSO
 .sp
 \fBlabgrid\-exporter\fP(1)

@@ -22,7 +22,7 @@ DEFAULT_ROLE_MAPPING = RoleMapping(
 
 def default_claims_to_clientIdentity(claims: OAuth2JWTClaims) -> ClientIdentity:
     capabilities = DEFAULT_ROLE_MAPPING(set(claims.roles))
-    return ClientIdentity(identity_id=claims.sub, user_agent=None, capabilities=capabilities)
+    return ClientIdentity(identity_id=claims.sub, capabilities=capabilities)
 
 
 class ServerConfig(Protocol):

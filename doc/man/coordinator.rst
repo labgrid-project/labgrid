@@ -34,6 +34,31 @@ OPTIONS
 -d, --debug
     enable debug mode
 
+HEALTH CHECKING
+---------------
+
+The ``grpc.health.v1.Health`` service reports the same status for both the
+``""`` and ``labgrid.Coordinator`` services.
+``SERVING`` means the Coordinator is ready to service RPCs.
+``NOT_SERVING`` means the Coordinator is in the process of startup or graceful shutdown.
+
+Check a plaintext listener with `grpcurl <https://github.com/fullstorydev/grpcurl>`_:
+
+.. code-block:: console
+
+   $ grpcurl -plaintext -d '{"service":""}' 127.0.0.1:20408 grpc.health.v1.Health/Check
+
+Watch status changes on a plaintext listener:
+
+.. code-block:: console
+
+   $ grpcurl -plaintext -d '{"service":""}' 127.0.0.1:20408 grpc.health.v1.Health/Watch
+
+For TLS, replace ``-plaintext`` with the appropriate TLS options.
+``Check`` returns the current status; ``Watch`` streams the initial status and
+changes. Unknown names return gRPC ``NOT_FOUND`` from ``Check`` or
+``SERVICE_UNKNOWN`` from ``Watch``, which stays open.
+
 TLS WITH A REVERSE PROXY
 ------------------------
 

@@ -199,6 +199,12 @@ class Config:
                 configuration, or if the target can not be found in the
                 configuration.
         """
+        warnings.warn(
+            "Config.get_target_option() is deprecated, use Target.options instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         if target not in self.data['targets']:
             raise KeyError(f"No target '{target}' found in configuration")
 

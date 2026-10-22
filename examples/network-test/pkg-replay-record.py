@@ -29,7 +29,7 @@ ssh = target.get_driver("SSHDriver")
 
 # get DUT interface
 exporter_iface = netdrv.iface.ifname
-dut_iface = env.config.get_target_option(target.name, "local_iface_to_dut_iface")[exporter_iface]
+dut_iface = target.options["local_iface_to_dut_iface"][exporter_iface]
 
 # generate test frame
 generated_frame = generate_frame()

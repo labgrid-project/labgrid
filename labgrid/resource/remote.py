@@ -95,6 +95,15 @@ class RemotePlaceManager(ResourceManager):
             raise ValueError("RemotePlace not allowed in remote place config")
         target_factory.make_resources_from_config(remote_place.target, remote_place_config.get("resources", {}))
         target_factory.make_drivers_from_config(remote_place.target, remote_place_config.get("drivers", {}))
+        # local options from the environment configuration take precedence
+        for name, value in remote_place_config.get("options", {}).items():
+            if name in remote_place.target.options:
+                self.logger.warning(
+                    "ignoring remote place config option '%s' of place %s, environment config takes precedence",
+                    name, remote_place.name,
+                )
+                continue
+            remote_place.target.options[name] = value
 
         remote_place.avail = True
         remote_place.tags = copy.deepcopy(place.tags)

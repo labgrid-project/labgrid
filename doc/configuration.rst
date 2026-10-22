@@ -3253,6 +3253,7 @@ Arguments:
 
   - nic (str): optional, configuration string to pass to QEMU to create a network interface
   - linesep (str, default="\n"): the separator when sending complete lines
+  - qmp_socket (bool, default=False): optional, use a unix socket for QMP instead of stdin and stdout.
 
 The QEMUDriver also requires the specification of:
 

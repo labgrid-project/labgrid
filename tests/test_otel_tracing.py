@@ -26,6 +26,7 @@ def otel_state(monkeypatch):
         if name.startswith("OTEL_"):
             monkeypatch.delenv(name)
     monkeypatch.setenv("OTEL_TRACES_EXPORTER", "none")
+    monkeypatch.setenv("OTEL_LOGS_EXPORTER", "none")
     monkeypatch.setattr(otel, "_enabled", False)
 
     providers = [trace.ProxyTracerProvider()]

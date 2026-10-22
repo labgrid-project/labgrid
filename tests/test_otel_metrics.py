@@ -13,6 +13,7 @@ from labgrid.remote.coordinator import Coordinator
 @pytest.fixture(autouse=True)
 def metrics_environment(monkeypatch):
     monkeypatch.delenv("OTEL_SDK_DISABLED", raising=False)
+    monkeypatch.setenv("OTEL_LOGS_EXPORTER", "none")
     monkeypatch.delenv("OTEL_METRICS_EXPORTER", raising=False)
     monkeypatch.setattr(otel_metrics, "_meter_provider", None)
 

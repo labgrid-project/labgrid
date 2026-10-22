@@ -6,8 +6,11 @@ from functools import wraps
 
 from opentelemetry import trace
 
+from ..logging import MasqueradingLogExporter
+
 LOGGER = logging.getLogger(__name__)
 _enabled = False
+_log_handler = None
 
 
 def _parse_exporters(value, *, default, supported):
@@ -22,12 +25,44 @@ def _parse_exporters(value, *, default, supported):
     return selected
 
 
+def _setup_logging(resource):
+    """Attach sanitized OTLP log export to the root logger once."""
+    global _log_handler
+    exporters = _parse_exporters(
+        os.environ.get("OTEL_LOGS_EXPORTER", ""),
+        default={"otlp"},
+        supported={"otlp"},
+    )
+    if not exporters:
+        return True
+
+    root = logging.getLogger()
+    if _log_handler in root.handlers:
+        return True
+
+    try:
+        from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
+        from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+        from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+    except ImportError:
+        LOGGER.debug("OpenTelemetry log exporter not installed")
+        return False
+
+    provider = LoggerProvider(resource=resource)
+    exporter = MasqueradingLogExporter(OTLPLogExporter())
+    provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
+    _log_handler = LoggingHandler(logger_provider=provider)
+    root.addHandler(_log_handler)
+    return True
+
+
 def setup_otel(service_name, *, with_metrics=False):
     """Configure telemetry when the optional ``otel`` dependencies are installed.
 
     Return whether the SDK is available and enabled, including when exporting is
-    disabled with ``OTEL_TRACES_EXPORTER=none``. An existing provider belongs to
-    its caller and is reused without changing its resource or exporters.
+    disabled with the ``OTEL_*_EXPORTER=none`` settings. An existing trace
+    provider belongs to its caller and is reused without changing its resource
+    or exporters.
     """
     global _enabled
     _enabled = False
@@ -59,6 +94,9 @@ def setup_otel(service_name, *, with_metrics=False):
             provider = TracerProvider(resource=resource)
             provider.add_span_processor(BatchSpanProcessor(exporter))
             trace.set_tracer_provider(provider)
+
+    if not _setup_logging(resource):
+        return False
 
     if with_metrics:
         from .otel_metrics import setup_metrics

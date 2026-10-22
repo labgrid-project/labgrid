@@ -34,6 +34,7 @@ from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from .otel import setup_otel
 from .otel_exporter import start_span_from_metadata
 from .otel_exporter_metrics import record_resource_command, setup_exporter_metrics
+from ..logging import basicConfig
 from ..util import get_free_port, labgrid_version
 
 
@@ -1281,7 +1282,10 @@ def main():
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
+    basicConfig(
+        level=logging.DEBUG if args.debug else logging.INFO,
+        format=logging.BASIC_FORMAT,
+    )
 
     config = {
         "name": args.name or gethostname(),

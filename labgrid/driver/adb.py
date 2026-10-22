@@ -5,7 +5,7 @@ import attr
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, FileTransferProtocol, ResetProtocol
-from ..resource.adb import NetworkADBDevice, RemoteUSBADBDevice, USBADBDevice
+from ..resource.adb import NetworkADBDevice, NetworkUSBADBDevice, USBADBDevice
 from ..step import step
 from ..util.proxy import proxymanager
 from .commandmixin import CommandMixin
@@ -28,7 +28,7 @@ class ADBRebootMode(Enum):
 class ADBDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, ResetProtocol):
     """ADB driver to execute commands, transfer files and reset devices via ADB."""
 
-    bindings = {"device": {"USBADBDevice", "RemoteUSBADBDevice", "NetworkADBDevice"}}
+    bindings = {"device": {"USBADBDevice", "NetworkUSBADBDevice", "NetworkADBDevice"}}
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -41,7 +41,7 @@ class ADBDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Res
         if isinstance(self.device, USBADBDevice):
             self._base_command = [self.tool, "-s", self.device.serialno]
 
-        elif isinstance(self.device, RemoteUSBADBDevice):
+        elif isinstance(self.device, NetworkUSBADBDevice):
             self._host, self._port = proxymanager.get_host_and_port(self.device)
             self._base_command = [self.tool, "-H", self._host, "-P", str(self._port), "-s", self.device.serialno]
 

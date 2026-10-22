@@ -1709,12 +1709,12 @@ class ClientSession:
         name = self.args.name
         adb_cmd = ["adb"]
 
-        from ..resource.adb import RemoteUSBADBDevice, NetworkADBDevice
+        from ..resource.adb import NetworkUSBADBDevice, NetworkADBDevice
 
         for resource in target.resources:
             if name and resource.name != name:
                 continue
-            if isinstance(resource, RemoteUSBADBDevice):
+            if isinstance(resource, NetworkUSBADBDevice):
                 host, port = proxymanager.get_host_and_port(resource)
                 adb_cmd = ["adb", "-H", host, "-P", str(port), "-s", resource.serialno]
                 break
@@ -1749,12 +1749,12 @@ class ClientSession:
         scrcpy_cmd = ["scrcpy"]
         env_var = os.environ.copy()
 
-        from ..resource.adb import RemoteUSBADBDevice, NetworkADBDevice
+        from ..resource.adb import NetworkUSBADBDevice, NetworkADBDevice
 
         for resource in target.resources:
             if name and resource.name != name:
                 continue
-            if isinstance(resource, RemoteUSBADBDevice):
+            if isinstance(resource, NetworkUSBADBDevice):
                 host, adb_port = proxymanager.get_host_and_port(resource)
                 ip_addr = gethostbyname(host)
                 env_var["ADB_SERVER_SOCKET"] = f"tcp:{ip_addr}:{adb_port}"

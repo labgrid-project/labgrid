@@ -648,3 +648,91 @@ def test_same_name_resources(place, exporter, tmpdir):
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
+
+
+def test_plugin_command(tmpdir, place):
+    plugin = tmpdir.join("hello_plugin.py")
+    plugin.write(
+        """
+from labgrid.remote.client_commands import client_command
+
+
+@client_command("hello")
+class HelloCommand:
+    \"\"\"greet from the acquired place\"\"\"
+
+    @staticmethod
+    def add_arguments(subparser):
+        subparser.add_argument("name")
+
+    @staticmethod
+    def run(session, place, target):
+        print(f"hello {session.args.name} from {place.name} ({target.name})")
+"""
+    )
+    env = tmpdir.join("env.yaml")
+    env.write(
+        f"""
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: test
+imports:
+  - {plugin}
+"""
+    )
+
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {env} -p test acquire') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {env} -p test hello world') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert b'hello world from test (main)' in spawn.before
+
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {env} --help') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 0, spawn.before.strip()
+        assert b'greet from the acquired place' in spawn.before
+
+
+def test_plugin_command_collision(tmpdir):
+    plugin = tmpdir.join("lock_plugin.py")
+    plugin.write(
+        """
+from labgrid.remote.client_commands import client_command
+
+
+@client_command("lock")
+class LockCommand:
+    @staticmethod
+    def add_arguments(subparser):
+        pass
+
+    @staticmethod
+    def run(session, place, target):
+        pass
+"""
+    )
+    env = tmpdir.join("env.yaml")
+    env.write(
+        f"""
+targets:
+  main:
+    resources: {{}}
+imports:
+  - {plugin}
+"""
+    )
+
+    with pexpect.spawn(f'python -m labgrid.remote.client -c {env} --help') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        assert spawn.exitstatus == 1, spawn.before.strip()
+        assert b'labgrid-client: error:' in spawn.before
+        assert b"'lock'" in spawn.before

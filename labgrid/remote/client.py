@@ -45,13 +45,16 @@ from .common import (
     get_client_credentials,
 )
 from .. import Environment, Target, target_factory
+from ..config import Config
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
+from . import client_commands
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..resource.remote import RemotePlaceManager, RemotePlace
 from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout
 from ..util.proxy import proxymanager
 from ..util.ssh import sshmanager
 from ..util.helper import processwrapper
+from ..util.imports import load_imports
 from ..util.loop import ensure_event_loop
 from ..driver import Mode, ExecutionError
 from ..logging import basicConfig, StepLogger
@@ -2380,7 +2383,26 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     scrcpy_subparser.add_argument("--name", "-n", help="optional resource name")
     scrcpy_subparser.set_defaults(func=ClientSession.scrcpy)
 
+    client_commands.install(subparsers)
+
     return parser
+
+
+def load_client_plugins():
+    """Import plugins that register client commands, so their subcommands exist when the parser is built.
+
+    Plugins come from installed entry points and from the ``imports`` of the
+    environment given with -c (or LG_ENV).
+    """
+    pre_parser = argparse.ArgumentParser(add_help=False)
+    pre_parser.add_argument("-c", "--config")
+    pre_args, _ = pre_parser.parse_known_args()
+
+    client_commands.load_entry_points()
+
+    config_file = pre_args.config or os.environ.get("LG_ENV")
+    if config_file:
+        load_imports(Config(config_file).get_imports())
 
 
 def main():
@@ -2401,7 +2423,12 @@ def main():
     state = os.environ.get("LG_STATE", state)
     initial_state = os.environ.get("LG_INITIAL_STATE", None)
 
-    parser = get_parser()
+    load_client_plugins()
+    try:
+        parser = get_parser()
+    except client_commands.ClientCommandError as e:
+        print(f"labgrid-client: error: {e}", file=sys.stderr)
+        sys.exit(1)
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()

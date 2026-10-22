@@ -190,6 +190,8 @@ are imported by the environment after loading the configuration.
 Paths relative to the configuration file are also supported.
 This is useful to load drivers and strategy which are contained in your
 testsuite, since the import is done before instantiating the targets.
+Imported modules can also add subcommands to ``labgrid-client``, see
+"Writing a Client Command" in the development documentation.
 
 IMPORTS EXAMPLE
 ~~~~~~~~~~~~~~~

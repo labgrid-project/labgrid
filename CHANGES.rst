@@ -1,3 +1,12 @@
+Unreleased
+----------
+
+New Features
+~~~~~~~~~~~~
+
+- ``USBStorageDriver`` supports ``Mode.BMAPTOOL_STREAMING``, available as
+  ``labgrid-client write-image --mode bmaptool-streaming``.
+
 Release 26.0 (Released Jun 06, 2026)
 ------------------------------------
 Sponsored by: Analog Devices GmbH

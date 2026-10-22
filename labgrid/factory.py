@@ -145,7 +145,7 @@ class TargetFactory:
     def make_target(self, name, config, *, env=None):
         from .target import Target
 
-        target = Target(name, env=env)
+        target = Target(name, env=env, options=dict(config.get('options', {})))
         self.make_resources_from_config(target, config.get('resources', {}))
         self.make_drivers_from_config(target, config.get('drivers', {}))
         return target

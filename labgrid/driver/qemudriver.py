@@ -51,6 +51,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             egl-headless: Create a headless GPU-backed graphics card. Requires host support
             qemu-default: Don't override QEMU default settings
         nic (str): optional, configuration string to pass to QEMU to create a network interface
+        qmp_socket (bool): optional, talk QMP over a unix socket instead of stdio, default False
     """
     qemu_bin = attr.ib(validator=attr.validators.instance_of(str))
     memory = attr.ib(validator=attr.validators.instance_of(str))
@@ -100,6 +101,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)))
     linesep = attr.ib(default="\n", validator=attr.validators.instance_of(str))
+    qmp_socket = attr.ib(
+        default=False,
+        validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -110,6 +114,9 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self._tempdir = None
         self._socket = None
         self._clientsocket = None
+        self._qmp_path = None
+        self._qmp_clientsocket = None
+        self._qmp_files = ()
         self._forwarded_ports = {}
 
     def get_qemu_version(self, qemu_bin):
@@ -236,7 +243,11 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
 
         qemu_cmd.append("-S")
         qemu_cmd.append("-qmp")
-        qemu_cmd.append("stdio")
+        if self.qmp_socket:
+            self._qmp_path = f"{self._tempdir}/qmp"
+            qemu_cmd.append(f"unix:{self._qmp_path},server,nowait")
+        else:
+            qemu_cmd.append("stdio")
 
         qemu_cmd.append("-chardev")
         qemu_cmd.append(f"socket,id=serialsocket,path={sockpath}")
@@ -262,7 +273,7 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         self.logger.debug("new connection from %s", address)
 
         try:
-            self.qmp = QMPMonitor(self._child.stdout, self._child.stdin)
+            self.qmp = self._create_qmp_monitor()
         except QMPError as exc:
             if self._child.poll() is not None:
                 _, err = self._child.communicate()
@@ -283,6 +294,8 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
             self._child = None
             self.qmp = None
 
+        self._close_qmp_socket()
+
         if self._clientsocket:
             self._clientsocket.close()
             self._clientsocket = None
@@ -293,6 +306,39 @@ class QEMUDriver(ConsoleExpectMixin, Driver, PowerProtocol, ConsoleProtocol):
         if self._tempdir:
             shutil.rmtree(self._tempdir)
             self._tempdir = None
+
+    def _create_qmp_monitor(self):
+        if not self.qmp_socket:
+            return QMPMonitor(self._child.stdout, self._child.stdin)
+        self._qmp_clientsocket = self._connect_unix_socket(self._qmp_path)
+        self._qmp_files = (
+            self._qmp_clientsocket.makefile("rb"),
+            self._qmp_clientsocket.makefile("wb"),
+        )
+        return QMPMonitor(*self._qmp_files)
+
+    def _close_qmp_socket(self):
+        for qmp_file in self._qmp_files:
+            qmp_file.close()
+        self._qmp_files = ()
+        if self._qmp_clientsocket:
+            self._qmp_clientsocket.close()
+            self._qmp_clientsocket = None
+
+    @staticmethod
+    def _connect_unix_socket(path, timeout=5.0):
+        """Connect to a unix socket, retrying until QEMU has created it"""
+        deadline = time.monotonic() + timeout
+        while True:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            try:
+                sock.connect(path)
+                return sock
+            except OSError:
+                sock.close()
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.05)
 
     @Driver.check_active
     @step()

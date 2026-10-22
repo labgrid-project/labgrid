@@ -150,17 +150,21 @@ class TargetFactory:
         self.make_drivers_from_config(target, config.get('drivers', {}))
         return target
 
-    def make_resources_from_config(self, target, resource_config):
+    def make_resources_from_config(self, target, resource_config, ignore=()):
         for item in TargetFactory._convert_to_named_list(resource_config):
             resource = item.pop('cls')
             name = item.pop('name', None)
+            if resource in ignore or f"{resource}:{name}" in ignore:
+                continue
             args = item # remaining args
             self.make_resource(target, resource, name, args)
 
-    def make_drivers_from_config(self, target, driver_config):
+    def make_drivers_from_config(self, target, driver_config, ignore=()):
         for item in TargetFactory._convert_to_named_list(driver_config):
             driver = item.pop('cls')
             name = item.pop('name', None)
+            if driver in ignore or f"{driver}:{name}" in ignore:
+                continue
             bindings = item.pop('bindings', {})
             args = item # remaining args
             if target is not None:

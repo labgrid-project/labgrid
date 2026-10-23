@@ -16,6 +16,7 @@ from typing import Optional
 import attr
 import grpc
 from grpc_reflection.v1alpha import reflection
+from yaml import YAMLError
 
 from labgrid.remote.identity import ClientIdentity, infer_peer_identity
 
@@ -663,6 +664,32 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self._publish_place(place)
         self.save_later()
         return labgrid_coordinator_pb2.SetPlaceCommentResponse()
+
+    @locked
+    async def SetPlaceRemotePlaceConfig(self, request, context):
+        placename = request.placename
+        changed = request.changed
+        remote_place_config = request.remote_place_config
+        try:
+            place = self.places[placename]
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {placename} does not exist")
+
+        try:
+            yaml.load(remote_place_config)
+        except YAMLError as e:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid YAML in remote place config: {e}")
+
+        if place.changed != changed:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION, "Config was changed elsewhere during during your edit"
+            )
+
+        place.remote_place_config = remote_place_config
+        place.touch()
+        self._publish_place(place)
+        self.save_later()
+        return labgrid_coordinator_pb2.SetPlaceRemotePlaceConfigResponse()
 
     @locked
     async def AddPlaceMatch(self, request, context):

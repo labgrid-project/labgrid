@@ -1802,6 +1802,8 @@ RemotePlace
 ~~~~~~~~~~~
 A :any:`RemotePlace` describes a set of resources attached to a labgrid remote
 place.
+Resources, drivers and options from the place's
+:ref:`remote place config <remote-place-config>` are created as well.
 
 .. code-block:: yaml
 
@@ -1814,6 +1816,10 @@ them to the internal environment.
 
 Arguments:
   - name (str): name or pattern of the remote place
+  - ignore_resources (list): optional, resources to ignore from the remote
+    place config. Given as ``<class>`` or ``<class>:<name>``.
+  - ignore_drivers (list): optional, drivers to ignore from the remote place
+    config. Given as ``<class>`` or ``<class>:<name>``.
 
 Used by:
   - potentially all drivers

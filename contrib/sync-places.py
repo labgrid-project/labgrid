@@ -26,6 +26,14 @@ import textwrap
 import yaml
 
 
+def _str_representer(dumper, data):
+    """Represents multi-line strings as YAML block scalars."""
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|" if "\n" in data else None)
+
+
+yaml.add_representer(str, _str_representer)
+
+
 def main():
     @contextmanager
     def get_file(name, mode, standard):
@@ -41,7 +49,6 @@ def main():
 
         config.setdefault("places", {})
 
-        changed = False
         seen_places = set()
         remove_places = set()
         for name, place in session.places.items():
@@ -57,8 +64,6 @@ def main():
                 await session.stub.DeletePlace(request)
                 await session.sync_with_coordinator()
 
-            changed = True
-
         for name in config["places"]:
             if not name in seen_places:
                 print(f"Adding place {name}")
@@ -66,8 +71,6 @@ def main():
                     request = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
                     await session.stub.AddPlace(request)
                     await session.sync_with_coordinator()
-
-                changed = True
 
         for name in config["places"]:
             matches = []
@@ -101,8 +104,6 @@ def main():
                     await session.stub.DeletePlaceMatch(request)
                     await session.sync_with_coordinator()
 
-                changed = True
-
             for m in matches:
                 if not m in seen_matches:
                     match, rename = m
@@ -117,7 +118,6 @@ def main():
                         )
                         await session.stub.AddPlaceMatch(request)
                         await session.sync_with_coordinator()
-                    changed = True
 
             tags = {str(k): str(v) for k, v in config["places"][name].get("tags", {}).items()}
 
@@ -140,7 +140,25 @@ def main():
                     await session.stub.SetPlaceTags(request)
                     await session.sync_with_coordinator()
 
-                changed = True
+            remote_place_config = config["places"][name].get("remote_place_config") or ""
+            current_remote_place_config = ""
+            if name in seen_places:
+                current_remote_place_config = place.remote_place_config or ""
+
+            if current_remote_place_config != remote_place_config:
+                if remote_place_config:
+                    print(f"Setting remote place config for place {name}")
+                else:
+                    print(f"Removing remote place config for place {name}")
+
+                if not args.dry_run:
+                    request = labgrid_coordinator_pb2.SetPlaceRemotePlaceConfigRequest(
+                        placename=name,
+                        changed=session.places[name].changed,
+                        remote_place_config=remote_place_config,
+                    )
+                    await session.stub.SetPlaceRemotePlaceConfig(request)
+                    await session.sync_with_coordinator()
 
     async def do_dump(session, args):
         config = {"places": {}}
@@ -149,6 +167,8 @@ def main():
                 "matches": [{repr(m): m.rename} if m.rename else repr(m) for m in place.matches],
                 "tags": {k: v for k, v in place.tags.items()},
             }
+            if place.remote_place_config:
+                config["places"][name]["remote_place_config"] = place.remote_place_config
 
         with get_file(args.dest, "w", sys.stdout) as f:
             yaml.dump(config, f)
@@ -169,9 +189,19 @@ def main():
                   tags: # A dictionary of key/value tags. Replace with your tags
                     board: awesomesauce
                     bar: baz
+                  remote_place_config: | # Resources, drivers and options stored on coordinator
+                    resources:
+                      NetworkService:
+                        address: "192.168.1.42"
+                        username: "root"
+                    drivers:
+                      SSHDriver: {}
+                    options:
+                      eth_iface: "eth0"
 
-            When syncing places, tags, and matches will be added or removed until the
-            remote configuration matches the one in the YAML file
+            When syncing places, tags, matches and remote place configs will be added,
+            changed or removed until the remote configuration matches the one in the
+            YAML file.
             """
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,

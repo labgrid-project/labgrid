@@ -24,6 +24,7 @@ from .udev import (
     SigrokUSBDevice,
     SigrokUSBSerialDevice,
     SunxiUSBLoader,
+    TegraUSBLoader,
     USBAudioInput,
     USBDebugger,
     USBFlashableDevice,

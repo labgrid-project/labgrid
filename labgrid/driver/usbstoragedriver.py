@@ -1,6 +1,7 @@
 import enum
 import os
 import pathlib
+import re
 import time
 import subprocess
 
@@ -16,6 +17,45 @@ from ..driver.exception import ExecutionError
 from ..util.helper import processwrapper
 from ..util.agentwrapper import AgentWrapper
 from ..util import Timeout
+
+
+def _partition_size(value):
+    if value == "remaining":
+        return 0
+    if isinstance(value, str):
+        match = re.fullmatch(r"([1-9][0-9]*)(MiB|GiB|TiB)", value)
+        if match:
+            return int(match[1]) * 1024 ** {"MiB": 2, "GiB": 3, "TiB": 4}[match[2]]
+    raise ValueError("partition size must be positive MiB, GiB, TiB or 'remaining'")
+
+
+@attr.s(frozen=True)
+class _Partition:
+    size = attr.ib(converter=_partition_size)
+    filesystem = attr.ib(validator=attr.validators.in_(("vfat", "ext4")))
+    label = attr.ib(default="", validator=attr.validators.instance_of(str))
+
+
+def _partitions(values):
+    if not isinstance(values, list) or not values:
+        raise ValueError("partitions must be a non-empty list")
+    return tuple(_Partition(**value) for value in values)
+
+
+@attr.s(frozen=True)
+class _FormatLayout:
+    partitions = attr.ib(converter=_partitions)
+    partition_table = attr.ib(default="dos", validator=attr.validators.in_(("dos", "gpt")))
+
+    def __attrs_post_init__(self):
+        if self.partition_table == "dos" and len(self.partitions) > 4:
+            raise ValueError("DOS supports at most four primary partitions")
+        if any(partition.size == 0 for partition in self.partitions[:-1]):
+            raise ValueError("'remaining' is only allowed on the final partition")
+
+
+def _format_layout(value):
+    return None if value is None else _FormatLayout(**value)
 
 
 class Mode(enum.Enum):
@@ -45,8 +85,12 @@ class USBStorageDriver(Driver):
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str))
     )
+    partition_layout = attr.ib(default=None, converter=_format_layout)
     WAIT_FOR_MEDIUM_TIMEOUT = 10.0 # s
     WAIT_FOR_MEDIUM_SLEEP = 0.5 # s
+    PARTITION_TABLE_TIMEOUT = 10.0 # s
+    PARTITION_TABLE_SLEEP = 0.2 # s
+    PARTITION_ALIGNMENT = 1024 * 1024 # bytes
     MOUNT_RETRIES = 5
 
     def __attrs_post_init__(self):
@@ -218,6 +262,48 @@ class USBStorageDriver(Driver):
             time.sleep(self.WAIT_FOR_MEDIUM_SLEEP)
         else:
             raise ExecutionError("Timeout while waiting for medium")
+
+    @Driver.check_active
+    @step()
+    def format(self):
+        """Replace the partition table using the configured format layout.
+
+        Without a layout, create one full-size FAT32 partition using DOS.
+        """
+        layout = self.partition_layout
+        if layout is None:
+            layout = _FormatLayout(partitions=[{
+                "size": "remaining",
+                "filesystem": "vfat",
+            }])
+
+        self._wait_for_medium(None)
+        self._start_wrapper()
+        self.devpath = self._get_devpath(None)
+        self.logger.info("Formatting %s with %s partition table", self.devpath, layout.partition_table)
+        self.proxy.create_partition_table(self.devpath, layout.partition_table)
+
+        timeout = Timeout(self.PARTITION_TABLE_TIMEOUT)
+        while not timeout.expired:
+            if self.proxy.has_partition_table(self.devpath):
+                break
+            time.sleep(min(self.PARTITION_TABLE_SLEEP, timeout.remaining))
+        else:
+            raise ExecutionError(
+                f"Timeout waiting for UDisks2 partition table on {self.devpath}"
+            )
+
+        offset = self.PARTITION_ALIGNMENT
+        for number, partition in enumerate(layout.partitions, start=1):
+            self.logger.info("Formatting partition %s as %s", number, partition.filesystem)
+            end = self.proxy.create_partition_and_format(
+                self.devpath, partition.filesystem, partition.label,
+                offset, partition.size,
+            )
+            self._wait_for_medium(number)
+            offset = (
+                (end + self.PARTITION_ALIGNMENT - 1) // self.PARTITION_ALIGNMENT
+            ) * self.PARTITION_ALIGNMENT
 
     @Driver.check_active
     @step(args=['partition'], result=True)

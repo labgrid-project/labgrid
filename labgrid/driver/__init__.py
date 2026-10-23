@@ -17,7 +17,8 @@ from .powerdriver import ManualPowerDriver, ExternalPowerDriver, \
                          USBPowerDriver, SiSPMPowerDriver, NetworkPowerDriver, \
                          PDUDaemonDriver
 from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, \
-                       RKUSBDriver, SunxiUSBDriver, TegraUSBDriver, UUUDriver
+                       RKUSBDriver, SamsungUSBDriver, SunxiUSBDriver, \
+                       TegraUSBDriver, UUUDriver
 from .usbsdmuxdriver import USBSDMuxDriver
 from .usbsdwiredriver import USBSDWireDriver
 from .usbsdwire3driver import USBSDWire3Driver

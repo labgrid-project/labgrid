@@ -1,9 +1,13 @@
 import pytest
 
 from labgrid.exceptions import InvalidConfigError
-from labgrid.resource.udev import SunxiUSBLoader, TegraUSBLoader
-from labgrid.resource.remote import NetworkSunxiUSBLoader, NetworkTegraUSBLoader
-from labgrid.driver.usbloader import SunxiUSBDriver, TegraUSBDriver
+from labgrid.resource.udev import SamsungUSBLoader, SunxiUSBLoader
+from labgrid.resource.udev import TegraUSBLoader
+from labgrid.resource.remote import NetworkSamsungUSBLoader
+from labgrid.resource.remote import NetworkSunxiUSBLoader
+from labgrid.resource.remote import NetworkTegraUSBLoader
+from labgrid.driver.usbloader import SamsungUSBDriver, SunxiUSBDriver
+from labgrid.driver.usbloader import TegraUSBDriver
 
 
 class FakeDevice:
@@ -120,3 +124,68 @@ def test_tegrausb_driver_load_no_env(target, tmpdir):
 
     with pytest.raises(InvalidConfigError, match='bct'):
         d.load(main)
+
+
+def test_samsungusb_network_create(target):
+    r = NetworkSamsungUSBLoader(target, busnum=1, devnum=2, path='a/path',
+                                vendor_id=1234, model_id=5678, name=None,
+                                host='localhost')
+    d = SamsungUSBDriver(target, bl1_loadaddr=0x100,
+                         spl_loadaddr=0x200, loadaddr=0x300, name=None)
+
+
+def test_samsungusb_driver_create(target):
+    r = SamsungUSBLoader(target, name=None)
+    assert isinstance(r, SamsungUSBLoader)
+
+    d = SamsungUSBDriver(target, bl1_loadaddr=0x100,
+                         spl_loadaddr=0x200, loadaddr=0x300, name=None)
+    assert isinstance(d, SamsungUSBDriver)
+
+
+def test_samsungusb_driver_load(target, mocker, tmpdir):
+    r = SamsungUSBLoader(target, name=None)
+    assert isinstance(r, SamsungUSBLoader)
+
+    bl1 = tmpdir.join('bl1').strpath
+    d = SamsungUSBDriver(target, bl1_loadaddr=0x100,
+                         spl_loadaddr=0x200, loadaddr=0x300, name=None)
+    r.avail = True
+    dev = FakeDevice()
+    r.device = dev
+    target.activate(d)
+
+    with open(bl1, 'wb') as outf:
+        outf.write(b'blah')
+
+    # The BL1 filename comes from the env's 'images:' section, not a driver arg
+    target.env = mocker.MagicMock()
+    target.env.config.get_image_path.return_value = bl1
+
+    pwrap = mocker.patch('labgrid.driver.usbloader.processwrapper')
+
+    d.load(phase='bl1')
+    target.env.config.get_image_path.assert_called_once_with('bl1')
+    pwrap.check_output.assert_called_once_with(
+        ['smdk-usbdl', '-a', '100', '-b', '001', '-d', '002', '-f', bl1])
+
+
+def test_samsungusb_driver_load_no_env(target, mocker, tmpdir):
+    r = SamsungUSBLoader(target, name=None)
+    d = SamsungUSBDriver(target, bl1_loadaddr=0x100,
+                         spl_loadaddr=0x200, loadaddr=0x300, name=None)
+    r.avail = True
+    r.device = FakeDevice()
+    target.activate(d)
+
+    with pytest.raises(InvalidConfigError, match='environment'):
+        d.load(phase='bl1')
+
+    # An explicit filename does not need the environment
+    spl = tmpdir.join('spl').strpath
+    with open(spl, 'wb') as outf:
+        outf.write(b'spl image')
+    pwrap = mocker.patch('labgrid.driver.usbloader.processwrapper')
+    d.load(spl, phase='spl')
+    pwrap.check_output.assert_called_once_with(
+        ['smdk-usbdl', '-a', '200', '-b', '001', '-d', '002', '-f', spl])

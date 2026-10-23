@@ -682,3 +682,118 @@ def test_remote_place_config_environment(dummy_session, tmpdir, caplog):
     # local options take precedence over the remote place config's options
     assert "ignoring remote place config option 'shared-option' of place test, environment config takes precedence" in caplog.text
     assert target.options == {"shared-option": "local", "remote-option": 23, "local-option": 42}
+
+
+@pytest.mark.parametrize(
+    ("ignore_resources", "expected_resources"),
+    [
+        pytest.param(
+            [],  # ignore nothing
+            {"NetworkService:eth0", "NetworkService:eth1", "NetworkPowerPort:power"},  # nothing ignored
+            id="none",
+        ),
+        pytest.param(
+            ["NetworkService"],  # ignore existent resource class
+            {"NetworkPowerPort:power"},  # both NetworkServices ignored
+            id="class",
+        ),
+        pytest.param(
+            ["NetworkService:eth1"],  # ignore existent resource by class:name
+            {"NetworkService:eth0", "NetworkPowerPort:power"},  # only eth1 ignored
+            id="class:name",
+        ),
+        pytest.param(
+            ["InexistentResource"],  # ignore inexistent resource class
+            {"NetworkService:eth0", "NetworkService:eth1", "NetworkPowerPort:power"},  # nothing ignored
+            id="inexistent-class",
+        ),
+        pytest.param(
+            ["NetworkService:foo"],  # ignore inexistent resource class/name combination
+            {"NetworkService:eth0", "NetworkService:eth1", "NetworkPowerPort:power"},  # nothing ignored
+            id="inexistent-class:name",
+        ),
+    ],
+)
+def test_remote_place_ignore_resources(dummy_session, ignore_resources, expected_resources):
+    # matched resources should never be ignored, so add one and make sure it's always in the target's resources
+    dummy_session.resources[("console", "NetworkSerialPort")] = ResourceEntry(
+        {"cls": "NetworkSerialPort", "params": {"host": "localhost", "port": 4000}, "avail": True}
+    )
+    dummy_session.place.remote_place_config = textwrap.dedent(
+        """\
+            resources:
+            - NetworkService:
+                name: "eth0"
+                address: "192.168.1.42"
+                username: "root"
+            - NetworkService:
+                name: "eth1"
+                address: "192.168.2.42"
+                username: "root"
+            - NetworkPowerPort:
+                name: "power"
+                model: "gude"
+                host: "192.168.1.2"
+                index: 1
+        """
+    )
+
+    target = Target("test")
+    RemotePlace(target, name="test", ignore_resources=ignore_resources)
+
+    resources = {f"{resource.__class__.__name__}:{resource.name}" for resource in target.resources}
+    assert resources == {"RemotePlace:test", "NetworkSerialPort:console"} | expected_resources
+
+
+@pytest.mark.parametrize(
+    ("ignore_drivers", "expected_drivers"),
+    [
+        pytest.param(
+            [],  # ignore nothing
+            {"SerialDriver:console", "ManualPowerDriver:power1", "ManualPowerDriver:power2"},  # nothing ignored
+            id="none",
+        ),
+        pytest.param(
+            ["ManualPowerDriver"],  # ignore existent driver class
+            {"SerialDriver:console"},  # both ManualPowerDrivers ignored
+            id="class",
+        ),
+        pytest.param(
+            ["ManualPowerDriver:power2"],  # ignore existent driver by class:name
+            {"SerialDriver:console", "ManualPowerDriver:power1"},  # only power2 ignored
+            id="class:name",
+        ),
+        pytest.param(
+            ["InexistentDriver"],  # ignore inexistent driver class
+            {"SerialDriver:console", "ManualPowerDriver:power1", "ManualPowerDriver:power2"},  # nothing ignored
+            id="inexistent-class",
+        ),
+        pytest.param(
+            ["SerialDriver:foo"],  # ignore inexistent driver class/name combination
+            {"SerialDriver:console", "ManualPowerDriver:power1", "ManualPowerDriver:power2"},  # nothing ignored
+            id="inexistent-class:name",
+        ),
+    ],
+)
+def test_remote_place_ignore_drivers(dummy_session, ignore_drivers, expected_drivers):
+    # the SerialDriver from the config binds to a matched NetworkSerialPort resource
+    dummy_session.resources[("console", "NetworkSerialPort")] = ResourceEntry(
+        {"cls": "NetworkSerialPort", "params": {"host": "localhost", "port": 4000}, "avail": True}
+    )
+    dummy_session.place.remote_place_config = textwrap.dedent(
+        """\
+            drivers:
+            - SerialDriver:
+                name: "console"
+            - ManualPowerDriver:
+                name: "power1"
+            - ManualPowerDriver:
+                name: "power2"
+        """
+    )
+
+    target = Target("test")
+    RemotePlace(target, name="test", ignore_drivers=ignore_drivers)
+
+    drivers = {f"{driver.__class__.__name__}:{driver.name}" for driver in target.drivers}
+    assert drivers == expected_drivers

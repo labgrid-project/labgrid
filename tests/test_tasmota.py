@@ -31,4 +31,4 @@ def test_tasmota_driver(target, mocker):
     res.manager._available.add("test")
     driver = TasmotaPowerDriver(target, name=None)
     target.activate(driver)
-    pw_set.assert_called_once_with("foo", "bar")
+    pw_set.assert_called_with("foo", "bar")

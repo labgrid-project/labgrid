@@ -19,6 +19,7 @@ from .udev import (
     MatchedSysfsGPIO,
     MXSUSBLoader,
     RKUSBLoader,
+    SamsungUSBLoader,
     SunxiUSBLoader,
     TegraUSBLoader,
     SiSPMPowerPort,

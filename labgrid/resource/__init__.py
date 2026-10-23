@@ -19,6 +19,7 @@ from .udev import (
     MXSUSBLoader,
     RKUSBLoader,
     SunxiUSBLoader,
+    TegraUSBLoader,
     SiSPMPowerPort,
     SigrokUSBDevice,
     SigrokUSBSerialDevice,

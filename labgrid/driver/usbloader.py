@@ -1,6 +1,7 @@
 import subprocess
 import attr
 
+from ..exceptions import InvalidConfigError
 from ..factory import target_factory
 from ..protocol import BootstrapProtocol
 from ..step import step
@@ -297,3 +298,57 @@ class SunxiUSBDriver(Driver, BootstrapProtocol):
     def execute(self):
         """Start executing the loaded image at the load address"""
         self._run_tool('exe', '%#x' % self.loadaddr)
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class TegraUSBDriver(Driver, BootstrapProtocol):
+    bindings = {
+        'loader': {'TegraUSBLoader', 'NetworkTegraUSBLoader'},
+    }
+
+    loadaddr = attr.ib(validator=attr.validators.instance_of(int))
+    image = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        # FIXME make sure we always have an environment or config
+        if self.target.env:
+            self.tool = self.target.env.config.get_tool('tegrarcm')
+        else:
+            self.tool = 'tegrarcm'
+
+    def on_activate(self):
+        pass
+
+    def on_deactivate(self):
+        pass
+
+    @Driver.check_active
+    @step(args=['filename'])
+    def load(self, filename=None, phase=None):
+        if not self.target.env:
+            raise InvalidConfigError("TegraUSBDriver needs an environment to find the 'bct' image")
+        if filename is None and self.image is not None:
+            filename = self.target.env.config.get_image_path(self.image)
+        mf = ManagedFile(filename, self.loader)
+        mf.sync_to_resource()
+
+        pathname = mf.get_remote_path()
+        bct = ManagedFile(self.target.env.config.get_image_path('bct'),
+                          self.loader)
+        bct.sync_to_resource()
+        args = [self.tool, '--bct=' + bct.get_remote_path(),
+               f'--bootloader={pathname}',
+               f'--loadaddr={self.loadaddr:#08x}',
+               '--usb-port-path', self.loader.path]
+
+        processwrapper.check_output(
+            self.loader.command_prefix + args,
+            print_on_silent_log=True
+        )
+
+    @Driver.check_active
+    @step()
+    def execute(self):
+        pass

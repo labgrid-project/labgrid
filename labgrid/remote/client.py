@@ -1709,12 +1709,12 @@ class ClientSession:
         name = self.args.name
         adb_cmd = ["adb"]
 
-        from ..resource.adb import RemoteUSBADBDevice, NetworkADBDevice
+        from ..resource.adb import NetworkUSBADBDevice, NetworkADBDevice
 
         for resource in target.resources:
             if name and resource.name != name:
                 continue
-            if isinstance(resource, RemoteUSBADBDevice):
+            if isinstance(resource, NetworkUSBADBDevice):
                 host, port = proxymanager.get_host_and_port(resource)
                 adb_cmd = ["adb", "-H", host, "-P", str(port), "-s", resource.serialno]
                 break
@@ -1734,7 +1734,12 @@ class ClientSession:
                 adb_cmd = ["adb", "-s", f"{host}:{str(port)}"]
                 break
 
-        adb_cmd += self.args.leftover
+        # If the first adb_args argument is 'scrcpy', delegate to the scrcpy method
+        if self.args.adb_args and self.args.adb_args[0] == "scrcpy":
+            self.args.leftover = self.args.adb_args[1:]
+            return self.scrcpy()
+
+        adb_cmd += self.args.adb_args
         subprocess.run(adb_cmd, check=True)
 
     def scrcpy(self):
@@ -1744,12 +1749,12 @@ class ClientSession:
         scrcpy_cmd = ["scrcpy"]
         env_var = os.environ.copy()
 
-        from ..resource.adb import RemoteUSBADBDevice, NetworkADBDevice
+        from ..resource.adb import NetworkUSBADBDevice, NetworkADBDevice
 
         for resource in target.resources:
             if name and resource.name != name:
                 continue
-            if isinstance(resource, RemoteUSBADBDevice):
+            if isinstance(resource, NetworkUSBADBDevice):
                 host, adb_port = proxymanager.get_host_and_port(resource)
                 ip_addr = gethostbyname(host)
                 env_var["ADB_SERVER_SOCKET"] = f"tcp:{ip_addr}:{adb_port}"
@@ -2368,17 +2373,12 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser = subparsers.add_parser("version", help="show version")
     subparser.set_defaults(func=ClientSession.print_version)
 
-    adb_subparser = subparsers.add_parser("adb", help="Run Android Debug Bridge")
-    adb_subparser.add_argument("--name", "-n", help="optional resource name")
-    adb_subparser.add_argument(
+    subparser = subparsers.add_parser("adb", help="Run Android Debug Bridge")
+    subparser.add_argument("--name", "-n", help="optional resource name")
+    subparser.add_argument(
         "adb_args", nargs=argparse.REMAINDER, help="adb command to execute (e.g. 'shell', 'devices', etc.)"
     )
-    adb_subparser.set_defaults(func=ClientSession.adb)
-
-    adb_subparsers = adb_subparser.add_subparsers(dest="adb_command")
-    scrcpy_subparser = adb_subparsers.add_parser("scrcpy", help="Run scrcpy to remote control an android device")
-    scrcpy_subparser.add_argument("--name", "-n", help="optional resource name")
-    scrcpy_subparser.set_defaults(func=ClientSession.scrcpy)
+    subparser.set_defaults(func=ClientSession.adb)
 
     return parser
 

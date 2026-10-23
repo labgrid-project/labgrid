@@ -12,7 +12,7 @@ class USBADBDevice(Resource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
-class RemoteUSBADBDevice(NetworkResource):
+class NetworkUSBADBDevice(NetworkResource):
     serialno = attr.ib(validator=attr.validators.instance_of(str))
     port = attr.ib(converter=int, validator=attr.validators.instance_of(int))
 

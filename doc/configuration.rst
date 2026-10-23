@@ -1481,10 +1481,10 @@ USBADBDevice
 Arguments:
  - serialno (str): The serial number of the device as shown by adb
 
-RemoteUSBADBDevice
-++++++++++++++++++
+NetworkUSBADBDevice
++++++++++++++++++++
 
-A :any:`RemoteUSBADBDevice` describes a `USBADBDevice`_ available on a remote computer.
+A :any:`NetworkUSBADBDevice` describes a `USBADBDevice`_ available on a remote computer.
 
 NetworkADBDevice
 ++++++++++++++++
@@ -4052,7 +4052,7 @@ It can interact with both USB and TCP adb devices.
 Binds to:
   device:
     - `USBADBDevice`_
-    - `RemoteUSBADBDevice`_
+    - `NetworkUSBADBDevice`_
     - `NetworkADBDevice`_
 
 Implements:

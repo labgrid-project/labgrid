@@ -179,6 +179,60 @@ allocated before returning.
 A reservation will time out after a short time, if it is neither refreshed nor
 used by locked places.
 
+.. _remote-place-config:
+
+Remote Place Config
+~~~~~~~~~~~~~~~~~~~
+
+Besides the resources matched to a place, the coordinator can store a *remote
+place config* for each place.
+It contains resources, drivers and options which every client using the place
+via a :any:`RemotePlace` gets.
+This way, they need to be defined only once in the coordinator instead of in
+the environment configuration.
+
+The remote place config is edited with ``labgrid-client edit``, which opens it
+in an interactive editor:
+
+.. code-block:: bash
+
+  $ labgrid-client -p example-place edit
+
+It uses the same syntax as a target in the
+:ref:`environment configuration <configuration:Environment Configuration>`,
+restricted to the ``resources``, ``drivers`` and ``options`` keys:
+
+.. code-block:: yaml
+
+  resources:
+    NetworkService:
+      address: '192.168.1.42'
+      username: 'root'
+  drivers:
+    SSHDriver: {}
+  options:
+    eth_iface: 'eth0'
+
+``labgrid-client show`` displays the remote place config of a place.
+The remote place config is applied whenever a `RemotePlace` resource is
+created:
+
+- Remote place config resources are created in addition to the place's resource
+  matches.
+- Remote place config drivers are created afterwards.
+- Remote place config options are added to ``Target.options``, where options
+  defined for the target in the environment configuration take precedence.
+
+.. note::
+   Objects are instantiated in the order they appear in the remote place config
+   as well as in the local :ref:`environment-configuration`.
+   Resources and drivers defined after the `RemotePlace` in the environment
+   configuration are created later and can bind to those provided by the
+   coordinator.
+
+.. note::
+   Templating in remote place configs is not supported.
+
 Library
 -------
 labgrid can be used directly as a Python library, without the infrastructure

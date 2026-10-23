@@ -355,6 +355,10 @@ When a RemotePlace is configured for a :any:`Target`, it will create a client
 connection to the coordinator, create additional resource objects for those
 configured for that place and keep them updated at runtime.
 
+In addition to the resources matched to a place, the coordinator can provide
+resources, drivers and options via its
+:ref:`remote place config <remote-place-config>`.
+
 The additional resource objects can be bound to by drivers as normal and the
 drivers do not need to be aware that they were provided by the coordinator.
 For resource types which do not have an existing, network-transparent protocol

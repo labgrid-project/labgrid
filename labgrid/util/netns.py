@@ -1,6 +1,7 @@
 import contextlib
 import errno
 import functools
+import json
 import logging
 import os
 import random
@@ -12,6 +13,7 @@ import tempfile
 
 from . import get_free_port
 from .agent import py2s, s2py
+from .helper import processwrapper
 
 
 class NSSocket(socket.socket):
@@ -112,7 +114,7 @@ class NetNamespace:
         return self._agent.get_intf()
 
     def ifindex(self):
-        links = self._agent.get_links()
+        links = self.get_links()
         for intf in links:
             if intf["ifname"] == self.intf:
                 return intf["ifindex"]
@@ -167,17 +169,23 @@ class NetNamespace:
         return result
 
     @contextlib.contextmanager
-    def socks_proxy(self):
-        port = get_free_port()
+    def _microsocks_proxy(self, port=1080):
         password = "".join(random.choice(string.ascii_letters + string.digits) for i in range(10))
 
+        with self.Popen(
+            ["microsocks", "-u", "labgrid", "-P", password, "-i", "127.0.0.1", "-p", str(port)],
+        ) as proxy:
+            try:
+                yield password
+            finally:
+                proxy.terminate()
+
+    @contextlib.contextmanager
+    def socks_proxy(self):
+        port = get_free_port()
+
         with contextlib.ExitStack() as stack:
-            proxy = stack.enter_context(
-                self.Popen(
-                    ["microsocks", "-u", "labgrid", "-P", password, "-i", "127.0.0.1"],
-                )
-            )
-            stack.callback(lambda: proxy.terminate())
+            password = stack.enter_context(self._microsocks_proxy())
             s = stack.enter_context(socket.socket())
             s.bind(("127.0.0.1", port))
             s.listen()
@@ -190,4 +198,45 @@ class NetNamespace:
             stack.callback(lambda: socat.terminate())
             stack.callback(lambda: print("A"))
             s.close()
+            yield (port, password)
+
+
+class DefaultNetNamespace(NetNamespace):
+    """
+    A NetNamespace object representing the default network namespace.
+
+    This can be used in situations where a network namespace is expected, but
+    the actual operations should be performed in the default namespace.
+
+    The interface defaults to loopback and can be selected with ``intf`` at
+    initialization.  No interfaces are created or configured.
+    """
+
+    @classmethod
+    def create(cls, agentwrapper=None, mac_address=None):
+        return cls()
+
+    def __init__(self, intf="lo"):
+        super().__init__(None)
+        self.intf = intf
+        self.prefix = []
+
+    def get_links(self):
+        return json.loads(processwrapper.check_output(["ip", "-j", "link"]))
+
+    def _get_cmd(self, command):
+        if isinstance(command, str):
+            return ["/bin/sh", "-c", command]
+        return command
+
+    def socket(self, *args, **kwargs):
+        return socket.socket(*args, **kwargs)
+
+    def getaddrinfo(self, *args, **kwargs):
+        return socket.getaddrinfo(*args, **kwargs)
+
+    @contextlib.contextmanager
+    def socks_proxy(self):
+        port = get_free_port()
+        with self._microsocks_proxy(port) as password:
             yield (port, password)

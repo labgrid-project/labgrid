@@ -41,7 +41,6 @@ def main():
 
         config.setdefault("places", {})
 
-        changed = False
         seen_places = set()
         remove_places = set()
         for name, place in session.places.items():
@@ -57,8 +56,6 @@ def main():
                 await session.stub.DeletePlace(request)
                 await session.sync_with_coordinator()
 
-            changed = True
-
         for name in config["places"]:
             if not name in seen_places:
                 print(f"Adding place {name}")
@@ -66,8 +63,6 @@ def main():
                     request = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
                     await session.stub.AddPlace(request)
                     await session.sync_with_coordinator()
-
-                changed = True
 
         for name in config["places"]:
             matches = []
@@ -101,8 +96,6 @@ def main():
                     await session.stub.DeletePlaceMatch(request)
                     await session.sync_with_coordinator()
 
-                changed = True
-
             for m in matches:
                 if not m in seen_matches:
                     match, rename = m
@@ -117,7 +110,6 @@ def main():
                         )
                         await session.stub.AddPlaceMatch(request)
                         await session.sync_with_coordinator()
-                    changed = True
 
             tags = {str(k): str(v) for k, v in config["places"][name].get("tags", {}).items()}
 
@@ -139,8 +131,6 @@ def main():
                     request = labgrid_coordinator_pb2.SetPlaceTagsRequest(placename=name, tags=tags)
                     await session.stub.SetPlaceTags(request)
                     await session.sync_with_coordinator()
-
-                changed = True
 
     async def do_dump(session, args):
         config = {"places": {}}

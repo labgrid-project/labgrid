@@ -89,8 +89,12 @@ class RemotePlaceManager(ResourceManager):
         if "RemotePlace" in resources:
             # RemotePlace not allowed in remote place config, would recurse infitintely
             raise ValueError("RemotePlace not allowed in remote place config")
-        target_factory.make_resources_from_config(remote_place.target, remote_place_config.get("resources", {}))
-        target_factory.make_drivers_from_config(remote_place.target, remote_place_config.get("drivers", {}))
+        target_factory.make_resources_from_config(
+            remote_place.target, remote_place_config.get("resources", {}), ignore=remote_place.ignore_resources
+        )
+        target_factory.make_drivers_from_config(
+            remote_place.target, remote_place_config.get("drivers", {}), ignore=remote_place.ignore_drivers
+        )
         # local options from the environment configuration take precedence
         for name, value in remote_place_config.get("options", {}).items():
             remote_place.target.options.setdefault(name, value)
@@ -127,6 +131,21 @@ class RemotePlaceManager(ResourceManager):
 @attr.s(eq=False)
 class RemotePlace(ManagedResource):
     manager_cls = RemotePlaceManager
+
+    ignore_resources = attr.ib(
+        default=attr.Factory(list),
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of(str),
+            iterable_validator=attr.validators.instance_of(list),
+        ),
+    )
+    ignore_drivers = attr.ib(
+        default=attr.Factory(list),
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of(str),
+            iterable_validator=attr.validators.instance_of(list),
+        ),
+    )
 
     def __attrs_post_init__(self):
         self.timeout = 10.0

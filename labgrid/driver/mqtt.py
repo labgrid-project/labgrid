@@ -32,6 +32,7 @@ class TasmotaPowerDriver(Driver, PowerProtocol):
     def on_activate(self):
         self._client.on_message = self._on_message
         self._client.on_connect = self._on_connect
+        self._client.username_pw_set(self.power.username, self.power.password)
         self._client.connect(self.power.host)
         self._client.loop_start()
 

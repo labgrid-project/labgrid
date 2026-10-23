@@ -230,6 +230,37 @@ created:
    configuration are created later and can bind to those provided by the
    coordinator.
 
+To leave out or override resources and drivers from the remote place config,
+list them in the ``ignore_resources`` and ``ignore_drivers`` arguments of the
+`RemotePlace` in the environment configuration.
+
+For example, imagine someone wants to use the above place, but log in via a
+second interface as a different user requiring an SSH key.
+A local environment config override for this could look like:
+
+.. code-block:: yaml
+
+  targets:
+    main:
+      resources:
+        RemotePlace:
+          name: 'example-place'
+          ignore_resources:
+          - NetworkService
+          ignore_drivers:
+          - SSHDriver
+        NetworkService:
+          address: '192.168.1.43'
+      drivers:
+        SSHDriver:
+          keyfile: 'id_ed25519_test'
+      options:
+        eth_iface: 'eth1'
+
+Entries in ``ignore_resources`` and ``ignore_drivers`` are either class names,
+ignoring all resources or drivers of that class, or ``<class>:<name>``,
+ignoring only the one with the given name.
+
 .. note::
    Templating in remote place configs is not supported.
 

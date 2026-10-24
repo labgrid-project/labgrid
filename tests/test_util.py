@@ -302,6 +302,85 @@ def test_proxymanager_local_forced_proxy(target):
 
     assert (host, port) != (nhost, nport)
 
+def test_proxymanager_get_ssh_host_no_extra(target):
+    nr = NetworkSerialPort(target, host='example.com', port=5000, name=None)
+
+    assert proxymanager.get_ssh_host(nr) == 'example.com'
+
+def test_proxymanager_get_ssh_host_not_required(target):
+    nr = NetworkSerialPort(target, host='example.com', port=5000, name=None)
+    nr.extra = {'proxy_required': False, 'proxy': 'proxyhost'}
+
+    assert proxymanager.get_ssh_host(nr) == 'example.com'
+
+def test_proxymanager_get_ssh_host_required(target):
+    nr = NetworkSerialPort(target, host='example.com', port=5000, name=None)
+    nr.extra = {'proxy_required': True, 'proxy': 'proxyhost'}
+
+    assert proxymanager.get_ssh_host(nr) == 'proxyhost'
+
+def test_managedfile_sync_uses_proxy_host(mocker, target, tmpdir):
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+
+    res = NetworkResource(target, "test", host="unreachable.invalid")
+    res.extra = {"proxy_required": True, "proxy": "proxyhost"}
+
+    mock_conn = mocker.MagicMock()
+    mock_sshmanager = mocker.patch("labgrid.util.managedfile.sshmanager")
+    mock_sshmanager.open.return_value = mock_conn
+
+    mf = ManagedFile(t, res, detect_nfs=False)
+    mf.sync_to_resource()
+
+    mock_sshmanager.open.assert_called_once_with("proxyhost")
+    mock_conn.run_check.assert_called_once_with(f"mkdir -p {mf.rpath}")
+    mock_conn.put_file.assert_called_once_with(
+        mf.local_path, f"{mf.rpath}{os.path.basename(mf.local_path)}"
+    )
+
+@pytest.mark.localsshmanager
+def test_remote_managedfile_via_proxy(target, tmpdir):
+    """Scenario, resource.host is unreachable (simulates an
+    isolated exporter's address), extra['proxy'] is the only reachable host.
+    Proves ManagedFile connects to the proxy, not resource.host."""
+    import hashlib
+    import getpass
+
+    res = NetworkResource(target, "test", "unreachable.invalid")
+    res.extra = {"proxy": "localhost", "proxy_required": True}
+    t = tmpdir.join("test")
+    t.write(
+"""
+Test
+"""
+    )
+    hash = hashlib.sha256(t.read().encode("utf-8")).hexdigest()
+    mf = ManagedFile(t, res, detect_nfs=False)
+    mf.sync_to_resource()
+
+    assert os.path.isfile(f"/var/cache/labgrid/{getpass.getuser()}/{hash}/test")
+
+@pytest.mark.localsshmanager
+def test_command_prefix_via_proxy(target):
+    """Real-SSH scenario: resource.host is unreachable, extra['proxy'] is the
+    only reachable host. Proves command_prefix executes on the proxy, not
+    resource.host."""
+    res = NetworkResource(target, "test", "unreachable.invalid")
+    res.extra = {"proxy": "localhost", "proxy_required": True}
+
+    result = subprocess.run(
+        res.command_prefix + ["echo", "proxy-ok"],
+        capture_output=True, text=True, timeout=10,
+    )
+
+    assert result.returncode == 0
+    assert result.stdout.strip() == "proxy-ok"
+
 @pytest.mark.localsshmanager
 def test_remote_managedfile(target, tmpdir):
     import hashlib

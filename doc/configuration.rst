@@ -1395,6 +1395,35 @@ NetworkDediprogFlasher
 A :any:`NetworkDediprogFlasher` describes a `DediprogFlasher`_ resource
 available on a remote computer.
 
+SFEmulator
+~~~~~~~~~~
+A :any:`SFEmulator` resource describes a USB-connected SPI-flash emulator.
+This allows a DUT's SPI flash to be replaced or overridden with the emulator,
+which is much faster to load than reprogramming the DUT's actual SPI flash.
+
+So far only the Dediprog EM100-PRO is supported, so there is no 'model' property
+defined. The EM100-PRO has no USB serial number, so it is normally matched by
+its USB path.
+
+.. code-block:: yaml
+
+   SFEmulator:
+     match:
+       ID_PATH: 'pci-0000:00:14.0-usb-0:3'
+     chip: 'W25Q64CV'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+  - chip (str): SPI-flash chip to emulate, as accepted by ``em100 --set``
+
+Used by:
+  - `SFEmulatorDriver`_
+
+NetworkSFEmulator
+~~~~~~~~~~~~~~~~~
+A :any:`NetworkSFEmulator` describes a `SFEmulator`_ resource available on a
+remote computer.
+
 XenaManager
 ~~~~~~~~~~~
 A :any:`XenaManager` resource describes a *Xena Manager* instance which is the
@@ -3636,6 +3665,16 @@ The DediprogFlashDriver allows using DediprogFlasher dpcmd to flash or erase SPI
 devices. It is assumed that the device flashing is an exporter wired, via a
 *Dediprog SF100 SPI NOR Flash Programmer* for instance, to the device being
 flashed.
+
+SFEmulatorDriver
+~~~~~~~~~~~~~~~~
+The :any:`SFEmulatorDriver` uses the ``em100`` tool to emulate a SPI-flash
+device on the DUT.
+
+Binds to:
+  emul:
+    - `SFEmulator`_
+    - `NetworkSFEmulator`_
 
 XenaDriver
 ~~~~~~~~~~

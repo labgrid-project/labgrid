@@ -1083,6 +1083,14 @@ class Exporter:
                     finally:
                         in_message = labgrid_coordinator_pb2.ExporterInMessage()
                         in_message.response.success = success
+                        if success:
+                            logging.info(
+                                "%s/%s %s by %s",
+                                out_message.set_acquired_request.group_name,
+                                out_message.set_acquired_request.resource_name,
+                                "acquired" if out_message.set_acquired_request.place_name else "released",
+                                out_message.set_acquired_request.client_identity.id,
+                            )
                         if reason:
                             in_message.response.reason = reason
                         logging.debug("queuing %s", in_message)
@@ -1117,7 +1125,7 @@ class Exporter:
 
         if resource.acquired:
             raise InvalidResourceRequestError(
-                f"Resource {group_name}/{resource_name} is already acquired by {resource.acquired}"
+                f"Resource {group_name}/{resource_name} is already in use by {resource.acquired}"
             )
 
         try:

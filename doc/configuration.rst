@@ -3104,6 +3104,47 @@ Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of an image to write to the target
 
+.. rubric:: Writing images with bmaptool
+
+``write_image()`` supports ``Mode.BMAPTOOL`` and ``Mode.BMAPTOOL_STREAMING``.
+Both require ``bmaptool`` on the system connected to the storage device and
+reject nonzero ``skip`` or ``seek`` offsets.
+
+``Mode.BMAPTOOL`` makes the image available on that system through
+``ManagedFile``, using the exporter cache or a shared filesystem for remote
+storage. ``Mode.BMAPTOOL_STREAMING`` serves the image from the client over HTTP
+instead, without staging or caching the image on the exporter:
+
+.. code-block:: python
+
+   from labgrid.driver import Mode
+
+   storage = target.get_driver("USBStorageDriver")
+   storage.write_image("image.wic.gz", mode=Mode.BMAPTOOL_STREAMING)
+
+The streaming mode takes a local filename. Labgrid starts a temporary HTTP
+server on the client and a reverse SSH tunnel with a dynamically allocated
+loopback port on the exporter. ``bmaptool`` runs on the exporter and writes to
+the attached storage device.
+
+Both bmaptool modes search for an adjacent block map by appending ``.bmap`` to
+the image filename, then repeatedly removing its last extension. For example,
+``image.wic.gz`` checks ``image.wic.gz.bmap``, ``image.wic.bmap``, and
+``image.bmap``, in that order. The block map is synchronized separately; if no
+block map is found, labgrid passes ``--nobmap`` to ``bmaptool``.
+
+The HTTP server supports byte-range requests and exposes only the selected image
+through a unique URL. The server and tunnel are closed when the write exits,
+including on failure.
+
+The written image must be kept available on the client until labgrid has
+written the full image to the target in the case of streaming, or until rsync
+completes copying the image. A failed write can leave the storage device
+partially written.
+
+Streaming avoids exporter image-cache space, but transfers the image again for
+each write. Cached or shared images can be preferable for repeated writes.
+
 OneWirePIODriver
 ~~~~~~~~~~~~~~~~
 A :any:`OneWirePIODriver` controls a `OneWirePIO`_ resource.

@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import enum
 import os
 import pathlib
@@ -10,6 +11,8 @@ from ..factory import target_factory
 from ..resource.remote import RemoteUSBResource
 from ..step import step
 from ..util.managedfile import ManagedFile
+from ..util.http import serve_file
+from ..util.ssh import sshmanager
 from .common import Driver
 from ..driver.exception import ExecutionError
 
@@ -21,6 +24,7 @@ from ..util import Timeout
 class Mode(enum.Enum):
     DD = "dd"
     BMAPTOOL = "bmaptool"
+    BMAPTOOL_STREAMING = "bmaptool-streaming"
 
     def __str__(self):
         return self.value
@@ -132,7 +136,8 @@ class USBStorageDriver(Driver):
 
         Args:
             filename (str): optional, path to the image to write to bound USB storage
-            mode (Mode): optional, Mode.DD or Mode.BMAPTOOL (defaults to Mode.DD)
+            mode (Mode): optional, Mode.DD, Mode.BMAPTOOL, or Mode.BMAPTOOL_STREAMING
+                (defaults to Mode.DD)
             partition (int or None): optional, write to the specified partition or None for writing
                 to root device (defaults to None)
             skip (int): optional, skip n 512-sized blocks at start of input file (defaults to 0)
@@ -141,68 +146,92 @@ class USBStorageDriver(Driver):
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
         assert filename, "write_image requires a filename"
-        mf = ManagedFile(filename, self.storage)
-        mf.sync_to_resource()
+        if mode in (Mode.BMAPTOOL, Mode.BMAPTOOL_STREAMING) and (skip or seek):
+            raise ExecutionError("bmaptool does not support skip or seek")
+        with self._image_path(filename, mode) as remote_path:
+            self._wait_for_medium(partition)
 
-        self._wait_for_medium(partition)
+            target = self._get_devpath(partition)
 
-        target = self._get_devpath(partition)
-        remote_path = mf.get_remote_path()
+            if mode == Mode.DD:
+                self.logger.info('Writing %s to %s using dd.', remote_path, target)
+                block_size = '512' if skip or seek else '4M'
+                args = [
+                    "dd",
+                    f"if={remote_path}",
+                    f"of={target}",
+                    "oflag=direct",
+                    "status=progress",
+                    f"bs={block_size}",
+                    f"skip={skip}",
+                    f"seek={seek}",
+                    "conv=fdatasync"
+                ]
+            elif mode in (Mode.BMAPTOOL, Mode.BMAPTOOL_STREAMING):
+                # Try to find a block map file using the same logic that bmaptool
+                # uses. Handles cases where the image is named like: <image>.bz2
+                # and the block map file is <image>.bmap
+                mf_bmap = None
+                image_path = filename
+                while True:
+                    bmap_path = f"{image_path}.bmap"
+                    if os.path.exists(bmap_path):
+                        mf_bmap = ManagedFile(bmap_path, self.storage)
+                        mf_bmap.sync_to_resource()
+                        break
 
-        if mode == Mode.DD:
-            self.logger.info('Writing %s to %s using dd.', remote_path, target)
-            block_size = '512' if skip or seek else '4M'
-            args = [
-                "dd",
-                f"if={remote_path}",
-                f"of={target}",
-                "oflag=direct",
-                "status=progress",
-                f"bs={block_size}",
-                f"skip={skip}",
-                f"seek={seek}",
-                "conv=fdatasync"
-            ]
-        elif mode == Mode.BMAPTOOL:
-            if skip or seek:
-                raise ExecutionError("bmaptool does not support skip or seek")
+                    image_path, ext = os.path.splitext(image_path)
+                    if not ext:
+                        break
 
-            # Try to find a block map file using the same logic that bmaptool
-            # uses. Handles cases where the image is named like: <image>.bz2
-            # and the block map file is <image>.bmap
-            mf_bmap = None
-            image_path = filename
-            while True:
-                bmap_path = f"{image_path}.bmap"
-                if os.path.exists(bmap_path):
-                    mf_bmap = ManagedFile(bmap_path, self.storage)
-                    mf_bmap.sync_to_resource()
-                    break
+                self.logger.info('Writing %s to %s using bmaptool.', remote_path, target)
+                args = [
+                    "bmaptool",
+                    "copy",
+                    f"{remote_path}",
+                    f"{target}",
+                ]
 
-                image_path, ext = os.path.splitext(image_path)
-                if not ext:
-                    break
-
-            self.logger.info('Writing %s to %s using bmaptool.', remote_path, target)
-            args = [
-                "bmaptool",
-                "copy",
-                f"{remote_path}",
-                f"{target}",
-            ]
-
-            if mf_bmap is None:
-                args.append("--nobmap")
+                if mf_bmap is None:
+                    args.append("--nobmap")
+                else:
+                    args.append(f"--bmap={mf_bmap.get_remote_path()}")
             else:
-                args.append(f"--bmap={mf_bmap.get_remote_path()}")
-        else:
-            raise ValueError
+                raise ValueError
 
-        processwrapper.check_wrapped_output(
-            self.storage,
-            args,
-            print_on_silent_log=True
-        )
+            processwrapper.check_wrapped_output(
+                self.storage,
+                args,
+                print_on_silent_log=True
+            )
+
+    @contextmanager
+    def _image_path(self, filename, mode):
+        if mode != Mode.BMAPTOOL_STREAMING:
+            mf = ManagedFile(filename, self.storage)
+            mf.sync_to_resource()
+            yield mf.get_remote_path()
+            return
+
+        # Validate before starting a server or opening an SSH connection.
+        mf = ManagedFile(filename, self.storage)
+        with serve_file(mf.local_path) as (local_port, path):
+            if not isinstance(self.storage, RemoteUSBResource):
+                yield f"http://127.0.0.1:{local_port}{path}"
+                return
+            host = self.storage.host
+            if getattr(self.storage, 'extra', {}).get('proxy_required'):
+                host = self.storage.extra.get('proxy')
+            connection = sshmanager.open(host)
+            remote_port = connection.add_remote_port_forward(
+                0, local_port, remote_bind="127.0.0.1"
+            )
+            try:
+                yield f"http://127.0.0.1:{remote_port}{path}"
+            finally:
+                connection.remove_remote_port_forward(
+                    remote_port, local_port, remote_bind="127.0.0.1"
+                )
 
     def _get_devpath(self, partition):
         partition = "" if partition is None else partition

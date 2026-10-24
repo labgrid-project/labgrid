@@ -620,6 +620,24 @@ available both locally and remotely via the same path:
 If this is the case the actual file transfer in ``sync_to_resource`` is
 skipped.
 
+HTTP File Serving
+-----------------
+
+Use ``labgrid.util.http.serve_file(filename)`` when a consumer needs HTTP access
+to a local file rather than a copy uploaded with ``ManagedFile``.
+The context manager yields ``(port, path)`` for a server bound to ``127.0.0.1``
+on an automatically selected port.
+The randomized URL path preserves the filename suffix for consumers which
+infer compression from the URL.
+Only the selected file is exposed; the server supports ``HEAD``, ``GET``, and
+single byte-range ``GET`` requests.
+
+.. note::
+   Keep the context open until the consumer finishes reading.
+   Leaving the context stops the server and interrupts active connections,
+   including when the consumer raises an exception.
+   For remote consumers, arrange a tunnel to the loopback listener separately.
+
 ProxyManager
 ------------
 The proxymanager is used to open connections across proxies via an attribute in

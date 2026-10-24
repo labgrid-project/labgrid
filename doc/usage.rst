@@ -416,6 +416,26 @@ The driver activation will also wait for unavailable resources when needed.
 For more information on the environment configuration files and the usage of
 multiple drivers, see :ref:`configuration:Environment Configuration`.
 
+Serving a File over HTTP
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``labgrid.util.http.serve_file()`` context manager serves a single local
+file over HTTP and yields its port and URL path:
+
+.. code-block:: python
+
+   from urllib.request import urlopen
+   from labgrid.util.http import serve_file
+
+   with serve_file("image.wic") as (port, path):
+       with urlopen(f"http://127.0.0.1:{port}{path}") as response:
+           data = response.read()
+
+.. note::
+   The server listens only on ``127.0.0.1`` and is available only inside the
+   ``with`` block. Remote consumers require a tunnel to reach it.
+   HTTP clients can request individual byte ranges instead of the entire file.
+
 pytest Plugin
 -------------
 labgrid includes a `pytest <http://pytest.org>`_ plugin to simplify writing tests which

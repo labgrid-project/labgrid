@@ -57,8 +57,6 @@ async def external(check_allowed, host, port, resource, logfile, listen_only):
         if logfile:
             logger.warning("--logfile option not supported by telnet, ignoring")
 
-    if logfile:
-        call.append(f"--logfile={logfile}")
     logger.info("connecting to %s calling %s", resource, " ".join(call))
     p = await asyncio.create_subprocess_exec(*call)
     while p.returncode is None:

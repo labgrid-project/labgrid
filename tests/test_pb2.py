@@ -55,6 +55,8 @@ def test_from_pb2_tags_deepcopy():
     place_new = Place.from_pb2(pb2)
     import copy
     tags_copy = copy.deepcopy(place_new.tags)
+    assert tags_copy == place_new.tags
+    assert tags_copy is not place_new.tags
 
 def test_place_as_pb2_copy_with_match():
     tags = {"some": "test", "more": "values"}
@@ -64,8 +66,15 @@ def test_place_as_pb2_copy_with_match():
 
     update_response = labgrid_coordinator_pb2.UpdateResponse()
     update_response.place.CopyFrom(place_start.as_pb2())
-
     out.updates.append(update_response)
+
+    place_pb2 = out.updates[0].place
+    assert place_pb2.name == "testing-place"
+    assert place_pb2.comment == "Hello"
+    assert len(place_pb2.matches) == 1
+    assert place_pb2.matches[0].exporter == "testporter"
+    assert place_pb2.matches[0].group == "somegroup"
+    assert place_pb2.matches[0].cls == "someclass"
 
 def test_match_as_from_pb2():
     rms = ResourceMatch("*", "somegroup", "someclass")

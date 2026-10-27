@@ -964,12 +964,7 @@ class ClientSession:
                 target.activate(drv)
             return drv
 
-    def power(self):
-        place = self.get_acquired_place()
-        action = self.args.action
-        delay = self.args.delay
-        name = self.args.name
-        target = self._get_target(place)
+    def _get_power_driver(self, target, name=None):
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
         from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
         from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
@@ -1001,11 +996,24 @@ class ClientSession:
 
         if not drv:
             raise UserError("target has no compatible resource available")
+        return drv
+
+    def _power(self, place, target, action, name=None, delay=None):
+        """Run a power action, return a message to show for "get"."""
+        drv = self._get_power_driver(target, name)
         if delay is not None:
             drv.delay = delay
         res = getattr(drv, action)()
         if action == "get":
-            print(f"power{' ' + name if name else ''} for place {place.name} is {'on' if res else 'off'}")
+            return f"power{' ' + name if name else ''} for place {place.name} is {'on' if res else 'off'}"
+        return None
+
+    def power(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        msg = self._power(place, target, self.args.action, self.args.name, self.args.delay)
+        if msg:
+            print(msg)
 
     def digital_io(self):
         place = self.get_acquired_place()

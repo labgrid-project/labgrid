@@ -671,6 +671,9 @@ Workflow
   documentation and test code.
 - If your change affects backward compatibility, describe the necessary changes
   in the commit message and update the examples where needed.
+- If the gRPC protocol or handlers are modified, ensure that the OpenTelemetry
+  instrumentation is updated accordingly. This includes ensuring that
+  attributes added to spans are still valid.
 
 Code
 ~~~~

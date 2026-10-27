@@ -1,23 +1,24 @@
-from typing import Optional
+import logging
 
 from grpc.aio import ClientCallDetails, ClientInterceptor, StreamStreamClientInterceptor, UnaryUnaryClientInterceptor
 
-from labgrid.remote.identity import HOSTNAME_KEY, USER_AGENT_KEY, NAME_KEY
+from labgrid.remote.auth.plugin import ClientAuthPlugin
 
 
 class BaseIdentityClientInterceptor(ClientInterceptor):
-    def __init__(self, username: Optional[str], hostname: str, user_agent: Optional[str]):
+    logger = logging.getLogger(__name__)
+
+    def __init__(self, plugin: ClientAuthPlugin):
         super().__init__()
-        self.username = username
-        self.hostname = hostname
-        self.user_agent = user_agent
+        self.plugin = plugin
 
     def _inject(self, client_call_details: ClientCallDetails):
-        if self.username:
-            client_call_details.metadata.add(NAME_KEY, self.username)
-        client_call_details.metadata.add(HOSTNAME_KEY, self.hostname)
-        if self.user_agent:
-            client_call_details.metadata.add(USER_AGENT_KEY, self.user_agent)
+        metadata_to_inject = self.plugin.metadata()
+        self.logger.debug("Metadata from plugin: %s", metadata_to_inject)
+        for k, vs in metadata_to_inject.items():
+            for v in vs:
+                client_call_details.metadata.add(k, v)
+        self.logger.debug("RPC metadata after modifications: %s", client_call_details.metadata)
 
 
 class IdentityClientUnaryUnaryInterceptor(UnaryUnaryClientInterceptor, BaseIdentityClientInterceptor):

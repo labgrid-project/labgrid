@@ -1,5 +1,6 @@
 import logging
 import copy
+import threading
 
 import attr
 
@@ -27,9 +28,17 @@ class StepFormatter:
     def __init__(self, *args, indent=True, color=None, parent=None, **kwargs):
         self.formatter = parent or logging.Formatter(*args, **kwargs)
         self.indent = indent
-        self.indent_level = 0
+        self._thread_local = threading.local()
         self.bufs = dict()
         self.color = color
+
+    @property
+    def indent_level(self):
+        return getattr(self._thread_local, "indent_level", 0)
+
+    @indent_level.setter
+    def indent_level(self, value):
+        self._thread_local.indent_level = value
 
     def format(self, record):
         old_msg = record.msg

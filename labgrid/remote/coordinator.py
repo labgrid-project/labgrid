@@ -12,12 +12,23 @@ import random
 import signal
 import pathlib
 from typing import Optional
+import os
 
 import attr
+import cel
 import grpc
+from grpc_health.v1 import health, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
-from labgrid.remote.identity import ClientIdentity, infer_peer_identity
+from labgrid.remote.identity import infer_peer_identity
+from labgrid.remote.auth.plugin import (
+    CoordinatorAuthPlugin,
+    clientidentity_from_plugin,
+    get_coordinator_auth_plugin,
+    DefaultCoordinatorAuthPlugin,
+    get_coordinator_auth_plugin_names,
+)
+from .auth.capability import Capability
 
 from .common import (
     ResourceEntry,
@@ -32,7 +43,14 @@ from .common import (
 from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
+from .grpc.health import HealthServicer
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
+from .otel import (
+    record_reservation_wait_duration,
+    setup_otel_metrics,
+    setup_otel_sdk_if_available,
+    set_traceparent_in_metadata,
+)
 
 
 @contextmanager
@@ -186,17 +204,43 @@ def locked(func):
     return wrapper
 
 
+async def check_capability(cls, identity, capability, context):
+    if not cls.use_capabilities:
+        return
+    if not identity:
+        await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities")
+    if capability not in identity.capabilities:
+        await context.abort(
+            grpc.StatusCode.PERMISSION_DENIED,
+            f"Capability {capability} not in client capabilities {identity.capabilities}",
+        )
+
+
+def require_capability(req_cap):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self, request, context):
+            identity = clientidentity_from_plugin(self.auth_plugin, context.invocation_metadata())
+            await check_capability(self, identity, req_cap, context)
+            return await func(self, request, context, identity=identity)
+
+        return wrapper
+
+    return decorator
+
+
 def add_identity(func):
     @wraps(func)
     async def wrapper(self, request, context):
-        identity = ClientIdentity.from_metadata(context.invocation_metadata())
+        identity = clientidentity_from_plugin(self.auth_plugin, context.invocation_metadata())
         return await func(self, request, context, identity=identity)
 
     return wrapper
 
 
 class ExporterCommand:
-    def __init__(self, request) -> None:
+    def __init__(self, kind, request) -> None:
+        self.kind = kind
         self.request = request
         self.response = None
         self.completed = asyncio.Event()
@@ -226,8 +270,14 @@ class ExporterError(CoordinatorError):
     pass
 
 
+class LeaseExtendPreconditionError(CoordinatorError):
+    pass
+
+
 class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
-    def __init__(self) -> None:
+    def __init__(self, use_capabilities, auth_plugin: CoordinatorAuthPlugin = DefaultCoordinatorAuthPlugin()) -> None:
+        self.use_capabilities = use_capabilities
+        self.auth_plugin = auth_plugin
         self.places: dict[str, Place] = {}
         self.reservations = {}
         self.poll_tasks = []
@@ -236,6 +286,34 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.lock = asyncio.Lock()
         self.exporters: dict[str, ExporterSession] = {}
         self.clients: dict[str, ClientSession] = {}
+        self.default_lease_duration = int(
+            os.environ.get("LG_DEFAULT_LEASE_DURATION", 15 * 60)
+        )  # lease starts with 15 minutes
+        self.default_extend_duration = int(
+            os.environ.get("LG_DEFAULT_EXTEND_DURATION", 5 * 60)
+        )  # every extend adds 5 minutes
+        self.max_lease_duration = int(
+            os.environ.get("LG_MAX_LEASE_DURATION", 2 * 60 * 60)
+        )  # total from lease start can never exceed 2 hours
+        self.poll_interval = float(os.environ.get("LG_COORDINATOR_POLL_INTERVAL", 15.0))
+
+        if self.default_lease_duration <= 0:
+            raise ValueError("LG_DEFAULT_LEASE_DURATION must be > 0")
+        if self.default_extend_duration <= 0:
+            raise ValueError("LG_DEFAULT_EXTEND_DURATION must be > 0")
+        if self.max_lease_duration <= 0:
+            raise ValueError("LG_MAX_LEASE_DURATION must be > 0")
+        if self.default_lease_duration > self.max_lease_duration:
+            raise ValueError("LG_DEFAULT_LEASE_DURATION must be <= LG_MAX_LEASE_DURATION")
+        if self.default_extend_duration > self.max_lease_duration:
+            raise ValueError("LG_DEFAULT_EXTEND_DURATION must be <= LG_MAX_LEASE_DURATION")
+        if self.poll_interval <= 0:
+            raise ValueError("LG_COORDINATOR_POLL_INTERVAL must be > 0")
+        self.reservation_retry_cooldown = float(os.environ.get("LG_RESERVATION_RETRY_COOLDOWN", 60.0))
+        self.reservation_place_cooldowns: dict[str, float] = {}
+
+        if self.reservation_retry_cooldown <= 0:
+            raise ValueError("LG_RESERVATION_RETRY_COOLDOWN must be > 0")
         self.load()
 
         self.loop = asyncio.get_running_loop()
@@ -260,12 +338,12 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         # update reservations
         async with self.lock:
             with warn_if_slow("schedule reservations"):
-                self.schedule_reservations()
+                await self.schedule_reservations()
 
     async def poll(self, step_func):
         while not self.loop.is_closed():
             try:
-                await asyncio.sleep(15.0)
+                await asyncio.sleep(self.poll_interval)
                 await step_func()
             except asyncio.CancelledError:
                 break
@@ -334,7 +412,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         assert peer not in self.clients
         out_msg_queue = asyncio.Queue()
 
-        identity = ClientIdentity.from_metadata(context.invocation_metadata())
+        identity = clientidentity_from_plugin(self.auth_plugin, context.invocation_metadata())
+        print(f"Stream identity: {identity}")
+        if self.use_capabilities:
+            await check_capability(self, identity, Capability.client_stream, context)
+
         if identity:
             logging.debug("client identity provided in gRPC metadata: %s", identity)
             self.clients[peer] = ClientSession(self, peer, identity.id, out_msg_queue, identity.user_agent)
@@ -452,6 +534,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         peer = context.peer()
         logging.info("exporter connected: %s", peer)
         assert peer not in self.exporters
+
+        identity = clientidentity_from_plugin(self.auth_plugin, context.invocation_metadata())
+        if self.use_capabilities:
+            await check_capability(self, identity, Capability.exporter_stream, context)
+
         command_queue = asyncio.Queue()
         pending_commands = []
 
@@ -461,7 +548,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         out_msg.hello.version = labgrid_version()
         yield out_msg
 
-        identity = ClientIdentity.from_metadata(context.invocation_metadata())
+        identity = clientidentity_from_plugin(self.auth_plugin, context.invocation_metadata())
         if identity:
             logging.debug("exporter identity provided in gRPC metadata: %s", identity)
             if existing := self.get_exporter_by_name(identity.id):
@@ -549,7 +636,15 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             async for cmd in queue_as_aiter(command_queue):
                 logging.debug("exporter cmd %s", cmd)
                 out_msg = labgrid_coordinator_pb2.ExporterOutMessage()
-                out_msg.set_acquired_request.CopyFrom(cmd.request)
+                set_traceparent_in_metadata(out_msg, cmd)
+                if cmd.kind == "set_acquired_request":
+                    out_msg.set_acquired_request.CopyFrom(cmd.request)
+                elif cmd.kind == "lease_started_request":
+                    out_msg.lease_started_request.CopyFrom(cmd.request)
+                elif cmd.kind == "lease_extended_request":
+                    out_msg.lease_extended_request.CopyFrom(cmd.request)
+                else:
+                    raise ValueError(f"unknown exporter command kind {cmd.kind}")
                 pending_commands.append(cmd)
                 yield out_msg
         except asyncio.exceptions.CancelledError:
@@ -560,8 +655,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         finally:
             await self._cleanup_exporter(peer, running_request_task)
 
-    @locked
-    async def AddPlace(self, request, context):
+    async def create_place(
+        self,
+        request: labgrid_coordinator_pb2.CreatePlaceRequest | labgrid_coordinator_pb2.AddPlaceRequest,
+        context,
+    ) -> Place:
         name = request.name
         if not name or not isinstance(name, str):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
@@ -572,10 +670,24 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.places[name] = place
         self._publish_place(place)
         self.save_later()
+        return place
+
+    @require_capability(Capability.add_place)
+    @locked
+    async def AddPlace(self, request, context, *, identity):
+        await self.create_place(request, context)
         return labgrid_coordinator_pb2.AddPlaceResponse()
 
+    @require_capability(Capability.create_place)
     @locked
-    async def DeletePlace(self, request, context):
+    async def CreatePlace(self, request, context, *, identity):
+        logging.debug("CreatePlace name=%s", request.name)
+        place = await self.create_place(request, context)
+        return labgrid_coordinator_pb2.CreatePlaceResponse(place=place.as_pb2())
+
+    @require_capability(Capability.delete_place)
+    @locked
+    async def DeletePlace(self, request, context, *, identity):
         name = request.name
         if not name or not isinstance(name, str):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
@@ -590,8 +702,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.DeletePlaceResponse()
 
+    @require_capability(Capability.add_place_alias)
     @locked
-    async def AddPlaceAlias(self, request, context):
+    async def AddPlaceAlias(self, request, context, *, identity):
         placename = request.placename
         alias = request.alias
         try:
@@ -604,8 +717,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AddPlaceAliasResponse()
 
+    @require_capability(Capability.delete_place_alias)
     @locked
-    async def DeletePlaceAlias(self, request, context):
+    async def DeletePlaceAlias(self, request, context, *, identity):
         placename = request.placename
         alias = request.alias
         try:
@@ -621,8 +735,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.DeletePlaceAliasResponse()
 
+    @require_capability(Capability.set_place_tags)
     @locked
-    async def SetPlaceTags(self, request, context):
+    async def SetPlaceTags(self, request, context, *, identity):
         placename = request.placename
         tags = dict(request.tags)
         try:
@@ -650,8 +765,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.SetPlaceTagsResponse()
 
+    @require_capability(Capability.set_place_comment)
     @locked
-    async def SetPlaceComment(self, request, context):
+    async def SetPlaceComment(self, request, context, *, identity):
         placename = request.placename
         comment = request.comment
         try:
@@ -664,8 +780,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.SetPlaceCommentResponse()
 
+    @require_capability(Capability.add_place_match)
     @locked
-    async def AddPlaceMatch(self, request, context):
+    async def AddPlaceMatch(self, request, context, *, identity):
         placename = request.placename
         pattern = request.pattern
         rename = request.rename if request.HasField("rename") else None
@@ -682,8 +799,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AddPlaceMatchResponse()
 
+    @require_capability(Capability.delete_place_match)
     @locked
-    async def DeletePlaceMatch(self, request, context):
+    async def DeletePlaceMatch(self, request, context, *, identity):
         placename = request.placename
         pattern = request.pattern
         rename = request.rename if request.HasField("rename") else None
@@ -710,7 +828,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         request.group_name = resource.path[1]
         request.resource_name = resource.path[3]
         request.place_name = place.name
-        cmd = ExporterCommand(request)
+        request.client_identity.id = place.acquired
+        cmd = ExporterCommand("set_acquired_request", request)
         self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
         try:
             await cmd.wait()
@@ -720,6 +839,28 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             raise ExporterError(cmd.response.reason or "exporter returned failure without a reason")
         if resource.acquired != place.name:
             logging.warning("resource %s not acquired by this place after acquire request", resource)
+
+    async def _lease_resource(self, place, resource, duration):
+        assert self.lock.locked()
+
+        # this triggers an update from the exporter which is published
+        # to the clients
+        request = labgrid_coordinator_pb2.ExporterLeaseStartedRequest()
+        request.group_name = resource.path[1]
+        request.resource_name = resource.path[3]
+        request.place_name = place.name
+        request.duration = duration
+        request.client_identity.id = place.acquired
+        cmd = ExporterCommand("lease_started_request", request)
+        self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
+        try:
+            await cmd.wait()
+        except asyncio.TimeoutError as e:
+            raise ExporterError("timed out waiting for exporter while leasing resource") from e
+        if not cmd.response.success:
+            raise ExporterError(cmd.response.reason or "exporter returned failure without a reason")
+        if resource.acquired != place.name:
+            logging.warning("resource %s not acquired by this place after lease request", resource)
 
     async def _acquire_resources(self, place, resources):
         assert self.lock.locked()
@@ -763,9 +904,83 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         for resource in resources:
             place.acquired_resources.append(resource)
 
-    async def _release_resources(self, place, resources, callback=True):
+    async def _lease_resources(self, place, resources, duration):
         assert self.lock.locked()
 
+        resources = resources.copy()  # we may modify the list
+        # all resources need to be free
+        for resource in resources:
+            if resource.acquired:
+                raise CoordinatorError(f"{resource} is already acquired by {resource.acquired}")
+
+            for otherplace in self.places.values():
+                for oldres in otherplace.acquired_resources:
+                    if resource.path == oldres.path:
+                        logging.info(
+                            "Conflicting orphaned resource %s for lease request for place %s", oldres, place.name
+                        )
+                        raise CoordinatorError(
+                            f"conflicting orphaned resource {oldres} for lease request for place {place.name}"
+                        )
+
+        # lease resources
+        leased = []
+        try:
+            for resource in resources:
+                await self._lease_resource(place, resource, duration)
+                leased.append(resource)
+        except Exception as e:
+            logging.exception("failed to lease %s", resource)
+            # cleanup
+            try:
+                await self._release_resources(place, leased)
+            except CoordinatorError:
+                logging.exception("failed to release leased resources during lease cleanup")
+            if isinstance(e, CoordinatorError):
+                raise
+            raise CoordinatorError(f"failed to lease {resource}") from e
+
+        for resource in resources:
+            place.acquired_resources.append(resource)
+
+    async def _notify_lease_extended_resource(self, place, resource, duration):
+        assert self.lock.locked()
+
+        request = labgrid_coordinator_pb2.ExporterLeaseExtendedRequest()
+        request.group_name = resource.path[1]
+        request.resource_name = resource.path[3]
+        if place is not None:
+            request.place_name = place.name
+        request.duration = duration
+
+        cmd = ExporterCommand("lease_extended_request", request)
+        self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
+        try:
+            await cmd.wait()
+        except asyncio.TimeoutError as e:
+            raise ExporterError("timed out waiting for exporter while extending lease") from e
+
+        if not cmd.response.success:
+            raise ExporterError(f"failed to notify lease extension for {resource} ({cmd.response.reason})")
+
+    async def _notify_lease_extended(self, place, duration):
+        assert self.lock.locked()
+
+        for resource in place.acquired_resources:
+            if getattr(resource, "orphaned", False):
+                raise LeaseExtendPreconditionError(
+                    f"cannot extend lease for {place.name}: resource {resource} is orphaned"
+                )
+
+        for resource in place.acquired_resources:
+            await self._notify_lease_extended_resource(place, resource, duration)
+
+    async def _release_resources(self, place, resources, callback=True, acquirer_identity=None):
+        assert self.lock.locked()
+
+        # Empty identity means the release came from an internal cleanup path
+        # where no client identity is available.
+        acquirer_identity = acquirer_identity or ""
         resources = resources.copy()  # we may modify the list
 
         failure = None
@@ -790,8 +1005,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     request = labgrid_coordinator_pb2.ExporterSetAcquiredRequest()
                     request.group_name = resource.path[1]
                     request.resource_name = resource.path[3]
+                    request.client_identity.id = acquirer_identity
                     # request.place_name is left unset to indicate release
-                    cmd = ExporterCommand(request)
+                    cmd = ExporterCommand("set_acquired_request", request)
                     exporter.queue.put_nowait(cmd)
                     try:
                         await cmd.wait()
@@ -936,6 +1152,64 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             idx = place.acquired_resources.index(oldresource)
             place.acquired_resources[idx] = newresource
 
+    def _return_reservation_after_place_failure(self, place):
+        assert self.lock.locked()
+
+        reservation_id = place.reservation
+        if not reservation_id:
+            return
+
+        reservation = self.reservations.get(reservation_id)
+        if reservation is None:
+            return
+
+        reservation.state = ReservationState.waiting
+        reservation.allocations.clear()
+        reservation.lease_start_time = 0.0
+        reservation.refresh()
+
+        place.reservation = None
+        place.acquired = None
+        place.allowed = set()
+        place.touch()
+        self.reservation_place_cooldowns[place.name] = time.time() + self.reservation_retry_cooldown
+        self._publish_place(place)
+        self.save_later()
+
+    async def _acquire_place_resources(self, place, owner):
+        assert self.lock.locked()
+
+        place.acquired = owner
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    if place.hasmatch(resource.path):
+                        resources.append(resource)
+
+        try:
+            await self._acquire_resources(place, resources)
+        except CoordinatorError:
+            place.acquired = None
+            raise
+
+    async def _lease_place_resources(self, place, owner, duration):
+        assert self.lock.locked()
+
+        place.acquired = owner
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    if place.hasmatch(resource.path):
+                        resources.append(resource)
+
+        try:
+            await self._lease_resources(place, resources, duration)
+        except CoordinatorError:
+            place.acquired = None
+            raise
+
     @add_identity
     @locked
     async def AcquirePlace(self, request, context, *, identity):
@@ -960,38 +1234,103 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
         # FIXME use the session object instead? or something else which
         # survives disconnecting clients?
-        place.acquired = username
-        resources = []
-        for _, session in sorted(self.exporters.items()):
-            for _, group in sorted(session.groups.items()):
-                for _, resource in sorted(group.items()):
-                    if not place.hasmatch(resource.path):
-                        continue
-                    resources.append(resource)
         try:
-            await self._acquire_resources(place, resources)
+            await self._acquire_place_resources(place, username)
         except CoordinatorError as e:
-            # revert earlier change
-            place.acquired = None
+            reservation_returned = bool(place.reservation)
+            if reservation_returned:
+                self._return_reservation_after_place_failure(place)
+                await self.schedule_reservations()
             message = f"Failed to acquire resources for place {name}"
             if str(e):
                 message += f": {e}"
+            if reservation_returned:
+                message += "; reservation was returned to waiting state"
             await context.abort(
                 grpc.StatusCode.FAILED_PRECONDITION,
                 message,
             )
+        if place.reservation:
+            res = self.reservations[place.reservation]
+            res.state = ReservationState.acquired
+            res.refresh()
         place.touch()
         self._publish_place(place)
         self.save_later()
-        self.schedule_reservations()
+        await self.schedule_reservations()
         print(f"{place.name}: place acquired by {place.acquired}")
         return labgrid_coordinator_pb2.AcquirePlaceResponse()
 
+    @add_identity
     @locked
-    async def ReleasePlace(self, request, context):
+    async def LeasePlace(self, request, context, *, identity):
+        peer = context.peer()
         name = request.placename
-        print(request)
+        try:
+            username = infer_peer_identity(self.clients, context, identity)
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
+
+        place = self.places.get(name)
+        if place is None:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
+        if place.acquired:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {name} is already acquired")
+        if not place.reservation:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                f"Place {name} is not reserved; leasing requires a reservation",
+            )
+
+        res = self.reservations[place.reservation]
+        if res.owner != username:
+            await context.abort(
+                grpc.StatusCode.PERMISSION_DENIED,
+                f"Place {name} is reserved by a different user",
+            )
+
+        try:
+            await self._lease_place_resources(place, username, self.default_lease_duration)
+        except CoordinatorError as e:
+            reservation_returned = bool(place.reservation)
+            if reservation_returned:
+                self._return_reservation_after_place_failure(place)
+                await self.schedule_reservations()
+            message = f"Failed to lease resources for place {name}"
+            if str(e):
+                message += f": {e}"
+            if reservation_returned:
+                message += "; reservation was returned to waiting state"
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, message)
+
+        now = time.time()
+        res.state = ReservationState.leased
+        res.lease_start_time = now
+        res.timeout = now + self.default_lease_duration
+
+        place.touch()
+        self._publish_place(place)
+        self.save_later()
+        await self.schedule_reservations()
+        print(f"{place.name}: place leased by {place.acquired}")
+        return labgrid_coordinator_pb2.LeasePlaceResponse()
+
+    @add_identity
+    @locked
+    async def ReleasePlace(self, request, context, *, identity):
+
+        if self.use_capabilities and not identity:
+            await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities")
+
+        name = request.placename
         fromuser = request.fromuser if request.HasField("fromuser") else None
+
+        if fromuser and self.use_capabilities and not Capability.release_place_any in identity.capabilities:
+            await context.abort(
+                grpc.StatusCode.PERMISSION_DENIED,
+                f"Capability {Capability.release_place_any} not in client capabilities {identity.capabilities}",
+            )
+
         try:
             place = self.places[name]
         except KeyError:
@@ -1004,7 +1343,33 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
         try:
-            await self._release_resources(place, place.acquired_resources)
+            acquirer_identity = infer_peer_identity(self.clients, context, identity)
+        except KeyError:
+            acquirer_identity = ""
+
+        if self.use_capabilities:
+            if not identity:
+                await context.abort(
+                    grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities"
+                )
+
+            owned = acquirer_identity == place.acquired
+            if owned and not (
+                Capability.release_place_owned in identity.capabilities
+                or Capability.release_place_any in identity.capabilities
+            ):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {Capability.release_place_owned} not in client capabilities {identity.capabilities}",
+                )
+            elif not owned and not Capability.release_place_any in identity.capabilities:
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {Capability.release_place_any} not in client capabilities {identity.capabilities}",
+                )
+
+        try:
+            await self._release_place(place, acquirer_identity=acquirer_identity)
         except CoordinatorError as e:
             place.touch()
             self._publish_place(place)
@@ -1013,20 +1378,105 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             if str(e):
                 message += f": {e}"
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, message)
+        await self.schedule_reservations()
+        return labgrid_coordinator_pb2.ReleasePlaceResponse()
+
+    async def _release_place(self, place, acquirer_identity=None):
+        assert self.lock.locked()
+        await self._release_resources(place, place.acquired_resources, acquirer_identity=acquirer_identity)
+
+        if place.reservation and place.reservation in self.reservations:
+            reservation = self.reservations[place.reservation]
+            if reservation.state is ReservationState.leased:
+                reservation.state = ReservationState.expired
+                reservation.allocations.clear()
+                reservation.refresh()
+                place.reservation = None
+            elif reservation.state is ReservationState.acquired:
+                reservation.state = ReservationState.allocated
+                reservation.refresh()
 
         place.acquired = None
         place.allowed = set()
         place.touch()
         self._publish_place(place)
         self.save_later()
-        self.schedule_reservations()
         print(f"{place.name}: place released")
-        return labgrid_coordinator_pb2.ReleasePlaceResponse()
+
+    async def share_place(self, placename, user, context, identity, capability_owned, capability_any):
+        peer = context.peer()
+
+        try:
+            username = infer_peer_identity(self.clients, context, identity)
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
+        try:
+            place = self.places[placename]
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {placename} does not exist")
+        if not place.acquired:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired")
+        owned = place.acquired == username
+        if not owned and not self.use_capabilities:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired by {username}"
+            )
+
+        if self.use_capabilities:
+            if not identity:
+                await context.abort(
+                    grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities"
+                )
+            if owned and not (capability_owned in identity.capabilities or capability_any in identity.capabilities):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {capability_owned} not in client capabilities {identity.capabilities}",
+                )
+            elif not owned and not capability_any in identity.capabilities:
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {capability_any} not in client capabilities {identity.capabilities}",
+                )
+
+        place.allowed.add(user)
+        place.touch()
+        self._publish_place(place)
+        self.save_later()
 
     @add_identity
     @locked
     async def AllowPlace(self, request, context, *, identity):
-        placename = request.placename
+        await self.share_place(
+            request.placename,
+            request.user,
+            context,
+            identity,
+            Capability.allow_place_owned,
+            Capability.allow_place_any,
+        )
+        return labgrid_coordinator_pb2.AllowPlaceResponse()
+
+    @add_identity
+    @locked
+    async def SharePlace(self, request, context, *, identity):
+        name = request.name
+        logging.debug("SharePlace name=%s user=%s", name, request.user)
+        if not name or not isinstance(name, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+
+        await self.share_place(
+            name, request.user, context, identity, Capability.share_place_owned, Capability.share_place_any
+        )
+        return labgrid_coordinator_pb2.SharePlaceResponse()
+
+    @add_identity
+    @locked
+    async def UnsharePlace(self, request, context, *, identity):
+        placename = request.name
+        logging.debug("UnsharePlace name=%s user=%s", placename, request.user)
+        if not placename or not isinstance(placename, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+
         user = request.user
         peer = context.peer()
         try:
@@ -1039,40 +1489,219 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {placename} does not exist")
         if not place.acquired:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired")
-        if not place.acquired == username:
-            await context.abort(
-                grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired by {username}"
-            )
-        place.allowed.add(user)
-        place.touch()
-        self._publish_place(place)
-        self.save_later()
-        return labgrid_coordinator_pb2.AllowPlaceResponse()
+        if self.use_capabilities:
+            if not (
+                Capability.unshare_place_any in identity.capabilities
+                or (place.acquired == username and Capability.unshare_place_owned in identity.capabilities)
+            ):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED, f"Insufficient permissions to unshare Place {placename}"
+                )
+        else:
+            if not place.acquired == username:
+                await context.abort(
+                    grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired by {username}"
+                )
+        try:
+            place.allowed.remove(user)
+            place.touch()
+            self._publish_place(place)
+            self.save_later()
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not shared with {user}")
+
+        return labgrid_coordinator_pb2.UnsharePlaceResponse()
 
     def _get_places(self):
         return {k: v.asdict() for k, v in self.places.items()}
 
+    @require_capability(Capability.get_place)
     @locked
-    async def GetPlaces(self, unused_request, unused_context):
+    async def GetPlace(self, request, context, *, identity):
+        name = request.name
+        logging.debug("GetPlace name=%s", name)
+        if not name or not isinstance(name, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+        try:
+            place = self.places[name]
+            return labgrid_coordinator_pb2.GetPlaceResponse(place=place.as_pb2())
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
+        except Exception:
+            logging.exception("error during get place")
+            await context.abort(grpc.StatusCode.INTERNAL, "internal error")
+
+    @require_capability(Capability.get_places)
+    @locked
+    async def GetPlaces(self, unused_request, unused_context, *, identity):
         logging.debug("GetPlaces")
         try:
             return labgrid_coordinator_pb2.GetPlacesResponse(places=[x.as_pb2() for x in self.places.values()])
         except Exception:
             logging.exception("error during get places")
 
-    def schedule_reservations(self):
+    @require_capability(Capability.list_places)
+    @locked
+    async def ListPlaces(self, request, context, *, identity):
+        logging.debug("ListPlaces")
+
+        if request.page_size != 0 or request.page_token != "":
+            await context.abort(grpc.StatusCode.UNIMPLEMENTED, "ListPlaces does not yet support pagination")
+
+        filter_program = None
+        if request.filter:
+            try:
+                filter_program = cel.compile(request.filter)  # pylint: disable=no-member
+            except ValueError as exc:
+                await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+        places = []
+        for place in self.places.values():
+            if filter_program is not None:
+                filter_context = place.asdict()
+                filter_context["name"] = place.name
+
+                try:
+                    filter_result = filter_program.execute(filter_context)
+                    if not isinstance(filter_result, bool):
+                        await context.abort(
+                            grpc.StatusCode.INVALID_ARGUMENT,
+                            "Filter must evaluate to a boolean",
+                        )
+
+                    if not filter_result:
+                        continue
+                except (RuntimeError, TypeError) as exc:
+                    await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+            places.append(place.as_pb2())
+
+        return labgrid_coordinator_pb2.ListPlacesResponse(places=places)
+
+    @require_capability(Capability.list_resources)
+    @locked
+    async def ListResources(self, request, context, *, identity):
+        logging.debug("ListResources")
+
+        if request.page_size != 0 or request.page_token != "":
+            await context.abort(grpc.StatusCode.UNIMPLEMENTED, "ListResources does not yet support pagination")
+
+        filter_program = None
+        if request.filter:
+            try:
+                filter_program = cel.compile(request.filter)  # pylint: disable=no-member
+            except ValueError as exc:
+                await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    if filter_program is not None:
+                        filter_context = resource.asdict()
+                        filter_context["path"] = {
+                            "exporter_name": resource.path[0],
+                            "group_name": resource.path[1],
+                            "resource_name": resource.path[3],
+                        }
+
+                        try:
+                            filter_result = filter_program.execute(filter_context)
+                            if not isinstance(filter_result, bool):
+                                await context.abort(
+                                    grpc.StatusCode.INVALID_ARGUMENT,
+                                    "Filter must evaluate to a boolean",
+                                )
+
+                            if not filter_result:
+                                continue
+                        except (RuntimeError, TypeError) as exc:
+                            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+                    serialised = resource.as_pb2()
+                    serialised.path.exporter_name = resource.path[0]
+                    serialised.path.group_name = resource.path[1]
+                    serialised.path.resource_name = resource.path[3]
+                    resources.append(serialised)
+        return labgrid_coordinator_pb2.ListResourcesResponse(resources=resources)
+
+    @add_identity
+    @locked
+    async def ListPlaceResources(self, request, context, *, identity):
+        name = request.name
+        if not name or not isinstance(name, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+        logging.debug("ListPlaceResources name=%s", name)
+
+        try:
+            place = self.places[name]
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
+
+        if self.use_capabilities:
+            if not identity:
+                await context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Identity required when using capabilities")
+            if not (
+                Capability.list_place_resources_any in identity.capabilities
+                or (
+                    (place.acquired == identity.id or identity.id in place.allowed)
+                    and Capability.list_place_resources_owned in identity.capabilities
+                )
+            ):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED, f"Insufficient permissions to list Resources for Place {name}"
+                )
+
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    if not place.hasmatch(resource.path):
+                        continue
+                    serialised = resource.as_pb2()
+                    serialised.path.exporter_name = resource.path[0]
+                    serialised.path.group_name = resource.path[1]
+                    serialised.path.resource_name = resource.path[3]
+                    resources.append(serialised)
+        return labgrid_coordinator_pb2.ListPlaceResourcesResponse(resources=resources)
+
+    async def schedule_reservations(self):
         # The primary information is stored in the reservations and the places
         # only have a copy for convenience.
 
         # expire reservations
         assert self.lock.locked()
+        now = time.time()
+        for name, cooldown_until in list(self.reservation_place_cooldowns.items()):
+            if cooldown_until <= now:
+                del self.reservation_place_cooldowns[name]
         for res in list(self.reservations.values()):
             if res.state is ReservationState.acquired:
                 # acquired reservations do not expire
                 res.refresh()
+
             if not res.expired:
                 continue
-            if res.state is not ReservationState.expired:
+            if res.state is ReservationState.leased:
+                for place in list(self.places.values()):
+                    if place.reservation == res.id and place.acquired == res.owner:
+                        try:
+                            await self._release_place(place)
+                        except CoordinatorError:
+                            logging.exception("failed to release expired lease on place %s; will retry", place.name)
+                            place.touch()
+                            self._publish_place(place)
+                            self.save_later()
+                        else:
+                            print(f"marked leased reservation expired ({res.owner}/{res.id})")
+                        break
+                else:
+                    res.state = ReservationState.expired
+                    res.allocations.clear()
+                    res.refresh()
+                    print(f"marked leased reservation expired ({res.owner}/{res.id})")
+                continue
+            elif res.state is not ReservationState.expired:
                 res.state = ReservationState.expired
                 res.allocations.clear()
                 res.refresh()
@@ -1095,15 +1724,23 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         res.refresh(300)
                         print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
                         break
+                    elif res.state is ReservationState.leased and place.acquired != res.owner:
+                        res.state = ReservationState.expired
+                        res.allocations.clear()
+                        res.refresh(300)
+                        logging.info("marked leased reservation expired (%s/%s)", res.owner, res.id)
+                        break
                     if place.acquired is not None:
                         acquired_places.add(name)
                     assert name not in allocated_places, "conflicting allocation"
                     allocated_places.add(name)
-            if acquired_places and res.state is ReservationState.allocated:
-                # an allocated place was acquired
-                res.state = ReservationState.acquired
-                res.refresh()
-                print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
+                else:
+                    continue  # inner loop didn't break
+                break  # inner loop broke -> break group loop
+            # if the reservation was deleted, skip the rest
+            if res.id not in self.reservations:
+                continue
+
             if not acquired_places and res.state is ReservationState.acquired:
                 # all allocated places were released
                 res.state = ReservationState.allocated
@@ -1113,6 +1750,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         # check which places are available for allocation
         available_places = set()
         for name, place in self.places.items():
+            if name in self.reservation_place_cooldowns:
+                continue
             if place.acquired is None and place.reservation is None:
                 available_places.add(name)
         assert not (available_places & allocated_places), "inconsistent allocation"
@@ -1143,6 +1782,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             res = self.reservations[res_id]
             res.allocations = {"main": [place_name]}
             res.state = ReservationState.allocated
+            record_reservation_wait_duration(self, time.time() - res.created)
             res.refresh()
             print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
 
@@ -1167,7 +1807,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             if old_map.get(name) != new_map.get(name):
                 self._publish_place(self.places[name])
 
-    @add_identity
+    @require_capability(Capability.create_reservation)
     @locked
     async def CreateReservation(self, request: labgrid_coordinator_pb2.CreateReservationRequest, context, *, identity):
         peer = context.peer()
@@ -1192,37 +1832,227 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
         res = Reservation(owner=owner, prio=request.prio, filters=fltrs)
         self.reservations[res.id] = res
-        self.schedule_reservations()
+        await self.schedule_reservations()
         return labgrid_coordinator_pb2.CreateReservationResponse(reservation=res.as_pb2())
 
+    @add_identity
     @locked
-    async def CancelReservation(self, request: labgrid_coordinator_pb2.CancelReservationRequest, context):
+    async def CancelReservation(self, request: labgrid_coordinator_pb2.CancelReservationRequest, context, *, identity):
         reservation_id = request.token
         if not isinstance(reservation_id, str) or not reservation_id:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid id {reservation_id}")
         if reservation_id not in self.reservations:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {reservation_id} does not exist")
+
+        reservation = self.reservations[reservation_id]
+        try:
+            owner = infer_peer_identity(self.clients, context, identity)
+        except KeyError:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION, f"Peer {context.peer()} does not have a valid session"
+            )
+
+        owned = reservation.owner == owner
+        if self.use_capabilities:
+            if not identity:
+                await context.abort(
+                    grpc.StatusCode.UNAUTHENTICATED, "Client identity is required when using capabilities"
+                )
+            if owned and not (
+                Capability.cancel_reservation_owned in identity.capabilities
+                or Capability.cancel_reservation_any in identity.capabilities
+            ):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {Capability.cancel_reservation_any} not in client capabilities {identity.capabilities}",
+                )
+            elif not owned and not Capability.cancel_reservation_any in identity.capabilities:
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Capability {Capability.cancel_reservation_any} not in client capabilities {identity.capabilities}",
+                )
+
+        # Cancelling a reservation for an active lease also releases the place.
+        if reservation.state is ReservationState.leased:
+            for place in list(self.places.values()):
+                if place.reservation == reservation_id and place.acquired == reservation.owner:
+                    await self._release_place(place)
+
         del self.reservations[reservation_id]
-        self.schedule_reservations()
+        await self.schedule_reservations()
         return labgrid_coordinator_pb2.CancelReservationResponse()
 
-    @locked
-    async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context):
-        reservation_id = request.token
+    async def refresh_reservation(self, reservation_id: str, context) -> Reservation:
         try:
             res = self.reservations[reservation_id]
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {reservation_id} does not exist")
-        res.refresh()
+        if res.state in (ReservationState.waiting, ReservationState.allocated):
+            res.refresh()
+        return res
+
+    @require_capability(Capability.poll_reservation)
+    @locked
+    async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context, *, identity):
+        res = await self.refresh_reservation(request.token, context)
         return labgrid_coordinator_pb2.PollReservationResponse(reservation=res.as_pb2())
 
+    @require_capability(Capability.refresh_reservation)
     @locked
-    async def GetReservations(self, request: labgrid_coordinator_pb2.GetReservationsRequest, context):
+    async def RefreshReservation(
+        self, request: labgrid_coordinator_pb2.RefreshReservationRequest, context, *, identity
+    ):
+        logging.debug("RefreshReservation reservation_id=%s", request.reservation_id)
+        res = await self.refresh_reservation(request.reservation_id, context)
+        return labgrid_coordinator_pb2.RefreshReservationResponse(reservation=res.as_pb2())
+
+    @require_capability(Capability.get_reservations)
+    @locked
+    async def GetReservations(self, request: labgrid_coordinator_pb2.GetReservationsRequest, context, *, identity):
         reservations = [x.as_pb2() for x in self.reservations.values()]
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
 
+    @require_capability(Capability.list_reservations)
+    @locked
+    async def ListReservations(self, request, context, *, identity):
+        if request.page_size != 0 or request.page_token != "":
+            await context.abort(grpc.StatusCode.UNIMPLEMENTED, "ListReservations does not yet support pagination")
 
-async def serve(listen, cleanup, server_credentials=None) -> None:
+        filter_program = None
+        if request.filter:
+            try:
+                filter_program = cel.compile(request.filter)  # pylint: disable=no-member
+            except ValueError as exc:
+                await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+        reservations = []
+        for reservation in self.reservations.values():
+            if filter_program is not None:
+                filter_context = reservation.asdict()
+                filter_context["token"] = reservation.id
+
+                try:
+                    filter_result = filter_program.execute(filter_context)
+                    if not isinstance(filter_result, bool):
+                        await context.abort(
+                            grpc.StatusCode.INVALID_ARGUMENT,
+                            "Filter must evaluate to a boolean",
+                        )
+
+                    if not filter_result:
+                        continue
+                except (RuntimeError, TypeError) as exc:
+                    await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid filter: {exc}")
+
+            reservations.append(reservation.as_pb2())
+
+        return labgrid_coordinator_pb2.ListReservationsResponse(reservations=reservations)
+
+    async def GetLeaseConfig(self, request, context):
+        return labgrid_coordinator_pb2.GetLeaseConfigResponse(
+            default_lease_duration=self.default_lease_duration,
+            default_extend_duration=self.default_extend_duration,
+            max_lease_duration=self.max_lease_duration,
+        )
+
+    @add_identity
+    @locked
+    async def ExtendLease(self, request, context, *, identity):
+        token = request.token
+
+        if not isinstance(token, str) or not token:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid token {token}")
+
+        if token not in self.reservations:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                f"Reservation {token} does not exist",
+            )
+
+        peer = context.peer()
+        try:
+            username = infer_peer_identity(self.clients, context, identity)
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
+
+        reservation = self.reservations[token]
+
+        if reservation.owner != username:
+            await context.abort(
+                grpc.StatusCode.PERMISSION_DENIED,
+                f"Reservation {token} is owned by a different user",
+            )
+
+        if reservation.expired:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                f"Reservation {token} has expired",
+            )
+
+        if reservation.state is not ReservationState.leased:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                f"Reservation {token} is not in leased state",
+            )
+
+        if reservation.lease_start_time <= 0:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                f"Reservation {token} has invalid lease start time",
+            )
+
+        extend_duration = self.default_extend_duration
+        requested_timeout = reservation.timeout + extend_duration
+        max_timeout = reservation.lease_start_time + self.max_lease_duration
+        remaining = max_timeout - reservation.timeout
+
+        if requested_timeout > max_timeout:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                f"Lease cannot be extended by {extend_duration} seconds; only {max(0, int(remaining))} seconds remain before reaching the maximum total lease duration of {self.max_lease_duration} seconds",
+            )
+
+        leased_place = None
+        for place in self.places.values():
+            if place.reservation == token and place.acquired == reservation.owner:
+                leased_place = place
+                break
+
+        if leased_place is None:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                f"Reservation {token} is leased but no acquired place was found",
+            )
+
+        try:
+            await self._notify_lease_extended(leased_place, extend_duration)
+        except LeaseExtendPreconditionError as e:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                str(e),
+            )
+        except ExporterError as e:
+            if len(leased_place.acquired_resources) == 1:
+                await context.abort(
+                    grpc.StatusCode.FAILED_PRECONDITION,
+                    f"Lease extension failed and the lease was kept: {e}",
+                )
+            try:
+                await self._release_place(leased_place)
+                await self.schedule_reservations()
+            except Exception:
+                logging.exception("failed to clean up lease after extension failure")
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                f"Lease extension failed and the lease was cancelled: {e}",
+            )
+        reservation.timeout = requested_timeout
+        self.save_later()
+
+        return labgrid_coordinator_pb2.ExtendLeaseResponse(reservation=reservation.as_pb2())
+
+
+async def serve(listen, cleanup, capabilities, auth_plugin, server_credentials=None) -> None:
     asyncio.current_task().set_name("coordinator-serve")
     # It seems since https://github.com/grpc/grpc/pull/34647, the
     # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
@@ -1240,12 +2070,18 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
     server = grpc.aio.server(
         options=channel_options,
     )
-    coordinator = Coordinator()
+    coordinator = Coordinator(capabilities, auth_plugin)
+    setup_otel_metrics(coordinator)
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
+    coordinator_service_name = labgrid_coordinator_pb2.DESCRIPTOR.services_by_name["Coordinator"].full_name
+    # the empty name is explicitly maintained server liveness
+    health_servicer = await HealthServicer.create(("", coordinator_service_name))
+    health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
     # enable reflection for use with grpcurl
     reflection.enable_server_reflection(
         (
-            labgrid_coordinator_pb2.DESCRIPTOR.services_by_name["Coordinator"].full_name,
+            coordinator_service_name,
+            health.SERVICE_NAME,
             reflection.SERVICE_NAME,
         ),
         server,
@@ -1272,6 +2108,7 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
 
     async def server_graceful_shutdown():
         logging.info("Starting graceful shutdown...")
+        await health_servicer.enter_graceful_shutdown()
         # Shuts down the server with 0 seconds of grace period. During the
         # grace period, the server won't accept new connections and allow
         # existing RPCs to continue within the grace period.
@@ -1284,6 +2121,8 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
     loop = asyncio.get_event_loop()
     loop.add_signal_handler(signal.SIGINT, callback)
     loop.add_signal_handler(signal.SIGTERM, callback)
+    # SERVING reports RPC availability, not exporter or device readiness.
+    await health_servicer.mark_serving()
     logging.info("Coordinator ready")
     host, sep, port = listen.rpartition(":")
     if not sep or not port.isdigit():
@@ -1317,15 +2156,29 @@ def main():
     parser.add_argument("--tls", action="store_true", default=False, help="enable TLS gRPC channel")
     parser.add_argument("--cert", type=pathlib.PurePath, help="path to server TLS certificate (in PEM format)")
     parser.add_argument("--key", type=pathlib.PurePath, help="path to TLS key (in PEM format)")
+    parser.add_argument(
+        "--auth-plugin",
+        default=os.environ.get("LG_COORDINATOR_AUTH_PLUGIN", None),
+        type=str,
+        help=f"name of the Coordinator authentication plugin (options: {get_coordinator_auth_plugin_names()})",
+    )
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
     parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
     parser.add_argument(
         "--pystuck-port", metavar="PORT", type=int, default=6666, help="use a different pystuck port than 6666"
     )
+    parser.add_argument(
+        "--capabilities",
+        action="store_true",
+        default=False,
+        help="enable using capabilities, which also enforces client identities",
+    )
 
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
+
+    setup_otel_sdk_if_available(Coordinator, ExporterCommand)
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -1347,7 +2200,9 @@ def main():
     loop.set_debug(True)
     try:
         server_credentials = get_server_credentials(args)
-        loop.run_until_complete(serve(args.listen, cleanup, server_credentials))
+        auth_plugin = get_coordinator_auth_plugin(args.auth_plugin)
+
+        loop.run_until_complete(serve(args.listen, cleanup, args.capabilities, auth_plugin, server_credentials))
     finally:
         if cleanup:
             loop.run_until_complete(*cleanup)

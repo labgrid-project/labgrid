@@ -1,3 +1,4 @@
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -136,23 +137,71 @@ class Hello(_message.Message):
     version: str
     def __init__(self, version: _Optional[str] = ...) -> None: ...
 
+class Metadata(_message.Message):
+    __slots__ = ("traceparent", "tracestate")
+    TRACEPARENT_FIELD_NUMBER: _ClassVar[int]
+    TRACESTATE_FIELD_NUMBER: _ClassVar[int]
+    traceparent: str
+    tracestate: str
+    def __init__(self, traceparent: _Optional[str] = ..., tracestate: _Optional[str] = ...) -> None: ...
+
 class ExporterOutMessage(_message.Message):
-    __slots__ = ("hello", "set_acquired_request")
+    __slots__ = ("hello", "set_acquired_request", "lease_started_request", "lease_extended_request", "metadata")
     HELLO_FIELD_NUMBER: _ClassVar[int]
     SET_ACQUIRED_REQUEST_FIELD_NUMBER: _ClassVar[int]
+    LEASE_STARTED_REQUEST_FIELD_NUMBER: _ClassVar[int]
+    LEASE_EXTENDED_REQUEST_FIELD_NUMBER: _ClassVar[int]
+    METADATA_FIELD_NUMBER: _ClassVar[int]
     hello: Hello
     set_acquired_request: ExporterSetAcquiredRequest
-    def __init__(self, hello: _Optional[_Union[Hello, _Mapping]] = ..., set_acquired_request: _Optional[_Union[ExporterSetAcquiredRequest, _Mapping]] = ...) -> None: ...
+    lease_started_request: ExporterLeaseStartedRequest
+    lease_extended_request: ExporterLeaseExtendedRequest
+    metadata: Metadata
+    def __init__(self, hello: _Optional[_Union[Hello, _Mapping]] = ..., set_acquired_request: _Optional[_Union[ExporterSetAcquiredRequest, _Mapping]] = ..., lease_started_request: _Optional[_Union[ExporterLeaseStartedRequest, _Mapping]] = ..., lease_extended_request: _Optional[_Union[ExporterLeaseExtendedRequest, _Mapping]] = ..., metadata: _Optional[_Union[Metadata, _Mapping]] = ...) -> None: ...
+
+class ClientIdentity(_message.Message):
+    __slots__ = ("id",)
+    ID_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    def __init__(self, id: _Optional[str] = ...) -> None: ...
 
 class ExporterSetAcquiredRequest(_message.Message):
-    __slots__ = ("group_name", "resource_name", "place_name")
+    __slots__ = ("group_name", "resource_name", "place_name", "client_identity")
     GROUP_NAME_FIELD_NUMBER: _ClassVar[int]
     RESOURCE_NAME_FIELD_NUMBER: _ClassVar[int]
     PLACE_NAME_FIELD_NUMBER: _ClassVar[int]
+    CLIENT_IDENTITY_FIELD_NUMBER: _ClassVar[int]
     group_name: str
     resource_name: str
     place_name: str
-    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ...) -> None: ...
+    client_identity: ClientIdentity
+    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., client_identity: _Optional[_Union[ClientIdentity, _Mapping]] = ...) -> None: ...
+
+class ExporterLeaseStartedRequest(_message.Message):
+    __slots__ = ("group_name", "resource_name", "place_name", "duration", "client_identity")
+    GROUP_NAME_FIELD_NUMBER: _ClassVar[int]
+    RESOURCE_NAME_FIELD_NUMBER: _ClassVar[int]
+    PLACE_NAME_FIELD_NUMBER: _ClassVar[int]
+    DURATION_FIELD_NUMBER: _ClassVar[int]
+    CLIENT_IDENTITY_FIELD_NUMBER: _ClassVar[int]
+    group_name: str
+    resource_name: str
+    place_name: str
+    duration: int
+    client_identity: ClientIdentity
+    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., duration: _Optional[int] = ..., client_identity: _Optional[_Union[ClientIdentity, _Mapping]] = ...) -> None: ...
+
+class ExporterLeaseExtendedRequest(_message.Message):
+    __slots__ = ("group_name", "resource_name", "place_name", "duration")
+    GROUP_NAME_FIELD_NUMBER: _ClassVar[int]
+    RESOURCE_NAME_FIELD_NUMBER: _ClassVar[int]
+    PLACE_NAME_FIELD_NUMBER: _ClassVar[int]
+    DURATION_FIELD_NUMBER: _ClassVar[int]
+    group_name: str
+    resource_name: str
+    place_name: str
+    duration: int
+    def __init__(self, group_name: _Optional[str] = ..., resource_name: _Optional[str] = ..., place_name: _Optional[str] = ..., duration: _Optional[int] = ...) -> None: ...
 
 class AddPlaceRequest(_message.Message):
     __slots__ = ("name",)
@@ -164,6 +213,18 @@ class AddPlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class CreatePlaceRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class CreatePlaceResponse(_message.Message):
+    __slots__ = ("place",)
+    PLACE_FIELD_NUMBER: _ClassVar[int]
+    place: Place
+    def __init__(self, place: _Optional[_Union[Place, _Mapping]] = ...) -> None: ...
+
 class DeletePlaceRequest(_message.Message):
     __slots__ = ("name",)
     NAME_FIELD_NUMBER: _ClassVar[int]
@@ -174,6 +235,18 @@ class DeletePlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class GetPlaceRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class GetPlaceResponse(_message.Message):
+    __slots__ = ("place",)
+    PLACE_FIELD_NUMBER: _ClassVar[int]
+    place: Place
+    def __init__(self, place: _Optional[_Union[Place, _Mapping]] = ...) -> None: ...
+
 class GetPlacesRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
@@ -183,6 +256,54 @@ class GetPlacesResponse(_message.Message):
     PLACES_FIELD_NUMBER: _ClassVar[int]
     places: _containers.RepeatedCompositeFieldContainer[Place]
     def __init__(self, places: _Optional[_Iterable[_Union[Place, _Mapping]]] = ...) -> None: ...
+
+class ListPlacesRequest(_message.Message):
+    __slots__ = ("filter", "page_size", "page_token")
+    FILTER_FIELD_NUMBER: _ClassVar[int]
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    filter: str
+    page_size: int
+    page_token: str
+    def __init__(self, filter: _Optional[str] = ..., page_size: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+
+class ListPlacesResponse(_message.Message):
+    __slots__ = ("places", "next_page_token")
+    PLACES_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    places: _containers.RepeatedCompositeFieldContainer[Place]
+    next_page_token: str
+    def __init__(self, places: _Optional[_Iterable[_Union[Place, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...
+
+class ListResourcesRequest(_message.Message):
+    __slots__ = ("filter", "page_size", "page_token")
+    FILTER_FIELD_NUMBER: _ClassVar[int]
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    filter: str
+    page_size: int
+    page_token: str
+    def __init__(self, filter: _Optional[str] = ..., page_size: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+
+class ListResourcesResponse(_message.Message):
+    __slots__ = ("resources", "next_page_token")
+    RESOURCES_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    resources: _containers.RepeatedCompositeFieldContainer[Resource]
+    next_page_token: str
+    def __init__(self, resources: _Optional[_Iterable[_Union[Resource, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...
+
+class ListPlaceResourcesRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class ListPlaceResourcesResponse(_message.Message):
+    __slots__ = ("resources",)
+    RESOURCES_FIELD_NUMBER: _ClassVar[int]
+    resources: _containers.RepeatedCompositeFieldContainer[Resource]
+    def __init__(self, resources: _Optional[_Iterable[_Union[Resource, _Mapping]]] = ...) -> None: ...
 
 class Place(_message.Message):
     __slots__ = ("name", "aliases", "comment", "tags", "matches", "acquired", "acquired_resources", "allowed", "created", "changed", "reservation")
@@ -324,6 +445,42 @@ class AcquirePlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class LeasePlaceRequest(_message.Message):
+    __slots__ = ("placename",)
+    PLACENAME_FIELD_NUMBER: _ClassVar[int]
+    placename: str
+    def __init__(self, placename: _Optional[str] = ...) -> None: ...
+
+class LeasePlaceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class ExtendLeaseRequest(_message.Message):
+    __slots__ = ("token",)
+    TOKEN_FIELD_NUMBER: _ClassVar[int]
+    token: str
+    def __init__(self, token: _Optional[str] = ...) -> None: ...
+
+class ExtendLeaseResponse(_message.Message):
+    __slots__ = ("reservation",)
+    RESERVATION_FIELD_NUMBER: _ClassVar[int]
+    reservation: Reservation
+    def __init__(self, reservation: _Optional[_Union[Reservation, _Mapping]] = ...) -> None: ...
+
+class GetLeaseConfigRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class GetLeaseConfigResponse(_message.Message):
+    __slots__ = ("default_lease_duration", "default_extend_duration", "max_lease_duration")
+    DEFAULT_LEASE_DURATION_FIELD_NUMBER: _ClassVar[int]
+    DEFAULT_EXTEND_DURATION_FIELD_NUMBER: _ClassVar[int]
+    MAX_LEASE_DURATION_FIELD_NUMBER: _ClassVar[int]
+    default_lease_duration: int
+    default_extend_duration: int
+    max_lease_duration: int
+    def __init__(self, default_lease_duration: _Optional[int] = ..., default_extend_duration: _Optional[int] = ..., max_lease_duration: _Optional[int] = ...) -> None: ...
+
 class ReleasePlaceRequest(_message.Message):
     __slots__ = ("placename", "fromuser")
     PLACENAME_FIELD_NUMBER: _ClassVar[int]
@@ -345,6 +502,30 @@ class AllowPlaceRequest(_message.Message):
     def __init__(self, placename: _Optional[str] = ..., user: _Optional[str] = ...) -> None: ...
 
 class AllowPlaceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class SharePlaceRequest(_message.Message):
+    __slots__ = ("name", "user")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    USER_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    user: str
+    def __init__(self, name: _Optional[str] = ..., user: _Optional[str] = ...) -> None: ...
+
+class SharePlaceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class UnsharePlaceRequest(_message.Message):
+    __slots__ = ("name", "user")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    USER_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    user: str
+    def __init__(self, name: _Optional[str] = ..., user: _Optional[str] = ...) -> None: ...
+
+class UnsharePlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
@@ -370,7 +551,7 @@ class CreateReservationResponse(_message.Message):
     def __init__(self, reservation: _Optional[_Union[Reservation, _Mapping]] = ...) -> None: ...
 
 class Reservation(_message.Message):
-    __slots__ = ("owner", "token", "state", "prio", "filters", "allocations", "created", "timeout")
+    __slots__ = ("owner", "token", "state", "prio", "filters", "allocations", "created", "timeout", "lease_start_time")
     class Filter(_message.Message):
         __slots__ = ("filter",)
         class FilterEntry(_message.Message):
@@ -405,6 +586,7 @@ class Reservation(_message.Message):
     ALLOCATIONS_FIELD_NUMBER: _ClassVar[int]
     CREATED_FIELD_NUMBER: _ClassVar[int]
     TIMEOUT_FIELD_NUMBER: _ClassVar[int]
+    LEASE_START_TIME_FIELD_NUMBER: _ClassVar[int]
     owner: str
     token: str
     state: int
@@ -413,7 +595,8 @@ class Reservation(_message.Message):
     allocations: _containers.ScalarMap[str, str]
     created: float
     timeout: float
-    def __init__(self, owner: _Optional[str] = ..., token: _Optional[str] = ..., state: _Optional[int] = ..., prio: _Optional[float] = ..., filters: _Optional[_Mapping[str, Reservation.Filter]] = ..., allocations: _Optional[_Mapping[str, str]] = ..., created: _Optional[float] = ..., timeout: _Optional[float] = ...) -> None: ...
+    lease_start_time: _timestamp_pb2.Timestamp
+    def __init__(self, owner: _Optional[str] = ..., token: _Optional[str] = ..., state: _Optional[int] = ..., prio: _Optional[float] = ..., filters: _Optional[_Mapping[str, Reservation.Filter]] = ..., allocations: _Optional[_Mapping[str, str]] = ..., created: _Optional[float] = ..., timeout: _Optional[float] = ..., lease_start_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
 
 class CancelReservationRequest(_message.Message):
     __slots__ = ("token",)
@@ -437,6 +620,18 @@ class PollReservationResponse(_message.Message):
     reservation: Reservation
     def __init__(self, reservation: _Optional[_Union[Reservation, _Mapping]] = ...) -> None: ...
 
+class RefreshReservationRequest(_message.Message):
+    __slots__ = ("reservation_id",)
+    RESERVATION_ID_FIELD_NUMBER: _ClassVar[int]
+    reservation_id: str
+    def __init__(self, reservation_id: _Optional[str] = ...) -> None: ...
+
+class RefreshReservationResponse(_message.Message):
+    __slots__ = ("reservation",)
+    RESERVATION_FIELD_NUMBER: _ClassVar[int]
+    reservation: Reservation
+    def __init__(self, reservation: _Optional[_Union[Reservation, _Mapping]] = ...) -> None: ...
+
 class GetReservationsResponse(_message.Message):
     __slots__ = ("reservations",)
     RESERVATIONS_FIELD_NUMBER: _ClassVar[int]
@@ -446,3 +641,21 @@ class GetReservationsResponse(_message.Message):
 class GetReservationsRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class ListReservationsRequest(_message.Message):
+    __slots__ = ("filter", "page_size", "page_token")
+    FILTER_FIELD_NUMBER: _ClassVar[int]
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    filter: str
+    page_size: int
+    page_token: str
+    def __init__(self, filter: _Optional[str] = ..., page_size: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+
+class ListReservationsResponse(_message.Message):
+    __slots__ = ("reservations", "next_page_token")
+    RESERVATIONS_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    reservations: _containers.RepeatedCompositeFieldContainer[Reservation]
+    next_page_token: str
+    def __init__(self, reservations: _Optional[_Iterable[_Union[Reservation, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...

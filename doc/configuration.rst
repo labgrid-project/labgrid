@@ -4044,7 +4044,7 @@ method removes a file by name.
 
 ADBDriver
 ~~~~~~~~~
-The :any:`ADBDriver` allows interaction with ADB devices. It allows the 
+The :any:`ADBDriver` allows interaction with ADB devices. It allows the
 execution of commands, transfer of files, and rebooting of the device.
 
 It can interact with both USB and TCP adb devices.

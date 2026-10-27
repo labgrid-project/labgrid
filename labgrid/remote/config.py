@@ -6,6 +6,7 @@ import os
 import attr
 import jinja2
 
+from ..util.usbhub import USBHubs
 from ..util.yaml import load
 from ..exceptions import NoConfigFoundError
 
@@ -22,6 +23,7 @@ class ResourceConfig:
             line_statement_prefix="#",
             line_comment_prefix="##",
         )
+        env.globals["usb_hubs"] = lambda name: USBHubs.from_file(os.path.join(_dirname, name))
         try:
             template = env.get_template(os.path.basename(self.filename))
         except jinja2.TemplateNotFound:

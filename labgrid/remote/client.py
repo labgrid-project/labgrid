@@ -1726,7 +1726,7 @@ class ClientSession:
                 # indefinitely when making calls to the device. To avoid this,
                 # always disconnect first.
                 subprocess.run(
-                    ["adb", "disconnect", f"{host}:{str(port)}"], stderr=subprocess.DEVNULL, timeout=10, check=True
+                    ["adb", "disconnect", f"{host}:{str(port)}"], stderr=subprocess.DEVNULL, timeout=10, check=False
                 )
                 subprocess.run(
                     ["adb", "connect", f"{host}:{str(port)}"], stdout=subprocess.DEVNULL, timeout=10, check=True
@@ -1794,7 +1794,7 @@ class ClientSession:
                 # indefinitely when making calls to the device. To avoid this,
                 # always disconnect first.
                 subprocess.run(
-                    ["adb", "disconnect", f"{host}:{str(port)}"], stderr=subprocess.DEVNULL, timeout=10, check=True
+                    ["adb", "disconnect", f"{host}:{str(port)}"], stderr=subprocess.DEVNULL, timeout=10, check=False
                 )
                 scrcpy_cmd = ["scrcpy", f"--tcpip={host}:{str(port)}"]
                 break

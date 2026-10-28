@@ -81,7 +81,6 @@ class SmallUBootDriver(UBootDriver):
         Arguments:
         cmd - Command to run
         """
-        # TODO: use codec, decodeerrors
 
         # Check if Uboot is in command line mode
         if self._status != 1:
@@ -100,7 +99,7 @@ class SmallUBootDriver(UBootDriver):
         _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
 
         data = re_vt100.sub(
-            '', before.decode('utf-8'), count=1000000
+            '', before.decode(codec, decodeerrors), count=1000000
         ).replace("\r", "").split("\n")
         data = data[1:]
         data = data[data.index(f"Unknown command 'echo{marker}' - try 'help'") +1 :]

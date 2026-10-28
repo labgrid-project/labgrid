@@ -72,8 +72,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self._status = 0
 
-    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
-        # TODO: use codec, decodeerrors
+    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=line-too-long
         # TODO: Shell Escaping for the U-Boot Shell
         if self._status != 1:
             raise ExecutionError("U-Boot is not at the prompt, cannot run commands")
@@ -84,7 +83,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
         # Remove VT100 Codes and split by newline
         data = re_vt100.sub(
-            '', before.decode('utf-8'), count=1000000
+            '', before.decode(codec, decodeerrors), count=1000000
         ).replace("\r", "").split("\n")
 
         # Strip possible U-Boot timestamps from the line

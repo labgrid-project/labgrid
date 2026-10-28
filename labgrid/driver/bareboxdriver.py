@@ -66,7 +66,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     def run(self, cmd: str, *, timeout: int = 30):
         return self._run(cmd, timeout=timeout)
 
-    def _run(self, cmd: str, *, timeout: int = 30, adjust_log_level: bool = True, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
+    def _run(self, cmd: str, *, timeout: int = 30, adjust_log_level: bool = True, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=line-too-long
         """
         Runs the specified command on the shell and returns the output.
 
@@ -83,7 +83,6 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         if self._status != 1:
             raise ExecutionError("barebox is not at the prompt, cannot run commands")
 
-        # FIXME: use codec, decodeerrors
         marker = gen_marker()
         # hide marker from expect
         hidden_marker = f'"{marker[:4]}""{marker[4:]}"'
@@ -100,7 +99,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             rf'{marker}(.*){marker}\s+(\d+)\s+.*{self.prompt}',
             timeout=timeout)
         # Remove VT100 Codes and split by newline
-        data = re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
+        data = re_vt100.sub('', match.group(1).decode(codec, decodeerrors)).split('\r\n')[1:-1]
         self.logger.debug("Received Data: %s", data)
         # Get exit code
         exitcode = int(match.group(2))

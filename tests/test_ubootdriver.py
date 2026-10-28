@@ -164,3 +164,35 @@ class TestUBootDriver:
             d.run_check("test")
         with pytest.raises(ExecutionError):
             d.run("test")
+
+    def test_uboot_run_decodeerrors(self, target_with_fakeconsole, mocker):
+        t = target_with_fakeconsole
+        d = UBootDriver(t, "uboot", prompt="=> ")
+        d._await_prompt = mocker.MagicMock()
+        t.activate(d)
+        d._status = 1
+        mocker.patch("labgrid.driver.ubootdriver.gen_marker", return_value="MARKERABCD")
+        # command echo, marker, invalid UTF-8 output, exit code, marker, prompt
+        d.console.rxq.append(b"echo cmd\r\nMARKERABCD\r\n\xff\r\n0\r\nMARKERABCD\r\n=> ")
+        assert d.run_check("test", decodeerrors="replace") == ["\ufffd"]
+
+        d.console.rxq.append(b"echo cmd\r\nMARKERABCD\r\n\xff\r\n0\r\nMARKERABCD\r\n=> ")
+        assert d.run_check("test", codec="latin-1") == ["\xff"]
+
+        d.console.rxq.append(b"echo cmd\r\nMARKERABCD\r\n\xff\r\n0\r\nMARKERABCD\r\n=> ")
+        with pytest.raises(UnicodeDecodeError):
+            d.run_check("test")
+
+    def test_smalluboot_run_decodeerrors(self, target_with_fakeconsole, mocker):
+        t = target_with_fakeconsole
+        d = SmallUBootDriver(t, "uboot", prompt="=> ")
+        d._await_prompt = mocker.MagicMock()
+        t.activate(d)
+        d._status = 1
+        mocker.patch("labgrid.driver.smallubootdriver.gen_marker", return_value="MARKERABCD")
+        unknown = b"Unknown command 'echoMARKERABCD' - try 'help'"
+        d.console.rxq.append(b"echo cmd\n" + unknown + b"\n\xff\n" + unknown + b"\n=> ")
+        assert d.run_check("test", decodeerrors="replace") == ["\ufffd"]
+
+        d.console.rxq.append(b"echo cmd\n" + unknown + b"\n\xff\n" + unknown + b"\n=> ")
+        assert d.run_check("test", codec="latin-1") == ["\xff"]

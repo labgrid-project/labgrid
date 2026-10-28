@@ -139,3 +139,21 @@ class TestBareboxDriver:
             d.run_check("test")
         with pytest.raises(ExecutionError):
             d.run("test")
+
+    def test_barebox_run_decodeerrors(self, target_with_fakeconsole, mocker):
+        t = target_with_fakeconsole
+        d = BareboxDriver(t, "barebox", prompt="barebox@board:/ ")
+        d._await_prompt = mocker.MagicMock()
+        t.activate(d)
+        d._status = 1
+        mocker.patch("labgrid.driver.bareboxdriver.gen_marker", return_value="MARKERABCD")
+        # marker, invalid UTF-8 output, marker + exit code, prompt
+        d.console.rxq.append(b"MARKERABCD\r\n\xff\r\nMARKERABCD 0\r\nbarebox@board:/ ")
+        assert d.run_check("test", decodeerrors="replace") == ["\ufffd"]
+
+        d.console.rxq.append(b"MARKERABCD\r\n\xff\r\nMARKERABCD 0\r\nbarebox@board:/ ")
+        assert d.run_check("test", codec="latin-1") == ["\xff"]
+
+        d.console.rxq.append(b"MARKERABCD\r\n\xff\r\nMARKERABCD 0\r\nbarebox@board:/ ")
+        with pytest.raises(UnicodeDecodeError):
+            d.run_check("test")

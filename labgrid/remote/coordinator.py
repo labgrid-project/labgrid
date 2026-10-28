@@ -1044,11 +1044,22 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         name = request.placename
         fromuser = request.fromuser if request.HasField("fromuser") else None
 
-        if fromuser and self.use_capabilities and not Capability.release_place_any in identity.capabilities:
+        try:
+            username = infer_peer_identity(self.clients, context, identity)
+        except KeyError:
             await context.abort(
-                grpc.StatusCode.PERMISSION_DENIED,
-                f"Capability {Capability.release_place_any} not in client capabilities {identity.capabilities}",
+                grpc.StatusCode.FAILED_PRECONDITION, f"Peer {context.peer()} does not have a valid session"
             )
+
+        if self.use_capabilities and fromuser:
+            if not (
+                Capability.release_place_any in identity.capabilities
+                or (fromuser == username and Capability.release_place_owned in identity.capabilities)
+            ):
+                await context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Insufficient permissions to release place {name}",
+                )
 
         try:
             place = self.places[name]
@@ -1060,13 +1071,6 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {name} is not acquired")
         if fromuser and place.acquired != fromuser:
             return labgrid_coordinator_pb2.ReleasePlaceResponse()
-
-        try:
-            username = infer_peer_identity(self.clients, context, identity)
-        except KeyError:
-            await context.abort(
-                grpc.StatusCode.FAILED_PRECONDITION, f"Peer {context.peer()} does not have a valid session"
-            )
 
         if self.use_capabilities:
             if not identity:

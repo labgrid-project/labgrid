@@ -1,4 +1,7 @@
+from types import SimpleNamespace
+
 import pytest
+from pexpect import TIMEOUT
 
 from labgrid import Target
 from labgrid.driver import UBootDriver
@@ -54,3 +57,88 @@ class TestUBootDriver:
         assert d.console.txq.pop() == b"bar\n"
         with pytest.raises(Exception):
             d.boot('nop')
+
+    def test_uboot_await_prompt_timeout_autoboot_loop(self, target_with_fakeconsole, mocker):
+        """A board stuck in a reset loop keeps printing the autoboot string.
+        _await_prompt must give up after login_timeout, allowing exactly one
+        more autoboot match after the deadline."""
+        t = target_with_fakeconsole
+        d = UBootDriver(t, "uboot", prompt="=> ", login_timeout=1)
+        clock = [0.0]
+        mocker.patch("labgrid.util.timeout.time", SimpleNamespace(monotonic=lambda: clock[0]))
+
+        def fake_expect(*args, **kwargs):
+            if d.console.expect.call_count > 10:
+                pytest.fail("_await_prompt did not give up after login_timeout")
+            clock[0] += 0.6
+            return (1, b"Hit any key to stop autoboot", None, None)
+
+        d.console.expect = mocker.MagicMock(side_effect=fake_expect)
+        with pytest.raises(TIMEOUT):
+            t.activate(d)
+        assert d.console.expect.call_count == 3
+
+    def test_uboot_await_prompt_match_after_deadline(self, target_with_fakeconsole, mocker):
+        """An autoboot match that arrives after login_timeout must not fail
+        when the prompt follows the interrupt that was just sent."""
+        t = target_with_fakeconsole
+        d = UBootDriver(t, "uboot", prompt="=> ", login_timeout=1)
+        clock = [0.0]
+        mocker.patch("labgrid.util.timeout.time", SimpleNamespace(monotonic=lambda: clock[0]))
+        responses = [
+            (1, b"Hit any key to stop autoboot", None, None),
+            (0, b"", None, None),
+        ]
+
+        def fake_expect(*args, **kwargs):
+            clock[0] += 1.2
+            return responses.pop(0)
+
+        d.console.expect = mocker.MagicMock(side_effect=fake_expect)
+        d._check_prompt = mocker.MagicMock()
+        t.activate(d)
+        assert d.console.expect.call_count == 2
+        assert d._status == 1
+
+    def test_uboot_await_prompt_password_after_deadline(self, target_with_fakeconsole, mocker):
+        """After a late autoboot match the password prompt may follow, it
+        must still be answered."""
+        t = target_with_fakeconsole
+        d = UBootDriver(t, "uboot", prompt="=> ", password="secret", login_timeout=1)
+        clock = [0.0]
+        mocker.patch("labgrid.util.timeout.time", SimpleNamespace(monotonic=lambda: clock[0]))
+        responses = [
+            (1, b"Hit any key to stop autoboot", None, None),
+            (2, b"enter Password:", None, None),
+            (0, b"", None, None),
+        ]
+
+        def fake_expect(*args, **kwargs):
+            clock[0] += 1.2
+            return responses.pop(0)
+
+        d.console.expect = mocker.MagicMock(side_effect=fake_expect)
+        d.console.sendline = mocker.MagicMock()
+        d._check_prompt = mocker.MagicMock()
+        t.activate(d)
+        assert d.console.expect.call_count == 3
+        d.console.sendline.assert_called_once_with("secret")
+
+    def test_uboot_await_prompt_password_loop(self, target_with_fakeconsole, mocker):
+        """A board that keeps printing the password prompt after the password
+        was sent must not make _await_prompt spin forever."""
+        t = target_with_fakeconsole
+        d = UBootDriver(t, "uboot", prompt="=> ", password="secret", login_timeout=1)
+        clock = [0.0]
+        mocker.patch("labgrid.util.timeout.time", SimpleNamespace(monotonic=lambda: clock[0]))
+
+        def fake_expect(*args, **kwargs):
+            if d.console.expect.call_count > 10:
+                pytest.fail("_await_prompt did not give up after login_timeout")
+            clock[0] += 0.6
+            return (2, b"enter Password:", None, None)
+
+        d.console.expect = mocker.MagicMock(side_effect=fake_expect)
+        with pytest.raises(TIMEOUT):
+            t.activate(d)
+        assert d.console.expect.call_count == 3

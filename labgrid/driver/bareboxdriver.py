@@ -149,6 +149,10 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # Because pexpect keeps any read data in it's buffer when a timeout
         # occours, we can't lose any data this way.
         last_before = None
+        late_matches = set()
+        timeout_message = (
+            f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"
+        )
         password_entered = False
 
         expectations = [self.prompt, self.autoboot, "Password: ", TIMEOUT]
@@ -187,11 +191,14 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                     self.console.sendline("")
 
                 if timeout.expired:
-                    raise TIMEOUT(
-                        f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"
-                    )
+                    raise TIMEOUT(timeout_message)
 
             last_before = before
+
+            if index != 3 and timeout.expired:
+                if index in late_matches:
+                    raise TIMEOUT(timeout_message)
+                late_matches.add(index)
 
         self._check_prompt()
 

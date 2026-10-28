@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from labgrid.driver import ShellDriver, ExecutionError
@@ -97,3 +99,51 @@ class TestShellDriver:
 
         res = d.get_ip_addresses()
         assert res[0] == IPv4Interface("192.168.42.1/24")
+
+    @staticmethod
+    def _wait_for_setup(target_with_fakeconsole, mocker):
+        """An active ShellDriver plus a fake clock that only advances in
+        sleep() and in the fake commands, so the tests do not depend on the
+        real time."""
+        t = target_with_fakeconsole
+        d = ShellDriver(t, "shell", prompt="dummy", login_prompt="dummy", username="dummy")
+        d.on_activate = mocker.MagicMock()
+        d = t.get_driver("ShellDriver")
+
+        clock = [0.0]
+        mocker.patch("labgrid.util.timeout.time", SimpleNamespace(monotonic=lambda: clock[0]))
+
+        def fake_sleep(seconds):
+            clock[0] += seconds
+
+        mocker.patch("labgrid.driver.commandmixin.sleep", fake_sleep)
+        return d, clock
+
+    def test_wait_for_found_after_deadline(self, target_with_fakeconsole, mocker):
+        """A pattern found by a command that started before the deadline but
+        finished after it must not be reported as a timeout."""
+        d, clock = self._wait_for_setup(target_with_fakeconsole, mocker)
+
+        def slow_run_check(cmd, **kwargs):
+            clock[0] += 0.2
+            return ["pattern found"]
+
+        d.run_check = mocker.MagicMock(side_effect=slow_run_check)
+        d.wait_for("cmd", "pattern", timeout=0.1, sleepduration=0)
+        d.run_check.assert_called_once_with("cmd")
+
+    def test_wait_for_final_attempt_at_deadline(self, target_with_fakeconsole, mocker):
+        """The sleep is cut short at the deadline and one final attempt is made."""
+        d, clock = self._wait_for_setup(target_with_fakeconsole, mocker)
+        results = [["nothing"], ["pattern found"]]
+        d.run_check = mocker.MagicMock(side_effect=lambda cmd, **kwargs: results.pop(0))
+        d.wait_for("cmd", "pattern", timeout=0.1, sleepduration=1)
+        assert d.run_check.call_count == 2
+        assert clock[0] == pytest.approx(0.1)
+
+    def test_wait_for_timeout(self, target_with_fakeconsole, mocker):
+        d, _ = self._wait_for_setup(target_with_fakeconsole, mocker)
+        d.run_check = mocker.MagicMock(return_value=["nothing"])
+        with pytest.raises(ExecutionError, match="Wait timeout expired"):
+            d.wait_for("cmd", "pattern", timeout=0.25, sleepduration=0.1)
+        assert d.run_check.call_count == 4

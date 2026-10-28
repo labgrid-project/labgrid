@@ -157,3 +157,22 @@ class TestBareboxDriver:
         d.console.rxq.append(b"MARKERABCD\r\n\xff\r\nMARKERABCD 0\r\nbarebox@board:/ ")
         with pytest.raises(UnicodeDecodeError):
             d.run_check("test")
+
+    def test_barebox_loglevel_unexpected_output(self, target_with_fakeconsole, mocker):
+        """Extra output lines while reading the log level must not break
+        activation, the default log level is kept in that case."""
+        t = target_with_fakeconsole
+        d = BareboxDriver(t, "barebox")
+        d = t.get_driver(BareboxDriver, activate=False)
+        # mock for d._run('echo $global.loglevel')
+        d._run = mocker.MagicMock(return_value=(['some async message', '5'], [], 0))
+        t.activate(d)
+        assert d.saved_log_level == 7
+
+    def test_barebox_loglevel_saved(self, target_with_fakeconsole, mocker):
+        t = target_with_fakeconsole
+        d = BareboxDriver(t, "barebox")
+        d = t.get_driver(BareboxDriver, activate=False)
+        d._run = mocker.MagicMock(return_value=(['5'], [], 0))
+        t.activate(d)
+        assert d.saved_log_level == '5'

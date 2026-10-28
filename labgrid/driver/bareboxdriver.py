@@ -209,9 +209,11 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # by pollers because no hardware interaction is triggered by echo, so
         # it should be safe to use the usual shell wrapper via _run()
         stdout, _, exitcode = self._run("echo $global.loglevel", adjust_log_level=False)
-        [saved_log_level] = stdout
-        if exitcode == 0 and saved_log_level.isnumeric():
-            self.saved_log_level = saved_log_level
+        if exitcode == 0 and len(stdout) == 1 and stdout[0].isnumeric():
+            self.saved_log_level = stdout[0]
+        else:
+            self.logger.debug("Unexpected output while reading the log level, keeping %s: %s",
+                              self.saved_log_level, stdout)
 
         # silence barebox, the driver can get confused by asynchronous messages
         # logged to the console otherwise

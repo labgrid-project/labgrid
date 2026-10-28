@@ -300,6 +300,9 @@ class ClientSession:
         else:
             old = group[resource_name].data
             group[resource_name].data = resource
+            if not resource:
+                # resource was deleted (exporter disconnected), remove it
+                del group[resource_name]
         if self.monitor:
             if "cls" in resource and not old:
                 print(f"Resource {exporter}/{group_name}/{resource['cls']}/{resource_name} created: {resource}")

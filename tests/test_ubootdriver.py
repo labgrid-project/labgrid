@@ -4,7 +4,7 @@ import pytest
 from pexpect import TIMEOUT
 
 from labgrid import Target
-from labgrid.driver import UBootDriver
+from labgrid.driver import UBootDriver, SmallUBootDriver
 from labgrid.driver.fake import FakeConsoleDriver
 from labgrid.protocol import CommandProtocol, LinuxBootProtocol
 from labgrid.driver import ExecutionError
@@ -142,3 +142,25 @@ class TestUBootDriver:
         with pytest.raises(TIMEOUT):
             t.activate(d)
         assert d.console.expect.call_count == 3
+
+    def test_uboot_run_not_at_prompt(self, target_with_fakeconsole):
+        t = target_with_fakeconsole
+        d = UBootDriver(t, "uboot")
+        d = t.get_driver(UBootDriver)
+        # e.g. after reset() failed to find the prompt again
+        d._status = 0
+        with pytest.raises(ExecutionError):
+            d.run_check("test")
+        with pytest.raises(ExecutionError):
+            d.run("test")
+
+    def test_smalluboot_run_not_at_prompt(self, target_with_fakeconsole):
+        t = target_with_fakeconsole
+        d = SmallUBootDriver(t, "uboot")
+        d.console.rxq.append(b"U-Boot 2019\n")
+        t.activate(d)
+        d._status = 0
+        with pytest.raises(ExecutionError):
+            d.run_check("test")
+        with pytest.raises(ExecutionError):
+            d.run("test")

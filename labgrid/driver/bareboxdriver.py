@@ -9,6 +9,7 @@ from ..step import step
 from ..util import gen_marker, Timeout, re_vt100
 from .common import Driver
 from .commandmixin import CommandMixin
+from .exception import ExecutionError
 
 
 @target_factory.reg_driver
@@ -74,8 +75,14 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             timeout (int): optional, timeout in seconds
 
         Returns:
-            Tuple[List[str],List[str], int]: if successful, None otherwise
+            Tuple[List[str],List[str], int]: stdout, stderr and exit code
+
+        Raises:
+            ExecutionError: if barebox is not at the prompt
         """
+        if self._status != 1:
+            raise ExecutionError("barebox is not at the prompt, cannot run commands")
+
         # FIXME: use codec, decodeerrors
         marker = gen_marker()
         # hide marker from expect
@@ -88,19 +95,16 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         if self.saved_log_level and adjust_log_level:
             cmp_command += ' global.loglevel=0;'
 
-        if self._status == 1:
-            self.console.sendline(cmp_command)
-            _, _, match, _ = self.console.expect(
-                rf'{marker}(.*){marker}\s+(\d+)\s+.*{self.prompt}',
-                timeout=timeout)
-            # Remove VT100 Codes and split by newline
-            data = re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
-            self.logger.debug("Received Data: %s", data)
-            # Get exit code
-            exitcode = int(match.group(2))
-            return (data, [], exitcode)
-
-        return None
+        self.console.sendline(cmp_command)
+        _, _, match, _ = self.console.expect(
+            rf'{marker}(.*){marker}\s+(\d+)\s+.*{self.prompt}',
+            timeout=timeout)
+        # Remove VT100 Codes and split by newline
+        data = re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
+        self.logger.debug("Received Data: %s", data)
+        # Get exit code
+        exitcode = int(match.group(2))
+        return (data, [], exitcode)
 
     @Driver.check_active
     @step()

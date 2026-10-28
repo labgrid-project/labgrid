@@ -4,6 +4,7 @@ from ..factory import target_factory
 from ..util import gen_marker
 from ..step import step
 from .common import Driver
+from .exception import ExecutionError
 
 from .ubootdriver import UBootDriver
 from ..util import re_vt100
@@ -84,7 +85,7 @@ class SmallUBootDriver(UBootDriver):
 
         # Check if Uboot is in command line mode
         if self._status != 1:
-            return None
+            raise ExecutionError("U-Boot is not at the prompt, cannot run commands")
 
         marker = gen_marker()
 

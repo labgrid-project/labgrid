@@ -124,3 +124,18 @@ class TestBareboxDriver:
         t.activate(d)
         assert d.console.expect.call_count == 3
         d.console.sendline.assert_called_once_with("secret")
+
+    def test_barebox_run_not_at_prompt(self, target_with_fakeconsole, mocker):
+        t = target_with_fakeconsole
+        d = BareboxDriver(t, "barebox")
+        d = t.get_driver(BareboxDriver, activate=False)
+        # mock for d._run('echo $global.loglevel')
+        d._run = mocker.MagicMock(return_value=(['7'], [], 0))
+        t.activate(d)
+        del d._run  # use the real _run again
+        # e.g. after reset() failed to find the prompt again
+        d._status = 0
+        with pytest.raises(ExecutionError):
+            d.run_check("test")
+        with pytest.raises(ExecutionError):
+            d.run("test")

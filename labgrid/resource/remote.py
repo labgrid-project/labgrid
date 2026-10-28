@@ -2,6 +2,7 @@ import copy
 import os
 import attr
 
+from ..exceptions import NoResourceFoundError
 from ..factory import target_factory
 from .common import NetworkResource, ManagedResource, ResourceManager
 
@@ -93,6 +94,11 @@ class RemotePlaceManager(ResourceManager):
         for resource in self.resources + self.unmanaged_resources:
             if isinstance(resource, RemotePlace):
                 continue
+            # coordinator dropped resource
+            if not resource._remote_entry.data:
+                raise NoResourceFoundError(
+                    f"remote resource {resource.display_name} was removed due to an exporter disconnect"
+                )
             attrs = resource._remote_entry.args.copy()
             attrs['avail'] = resource._remote_entry.avail
             # TODO allow the resource to do the update itself?

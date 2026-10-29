@@ -1025,6 +1025,9 @@ class Exporter:
                     if self.pump_task.done():
                         await self.pump_task
                         logging.debug("pump task exited, shutting down exporter")
+
+                        global reexec
+                        reexec = True
                         return
 
         logging.info("creating poll task")

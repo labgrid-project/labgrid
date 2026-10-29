@@ -287,30 +287,54 @@ class IMXUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
-        if match not in [# Extracted from `uuu -udev` command (v. 1.5.243)
-                         ("0483", "0afb"), ("0525", "a4a5"),
-                         ("0525", "b4a4"), ("066f", "9afe"),
-                         ("066f", "9bff"), ("15a2", "003a"),
-                         ("15a2", "0054"), ("15a2", "0061"),
-                         ("15a2", "0063"), ("15a2", "0071"),
-                         ("15a2", "0076"), ("15a2", "007d"),
-                         ("15a2", "0080"), ("18d1", "0d02"),
-                         ("1fc9", "0027"), ("1fc9", "0126"),
-                         ("1fc9", "0128"), ("1fc9", "0129"),
-                         ("1fc9", "012b"), ("1fc9", "012f"),
-                         ("1fc9", "0134"), ("1fc9", "0135"),
-                         ("1fc9", "013e"), ("1fc9", "0146"),
-                         ("1fc9", "0147"), ("1fc9", "014a"),
-                         ("1fc9", "014b"), ("1fc9", "014e"),
-                         ("1fc9", "0151"), ("1fc9", "0152"),
-                         ("1fc9", "0153"), ("1fc9", "0159"),
-                         ("1fc9", "015c"), ("1fc9", "015d"),
-                         ("3016", "0001"), ("3016", "1001"),
-                         ("1fc9", "0028"),
-
-                         # Existing in previous code and not found above
-                         ("15a2", "004f"), ("1b67", "4fff"), # SPL
-                         ]:
+        # Extracted from `uuu -udev` command (v. 1.5.243)
+        if match not in [
+            # SDPS: entries
+            ("1fc9", "012f"),  # MX8QXP
+            ("1fc9", "0129"),  # MX8QM
+            ("1fc9", "0147"),  # MX8DXL
+            ("15a2", "004f"),  # MX28
+            ("1fc9", "013e"),  # MX815
+            ("1fc9", "0146"),  # MX865
+            ("1fc9", "014a"),  # MX8ULP
+            ("1fc9", "014b"),  # MX8ULP
+            ("1fc9", "014e"),  # MX93
+            ("1fc9", "0159"),  # MX91
+            ("1fc9", "015d"),  # MX95
+            ("1fc9", "015c"),  # MX95
+            ("1fc9", "0027"),  # MX943
+            ("1fc9", "0028"),  # MX952/MX937
+            # SDP: entries
+            ("15a2", "0076"),  # MX7D
+            ("15a2", "0054"),  # MX6Q
+            ("15a2", "0061"),  # MX6D
+            ("15a2", "0063"),  # MX6SL
+            ("15a2", "0071"),  # MX6SX
+            ("15a2", "007d"),  # MX6UL
+            ("15a2", "0080"),  # MX6ULL
+            ("1fc9", "0128"),  # MX6SLL
+            ("1fc9", "0126"),  # MX7ULP
+            ("1fc9", "0135"),  # MXRT106X
+            ("1fc9", "0134"),  # MX8MM
+            ("1fc9", "012b"),  # MX8MQ
+            # SDPU:/SDPV: entries
+            ("0525", "b4a4"),  # SPL/SPL1
+            ("1fc9", "0151"),  # SPL1
+            ("3016", "1001"),  # SPL/SPL1
+            # FBK: entries
+            ("066f", "9afe"),  # FBK
+            ("066f", "9bff"),  # FBK
+            ("1fc9", "0153"),  # FBK
+            # FB: entries
+            ("0525", "a4a5"),  # FB
+            ("18d1", "0d02"),  # FB
+            ("3016", "0001"),  # FB
+            ("1fc9", "0152"),  # FB
+            ("0483", "0afb"),  # FB
+            # Existing in previous code and not in UUU list, for legacy compatibility
+            ("15a2", "003a"),
+            ("1b67", "4fff"),
+        ]:
             return False
 
         return super().filter_match(device)

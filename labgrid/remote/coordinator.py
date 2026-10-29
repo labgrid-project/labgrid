@@ -2,6 +2,7 @@
 import argparse
 import logging
 import asyncio
+import os
 import traceback
 from enum import Enum
 from functools import wraps
@@ -236,6 +237,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.lock = asyncio.Lock()
         self.exporters: dict[str, ExporterSession] = {}
         self.clients: dict[str, ClientSession] = {}
+        self.reservation_retry_cooldown = float(os.environ.get("LG_RESERVATION_RETRY_COOLDOWN", 60.0))
+        self.reservation_place_cooldowns: dict[str, float] = {}
+
+        if self.reservation_retry_cooldown <= 0:
+            raise ValueError("LG_RESERVATION_RETRY_COOLDOWN must be > 0")
         self.load()
 
         self.loop = asyncio.get_running_loop()
@@ -936,6 +942,29 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             idx = place.acquired_resources.index(oldresource)
             place.acquired_resources[idx] = newresource
 
+    def _return_reservation_after_place_failure(self, place):
+        assert self.lock.locked()
+
+        reservation_id = place.reservation
+        if not reservation_id:
+            return
+
+        reservation = self.reservations.get(reservation_id)
+        if reservation is None:
+            return
+
+        reservation.state = ReservationState.waiting
+        reservation.allocations.clear()
+        reservation.refresh()
+
+        place.reservation = None
+        place.acquired = None
+        place.allowed = set()
+        place.touch()
+        self.reservation_place_cooldowns[place.name] = time.time() + self.reservation_retry_cooldown
+        self._publish_place(place)
+        self.save_later()
+
     @add_identity
     @locked
     async def AcquirePlace(self, request, context, *, identity):
@@ -971,11 +1000,18 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         try:
             await self._acquire_resources(place, resources)
         except CoordinatorError as e:
-            # revert earlier change
-            place.acquired = None
+            reservation_returned = bool(place.reservation)
+            if reservation_returned:
+                self._return_reservation_after_place_failure(place)
+                self.schedule_reservations()
+            else:
+                # revert earlier change
+                place.acquired = None
             message = f"Failed to acquire resources for place {name}"
             if str(e):
                 message += f": {e}"
+            if reservation_returned:
+                message += "; reservation was returned to waiting state"
             await context.abort(
                 grpc.StatusCode.FAILED_PRECONDITION,
                 message,
@@ -1066,6 +1102,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
         # expire reservations
         assert self.lock.locked()
+        now = time.time()
+        for name, cooldown_until in list(self.reservation_place_cooldowns.items()):
+            if cooldown_until <= now:
+                del self.reservation_place_cooldowns[name]
+
         for res in list(self.reservations.values()):
             if res.state is ReservationState.acquired:
                 # acquired reservations do not expire
@@ -1113,6 +1154,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         # check which places are available for allocation
         available_places = set()
         for name, place in self.places.items():
+            if name in self.reservation_place_cooldowns:
+                continue
             if place.acquired is None and place.reservation is None:
                 available_places.add(name)
         assert not (available_places & allocated_places), "inconsistent allocation"

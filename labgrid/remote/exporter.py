@@ -20,6 +20,8 @@ import pathlib
 
 import attr
 import grpc
+from opentelemetry import trace
+from opentelemetry.trace import StatusCode
 
 from labgrid.remote.grpc.interceptor.client import (
     IdentityClientStreamStreamInterceptor,
@@ -29,11 +31,16 @@ from labgrid.remote.grpc.interceptor.client import (
 from .config import ResourceConfig
 from .common import ResourceEntry, get_client_credentials, queue_as_aiter
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
+from .otel import setup_otel
+from .otel_exporter import start_span_from_metadata
+from .otel_exporter_metrics import record_resource_command, setup_exporter_metrics
+from ..logging import basicConfig
 from ..util import get_free_port, labgrid_version
 
 
 exports: Dict[str, Type[ResourceEntry]] = {}
 reexec = False
+tracer = trace.get_tracer("labgrid-exporter")
 
 
 class ExporterError(Exception):
@@ -1058,36 +1065,7 @@ class Exporter:
                     print("Exporter ready", flush=True)
                     logging.info("connected to coordinator version %s", out_message.hello.version)
                 elif kind == "set_acquired_request":
-                    logging.debug("acquire request")
-                    success = False
-                    reason = None
-                    try:
-                        if out_message.set_acquired_request.place_name:
-                            await self.acquire(
-                                out_message.set_acquired_request.group_name,
-                                out_message.set_acquired_request.resource_name,
-                                out_message.set_acquired_request.place_name,
-                            )
-                        else:
-                            await self.release(
-                                out_message.set_acquired_request.group_name,
-                                out_message.set_acquired_request.resource_name,
-                            )
-                        success = True
-                    except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
-                        reason = str(e)
-                        logging.warning("set_acquired_request failed: %s", reason)
-                    except Exception as e:
-                        reason = str(e) or repr(e)
-                        logging.exception("failed to handle set_acquired_request: %s", reason)
-                    finally:
-                        in_message = labgrid_coordinator_pb2.ExporterInMessage()
-                        in_message.response.success = success
-                        if reason:
-                            in_message.response.reason = reason
-                        logging.debug("queuing %s", in_message)
-                        self.out_queue.put_nowait(in_message)
-                        logging.debug("queued %s", in_message)
+                    await self._handle_set_acquired_request(out_message)
                 else:
                     logging.debug("unknown request: %s", kind)
         except grpc.aio.AioRpcError as e:
@@ -1107,6 +1085,40 @@ class Exporter:
             self.out_queue.put_nowait(None)  # let the sender side exit gracefully
             logging.exception("error in coordinator message pump")
             raise
+
+    async def _handle_set_acquired_request(self, out_message):
+        with start_span_from_metadata(out_message, tracer) as span:
+            request = out_message.set_acquired_request
+            operation = "acquire" if request.place_name else "release"
+            logging.debug("acquire request")
+            success = False
+            reason = None
+            try:
+                if request.place_name:
+                    await self.acquire(request.group_name, request.resource_name, request.place_name)
+                else:
+                    await self.release(request.group_name, request.resource_name)
+                success = True
+                span.set_status(StatusCode.OK)
+            except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
+                reason = str(e)
+                logging.warning("set_acquired_request failed: %s", reason)
+                span.record_exception(e)
+                span.set_status(StatusCode.ERROR, reason)
+            except Exception as e:
+                reason = str(e) or repr(e)
+                logging.exception("failed to handle set_acquired_request: %s", reason)
+                span.record_exception(e)
+                span.set_status(StatusCode.ERROR, reason)
+            finally:
+                record_resource_command(self, operation, success)
+                in_message = labgrid_coordinator_pb2.ExporterInMessage()
+                in_message.response.success = success
+                if reason:
+                    in_message.response.reason = reason
+                logging.debug("queuing %s", in_message)
+                self.out_queue.put_nowait(in_message)
+                logging.debug("queued %s", in_message)
 
     async def acquire(self, group_name, resource_name, place_name):
         resource = self.groups.get(group_name, {}).get(resource_name)
@@ -1205,6 +1217,7 @@ class Exporter:
 
 async def amain(config) -> bool:
     exporter = Exporter(config)
+    setup_exporter_metrics(exporter)
 
     if inspect:
         inspect.exporter = exporter
@@ -1269,7 +1282,10 @@ def main():
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
+    basicConfig(
+        level=logging.DEBUG if args.debug else logging.INFO,
+        format=logging.BASIC_FORMAT,
+    )
 
     config = {
         "name": args.name or gethostname(),
@@ -1283,6 +1299,8 @@ def main():
     print(f"exporter name: {config['name']}")
     print(f"exporter hostname: {config['hostname']}")
     print(f"resource config file: {config['resources']}")
+
+    setup_otel("labgrid-exporter", with_metrics=True)
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

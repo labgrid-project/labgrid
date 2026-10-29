@@ -43,6 +43,18 @@ WORKDIR /opt/coordinator
 CMD ["/usr/local/bin/labgrid-coordinator"]
 
 #
+# Coordinator with OpenTelemetry
+#
+FROM labgrid-coordinator AS labgrid-coordinator-otel
+ARG VERSION=0.0.0
+
+ENV OTEL_EXPORTER_PROMETHEUS_HOST=0.0.0.0
+EXPOSE 9464
+
+RUN cd /opt/labgrid && \
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir '.[otel]'
+
+#
 # Exporter
 #
 FROM labgrid-base AS labgrid-exporter
@@ -57,6 +69,18 @@ RUN apt update -q=2 && \
 VOLUME /opt/conf
 
 CMD ["/entrypoint.sh"]
+
+#
+# Exporter with OpenTelemetry
+#
+FROM labgrid-exporter AS labgrid-exporter-otel
+ARG VERSION=0.0.0
+
+ENV OTEL_EXPORTER_PROMETHEUS_HOST=0.0.0.0
+EXPOSE 9464
+
+RUN cd /opt/labgrid && \
+    SETUPTOOLS_SCM_PRETEND_VERSION="$VERSION" pip3 install --no-cache-dir '.[otel]'
 
 #
 # Coordinator statsd

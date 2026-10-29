@@ -16,6 +16,7 @@ from typing import Optional
 import attr
 import grpc
 from grpc_reflection.v1alpha import reflection
+from opentelemetry import context as otel_context
 
 from labgrid.remote.identity import ClientIdentity, infer_peer_identity
 
@@ -32,6 +33,10 @@ from .common import (
 from .scheduler import TagSet, schedule
 from .generated import labgrid_coordinator_pb2
 from .generated import labgrid_coordinator_pb2_grpc
+from .otel import instrument_grpc_server, instrument_rpc, setup_otel
+from .otel_exporter import inject_trace_context
+from .otel_metrics import record_reservation_wait_duration, setup_coordinator_metrics
+from ..logging import basicConfig
 from ..util import atomic_replace, labgrid_version, yaml, Timeout
 
 
@@ -52,6 +57,21 @@ class Action(Enum):
     ADD = 0
     DEL = 1
     UPD = 2
+
+
+class CoordinatorEvent(Enum):
+    PLACE_ACQUIRED = ("place.acquired", "{subject}: place acquired by {user}")
+    PLACE_RELEASED = ("place.released", "{subject}: place released")
+    PLACE_RELEASED_SKIPPED = ("place.released_skipped", "{subject}: place released skipped")
+
+    def __new__(cls, event_name, success_message):
+        member = object.__new__(cls)
+        member._value_ = event_name
+        member.success_message = success_message
+        return member
+
+    def format_success_message(self, subject, user):
+        return self.success_message.format(subject=subject, user=user)
 
 
 @attr.s(init=False, eq=False)
@@ -195,9 +215,59 @@ def add_identity(func):
     return wrapper
 
 
+def _log_event(event, get_subject_and_log_fields):
+    """Log an RPC outcome with stable, queryable fields."""
+
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self, request, context):
+            peer = context.peer()
+            identity = ClientIdentity.from_metadata(context.invocation_metadata())
+            user = identity.id if identity else getattr(self.clients.get(peer), "name", "")
+            subject, fields = get_subject_and_log_fields(request)
+            fields["event.name"] = event.value
+            if user:
+                fields["user.id"] = user
+            try:
+                response = await func(self, request, context)
+            except Exception:
+                fields["event.outcome"] = "failure"
+                logging.getLogger("coordinator.events").exception(
+                    "%s: %s failed for %s",
+                    subject,
+                    event.value,
+                    user,
+                    extra=fields,
+                )
+                raise
+            fields["event.outcome"] = "success"
+            logging.getLogger("coordinator.events").info(
+                event.format_success_message(subject, user),
+                extra=fields,
+            )
+            return response
+
+        return wrapper
+
+    return decorator
+
+
+def log_place_event(event):
+    """Log an event for an RPC which identifies a place by name."""
+
+    def get_subject_and_log_fields(request):
+        place = getattr(request, "placename", None) or getattr(request, "name", None)
+        return place, {"place.name": place}
+
+    return _log_event(event, get_subject_and_log_fields)
+
+
 class ExporterCommand:
     def __init__(self, request) -> None:
         self.request = request
+        # The stream sends this command from a different task than the RPC
+        # which created it, so retain that RPC's context at the queue boundary.
+        self.trace_context = otel_context.get_current()
         self.response = None
         self.completed = asyncio.Event()
         self.expired = False
@@ -330,7 +400,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     async def ClientStream(self, request_iterator, context):
         peer = context.peer()
-        logging.info("client connected: %s", peer)
+        logging.info(
+            "client connected: %s",
+            peer,
+            extra={"event.name": "client.connected", "event.outcome": "success", "peer": peer},
+        )
         assert peer not in self.clients
         out_msg_queue = asyncio.Queue()
 
@@ -393,7 +467,14 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 await running_request_task
                 logging.debug("client aborted %s, cancelled: %s", session, context.cancelled())
             except KeyError:
-                logging.info("Never received startup from peer %s that disconnected", peer)
+                logging.info(
+                    "Never received startup from peer %s that disconnected",
+                    peer,
+                    extra={
+                        "event.name": "client.disconnected",
+                        "event.outcome": "failure",
+                    },
+                )
 
     def _add_default_place(self, name):
         if name in self.places:
@@ -550,16 +631,25 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 logging.debug("exporter cmd %s", cmd)
                 out_msg = labgrid_coordinator_pb2.ExporterOutMessage()
                 out_msg.set_acquired_request.CopyFrom(cmd.request)
+                inject_trace_context(out_msg, cmd.trace_context)
                 pending_commands.append(cmd)
                 yield out_msg
         except asyncio.exceptions.CancelledError:
-            logging.info("exporter disconnected %s", context.peer())
+            logging.info(
+                "exporter disconnected %s",
+                context.peer(),
+                extra={
+                    "event.name": "exporter.disconnected",
+                    "event.outcome": "success",
+                },
+            )
         except Exception:
             logging.exception("error in exporter command handler")
             raise
         finally:
             await self._cleanup_exporter(peer, running_request_task)
 
+    @instrument_rpc({"labgrid.place.name": "name"})
     @locked
     async def AddPlace(self, request, context):
         name = request.name
@@ -574,6 +664,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AddPlaceResponse()
 
+    @instrument_rpc({"labgrid.place.name": "name"})
     @locked
     async def DeletePlace(self, request, context):
         name = request.name
@@ -590,6 +681,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.DeletePlaceResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.place.alias": "alias"})
     @locked
     async def AddPlaceAlias(self, request, context):
         placename = request.placename
@@ -604,6 +696,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AddPlaceAliasResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.place.alias": "alias"})
     @locked
     async def DeletePlaceAlias(self, request, context):
         placename = request.placename
@@ -621,6 +714,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.DeletePlaceAliasResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.place.tags": "tags"})
     @locked
     async def SetPlaceTags(self, request, context):
         placename = request.placename
@@ -650,6 +744,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.SetPlaceTagsResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.place.comment": "comment"})
     @locked
     async def SetPlaceComment(self, request, context):
         placename = request.placename
@@ -664,6 +759,13 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.SetPlaceCommentResponse()
 
+    @instrument_rpc(
+        {
+            "labgrid.place.name": "placename",
+            "labgrid.place.match.pattern": "pattern",
+            "labgrid.place.match.rename": "rename",
+        }
+    )
     @locked
     async def AddPlaceMatch(self, request, context):
         placename = request.placename
@@ -682,6 +784,13 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.save_later()
         return labgrid_coordinator_pb2.AddPlaceMatchResponse()
 
+    @instrument_rpc(
+        {
+            "labgrid.place.name": "placename",
+            "labgrid.place.match.pattern": "pattern",
+            "labgrid.place.match.rename": "rename",
+        }
+    )
     @locked
     async def DeletePlaceMatch(self, request, context):
         placename = request.placename
@@ -865,7 +974,16 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             if resource.acquired == "<broken>":
                 continue
             place = self.places.get(resource.acquired)
-            print(f"should release {resource} for {place}?")
+            logging.debug(
+                "should release %s for %s?",
+                resource,
+                place,
+                extra={
+                    "event.name": "resource.release_required",
+                    "board.name": getattr(place, "name", None),
+                    "resource.path": str(resource),
+                },
+            )
 
             if place is None:
                 logging.warning("resource %s claims to be acquired by unknown place", resource)
@@ -895,7 +1013,16 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             place = self.places.get(resource.acquired)
             assert place is not None
             assert place.acquired
-            print(f"should acquire {resource} for {place}?")
+            logging.debug(
+                "should acquire %s for %s?",
+                resource,
+                place,
+                extra={
+                    "event.name": "resource.acquire_required",
+                    "board.name": getattr(place, "name", None),
+                    "resource.path": str(resource),
+                },
+            )
 
             # is the exporter connected again?
             exporter = self.get_exporter_by_name(resource.path[0])
@@ -936,6 +1063,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             idx = place.acquired_resources.index(oldresource)
             place.acquired_resources[idx] = newresource
 
+    @instrument_rpc({"labgrid.place.name": "placename"})
+    @log_place_event(CoordinatorEvent.PLACE_ACQUIRED)
     @add_identity
     @locked
     async def AcquirePlace(self, request, context, *, identity):
@@ -945,7 +1074,6 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             username = infer_peer_identity(self.clients, context, identity)
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
-        print(request)
 
         try:
             place = self.places[name]
@@ -984,35 +1112,84 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self._publish_place(place)
         self.save_later()
         self.schedule_reservations()
-        print(f"{place.name}: place acquired by {place.acquired}")
         return labgrid_coordinator_pb2.AcquirePlaceResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.fromuser": "fromuser"})
     @locked
     async def ReleasePlace(self, request, context):
         name = request.placename
-        print(request)
         fromuser = request.fromuser if request.HasField("fromuser") else None
+        peer = context.peer()
+        identity = ClientIdentity.from_metadata(context.invocation_metadata())
+        user = identity.id if identity else getattr(self.clients.get(peer), "name", "")
+        fields = {
+            "event.name": CoordinatorEvent.PLACE_RELEASED.value,
+            "place.name": name,
+        }
+        if user:
+            fields["user.id"] = user
+        event_logger = logging.getLogger("coordinator.events")
+
         try:
             place = self.places[name]
         except KeyError:
+            fields["event.outcome"] = "failure"
+            event_logger.error(
+                "%s: %s failed for %s",
+                name,
+                CoordinatorEvent.PLACE_RELEASED.value,
+                user,
+                extra=fields,
+            )
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
         if not place.acquired:
             if fromuser:
+                fields["event.outcome"] = "success"
+                fields["event.name"] = CoordinatorEvent.PLACE_RELEASED_SKIPPED.value
+                event_logger.info(
+                    CoordinatorEvent.PLACE_RELEASED_SKIPPED.format_success_message(name, user),
+                    extra=fields,
+                )
                 return labgrid_coordinator_pb2.ReleasePlaceResponse()
+            fields["event.outcome"] = "failure"
+            event_logger.error(
+                "%s: %s failed for %s",
+                name,
+                CoordinatorEvent.PLACE_RELEASED.value,
+                user,
+                extra=fields,
+            )
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {name} is not acquired")
         if fromuser and place.acquired != fromuser:
+            fields["event.outcome"] = "failure"
+            fields["event.name"] = CoordinatorEvent.PLACE_RELEASED_SKIPPED.value
+            event_logger.error(
+                CoordinatorEvent.PLACE_RELEASED_SKIPPED.format_success_message(name, user),
+                extra=fields,
+            )
             return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
         try:
-            await self._release_resources(place, place.acquired_resources)
-        except CoordinatorError as e:
-            place.touch()
-            self._publish_place(place)
-            self.save_later()
-            message = f"Failed to release resources for place {name}"
-            if str(e):
-                message += f": {e}"
-            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, message)
+            try:
+                await self._release_resources(place, place.acquired_resources)
+            except CoordinatorError as e:
+                place.touch()
+                self._publish_place(place)
+                self.save_later()
+                message = f"Failed to release resources for place {name}"
+                if str(e):
+                    message += f": {e}"
+                await context.abort(grpc.StatusCode.FAILED_PRECONDITION, message)
+        except Exception:
+            fields["event.outcome"] = "failure"
+            event_logger.exception(
+                "%s: %s failed for %s",
+                name,
+                CoordinatorEvent.PLACE_RELEASED.value,
+                user,
+                extra=fields,
+            )
+            raise
 
         place.acquired = None
         place.allowed = set()
@@ -1020,9 +1197,14 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self._publish_place(place)
         self.save_later()
         self.schedule_reservations()
-        print(f"{place.name}: place released")
+        fields["event.outcome"] = "success"
+        event_logger.info(
+            CoordinatorEvent.PLACE_RELEASED.format_success_message(name, user),
+            extra=fields,
+        )
         return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
+    @instrument_rpc({"labgrid.place.name": "placename", "labgrid.place.share.user": "user"})
     @add_identity
     @locked
     async def AllowPlace(self, request, context, *, identity):
@@ -1076,10 +1258,34 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 res.state = ReservationState.expired
                 res.allocations.clear()
                 res.refresh()
-                print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
+                logging.info(
+                    "reservation (%s/%s) is now %s",
+                    res.owner,
+                    res.id,
+                    res.state.name,
+                    extra={
+                        "event.name": "reservation.state_changed",
+                        "event.outcome": "success",
+                        "user.id": res.owner,
+                        "reservation.id": res.id,
+                        "reservation.state": res.state.name,
+                    },
+                )
             else:
                 del self.reservations[res.id]
-                print(f"removed {res.state.name} reservation ({res.owner}/{res.id})")
+                logging.info(
+                    "removed %s reservation (%s/%s)",
+                    res.state.name,
+                    res.owner,
+                    res.id,
+                    extra={
+                        "event.name": "reservation.removed",
+                        "event.outcome": "success",
+                        "user.id": res.owner,
+                        "reservation.id": res.id,
+                        "reservation.state": res.state.name,
+                    },
+                )
 
         # check which places are already allocated and handle state transitions
         allocated_places = set()
@@ -1093,7 +1299,19 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                         res.state = ReservationState.invalid
                         res.allocations.clear()
                         res.refresh(300)
-                        print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
+                        logging.info(
+                            "reservation (%s/%s) is now %s",
+                            res.owner,
+                            res.id,
+                            res.state.name,
+                            extra={
+                                "event.name": "reservation.state_changed",
+                                "event.outcome": "success",
+                                "user.id": res.owner,
+                                "reservation.id": res.id,
+                                "reservation.state": res.state.name,
+                            },
+                        )
                         break
                     if place.acquired is not None:
                         acquired_places.add(name)
@@ -1103,12 +1321,36 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                 # an allocated place was acquired
                 res.state = ReservationState.acquired
                 res.refresh()
-                print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
+                logging.info(
+                    "reservation (%s/%s) is now %s",
+                    res.owner,
+                    res.id,
+                    res.state.name,
+                    extra={
+                        "event.name": "reservation.state_changed",
+                        "event.outcome": "success",
+                        "user.id": res.owner,
+                        "reservation.id": res.id,
+                        "reservation.state": res.state.name,
+                    },
+                )
             if not acquired_places and res.state is ReservationState.acquired:
                 # all allocated places were released
                 res.state = ReservationState.allocated
                 res.refresh()
-                print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
+                logging.info(
+                    "reservation (%s/%s) is now %s",
+                    res.owner,
+                    res.id,
+                    res.state.name,
+                    extra={
+                        "event.name": "reservation.state_changed",
+                        "event.outcome": "success",
+                        "user.id": res.owner,
+                        "reservation.id": res.id,
+                        "reservation.state": res.state.name,
+                    },
+                )
 
         # check which places are available for allocation
         available_places = set()
@@ -1143,8 +1385,21 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             res = self.reservations[res_id]
             res.allocations = {"main": [place_name]}
             res.state = ReservationState.allocated
+            record_reservation_wait_duration(self, res, time.time() - res.created)
             res.refresh()
-            print(f"reservation ({res.owner}/{res.id}) is now {res.state.name}")
+            logging.info(
+                "reservation (%s/%s) is now %s",
+                res.owner,
+                res.id,
+                res.state.name,
+                extra={
+                    "event.name": "reservation.state_changed",
+                    "event.outcome": "success",
+                    "user.id": res.owner,
+                    "reservation.id": res.id,
+                    "reservation.state": res.state.name,
+                },
+            )
 
         # update reservation property of each place and notify
         old_map = {}
@@ -1167,6 +1422,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             if old_map.get(name) != new_map.get(name):
                 self._publish_place(self.places[name])
 
+    @instrument_rpc({"labgrid.reservation.filters": "filters", "labgrid.reservation.priority": "prio"})
     @add_identity
     @locked
     async def CreateReservation(self, request: labgrid_coordinator_pb2.CreateReservationRequest, context, *, identity):
@@ -1195,6 +1451,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CreateReservationResponse(reservation=res.as_pb2())
 
+    @instrument_rpc({"labgrid.reservation.id": "token"})
     @locked
     async def CancelReservation(self, request: labgrid_coordinator_pb2.CancelReservationRequest, context):
         reservation_id = request.token
@@ -1206,6 +1463,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CancelReservationResponse()
 
+    @instrument_rpc({"labgrid.reservation.id": "token"})
     @locked
     async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context):
         reservation_id = request.token
@@ -1241,6 +1499,7 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
         options=channel_options,
     )
     coordinator = Coordinator()
+    setup_coordinator_metrics(coordinator)
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
     # enable reflection for use with grpcurl
     reflection.enable_server_reflection(
@@ -1325,7 +1584,13 @@ def main():
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
+    basicConfig(
+        level=logging.DEBUG if args.debug else logging.INFO,
+        format=logging.BASIC_FORMAT,
+    )
+
+    setup_otel("labgrid-coordinator", with_metrics=True)
+    instrument_grpc_server()
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

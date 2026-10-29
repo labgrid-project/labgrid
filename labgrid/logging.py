@@ -1,21 +1,100 @@
-import logging
 import copy
+import logging
+import re
 
 import attr
 
-from .step import steps, StepEvent
+from .step import StepEvent, steps
 from .util import re_vt100
 
 DEFAULT_FORMAT = "%(levelname)-7.7s %(name)15.15s: %(message)s"
 
+REDACTED_VALUE = "[REDACTED]"
+SENSITIVE_KEY_PATTERN = (
+    r"authorization|pass(?:word)?|(?:access|refresh)[_-]?token|" r"api[_-]?key|token|jwt|secret|credential"
+)
+SENSITIVE_FIELD_RE = re.compile(SENSITIVE_KEY_PATTERN, re.IGNORECASE)
+SENSITIVE_PAIR_RE = re.compile(
+    rf'(?:((?:{SENSITIVE_KEY_PATTERN})["\']?\s*[:=]\s*")([^"]*)(")|'
+    rf"((?:{SENSITIVE_KEY_PATTERN})[\"']?\s*[:=]\s*')([^']*)(')|"
+    rf'((?:{SENSITIVE_KEY_PATTERN})["\']?\s*[:=]\s*)([^\s,;}}"\']+))',
+    re.IGNORECASE,
+)
+BEARER_RE = re.compile(r"bearer\s+[a-z0-9._~+/=-]+", re.IGNORECASE)
+JWT_TOKEN_RE = re.compile(r"\beyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\b")
+
+
 def basicConfig(**kwargs):
-    kwargs.setdefault("format", DEFAULT_FORMAT)
     indent = kwargs.get("indent", True)
+    kwargs.setdefault("format", DEFAULT_FORMAT)
     logging.basicConfig(**kwargs)
     root = logging.getLogger()
 
-    parent = root.handlers[0].formatter
+    parent = MasqueradingFormatter(root.handlers[0].formatter)
     root.handlers[0].setFormatter(StepFormatter(indent=indent, parent=parent))
+
+
+def _redact_sensitive_pair(match):
+    prefix = match.group(1) or match.group(4) or match.group(7)
+    suffix = match.group(3) or match.group(6) or ""
+    return f"{prefix}{REDACTED_VALUE}{suffix}"
+
+
+def _masquerade(value, field_name=""):
+    if SENSITIVE_FIELD_RE.search(field_name):
+        return REDACTED_VALUE
+
+    if isinstance(value, str):
+        value = BEARER_RE.sub(REDACTED_VALUE, value)
+        value = JWT_TOKEN_RE.sub(REDACTED_VALUE, value)
+        return SENSITIVE_PAIR_RE.sub(_redact_sensitive_pair, value)
+    if isinstance(value, bytes):
+        value = value.decode("utf-8", errors="surrogateescape")
+        return _masquerade(value, field_name).encode("utf-8", errors="surrogateescape")
+    if isinstance(value, dict):
+        return {key: _masquerade(item, str(key)) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_masquerade(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_masquerade(item) for item in value)
+    return value
+
+
+class MasqueradingFormatter:
+    """Masquerade secrets in log record fields and rendered messages."""
+
+    def __init__(self, formatter):
+        self.formatter = formatter
+
+    def format(self, record):
+        record = copy.copy(record)
+        for field_name, value in vars(record).items():
+            if field_name == "msg":
+                continue
+            setattr(record, field_name, _masquerade(value, field_name))
+        return _masquerade(self.formatter.format(record))
+
+
+class MasqueradingLogExporter:
+    """Masquerade secrets before delegating to an OpenTelemetry exporter."""
+
+    def __init__(self, exporter):
+        self.exporter = exporter
+
+    def export(self, batch):
+        for log_data in batch:
+            log_record = log_data.log_record
+            log_record.body = _masquerade(log_record.body)
+            if hasattr(log_record, "attributes"):
+                log_record.attributes = _masquerade(log_record.attributes)
+
+        return self.exporter.export(batch)
+
+    def shutdown(self, *args, **kwargs):
+        return self.exporter.shutdown(*args, **kwargs)
+
+    def force_flush(self, *args, **kwargs):
+        return self.exporter.force_flush(*args, **kwargs)
 
 
 logging.CONSOLE = logging.INFO - 5

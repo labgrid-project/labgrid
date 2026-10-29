@@ -286,24 +286,22 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         logging.debug("Running Save")
         self.save_scheduled = False
 
+        snapshots = {}
         with warn_if_slow("create resources snapshot", level=logging.DEBUG):
-            resources = copy.deepcopy(self._get_resources())
+            snapshots["resources"] = copy.deepcopy(self._get_resources())
         with warn_if_slow("create places snapshot", level=logging.DEBUG):
-            places = copy.deepcopy(self._get_places())
+            snapshots["places"] = copy.deepcopy(self._get_places())
 
-        def save_sync(resources, places):
-            with warn_if_slow("dump resources", level=logging.DEBUG):
-                resources = yaml.dump(resources)
-                resources = resources.encode()
-            with warn_if_slow("dump places", level=logging.DEBUG):
-                places = yaml.dump(places)
-                places = places.encode()
-            with warn_if_slow("write resources", level=logging.DEBUG):
-                atomic_replace("resources.yaml", resources)
-            with warn_if_slow("write places", level=logging.DEBUG):
-                atomic_replace("places.yaml", places)
+        def save_sync(snapshots):
+            dumped = {}
+            for name, data in snapshots.items():
+                with warn_if_slow(f"dump {name}", level=logging.DEBUG):
+                    dumped[name] = yaml.dump(data).encode()
+            for name, data in dumped.items():
+                with warn_if_slow(f"write {name}", level=logging.DEBUG):
+                    atomic_replace(f"{name}.yaml", data)
 
-        await self.loop.run_in_executor(None, save_sync, resources, places)
+        await self.loop.run_in_executor(None, save_sync, snapshots)
 
     def load(self):
         try:

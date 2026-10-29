@@ -287,7 +287,7 @@ class IMXUSBLoader(USBResource):
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
 
-        if match not in [# Extracted from `uuu -udev` command (v. 1.5.239)
+        if match not in [# Extracted from `uuu -udev` command (v. 1.5.243)
                          ("0483", "0afb"), ("0525", "a4a5"),
                          ("0525", "b4a4"), ("066f", "9afe"),
                          ("066f", "9bff"), ("15a2", "003a"),
@@ -306,6 +306,7 @@ class IMXUSBLoader(USBResource):
                          ("1fc9", "0153"), ("1fc9", "0159"),
                          ("1fc9", "015c"), ("1fc9", "015d"),
                          ("3016", "0001"), ("3016", "1001"),
+                         ("1fc9", "0028"),
 
                          # Existing in previous code and not found above
                          ("15a2", "004f"), ("1b67", "4fff"), # SPL
@@ -565,7 +566,7 @@ class USBSDWire3Device(USBResource):
         self.match['ID_VENDOR_ID'] = '0bda'
         self.match['ID_MODEL_ID'] = '0316'
         self.match['@ID_VENDOR_ID'] = '1d6b'
-        self.match['@ID_MODEL_ID'] = '0002'        
+        self.match['@ID_MODEL_ID'] = '0002'
         super().__attrs_post_init__()
 
     # Overwrite the avail attribute with our internal property

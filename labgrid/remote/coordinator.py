@@ -710,6 +710,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         request.group_name = resource.path[1]
         request.resource_name = resource.path[3]
         request.place_name = place.name
+        request.client_identity.id = place.acquired
         cmd = ExporterCommand(request)
         self.get_exporter_by_name(resource.path[0]).queue.put_nowait(cmd)
         try:
@@ -763,9 +764,12 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         for resource in resources:
             place.acquired_resources.append(resource)
 
-    async def _release_resources(self, place, resources, callback=True):
+    async def _release_resources(self, place, resources, callback=True, releaser_identity=None):
         assert self.lock.locked()
 
+        # Empty identity means the release came from an internal cleanup path
+        # where no client identity is available.
+        releaser_identity = releaser_identity or ""
         resources = resources.copy()  # we may modify the list
 
         failure = None
@@ -790,6 +794,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
                     request = labgrid_coordinator_pb2.ExporterSetAcquiredRequest()
                     request.group_name = resource.path[1]
                     request.resource_name = resource.path[3]
+                    request.client_identity.id = releaser_identity
                     # request.place_name is left unset to indicate release
                     cmd = ExporterCommand(request)
                     exporter.queue.put_nowait(cmd)
@@ -987,8 +992,9 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         print(f"{place.name}: place acquired by {place.acquired}")
         return labgrid_coordinator_pb2.AcquirePlaceResponse()
 
+    @add_identity
     @locked
-    async def ReleasePlace(self, request, context):
+    async def ReleasePlace(self, request, context, *, identity):
         name = request.placename
         print(request)
         fromuser = request.fromuser if request.HasField("fromuser") else None
@@ -1004,7 +1010,12 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
         try:
-            await self._release_resources(place, place.acquired_resources)
+            releaser_identity = infer_peer_identity(self.clients, context, identity)
+        except KeyError:
+            releaser_identity = ""
+
+        try:
+            await self._release_resources(place, place.acquired_resources, releaser_identity=releaser_identity)
         except CoordinatorError as e:
             place.touch()
             self._publish_place(place)

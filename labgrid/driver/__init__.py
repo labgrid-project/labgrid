@@ -29,6 +29,7 @@ from .usbstoragedriver import USBStorageDriver, Mode
 from .resetdriver import DigitalOutputResetDriver
 from .gpiodriver import GpioDigitalInputDriver, GpioDigitalOutputDriver
 from .ftdigpiodriver import FTDIGPIODriver
+from .ftdimpssedriver import FtdiMpsseDriver
 from .filedigitaloutput import FileDigitalOutputDriver
 from .serialdigitaloutput import SerialPortDigitalOutputDriver
 from .xenadriver import XenaDriver

@@ -97,6 +97,7 @@ dev = [
     # https://github.com/ionelmc/pytest-benchmark/issues/321
     "pytest<9.2",
 ]
+ftdi = ["pyftdi>=0.57.2"]
 
 [project.scripts]
 labgrid-autoinstall = "labgrid.autoinstall.main:main"

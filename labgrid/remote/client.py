@@ -1487,6 +1487,26 @@ class ClientSession:
                 if p.returncode != 0:
                     raise InteractiveCommandError("netns command error", p.returncode)
 
+    def ftdi_mpsse_cmd(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        drv = self._get_driver_or_new(target, "FtdiMpsseDriver")
+        cmd = self.args.subcommand
+        if cmd == "dump-eeprom":
+            config, hex_data = drv.dump_eeprom()
+            print("=======================================================")
+            print(config)
+            print("=======================================================")
+            print(hex_data)
+            print("READY.")
+        elif cmd == "i2cdetect":
+            print(drv.i2cdetect())
+        elif cmd == "i2ctransfer":
+            i2c_params = self.args.i2c_args + getattr(self.args, "leftover", [])
+            print(drv.i2ctransfer(i2c_params))
+        else:
+            raise InteractiveCommandError(f"Unknown ftdi subcommand: {cmd}")
+
     def _get_tmc(self):
         place = self.get_acquired_place()
         target = self._get_target(place)
@@ -2383,6 +2403,16 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     scrcpy_subparser.add_argument("--name", "-n", help="optional resource name")
     scrcpy_subparser.set_defaults(func=ClientSession.scrcpy)
 
+    ftdi_parser = subparsers.add_parser("ftdi", help="FTDI MPSSE utilities")
+    ftdi_subparsers = ftdi_parser.add_subparsers(dest="subcommand", required=True)
+
+    ftdi_subparsers.add_parser("dump-eeprom", help="Dump FTDI EEPROM layout")
+    ftdi_subparsers.add_parser("i2cdetect", help="Scan and list devices on the FTDI I2C segment")
+    i2c_transfer_parser = ftdi_subparsers.add_parser("i2ctransfer", help="Execute raw read/write commands over I2C")
+    i2c_transfer_parser.add_argument("i2c_args", nargs="*", help="Arguments passed directly to i2ctransfer")
+
+    ftdi_parser.set_defaults(func=ClientSession.ftdi_mpsse_cmd)
+
     return parser
 
 
@@ -2408,7 +2438,7 @@ def main():
 
     # make any leftover arguments available for some commands
     args, leftover = parser.parse_known_args()
-    if args.command not in ["ssh", "rsync", "forward", "adb", "scrcpy"]:
+    if args.command not in ["ssh", "rsync", "forward", "adb", "scrcpy", "ftdi"]:
         args = parser.parse_args()
     else:
         args.leftover = leftover

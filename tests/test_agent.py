@@ -2,6 +2,7 @@ import os
 import socket
 import subprocess
 import shutil
+import sys
 
 import pytest
 from py.path import local
@@ -37,7 +38,7 @@ def subprocess_mock(mocker):
             if args[0] in ['python3', 'labgrid-python3']:
                 assert args[1].startswith('.labgrid_agent')
                 # we need to use the original here to get the coverage right
-                return original(['python3', str(agent)], **kwargs)
+                return original([sys.executable, str(agent)], **kwargs)
             else:
                 lg_py3_env = 'true' if shutil.which('labgrid-python3') else 'false'
                 return original([lg_py3_env], **kwargs)

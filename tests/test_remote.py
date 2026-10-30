@@ -21,7 +21,7 @@ from labgrid.util.yaml import dump
 
 
 def test_client_help():
-    with pexpect.spawn("python -m labgrid.remote.client --help") as spawn:
+    with pexpect.spawn(f"{sys.executable} -m labgrid.remote.client --help") as spawn:
         spawn.expect("usage")
         spawn.expect(pexpect.EOF)
         spawn.close()
@@ -30,7 +30,7 @@ def test_client_help():
 
 
 def test_exporter_help():
-    with pexpect.spawn("python -m labgrid.remote.exporter --help") as spawn:
+    with pexpect.spawn(f"{sys.executable} -m labgrid.remote.exporter --help") as spawn:
         spawn.expect("usage")
         spawn.expect(pexpect.EOF)
         spawn.close()
@@ -52,7 +52,7 @@ def test_exporter_start_coordinator_unreachable(monkeypatch, tmpdir):
     """
     )
 
-    with pexpect.spawn(f"python -m labgrid.remote.exporter {config}", cwd=tmpdir) as spawn:
+    with pexpect.spawn(f"{sys.executable} -m labgrid.remote.exporter {config}", cwd=tmpdir) as spawn:
         spawn.expect("coordinator is unavailable", timeout=10)
         spawn.expect(pexpect.EOF)
         spawn.close()
@@ -307,12 +307,12 @@ def test_tls_coordinator_with_client(tmpdir):
     cert, key = setup_tmp_cert_key(tmpdir)
 
     with pexpect.spawn(
-        f"python -m labgrid.remote.coordinator --tls --cert {cert} --key {key}", cwd=tmpdir
+        f"{sys.executable} -m labgrid.remote.coordinator --tls --cert {cert} --key {key}", cwd=tmpdir
     ) as coord_spawn:
         coord_spawn.expect("INFO:root:Coordinator ready", timeout=1)
 
         with pexpect.spawn(
-            f"python -m labgrid.remote.client --tls --cacert {cert} reserve abc=123", cwd=tmpdir
+            f"{sys.executable} -m labgrid.remote.client --tls --cacert {cert} reserve abc=123", cwd=tmpdir
         ) as client_spawn:
             client_spawn.expect("  state: waiting", timeout=1)
             client_spawn.close()
@@ -335,12 +335,12 @@ def test_tls_coordinator_with_exporter(tmpdir):
     cert, key = setup_tmp_cert_key(tmpdir)
 
     with pexpect.spawn(
-        f"python -m labgrid.remote.coordinator --tls --cert {cert} --key {key}", cwd=tmpdir
+        f"{sys.executable} -m labgrid.remote.coordinator --tls --cert {cert} --key {key}", cwd=tmpdir
     ) as coord_spawn:
         coord_spawn.expect("INFO:root:Coordinator ready", timeout=1)
 
         with pexpect.spawn(
-            f"python -m labgrid.remote.exporter --tls --cacert {cert} {config}", cwd=tmpdir
+            f"{sys.executable} -m labgrid.remote.exporter --tls --cacert {cert} {config}", cwd=tmpdir
         ) as exporter_spawn:
             exporter_spawn.expect(
                 "add resource Testport/NetworkSerialPort: NetworkSerialPort/OrderedDict.*", timeout=1

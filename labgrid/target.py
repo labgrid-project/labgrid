@@ -41,6 +41,16 @@ class Target:
         else:
             input(msg)
 
+    def get_tool(self, tool):
+        """Return the path configured for ``tool`` in the environment.
+
+        Falls back to the bare tool name if the target has no environment (and
+        thus no configuration), so it can still be resolved via ``$PATH``.
+        """
+        if self.env:
+            return self.env.config.get_tool(tool)
+        return tool
+
     def update_resources(self):
         """
         Iterate over this target's resources, deactivate any active but

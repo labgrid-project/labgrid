@@ -434,6 +434,9 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol):
     def sshfs(self, *, path=None, mountpoint=None, mount=False, unmount=False):
         import os, subprocess
 
+        # don't be picky on added ':'
+        path = path.lstrip(':')
+
         # unmount
         if unmount:
             if not os.path.ismount(mountpoint):

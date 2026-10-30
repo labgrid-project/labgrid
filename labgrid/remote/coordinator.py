@@ -227,11 +227,12 @@ class ExporterError(CoordinatorError):
 
 
 class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
-    def __init__(self) -> None:
+    def __init__(self, *, debug=False) -> None:
         self.places: dict[str, Place] = {}
         self.reservations = {}
         self.poll_tasks = []
         self.save_scheduled = False
+        self.debug = debug
 
         self.lock = asyncio.Lock()
         self.exporters: dict[str, ExporterSession] = {}
@@ -286,24 +287,23 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         logging.debug("Running Save")
         self.save_scheduled = False
 
-        with warn_if_slow("create resources snapshot", level=logging.DEBUG):
-            resources = copy.deepcopy(self._get_resources())
+        snapshots = {}
+        if self.debug:
+            with warn_if_slow("create resources snapshot", level=logging.DEBUG):
+                snapshots["resources"] = copy.deepcopy(self._get_resources())
         with warn_if_slow("create places snapshot", level=logging.DEBUG):
-            places = copy.deepcopy(self._get_places())
+            snapshots["places"] = copy.deepcopy(self._get_places())
 
-        def save_sync(resources, places):
-            with warn_if_slow("dump resources", level=logging.DEBUG):
-                resources = yaml.dump(resources)
-                resources = resources.encode()
-            with warn_if_slow("dump places", level=logging.DEBUG):
-                places = yaml.dump(places)
-                places = places.encode()
-            with warn_if_slow("write resources", level=logging.DEBUG):
-                atomic_replace("resources.yaml", resources)
-            with warn_if_slow("write places", level=logging.DEBUG):
-                atomic_replace("places.yaml", places)
+        def save_sync(snapshots):
+            dumped = {}
+            for name, data in snapshots.items():
+                with warn_if_slow(f"dump {name}", level=logging.DEBUG):
+                    dumped[name] = yaml.dump(data).encode()
+            for name, data in dumped.items():
+                with warn_if_slow(f"write {name}", level=logging.DEBUG):
+                    atomic_replace(f"{name}.yaml", data)
 
-        await self.loop.run_in_executor(None, save_sync, resources, places)
+        await self.loop.run_in_executor(None, save_sync, snapshots)
 
     def load(self):
         try:
@@ -1233,7 +1233,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
 
 
-async def serve(listen, cleanup, server_credentials=None) -> None:
+async def serve(listen, cleanup, server_credentials=None, debug=False) -> None:
     asyncio.current_task().set_name("coordinator-serve")
     # It seems since https://github.com/grpc/grpc/pull/34647, the
     # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
@@ -1251,7 +1251,7 @@ async def serve(listen, cleanup, server_credentials=None) -> None:
     server = grpc.aio.server(
         options=channel_options,
     )
-    coordinator = Coordinator()
+    coordinator = Coordinator(debug=debug)
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
     # enable reflection for use with grpcurl
     reflection.enable_server_reflection(
@@ -1328,7 +1328,13 @@ def main():
     parser.add_argument("--tls", action="store_true", default=False, help="enable TLS gRPC channel")
     parser.add_argument("--cert", type=pathlib.PurePath, help="path to server TLS certificate (in PEM format)")
     parser.add_argument("--key", type=pathlib.PurePath, help="path to TLS key (in PEM format)")
-    parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
+    parser.add_argument(
+        "-d",
+        "--debug",
+        action="store_true",
+        default=False,
+        help="enable debug mode (deployments with a large number of exported resources will suffer from performance overhead)",
+    )
     parser.add_argument("--pystuck", action="store_true", help="enable pystuck")
     parser.add_argument(
         "--pystuck-port", metavar="PORT", type=int, default=6666, help="use a different pystuck port than 6666"
@@ -1358,7 +1364,7 @@ def main():
     loop.set_debug(True)
     try:
         server_credentials = get_server_credentials(args)
-        loop.run_until_complete(serve(args.listen, cleanup, server_credentials))
+        loop.run_until_complete(serve(args.listen, cleanup, server_credentials, debug=args.debug))
     finally:
         if cleanup:
             loop.run_until_complete(*cleanup)

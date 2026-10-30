@@ -32,7 +32,8 @@ OPTIONS
 --key
     path to TLS key (in PEM format)
 -d, --debug
-    enable debug mode
+    enable debug mode (deployments with a large number of exported resources
+    will suffer from performance overhead)
 
 TLS WITH A REVERSE PROXY
 ------------------------

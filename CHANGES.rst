@@ -1,3 +1,23 @@
+Release 26.1 (Unreleased)
+-------------------------
+
+New Features in 26.1
+~~~~~~~~~~~~~~~~~~~~
+FIXME
+
+Bug fixes in 26.1
+~~~~~~~~~~~~~~~~~
+FIXME
+
+Breaking changes in 26.1
+~~~~~~~~~~~~~~~~~~~~~~~~
+- ``labgrid-coordinator`` now saves ``resources.yaml`` only with ``-d``/``--debug``.
+  Note the performance overhead mentioned in its man page when enabling that.
+
+Known issues in 26.1
+~~~~~~~~~~~~~~~~~~~~
+FIXME
+
 Release 26.0.1 (Released Oct 14, 2026)
 --------------------------------------
 

@@ -19,5 +19,11 @@ class RemoteUSBADBDevice(NetworkResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class NetworkUSBADBDevice(RemoteUSBADBDevice):
+    """USB ADB device exported as a network resource."""
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class NetworkADBDevice(NetworkResource):
     port = attr.ib(converter=int, validator=attr.validators.instance_of(int))

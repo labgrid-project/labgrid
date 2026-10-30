@@ -58,7 +58,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'labgrid'
-copyright = '2016-2025 Pengutronix, Jan Luebbe and Rouven Czerwinski'
+copyright = '2016-2026 Pengutronix, Jan Luebbe and Rouven Czerwinski'
 author = 'Jan Luebbe, Rouven Czerwinski'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -224,7 +224,7 @@ def setup(app):
     # Make version and date stable when generating manpages as they will be tracked in git
     if app.outdir.parts[-1] == "man":
         app.config.version = ""
-        app.config.today = "2025"
+        app.config.today = "2026"
     app.connect('builder-inited', run_apidoc)
     app.connect('doctree-read', write_literal_blocks)
 

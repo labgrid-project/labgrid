@@ -106,8 +106,9 @@ def test_no_resource(target):
 
 
 def test_no_driver(target):
-    with pytest.raises(NoDriverFoundError):
+    with pytest.raises(NoDriverFoundError) as excinfo:
         target.get_driver(Target)
+    assert excinfo.value.found is None
 
 
 # test alternative suppliers
@@ -385,6 +386,7 @@ def test_get_by_same_priority(target):
     with pytest.raises(NoDriverFoundError) as e_info:
         target.get_driver(AProtocol)
     assert "multiple drivers matching" in str(e_info.value)
+    assert e_info.value.found == [a, c]
 
 def test_get_by_default_priority(target):
     class AProtocol(abc.ABC):

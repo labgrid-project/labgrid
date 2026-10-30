@@ -34,8 +34,13 @@ def make_coordinator_with_fake_exporter(
     on_release_command=None,
 ):
     coordinator = Coordinator.__new__(Coordinator)
+    coordinator.use_capabilities = False;
     coordinator.lock = asyncio.Lock()
-    coordinator.clients = {}
+    coordinator.clients = {
+        "unknown-peer" : SimpleNamespace(
+            name="testhost",
+            ),
+    }
     coordinator.exporters = {
         "peer": SimpleNamespace(
             name="testhost",
@@ -469,3 +474,18 @@ def test_coordinator_release_fromuser_noop_without_identity(mocker, acquired):
     assert place.acquired_resources == [resource]
     on_release.assert_not_called()
     context.abort.assert_not_awaited()
+
+def test_coordinator_capabilities(coordinator_with_capabilities):
+    channel = grpc.insecure_channel("127.0.0.1:20408")
+    stub = labgrid_coordinator_pb2_grpc.CoordinatorStub(channel)
+    request = labgrid_coordinator_pb2.AddPlaceRequest(name="test")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.AddPlace(request)
+    assert excinfo.value.code() == grpc.StatusCode.UNAUTHENTICATED
+
+    metadata = (("x-lg-hostname", "testhost"), ("x-lg-name", "testuser"))
+    res = stub.AddPlace(request, metadata=metadata)
+    assert res, f"There was an error: {res}"
+
+    channel.close()

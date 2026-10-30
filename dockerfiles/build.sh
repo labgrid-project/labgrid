@@ -88,7 +88,7 @@ main() {
     fi
 
     script_dir="$(dirname "$(realpath "${BASH_SOURCE:-$0}")")"
-    version="$(python -m setuptools_scm)"
+    version="$(python3 -m setuptools_scm)"
     docker_cmd="$(get_docker_cmd "${DOCKER}")"
 
     cd "${script_dir}/.." || die "Could not cd into repo root dir"

@@ -3077,6 +3077,8 @@ USBStorageDriver
 ~~~~~~~~~~~~~~~~
 A :any:`USBStorageDriver` allows access to a USB stick or similar local or
 remote device.
+It can write images and files and can create DOS or GPT
+partition tables with configured partitions and filesystems.
 
 Binds to:
   storage:
@@ -3103,6 +3105,38 @@ Implements:
 Arguments:
   - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of an image to write to the target
+
+Formatting requires UDisks2, its Python GI bindings, and the configured
+filesystem utilities on the same system as the block device. For ``vfat`` and
+``ext4``, install ``dosfstools`` and ``e2fsprogs``, respectively.
+
+Without a configured layout, it creates one full-size FAT32 partition using a
+DOS partition table.
+
+UDisks2's polkit policy must authorize the caller to modify the device.
+Labgrid does not elevate privileges or install authorization rules.
+
+Partition layouts are configured with the ``partition_layout`` driver
+argument:
+
+.. code-block:: yaml
+
+   USBStorageDriver:
+     partition_layout:
+       partition_table: gpt
+       partitions:
+         - size: 512MiB
+           filesystem: vfat
+           label: BOOT
+         - size: remaining
+           filesystem: ext4
+           label: DATA
+
+The ordered list determines the number and order of partitions. DOS layouts
+support at most four primary partitions. Each partition requires a
+``filesystem`` (``vfat`` or ``ext4``) and a ``size`` (a positive integer
+followed by ``MiB``, ``GiB`` or ``TiB``). ``remaining`` consumes the available
+space and may only appear on the last partition.
 
 OneWirePIODriver
 ~~~~~~~~~~~~~~~~

@@ -1,5 +1,5 @@
 """
-This module implements mounting file systems via communication with udisksd.
+This module implements formatting and mounting file systems via udisksd.
 """
 
 import logging
@@ -26,22 +26,12 @@ class UDisks2Device:
         Raises:
             ValueError: no udisks2 device or no filesystem found on devpath
         """
-        client = UDisks.Client.new_sync(None)
-        manager = client.get_object_manager()
-        for obj in manager.get_objects():
-            block = obj.get_block()
-            if not block:
-                continue
-
-            device_path = block.get_cached_property("Device").get_bytestring().decode("utf-8")
-            if device_path == self.devpath:
-                self.fs = obj.get_filesystem()
-                if self.fs is None:
-                    raise ValueError(f"no filesystem found on {self.devpath}")
-
-                return
-
-        raise ValueError(f"No udisks2 device found for {self.devpath}")
+        device = _find_udisks2_object(self.devpath)
+        if device is None:
+            raise ValueError(f"No udisks2 device found for {self.devpath}")
+        self.fs = device.get_filesystem()
+        if self.fs is None:
+            raise ValueError(f"no filesystem found on {self.devpath}")
 
     def mount(self, readonly=False, retries=0):
         opts = GLib.Variant("a{sv}", {"options": GLib.Variant("s", "ro" if readonly else "rw")})
@@ -132,7 +122,87 @@ def handle_unmount(devpath, lazy=False):
     return dev.unmount(lazy=lazy)
 
 
+def _find_udisks2_object(devpath):
+    client = UDisks.Client.new_sync(None)
+    manager = client.get_object_manager()
+    for obj in manager.get_objects():
+        block = obj.get_block()
+        if block is None:
+            continue
+        device_path = block.get_cached_property("Device").get_bytestring().decode("utf-8")
+        if device_path == devpath:
+            return obj
+    return None
+
+
+def handle_create_partition_table(devpath, table_type="dos"):
+    """Create a partition table, erasing existing partition data."""
+    device = _find_udisks2_object(devpath)
+    if device is None:
+        raise ValueError(f"No udisks2 device found for {devpath}")
+    # Formatting invalidates cached filesystem proxies, including on failure.
+    _devs.clear()
+    device.get_block().call_format_sync(table_type, GLib.Variant("a{sv}", {}), None)
+
+
+def handle_has_partition_table(devpath):
+    device = _find_udisks2_object(devpath)
+    return device is not None and device.get_partition_table() is not None
+
+
+def handle_create_partition_and_format(
+    devpath, filesystem="vfat", label="", offset=1048576, size=0,
+):
+    """Create and format a partition, returning its end offset in bytes.
+
+    Args:
+        devpath (str): Block device path.
+        filesystem (str): Filesystem type, such as ``vfat`` or ``ext4``.
+        label (str): Filesystem label.
+        offset (int): Partition start offset in bytes.
+        size (int): Partition size in bytes, or 0 to use the remaining space.
+    """
+    device = _find_udisks2_object(devpath)
+    if device is None:
+        raise ValueError(f"No udisks2 device found for {devpath}")
+    partition_table = device.get_partition_table()
+    if partition_table is None:
+        raise ValueError(f"No partition table found on {devpath}")
+
+    options = {}
+    if partition_table.get_cached_property("Type").get_string() == "dos":
+        options["partition-type"] = GLib.Variant("s", "primary")
+    partition_options = GLib.Variant("a{sv}", options)
+    format_options = {"label": GLib.Variant("s", label)}
+    if filesystem == "vfat":
+        format_options["mkfs-args"] = GLib.Variant("as", ["-F", "32"])
+    else:
+        # Without this, the ext4 root is owned by root and the invoking user
+        # cannot write to the mounted filesystem.
+        format_options["take-ownership"] = GLib.Variant("b", True)
+    path = partition_table.call_create_partition_and_format_sync(
+        offset,
+        size,
+        "",
+        "",
+        partition_options,
+        filesystem,
+        GLib.Variant("a{sv}", format_options),
+        None,
+    )
+    _devs.clear()
+    client = UDisks.Client.new_sync(None)
+    partition = client.get_object(path).get_partition()
+    return (
+        partition.get_cached_property("Offset").get_uint64()
+        + partition.get_cached_property("Size").get_uint64()
+    )
+
+
 methods = {
+    "create_partition_table": handle_create_partition_table,
+    "has_partition_table": handle_has_partition_table,
+    "create_partition_and_format": handle_create_partition_and_format,
     "mount": handle_mount,
     "unmount": handle_unmount,
 }

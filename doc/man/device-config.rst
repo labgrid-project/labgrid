@@ -143,6 +143,10 @@ TOOLS KEYS
     Path to the sispmctl binary, used by the SiSPMPowerDriver.
     See: https://sispmctl.sourceforge.net/
 
+``smdk-usbdl``
+    Path to the smdk-usbdl binary, used by the SamsungUSBDriver.
+    See: http://www.fluff.org/ben/smdk/tools/
+
 ``ssh``
     Path to the ssh binary, used by the SSHDriver.
     See: https://github.com/openssh/openssh-portable
@@ -150,6 +154,14 @@ TOOLS KEYS
 ``sshfs``
     Path to the sshfs binary, used by the SSHDriver.
     See: https://github.com/libfuse/sshfs
+
+``sunxi-fel``
+    Path to the sunxi-fel binary, used by the SunxiUSBDriver.
+    See: https://github.com/linux-sunxi/sunxi-tools
+
+``tegrarcm``
+    Path to the tegrarcm binary, used by the TegraUSBDriver.
+    See: https://github.com/NVIDIA/tegrarcm
 
 ``uhubctl``
     Path to the uhubctl binary, used by the USBPowerDriver.

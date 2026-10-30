@@ -28,7 +28,7 @@ class SNMPSwitch:
     def _autodetect(self):
         import pysnmp.hlapi.v3arch.asyncio as hlapi
 
-        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.getCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.get_cmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 self.transport,
@@ -69,7 +69,7 @@ class SNMPSwitch:
         ]
         ports = {}
 
-        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulk_cmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 self.transport,
@@ -102,7 +102,7 @@ class SNMPSwitch:
 
         ports = {}
 
-        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulk_cmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 self.transport,
@@ -119,7 +119,7 @@ class SNMPSwitch:
                     key, val = varBinds
                     if not val:
                         continue
-                    mac = key.getMibSymbol()[-1][0].prettyPrint()
+                    mac = key.get_mib_symbol()[-1][0].prettyPrint()
                     interface = str(int(val))
                     ports.setdefault(interface, []).append(mac)
 
@@ -135,7 +135,7 @@ class SNMPSwitch:
 
         ports = {}
 
-        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulkCmd(
+        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulk_cmd(
                 hlapi.SnmpEngine(),
                 hlapi.CommunityData('public'),
                 self.transport,
@@ -152,7 +152,7 @@ class SNMPSwitch:
                     key, val = varBinds
                     if not val:
                         continue
-                    mac = key.getMibSymbol()[-1][1].prettyPrint()
+                    mac = key.get_mib_symbol()[-1][1].prettyPrint()
                     interface = str(int(val))
                     ports.setdefault(interface, []).append(mac)
 

@@ -91,6 +91,10 @@ TOOLS KEYS
     Path to the dpcmd binary, used by the DediprogFlashDriver.
     See: https://github.com/DediProgSW/SF100Linux
 
+``em100``
+    Path to the em100 binary, used by the SFEmulatorDriver.
+    See: https://review.coreboot.org/em100.git
+
 ``fastboot``
     Path to the fastboot binary, used by the AndroidFastbootDriver.
     See: https://developer.android.com/studio/releases/platform-tools

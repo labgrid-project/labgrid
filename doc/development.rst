@@ -323,6 +323,61 @@ implements this functionality, it expects a list of resources to wait for and
 optionally takes a timeout and whether the resource should be available or
 unavailable.
 
+Writing a Client Command
+------------------------
+
+``labgrid-client`` has a fixed set of built-in subcommands.
+Drivers that are specific to one lab or product, and thus not suitable for
+upstreaming, can add their own subcommands by registering a class with the
+:code:`client_command` decorator:
+
+.. code-block:: python
+
+    from labgrid.remote.client_commands import client_command
+
+    @client_command("rest")
+    class RestCommand:
+        """query the device REST interface"""
+
+        @staticmethod
+        def add_arguments(subparser):
+            subparser.add_argument("path")
+
+        @staticmethod
+        def run(session, place, target):
+            rest = target.get_driver("MyRestDriver")
+            print(rest.get(session.args.path))
+
+The class docstring is used as help text.
+``add_arguments()`` receives the subparser created for the command and
+declares its arguments.
+``run()`` is called with the :code:`ClientSession`, the acquired place and the
+target built from the environment configuration (including any ``--state``
+transition).
+It may also be a coroutine function.
+Commands cannot replace built-in commands; a name or alias collision is
+reported as an error.
+
+The module is made known to the client in one of two ways:
+
+- It is listed under ``imports`` in the environment configuration passed with
+  ``-c`` (or ``LG_ENV``), together with the modules that register the custom
+  resources and drivers.
+- It is part of an installed package which exposes the module in the
+  ``labgrid.client_commands`` entry point group.
+  
+  In ``pyproject.toml``:
+
+  .. code-block:: toml
+
+      [project.entry-points."labgrid.client_commands"]
+      my-plugin = "my_package.client_commands"
+
+Both sources are loaded before the command line is parsed, so the commands
+show up in ``labgrid-client --help``.
+The man page and ``labgrid-client complete`` only list plugin commands when
+the plugin is loaded.
+
 
 Tips for Writing and Debugging Tests
 ------------------------------------

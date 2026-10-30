@@ -1,9 +1,9 @@
-import os
 from typing import Optional
 import attr
 
 from .target import Target
 from .config import Config
+from .util.imports import load_imports
 
 
 @attr.s(eq=False)
@@ -19,21 +19,7 @@ class Environment:
 
         self.config = Config(self.config_file)
 
-        for user_import in self.config.get_imports():
-            import importlib.util
-            from importlib.machinery import SourceFileLoader
-            import sys
-
-            if user_import.endswith('.py'):
-                module_name = os.path.basename(user_import)[:-3]
-                loader = SourceFileLoader(module_name, user_import)
-                spec = importlib.util.spec_from_loader(loader.name, loader)
-                module = importlib.util.module_from_spec(spec)
-                loader.exec_module(module)
-            else:
-                module_name = user_import
-                module = importlib.import_module(user_import)
-            sys.modules[module_name] = module
+        load_imports(self.config.get_imports())
 
     def get_target(self, role: str = 'main') -> Optional[Target]:
         """Returns the specified target or None if not found.

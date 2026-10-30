@@ -144,7 +144,9 @@ class TargetFactory:
     def make_target(self, name, config, *, env=None):
         from .target import Target
 
-        target = Target(name, env=env)
+        target = Target(name, env=env,
+                        features=frozenset(config.get('features', [])),
+                        options=frozenset(config.get('options', [])))
         for item in TargetFactory._convert_to_named_list(config.get('resources', {})):
             resource = item.pop('cls')
             name = item.pop('name', None)

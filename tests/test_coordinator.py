@@ -35,8 +35,13 @@ def make_coordinator_with_fake_exporter(
     on_release_command=None,
 ):
     coordinator = Coordinator.__new__(Coordinator)
+    coordinator.require_metadata_identity = False;
     coordinator.lock = asyncio.Lock()
-    coordinator.clients = {}
+    coordinator.clients = {
+        "unknown-peer" : SimpleNamespace(
+            name="testhost",
+            ),
+    }
     coordinator.exporters = {
         "peer": SimpleNamespace(
             name="testhost",

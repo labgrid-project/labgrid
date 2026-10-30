@@ -630,6 +630,42 @@ exports["LXAUSBMux"] = USBGenericExport
 
 
 @attr.s(eq=False)
+class FTDIPortExport(USBGenericExport):
+    """ResourceExport executing raw pyftdi commands."""
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        self.data["cls"] = "NetworkFTDIPort"
+
+    def _get_params(self):
+        match_rules = self.local_params.get("match", {})
+        serial = match_rules.get("ID_SERIAL_SHORT", "unknown")
+        resolved_port = getattr(self.local, "port", None)
+        return {
+            "host" : self.host,
+            "serial": serial,
+            "path": resolved_port,
+        }
+
+    def poll(self):
+        dirty = False
+        if not self.avail:
+            self.data["avail"] = True
+            dirty = True
+        params = self._get_params()
+        if not params.get("extra"):
+            params["extra"] = {}
+        params["extra"]["proxy_required"] = self.proxy_required
+        params["extra"]["proxy"] = self.proxy
+        if self.params != params:
+            self.data["params"].update(params)
+            dirty = True
+        return dirty
+
+exports["FTDIPort"] = FTDIPortExport
+
+
+@attr.s(eq=False)
 class ProviderGenericExport(ResourceExport):
     """ResourceExport for Resources derived from BaseProvider"""
 

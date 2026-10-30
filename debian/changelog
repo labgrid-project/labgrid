@@ -1,3 +1,9 @@
+labgrid (26.0.0) UNRELEASED; urgency=low
+
+  * See https://github.com/labgrid-project/labgrid/blob/master/CHANGES.rst
+
+ -- Bastian Krause <bst@pengutronix.de>  Fri, 30 Oct 2026 10:54:12 +0100
+
 labgrid (25.0.0) UNRELEASED; urgency=low
 
   * See https://github.com/labgrid-project/labgrid/blob/master/CHANGES.rst

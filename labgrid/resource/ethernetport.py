@@ -22,24 +22,24 @@ class SNMPSwitch:
         self.ports = {}
         self.fdb = {}
         self.macs_by_port = {}
+        self.engine = hlapi.SnmpEngine()
         self.transport = self.loop.run_until_complete(hlapi.UdpTransportTarget.create((self.hostname, 161)))
         self._autodetect()
 
     def _autodetect(self):
         import pysnmp.hlapi.v3arch.asyncio as hlapi
 
-        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.getCmd(
-                hlapi.SnmpEngine(),
+        errorIndication, errorStatus, _, varBinds = self.loop.run_until_complete(hlapi.get_cmd(
+                self.engine,
                 hlapi.CommunityData('public'),
                 self.transport,
                 hlapi.ContextData(),
-                hlapi.ObjectType(hlapi.ObjectIdentity('SNMPv2-MIB', 'sysDescr', 0)))):
-            if errorIndication:
-                raise Exception(f"snmp error {errorIndication}")
-            elif errorStatus:
-                raise Exception(f"snmp error {errorStatus}")
-            else:
-                sysDescr = str(varBindTable[0][1])
+                hlapi.ObjectType(hlapi.ObjectIdentity('SNMPv2-MIB', 'sysDescr', 0))))
+        if errorIndication:
+            raise Exception(f"snmp error {errorIndication}")
+        elif errorStatus:
+            raise Exception(f"snmp error {errorStatus}")
+        sysDescr = str(varBinds[0][1])
 
         if sysDescr.startswith("HPE OfficeConnect Switch 1820 24G J9980A,"):
             self._get_fdb = self._get_fdb_dot1q
@@ -50,6 +50,33 @@ class SNMPSwitch:
 
         self.logger.debug("autodetected switch%s: %s %s", sysDescr, self._get_ports, self._get_fdb)
 
+    def _bulk_walk(self, max_repetitions, var_bind):
+        """Walk the SNMP subtree below var_bind using GETBULK requests
+
+        Returns:
+            List[Tuple[ObjectIdentity, value]]: the variable bindings found below var_bind
+        """
+        import pysnmp.hlapi.v3arch.asyncio as hlapi
+
+        async def walk():
+            var_binds = []
+            async for (errorIndication, errorStatus, _, varBindTable) in hlapi.bulk_walk_cmd(
+                    self.engine,
+                    hlapi.CommunityData('public'),
+                    self.transport,
+                    hlapi.ContextData(),
+                    0, max_repetitions,
+                    var_bind,
+                    lexicographicMode=False):
+                if errorIndication:
+                    raise Exception(f"snmp error {errorIndication}")
+                elif errorStatus:
+                    raise Exception(f"snmp error {errorStatus}")
+                var_binds.extend(varBindTable)
+            return var_binds
+
+        return self.loop.run_until_complete(walk())
+
     def _get_ports(self):
         """Fetch ports and their values via SNMP
 
@@ -59,7 +86,6 @@ class SNMPSwitch:
         import pysnmp.hlapi.v3arch.asyncio as hlapi
 
         variables = [
-            (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifIndex')), 'index'),
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifDescr')), 'descr'),
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifSpeed')), 'speed'),
             (hlapi.ObjectType(hlapi.ObjectIdentity('IF-MIB', 'ifOperStatus')), 'status'),
@@ -69,26 +95,14 @@ class SNMPSwitch:
         ]
         ports = {}
 
-        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulkCmd(
-                hlapi.SnmpEngine(),
-                hlapi.CommunityData('public'),
-                self.transport,
-                hlapi.ContextData(),
-                0, 20,
-                *[x[0] for x in variables],
-                lexicographicMode=False)):
-            if errorIndication:
-                raise Exception(f"snmp error {errorIndication}")
-            elif errorStatus:
-                raise Exception(f"snmp error {errorStatus}")
-            else:
-                port = {}
-                for (_, val), (_, label) in zip(varBindTable, variables):
-                    val = val.prettyPrint()
-                    if label == 'status':
-                        val = val.strip("'")
-                    port[label] = val
-                ports[port.pop('index')] = port
+        for var_bind, label in variables:
+            for key, val in self._bulk_walk(20, var_bind):
+                # rows of ifTable/ifXTable are indexed by ifIndex
+                index = key.get_mib_symbol()[-1][0].prettyPrint()
+                val = val.prettyPrint()
+                if label == 'status':
+                    val = val.strip("'")
+                ports.setdefault(index, {})[label] = val
 
         return ports
 
@@ -102,26 +116,12 @@ class SNMPSwitch:
 
         ports = {}
 
-        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulkCmd(
-                hlapi.SnmpEngine(),
-                hlapi.CommunityData('public'),
-                self.transport,
-                hlapi.ContextData(),
-                0, 50,
-                hlapi.ObjectType(hlapi.ObjectIdentity('BRIDGE-MIB', 'dot1dTpFdbPort')),
-                lexicographicMode=False)):
-            if errorIndication:
-                raise Exception(f"snmp error {errorIndication}")
-            elif errorStatus:
-                raise Exception(f"snmp error {errorStatus}")
-            else:
-                for varBinds in varBindTable:
-                    key, val = varBinds
-                    if not val:
-                        continue
-                    mac = key.getMibSymbol()[-1][0].prettyPrint()
-                    interface = str(int(val))
-                    ports.setdefault(interface, []).append(mac)
+        for key, val in self._bulk_walk(50, hlapi.ObjectType(hlapi.ObjectIdentity('BRIDGE-MIB', 'dot1dTpFdbPort'))):
+            if not val:
+                continue
+            mac = key.get_mib_symbol()[-1][0].prettyPrint()
+            interface = str(int(val))
+            ports.setdefault(interface, []).append(mac)
 
         return ports
 
@@ -135,26 +135,12 @@ class SNMPSwitch:
 
         ports = {}
 
-        for (errorIndication, errorStatus, _, varBindTable) in self.loop.run_until_complete(hlapi.bulkCmd(
-                hlapi.SnmpEngine(),
-                hlapi.CommunityData('public'),
-                self.transport,
-                hlapi.ContextData(),
-                0, 50,
-                hlapi.ObjectType(hlapi.ObjectIdentity('Q-BRIDGE-MIB', 'dot1qTpFdbPort')),
-                lexicographicMode=False)):
-            if errorIndication:
-                raise Exception(f"snmp error {errorIndication}")
-            elif errorStatus:
-                raise Exception(f"snmp error {errorStatus}")
-            else:
-                for varBinds in varBindTable:
-                    key, val = varBinds
-                    if not val:
-                        continue
-                    mac = key.getMibSymbol()[-1][1].prettyPrint()
-                    interface = str(int(val))
-                    ports.setdefault(interface, []).append(mac)
+        for key, val in self._bulk_walk(50, hlapi.ObjectType(hlapi.ObjectIdentity('Q-BRIDGE-MIB', 'dot1qTpFdbPort'))):
+            if not val:
+                continue
+            mac = key.get_mib_symbol()[-1][1].prettyPrint()
+            interface = str(int(val))
+            ports.setdefault(interface, []).append(mac)
 
         return ports
 

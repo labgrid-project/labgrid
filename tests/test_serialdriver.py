@@ -61,7 +61,7 @@ class TestSerialDriver:
         serial_mock.return_value.close.assert_called_once_with()
 
     def test_rfc2711_instanziation(self, target, serial_rfc2711_port, mocker):
-        serial_mock = mocker.patch("serial.rfc2217.Serial")
+        serial_mock = mocker.patch("labgrid.driver.serialdriver._RFC2217Serial")
         s = SerialDriver(target, "serial")
         assert isinstance(s, SerialDriver)
         assert target.drivers[0] == s

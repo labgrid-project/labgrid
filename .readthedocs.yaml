@@ -11,6 +11,6 @@ python:
         - doc
 
 build:
-  os: "ubuntu-24.04"
+  os: "ubuntu-26.04"
   tools:
-    python: "3.13"
+    python: "3.14"

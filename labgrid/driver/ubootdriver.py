@@ -9,6 +9,7 @@ from ..util import gen_marker, re_vt100, Timeout
 from ..step import step
 from .common import Driver
 from .commandmixin import CommandMixin
+from .exception import ExecutionError
 
 re_uboot_timestamp = re.compile(r"^\[\s+\d+\.\d+\]\s*")
 
@@ -71,32 +72,31 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         """
         self._status = 0
 
-    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
-        # TODO: use codec, decodeerrors
+    def _run(self, cmd: str, *, timeout: int = 30, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=line-too-long
         # TODO: Shell Escaping for the U-Boot Shell
+        if self._status != 1:
+            raise ExecutionError("U-Boot is not at the prompt, cannot run commands")
+
         marker = gen_marker()
         cmp_command = f"""echo '{marker[:4]}''{marker[4:]}'; {cmd}; echo "$?"; echo '{marker[:4]}''{marker[4:]}';"""  # pylint: disable=line-too-long
-        if self._status == 1:
-            self.console.sendline(cmp_command)
-            _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
-            # Remove VT100 Codes and split by newline
-            data = re_vt100.sub(
-                '', before.decode('utf-8'), count=1000000
-            ).replace("\r", "").split("\n")
+        self.console.sendline(cmp_command)
+        _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
+        # Remove VT100 Codes and split by newline
+        data = re_vt100.sub(
+            '', before.decode(codec, decodeerrors), count=1000000
+        ).replace("\r", "").split("\n")
 
-            # Strip possible U-Boot timestamps from the line
-            if self.strip_timestamp:
-                data = [re_uboot_timestamp.sub('', line) for line in data]
+        # Strip possible U-Boot timestamps from the line
+        if self.strip_timestamp:
+            data = [re_uboot_timestamp.sub('', line) for line in data]
 
-            self.logger.debug("Received Data: %s", data)
-            # Remove first element, the invoked cmd
-            data = data[data.index(marker) + 1:]
-            data = data[:data.index(marker)]
-            exitcode = int(data[-1])
-            del data[-1]
-            return (data, [], exitcode)
-
-        return None
+        self.logger.debug("Received Data: %s", data)
+        # Remove first element, the invoked cmd
+        data = data[data.index(marker) + 1:]
+        data = data[:data.index(marker)]
+        exitcode = int(data[-1])
+        del data[-1]
+        return (data, [], exitcode)
 
     @Driver.check_active
     @step(args=['cmd'], result=True)
@@ -109,7 +109,10 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             timeout (int): optional, how long to wait for completion
 
         Returns:
-            Tuple[List[str],List[str], int]: if successful, None otherwise
+            Tuple[List[str],List[str], int]: stdout, stderr and exit code
+
+        Raises:
+            ExecutionError: if U-Boot is not at the prompt
         """
         return self._run(cmd, timeout=timeout)
 
@@ -160,6 +163,10 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # Because pexpect keeps any read data in it's buffer when a timeout
         # occours, we can't lose any data this way.
         last_before = None
+        late_matches = set()
+        timeout_message = (
+            f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"
+        )
 
         expectations = [self.prompt, self.autoboot, self.password_prompt, TIMEOUT]
         while True:
@@ -188,11 +195,14 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                     self.console.sendline("")
 
                 if timeout.expired:
-                    raise TIMEOUT(
-                        f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"
-                    )
+                    raise TIMEOUT(timeout_message)
 
             last_before = before
+
+            if index != 3 and timeout.expired:
+                if index in late_matches:
+                    raise TIMEOUT(timeout_message)
+                late_matches.add(index)
 
         if self.prompt:
             self._check_prompt()

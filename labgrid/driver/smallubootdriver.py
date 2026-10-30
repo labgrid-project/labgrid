@@ -4,6 +4,7 @@ from ..factory import target_factory
 from ..util import gen_marker
 from ..step import step
 from .common import Driver
+from .exception import ExecutionError
 
 from .ubootdriver import UBootDriver
 from ..util import re_vt100
@@ -80,11 +81,10 @@ class SmallUBootDriver(UBootDriver):
         Arguments:
         cmd - Command to run
         """
-        # TODO: use codec, decodeerrors
 
         # Check if Uboot is in command line mode
         if self._status != 1:
-            return None
+            raise ExecutionError("U-Boot is not at the prompt, cannot run commands")
 
         marker = gen_marker()
 
@@ -99,7 +99,7 @@ class SmallUBootDriver(UBootDriver):
         _, before, _, _ = self.console.expect(self.prompt, timeout=timeout)
 
         data = re_vt100.sub(
-            '', before.decode('utf-8'), count=1000000
+            '', before.decode(codec, decodeerrors), count=1000000
         ).replace("\r", "").split("\n")
         data = data[1:]
         data = data[data.index(f"Unknown command 'echo{marker}' - try 'help'") +1 :]

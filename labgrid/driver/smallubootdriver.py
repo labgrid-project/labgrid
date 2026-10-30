@@ -61,10 +61,18 @@ class SmallUBootDriver(UBootDriver):
 
         # wait for boot expression. Afterwards enter secret
         self.console.expect(self.boot_expression, timeout=self.login_timeout)
+
+        secret = self.boot_secret.encode('ASCII')
+        if self.boot_secret.startswith('\\x'):
+            try:
+                secret = bytearray.fromhex(self.boot_secret[2:])
+            except ValueError:
+                pass
+
         if self.boot_secret_nolf:
-            self.console.write(self.boot_secret.encode('ASCII'))
+            self.console.write(secret)
         else:
-            self.console.sendline(self.boot_secret)
+            self.console.sendline(secret)
         self._status = 1
 
         # wait until UBoot has reached it's prompt

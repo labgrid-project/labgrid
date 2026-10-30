@@ -40,6 +40,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.coverage',
               'sphinx.ext.viewcode',
+              'reno.sphinxext',
               'sphinxcontrib.autoprogram',
               'sphinx.ext.autosectionlabel',
               'sphinx_rtd_theme']

@@ -48,7 +48,7 @@ USB devices and various other controllers.
 .B  \-h\fP,\fB  \-\-help
 display command line help
 .TP
-.B  \-x\fP,\fB  \-\-coordinator
+.B  \-c\fP,\fB  \-\-coordinator
 coordinator \fBHOST[:PORT]\fP to connect to, defaults to \fB127.0.0.1:20408\fP
 .TP
 .B  \-\-tls
@@ -71,6 +71,12 @@ use fully qualified domain name as default for hostname
 .TP
 .B  \-d\fP,\fB  \-\-debug
 enable debug mode
+.TP
+.B  \-\-pystuck
+enable \X'tty: link https://github.com/alonho/pystuck'\fI\%pystuck\fP\X'tty: link' for debugging
+.TP
+.BI \-\-pystuck\-port \ PORT
+use a different pystuck port than 6667
 .UNINDENT
 .SS \-i / \-\-isolated
 .sp

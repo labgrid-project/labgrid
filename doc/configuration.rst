@@ -2210,8 +2210,8 @@ Arguments:
   - interrupt (str, default="\\n"): string to interrupt autoboot (use ``\\x03`` for CTRL-C)
   - init_commands (tuple): optional, tuple of commands to execute after matching the
     prompt
-  - password_prompt (str, default="enter Password: "): regex to match the U-Boot password prompt
-  - bootstring (str): optional, regex to match on Linux Kernel boot
+  - password_prompt (str, default="enter Password:"): regex to match the U-Boot password prompt
+  - bootstring (str, default="Linux version \\d"): regex to match on Linux Kernel boot
   - boot_command (str, default="run bootcmd"): boot command for booting target
   - boot_commands (dict, default={}): boot commands by name for LinuxBootProtocol boot command
   - login_timeout (int, default=30): timeout for login prompt detection in seconds

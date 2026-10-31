@@ -35,6 +35,10 @@ OPTIONS
 -d, --debug
     enable debug mode (deployments with a large number of exported resources
     will suffer from performance overhead)
+--pystuck
+    enable `pystuck <https://github.com/alonho/pystuck>`_ for debugging
+--pystuck-port PORT
+    use a different pystuck port than 6666
 
 TLS WITH A REVERSE PROXY
 ------------------------

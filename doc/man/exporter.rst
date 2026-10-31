@@ -41,6 +41,10 @@ OPTIONS
     use fully qualified domain name as default for hostname
 -d, --debug
     enable debug mode
+--pystuck
+    enable `pystuck <https://github.com/alonho/pystuck>`_ for debugging
+--pystuck-port PORT
+    use a different pystuck port than 6667
 
 -i / --isolated
 ~~~~~~~~~~~~~~~

@@ -24,7 +24,8 @@ OPTIONS
 -h, --help
     display command line help
 -l ADDRESS, --listen ADDRESS
-    make coordinator listen on host and port
+    make coordinator listen on host and port (``HOST:PORT``), defaults to
+    ``[::]:20408``
 --tls
     enable TLS gRPC channel
 --cert

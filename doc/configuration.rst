@@ -61,7 +61,7 @@ The example would access the serial port on computer
 
 Arguments:
   - host (str): hostname of the remote host
-  - port (str): TCP port on the remote host to connect to
+  - port (int): TCP port on the remote host to connect to
   - speed (int, default=115200): baud rate of the serial port
   - protocol (str, default="rfc2217"): protocol used for connection: raw or
     rfc2217

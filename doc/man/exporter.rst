@@ -25,7 +25,7 @@ OPTIONS
 -------
 -h, --help
     display command line help
--x, --coordinator
+-c, --coordinator
     coordinator ``HOST[:PORT]`` to connect to, defaults to ``127.0.0.1:20408``
 --tls
     enable TLS gRPC channel

@@ -27,8 +27,8 @@ This variable can be used to specify a place without using the ``-p`` option, th
 
 LG_RESERVATION (previously LG_TOKEN)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This variable can be used to specify a reservation for the ``wait`` command and
-for the ``+`` place expansion.
+This variable can be used to specify a reservation for the ``wait`` and
+``cancel-reservation`` commands and for the ``+`` place expansion.
 
 LG_STATE
 ~~~~~~~~

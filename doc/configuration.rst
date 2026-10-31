@@ -3086,6 +3086,8 @@ Binds to:
     - `NetworkUSBSDMuxDevice`_
     - `USBSDWireDevice`_
     - `NetworkUSBSDWireDevice`_
+    - `USBSDWire3Device`_
+    - `NetworkUSBSDWire3Device`_
 
 Implements:
   - None (yet)

@@ -927,6 +927,8 @@ RemoteAndroidUSBFastboot
 ~~~~~~~~~~~~~~~~~~~~~~~~
 A :any:`RemoteAndroidUSBFastboot` describes a `AndroidUSBFastboot`_ resource
 available on a remote computer.
+Previously, this resource was named NetworkAndroidFastboot and this name is
+still supported for backwards compatibility.
 
 AndroidNetFastboot
 ~~~~~~~~~~~~~~~~~~
@@ -1069,6 +1071,21 @@ which is accessible via SNMP.
    SNMPEthernetPort:
      switch: 'switch-012'
      interface: '17'
+
+Arguments:
+  - switch (str): host name of the Ethernet switch
+  - interface (str): interface name
+
+Used by:
+  - None
+
+EthernetPort
+~~~~~~~~~~~~
+An :any:`EthernetPort` resource describes a port on an Ethernet switch without
+any access method.
+The exporter exports a `SNMPEthernetPort`_ as an ``EthernetPort`` to the
+clients, where it is used by ``labgrid-client`` to look up the IP address of
+the device (e.g. for the ``ssh`` and ``scp`` subcommands).
 
 Arguments:
   - switch (str): host name of the Ethernet switch

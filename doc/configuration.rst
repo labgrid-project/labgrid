@@ -3405,7 +3405,7 @@ Arguments:
   - None
 
 The driver can be used in test cases by calling its ``set_mode()`` method with
-argument being "dut", "host", "off", or "client".
+argument being "dut" or "host".
 
 USBSDWire3Driver
 ~~~~~~~~~~~~~~~~

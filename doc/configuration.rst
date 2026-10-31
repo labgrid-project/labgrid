@@ -3493,7 +3493,8 @@ Arguments:
 Currently, it can be used by the ``labgrid-client`` ``tmc`` subcommands to show
 (and save) a screenshot, to show per channel measurements and to execute raw
 TMC commands.
-It only supports the *Keysight DSO-X 2000* series (with the USB ID ``0957:1798``),
+It supports the *Keysight DSO-X 2000* series (with the USB ID ``0957:1798``)
+and the *Tektronix TDS 2000* series (with the USB ID ``0699:0368``),
 but more devices can be added by extending ``on_activate()`` in
 ``labgrid/driver/usbtmcdriver.py`` and writing a corresponding backend in
 ``labgrid/driver/usbtmc/``.

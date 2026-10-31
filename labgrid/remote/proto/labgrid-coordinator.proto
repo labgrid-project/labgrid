@@ -38,6 +38,8 @@ service Coordinator {
   rpc PollReservation(PollReservationRequest) returns (PollReservationResponse) {}
 
   rpc GetReservations(GetReservationsRequest) returns (GetReservationsResponse) {}
+
+  rpc SetPlaceRemotePlaceConfig(SetPlaceRemotePlaceConfigRequest) returns (SetPlaceRemotePlaceConfigResponse) {}
 }
 
 message ClientInMessage {
@@ -174,6 +176,7 @@ message Place {
   double created = 9;
   double changed = 10;
   optional string reservation = 11;
+  optional string remote_place_config = 12;
 };
 
 message ResourceMatch {
@@ -301,4 +304,13 @@ message GetReservationsResponse {
 };
 
 message GetReservationsRequest {
+};
+
+message SetPlaceRemotePlaceConfigRequest {
+  string placename = 1;
+  double changed = 2;
+  string remote_place_config = 3;
+};
+
+message SetPlaceRemotePlaceConfigResponse {
 };

@@ -17,7 +17,7 @@ class RemotePlaceManager(ResourceManager):
         self.loop = None
         self.session = None
         self.ready = None
-        self.unmanaged_resources = []
+        self.expanded_resources = []
         self.last_sync = 0.0
 
     def _get_credentials(self):
@@ -83,10 +83,26 @@ class RemotePlaceManager(ResourceManager):
             new.avail = resource_entry.avail
             new.extra = resource_entry.extra
             new._remote_entry = resource_entry
-            if not isinstance(new, ManagedResource):
-                self.unmanaged_resources.append(new)
             expanded.append(new)
+        self.expanded_resources.extend(expanded)
         self.logger.debug("expanded remote resources for place %s: %s", remote_place.name, expanded)
+
+        # handle remote place config
+        remote_place_config = place.get_remote_place_config()
+        resources, _ = target_factory.normalize_config(remote_place_config)
+        if "RemotePlace" in resources:
+            # RemotePlace not allowed in remote place config, would recurse infitintely
+            raise ValueError("RemotePlace not allowed in remote place config")
+        target_factory.make_resources_from_config(
+            remote_place.target, remote_place_config.get("resources", {}), ignore=remote_place.ignore_resources
+        )
+        target_factory.make_drivers_from_config(
+            remote_place.target, remote_place_config.get("drivers", {}), ignore=remote_place.ignore_drivers
+        )
+        # local options from the environment configuration take precedence
+        for name, value in remote_place_config.get("options", {}).items():
+            remote_place.target.options.setdefault(name, value)
+
         remote_place.avail = True
         remote_place.tags = copy.deepcopy(place.tags)
 
@@ -103,9 +119,7 @@ class RemotePlaceManager(ResourceManager):
             except asyncio.TimeoutError:
                 self.logger.warning("coordinator did not respond in time, continuing with possibly outdated resources")
             self.last_sync = time.monotonic()
-        for resource in self.resources + self.unmanaged_resources:
-            if isinstance(resource, RemotePlace):
-                continue
+        for resource in self.expanded_resources:
             # coordinator dropped resource
             if not resource._remote_entry.data:
                 raise NoResourceFoundError(
@@ -135,6 +149,21 @@ class RemotePlaceManager(ResourceManager):
 @attr.s(eq=False)
 class RemotePlace(ManagedResource):
     manager_cls = RemotePlaceManager
+
+    ignore_resources = attr.ib(
+        default=attr.Factory(list),
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of(str),
+            iterable_validator=attr.validators.instance_of(list),
+        ),
+    )
+    ignore_drivers = attr.ib(
+        default=attr.Factory(list),
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of(str),
+            iterable_validator=attr.validators.instance_of(list),
+        ),
+    )
 
     def __attrs_post_init__(self):
         self.timeout = 10.0

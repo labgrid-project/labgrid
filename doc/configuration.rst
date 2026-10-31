@@ -3892,6 +3892,7 @@ Binds to:
 
 Implements:
   - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 .. code-block:: yaml
 

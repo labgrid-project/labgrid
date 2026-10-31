@@ -83,6 +83,10 @@ The ``tools:`` top key provides paths to binaries such as fastboot.
 TOOLS KEYS
 ~~~~~~~~~~
 
+``adb``
+    Path to the adb binary, used by the ADBDriver.
+    See: https://developer.android.com/studio/releases/platform-tools
+
 ``dfu-util``
     Path to the dfu-util binary, used by the DFUDriver.
     See: https://dfu-util.sourceforge.net/
@@ -138,6 +142,10 @@ TOOLS KEYS
 ``sd-mux-ctrl``
     Path to the sd-mux-ctrl binary, used by the USBSDWireDriver.
     See: https://git.tizen.org/cgit/tools/testlab/sd-mux/
+
+``sdwire``
+    Path to the sdwire binary, used by the USBSDWire3Driver.
+    See: https://github.com/Badger-Embedded/sdwire-cli
 
 ``sispmctl``
     Path to the sispmctl binary, used by the SiSPMPowerDriver.

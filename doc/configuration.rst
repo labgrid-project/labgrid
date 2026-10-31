@@ -822,7 +822,7 @@ specific device from all connected supported devices use the
      channels: 'D0=CLK,D1=DATA'
 
 Arguments:
-  - driver (str): name of the sigrok driver to use
+  - driver (str, default="demo"): name of the sigrok driver to use
   - channels (str): optional, channel mapping as described in the
     ``sigrok-cli`` man page
   - channel_group (str): optional, channel group as described in the

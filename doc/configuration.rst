@@ -1099,6 +1099,7 @@ Arguments:
 
 Used by:
   - `SigrokDriver`_
+  - `SigrokDmmDriver`_
 
 NetworkSigrokUSBDevice
 ~~~~~~~~~~~~~~~~~~~~~~

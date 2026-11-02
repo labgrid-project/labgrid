@@ -15,6 +15,7 @@ from .udev import (
     FTDIGPIO,
     HIDRelay,
     IMXUSBLoader,
+    LinkPiSmartHUBPowerPort,
     LXAUSBMux,
     MatchedSysfsGPIO,
     MXSUSBLoader,

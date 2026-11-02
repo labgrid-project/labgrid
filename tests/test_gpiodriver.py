@@ -2,10 +2,10 @@ import types
 
 import labgrid.driver.gpiodriver as gpiodriver
 from labgrid.driver.gpiodriver import GpioDigitalInputDriver, GpioDigitalOutputDriver
-from labgrid.remote.client import ClientSession
+from labgrid.remote.client import ClientCommands
+from labgrid.resource import SysfsGPIO
 from labgrid.resource.common import ResourceManager
 from labgrid.resource.remote import NetworkSysfsGPIO
-from labgrid.resource import SysfsGPIO
 
 
 class FakeWrapper:
@@ -64,7 +64,7 @@ def test_client_io_get_uses_configured_gpio_input_driver(target, monkeypatch, ca
     SysfsGPIO(target, name="gpio_in", index=13, invert=False)
     GpioDigitalInputDriver(target, name="gpio_in")
 
-    session = object.__new__(ClientSession)
+    session = object.__new__(ClientCommands)
     session.args = types.SimpleNamespace(action="get", name="gpio_in")
     session.get_acquired_place = lambda: types.SimpleNamespace(name="test")
     session._get_target = lambda place: target
@@ -78,7 +78,7 @@ def test_client_io_get_uses_configured_gpio_input_driver(target, monkeypatch, ca
 def test_client_io_get_keeps_network_sysfs_output_fallback(target, monkeypatch, mocker):
     monkeypatch.setattr(NetworkSysfsGPIO, "manager_cls", ResourceManager)
     driver = types.SimpleNamespace(get=mocker.MagicMock(return_value=False))
-    session = object.__new__(ClientSession)
+    session = object.__new__(ClientCommands)
     session.args = types.SimpleNamespace(action="get", name="gpio")
     session.get_acquired_place = lambda: types.SimpleNamespace(name="test")
     session._get_target = lambda place: target

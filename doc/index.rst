@@ -41,6 +41,7 @@ You can also look at :ref:`ideas` for enhancements which are not yet implemented
    getting_started
    overview
    usage
+   client-session
    man
    configuration
    development

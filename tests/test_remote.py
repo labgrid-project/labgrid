@@ -1,20 +1,19 @@
 import argparse
-import warnings
-
-import pexpect
-import pytest
 import asyncio
-import grpc
 import signal
 import sys
 import time
+import warnings
+
+import grpc
+import pexpect
+import pytest
 
 from labgrid import Environment, Target
 from labgrid.remote.common import get_client_credentials, get_metadata_single_value_by_key
 from labgrid.remote.coordinator import get_server_credentials
 from labgrid.remote.exporter import Exporter, SerialPortExport
-from labgrid.remote.generated import labgrid_coordinator_pb2
-from labgrid.remote.generated import labgrid_coordinator_pb2_grpc
+from labgrid.remote.generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from labgrid.resource import RemotePlace
 from labgrid.resource.common import ResourceManager
 from labgrid.util.yaml import dump
@@ -445,7 +444,7 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
             return argparse.Namespace(tags={}, acquired_resources=[])
 
         def get_target_resources(self, place):
-            return {}
+            return ()
 
     captured = {}
 
@@ -459,7 +458,7 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
         return DummySession()
 
     monkeypatch.setattr("labgrid.remote.common.get_client_credentials", get_client_credentials)
-    monkeypatch.setattr("labgrid.remote.client.start_session", start_session)
+    monkeypatch.setattr("labgrid.remote.session.start_session", start_session)
 
     config = _make_remote_place_config(tmpdir, options=options)
     env = Environment(str(config))

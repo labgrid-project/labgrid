@@ -80,6 +80,9 @@ Then, you can use the reservation id prefixed by ``+`` to refer to the
 allocated place for locking and usage.
 While a place is allocated for a reservation, only the owner of the reservation
 can lock that place.
+If acquiring the reserved place fails, the reservation is returned to
+``waiting`` state and the failed place is ignored for 60 seconds before it can
+be allocated to a reservation again.
 
 
 .. code-block:: bash

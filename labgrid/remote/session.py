@@ -392,6 +392,9 @@ class ClientSession:
         else:
             group[resource_name].data = resource
         current = copy.deepcopy(group[resource_name]) if "cls" in resource else None
+        if not resource:
+            # Invalidate existing references before removing the cached resource.
+            del group[resource_name]
         self._emit(ResourceChanged(exporter, group_name, resource_name, old, current))
 
     async def _on_place_changed(self, place_pb2):

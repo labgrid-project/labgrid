@@ -87,9 +87,10 @@ class USBAudioInputDriver(Driver):
     @step()
     def start_sender(self):
         """Return a subprocess which provides audio data in a matroska container on stdout"""
-        tx_cmd = self.res.command_prefix + ["gst-launch-1.0", "-q"]
+        tx_cmd = ["gst-launch-1.0", "-q"]
         tx_cmd += self._get_pipeline()
 
+        tx_cmd = self.res.wrap_command(tx_cmd)
         tx = subprocess.Popen(
             tx_cmd,
             stdin=subprocess.DEVNULL,

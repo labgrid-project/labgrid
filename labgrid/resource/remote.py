@@ -1,8 +1,10 @@
 import copy
 import os
+import time
 
 import attr
 
+from ..exceptions import NoResourceFoundError
 from ..factory import target_factory
 from .common import ManagedResource, NetworkResource, ResourceManager
 
@@ -16,6 +18,7 @@ class RemotePlaceManager(ResourceManager):
         self.session = None
         self.ready = None
         self.unmanaged_resources = []
+        self.last_sync = 0.0
 
     def _get_credentials(self):
         from ..remote.common import get_client_credentials
@@ -93,11 +96,25 @@ class RemotePlaceManager(ResourceManager):
 
     def poll(self):
         import asyncio
-        if not self.loop.is_running():
-            self.loop.run_until_complete(asyncio.sleep(0.1))
+
+        if (
+            not self.loop.is_running()
+            and time.monotonic() - self.last_sync >= 0.1
+            and not self.session.stopping.is_set()
+        ):
+            try:
+                self.loop.run_until_complete(asyncio.wait_for(self.session.sync_with_coordinator(), timeout=2.0))
+            except asyncio.TimeoutError:
+                self.logger.warning("coordinator did not respond in time, continuing with possibly outdated resources")
+            self.last_sync = time.monotonic()
         for resource in self.resources + self.unmanaged_resources:
             if isinstance(resource, RemotePlace):
                 continue
+            # coordinator dropped resource
+            if not resource._remote_entry.data:
+                raise NoResourceFoundError(
+                    f"remote resource {resource.display_name} was removed due to an exporter disconnect"
+                )
             attrs = resource._remote_entry.args.copy()
             attrs['avail'] = resource._remote_entry.avail
             # TODO allow the resource to do the update itself?

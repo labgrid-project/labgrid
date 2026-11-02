@@ -24,6 +24,23 @@ psutil = pytest.importorskip("psutil")
 os.environ.setdefault("GRPC_ENABLE_FORK_SUPPORT", "0")
 
 
+@pytest.fixture(autouse=True)
+def clean_env(monkeypatch):
+    monkeypatch.delenv("LG_AGENT_PREFIX", raising=False)
+    monkeypatch.delenv("LG_COORDINATOR", raising=False)
+    monkeypatch.delenv("LG_COORDINATOR_TLS", raising=False)
+    monkeypatch.delenv("LG_ENV", raising=False)
+    monkeypatch.delenv("LG_HOSTNAME", raising=False)
+    monkeypatch.delenv("LG_INITIAL_STATE", raising=False)
+    monkeypatch.delenv("LG_PLACE", raising=False)
+    monkeypatch.delenv("LG_PROXY", raising=False)
+    monkeypatch.delenv("LG_RESERVATION", raising=False)
+    monkeypatch.delenv("LG_SSH_CONNECT_TIMEOUT", raising=False)
+    monkeypatch.delenv("LG_STATE", raising=False)
+    monkeypatch.delenv("LG_TOKEN", raising=False)
+    monkeypatch.delenv("LG_USERNAME", raising=False)
+
+
 @pytest.fixture(scope="session")
 def curses_init():
     """ curses only reads the terminfo DB once on the first import, so make
@@ -173,7 +190,7 @@ class Exporter(LabgridComponent):
         assert self.reader is None
 
         self.spawn = pexpect.spawn(
-            f'python -m labgrid.remote.exporter --name testhost {self.config}',
+            f'{sys.executable} -m labgrid.remote.exporter --name testhost {self.config}',
             logfile=Prefixer(sys.stdout.buffer, 'exporter'),
             cwd=self.cwd)
         try:
@@ -191,7 +208,7 @@ class Coordinator(LabgridComponent):
         assert self.reader is None
 
         self.spawn = pexpect.spawn(
-            'python -m labgrid.remote.coordinator',
+            f'{sys.executable} -m labgrid.remote.coordinator',
             logfile=Prefixer(sys.stdout.buffer, 'coordinator'),
             cwd=self.cwd)
         try:

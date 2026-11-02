@@ -50,10 +50,11 @@ def test_env_fixture_no_logging(short_env, short_test):
 def test_env_env_fixture(short_env, short_test):
     env=os.environ.copy()
     env['LG_ENV'] = short_env
-    with pexpect.spawn(f'pytest {short_test}') as spawn:
+    with pexpect.spawn(f'pytest {short_test}', env=env) as spawn:
         spawn.expect(pexpect.EOF)
         spawn.close()
         assert spawn.exitstatus == 0
+        assert b'1 passed' in spawn.before
 
 def test_env_with_junit(short_env, short_test, tmpdir):
     x = tmpdir.join('junit.xml')

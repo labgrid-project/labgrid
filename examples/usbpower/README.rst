@@ -45,7 +45,7 @@ The ``uhubctl`` and ``usbsdmux`` tools need to be installed on the system.
 Library Example
 ---------------
 
-Ensure that the hardware is connected and run ``python cycle.py``.
+Ensure that the hardware is connected and run ``python3 cycle.py``.
 You should get the following output::
 
   Target: Target(name='main', env=None)

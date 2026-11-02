@@ -30,9 +30,6 @@ class FlashromDriver(Driver, BootstrapProtocol):
             self.tool = "flashrom"
         self.logger.debug("Tool %s", self.tool)
 
-    def _get_flashrom_prefix(self):
-        return self.flashrom_resource.command_prefix + [self.tool]
-
     def on_activate(self):
         pass
 
@@ -45,7 +42,8 @@ class FlashromDriver(Driver, BootstrapProtocol):
         arg_list = list(args)
         arg_list.append("-p")
         arg_list.append(f"{self.flashrom_resource.programmer}")
-        processwrapper.check_output(self._get_flashrom_prefix() + arg_list)
+        arg_list = [self.tool] + arg_list
+        processwrapper.check_wrapped_output(self.flashrom_resource, arg_list)
 
     @Driver.check_active
     @step(args=["filename"])

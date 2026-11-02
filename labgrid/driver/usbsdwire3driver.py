@@ -38,17 +38,17 @@ class USBSDWire3Driver(Driver):
     def set_mode(self, mode):
         if not mode.lower() in ["dut", "host"]:
             raise ExecutionError(f"Setting mode '{mode}' not supported by USBSDWire3Driver")
-        cmd = self.mux.command_prefix + [
+        cmd = [
             self.tool,
             "switch",
             "-s",
             self.control_serial,
             "dut" if mode.lower() == "dut" else "ts",
         ]
-        processwrapper.check_output(cmd)
+        processwrapper.check_wrapped_output(self.mux, cmd)
 
     def match_control_serial(self):
-        cmd = self.mux.command_prefix + [self.tool, "list"]
+        cmd = self.mux.wrap_command([self.tool, "list"])
         proc = subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
         output = proc.stdout.strip().decode()
         for line in output.splitlines():
@@ -59,13 +59,13 @@ class USBSDWire3Driver(Driver):
     @Driver.check_active
     @step(title="sdmux_get")
     def get_mode(self):
-        cmd = self.mux.command_prefix + [
+        cmd = [
             self.tool,
             "state",
             "-s",
             self.control_serial,
         ]
-        result = processwrapper.check_output(cmd)
+        result = processwrapper.check_wrapped_output(self.mux, cmd)
         for line in result.decode().splitlines():
             if re.match(self.control_serial, line):
                 return line.split(" ", maxsplit=1)[1].strip()

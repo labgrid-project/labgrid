@@ -28,9 +28,6 @@ class DediprogFlashDriver(Driver):
         else:
             self.tool = "dpcmd"
 
-    def _get_dediprog_prefix(self):
-        return self.flasher.command_prefix + [self.tool]
-
     def on_activate(self):
         pass
 
@@ -49,7 +46,8 @@ class DediprogFlashDriver(Driver):
         arg_list.append("--vcc")
         arg_list.append(vcc)
         arg_list.append("--silent")
-        processwrapper.check_output(self._get_dediprog_prefix() + arg_list)
+        arg_list = [self.tool] + arg_list
+        processwrapper.check_wrapped_output(self.flasher, arg_list)
 
     @Driver.check_active
     @step(args=["filename"])

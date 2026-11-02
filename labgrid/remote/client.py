@@ -1294,7 +1294,7 @@ class ClientCommands:
 
                 # Find a free port on the exporter machine
                 scrcpy_port = sshmanager.get(host).run_check(
-                    'python -c "'
+                    'python3 -c "'
                     "import socket;"
                     "s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(("
                     "'', 0));"

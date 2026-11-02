@@ -227,6 +227,6 @@ def test_register_same_resource():
         pass
 
     with pytest.raises(RegistrationError) as excinfo:
-        target_factory.reg_driver(SameResource)
-        target_factory.reg_driver(SameResource)
-    assert "driver with name" in excinfo.value.msg
+        target_factory.reg_resource(SameResource)
+        target_factory.reg_resource(SameResource)
+    assert "resource with name" in excinfo.value.msg

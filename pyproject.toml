@@ -92,6 +92,10 @@ dev = [
 
     # GRPC Channelz support
     "grpcio-channelz>=1.64.1, <2.0.0",
+
+    # pytest-benchmark breaks with pytest 9.2:
+    # https://github.com/ionelmc/pytest-benchmark/issues/321
+    "pytest<9.2",
 ]
 
 [project.scripts]

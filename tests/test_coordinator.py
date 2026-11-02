@@ -1,7 +1,10 @@
 import asyncio
+import os
+import signal
 from types import SimpleNamespace
 
 import grpc
+import pexpect
 import pytest
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
@@ -299,3 +302,170 @@ def test_coordinator_create_reservation(coordinator, coordinator_place):
     assert res
     res: labgrid_coordinator_pb2.CreateReservationResponse
     assert len(res.reservation.token) > 0
+
+
+def test_coordinator_propagate_identity_on_lock_and_release(coordinator, channel_stub, tmpdir):
+    with open(tmpdir / "exports.yaml", "w") as f:
+        f.write(
+            """
+        Example:
+            NetworkService:
+              address: "192.168.0.1"
+              username: "root"
+        """
+        )
+
+    stub = channel_stub
+
+    assert stub.AddPlace(labgrid_coordinator_pb2.AddPlaceRequest(name="place1"))
+    assert stub.AddPlaceMatch(
+        labgrid_coordinator_pb2.AddPlaceMatchRequest(
+            placename="place1", pattern="testexporter/Example/NetworkService"
+        )
+    )
+
+    with pexpect.spawn("python -m labgrid.remote.exporter --name testexporter exports.yaml", cwd=tmpdir) as spawn:
+        spawn.expect("Exporter ready")
+
+        with pexpect.spawn(
+            "python -m labgrid.remote.client -p place1 lock",
+            cwd=tmpdir,
+            env=os.environ | {"LG_HOSTNAME": "somehost", "LG_USERNAME": "someuser"},
+        ) as spawn_acquire:
+            spawn_acquire.expect("acquired place place1")
+            spawn_acquire.expect(pexpect.EOF)
+
+        spawn.expect("INFO:root:Example/NetworkService acquired by somehost/someuser")
+
+        with pexpect.spawn(
+            "python -m labgrid.remote.client -p place1 release --kick",
+            cwd=tmpdir,
+            env=os.environ | {"LG_HOSTNAME": "otherhost", "LG_USERNAME": "otheruser"},
+        ) as spawn_release:
+            spawn_release.expect("released place place1")
+            spawn_release.expect(pexpect.EOF)
+
+        spawn.expect("INFO:root:Example/NetworkService released by otherhost/otheruser")
+
+        spawn.kill(signal.SIGTERM)
+        spawn.expect(pexpect.EOF)
+
+
+@pytest.mark.parametrize(
+    "metadata, legacy_name, expected_identity",
+    [
+        pytest.param(
+            (("x-lg-hostname", "releasehost"), ("x-lg-name", "releaser")),
+            None,
+            "releasehost/releaser",
+            id="metadata-without-session",
+        ),
+        pytest.param(
+            (("x-lg-hostname", "releasehost"), ("x-lg-name", "releaser")),
+            "legacyhost/legacyuser",
+            "releasehost/releaser",
+            id="metadata-overrides-session",
+        ),
+        pytest.param((), "legacyhost/legacyuser", "legacyhost/legacyuser", id="legacy-session"),
+    ],
+)
+@pytest.mark.parametrize("release_success", [True, False], ids=["success", "exporter-failure"])
+def test_coordinator_propagate_release_identity(
+    mocker, metadata, legacy_name, expected_identity, release_success
+):
+    place, resource = make_place_with_acquired_resource()
+    owner = place.acquired
+    requests = []
+
+    def on_release(command):
+        requests.append(command.request)
+        if release_success:
+            resource.data["acquired"] = None
+
+    coordinator = make_coordinator_with_fake_exporter(
+        release_success=release_success, on_release_command=on_release
+    )
+    coordinator.places = {place.name: place}
+    coordinator._publish_place = mocker.Mock()
+    coordinator._publish_resource = mocker.Mock()
+    coordinator.save_later = mocker.Mock()
+    coordinator.schedule_reservations = mocker.Mock()
+    if legacy_name:
+        coordinator.clients["client-peer"] = SimpleNamespace(name=legacy_name)
+    context = SimpleNamespace(
+        invocation_metadata=lambda: metadata,
+        peer=lambda: "client-peer",
+        abort=mocker.AsyncMock(side_effect=RuntimeError("RPC aborted")),
+    )
+    request = labgrid_coordinator_pb2.ReleasePlaceRequest(placename=place.name)
+
+    if release_success:
+        response = asyncio.run(coordinator.ReleasePlace(request, context))
+        assert isinstance(response, labgrid_coordinator_pb2.ReleasePlaceResponse)
+        context.abort.assert_not_awaited()
+        assert place.acquired is None
+        assert not place.acquired_resources
+        coordinator.schedule_reservations.assert_called_once_with()
+    else:
+        with pytest.raises(RuntimeError, match="RPC aborted"):
+            asyncio.run(coordinator.ReleasePlace(request, context))
+        context.abort.assert_awaited_once_with(
+            grpc.StatusCode.FAILED_PRECONDITION,
+            f"Failed to release resources for place {place.name}: release failed",
+        )
+        assert place.acquired == owner
+        assert place.acquired_resources == [resource]
+        coordinator.schedule_reservations.assert_not_called()
+        coordinator._publish_resource.assert_called_once_with(resource)
+
+    assert len(requests) == 1
+    assert requests[0].client_identity.id == expected_identity
+    assert requests[0].client_identity.id != owner
+    assert not requests[0].HasField("place_name")
+    coordinator._publish_place.assert_called_once_with(place)
+    coordinator.save_later.assert_called_once_with()
+
+
+def test_coordinator_cleanup_release_has_empty_identity():
+    requests = []
+    coordinator = make_coordinator_with_fake_exporter(
+        release_success=True, on_release_command=lambda command: requests.append(command.request)
+    )
+    place, resource = make_place_with_acquired_resource()
+
+    async def release_resources():
+        async with coordinator.lock:
+            await coordinator._release_resources(place, [resource])
+
+    asyncio.run(release_resources())
+
+    assert len(requests) == 1
+    assert requests[0].client_identity.id == ""
+    assert not requests[0].HasField("place_name")
+
+
+@pytest.mark.parametrize("acquired", [None, "original-owner"], ids=["already-free", "different-owner"])
+def test_coordinator_release_fromuser_noop_without_identity(mocker, acquired):
+    on_release = mocker.Mock()
+    coordinator = make_coordinator_with_fake_exporter(
+        release_success=True, on_release_command=on_release
+    )
+    place, resource = make_place_with_acquired_resource()
+    place.acquired = acquired
+    coordinator.places = {place.name: place}
+    context = SimpleNamespace(
+        invocation_metadata=lambda: (),
+        peer=lambda: "unknown-peer",
+        abort=mocker.AsyncMock(side_effect=RuntimeError("RPC aborted")),
+    )
+    request = labgrid_coordinator_pb2.ReleasePlaceRequest(
+        placename=place.name, fromuser="another-owner"
+    )
+
+    response = asyncio.run(coordinator.ReleasePlace(request, context))
+
+    assert isinstance(response, labgrid_coordinator_pb2.ReleasePlaceResponse)
+    assert place.acquired == acquired
+    assert place.acquired_resources == [resource]
+    on_release.assert_not_called()
+    context.abort.assert_not_awaited()

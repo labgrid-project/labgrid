@@ -602,6 +602,8 @@ def test_recreated_resource_event_has_no_previous_snapshot(session):
     run(session, session._on_resource_changed("exporter", "group", "port", data.copy()))
     live = session.resources["exporter"]["group"]["port"]
     run(session, session._on_resource_changed("exporter", "group", "port", {}))
+    assert "port" not in session.resources["exporter"]["group"]
+    assert live.data == {}
     run(session, session._on_resource_changed("exporter", "group", "port", data.copy()))
 
     created, deleted, recreated = events
@@ -610,9 +612,11 @@ def test_recreated_resource_event_has_no_previous_snapshot(session):
     assert deleted.current is None
     assert recreated.current.cls == "SerialPort"
     assert recreated.previous is None
-    assert session.resources["exporter"]["group"]["port"] is live
-    assert live.cls == "SerialPort"
-    assert recreated.current is not live
+    recreated_live = session.resources["exporter"]["group"]["port"]
+    assert recreated_live is not live
+    assert recreated_live.cls == "SerialPort"
+    assert live.data == {}
+    assert recreated.current is not recreated_live
 
 
 def test_update_events_preserve_cache_identity_and_snapshots(session, capsys):

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import logging
+import math
 import asyncio
 import traceback
 from enum import Enum
@@ -12,6 +13,7 @@ import random
 import signal
 import pathlib
 from typing import Optional
+import os
 
 import attr
 import grpc
@@ -226,8 +228,31 @@ class ExporterError(CoordinatorError):
     pass
 
 
+@attr.s(frozen=True, auto_attribs=True)
+class CoordinatorConfig:
+    poll_interval: float = 15.0
+
+    def __attrs_post_init__(self):
+        if not math.isfinite(self.poll_interval) or self.poll_interval <= 0:
+            raise ValueError("LG_COORDINATOR_POLL_INTERVAL must be finite and > 0")
+
+    @classmethod
+    def from_env(cls):
+        values = {}
+        for field in attr.fields(cls):
+            env_name = f"LG_COORDINATOR_{field.name.upper()}"
+            try:
+                values[field.name] = field.type(os.environ.get(env_name, field.default))
+            except ValueError as e:
+                raise ValueError(f"{env_name} must be a valid {field.type.__name__}") from e
+        return cls(**values)
+
+
 class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
-    def __init__(self, *, debug=False) -> None:
+    def __init__(self, config: CoordinatorConfig, *, debug=False) -> None:
+        if config is None:
+            raise TypeError("config must not be None")
+        self.config = config
         self.places: dict[str, Place] = {}
         self.reservations = {}
         self.poll_tasks = []
@@ -268,7 +293,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
     async def poll(self, step_func):
         while not self.loop.is_closed():
             try:
-                await asyncio.sleep(15.0)
+                await asyncio.sleep(self.config.poll_interval)
                 await step_func()
             except asyncio.CancelledError:
                 break
@@ -1269,6 +1294,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
 async def serve(listen, cleanup, server_credentials=None, debug=False) -> None:
     asyncio.current_task().set_name("coordinator-serve")
+    config = CoordinatorConfig.from_env()
     # It seems since https://github.com/grpc/grpc/pull/34647, the
     # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
     # so set it as well.
@@ -1285,7 +1311,7 @@ async def serve(listen, cleanup, server_credentials=None, debug=False) -> None:
     server = grpc.aio.server(
         options=channel_options,
     )
-    coordinator = Coordinator(debug=debug)
+    coordinator = Coordinator(config, debug=debug)
     labgrid_coordinator_pb2_grpc.add_CoordinatorServicer_to_server(coordinator, server)
     # enable reflection for use with grpcurl
     reflection.enable_server_reflection(

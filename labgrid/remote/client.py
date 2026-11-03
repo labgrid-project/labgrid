@@ -123,6 +123,9 @@ class ClientSession:
     prog = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     args = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(argparse.Namespace)))
     monitor = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    _subscribe_resources = attr.ib(
+        default=True, kw_only=True, alias="_subscribe_resources", validator=attr.validators.instance_of(bool)
+    )
 
     def gethostname(self):
         return os.environ.get("LG_HOSTNAME", gethostname())
@@ -192,9 +195,10 @@ class ClientSession:
         msg = labgrid_coordinator_pb2.ClientInMessage()
         msg.subscribe.all_places = True
         self.out_queue.put_nowait(msg)
-        msg = labgrid_coordinator_pb2.ClientInMessage()
-        msg.subscribe.all_resources = True
-        self.out_queue.put_nowait(msg)
+        if self._subscribe_resources:
+            msg = labgrid_coordinator_pb2.ClientInMessage()
+            msg.subscribe.all_resources = True
+            self.out_queue.put_nowait(msg)
         await self.sync_with_coordinator()
         if self.stopping.is_set():
             raise ServerError("Could not connect to coordinator")
@@ -1994,6 +1998,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     parser.add_argument("-P", "--proxy", type=str, help="proxy connections via given ssh host")
+    parser.set_defaults(needs_resources=True)
     subparsers = parser.add_subparsers(
         dest="command",
         title="available subcommands",
@@ -2026,13 +2031,13 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument("-a", "--acquired", action="store_true")
     subparser.add_argument("-r", "--released", action="store_true")
     subparser.add_argument("--sort-last-changed", action="store_true", help="sort by last changed date (oldest first)")
-    subparser.set_defaults(func=ClientSession.print_places)
+    subparser.set_defaults(func=ClientSession.print_places, needs_resources=False)
 
     subparser = subparsers.add_parser("who", help="list acquired places by user")
     subparser.add_argument(
         "-e", "--show-exporters", action="store_true", help="show exporters currently used by each place"
     )
-    subparser.set_defaults(func=ClientSession.print_who)
+    subparser.set_defaults(func=ClientSession.print_who, needs_resources=False)
 
     subparser = subparsers.add_parser("show", help="show a place and related resources")
     subparser.set_defaults(func=ClientSession.print_place)
@@ -2041,39 +2046,39 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         "create",
         help="add a new place with the name specified via --place or the LG_PLACE environment variable",
     )
-    subparser.set_defaults(func=ClientSession.add_place)
+    subparser.set_defaults(func=ClientSession.add_place, needs_resources=False)
 
     subparser = subparsers.add_parser("delete", help="delete an existing place")
-    subparser.set_defaults(func=ClientSession.del_place)
+    subparser.set_defaults(func=ClientSession.del_place, needs_resources=False)
 
     subparser = subparsers.add_parser("add-alias", help="add an alias to a place")
     subparser.add_argument("alias")
-    subparser.set_defaults(func=ClientSession.add_alias)
+    subparser.set_defaults(func=ClientSession.add_alias, needs_resources=False)
 
     subparser = subparsers.add_parser("del-alias", help="delete an alias from a place")
     subparser.add_argument("alias")
-    subparser.set_defaults(func=ClientSession.del_alias)
+    subparser.set_defaults(func=ClientSession.del_alias, needs_resources=False)
 
     subparser = subparsers.add_parser("set-comment", help="update the place comment")
     subparser.add_argument("comment", nargs="+")
-    subparser.set_defaults(func=ClientSession.set_comment)
+    subparser.set_defaults(func=ClientSession.set_comment, needs_resources=False)
 
     subparser = subparsers.add_parser("set-tags", help="update the place tags")
     subparser.add_argument("tags", metavar="KEY=VALUE", nargs="+", help="use an empty value for deletion")
-    subparser.set_defaults(func=ClientSession.set_tags)
+    subparser.set_defaults(func=ClientSession.set_tags, needs_resources=False)
 
     subparser = subparsers.add_parser("add-match", help="add one (or multiple) match pattern(s) to a place")
     subparser.add_argument("patterns", metavar="PATTERN", nargs="+")
-    subparser.set_defaults(func=ClientSession.add_match)
+    subparser.set_defaults(func=ClientSession.add_match, needs_resources=False)
 
     subparser = subparsers.add_parser("del-match", help="delete one (or multiple) match pattern(s) from a place")
     subparser.add_argument("patterns", metavar="PATTERN", nargs="+")
-    subparser.set_defaults(func=ClientSession.del_match)
+    subparser.set_defaults(func=ClientSession.del_match, needs_resources=False)
 
     subparser = subparsers.add_parser("add-named-match", help="add one match pattern with a name to a place")
     subparser.add_argument("pattern", metavar="PATTERN")
     subparser.add_argument("name", metavar="NAME")
-    subparser.set_defaults(func=ClientSession.add_named_match)
+    subparser.set_defaults(func=ClientSession.add_named_match, needs_resources=False)
 
     subparser = subparsers.add_parser("acquire", aliases=("lock",), help="acquire a place")
     subparser.add_argument(
@@ -2085,7 +2090,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument(
         "-k", "--kick", action="store_true", help="release a place even if it is acquired by a different user"
     )
-    subparser.set_defaults(func=ClientSession.release)
+    subparser.set_defaults(func=ClientSession.release, needs_resources=False)
 
     subparser = subparsers.add_parser(
         "release-from",
@@ -2094,11 +2099,11 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         "meaning it may be acquired by another user or not at all.",
     )
     subparser.add_argument("acquired", metavar="HOST/USER", help="User and host to match against when releasing")
-    subparser.set_defaults(func=ClientSession.release_from)
+    subparser.set_defaults(func=ClientSession.release_from, needs_resources=False)
 
     subparser = subparsers.add_parser("allow", help="allow another user to access a place")
     subparser.add_argument("user", help="<host>/<username>")
-    subparser.set_defaults(func=ClientSession.allow)
+    subparser.set_defaults(func=ClientSession.allow, needs_resources=False)
 
     subparser = subparsers.add_parser("env", help="generate a labgrid environment file for a place")
     subparser.set_defaults(func=ClientSession.print_env)
@@ -2329,7 +2334,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         "--prio", type=float, default=0.0, help="priority relative to other reservations (default 0)"
     )
     subparser.add_argument("filters", metavar="KEY=VALUE", nargs="+", help="required tags")
-    subparser.set_defaults(func=ClientSession.create_reservation)
+    subparser.set_defaults(func=ClientSession.create_reservation, needs_resources=False)
 
     subparser = subparsers.add_parser("cancel-reservation", help="cancel a reservation")
     subparser.add_argument(
@@ -2339,7 +2344,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         help="the reservation id (previously called token)",
         metavar="reservation-id",
     )
-    subparser.set_defaults(func=ClientSession.cancel_reservation)
+    subparser.set_defaults(func=ClientSession.cancel_reservation, needs_resources=False)
 
     subparser = subparsers.add_parser("wait", help="wait for a reservation to be allocated")
     subparser.add_argument(
@@ -2349,10 +2354,10 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         help="the reservation id (previously called token)",
         metavar="reservation-id",
     )
-    subparser.set_defaults(func=ClientSession.wait_reservation)
+    subparser.set_defaults(func=ClientSession.wait_reservation, needs_resources=False)
 
     subparser = subparsers.add_parser("reservations", help="list current reservations")
-    subparser.set_defaults(func=ClientSession.print_reservations)
+    subparser.set_defaults(func=ClientSession.print_reservations, needs_resources=False)
 
     subparser = subparsers.add_parser(
         "export", help="export driver information to a file (needs environment with drivers)"
@@ -2369,7 +2374,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.set_defaults(func=ClientSession.export)
 
     subparser = subparsers.add_parser("version", help="show version")
-    subparser.set_defaults(func=ClientSession.print_version)
+    subparser.set_defaults(func=ClientSession.print_version, needs_resources=False)
 
     adb_subparser = subparsers.add_parser("adb", help="Run Android Debug Bridge")
     adb_subparser.add_argument("--name", "-n", help="optional resource name")
@@ -2426,6 +2431,9 @@ def main():
     if args.initial_state is None:
         args.initial_state = initial_state
 
+    if args.command == "complete":
+        args.needs_resources = args.type == "resources"
+
     if args.command in ["cancel-reservation", "wait"] and args.reservation_id is None:
         reservation_id = _get_reservation_id_from_env()
         if reservation_id:
@@ -2476,6 +2484,7 @@ def main():
         "env": env,
         "role": role,
         "prog": parser.prog,
+        "_subscribe_resources": args.needs_resources,
     }
 
     if args.command and args.command != "help":

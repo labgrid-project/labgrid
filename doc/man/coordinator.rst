@@ -40,6 +40,20 @@ OPTIONS
 --pystuck-port PORT
     use a different pystuck port than 6666
 
+ENVIRONMENT
+-----------
+
+``LG_COORDINATOR_POLL_INTERVAL``
+    Delay in seconds between runs of each coordinator polling task.
+    These tasks save pending state changes, synchronize resources and schedule
+    reservations.
+    A shorter interval makes periodic checks for expired reservations more frequent,
+    at the cost of running these tasks more often.
+    Polling can take longer if the coordinator is busy or an exporter fails.
+
+This variable is read and validated by the coordinator before the gRPC server
+is created.
+
 TLS WITH A REVERSE PROXY
 ------------------------
 

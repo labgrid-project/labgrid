@@ -706,7 +706,7 @@ class SiSPMPowerPort(USBResource):
     Args:
         index (int): port index
     """
-    index = attr.ib(default=0, validator=attr.validators.instance_of(int))
+    index = attr.ib(default=None, validator=attr.validators.instance_of(int))
 
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))

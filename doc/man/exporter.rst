@@ -25,7 +25,7 @@ OPTIONS
 -------
 -h, --help
     display command line help
--x, --coordinator
+-c, --coordinator
     coordinator ``HOST[:PORT]`` to connect to, defaults to ``127.0.0.1:20408``
 --tls
     enable TLS gRPC channel
@@ -41,6 +41,10 @@ OPTIONS
     use fully qualified domain name as default for hostname
 -d, --debug
     enable debug mode
+--pystuck
+    enable `pystuck <https://github.com/alonho/pystuck>`_ for debugging
+--pystuck-port PORT
+    use a different pystuck port than 6667
 
 -i / --isolated
 ~~~~~~~~~~~~~~~

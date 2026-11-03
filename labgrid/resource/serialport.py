@@ -24,7 +24,7 @@ class NetworkSerialPort(NetworkResource):
     accessed via rfc2217 or tcp raw.
 
     Args:
-        port (str): socket port to connect to
+        port (int): socket port to connect to
         speed (int): speed of the port e.g. 9800
         protocol (str): connection protocol: "raw" or "rfc2217"
     """

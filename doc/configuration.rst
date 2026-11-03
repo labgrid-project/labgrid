@@ -61,7 +61,7 @@ The example would access the serial port on computer
 
 Arguments:
   - host (str): hostname of the remote host
-  - port (str): TCP port on the remote host to connect to
+  - port (int): TCP port on the remote host to connect to
   - speed (int, default=115200): baud rate of the serial port
   - protocol (str, default="rfc2217"): protocol used for connection: raw or
     rfc2217
@@ -822,7 +822,7 @@ specific device from all connected supported devices use the
      channels: 'D0=CLK,D1=DATA'
 
 Arguments:
-  - driver (str): name of the sigrok driver to use
+  - driver (str, default="demo"): name of the sigrok driver to use
   - channels (str): optional, channel mapping as described in the
     ``sigrok-cli`` man page
   - channel_group (str): optional, channel group as described in the
@@ -927,6 +927,8 @@ RemoteAndroidUSBFastboot
 ~~~~~~~~~~~~~~~~~~~~~~~~
 A :any:`RemoteAndroidUSBFastboot` describes a `AndroidUSBFastboot`_ resource
 available on a remote computer.
+Previously, this resource was named NetworkAndroidFastboot and this name is
+still supported for backwards compatibility.
 
 AndroidNetFastboot
 ~~~~~~~~~~~~~~~~~~
@@ -1077,6 +1079,21 @@ Arguments:
 Used by:
   - None
 
+EthernetPort
+~~~~~~~~~~~~
+An :any:`EthernetPort` resource describes a port on an Ethernet switch without
+any access method.
+The exporter exports a `SNMPEthernetPort`_ as an ``EthernetPort`` to the
+clients, where it is used by ``labgrid-client`` to look up the IP address of
+the device (e.g. for the ``ssh`` and ``scp`` subcommands).
+
+Arguments:
+  - switch (str): host name of the Ethernet switch
+  - interface (str): interface name
+
+Used by:
+  - None
+
 SigrokUSBDevice
 ~~~~~~~~~~~~~~~
 A :any:`SigrokUSBDevice` resource describes a *Sigrok* USB device.
@@ -1099,6 +1116,7 @@ Arguments:
 
 Used by:
   - `SigrokDriver`_
+  - `SigrokDmmDriver`_
 
 NetworkSigrokUSBDevice
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -2058,7 +2076,6 @@ Binds to:
 
 Implements:
   - :any:`ConsoleProtocol`
-  - :any:`ResetProtocol`
 
 Arguments:
   - txdelay (float, default=0.0): time in seconds to wait before sending a chunk
@@ -2211,8 +2228,8 @@ Arguments:
   - interrupt (str, default="\\n"): string to interrupt autoboot (use ``\\x03`` for CTRL-C)
   - init_commands (tuple): optional, tuple of commands to execute after matching the
     prompt
-  - password_prompt (str, default="enter Password: "): regex to match the U-Boot password prompt
-  - bootstring (str): optional, regex to match on Linux Kernel boot
+  - password_prompt (str, default="enter Password:"): regex to match the U-Boot password prompt
+  - bootstring (str, default="Linux version \\d"): regex to match on Linux Kernel boot
   - boot_command (str, default="run bootcmd"): boot command for booting target
   - boot_commands (dict, default={}): boot commands by name for LinuxBootProtocol boot command
   - login_timeout (int, default=30): timeout for login prompt detection in seconds
@@ -3087,6 +3104,8 @@ Binds to:
     - `NetworkUSBSDMuxDevice`_
     - `USBSDWireDevice`_
     - `NetworkUSBSDWireDevice`_
+    - `USBSDWire3Device`_
+    - `NetworkUSBSDWire3Device`_
 
 Implements:
   - None (yet)
@@ -3405,7 +3424,7 @@ Arguments:
   - None
 
 The driver can be used in test cases by calling its ``set_mode()`` method with
-argument being "dut", "host", "off", or "client".
+argument being "dut" or "host".
 
 USBSDWire3Driver
 ~~~~~~~~~~~~~~~~
@@ -3493,7 +3512,8 @@ Arguments:
 Currently, it can be used by the ``labgrid-client`` ``tmc`` subcommands to show
 (and save) a screenshot, to show per channel measurements and to execute raw
 TMC commands.
-It only supports the *Keysight DSO-X 2000* series (with the USB ID ``0957:1798``),
+It supports the *Keysight DSO-X 2000* series (with the USB ID ``0957:1798``)
+and the *Tektronix TDS 2000* series (with the USB ID ``0699:0368``),
 but more devices can be added by extending ``on_activate()`` in
 ``labgrid/driver/usbtmcdriver.py`` and writing a corresponding backend in
 ``labgrid/driver/usbtmc/``.
@@ -3563,7 +3583,6 @@ Arguments:
   - script (str): optional, key in :ref:`images <labgrid-device-config-images>`
     containing the script to execute for writing of the flashable device
   - args (list of str): optional, list of arguments for flash script execution
-  - timeout (float): optional, timeout for script execution in seconds
 
 The FlashScriptDriver allows running arbitrary programs to flash a device.
 Some SoC or devices may require custom, one-off, or proprietary programs to
@@ -3890,6 +3909,7 @@ Binds to:
 
 Implements:
   - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 .. code-block:: yaml
 

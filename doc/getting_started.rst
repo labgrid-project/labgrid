@@ -86,8 +86,8 @@ onewire library version in addition to the normal installation.
 
 SNMP
 ++++
-SNMP support requires to additional packages, ``pysnmp`` and ``pysnmpmibs``. They
-are included in the ``snmp`` extra.
+SNMP support requires the additional package ``pysnmp``. It is included in
+the ``snmp`` extra.
 
 Modbus
 ++++++

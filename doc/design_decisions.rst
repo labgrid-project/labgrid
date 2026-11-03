@@ -53,7 +53,6 @@ In Scope
 - emulation of external services:
 
   - USB stick emulation
-  - external update services (Hawkbit)
 
 - bootstrap services:
 

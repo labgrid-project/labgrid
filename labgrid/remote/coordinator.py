@@ -986,6 +986,23 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self._publish_place(place)
         self.save_later()
 
+    async def _acquire_place_resources(self, place, owner):
+        assert self.lock.locked()
+
+        place.acquired = owner
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    if place.hasmatch(resource.path):
+                        resources.append(resource)
+
+        try:
+            await self._acquire_resources(place, resources)
+        except CoordinatorError:
+            place.acquired = None
+            raise
+
     @add_identity
     @locked
     async def AcquirePlace(self, request, context, *, identity):
@@ -1010,16 +1027,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
         # FIXME use the session object instead? or something else which
         # survives disconnecting clients?
-        place.acquired = username
-        resources = []
-        for _, session in sorted(self.exporters.items()):
-            for _, group in sorted(session.groups.items()):
-                for _, resource in sorted(group.items()):
-                    if not place.hasmatch(resource.path):
-                        continue
-                    resources.append(resource)
         try:
-            await self._acquire_resources(place, resources)
+            await self._acquire_place_resources(place, username)
         except CoordinatorError as e:
             reservation_returned = bool(place.reservation)
             if reservation_returned:

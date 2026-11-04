@@ -334,7 +334,7 @@ def test_place_del_no_name(coordinator):
         spawn.close()
         assert spawn.exitstatus != 0, spawn.before.strip()
 
-def test_remoteplace_target(place_acquire, tmpdir):
+def test_remoteplace_target(place_acquire, tmpdir, isolated_resource_managers):
     from labgrid.environment import Environment
     p = tmpdir.join("config.yaml")
     p.write(
@@ -354,7 +354,7 @@ def test_remoteplace_target(place_acquire, tmpdir):
     remote_place = t.get_resource("RemotePlace")
     assert remote_place.tags == {"board": "123board"}
 
-def test_remoteplace_target_without_env(request, place_acquire):
+def test_remoteplace_target_without_env(request, place_acquire, isolated_resource_managers):
     from labgrid import Target
     from labgrid.resource import RemotePlace
 

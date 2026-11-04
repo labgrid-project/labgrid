@@ -11,6 +11,8 @@ from labgrid.driver import DockerDriver
 from labgrid.resource.docker import DockerConstants
 from labgrid.exceptions import NoResourceFoundError
 
+pytestmark = pytest.mark.usefixtures("isolated_resource_managers")
+
 pytest.importorskip("docker")
 
 
@@ -89,25 +91,9 @@ def docker_env_for_local_container(tmp_path_factory):
 @pytest.fixture
 def docker_target(docker_env):
     """Get a labgrid Target instance from the Environment instance
-    given by docker_env. When tearing down the Target instance, make sure
-    singleton ResourceManager is "reset".
+    given by docker_env.
     """
-    t = docker_env.get_target()
-    yield t
-
-    # Fake! In real life, ResourceManager is intended to be a singleton.
-    # The class is created only once - when python parses common.py.
-    # But this means that the class with its "instances" attribute survives
-    # from test case to test case. This is not what we want. On the contrary,
-    # we want each of test_docker_with_daemon and test_docker_without_daemon
-    # to run with a *fresh* instance of the ResourceManager singleton.
-    #
-    # Luckily it is easy to "reset" ResourceManager. The singleton is kept
-    # in attribute "instances" so by resetting "instances" to {}, next test
-    # case will force creation of a fresh ResourceManager instance.
-    from labgrid.resource import ResourceManager
-
-    ResourceManager.instances = {}
+    return docker_env.get_target()
 
 
 @pytest.fixture
@@ -125,12 +111,7 @@ def command(docker_target):
 @pytest.fixture
 def docker_target_for_local_image(docker_env_for_local_container):
     """Same as `docker_target` but uses a different image uri"""
-    t = docker_env_for_local_container.get_target()
-    yield t
-
-    from labgrid.resource import ResourceManager
-
-    ResourceManager.instances = {}
+    return docker_env_for_local_container.get_target()
 
 
 @pytest.fixture

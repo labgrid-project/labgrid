@@ -219,6 +219,26 @@ class Coordinator(LabgridComponent):
         self.start_reader()
 
 
+@pytest.fixture
+def isolated_resource_managers(monkeypatch):
+    """Provides fresh ResourceManager singletons and stops their coordinator sessions afterwards."""
+    from labgrid.remote.client import ClientSession
+    from labgrid.resource.common import ResourceManager
+
+    instances = {}
+    monkeypatch.setattr(ResourceManager, "instances", instances)
+
+    yield
+
+    for manager in instances.values():
+        session = getattr(manager, "session", None)
+        # tests may install dummy sessions without an event loop
+        if not isinstance(session, ClientSession) or session.loop.is_running():
+            continue
+        session.loop.run_until_complete(session.stop())
+        session.loop.run_until_complete(session.close())
+
+
 @pytest.fixture(scope='function')
 def target():
     return Target('Test')

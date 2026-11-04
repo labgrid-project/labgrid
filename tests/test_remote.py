@@ -16,7 +16,6 @@ from labgrid.remote.exporter import Exporter, SerialPortExport
 from labgrid.remote.generated import labgrid_coordinator_pb2
 from labgrid.remote.generated import labgrid_coordinator_pb2_grpc
 from labgrid.resource import RemotePlace
-from labgrid.resource.common import ResourceManager
 from labgrid.util.yaml import dump
 
 
@@ -432,7 +431,6 @@ def _make_remote_place_config(tmpdir, options=None):
 
 
 def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_env=None):
-    monkeypatch.setattr(ResourceManager, "instances", {})
     monkeypatch.delenv("LG_COORDINATOR_TLS", raising=False)
 
     if tls_env is not None:
@@ -490,7 +488,9 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
         pytest.param({"coordinator_tls": "false"}, "true", False, None, id="config-string-overrides-env"),
     ],
 )
-def test_remote_place_client_credentials(monkeypatch, tmpdir, options, tls_env, expected_tls, expected_cacert):
+def test_remote_place_client_credentials(
+    monkeypatch, tmpdir, options, tls_env, expected_tls, expected_cacert, isolated_resource_managers
+):
     cert_path, _ = setup_tmp_cert_key(tmpdir)
     assert cert_path.basename == "cert.pem"
     if expected_cacert:

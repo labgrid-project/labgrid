@@ -2,15 +2,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from labgrid.resource.common import ResourceManager
 from labgrid.resource.suggest import Suggester
 
 
 @pytest.fixture
-def fake_udev(monkeypatch):
-    """Replace pyudev with a mock so Suggester can be constructed on any host
-    and use fresh resource managers so the test does not leak resources."""
-    monkeypatch.setattr(ResourceManager, 'instances', {})
+def fake_udev(monkeypatch, isolated_resource_managers):
+    """Replace pyudev with a mock so Suggester can be constructed on any host."""
     monkeypatch.setattr('labgrid.resource.udev.import_module', lambda name: MagicMock())
 
 

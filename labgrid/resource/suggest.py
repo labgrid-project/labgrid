@@ -53,7 +53,7 @@ class Suggester:
         self.resources.append(AlteraUSBBlaster(**args))
         self.resources.append(RKUSBLoader(**args))
         self.resources.append(USBNetworkInterface(**args))
-        self.resources.append(SiSPMPowerPort(**args))
+        self.resources.append(SiSPMPowerPort(**args, index=1))
         self.resources.append(USBAudioInput(**args))
         self.resources.append(LXAUSBMux(**args))
         self.resources.append(HIDRelay(**args))
@@ -86,7 +86,7 @@ class Suggester:
                 dump({cls: {"match": suggestion}}).strip(),
                 '  ',
             ))
-            if cls == 'USBPowerPort':
+            if cls in ('USBPowerPort', 'SiSPMPowerPort'):
                 print('    index: ?')
             if cls == 'MatchedSysfsGPIO':
                 print('    pin: ?')

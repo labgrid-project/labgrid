@@ -7,16 +7,17 @@ import asyncio
 import grpc
 import signal
 import sys
+import textwrap
 import time
 
 from labgrid import Environment, Target
-from labgrid.driver import SSHDriver, SerialDriver
+from labgrid.driver import NetworkPowerDriver, SSHDriver, SerialDriver
 from labgrid.remote.common import Place, ResourceEntry, get_client_credentials, get_metadata_single_value_by_key
 from labgrid.remote.coordinator import get_server_credentials
 from labgrid.remote.exporter import Exporter, SerialPortExport
 from labgrid.remote.generated import labgrid_coordinator_pb2
 from labgrid.remote.generated import labgrid_coordinator_pb2_grpc
-from labgrid.resource import NetworkSerialPort, NetworkService, RemotePlace
+from labgrid.resource import NetworkPowerPort, NetworkSerialPort, NetworkService, RawSerialPort, RemotePlace
 from labgrid.util.yaml import dump
 
 
@@ -620,3 +621,64 @@ def test_remote_place_config_drivers_bind(dummy_session):
     assert serial_driver.port is target.get_resource(NetworkSerialPort, wait_avail=False)
     ssh_driver = target.get_driver(SSHDriver, activate=False)
     assert ssh_driver.networkservice is target.get_resource(NetworkService, wait_avail=False)
+
+
+def test_remote_place_config_environment(dummy_session, tmpdir, caplog):
+    # matched resource
+    dummy_session.resources[("power", "NetworkPowerPort")] = ResourceEntry(
+        {"cls": "NetworkPowerPort", "params": {"model": "gude", "host": "localhost", "index": 1}, "avail": True}
+    )
+    # remote place config:
+    dummy_session.place.remote_place_config = textwrap.dedent(
+        """\
+            resources:
+              NetworkService:
+                address: "192.168.1.42"
+                username: "root"
+            drivers:
+              SerialDriver: {}
+            options:
+              shared-option: "remote"
+              remote-option: 23
+        """
+    )
+    # local environment config
+    config = tmpdir.join("env.yaml")
+    config.write(
+        textwrap.dedent(
+            """\
+            targets:
+              main:
+                resources:
+                  # defined before RemotePlace, so remote place config's SerialDriver can bind to it
+                  RawSerialPort:
+                    port: "/dev/ttyUSB0"
+                  RemotePlace:
+                    name: "test"
+                drivers:
+                  NetworkPowerDriver: {}
+                  SSHDriver: {}
+                options:
+                  shared-option: "local"
+                  local-option: 42
+            """
+        )
+    )
+
+    target = Environment(str(config)).get_target()
+
+    # env config's NetworkPowerDriver binds to matched NetworkPowerPort resource
+    power_driver = target.get_driver(NetworkPowerDriver, activate=False)
+    assert power_driver.port is target.get_resource(NetworkPowerPort, wait_avail=False)
+
+    # env config's SSHDriver binds to remote place config's NetworkService resource
+    ssh_driver = target.get_driver(SSHDriver, activate=False)
+    assert ssh_driver.networkservice is target.get_resource(NetworkService, wait_avail=False)
+
+    # remote place config's SerialDriver binds to local RawSerialPort resource
+    serial_driver = target.get_driver(SerialDriver, activate=False)
+    assert serial_driver.port is target.get_resource(RawSerialPort, wait_avail=False)
+
+    # local options take precedence over the remote place config's options
+    assert "ignoring remote place config option 'shared-option' of place test, environment config takes precedence" in caplog.text
+    assert target.options == {"shared-option": "local", "remote-option": 23, "local-option": 42}

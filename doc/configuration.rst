@@ -607,11 +607,32 @@ interface, not CBUS ``ftdi-cbus`` gpiochips or EEPROM-configured ACBUS
 functions.
 
 Supported devices are FT2232-style devices (``0403:6010``, interfaces 1..2),
-FT4232H (``0403:6011``, interfaces 1..4), and FT232H (``0403:6014``,
-interface 1). For each interface, ``index`` selects bit ``0`` to ``7`` on
-that interface's data bus.
+FT4232H (``0403:6011``, interfaces 1..4), FT232H (``0403:6014``,
+interface 1), and FT-X series devices (``0403:6015``, interface 1). For each
+interface, ``index`` selects bit ``0`` to ``7`` on that interface's data bus.
 Writes use a read-modify-write cycle on the selected 8-bit interface to avoid
 changing unrelated bits managed by labgrid.
+
+On FT-X series devices the data bus uses the UART pins.
+
+===== ==========
+Index Pin
+===== ==========
+``0`` ``TXD``
+``1`` ``RXD``
+``2`` ``RTS#``
+``3`` ``CTS#``
+``4`` ``DTR#``
+``5`` ``DSR#``
+``6`` ``DCD#``
+``7`` ``RI#``
+===== ==========
+
+Smaller packages only bring out some of these pins. The FT234XD on the
+UMFT234XF module, for example, only has ``TXD``, ``RXD``, ``RTS#`` and
+``CTS#``.
+These chips have a single interface, so the serial port cannot be used while
+the interface is used for GPIO.
 
 .. code-block:: yaml
 

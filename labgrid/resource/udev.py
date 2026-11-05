@@ -859,6 +859,7 @@ class FTDIGPIO(USBResource):
         if match not in [("0403", "6010"),  # FT2232C/D/H Dual UART/FIFO IC
                          ("0403", "6011"),  # FT4232H Quad UART/MPSSE IC
                          ("0403", "6014"),  # FT232HL/Q
+                         ("0403", "6015"),  # FT-X series (FT230X, FT231X, FT234XD, ...)
                          ]:
             return False
 

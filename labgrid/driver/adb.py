@@ -28,7 +28,7 @@ class ADBRebootMode(Enum):
 class ADBDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, ResetProtocol):
     """ADB driver to execute commands, transfer files and reset devices via ADB."""
 
-    bindings = {"device": {"USBADBDevice", "RemoteUSBADBDevice", "NetworkADBDevice"}}
+    bindings = {"device": {"USBADBDevice", "RemoteUSBADBDevice", "NetworkUSBADBDevice", "NetworkADBDevice"}}
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

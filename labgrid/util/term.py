@@ -17,6 +17,79 @@ EXIT_WINDOW = .5    # seconds allowed between the two exit characters
 
 logger = logging.getLogger("ClientSession")
 
+
+class ConsolePrompt:
+    """Line editor for the console command prompt.
+
+    feed() takes raw terminal input and returns (output, status, rest): output
+    is to be written to the terminal, status is None while editing, "enter"
+    (the line is in self.line), "cancel" (Ctrl-C) or "literal" (Ctrl-T, to be
+    sent to the target) and rest is the input following a final status.
+    Tab completes the line against the command names or lists the matches.
+    Escape sequences (e.g. arrow keys) are ignored.
+    """
+
+    CONSOLE_CONTROL_PROMPT = "labgrid> "
+
+    def __init__(self, commands):
+        self.commands = sorted(commands)
+        self.line = ""
+        self._esc = None
+
+    def start(self):
+        self.line = ""
+        self._esc = None
+        return f"\r\n{self.CONSOLE_CONTROL_PROMPT}".encode()
+
+    def feed(self, data):
+        out = []
+        for i, b in enumerate(data):
+            status = self._key(b, out)
+            if status:
+                return "".join(out).encode(), status, data[i + 1 :]
+        return "".join(out).encode(), None, b""
+
+    def _key(self, b, out):
+        if self._esc == "esc":
+            # skip the escape sequence (CSI/SS3) or Alt+key
+            self._esc = "seq" if b in b"[O" else None
+        elif self._esc == "seq":
+            if 0x40 <= b <= 0x7E:
+                self._esc = None
+        elif b == 0x1B:
+            self._esc = "esc"
+        elif b in b"\r\n":
+            out.append("\r\n")
+            return "enter"
+        elif b == 0x03:
+            out.append("\r\n")
+            return "cancel"
+        elif b == 0x14:
+            out.append("\r\n")
+            return "literal"
+        elif b in b"\x7f\x08":
+            if self.line:
+                self.line = self.line[:-1]
+                out.append("\b \b")
+        elif b == 0x09:
+            out.append(self._complete())
+        elif 0x20 <= b < 0x7F:
+            self.line += chr(b)
+            out.append(chr(b))
+        return None
+
+    def _complete(self):
+        matches = [c for c in self.commands if c.startswith(self.line)]
+        prefix = os.path.commonprefix(matches)
+        if len(prefix) > len(self.line):
+            added = prefix[len(self.line) :]
+            self.line = prefix
+            return added
+        if not matches:
+            return "\a"
+        return f"\r\n{'  '.join(matches)}\r\n{self.CONSOLE_CONTROL_PROMPT}{self.line}"
+
+
 async def external(check_allowed, host, port, resource, logfile, listen_only):
     """Start an external terminal sessions
 

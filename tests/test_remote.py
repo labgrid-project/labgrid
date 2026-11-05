@@ -431,8 +431,6 @@ def _make_remote_place_config(tmpdir, options=None):
 
 
 def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_env=None):
-    monkeypatch.delenv("LG_COORDINATOR_TLS", raising=False)
-
     if tls_env is not None:
         monkeypatch.setenv("LG_COORDINATOR_TLS", tls_env)
 
@@ -517,7 +515,6 @@ def test_remote_place_client_credentials(
 def test_client_parser_tls_env_default(monkeypatch, tls_env, expected_tls):
     from labgrid.remote.client import get_parser
 
-    monkeypatch.delenv("LG_COORDINATOR_TLS", raising=False)
     if tls_env is not None:
         monkeypatch.setenv("LG_COORDINATOR_TLS", tls_env)
 

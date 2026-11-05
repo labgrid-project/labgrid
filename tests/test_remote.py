@@ -10,7 +10,7 @@ import sys
 import time
 
 from labgrid import Environment, Target
-from labgrid.remote.common import get_client_credentials, get_metadata_single_value_by_key
+from labgrid.remote.common import Place, get_client_credentials, get_metadata_single_value_by_key
 from labgrid.remote.coordinator import get_server_credentials
 from labgrid.remote.exporter import Exporter, SerialPortExport
 from labgrid.remote.generated import labgrid_coordinator_pb2
@@ -430,18 +430,37 @@ def _make_remote_place_config(tmpdir, options=None):
     return config
 
 
-def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_env=None):
-    if tls_env is not None:
-        monkeypatch.setenv("LG_COORDINATOR_TLS", tls_env)
+@pytest.fixture
+def dummy_session(monkeypatch, isolated_resource_managers):
+    """Replaces the RemotePlaceManager's coordinator session with a dummy serving the place "test"."""
 
     class DummySession:
         loop = None
 
+        def __init__(self):
+            self.place = Place("test")
+            self.resources = {}
+            self.start_kwargs = None
+
         def get_place(self, name):
-            return argparse.Namespace(tags={}, acquired_resources=[])
+            return self.place
 
         def get_target_resources(self, place):
-            return {}
+            return self.resources
+
+    session = DummySession()
+
+    def start_session(address, **kwargs):
+        session.start_kwargs = kwargs
+        return session
+
+    monkeypatch.setattr("labgrid.remote.client.start_session", start_session)
+    return session
+
+
+def _capture_remote_place_credentials(monkeypatch, tmpdir, dummy_session, *, options=None, tls_env=None):
+    if tls_env is not None:
+        monkeypatch.setenv("LG_COORDINATOR_TLS", tls_env)
 
     captured = {}
 
@@ -450,18 +469,14 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
         captured["cacert"] = cacert
         return "credentials" if tls else None
 
-    def start_session(address, *, extra=None, credentials=None, **kwargs):
-        captured["credentials"] = credentials
-        return DummySession()
-
     monkeypatch.setattr("labgrid.remote.common.get_client_credentials", get_client_credentials)
-    monkeypatch.setattr("labgrid.remote.client.start_session", start_session)
 
     config = _make_remote_place_config(tmpdir, options=options)
     env = Environment(str(config))
     target = Target("test", env=env)
     RemotePlace(target, name="test")
 
+    captured["credentials"] = dummy_session.start_kwargs["credentials"]
     return captured
 
 
@@ -487,14 +502,14 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
     ],
 )
 def test_remote_place_client_credentials(
-    monkeypatch, tmpdir, options, tls_env, expected_tls, expected_cacert, isolated_resource_managers
+    monkeypatch, tmpdir, dummy_session, options, tls_env, expected_tls, expected_cacert
 ):
     cert_path, _ = setup_tmp_cert_key(tmpdir)
     assert cert_path.basename == "cert.pem"
     if expected_cacert:
         expected_cacert = str(tmpdir.join(expected_cacert))
 
-    captured = _capture_remote_place_credentials(monkeypatch, tmpdir, options=options, tls_env=tls_env)
+    captured = _capture_remote_place_credentials(monkeypatch, tmpdir, dummy_session, options=options, tls_env=tls_env)
 
     assert captured["tls"] is expected_tls
     assert captured["cacert"] == expected_cacert

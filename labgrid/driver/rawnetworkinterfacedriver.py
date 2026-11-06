@@ -19,6 +19,7 @@ from ..util.managedfile import ManagedFile
 from ..util.timeout import Timeout
 from ..util.netns import NetNamespace
 from ..resource.common import NetworkResource
+from ..resource.remote import RemoteNetworkInterface
 
 
 @target_factory.reg_driver
@@ -398,6 +399,10 @@ class RawNetworkInterfaceDriver(Driver):
     @step()
     @contextlib.contextmanager
     def setup_netns(self, mac_address=None):
+        if not isinstance(self.iface, RemoteNetworkInterface):
+            yield NetNamespace.default(self.iface.ifname)
+            return
+
         with contextlib.ExitStack() as ctx:
             remote_ns = ctx.enter_context(self._netns(self.iface.host))
             local_ns = ctx.enter_context(self._netns(None))

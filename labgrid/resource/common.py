@@ -91,11 +91,10 @@ class NetworkResource(Resource):
 
     @property
     def command_prefix(self):
-        host = self.host
+        # imported locally to avoid a circular import
+        from ..util.proxy import proxymanager
 
-        if hasattr(self, 'extra'):
-            if self.extra.get('proxy_required'):
-                host = self.extra.get('proxy')
+        host = proxymanager.get_ssh_host(self)
 
         conn = sshmanager.get(host)
         prefix = conn.get_prefix()

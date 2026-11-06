@@ -70,6 +70,26 @@ class ProxyManager:
         return host, port
 
     @classmethod
+    def get_ssh_host(cls, res):
+        """get host to open a direct SSH connection to for exec/scp use (as
+        opposed to get_host_and_port's port-forwarding use)
+
+        Args:
+            res (Resource): The resource to retrieve the SSH host for
+
+        Returns:
+            str: extra['proxy'] if extra['proxy_required'] is set, otherwise
+                 res.host
+        """
+        assert isinstance(res, Resource)
+
+        extra = getattr(res, "extra", {})
+        if extra.get("proxy_required"):
+            return extra.get("proxy")
+
+        return res.host
+
+    @classmethod
     def get_url(cls, url, *, default_port=None):
         assert isinstance(url, str)
 

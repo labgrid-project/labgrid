@@ -172,6 +172,18 @@ class AddPlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class CreatePlaceRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class CreatePlaceResponse(_message.Message):
+    __slots__ = ("place",)
+    PLACE_FIELD_NUMBER: _ClassVar[int]
+    place: Place
+    def __init__(self, place: _Optional[_Union[Place, _Mapping]] = ...) -> None: ...
+
 class DeletePlaceRequest(_message.Message):
     __slots__ = ("name",)
     NAME_FIELD_NUMBER: _ClassVar[int]
@@ -182,6 +194,18 @@ class DeletePlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class GetPlaceRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class GetPlaceResponse(_message.Message):
+    __slots__ = ("place",)
+    PLACE_FIELD_NUMBER: _ClassVar[int]
+    place: Place
+    def __init__(self, place: _Optional[_Union[Place, _Mapping]] = ...) -> None: ...
+
 class GetPlacesRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
@@ -191,6 +215,50 @@ class GetPlacesResponse(_message.Message):
     PLACES_FIELD_NUMBER: _ClassVar[int]
     places: _containers.RepeatedCompositeFieldContainer[Place]
     def __init__(self, places: _Optional[_Iterable[_Union[Place, _Mapping]]] = ...) -> None: ...
+
+class ListPlacesRequest(_message.Message):
+    __slots__ = ("page_size", "page_token")
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    page_size: int
+    page_token: str
+    def __init__(self, page_size: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+
+class ListPlacesResponse(_message.Message):
+    __slots__ = ("places", "next_page_token")
+    PLACES_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    places: _containers.RepeatedCompositeFieldContainer[Place]
+    next_page_token: str
+    def __init__(self, places: _Optional[_Iterable[_Union[Place, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...
+
+class ListResourcesRequest(_message.Message):
+    __slots__ = ("page_size", "page_token")
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    page_size: int
+    page_token: str
+    def __init__(self, page_size: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+
+class ListResourcesResponse(_message.Message):
+    __slots__ = ("resources", "next_page_token")
+    RESOURCES_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    resources: _containers.RepeatedCompositeFieldContainer[Resource]
+    next_page_token: str
+    def __init__(self, resources: _Optional[_Iterable[_Union[Resource, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...
+
+class ListPlaceResourcesRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class ListPlaceResourcesResponse(_message.Message):
+    __slots__ = ("resources",)
+    RESOURCES_FIELD_NUMBER: _ClassVar[int]
+    resources: _containers.RepeatedCompositeFieldContainer[Resource]
+    def __init__(self, resources: _Optional[_Iterable[_Union[Resource, _Mapping]]] = ...) -> None: ...
 
 class Place(_message.Message):
     __slots__ = ("name", "aliases", "comment", "tags", "matches", "acquired", "acquired_resources", "allowed", "created", "changed", "reservation")
@@ -356,6 +424,30 @@ class AllowPlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class SharePlaceRequest(_message.Message):
+    __slots__ = ("name", "user")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    USER_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    user: str
+    def __init__(self, name: _Optional[str] = ..., user: _Optional[str] = ...) -> None: ...
+
+class SharePlaceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class UnsharePlaceRequest(_message.Message):
+    __slots__ = ("name", "user")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    USER_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    user: str
+    def __init__(self, name: _Optional[str] = ..., user: _Optional[str] = ...) -> None: ...
+
+class UnsharePlaceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
 class CreateReservationRequest(_message.Message):
     __slots__ = ("filters", "prio")
     class FiltersEntry(_message.Message):
@@ -445,6 +537,18 @@ class PollReservationResponse(_message.Message):
     reservation: Reservation
     def __init__(self, reservation: _Optional[_Union[Reservation, _Mapping]] = ...) -> None: ...
 
+class RefreshReservationRequest(_message.Message):
+    __slots__ = ("reservation_id",)
+    RESERVATION_ID_FIELD_NUMBER: _ClassVar[int]
+    reservation_id: str
+    def __init__(self, reservation_id: _Optional[str] = ...) -> None: ...
+
+class RefreshReservationResponse(_message.Message):
+    __slots__ = ("reservation",)
+    RESERVATION_FIELD_NUMBER: _ClassVar[int]
+    reservation: Reservation
+    def __init__(self, reservation: _Optional[_Union[Reservation, _Mapping]] = ...) -> None: ...
+
 class GetReservationsResponse(_message.Message):
     __slots__ = ("reservations",)
     RESERVATIONS_FIELD_NUMBER: _ClassVar[int]
@@ -454,3 +558,19 @@ class GetReservationsResponse(_message.Message):
 class GetReservationsRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class ListReservationsRequest(_message.Message):
+    __slots__ = ("page_size", "page_token")
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    page_size: int
+    page_token: str
+    def __init__(self, page_size: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+
+class ListReservationsResponse(_message.Message):
+    __slots__ = ("reservations", "next_page_token")
+    RESERVATIONS_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    reservations: _containers.RepeatedCompositeFieldContainer[Reservation]
+    next_page_token: str
+    def __init__(self, reservations: _Optional[_Iterable[_Union[Reservation, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...

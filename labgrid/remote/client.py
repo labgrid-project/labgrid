@@ -529,11 +529,11 @@ class ClientSession:
             host, user = place.acquired.split("/")
             if user != self.getuser():
                 raise UserError(
-                    f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}"
+                    f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()}"
                 )
             if host != self.gethostname():
                 raise UserError(
-                    f"place {place.name} is not acquired on this computer, acquired on {host}. To allow this host, use labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()} on the other host"
+                    f"place {place.name} is not acquired on this computer, acquired on {host}. To share with this host, use labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()} on the other host"
                 )
 
     def get_place(self, place=None):
@@ -609,15 +609,29 @@ class ClientSession:
                         print(f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}):")  # pylint: disable=line-too-long
                         print(indent(pformat(resource.asdict()), prefix="  "))
 
-    async def add_place(self):
-        """Add a place to the coordinator"""
+    async def _call_with_fallback(self, rpc, request, fallback_rpc, fallback_request):
+        """Use the legacy RPC only when the coordinator does not implement the new one."""
+        try:
+            return await rpc(request)
+        except grpc.aio.AioRpcError as e:
+            if e.code() != grpc.StatusCode.UNIMPLEMENTED:
+                raise
+        return await fallback_rpc(fallback_request)
+
+    async def create_place(self):
+        """Create a place on the coordinator"""
         name = self.args.place
         if not name:
             raise UserError("missing place name. Set with -p <place> or via env var LG_PLACE")
 
-        request = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
+        request = labgrid_coordinator_pb2.CreatePlaceRequest(name=name)
         try:
-            await self.stub.AddPlace(request)
+            await self._call_with_fallback(
+                self.stub.CreatePlace,
+                request,
+                self.stub.AddPlace,
+                labgrid_coordinator_pb2.AddPlaceRequest(name=name),
+            )
             await self.sync_with_coordinator()
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
@@ -781,17 +795,17 @@ class ClientSession:
         place = self.get_place(place)
         if place.acquired:
             host, user = place.acquired.split("/")
-            allowhelp = f"'labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}' on {host}."
+            sharehelp = f"'labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()}' on {host}."
             if self.getuser() == user:
                 if self.gethostname() == host:
                     raise UserError(f"You have already acquired place {place.name}.")
                 else:
                     raise UserError(
-                        f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {allowhelp}"
+                        f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {sharehelp}"
                     )
             else:
                 raise UserError(
-                    f"Place {place.name} is already acquired by {place.acquired}. To work simultaneously, {user} can execute {allowhelp}"
+                    f"Place {place.name} is already acquired by {place.acquired}. To work simultaneously, {user} can execute {sharehelp}"
                 )
         if not self.args.allow_unmatched:
             self.check_matches(place)
@@ -858,20 +872,42 @@ class ClientSession:
 
         print(f"{self.args.acquired} has released place {place.name}")
 
-    async def allow(self):
-        """Allow another use access to a previously acquired place"""
+    async def share(self):
+        """Share access to a previously acquired place with another user"""
         place = self.get_acquired_place()
         if "/" not in self.args.user:
             raise UserError(f"user {self.args.user} must be in <host>/<username> format")
-        request = labgrid_coordinator_pb2.AllowPlaceRequest(placename=place.name, user=self.args.user)
+        request = labgrid_coordinator_pb2.SharePlaceRequest(name=place.name, user=self.args.user)
 
         try:
-            await self.stub.AllowPlace(request)
+            await self._call_with_fallback(
+                self.stub.SharePlace,
+                request,
+                self.stub.AllowPlace,
+                labgrid_coordinator_pb2.AllowPlaceRequest(placename=place.name, user=self.args.user),
+            )
             await self.sync_with_coordinator()
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
 
-        print(f"allowed {self.args.user} for place {place.name}")
+        print(f"shared place {place.name} with {self.args.user}")
+
+    async def unshare(self):
+        """Remove another user's access to a previously acquired place"""
+        place = self.get_acquired_place()
+        if "/" not in self.args.user:
+            raise UserError(f"user {self.args.user} must be in <host>/<username> format")
+        request = labgrid_coordinator_pb2.UnsharePlaceRequest(name=place.name, user=self.args.user)
+
+        try:
+            await self.stub.UnsharePlace(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNIMPLEMENTED:
+                raise ServerError("This coordinator does not support unshare; update the coordinator to use it") from e
+            raise ServerError(e.details())
+
+        print(f"unshared place {place.name} with {self.args.user}")
 
     def get_target_resources(self, place):
         self._check_allowed(place)
@@ -1643,10 +1679,15 @@ class ClientSession:
 
     async def _wait_reservation(self, reservation_id: str, verbose=True):
         while True:
-            request = labgrid_coordinator_pb2.PollReservationRequest(token=reservation_id)
+            request = labgrid_coordinator_pb2.RefreshReservationRequest(reservation_id=reservation_id)
 
             try:
-                response: labgrid_coordinator_pb2.PollReservationResponse = await self.stub.PollReservation(request)
+                response = await self._call_with_fallback(
+                    self.stub.RefreshReservation,
+                    request,
+                    self.stub.PollReservation,
+                    labgrid_coordinator_pb2.PollReservationRequest(token=reservation_id),
+                )
             except grpc.aio.AioRpcError as e:
                 raise ServerError(e.details())
 
@@ -1663,10 +1704,15 @@ class ClientSession:
         await self._wait_reservation(reservation_id)
 
     async def print_reservations(self):
-        request = labgrid_coordinator_pb2.GetReservationsRequest()
+        request = labgrid_coordinator_pb2.ListReservationsRequest()
 
         try:
-            response: labgrid_coordinator_pb2.GetReservationsResponse = await self.stub.GetReservations(request)
+            response = await self._call_with_fallback(
+                self.stub.ListReservations,
+                request,
+                self.stub.GetReservations,
+                labgrid_coordinator_pb2.GetReservationsRequest(),
+            )
             reservations = [Reservation.from_pb2(x) for x in response.reservations]
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
@@ -2044,9 +2090,9 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
     subparser = subparsers.add_parser(
         "create",
-        help="add a new place with the name specified via --place or the LG_PLACE environment variable",
+        help="create a new place with the name specified via --place or the LG_PLACE environment variable",
     )
-    subparser.set_defaults(func=ClientSession.add_place, needs_resources=False)
+    subparser.set_defaults(func=ClientSession.create_place, needs_resources=False)
 
     subparser = subparsers.add_parser("delete", help="delete an existing place")
     subparser.set_defaults(func=ClientSession.del_place, needs_resources=False)
@@ -2101,9 +2147,13 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument("acquired", metavar="HOST/USER", help="User and host to match against when releasing")
     subparser.set_defaults(func=ClientSession.release_from, needs_resources=False)
 
-    subparser = subparsers.add_parser("allow", help="allow another user to access a place")
+    subparser = subparsers.add_parser("share", aliases=("allow",), help="share a place with another user")
     subparser.add_argument("user", help="<host>/<username>")
-    subparser.set_defaults(func=ClientSession.allow, needs_resources=False)
+    subparser.set_defaults(func=ClientSession.share, needs_resources=False)
+
+    subparser = subparsers.add_parser("unshare", help="remove another user's access to a place")
+    subparser.add_argument("user", help="<host>/<username>")
+    subparser.set_defaults(func=ClientSession.unshare, needs_resources=False)
 
     subparser = subparsers.add_parser("env", help="generate a labgrid environment file for a place")
     subparser.set_defaults(func=ClientSession.print_env)

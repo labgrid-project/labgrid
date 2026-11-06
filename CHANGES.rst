@@ -3,7 +3,8 @@ Release 26.1 (Unreleased)
 
 New Features in 26.1
 ~~~~~~~~~~~~~~~~~~~~
-FIXME
+- The `SmallUBootDriver` now supports ``boot_command``, which is sent when
+  ``boot()`` is called without a memory location (default: ``bootm``).
 
 Bug fixes in 26.1
 ~~~~~~~~~~~~~~~~~

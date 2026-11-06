@@ -2289,7 +2289,8 @@ This driver needs the following features activated in U-Boot to work:
 
 - The U-Boot must be able to parse multiple commands in a single line separated
   by ";".
-- The U-Boot must support the "bootm" command to boot from a memory location.
+- The U-Boot must support the "bootm" command to boot from a memory location,
+  unless a different ``boot_command`` is configured.
 
 Binds to:
   console:
@@ -2311,6 +2312,8 @@ Arguments:
   - boot_secret (str, default="a"): secret used to unlock prompt
   - boot_secret_nolf (bool, default=False): send boot_secret without new line
   - login_timeout (int, default=60): timeout for password/login prompt detection
+  - boot_command (str, default="bootm"): command to boot the target if
+    ``boot()`` is called without a memory location
   - for other arguments, see `UBootDriver`_
 
 BareboxDriver

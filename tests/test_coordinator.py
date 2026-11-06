@@ -540,3 +540,35 @@ def test_acquire_failure_returns_reservation_to_waiting_and_cools_place():
         assert place.reservation is None
 
     asyncio.run(run_test())
+
+
+def test_coordinator_place_set_remote_place_config(coordinator, coordinator_place):
+    stub = coordinator_place
+    changed = stub.GetPlaces(labgrid_coordinator_pb2.GetPlacesRequest()).places[0].changed
+    res = stub.SetPlaceRemotePlaceConfig(
+        labgrid_coordinator_pb2.SetPlaceRemotePlaceConfigRequest(
+            placename="test", changed=changed, remote_place_config="drivers: {SerialDriver: {}}"
+        )
+    )
+    assert res
+
+    # the empty string removes the remote place config, the request needs the new change time
+    changed = stub.GetPlaces(labgrid_coordinator_pb2.GetPlacesRequest()).places[0].changed
+    res = stub.SetPlaceRemotePlaceConfig(
+        labgrid_coordinator_pb2.SetPlaceRemotePlaceConfigRequest(placename="test", changed=changed, remote_place_config="")
+    )
+    assert res
+
+
+def test_coordinator_place_set_remote_place_config_changed(coordinator, coordinator_place):
+    stub = coordinator_place
+    changed = stub.GetPlaces(labgrid_coordinator_pb2.GetPlacesRequest()).places[0].changed
+    request = labgrid_coordinator_pb2.SetPlaceRemotePlaceConfigRequest(
+        placename="test", changed=changed, remote_place_config="drivers: {SerialDriver: {}}"
+    )
+    assert stub.SetPlaceRemotePlaceConfig(request)
+
+    # the place changed, so the same request must be rejected now
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.SetPlaceRemotePlaceConfig(request)
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION

@@ -7,6 +7,7 @@ import random
 import re
 import string
 import logging
+import textwrap
 from datetime import datetime
 from fnmatch import fnmatchcase
 from typing import Optional
@@ -16,6 +17,7 @@ import attr
 import grpc
 
 from .generated import labgrid_coordinator_pb2
+from ..util.yaml import load
 
 __all__ = [
     "TAG_KEY",
@@ -288,6 +290,7 @@ class Place:
     created = attr.ib(default=attr.Factory(time.time))
     changed = attr.ib(default=attr.Factory(time.time))
     reservation = attr.ib(default=None)
+    remote_place_config = attr.ib(default=None)
 
     def __attrs_post_init__(self):
         self.logger = logging.getLogger(f"{self}")
@@ -312,6 +315,7 @@ class Place:
             "created": self.created,
             "changed": self.changed,
             "reservation": self.reservation,
+            "remote_place_config": self.remote_place_config,
         }
 
     def update_from_pb2(self, place_pb2):
@@ -359,6 +363,15 @@ class Place:
         print(indent + f"changed: {datetime.fromtimestamp(self.changed)}")
         if self.reservation:
             print(indent + f"reservation: {self.reservation}")
+        if self.remote_place_config:
+            print(indent + "remote place config:")
+            print(textwrap.indent(self.remote_place_config, indent + "  "))
+
+    def get_remote_place_config(self):
+        if self.remote_place_config:
+            return load(self.remote_place_config)
+
+        return {}
 
     def getmatch(self, resource_path):
         """Return the ResourceMatch object for the given resource path or None if not found.
@@ -411,6 +424,8 @@ class Place:
             place.created = self.created
             if self.reservation:
                 place.reservation = self.reservation
+            if self.remote_place_config:
+                place.remote_place_config = self.remote_place_config
             for key, value in self.tags.items():
                 place.tags[key] = value
             return place
@@ -438,6 +453,7 @@ class Place:
             created=pb2.created,
             changed=pb2.changed,
             reservation=pb2.reservation if pb2.HasField("reservation") else None,
+            remote_place_config=pb2.remote_place_config if pb2.HasField("remote_place_config") else None,
         )
 
     def __str__(self):

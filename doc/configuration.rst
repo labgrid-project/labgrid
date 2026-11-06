@@ -2187,7 +2187,7 @@ Arguments:
 SSHDriver
 ~~~~~~~~~
 An :any:`SSHDriver` requires a `NetworkService`_ resource and allows the
-execution of commands and file upload via network.
+execution of commands, file upload and TCP port forwarding via network.
 It uses SSH's ``ServerAliveInterval`` option to detect failed connections.
 
 If a shared SSH connection to the target is already open, it will reuse it when
@@ -2202,6 +2202,7 @@ Binds to:
 Implements:
   - :any:`CommandProtocol`
   - :any:`FileTransferProtocol`
+  - :any:`PortForwardProtocol`
 
 .. code-block:: yaml
 
@@ -4089,10 +4090,14 @@ method removes a file by name.
 
 ADBDriver
 ~~~~~~~~~
-The :any:`ADBDriver` allows interaction with ADB devices. It allows the 
-execution of commands, transfer of files, and rebooting of the device.
+The :any:`ADBDriver` allows interaction with ADB devices. It allows the
+execution of commands, transfer of files, TCP port forwarding and rebooting of
+the device.
 
 It can interact with both USB and TCP adb devices.
+Port forwarding with a :any:`RemoteUSBADBDevice` requires SSH port forwarding
+access to the exporter. The connection goes through ``LG_PROXY`` when set.
+See :ref:`overview-proxy-mechanism` for details.
 
 Binds to:
   device:
@@ -4103,6 +4108,7 @@ Binds to:
 Implements:
   - :any:`CommandProtocol`
   - :any:`FileTransferProtocol`
+  - :any:`PortForwardProtocol`
   - :any:`ResetProtocol`
 
 Arguments:

@@ -22,7 +22,10 @@ class InvalidConfigError(Exception):
 
 @attr.s(eq=False)
 class NoDriverFoundError(NoSupplierFoundError):
-    pass
+    found = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(list))
+    )
 
 
 @attr.s(eq=False)

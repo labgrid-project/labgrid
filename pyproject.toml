@@ -237,8 +237,10 @@ include = [
   "labgrid/util/agents/usb_hid_relay.py",
   "labgrid/util/exceptions.py",
   "labgrid/util/netns.py",
+  "labgrid/util/usbtree.py",
   "labgrid/tapfwd.py",
   "tests/test_netns.py",
+  "tests/test_usbtree.py",
 ]
 
 [tool.ruff.lint]

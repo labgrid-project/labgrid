@@ -2263,6 +2263,13 @@ Arguments:
   - boot_timeout (int, default=30): timeout for initial Linux Kernel version detection
   - strip_timestamp (bool, default=False): strip timestamps prepended to console when present
 
+For U-Boot variants with a zero-second boot delay (for example the Linksys
+EA4500's ``Viper>> `` firmware), set ``UBootDriver.interrupt_interval`` to a
+positive number of seconds. The driver sends ``interrupt`` before each short
+prompt wait, without waiting for the countdown banner. The default, ``0.0``,
+preserves banner-triggered interruption. ``settle_time`` optionally waits for
+quiet and requests a fresh prompt before the normal echo-marker handshake.
+
 SmallUBootDriver
 ~~~~~~~~~~~~~~~~
 A :any:`SmallUBootDriver` interfaces with stripped-down *U-Boot* variants that

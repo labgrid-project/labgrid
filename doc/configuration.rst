@@ -2224,6 +2224,31 @@ Arguments:
   - extra_options (list or str): optional, extra options required for the SSH connection, e.g.
     defining host key algorithms
 
+CFEDriver
+~~~~~~~~~
+The :any:`CFEDriver` implements :any:`LinuxBootProtocol` for Broadcom CFE.
+It binds to a console and interrupts autoboot with Ctrl-C. ``autoboot`` may
+specify a banner to wait for before sending a single interrupt; otherwise
+interrupts repeat every ``interrupt_interval`` seconds until the prompt.
+All prompt acquisition is bounded by ``login_timeout``.
+
+.. code-block:: yaml
+
+   CFEDriver:
+     init_commands:
+       - ifconfig eth0 -auto
+     boot_command: boot -elf 192.0.2.1:sibyte/vmlinux.32
+     boot_timeout: 120
+
+For BCM4708 raw images, use a board-appropriate command such as
+``boot -raw -tftp -addr=0x01000000 -max=0x14000000 192.0.2.1:zImage``.
+``run_command(command, expect=..., timeout=...)`` checks an optional success
+expression against output before the next prompt. It does not implement
+CommandProtocol, since CFE has no portable shell exit status. ``init_commands``
+accepts strings or mappings with ``command``, optional ``expect`` and ``timeout``.
+The final command is configured with ``boot_command`` or selected by name from
+``boot_commands``. ``await_boot()`` waits for ``bootstring`` within ``boot_timeout``.
+
 UBootDriver
 ~~~~~~~~~~~
 A :any:`UBootDriver` interfaces with a U-Boot bootloader via a

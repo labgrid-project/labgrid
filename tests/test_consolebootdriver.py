@@ -89,3 +89,25 @@ def test_reset(firmware):
     driver.reset()
     assert b'reset\n' in console.txq
     assert driver._ready
+
+
+@pytest.mark.parametrize('driver_name,banner,prompt,command,summary,boot', [
+    ('CFEDriver', '', 'CFE> ', 'ifconfig eth0 -auto', 'Link up', 'boot -elf server:kernel'),
+    ('YAMONDriver', 'Press Ctrl-C to bypass this.\r\n', 'YAMON> ', 'load tftp://server/kernel',
+     'Start = 0x80000000, length = 0x1234, format = SREC', 'go .'),
+    ('CoLoDriver', 'boot: running boot menu\r\n', '> ', 'tftp server kernel', 'loaded kernel', 'exec'),
+])
+def test_firmware_transcript(driver_name, banner, prompt, command, summary, boot):
+    import labgrid.driver
+
+    target = Target('test')
+    console = FakeConsoleDriver(target, 'console')
+    console.rxq.append((banner + prompt + command + '\r\n' + summary + '\r\n' + prompt
+                        + 'Linux version 6.19.0\r\n').encode())
+    driver = getattr(labgrid.driver, driver_name)(
+        target, 'firmware', init_commands=[{'command': command, 'expect': summary}], boot_command=boot)
+    target.activate(driver)
+    driver.boot()
+    driver.await_boot()
+    assert console.txq[-2:] == [(command + '\n').encode(), (boot + '\n').encode()]
+    target.cleanup()

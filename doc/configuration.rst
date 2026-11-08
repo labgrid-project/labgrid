@@ -2267,6 +2267,26 @@ A prompt following a failed load is not treated as success.
          timeout: 120
      boot_command: go . console=ttyS0,115200
 
+CoLoDriver
+~~~~~~~~~~
+The :any:`CoLoDriver` implements :any:`LinuxBootProtocol` for Cobalt CoLo.
+It sends Ctrl-C at ``boot: running boot menu``, then waits for ``> ``.
+``load(server, filename)`` executes ``net`` and ``tftp server filename``.
+Configure ``boot_command`` to pass Linux arguments to ``exec``.
+
+.. code-block:: yaml
+
+   CoLoDriver:
+     init_commands:
+       - net
+       - command: tftp 192.0.2.1 cobalt/vmlinux64
+         timeout: 120
+     boot_command: 'exec "console=ttyS0,115200"'
+
+Bind CoLoDriver to a console implementing :any:`ConsoleProtocol`.
+CoLoDriver does not assume a firmware reset command; use power cycling or
+set ``reset_command`` for your firmware.
+
 UBootDriver
 ~~~~~~~~~~~
 A :any:`UBootDriver` interfaces with a U-Boot bootloader via a

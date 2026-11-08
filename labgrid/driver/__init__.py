@@ -59,3 +59,4 @@ from .adb import ADBDriver
 
 from .cfedriver import CFEDriver
 from .yamondriver import YAMONDriver
+from .colodriver import CoLoDriver

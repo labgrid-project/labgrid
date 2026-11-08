@@ -2249,6 +2249,24 @@ accepts strings or mappings with ``command``, optional ``expect`` and ``timeout`
 The final command is configured with ``boot_command`` or selected by name from
 ``boot_commands``. ``await_boot()`` waits for ``bootstring`` within ``boot_timeout``.
 
+YAMONDriver
+~~~~~~~~~~~
+The :any:`YAMONDriver` implements :any:`LinuxBootProtocol` for MIPS YAMON,
+including the MTX-1. It shares CFEDriver's prompt and command configuration.
+By default it interrupts at ``Press Ctrl-C to bypass this.`` and boots with
+``go .``. ``load("tftp://server/image", timeout=120)`` requires the successful
+``Start = 0x..., ... format = SREC`` summary before accepting the next prompt.
+A prompt following a failed load is not treated as success.
+
+.. code-block:: yaml
+
+   YAMONDriver:
+     init_commands:
+       - command: load tftp://192.0.2.1/mtx1/vmlinux.srec
+         expect: 'Start\s*=\s*0x[0-9a-fA-F]+,[^\r\n]*format\s*=\s*SREC'
+         timeout: 120
+     boot_command: go . console=ttyS0,115200
+
 UBootDriver
 ~~~~~~~~~~~
 A :any:`UBootDriver` interfaces with a U-Boot bootloader via a

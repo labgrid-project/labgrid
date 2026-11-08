@@ -58,3 +58,4 @@ from .laadriver import LAASerialDriver, LAAPowerDriver, \
 from .adb import ADBDriver
 
 from .cfedriver import CFEDriver
+from .yamondriver import YAMONDriver

@@ -1,4 +1,5 @@
 import inspect
+import threading
 import os
 import warnings
 from functools import wraps
@@ -9,8 +10,14 @@ from time import monotonic
 # after some time
 class Steps:
     def __init__(self):
-        self._stack = []
+        self._local = threading.local()
         self._subscribers = []
+
+    @property
+    def _stack(self):
+        if not hasattr(self._local, "stack"):
+            self._local.stack = []
+        return self._local.stack
 
     def get_current(self):
         return self._stack[-1] if self._stack else None
@@ -21,8 +28,8 @@ class Steps:
 
     def push(self, step):  # pylint: disable=redefined-outer-name
         assert step not in self._stack
-        self._stack.append(step)
         step.parent = self.get_current()
+        self._stack.append(step)
         step.level = len(self._stack)
 
     def pop(self, step):  # pylint: disable=redefined-outer-name

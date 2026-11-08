@@ -174,3 +174,39 @@ def test_subscriber_error():
     with pytest.warns(UserWarning):
         step = step_event_skip()
     steps.unsubscribe(callback)
+
+
+def test_steps_in_parallel_threads():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    barrier = Barrier(2)
+
+    @step()
+    def overlapping(*, step):
+        barrier.wait(timeout=5)
+        assert steps.get_current() is step
+        assert step.level == 1
+        assert step.parent is None
+        barrier.wait(timeout=5)
+        return step
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(overlapping)
+        main_step = overlapping()
+        other_step = future.result()
+    assert main_step is not other_step
+    assert steps.get_current() is None
+
+
+def test_nested_step_parent():
+    @step()
+    def inner(*, step):
+        return step
+
+    @step()
+    def outer(*, step):
+        return step, inner()
+
+    parent, child = outer()
+    assert child.parent is parent

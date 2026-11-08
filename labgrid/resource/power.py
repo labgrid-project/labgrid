@@ -22,6 +22,15 @@ class NetworkPowerPort(Resource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class WTIPowerPort(Resource):
+    """An outlet on a WTI power switch accessible over Telnet."""
+
+    host = attr.ib(validator=attr.validators.instance_of(str))
+    index = attr.ib(converter=int, validator=attr.validators.in_(range(1, 9)))
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class PDUDaemonPort(Resource):
     """The PDUDaemonPort describes a port on a PDU accessible via PDUDaemon
 

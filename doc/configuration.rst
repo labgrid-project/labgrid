@@ -4115,6 +4115,25 @@ Strategies
 Strategies are used to ensure that the device is in a certain state during a test.
 Such a state could be the bootloader or a booted Linux kernel with shell.
 
+LinuxBootStrategy
+~~~~~~~~~~~~~~~~~
+``power_delay`` (default 2.0 seconds) sets the minimum off time before power-on.
+The :any:`LinuxBootStrategy` transitions between ``off``, ``bootloader`` and
+``shell`` using PowerProtocol, ConsoleProtocol, an optional LinuxBootProtocol
+and ShellDriver. It supports CFE, YAMON, CoLo and U-Boot without depending on a
+particular init system. Shell readiness is checked with ``true``.
+
+Firmware activation overlaps power-on so a slow PDU response cannot hide a
+zero-second autoboot window. Only the power driver runs in a worker thread;
+console I/O and target activation stay on the calling thread. Power drivers
+must have bounded I/O timeouts. Power failures break the strategy and are
+propagated to the caller. Repeated transitions to the current state do nothing.
+
+Omit the bootloader for direct firmware or PXE boot. In this case the strategy
+waits for ``bootstring`` within ``boot_timeout`` before activating ShellDriver.
+It does not send firmware interruption characters. Use ``force("shell")`` to
+attach to an already running system without cycling power.
+
 .. _conf-bareboxstrategy:
 
 BareboxStrategy

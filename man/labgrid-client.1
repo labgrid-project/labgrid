@@ -282,7 +282,7 @@ connect to the console
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client console|con [\-l] [\-o] [\-\-logfile FILE] [name]
+usage: labgrid\-client console|con [\-i] [\-l] [\-o] [\-\-logfile FILE] [name]
 .EE
 .UNINDENT
 .UNINDENT
@@ -290,6 +290,11 @@ usage: labgrid\-client console|con [\-l] [\-o] [\-\-logfile FILE] [name]
 .TP
 .B name
 optional resource name
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-i, \-\-internal
+use an internal console instead of microcom
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1271,16 +1276,6 @@ $ labgrid\-client \-p <placename> acquire
 .UNINDENT
 .UNINDENT
 .sp
-Open a console to the acquired place:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.EX
-$ labgrid\-client \-p <placename> console
-.EE
-.UNINDENT
-.UNINDENT
-.sp
 Add all resources with the group \(dqexample\-group\(dq to the place example\-place:
 .INDENT 0.0
 .INDENT 3.5
@@ -1300,6 +1295,35 @@ $ labgrid\-client \-\-tls [\-\-cacert PATH] places
 .EE
 .UNINDENT
 .UNINDENT
+.sp
+Open a console to an acquired place:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+$ labgrid\-client \-p <placename> console
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+While the internal console (\fBconsole \-i\fP) is open, \fBCtrl\-T\fP opens a
+\fBlabgrid>\fP command prompt.
+\fBTab\fP completes a command or lists the matching ones, \fBEnter\fP runs it and
+\fBq\fP (followed by \fBEnter\fP) or \fBCtrl\-C\fP leaves the prompt. Console output
+is held back while the prompt is open. \fBCtrl\-T Ctrl\-T\fP sends a literal
+\fBCtrl\-T\fP to the target. The prompt is not available with \fB\-\-listenonly\fP or
+with microcom or telnet.
+.sp
+The available commands are:
+.INDENT 0.0
+.IP \(bu 2
+\fBpower (pw) on|off|cycle|get\fP
+.IP \(bu 2
+\fBhelp\fP
+.UNINDENT
+.sp
+They accept the same options as the corresponding \fBlabgrid\-client\fP
+command, e.g. \fBpw cycle \-t 5\fP, and \fB\-h\fP shows their help.
 .SH SEE ALSO
 .sp
 \fBlabgrid\-exporter\fP(1)

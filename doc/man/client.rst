@@ -127,12 +127,6 @@ the ``acquire command`` and passing the placename as a -p parameter:
 
    $ labgrid-client -p <placename> acquire
 
-Open a console to the acquired place:
-
-.. code-block:: bash
-
-   $ labgrid-client -p <placename> console
-
 Add all resources with the group "example-group" to the place example-place:
 
 .. code-block:: bash
@@ -144,6 +138,28 @@ Retrieve a list of places on a ``labgrid-coordinator`` that uses TLS gRPC channe
 .. code-block:: bash
 
     $ labgrid-client --tls [--cacert PATH] places
+
+Open a console to an acquired place:
+
+.. code-block:: bash
+
+   $ labgrid-client -p <placename> console
+
+While the internal console (``console -i``) is open, ``Ctrl-T`` opens a
+``labgrid>`` command prompt.
+``Tab`` completes a command or lists the matching ones, ``Enter`` runs it and
+``q`` (followed by ``Enter``) or ``Ctrl-C`` leaves the prompt. Console output
+is held back while the prompt is open. ``Ctrl-T Ctrl-T`` sends a literal
+``Ctrl-T`` to the target. The prompt is not available with ``--listenonly`` or
+with microcom or telnet.
+
+The available commands are:
+
+- ``power (pw) on|off|cycle|get``
+- ``help``
+
+They accept the same options as the corresponding ``labgrid-client``
+command, e.g. ``pw cycle -t 5``, and ``-h`` shows their help.
 
 See Also
 --------

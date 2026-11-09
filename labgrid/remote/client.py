@@ -5,6 +5,7 @@ import argparse
 import asyncio
 import contextlib
 import enum
+import io
 import os
 import pathlib
 import subprocess
@@ -13,7 +14,6 @@ import logging
 import signal
 import sys
 import shlex
-import shutil
 import json
 import itertools
 import ipaddress
@@ -48,7 +48,7 @@ from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout
+from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout, term
 from ..util.proxy import proxymanager
 from ..util.ssh import sshmanager
 from ..util.helper import processwrapper
@@ -522,19 +522,28 @@ class ClientSession:
                     result.add(name)
         return list(result)
 
-    def _check_allowed(self, place):
+    def is_allowed(self, place):
+        """Check if a place is acquired
+
+        Args:
+            place (str): Place name to check
+
+        Returns:
+            str: None if acquired, else error message
+        """
         if not place.acquired:
-            raise UserError(f"place {place.name} is not acquired")
+            return f"place {place.name} is not acquired"
         if f"{self.gethostname()}/{self.getuser()}" not in place.allowed:
             host, user = place.acquired.split("/")
             if user != self.getuser():
-                raise UserError(
-                    f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}"
-                )
+                return f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}"
             if host != self.gethostname():
-                raise UserError(
-                    f"place {place.name} is not acquired on this computer, acquired on {host}. To allow this host, use labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()} on the other host"
-                )
+                return f"place {place.name} is not acquired on this computer, acquired on {host}. To allow this host, use labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()} on the other host"
+
+    def _check_allowed(self, place):
+        err = self.is_allowed(place)
+        if err:
+            raise UserError(err)
 
     def get_place(self, place=None):
         pattern = place or self.args.place
@@ -927,12 +936,6 @@ class ClientSession:
                     strategy.force(self.args.initial_state)
                 print(f"Transitioning into state {self.args.state}")
                 strategy.transition(self.args.state)
-                # deactivate console drivers so we are able to connect with microcom later
-                try:
-                    con = target.get_active_driver("ConsoleProtocol")
-                    target.deactivate(con)
-                except NoDriverFoundError:
-                    pass
         else:
             target = Target(place.name, env=self.env)
             RemotePlace(target, name=place.name)
@@ -969,12 +972,7 @@ class ClientSession:
                 target.activate(drv)
             return drv
 
-    def power(self):
-        place = self.get_acquired_place()
-        action = self.args.action
-        delay = self.args.delay
-        name = self.args.name
-        target = self._get_target(place)
+    def _get_power_driver(self, target, name=None):
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
         from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
         from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
@@ -1006,11 +1004,24 @@ class ClientSession:
 
         if not drv:
             raise UserError("target has no compatible resource available")
+        return drv
+
+    def _power(self, place, target, action, name=None, delay=None):
+        """Run a power action, return a message to show for "get"."""
+        drv = self._get_power_driver(target, name)
         if delay is not None:
             drv.delay = delay
         res = getattr(drv, action)()
         if action == "get":
-            print(f"power{' ' + name if name else ''} for place {place.name} is {'on' if res else 'off'}")
+            return f"power{' ' + name if name else ''} for place {place.name} is {'on' if res else 'off'}"
+        return None
+
+    def power(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        msg = self._power(place, target, self.args.action, self.args.name, self.args.delay)
+        if msg:
+            print(msg)
 
     def digital_io(self):
         place = self.get_acquired_place()
@@ -1074,79 +1085,103 @@ class ClientSession:
         elif action == "low":
             drv.set(False)
 
+    def _console_commands(self, place, target):
+        """Return the commands for the console command prompt, see term.run()
+
+        The prompt accepts these labgrid-client commands plus "help", parsed
+        with the labgrid-client argument parser, so that aliases, choices and
+        options match typical labgrid-client usage.
+        """
+        funcs = {
+            "power": lambda args: self._power(place, target, args.action, args.name, args.delay),
+        }
+        # argparse has no public API to access the subcommand parsers
+        parsers = {}
+        names = ["help"]
+        for name, parser in get_parser()._subparsers._group_actions[0].choices.items():
+            command = parser.prog.split()[-1]  # also for aliases
+            if command not in funcs:
+                continue
+            parser.prog = command
+            parsers[name] = parser
+            choices = [c for a in parser._actions if not a.option_strings and a.choices for c in a.choices]
+            names += [f"{name} {c}" for c in choices] or [name]
+
+        def handler(line):
+            words = shlex.split(line)
+            if words == ["help"]:
+                lines = []
+                for parser in dict.fromkeys(parsers.values()):
+                    aliases = [name for name, p in parsers.items() if p is parser and name != parser.prog]
+                    lines.append(parser.format_usage().strip())
+                    if aliases:
+                        lines.append(f"  (short: {', '.join(aliases)})")
+                lines.append("use <command> -h for details, q leaves the prompt")
+                return "\n".join(lines)
+            parser = parsers.get(words[0])
+            if parser is None:
+                return f"unknown command '{words[0]}', press Tab to list commands"
+            # argparse prints usage, errors and -h output, then exits
+            out = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+                    args = parser.parse_args(words[1:])
+            except SystemExit:
+                return out.getvalue()
+            return lambda: funcs[parser.prog](args)
+
+        return names, handler
+
     async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
+        from ..protocol import ConsoleProtocol
+
         name = self.args.name
-        from ..resource import NetworkSerialPort
-
-        resource = target.get_resource(NetworkSerialPort, name=name, wait_avail=False)
-
-        # async await resources
-        timeout = Timeout(timeout)
-        while True:
-            target.update_resources()
-            if resource.avail or (not loop and timeout.expired):
-                break
-            await asyncio.sleep(0.1)
-
-        # use zero timeout to prevent blocking sleeps
-        target.await_resources([resource], timeout=0.0)
 
         if not place.acquired:
             print("place released")
             return 255
 
-        host, port = proxymanager.get_host_and_port(resource)
-
-        # check for valid resources
-        assert port is not None, "Port is not set"
-
-        microcom_bin = shutil.which("microcom")
-
-        if microcom_bin is not None:
-            call = [microcom_bin, "-s", str(resource.speed), "-t", f"{host}:{port}"]
-
-            if listen_only:
-                call.append("--listenonly")
-
-            if logfile:
-                call.append(f"--logfile={logfile}")
+        if self.args.internal or os.environ.get("LG_CONSOLE") == "internal":
+            console = target.get_driver(ConsoleProtocol, name=name)
+            returncode = await term.internal(
+                lambda: self.is_allowed(place), console, logfile, listen_only, self._console_commands(place, target)
+            )
         else:
-            call = ["telnet", host, str(port)]
+            from ..resource import NetworkSerialPort
 
-            self.logger.info("microcom not available, using telnet instead")
-
-            if listen_only:
-                self.logger.warning("--listenonly option not supported by telnet, ignoring")
-
-            if logfile:
-                self.logger.warning("--logfile option not supported by telnet, ignoring")
-
-        print(f"connecting to {resource} calling {' '.join(call)}")
-        try:
-            p = await asyncio.create_subprocess_exec(*call)
-        except FileNotFoundError as e:
-            raise ServerError(f"failed to execute remote console command: {e}")
-        while p.returncode is None:
+            # deactivate console drivers so we are able to connect with microcom
             try:
-                await asyncio.wait_for(p.wait(), 1.0)
-            except asyncio.TimeoutError:
-                # subprocess is still running
+                con = target.get_active_driver("ConsoleProtocol")
+                target.deactivate(con)
+            except NoDriverFoundError:
                 pass
 
+            resource = target.get_resource(NetworkSerialPort, name=name, wait_avail=False)
+
+            # async await resources
+            timeout = Timeout(timeout)
+            while True:
+                target.update_resources()
+                if resource.avail or (not loop and timeout.expired):
+                    break
+                await asyncio.sleep(0.1)
+
+            # use zero timeout to prevent blocking sleeps
+            target.await_resources([resource], timeout=0.0)
+            host, port = proxymanager.get_host_and_port(resource)
+
+            # check for valid resources
+            assert port is not None, "Port is not set"
             try:
-                self._check_allowed(place)
-            except UserError:
-                p.terminate()
-                try:
-                    await asyncio.wait_for(p.wait(), 1.0)
-                except asyncio.TimeoutError:
-                    # try harder
-                    p.kill()
-                    await asyncio.wait_for(p.wait(), 1.0)
-                raise
-        if p.returncode:
-            print("connection lost", file=sys.stderr)
-        return p.returncode
+                returncode = await term.external(
+                    lambda: self.is_allowed(place), host, port, resource, logfile, listen_only
+                )
+            except FileNotFoundError as e:
+                raise ServerError(f"failed to execute remote console command: {e}")
+
+        # Raise an exception if the place was released
+        self._check_allowed(place)
+        return returncode
 
     async def console(self, place, target):
         while True:
@@ -1158,7 +1193,7 @@ class ClientSession:
                 break
             if not self.args.loop:
                 if res:
-                    raise InteractiveCommandError("microcom error", res)
+                    raise InteractiveCommandError("console error", res)
                 break
             await asyncio.sleep(1.0)
 
@@ -2122,6 +2157,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.set_defaults(func=ClientSession.digital_io)
 
     subparser = subparsers.add_parser("console", aliases=("con",), help="connect to the console")
+    subparser.add_argument("-i", "--internal", action="store_true", help="use an internal console instead of microcom")
     subparser.add_argument(
         "-l", "--loop", action="store_true", help="keep trying to connect if the console is unavailable"
     )

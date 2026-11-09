@@ -5,6 +5,7 @@ import argparse
 import asyncio
 import contextlib
 import enum
+import io
 import os
 import pathlib
 import subprocess
@@ -1077,6 +1078,53 @@ class ClientSession:
         elif action == "low":
             drv.set(False)
 
+    def _console_commands(self, place, target):
+        """Return the commands for the console command prompt, see term.run()
+
+        The prompt accepts these labgrid-client commands plus "help", parsed
+        with the labgrid-client argument parser, so that aliases, choices and
+        options match typical labgrid-client usage.
+        """
+        funcs = {
+            "power": lambda args: self._power(place, target, args.action, args.name, args.delay),
+        }
+        # argparse has no public API to access the subcommand parsers
+        parsers = {}
+        names = ["help"]
+        for name, parser in get_parser()._subparsers._group_actions[0].choices.items():
+            command = parser.prog.split()[-1]  # also for aliases
+            if command not in funcs:
+                continue
+            parser.prog = command
+            parsers[name] = parser
+            choices = [c for a in parser._actions if not a.option_strings and a.choices for c in a.choices]
+            names += [f"{name} {c}" for c in choices] or [name]
+
+        def handler(line):
+            words = shlex.split(line)
+            if words == ["help"]:
+                lines = []
+                for parser in dict.fromkeys(parsers.values()):
+                    aliases = [name for name, p in parsers.items() if p is parser and name != parser.prog]
+                    lines.append(parser.format_usage().strip())
+                    if aliases:
+                        lines.append(f"  (short: {', '.join(aliases)})")
+                lines.append("use <command> -h for details, q leaves the prompt")
+                return "\n".join(lines)
+            parser = parsers.get(words[0])
+            if parser is None:
+                return f"unknown command '{words[0]}', press Tab to list commands"
+            # argparse prints usage, errors and -h output, then exits
+            out = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+                    args = parser.parse_args(words[1:])
+            except SystemExit:
+                return out.getvalue()
+            return lambda: funcs[parser.prog](args)
+
+        return names, handler
+
     async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
         from ..protocol import ConsoleProtocol
 
@@ -1088,7 +1136,9 @@ class ClientSession:
 
         if self.args.internal or os.environ.get("LG_CONSOLE") == "internal":
             console = target.get_driver(ConsoleProtocol, name=name)
-            returncode = await term.internal(lambda: self.is_allowed(place), console, logfile, listen_only)
+            returncode = await term.internal(
+                lambda: self.is_allowed(place), console, logfile, listen_only, self._console_commands(place, target)
+            )
         else:
             from ..resource import NetworkSerialPort
 

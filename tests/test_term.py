@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from labgrid.step import step
 from labgrid.util.term import external, run, internal, ConsolePrompt, EXIT_CHAR, EXIT_WINDOW
 from pexpect import TIMEOUT
 from prompt_toolkit.input import create_input
@@ -623,6 +624,151 @@ class TestInternal:
 
             # The terminal is passed on, so that run() can watch the keyboard
             assert mock_run.await_args[0][4] is inp
+
+
+# --- command prompt tests ---
+
+class OutputConsole(FakeConsole):
+    """FakeConsole which returns queued output when read"""
+    def __init__(self):
+        super().__init__()
+        self.output = []
+
+    def read(self, size=1024, timeout=0.001):
+        if self.output:
+            return self.output.pop(0)
+        raise TIMEOUT("timeout")
+
+
+class TestPrompt:
+    def run_prompt(self, event_loop, inp, cons, feed, done, commands):
+        """Run the loop with a command prompt while a thread types
+
+        Args:
+            feed: function to call in a thread to type things, called with a
+                function returning what was written to stdout so far
+            done: function called with what was written to stdout so far,
+                returning True when the loop should stop
+
+        Returns:
+            bytes: What was written to stdout
+        """
+        stdout = io.TextIOWrapper(io.BytesIO())
+        threading.Thread(target=feed, args=(stdout.buffer.getvalue,), daemon=True).start()
+        start = time.monotonic()
+
+        def check():
+            if time.monotonic() - start > 5:
+                return "timeout"
+            return "done" if done(stdout.buffer.getvalue()) else None
+
+        with patch("sys.stdout", stdout):
+            event_loop.run_until_complete(run(check, cons, None, False, inp, commands))
+        assert time.monotonic() - start < 5, "loop did not stop"
+        return stdout.buffer.getvalue()
+
+    def test_command(self, event_loop, stdin_pipe):
+        """Test that a command typed at the prompt runs, in the console's thread"""
+        inp, write_fd = stdin_pipe
+        cons = FakeConsole()
+        lines = []
+        threads = []
+
+        def handler(line):
+            lines.append(line)
+            return lambda: threads.append(threading.current_thread()) or "switched"
+
+        out = self.run_prompt(
+            event_loop, inp, cons, lambda out: os.write(write_fd, b"\x14pw of\t\r"),
+            lambda out: b"switched" in out, (["pw on", "pw off"], handler))
+        assert lines == ["pw off"]
+        # labgrid steps are not thread-safe, so no worker thread
+        assert threads == [threading.current_thread()]
+        assert b"labgrid> pw off\r\n" in out
+        assert b"[labgrid] pw off...\r\n" in out
+        assert not cons.written
+
+    def test_command_steps(self, event_loop, stdin_pipe):
+        """Test that a command using labgrid steps does not upset the console's
+        steps, since the step stack is not thread-safe"""
+        inp, write_fd = stdin_pipe
+
+        class StepConsole(FakeConsole):
+            @step()
+            def read(self, size=1024, timeout=0.001):
+                time.sleep(timeout)
+                raise TIMEOUT("timeout")
+
+        @step()
+        def inner():
+            time.sleep(0.002)
+
+        def slow():
+            for _ in range(50):
+                inner()
+            return "slow done"
+
+        out = self.run_prompt(
+            event_loop, inp, StepConsole(), lambda out: os.write(write_fd, b"\x14slow\r"),
+            lambda out: b"slow" in out and b"..." not in out.rsplit(b"slow", 1)[1],
+            (["slow"], lambda line: slow))
+        assert b"[labgrid] slow done" in out
+
+    def test_message(self, event_loop, stdin_pipe):
+        """Test that a message returned by the handler is shown, with CRLF"""
+        inp, write_fd = stdin_pipe
+        out = self.run_prompt(
+            event_loop, inp, FakeConsole(), lambda out: os.write(write_fd, b"\x14help\r"),
+            lambda out: b"two" in out, (["help"], lambda line: "one\ntwo\n"))
+        assert b"[labgrid] one\r\ntwo\r\n" in out
+
+    def test_failure(self, event_loop, stdin_pipe):
+        """Test that an exception from a command is shown"""
+        inp, write_fd = stdin_pipe
+
+        def fail():
+            raise ValueError("no power")
+
+        out = self.run_prompt(
+            event_loop, inp, FakeConsole(), lambda out: os.write(write_fd, b"\x14pw on\r"),
+            lambda out: b"no power" in out, (["pw on"], lambda line: fail))
+        assert b"[labgrid] pw on failed: no power" in out
+
+    def test_literal(self, event_loop, stdin_pipe):
+        """Test that Ctrl-T Ctrl-T sends Ctrl-T to the board"""
+        inp, write_fd = stdin_pipe
+        cons = FakeConsole()
+        self.run_prompt(
+            event_loop, inp, cons, lambda out: os.write(write_fd, b"\x14\x14x"),
+            lambda out: b"x" in b"".join(cons.written), ([], None))
+        assert b"".join(cons.written) == b"\x14x"
+
+    def test_no_commands(self, event_loop, stdin_pipe):
+        """Test that Ctrl-T goes to the board when there is no prompt"""
+        inp, write_fd = stdin_pipe
+        cons = FakeConsole()
+        self.run_prompt(
+            event_loop, inp, cons, lambda out: os.write(write_fd, b"\x14x"),
+            lambda out: b"x" in b"".join(cons.written), None)
+        assert b"".join(cons.written) == b"\x14x"
+
+    def test_output_held(self, event_loop, stdin_pipe):
+        """Test that console output is held back while the prompt is open"""
+        inp, write_fd = stdin_pipe
+        cons = OutputConsole()
+        held = []
+
+        def feed(out):
+            os.write(write_fd, b"\x14")
+            time.sleep(0.1)
+            cons.output.append(b"late")
+            time.sleep(0.1)
+            held.append(out())
+            os.write(write_fd, b"q\r")
+
+        out = self.run_prompt(event_loop, inp, cons, feed, lambda out: b"late" in out, ([], None))
+        assert b"labgrid> " in held[0] and b"late" not in held[0]
+        assert out.endswith(b"labgrid> q\r\nlate")
 
 
 # --- ConsolePrompt tests ---

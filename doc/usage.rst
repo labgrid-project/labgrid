@@ -877,3 +877,8 @@ not suitable, an internal console is provided. To use this, provide the
 When the internal console is used, the console transitions cleanly between use
 within a strategy or driver, and interactive use for the user. The console is
 not closed and therefore there is no loss of data.
+
+In the internal console, ``Ctrl-T`` opens a ``labgrid>`` prompt for running
+some ``labgrid-client`` commands, such as ``pw cycle``, without leaving the
+console. Use ``help`` at the prompt to list them, see ``labgrid-client``\(1)
+for details.

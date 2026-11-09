@@ -92,3 +92,39 @@ class TestGetParser:
         parser = get_parser()
         args = parser.parse_args(["console", "--internal"])
         assert args.internal is True
+
+
+# --- _console_commands() tests ---
+
+class TestConsoleCommands:
+    @pytest.fixture
+    def commands(self, session, mock_place):
+        session._power = MagicMock(return_value="power is on")
+        return session._console_commands(mock_place, "target")
+
+    def test_names(self, commands):
+        names, _ = commands
+        assert "help" in names
+        assert "power cycle" in names
+        assert "pw get" in names
+
+    def test_power(self, session, mock_place, commands):
+        _, handler = commands
+        assert handler("pw get")() == "power is on"
+        session._power.assert_called_with(mock_place, "target", "get", None, None)
+        handler("power cycle -t 5 -n port1")()
+        session._power.assert_called_with(mock_place, "target", "cycle", "port1", 5.0)
+
+    def test_errors(self, session, commands):
+        _, handler = commands
+        assert "invalid choice: 'onn'" in handler("pw onn")
+        assert "required: action" in handler("pw")
+        assert "--delay" in handler("pw -h")
+        assert handler("nope").startswith("unknown command 'nope'")
+        session._power.assert_not_called()
+
+    def test_help(self, commands):
+        _, handler = commands
+        msg = handler("help")
+        assert "usage: power [-h]" in msg
+        assert "(short: pw)" in msg

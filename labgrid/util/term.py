@@ -14,6 +14,8 @@ from serial.serialutil import SerialException
 
 EXIT_CHAR = 0x1d    # FS (Ctrl + ])
 EXIT_WINDOW = .5    # seconds allowed between the two exit characters
+PROMPT_CHAR = 0x14  # DC4 (Ctrl + T), opens the command prompt
+HELD_LIMIT = 1024 * 1024  # console output kept while the prompt is open
 
 logger = logging.getLogger("ClientSession")
 
@@ -155,8 +157,12 @@ async def external(check_allowed, host, port, resource, logfile, listen_only):
 
 BUF_SIZE = 1024
 
-async def run(check_allowed, cons, log_fd, listen_only, inp=None):
+async def run(check_allowed, cons, log_fd, listen_only, inp=None, commands=None):
     """Handle the console session, passing data between board and terminal
+
+    If commands is given, Ctrl-T opens a command prompt (see ConsolePrompt).
+    Console output is held back while it is open. Ctrl-T Ctrl-T sends a
+    literal Ctrl-T to the board.
 
     Args:
         check_allowed (lambda): Function to call to make sure the terminal is
@@ -167,6 +173,13 @@ async def run(check_allowed, cons, log_fd, listen_only, inp=None):
         listen_only (bool): True to ignore keyboard input
         inp (prompt_toolkit Input): Terminal to read keystrokes from, or None
             to ignore the keyboard
+        commands (tuple): (names, handler) for the command prompt, or None
+            for no prompt. names is a list of command lines for Tab
+            completion. handler is called with the line entered and returns
+            a message to show, or a function to run the command, which
+            returns a message to show or None. The function is called in
+            this thread, since labgrid steps are not thread-safe, so the
+            console is not read until it returns
 
     Returns:
         int: 0 if the session ended normally, 1 if the console was lost
@@ -178,6 +191,47 @@ async def run(check_allowed, cons, log_fd, listen_only, inp=None):
     txdelay = cons.txdelay
     txchunk = getattr(cons, 'txchunk', 1)
     typed = bytearray()
+    prompt = ConsolePrompt([*commands[0], "q"]) if commands and inp else None
+    prompting = False
+    held = bytearray()
+    dropped = False
+
+    def write(data):
+        nonlocal dropped
+        if prompting:
+            dropped |= len(held) + len(data) > HELD_LIMIT
+            held.extend(data[:HELD_LIMIT - len(held)])
+        else:
+            sys.stdout.buffer.write(data)
+            sys.stdout.buffer.flush()
+
+    def say(msg):
+        msg = msg.rstrip("\n").replace("\n", "\r\n")
+        write(f"\r\n[labgrid] {msg}\r\n".encode())
+
+    def leave_prompt():
+        nonlocal prompting, dropped
+        prompting = False
+        write(bytes(held))
+        held.clear()
+        if dropped:
+            say("some console output was dropped while the prompt was open")
+            dropped = False
+
+    def run_command(line):
+        line = " ".join(line.split())
+        # Enter already closed the prompt, so there is nothing left to do for q
+        if line in ("", "q"):
+            return
+        try:
+            res = commands[1](line)
+            if callable(res):
+                say(f"{line}...")
+                res = res() or f"{line} done"
+        except Exception as e:  # pylint: disable=broad-except
+            res = f"{line} failed: {e}"
+        if res:
+            say(res)
 
     def read_keys():
         """Collect what the user types, called by the event loop
@@ -198,7 +252,9 @@ async def run(check_allowed, cons, log_fd, listen_only, inp=None):
             asyncio.get_running_loop().remove_reader(inp.fileno())
 
     # Show a message to indicate we are waiting for output from the board
-    if inp:
+    if prompt:
+        msg = 'Terminal ready...press Ctrl-] twice to exit, Ctrl-T for commands'
+    elif inp:
         msg = 'Terminal ready...press Ctrl-] twice to exit'
     else:
         msg = 'Terminal ready...press Ctrl-C to exit'
@@ -222,8 +278,7 @@ async def run(check_allowed, cons, log_fd, listen_only, inp=None):
                         sys.stdout.write(erase_msg)
                         sys.stdout.flush()
                         have_output = True
-                    sys.stdout.buffer.write(data)
-                    sys.stdout.buffer.flush()
+                    write(data)
                     if log_fd:
                         log_fd.write(data)
                         log_fd.flush()
@@ -249,7 +304,19 @@ async def run(check_allowed, cons, log_fd, listen_only, inp=None):
                 # one follows; if it does, exit without sending either
                 done = False
                 out = bytearray()
-                for ch in data:
+                while data:
+                    if prompting:
+                        echo, status, data = prompt.feed(data)
+                        sys.stdout.buffer.write(echo)
+                        sys.stdout.buffer.flush()
+                        if status == "literal":
+                            out.append(PROMPT_CHAR)
+                        if status:
+                            leave_prompt()
+                        if status == "enter":
+                            run_command(prompt.line)
+                        continue
+                    ch, data = data[0], data[1:]
                     if ch == EXIT_CHAR and exit_deadline:
                         done = True
                         break
@@ -258,6 +325,12 @@ async def run(check_allowed, cons, log_fd, listen_only, inp=None):
                         exit_deadline = None
                     if ch == EXIT_CHAR:
                         exit_deadline = time.monotonic() + EXIT_WINDOW
+                    elif ch == PROMPT_CHAR and prompt:
+                        prompting = True
+                        # the prompt goes below our message, so leave it there
+                        have_output = True
+                        sys.stdout.buffer.write(prompt.start())
+                        sys.stdout.buffer.flush()
                     else:
                         out.append(ch)
                 if done:
@@ -283,6 +356,9 @@ async def run(check_allowed, cons, log_fd, listen_only, inp=None):
             # Give the event loop a chance to run read_keys()
             await asyncio.sleep(0 if activity else .001)
 
+    if prompting:
+        leave_prompt()
+
     # Blank line to move past any partial output
     print()
     if returncode:
@@ -290,7 +366,7 @@ async def run(check_allowed, cons, log_fd, listen_only, inp=None):
     return returncode
 
 
-async def internal(check_allowed, cons, logfile, listen_only):
+async def internal(check_allowed, cons, logfile, listen_only, commands=None):
     """Start an internal terminal session
 
     This talks to the board directly, rather than starting a separate tool.
@@ -302,6 +378,7 @@ async def internal(check_allowed, cons, logfile, listen_only):
         cons (ConsoleProtocol): Console device to read/write
         logfile (str): Logfile to write output too, or None
         listen_only (bool): True to ignore keyboard input
+        commands (tuple): Commands for the command prompt, see run()
 
     Return:
         int: Result code
@@ -326,7 +403,7 @@ async def internal(check_allowed, cons, logfile, listen_only):
         # terminal, such as when input is piped in
         raw_mode = inp.raw_mode() if inp else contextlib.nullcontext()
         with raw_mode:
-            returncode = await run(check_allowed, cons, log_fd, listen_only, inp)
+            returncode = await run(check_allowed, cons, log_fd, listen_only, inp, commands)
 
     except OSError as err:
         print('error', err)

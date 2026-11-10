@@ -28,9 +28,9 @@ class UdevManager(ResourceManager):
     def on_resource_added(self, resource):
         subsystem = resource.match['SUBSYSTEM']
         if subsystem not in self._devices:
-            self._devices[subsystem] = list(self._context.list_devices(subsystem=subsystem))
-        for device in self._devices[subsystem]:
-            if resource.try_match(device):
+            self._devices[subsystem] = [(device, {}) for device in self._context.list_devices(subsystem=subsystem)]
+        for device, cache in self._devices[subsystem]:
+            if resource.try_match(device, cache):
                 self.logger.debug(" matched successfully against %s", resource.device)
 
     def _insert_into_queue(self, device):
@@ -45,8 +45,9 @@ class UdevManager(ResourceManager):
                 break
             self._devices.clear()
             self.logger.debug("%s: %s", device.action, device)
+            cache = {}
             for resource in self.resources:
-                if resource.try_match(device):
+                if resource.try_match(device, cache):
                     self.logger.debug(" matched successfully")
 
 @attr.s(eq=False)
@@ -126,30 +127,32 @@ class USBResource(ManagedResource):
 
         return meta, suggestions
 
-    def try_match(self, device):
+    def try_match(self, device, cache):
         if self.device is None:  # new device
-            def match_single(dev, key, value):
-                if dev.properties.get(key) == value:
-                    return True
-                if dev.attributes.get(key) and dev.attributes.asstring(key) == value:
-                    return True
-                if getattr(dev, key, None) == value:
-                    return True
-                return False
+            def values(dev, key):
+                return (
+                    dev.properties.get(key),
+                    dev.attributes.asstring(key) if dev.attributes.get(key) else None,
+                    getattr(dev, key, None),
+                )
+
+            def match_single(key, value):
+                if key not in cache:
+                    cache[key] = values(device, key)
+                return value in cache[key]
 
             def match_ancestors(key, value):
-                for ancestor in device.ancestors:
-                    if match_single(ancestor, key, value):
-                        return True
-                return False
+                if key not in cache:
+                    cache[key] = tuple(v for ancestor in device.ancestors for v in values(ancestor, key[1:]))
+                return value in cache[key]
 
             # process matches, SUBSYSTEM first
             for k, v in sorted(self.match.items(), key=lambda item: item[0] != 'SUBSYSTEM'):
                 if k.startswith('@'):
-                    if not match_ancestors(k[1:], v):
+                    if not match_ancestors(k, v):
                         return False
                 else:
-                    if not match_single(device, k, v):
+                    if not match_single(k, v):
                         return False
 
             if not self.filter_match(device):

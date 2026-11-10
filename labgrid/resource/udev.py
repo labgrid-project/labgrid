@@ -16,6 +16,7 @@ class UdevManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.queue = queue.Queue()
+        self._devices = {}
 
         self._pyudev = import_module('pyudev')
         self._context = self._pyudev.Context()
@@ -25,9 +26,10 @@ class UdevManager(ResourceManager):
         self._observer.start()
 
     def on_resource_added(self, resource):
-        devices = self._context.list_devices()
-        devices.match_subsystem(resource.match['SUBSYSTEM'])
-        for device in devices:
+        subsystem = resource.match['SUBSYSTEM']
+        if subsystem not in self._devices:
+            self._devices[subsystem] = list(self._context.list_devices(subsystem=subsystem))
+        for device in self._devices[subsystem]:
             if resource.try_match(device):
                 self.logger.debug(" matched successfully against %s", resource.device)
 
@@ -41,6 +43,7 @@ class UdevManager(ResourceManager):
                 device = self.queue.get(False)
             except queue.Empty:
                 break
+            self._devices.clear()
             self.logger.debug("%s: %s", device.action, device)
             for resource in self.resources:
                 if resource.try_match(device):

@@ -133,6 +133,7 @@ class TapToStreamPipe(Pipe):
             except BrokenPipeError:
                 logging.debug("Write pipe is closed")
                 self._handle_eof()
+                break
 
         self.write_event.set()
 

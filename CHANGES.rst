@@ -7,6 +7,8 @@ Bug fixes in 26.0.2
   with a non-remote ``NetworkInterfaces`` instance by updating
   ``RawNetworkInterfaceDriver`` to return a ``DefaultNetNamespace`` object
   in such cases.
+- Fix a bug where labgrid-tap-fwd would not exit when the pipe closed while a
+  frame was still pending.
 
 Release 26.0.1 (Released Oct 14, 2026)
 --------------------------------------

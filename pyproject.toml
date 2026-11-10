@@ -239,6 +239,7 @@ include = [
   "labgrid/util/netns.py",
   "labgrid/tapfwd.py",
   "tests/test_netns.py",
+  "tests/test_tapfwd.py",
 ]
 
 [tool.ruff.lint]

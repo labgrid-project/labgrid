@@ -140,7 +140,8 @@ class USBResource(ManagedResource):
                         return True
                 return False
 
-            for k, v in self.match.items():
+            # process matches, SUBSYSTEM first
+            for k, v in sorted(self.match.items(), key=lambda item: item[0] != 'SUBSYSTEM'):
                 if k.startswith('@'):
                     if not match_ancestors(k[1:], v):
                         return False

@@ -1762,15 +1762,19 @@ class ClientSession:
                 env_var["ADB_SERVER_SOCKET"] = f"tcp:{ip_addr}:{adb_port}"
 
                 # Find a free port on the exporter machine
-                scrcpy_port = sshmanager.get(host).run_check(
-                    'python3 -c "'
-                    "import socket;"
-                    "s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(("
-                    "'', 0));"
-                    "addr = s.getsockname();"
-                    "print(addr[1]);"
-                    's.close()"'
-                )[0]
+                command = resource.wrap_command(
+                    [
+                        "python3",
+                        "-c",
+                        "import socket;"
+                        "s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(("
+                        "'', 0));"
+                        "addr = s.getsockname();"
+                        "print(addr[1]);"
+                        "s.close()",
+                    ]
+                )
+                scrcpy_port = subprocess.check_output(command, text=True).strip()
 
                 scrcpy_cmd = [
                     "scrcpy",

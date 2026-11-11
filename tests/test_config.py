@@ -25,21 +25,22 @@ def test_get_target_option(tmpdir):
         """
     )
     c = Config(str(p))
-    assert c.get_target_option("main", "str") == "test"
-    assert c.get_target_option("main", "list") == [1, 2, 3]
-    assert c.get_target_option("main", "dict") == OrderedDict([("a", 1), ("b", 2)])
-    assert c.get_target_option("main", "bool") is False
-    assert c.get_target_option("main", "int") == 0x20
-    assert c.get_target_option("main", "float") == 3.14
-    assert c.get_target_option("main", "none") is None
+    with pytest.deprecated_call():
+        assert c.get_target_option("main", "str") == "test"
+        assert c.get_target_option("main", "list") == [1, 2, 3]
+        assert c.get_target_option("main", "dict") == OrderedDict([("a", 1), ("b", 2)])
+        assert c.get_target_option("main", "bool") is False
+        assert c.get_target_option("main", "int") == 0x20
+        assert c.get_target_option("main", "float") == 3.14
+        assert c.get_target_option("main", "none") is None
 
-    with pytest.raises(KeyError) as err:
-        c.get_target_option("main", "blah")
-    assert "No option" in str(err)
+        with pytest.raises(KeyError) as err:
+            c.get_target_option("main", "blah")
+        assert "No option" in str(err)
 
-    with pytest.raises(KeyError) as err:
-        c.get_target_option("nonexist", "str")
-    assert "No target" in str(err)
+        with pytest.raises(KeyError) as err:
+            c.get_target_option("nonexist", "str")
+        assert "No target" in str(err)
 
 
 def test_set_target_option(tmpdir):
@@ -52,16 +53,18 @@ def test_set_target_option(tmpdir):
     )
     c = Config(str(p))
 
-    with pytest.raises(KeyError) as err:
+    with pytest.deprecated_call(), pytest.raises(KeyError) as err:
         c.get_target_option("main", "spam")
     assert "No option" in str(err)
 
     c.set_target_option("main", "spam", "eggs")
-    assert c.get_target_option("main", "spam") == "eggs"
+    with pytest.deprecated_call():
+        assert c.get_target_option("main", "spam") == "eggs"
 
     obj = object()
     c.set_target_option("main", "obj", obj)
-    assert c.get_target_option("main", "obj") is obj
+    with pytest.deprecated_call():
+        assert c.get_target_option("main", "obj") is obj
 
 
 def test_template(tmpdir):

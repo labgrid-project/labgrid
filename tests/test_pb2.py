@@ -7,9 +7,13 @@ def test_place_as_pb2():
     assert pb2.name == "testing-place"
     assert pb2.created == place.created
     assert pb2.changed == place.changed
+    # a place without a remote place config leaves the optional field unset
+    assert not pb2.HasField("remote_place_config")
 
 def test_place_from_pb2():
-    place_start = Place(name="testing-place", comment="such-comment")
+    place_start = Place(
+        name="testing-place", comment="such-comment", remote_place_config="drivers:\n  SerialDriver: {}\n"
+    )
     pb2 = place_start.as_pb2()
     assert pb2.name == "testing-place"
     place_new = Place.from_pb2(pb2)
@@ -24,6 +28,7 @@ def test_place_from_pb2():
     assert place_new.created == place_start.created
     assert place_new.changed == place_start.changed
     assert place_new.reservation == place_start.reservation
+    assert place_new.remote_place_config == place_start.remote_place_config
 
 def test_from_pb2_tags():
     tags = {"some": "test", "more": "values"}

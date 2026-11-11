@@ -460,3 +460,14 @@ See the section about the various :ref:`shipped strategies <conf-strategies>`
 for examples on this.
 
 An example using the pytest plugin is provided under ``examples/strategy``.
+
+Distribution installation
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Labgrid is packaged for the following Linux distributions:
+
+- [Debian Sid](https://packages.debian.org/sid/python3-labgrid)
+- [Debian Forky](https://packages.debian.org/forky/python3-labgrid)
+- Unofficial support for Fedora 42 and 43 by
+  [philipmolloy/labgrid](https://copr.fedorainfracloud.org/coprs/philipmolloy/labgrid/)
+  on Fedora Copr

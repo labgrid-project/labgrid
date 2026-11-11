@@ -7,6 +7,7 @@ from importlib import import_module
 import attr
 
 from .helper import get_user
+from .proxy import proxymanager
 from .ssh import sshmanager
 from ..resource.common import Resource, NetworkResource
 from ..driver.exception import ExecutionError
@@ -53,7 +54,7 @@ class ManagedFile:
             ExecutionError: if the SSH connection/copy fails
         """
         if isinstance(self.resource, NetworkResource):
-            host = self.resource.host
+            host = proxymanager.get_ssh_host(self.resource)
             conn = sshmanager.open(host)
 
             if self._on_nfs(conn):

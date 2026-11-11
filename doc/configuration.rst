@@ -4717,3 +4717,65 @@ isolated
 
 name
   The name of the exporter.
+
+usb_hubs
+  A function which reads a description of the USB hubs in the lab, see
+  :ref:`exporter-usb-hubs`.
+
+.. _exporter-usb-hubs:
+
+Describing USB Hubs
+~~~~~~~~~~~~~~~~~~~
+In a lab with large USB hubs, the ``ID_PATH`` of each device is a long string
+which is hard to reconcile with the physical port that it is plugged into.
+Since the numbering of ports inside a hub rarely matches the labels on its case,
+even looking at the last few digits becomes a manual-lookup exercise.
+
+Instead, the hubs can be described in a separate YAML file,
+giving each hub a name, its ``base`` path
+and the path suffix for each port on its case:
+
+.. code-block:: yaml
+
+   a:
+     base: 'pci-0000:00:14.0-usb-0:10'
+     ports:
+       1: '2.1'
+       2: '2.2'
+       # ...
+       14: '1.2'
+   b:
+     base: 'pci-0000:04:00.0-usb-0:2'
+     ports:
+       7: '2.3'
+
+The suffixes depend on the hub's internal topology.
+They can be found by plugging a device into each port in turn
+and checking its ``ID_PATH`` with ``udevadm info``:
+the ``base`` is the common prefix and the suffix is the remainder.
+Quote the suffixes, since YAML would otherwise read ``1.10`` as the number 1.1.
+
+The exporter configuration then reads the file with ``usb_hubs()``
+(relative to the directory of the configuration)
+and builds each path with ``path(hub, port)``,
+adding a USB interface where one is needed:
+
+.. code-block:: yaml
+
+   # set hub = usb_hubs('hubs.yaml')
+   board1:
+     USBSerialPort:
+       match:
+         '@ID_PATH': '{{ hub.path('a', 2, '1.0') }}'
+     HIDRelay:
+       index: 4
+       match:
+         ID_PATH: '{{ hub.path('a', 14) }}'
+
+This expands to ``pci-0000:00:14.0-usb-0:10.2.2:1.0``
+and ``pci-0000:00:14.0-usb-0:10.1.2`` respectively.
+The match key is written out as usual,
+so the hub description works with any USB resource.
+
+An undefined hub or port stops the exporter with an error,
+so a typo does not produce a match which silently never succeeds.

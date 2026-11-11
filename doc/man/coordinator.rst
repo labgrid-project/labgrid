@@ -40,6 +40,29 @@ OPTIONS
 --pystuck-port PORT
     use a different pystuck port than 6666
 
+ENVIRONMENT
+-----------
+
+``LG_COORDINATOR_POLL_INTERVAL``
+    Interval in seconds between coordinator maintenance runs.
+    This controls saving state, resource synchronization and reservation scheduling.
+    A shorter interval reduces the delay before an expired lease is released,
+    at the cost of more frequent maintenance work.
+    Release can take longer if the coordinator is busy or an exporter fails.
+
+``LG_COORDINATOR_DEFAULT_LEASE_DURATION``
+    Initial lease duration in seconds.
+
+``LG_COORDINATOR_DEFAULT_EXTEND_DURATION``
+    Seconds added by each successful lease extension.
+
+``LG_COORDINATOR_MAX_LEASE_DURATION``
+    Maximum duration in seconds from lease start.
+    Initial and extension durations must not exceed this value.
+
+These variables are read and validated by the coordinator before the gRPC server
+is created.
+
 TLS WITH A REVERSE PROXY
 ------------------------
 

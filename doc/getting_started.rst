@@ -311,6 +311,14 @@ To interact with this place, it needs to be acquired first, this is done by
 
     labgrid-venv $ labgrid-client -p example-place acquire
 
+For short-lived access, a place can also be leased using a reservation:
+
+.. code-block:: bash
+
+    labgrid-venv $ eval "$(labgrid-client reserve --shell board=example)"
+    labgrid-venv $ labgrid-client wait
+    labgrid-venv $ labgrid-client -p + lease
+
 Now we can connect to the serial console:
 
 .. code-block:: bash

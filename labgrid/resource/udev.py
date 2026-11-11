@@ -1044,3 +1044,12 @@ class MatchedSysfsGPIO(USBResource):
             self.index = int(self.read_attr('base')) + self.pin
         else:
             self.index = None
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class FTDIPort(USBResource):
+    """
+    Local FTDIPort resource mapping udev discovery attributes
+    directly into userspace driver access layers.
+    """
+    pass

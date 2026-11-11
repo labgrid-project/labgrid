@@ -429,6 +429,19 @@ class NetworkSysfsGPIO(NetworkResource, ManagedResource):
         self.timeout = 10.0
         super().__attrs_post_init__()
 
+@target_factory.reg_resource
+@attr.s(eq=False)
+class NetworkFTDIPort(NetworkResource, ManagedResource):
+    manager_cls = RemotePlaceManager
+
+    """A NetworkFTDIPort describes a remotely shared FTDI utility channel"""
+    host = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    serial = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    path = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
 @attr.s(eq=False)
 class NetworkLXAIOBusNode(ManagedResource):
     manager_cls = RemotePlaceManager

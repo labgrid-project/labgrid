@@ -85,12 +85,42 @@ for more information.
 
 ENVIRONMENT VARIABLES
 ---------------------
-The following environment variable can be used to configure labgrid-exporter.
+The following environment variables can be used to configure
+labgrid-exporter.
 
 LG_COORDINATOR
 ~~~~~~~~~~~~~~
 This variable can be used to set the default coordinator in the format
 ``HOST[:PORT]`` (instead of using the ``-x`` option).
+
+LG_SERIAL_TRACE_DIR
+~~~~~~~~~~~~~~~~~~~
+When set, the exporter records all serial-port traffic for each
+acquired resource into
+``<LG_SERIAL_TRACE_DIR>/<board>-<resource>-<user>.log``, where
+``<board>`` is the resource group name, ``<resource>`` is the
+resource name and ``<user>`` is the acquiring user identity
+reported by the coordinator (in ``host/user`` form).  Any character
+other than a letter, digit, ``.``, ``_`` or ``-`` is rewritten to
+``_``.  Both directions are captured verbatim, and ser2net writes
+timestamped OPEN/CLOSE markers at the start and end of each client
+connection so the lab admin has an independent record that is not
+affected by per-client logging options.
+
+The directory is created on demand; if that fails, a warning is
+logged and the port is exported without tracing.  A fresh ser2net
+instance is started for each acquire, so repeated acquires by the
+same user on the same board append to the same file.  This needs
+ser2net 4.2.0 or later.
+
+LG_SERIAL_TRACE_HEXDUMP
+~~~~~~~~~~~~~~~~~~~~~~~
+When set to ``1`` (and ``LG_SERIAL_TRACE_DIR`` is also set), the
+exporter additionally enables ser2net's hexdump format for the
+trace.  This prepends a timestamp to every line at the cost of
+producing hex+ASCII output instead of readable text.  The
+timestamps have a resolution of one second.  Use this when knowing
+when each command was typed matters more than readability.
 
 EXAMPLES
 --------

@@ -172,6 +172,18 @@ class AddPlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class CreatePlaceRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class CreatePlaceResponse(_message.Message):
+    __slots__ = ("place",)
+    PLACE_FIELD_NUMBER: _ClassVar[int]
+    place: Place
+    def __init__(self, place: _Optional[_Union[Place, _Mapping]] = ...) -> None: ...
+
 class DeletePlaceRequest(_message.Message):
     __slots__ = ("name",)
     NAME_FIELD_NUMBER: _ClassVar[int]
@@ -181,6 +193,18 @@ class DeletePlaceRequest(_message.Message):
 class DeletePlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class GetPlaceRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class GetPlaceResponse(_message.Message):
+    __slots__ = ("place",)
+    PLACE_FIELD_NUMBER: _ClassVar[int]
+    place: Place
+    def __init__(self, place: _Optional[_Union[Place, _Mapping]] = ...) -> None: ...
 
 class GetPlacesRequest(_message.Message):
     __slots__ = ()
@@ -356,6 +380,30 @@ class AllowPlaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class SharePlaceRequest(_message.Message):
+    __slots__ = ("name", "user")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    USER_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    user: str
+    def __init__(self, name: _Optional[str] = ..., user: _Optional[str] = ...) -> None: ...
+
+class SharePlaceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class UnsharePlaceRequest(_message.Message):
+    __slots__ = ("name", "user")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    USER_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    user: str
+    def __init__(self, name: _Optional[str] = ..., user: _Optional[str] = ...) -> None: ...
+
+class UnsharePlaceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
 class CreateReservationRequest(_message.Message):
     __slots__ = ("filters", "prio")
     class FiltersEntry(_message.Message):
@@ -440,6 +488,18 @@ class PollReservationRequest(_message.Message):
     def __init__(self, token: _Optional[str] = ...) -> None: ...
 
 class PollReservationResponse(_message.Message):
+    __slots__ = ("reservation",)
+    RESERVATION_FIELD_NUMBER: _ClassVar[int]
+    reservation: Reservation
+    def __init__(self, reservation: _Optional[_Union[Reservation, _Mapping]] = ...) -> None: ...
+
+class RefreshReservationRequest(_message.Message):
+    __slots__ = ("reservation_id",)
+    RESERVATION_ID_FIELD_NUMBER: _ClassVar[int]
+    reservation_id: str
+    def __init__(self, reservation_id: _Optional[str] = ...) -> None: ...
+
+class RefreshReservationResponse(_message.Message):
     __slots__ = ("reservation",)
     RESERVATION_FIELD_NUMBER: _ClassVar[int]
     reservation: Reservation

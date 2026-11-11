@@ -27,6 +27,7 @@ from typing import Any, Dict
 
 import attr
 import grpc
+import yaml
 
 from labgrid.remote.grpc.interceptor.client import (
     IdentityClientStreamStreamInterceptor,
@@ -1005,6 +1006,19 @@ class ClientSession:
                 target.activate(drv)
             return drv
 
+    def _parse_driver_args(self, args):
+        parsed = {}
+        for arg in args:
+            try:
+                key, value = arg.split("=", 1)
+            except ValueError:
+                raise UserError(f"invalid bootstrap argument '{arg}', expected key=value")
+            try:
+                parsed[key] = yaml.safe_load(value)
+            except yaml.YAMLError as e:
+                raise UserError(f"invalid value for bootstrap argument '{key}': {e}") from e
+        return parsed
+
     def power(self):
         place = self.get_acquired_place()
         action = self.args.action
@@ -1260,10 +1274,12 @@ class ClientSession:
             NetworkIMXUSBLoader,
             NetworkRKUSBLoader,
             NetworkAlteraUSBBlaster,
+            NetworkUSBDebugger,
         )
         from ..driver import OpenOCDDriver
 
         drv = None
+        args = self._parse_driver_args(self.args.bootstrap_args)
         try:
             drv = target.get_driver("BootstrapProtocol", name=name)
         except NoDriverFoundError:
@@ -1276,8 +1292,7 @@ class ClientSession:
                 elif isinstance(resource, NetworkMXSUSBLoader):
                     drv = self._get_driver_or_new(target, "MXSUSBDriver", activate=False, name=name)
                     drv.loader.timeout = self.args.wait
-                elif isinstance(resource, NetworkAlteraUSBBlaster):
-                    args = dict(arg.split("=", 1) for arg in self.args.bootstrap_args)
+                elif isinstance(resource, (NetworkAlteraUSBBlaster, NetworkUSBDebugger)):
                     try:
                         drv = target.get_driver("OpenOCDDriver", activate=False, name=name)
                     except NoDriverFoundError:

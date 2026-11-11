@@ -1,5 +1,6 @@
 import pytest
 import socket
+from pexpect import TIMEOUT, EOF
 
 from labgrid import Environment
 from labgrid.driver import SSHDriver, ExecutionError
@@ -226,3 +227,82 @@ def test_unix_socket_forward(ssh_localhost, tmpdir):
                 send_socket.send(test_string.encode("utf-8"))
 
                 assert client_socket.recv(16).decode("utf-8") == test_string
+
+@pytest.mark.sshusername
+def test_start_process_simple(ssh_localhost):
+    with ssh_localhost.start_process("echo Hello World") as p:
+        assert p.read_nonblocking(6, timeout=10.0) == b"Hello "
+        assert p.read_nonblocking(7, timeout=10.0) == b"World\n"
+        with pytest.raises(EOF):
+            p.read_nonblocking(1, timeout=1)
+
+    with ssh_localhost.start_process("echo Hello World") as p:
+        p.expect("Hello World")
+        p.expect(EOF)
+        with pytest.raises(EOF):
+            p.expect(r".")
+
+
+@pytest.mark.sshusername
+def test_start_process_timeout(ssh_localhost):
+    with ssh_localhost.start_process("cat") as p:
+        with pytest.raises(TIMEOUT):
+            p.read_nonblocking(100, timeout=5)
+
+        with pytest.raises(TIMEOUT):
+            p.expect("Never found", timeout=5)
+
+@pytest.mark.sshusername
+def test_start_process_stream(ssh_localhost):
+    with ssh_localhost.start_process("cat") as p:
+        p.write(b"Hello World\n")
+        data = p.read_nonblocking(20, timeout=10.0)
+        data = data.decode("utf-8").splitlines()
+        # Only one hello world expected. Input echo is disabled
+        assert data == ["Hello World"]
+
+        assert p.poll() is None
+        assert p.exitcode is None
+        p.sendcontrol('d')
+        p.expect(EOF)
+
+        assert p.poll() == 0
+        assert p.wait() == 0
+        assert p.exitcode == 0
+
+    with ssh_localhost.start_process("cat") as p:
+        p.write(b"ABCDEF\n")
+
+        p.expect(b"ABCDEF", timeout=10.0)
+
+        assert p.poll() is None
+        assert p.exitcode is None
+        p.stop()
+
+        code = p.poll()
+        assert code is not None
+        assert code != 0
+        assert p.wait() == code
+        assert p.exitcode == code
+
+
+@pytest.mark.sshusername
+def test_start_process_read(ssh_localhost):
+    with ssh_localhost.start_process("echo Hello World") as p:
+        assert p.read(6, timeout=10.0) == b"Hello "
+        # Short read at EOF returns what is available
+        assert p.read(100, timeout=10.0) == b"World\n"
+        assert p.read(1, timeout=10.0) == b""
+
+    # Works with buffered data from expect
+    with ssh_localhost.start_process("echo Hello World") as p:
+        p.expect("Hello")
+        assert p.read(100, timeout=10.0) == b" World\n"
+
+    with ssh_localhost.start_process("cat") as p:
+        with pytest.raises(TIMEOUT):
+            p.read(1, timeout=2)
+
+        p.write(b"ABC\n")
+        assert p.read(3, timeout=10.0) == b"ABC"
+        assert p.read(1) == b"\n"

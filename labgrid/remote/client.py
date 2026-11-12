@@ -1719,10 +1719,15 @@ class ClientSession:
         await self._wait_reservation(reservation_id)
 
     async def print_reservations(self):
-        request = labgrid_coordinator_pb2.GetReservationsRequest()
+        request = labgrid_coordinator_pb2.ListReservationsRequest()
 
         try:
-            response: labgrid_coordinator_pb2.GetReservationsResponse = await self.stub.GetReservations(request)
+            response = await self._call_with_fallback(
+                self.stub.ListReservations,
+                request,
+                self.stub.GetReservations,
+                labgrid_coordinator_pb2.GetReservationsRequest(),
+            )
             reservations = [Reservation.from_pb2(x) for x in response.reservations]
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())

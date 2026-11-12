@@ -17,7 +17,15 @@ service Coordinator {
 
   rpc GetPlace(GetPlaceRequest) returns (GetPlaceResponse) {}
 
-  rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {}
+  rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {
+    option deprecated = true;
+  }
+
+  rpc ListPlaces(ListPlacesRequest) returns (ListPlacesResponse) {}
+
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {}
+
+  rpc ListPlaceResources(ListPlaceResourcesRequest) returns (ListPlaceResourcesResponse) {}
 
   rpc AddPlaceAlias(AddPlaceAliasRequest) returns (AddPlaceAliasResponse) {}
 
@@ -53,7 +61,11 @@ service Coordinator {
 
   rpc RefreshReservation(RefreshReservationRequest) returns (RefreshReservationResponse) {}
 
-  rpc GetReservations(GetReservationsRequest) returns (GetReservationsResponse) {}
+  rpc GetReservations(GetReservationsRequest) returns (GetReservationsResponse) {
+    option deprecated = true;
+  }
+
+  rpc ListReservations(ListReservationsRequest) returns (ListReservationsResponse) {}
 }
 
 message ClientInMessage {
@@ -191,10 +203,35 @@ message GetPlaceResponse {
 }
 
 message GetPlacesRequest {
+  option deprecated = true;
 };
 
 message GetPlacesResponse {
+  option deprecated = true;
+
   repeated Place places = 1;
+}
+
+message ListPlacesRequest {
+}
+
+message ListPlacesResponse {
+  repeated Place places = 1;
+}
+
+message ListResourcesRequest {
+};
+
+message ListResourcesResponse {
+  repeated Resource resources = 1;
+};
+
+message ListPlaceResourcesRequest {
+  string name = 1;
+}
+
+message ListPlaceResourcesResponse {
+  repeated Resource resources = 1;
 }
 
 message Place {
@@ -362,8 +399,18 @@ message RefreshReservationResponse {
 }
 
 message GetReservationsResponse {
+  option deprecated = true;
+
   repeated Reservation reservations = 1;
 };
 
 message GetReservationsRequest {
+  option deprecated = true;
+};
+
+message ListReservationsRequest {
+};
+
+message ListReservationsResponse {
+  repeated Reservation reservations = 1;
 };

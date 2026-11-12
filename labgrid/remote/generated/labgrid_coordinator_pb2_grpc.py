@@ -49,6 +49,21 @@ class CoordinatorStub(object):
                 request_serializer=labgrid__coordinator__pb2.GetPlacesRequest.SerializeToString,
                 response_deserializer=labgrid__coordinator__pb2.GetPlacesResponse.FromString,
                 )
+        self.ListPlaces = channel.unary_unary(
+                '/labgrid.Coordinator/ListPlaces',
+                request_serializer=labgrid__coordinator__pb2.ListPlacesRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.ListPlacesResponse.FromString,
+                )
+        self.ListResources = channel.unary_unary(
+                '/labgrid.Coordinator/ListResources',
+                request_serializer=labgrid__coordinator__pb2.ListResourcesRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.ListResourcesResponse.FromString,
+                )
+        self.ListPlaceResources = channel.unary_unary(
+                '/labgrid.Coordinator/ListPlaceResources',
+                request_serializer=labgrid__coordinator__pb2.ListPlaceResourcesRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.ListPlaceResourcesResponse.FromString,
+                )
         self.AddPlaceAlias = channel.unary_unary(
                 '/labgrid.Coordinator/AddPlaceAlias',
                 request_serializer=labgrid__coordinator__pb2.AddPlaceAliasRequest.SerializeToString,
@@ -129,6 +144,11 @@ class CoordinatorStub(object):
                 request_serializer=labgrid__coordinator__pb2.GetReservationsRequest.SerializeToString,
                 response_deserializer=labgrid__coordinator__pb2.GetReservationsResponse.FromString,
                 )
+        self.ListReservations = channel.unary_unary(
+                '/labgrid.Coordinator/ListReservations',
+                request_serializer=labgrid__coordinator__pb2.ListReservationsRequest.SerializeToString,
+                response_deserializer=labgrid__coordinator__pb2.ListReservationsResponse.FromString,
+                )
 
 
 class CoordinatorServicer(object):
@@ -171,6 +191,24 @@ class CoordinatorServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def GetPlaces(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListPlaces(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListResources(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListPlaceResources(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -272,6 +310,12 @@ class CoordinatorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListReservations(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_CoordinatorServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -309,6 +353,21 @@ def add_CoordinatorServicer_to_server(servicer, server):
                     servicer.GetPlaces,
                     request_deserializer=labgrid__coordinator__pb2.GetPlacesRequest.FromString,
                     response_serializer=labgrid__coordinator__pb2.GetPlacesResponse.SerializeToString,
+            ),
+            'ListPlaces': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListPlaces,
+                    request_deserializer=labgrid__coordinator__pb2.ListPlacesRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.ListPlacesResponse.SerializeToString,
+            ),
+            'ListResources': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListResources,
+                    request_deserializer=labgrid__coordinator__pb2.ListResourcesRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.ListResourcesResponse.SerializeToString,
+            ),
+            'ListPlaceResources': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListPlaceResources,
+                    request_deserializer=labgrid__coordinator__pb2.ListPlaceResourcesRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.ListPlaceResourcesResponse.SerializeToString,
             ),
             'AddPlaceAlias': grpc.unary_unary_rpc_method_handler(
                     servicer.AddPlaceAlias,
@@ -389,6 +448,11 @@ def add_CoordinatorServicer_to_server(servicer, server):
                     servicer.GetReservations,
                     request_deserializer=labgrid__coordinator__pb2.GetReservationsRequest.FromString,
                     response_serializer=labgrid__coordinator__pb2.GetReservationsResponse.SerializeToString,
+            ),
+            'ListReservations': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListReservations,
+                    request_deserializer=labgrid__coordinator__pb2.ListReservationsRequest.FromString,
+                    response_serializer=labgrid__coordinator__pb2.ListReservationsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -516,6 +580,57 @@ class Coordinator(object):
         return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/GetPlaces',
             labgrid__coordinator__pb2.GetPlacesRequest.SerializeToString,
             labgrid__coordinator__pb2.GetPlacesResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ListPlaces(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/ListPlaces',
+            labgrid__coordinator__pb2.ListPlacesRequest.SerializeToString,
+            labgrid__coordinator__pb2.ListPlacesResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ListResources(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/ListResources',
+            labgrid__coordinator__pb2.ListResourcesRequest.SerializeToString,
+            labgrid__coordinator__pb2.ListResourcesResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ListPlaceResources(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/ListPlaceResources',
+            labgrid__coordinator__pb2.ListPlaceResourcesRequest.SerializeToString,
+            labgrid__coordinator__pb2.ListPlaceResourcesResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -788,5 +903,22 @@ class Coordinator(object):
         return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/GetReservations',
             labgrid__coordinator__pb2.GetReservationsRequest.SerializeToString,
             labgrid__coordinator__pb2.GetReservationsResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ListReservations(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/labgrid.Coordinator/ListReservations',
+            labgrid__coordinator__pb2.ListReservationsRequest.SerializeToString,
+            labgrid__coordinator__pb2.ListReservationsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -216,6 +216,38 @@ class GetPlacesResponse(_message.Message):
     places: _containers.RepeatedCompositeFieldContainer[Place]
     def __init__(self, places: _Optional[_Iterable[_Union[Place, _Mapping]]] = ...) -> None: ...
 
+class ListPlacesRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class ListPlacesResponse(_message.Message):
+    __slots__ = ("places",)
+    PLACES_FIELD_NUMBER: _ClassVar[int]
+    places: _containers.RepeatedCompositeFieldContainer[Place]
+    def __init__(self, places: _Optional[_Iterable[_Union[Place, _Mapping]]] = ...) -> None: ...
+
+class ListResourcesRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class ListResourcesResponse(_message.Message):
+    __slots__ = ("resources",)
+    RESOURCES_FIELD_NUMBER: _ClassVar[int]
+    resources: _containers.RepeatedCompositeFieldContainer[Resource]
+    def __init__(self, resources: _Optional[_Iterable[_Union[Resource, _Mapping]]] = ...) -> None: ...
+
+class ListPlaceResourcesRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class ListPlaceResourcesResponse(_message.Message):
+    __slots__ = ("resources",)
+    RESOURCES_FIELD_NUMBER: _ClassVar[int]
+    resources: _containers.RepeatedCompositeFieldContainer[Resource]
+    def __init__(self, resources: _Optional[_Iterable[_Union[Resource, _Mapping]]] = ...) -> None: ...
+
 class Place(_message.Message):
     __slots__ = ("name", "aliases", "comment", "tags", "matches", "acquired", "acquired_resources", "allowed", "created", "changed", "reservation")
     class TagsEntry(_message.Message):
@@ -514,3 +546,13 @@ class GetReservationsResponse(_message.Message):
 class GetReservationsRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class ListReservationsRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class ListReservationsResponse(_message.Message):
+    __slots__ = ("reservations",)
+    RESERVATIONS_FIELD_NUMBER: _ClassVar[int]
+    reservations: _containers.RepeatedCompositeFieldContainer[Reservation]
+    def __init__(self, reservations: _Optional[_Iterable[_Union[Reservation, _Mapping]]] = ...) -> None: ...

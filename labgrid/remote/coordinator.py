@@ -1169,11 +1169,58 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @locked
     async def GetPlaces(self, unused_request, unused_context):
-        logging.debug("GetPlaces")
+        logging.warning("GetPlaces is deprecated; use ListPlaces instead")
         try:
             return labgrid_coordinator_pb2.GetPlacesResponse(places=[x.as_pb2() for x in self.places.values()])
         except Exception:
             logging.exception("error during get places")
+
+    async def ListPlaces(self, request, context):
+        logging.debug("ListPlaces")
+        # Successful list reads do not yield while copying the current state.
+        # They need not wait for mutations which are awaiting exporter replies.
+
+        places = []
+        for place in self.places.values():
+            places.append(place.as_pb2())
+
+        return labgrid_coordinator_pb2.ListPlacesResponse(places=places)
+
+    async def ListResources(self, request, context):
+        logging.debug("ListResources")
+
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    serialised = resource.as_pb2()
+                    serialised.path.exporter_name = resource.path[0]
+                    serialised.path.group_name = resource.path[1]
+                    serialised.path.resource_name = resource.path[3]
+                    resources.append(serialised)
+        return labgrid_coordinator_pb2.ListResourcesResponse(resources=resources)
+
+    async def ListPlaceResources(self, request, context):
+        name = request.name
+        logging.debug("ListPlaceResources name=%s", name)
+        if not name or not isinstance(name, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+        try:
+            place = self.places[name]
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    if not place.hasmatch(resource.path):
+                        continue
+                    serialised = resource.as_pb2()
+                    serialised.path.exporter_name = resource.path[0]
+                    serialised.path.group_name = resource.path[1]
+                    serialised.path.resource_name = resource.path[3]
+                    resources.append(serialised)
+        return labgrid_coordinator_pb2.ListPlaceResourcesResponse(resources=resources)
 
     def schedule_reservations(self):
         # The primary information is stored in the reservations and the places
@@ -1351,8 +1398,17 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
     @locked
     async def GetReservations(self, request: labgrid_coordinator_pb2.GetReservationsRequest, context):
+        logging.warning("GetReservations is deprecated; use ListReservations instead")
         reservations = [x.as_pb2() for x in self.reservations.values()]
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
+
+    async def ListReservations(self, request, context):
+        # Copy the current state without yielding or waiting for the mutation lock.
+        reservations = []
+        for reservation in self.reservations.values():
+            reservations.append(reservation.as_pb2())
+
+        return labgrid_coordinator_pb2.ListReservationsResponse(reservations=reservations)
 
 
 async def serve(listen, cleanup, server_credentials=None, debug=False) -> None:

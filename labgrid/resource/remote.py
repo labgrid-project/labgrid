@@ -220,6 +220,21 @@ class NetworkAlteraUSBBlaster(RemoteUSBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class NetworkSFEmulator(RemoteUSBResource):
+    """The NetworkSFEmulator describes a remotely accessible Dediprog
+    EM100-PRO SPI-flash emulator"""
+    chip = attr.ib(
+        default=None,
+        validator=attr.validators.instance_of(str)
+    )
+
+    def __attrs_post_init__(self):
+        self.timeout = 10.0
+        super().__attrs_post_init__()
+
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class NetworkSigrokUSBDevice(RemoteUSBResource):
     """The NetworkSigrokUSBDevice describes a remotely accessible sigrok USB device"""
     driver = attr.ib(

@@ -7,6 +7,7 @@ import logging
 import sys
 import os
 import os.path
+import re
 import traceback
 import signal
 import shutil
@@ -74,6 +75,9 @@ class ResourceExport(ResourceEntry):
     host = attr.ib(default=gethostname(), validator=attr.validators.instance_of(str))
     proxy = attr.ib(default=None)
     proxy_required = attr.ib(default=False)
+    group_name = attr.ib(default="")
+    resource_name = attr.ib(default="")
+    client_identity = attr.ib(default=None, init=False)
     local = attr.ib(init=False)
     local_params = attr.ib(init=False)
     start_params = attr.ib(init=False)
@@ -244,6 +248,54 @@ class SerialPortExport(ResourceExport):
             },
         }
 
+    @staticmethod
+    def _build_trace_args(group_name, resource_name, client_identity, path):
+        """Return ser2net YAML args for trace logging, or [] if disabled
+
+        Reads LG_SERIAL_TRACE_DIR; when set, creates the directory and
+        builds a per-board, per-resource, per-user file path under it,
+        then returns the YAML option pairs needed to enable trace-both
+        for that file.  The board comes from the resource's group name
+        when available, falling back to the basename of the device path
+        so the filename is still meaningful.  The user is the client
+        identity (host/user) which the coordinator sends when the
+        resource is acquired, or ``unknown`` when there is none.
+
+        The client chooses its identity, and ser2net treats a backslash
+        in the filename as an escape, so every character other than a
+        letter, digit, '.', '_' or '-' becomes '_'.  This also keeps the
+        name from breaking the YAML.
+
+        If the directory cannot be created, a warning is logged and
+        tracing is disabled, rather than failing the acquire.
+
+        Setting LG_SERIAL_TRACE_HEXDUMP=1 additionally enables ser2net's
+        hexdump format for the trace, which prepends a timestamp to
+        every line at the cost of producing hex+ASCII rather than raw
+        text.  Without it, only the OPEN and CLOSE session markers are
+        timestamped, but the traffic remains readable.
+        """
+        trace_dir = os.environ.get("LG_SERIAL_TRACE_DIR")
+        if not trace_dir:
+            return []
+        try:
+            os.makedirs(trace_dir, exist_ok=True)
+        except OSError as e:
+            logging.warning("Not tracing %s: cannot create LG_SERIAL_TRACE_DIR: %s", path, e)
+            return []
+        parts = [group_name or os.path.basename(path), resource_name, client_identity or "unknown"]
+        name = "-".join(re.sub(r"[^A-Za-z0-9._-]", "_", part) for part in parts if part)
+        trace_path = os.path.join(trace_dir, f"{name}.log")
+        args = [
+            "-Y",
+            f"    trace-both: {trace_path}",
+            "-Y",
+            "    trace-both-timestamp: true",
+        ]
+        if os.environ.get("LG_SERIAL_TRACE_HEXDUMP") == "1":
+            args += ["-Y", "    trace-both-hexdump: true"]
+        return args
+
     def _start(self, start_params):
         """Start ``ser2net`` subprocess"""
         assert self.local.avail
@@ -277,7 +329,21 @@ class SerialPortExport(ResourceExport):
                 "-Y",
                 "    max-connections: 10",
             ]
+            # If LG_SERIAL_TRACE_DIR is set, ask ser2net to log all
+            # serial traffic for this device.  Useful for centralised
+            # audit on the exporter host.  ser2net is started fresh
+            # on each acquire and stopped on release, so the trace
+            # file is named after the user who acquired it.
+            cmd += self._build_trace_args(
+                self.group_name, self.resource_name, self.client_identity, start_params["path"]
+            )
         else:
+            if os.environ.get("LG_SERIAL_TRACE_DIR"):
+                self.logger.warning(
+                    "Not tracing %s: LG_SERIAL_TRACE_DIR needs ser2net 4.2.0 or later, not %s",
+                    start_params["path"],
+                    ".".join(str(v) for v in version),
+                )
             cmd = [
                 self.ser2net_bin,
                 "-d",
@@ -1070,6 +1136,7 @@ class Exporter:
                                 out_message.set_acquired_request.group_name,
                                 out_message.set_acquired_request.resource_name,
                                 out_message.set_acquired_request.place_name,
+                                out_message.set_acquired_request.client_identity.id or None,
                             )
                         else:
                             await self.release(
@@ -1119,7 +1186,7 @@ class Exporter:
             logging.exception("error in coordinator message pump")
             raise
 
-    async def acquire(self, group_name, resource_name, place_name):
+    async def acquire(self, group_name, resource_name, place_name, client_identity=None):
         resource = self.groups.get(group_name, {}).get(resource_name)
         if resource is None:
             raise UnknownResourceError(
@@ -1131,6 +1198,11 @@ class Exporter:
                 f"Resource {group_name}/{resource_name} is already in use by {resource.acquired}"
             )
 
+        # Record who acquired the resource, so that ResourceExport
+        # subclasses can use it, e.g. for per-user trace files. This is
+        # None if the coordinator does not send the client identity.
+        if isinstance(resource, ResourceExport):
+            resource.client_identity = client_identity
         try:
             resource.acquire(place_name)
         finally:
@@ -1192,7 +1264,12 @@ class Exporter:
         proxy_req = self.isolated
         if issubclass(export_cls, ResourceExport):
             res = group[resource_name] = export_cls(
-                config, host=self.hostname, proxy=getfqdn(), proxy_required=proxy_req
+                config,
+                host=self.hostname,
+                proxy=getfqdn(),
+                proxy_required=proxy_req,
+                group_name=group_name,
+                resource_name=resource_name,
             )
             res.poll()
         else:

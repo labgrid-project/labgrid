@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    The ``env`` and ``strategy`` fixtures now pass a string as the ``reason``
+    parameter to ``pytest.exit()``. Previously the exception object itself was
+    passed, which has the wrong type and could make pytest fail with an error
+    instead of exiting with the intended message.

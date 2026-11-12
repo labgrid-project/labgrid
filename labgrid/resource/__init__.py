@@ -53,4 +53,4 @@ from .eth008 import Eth008DigitalOutput
 from .laa import LAASerialPort, LAAPowerPort, LAAUSBGadgetMassStorage, \
                  LAAUSBPort, LAAButtonPort, \
                  LAALed, LAATempSensor, LAAWattMeter, LAAProvider
-from .adb import NetworkADBDevice, RemoteUSBADBDevice, USBADBDevice
+from .adb import NetworkADBDevice, NetworkUSBADBDevice, RemoteUSBADBDevice, USBADBDevice

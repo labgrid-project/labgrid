@@ -27,6 +27,7 @@ from .udev import (
     MatchedSysfsGPIO
 )
 from ..util import dump
+from ..util.usbtree import list_hubs
 
 
 class Suggester:
@@ -116,11 +117,21 @@ def main():
         default=False,
         help="enable debug mode"
     )
+    parser.add_argument(
+        '--list-hubs',
+        action='store_true',
+        default=False,
+        help="list the USB hubs and how full each host controller is, then exit"
+    )
 
     args = parser.parse_args()
 
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if args.list_hubs:
+        print("\n".join(list_hubs()))
+        return
 
     suggester = Suggester(args)
     try:

@@ -1944,6 +1944,8 @@ configuration or under their own entries in an exporter configuration file.
 As the USB bus number can change depending on the kernel driver initialization
 order, it is better to use the ``ID_PATH`` instead of ``sys_name`` for USB
 devices.
+``labgrid-suggest --list-hubs`` shows the ``ID_PATH`` of each USB hub,
+which helps when writing matches for the devices on its ports.
 
 In the default udev configuration, ``ID_PATH`` is not available for all USB
 devices, but that can be changed by creating a udev rules file:

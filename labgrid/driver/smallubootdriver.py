@@ -35,7 +35,7 @@ class SmallUBootDriver(UBootDriver):
     - The UBoot must be able to parse multiple commands in a single
       line separated by ";".
     - The UBoot must support the "bootm" command to boot from a
-      memory location.
+      memory location, unless a different boot_command is configured.
 
     This driver was created especially for the following devices:
 
@@ -45,12 +45,14 @@ class SmallUBootDriver(UBootDriver):
         boot_secret (str): optional, secret used to unlock prompt
         boot_secret_nolf (bool): optional, send boot_secret without new line
         login_timeout (int): optional, timeout for login prompt detection,
+        boot_command (str): optional, command sent by boot() if no address is given
     """
 
     boot_expression = attr.ib(default=r"U-Boot 20\d+", validator=attr.validators.instance_of(str))
     boot_secret = attr.ib(default="a", validator=attr.validators.instance_of(str))
     boot_secret_nolf = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     login_timeout = attr.ib(default=60, validator=attr.validators.instance_of(int))
+    boot_command = attr.ib(default="bootm", validator=attr.validators.instance_of(str))
 
     @step()
     def _await_prompt(self):
@@ -111,11 +113,15 @@ class SmallUBootDriver(UBootDriver):
 
     @Driver.check_active
     @step(args=['name'], result=True)
-    def boot(self, name):
+    def boot(self, name: str = ""):
         """
-        Boot the device from the given memory location using 'bootm'.
+        Boot the device from the given memory location using 'bootm', or run
+        boot_command if no location is given.
 
         Args:
-            name (str): address to boot
+            name (str): optional, address to boot
         """
-        self.console.sendline(f"bootm {name}")
+        if name:
+            self.console.sendline(f"bootm {name}")
+        else:
+            self.console.sendline(self.boot_command)

@@ -39,6 +39,12 @@ def sshmanager_fix():
     yield sshmanager
     sshmanager.close_all()
 
+@pytest.fixture
+def proxymanager_fix():
+    force_proxy = proxymanager._force_proxy
+    yield proxymanager
+    type(proxymanager)._force_proxy = force_proxy
+
 def test_diff_dict():
     dict_a = {"a": 1,
               "b": 2}
@@ -182,7 +188,25 @@ def test_sshconnection_port_remote_forward_add_remove(connection_localhost):
 
     assert client_socket.recv(16).decode("utf-8") == test_string
     connection_localhost.remove_remote_port_forward(rport, lport)
-    assert connection_localhost._r_forwards == set()
+    assert connection_localhost._r_forwards == {}
+
+@pytest.mark.localsshmanager
+def test_sshconnection_port_remote_forward_auto_allocation(connection_localhost):
+    lport = get_free_port()
+    test_string = "Hello World"
+
+    rport = connection_localhost.add_remote_port_forward(0, lport, "localhost")
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(("127.0.0.1", lport))
+    server_socket.listen(1)
+    send_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    send_socket.connect(("127.0.0.1", rport))
+    client_socket, address = server_socket.accept()
+    send_socket.send(test_string.encode("utf-8"))
+
+    assert client_socket.recv(16).decode("utf-8") == test_string
+    connection_localhost.remove_remote_port_forward(rport, lport, "localhost")
+    assert connection_localhost._r_forwards == {}
 
 
 @pytest.mark.localsshmanager
@@ -217,6 +241,15 @@ def test_sshmanager_open(sshmanager_fix):
     assert isinstance(con, SSHConnection)
 
 @pytest.mark.localsshmanager
+def test_sshmanager_extra_options(sshmanager_fix):
+    extra_options = ["ConnectTimeout=3"]
+    con = sshmanager_fix.get("localhost", extra_options=extra_options)
+
+    assert con is not sshmanager_fix.get("localhost")
+    assert sshmanager_fix.get("localhost", extra_options=tuple(extra_options)) is con
+    assert con.run_check("echo Hello World") == ["Hello World"]
+
+@pytest.mark.localsshmanager
 def test_sshmanager_add_forward(sshmanager_fix):
     port = sshmanager_fix.request_forward("localhost", 'localhost', 3000)
 
@@ -248,9 +281,9 @@ def test_sshmanager_add_duplicate(sshmanager_fix):
     host = 'localhost'
     con = SSHConnection(host)
     sshmanager_fix.add_connection(con)
-    con_there = sshmanager_fix._connections[host]
+    con_there = sshmanager_fix._connections[host, ()]
     sshmanager_fix.add_connection(con)
-    con_now = sshmanager_fix._connections[host]
+    con_now = sshmanager_fix._connections[host, ()]
 
     assert con_now == con_there
 
@@ -259,7 +292,7 @@ def test_sshmanager_add_new(sshmanager_fix):
     host = 'other_host'
     con = SSHConnection(host)
     sshmanager_fix.add_connection(con)
-    con_now = sshmanager_fix._connections[host]
+    con_now = sshmanager_fix._connections[host, ()]
 
     assert con_now == con
 
@@ -277,6 +310,38 @@ def test_proxymanager_no_proxy(target):
     nr.proxy_required = False
 
     assert (host, port) == proxymanager.get_host_and_port(nr)
+
+@pytest.mark.localsshmanager
+@pytest.mark.parametrize("force_proxy, required, uses_proxy", [
+    (None, False, False),
+    ("ip6-localhost", False, True),
+    ("nosuchhost.notavailable", True, False),
+])
+def test_proxymanager_forward(target, sshmanager_fix, proxymanager_fix, force_proxy, required, uses_proxy):
+    nr = NetworkResource(target, None, "localhost")
+    nr.extra = {"proxy": "localhost", "proxy_required": required}
+    type(proxymanager_fix)._force_proxy = force_proxy
+    test_string = "Hello World"
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        server_socket.bind(("127.0.0.1", 0))
+        server_socket.listen(1)
+        server_socket.settimeout(5)
+        port = server_socket.getsockname()[1]
+        for forward in (proxymanager_fix.local_forward(nr, "localhost", port),
+                        proxymanager_fix.remote_forward(nr, port)):
+            with forward as forwarded_port:
+                with socket.create_connection(("127.0.0.1", forwarded_port), timeout=5) as send_socket:
+                    send_socket.sendall(test_string.encode("utf-8"))
+                    client_socket, _ = server_socket.accept()
+                    with client_socket:
+                        client_socket.settimeout(5)
+                        assert client_socket.recv(16).decode("utf-8") == test_string
+
+    connection = proxymanager_fix._get_connection(nr)
+    assert bool(connection.extra_options) == uses_proxy
+    assert connection._l_forwards == {}
+    assert connection._r_forwards == {}
 
 @pytest.mark.localsshmanager
 def test_proxymanager_remote_forced_proxy(target):

@@ -1,10 +1,11 @@
+import contextlib
 import subprocess
 from enum import Enum
 
 import attr
 
 from ..factory import target_factory
-from ..protocol import CommandProtocol, FileTransferProtocol, ResetProtocol
+from ..protocol import CommandProtocol, FileTransferProtocol, PortForwardProtocol, ResetProtocol
 from ..resource.adb import NetworkADBDevice, RemoteUSBADBDevice, USBADBDevice
 from ..step import step
 from ..util.proxy import proxymanager
@@ -25,8 +26,8 @@ class ADBRebootMode(Enum):
 
 @target_factory.reg_driver
 @attr.s(eq=False)
-class ADBDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, ResetProtocol):
-    """ADB driver to execute commands, transfer files and reset devices via ADB."""
+class ADBDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, ResetProtocol, PortForwardProtocol):
+    """ADB driver for commands, file transfers, resets and port forwarding."""
 
     bindings = {"device": {"USBADBDevice", "RemoteUSBADBDevice", "NetworkADBDevice"}}
 
@@ -128,6 +129,65 @@ class ADBDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Res
             timeout=timeout,
             check=True,
         )
+
+    # Port Forward Protocol
+
+    @contextlib.contextmanager
+    def _forward(self, command, listen_port, connect_port):
+        result = subprocess.run(
+            [
+                *self._base_command,
+                command,
+                "--no-rebind",
+                f"tcp:{listen_port}",
+                f"tcp:{connect_port}",
+            ],
+            stdout=subprocess.PIPE,
+            text=True,
+            timeout=ADB_TIMEOUT,
+            check=True,
+        )
+        try:
+            if listen_port == 0:
+                listen_port = int(result.stdout.strip())
+
+            yield listen_port
+        finally:
+            subprocess.run(
+                [*self._base_command, command, "--remove", f"tcp:{listen_port}"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=ADB_TIMEOUT,
+                check=False,
+            )
+
+    @Driver.check_active
+    @contextlib.contextmanager
+    def local_forward(self, remote_port: int, *, local_port: int = 0):
+        if isinstance(self.device, RemoteUSBADBDevice):
+            with (
+                self._forward("forward", 0, remote_port) as rp,
+                proxymanager.local_forward(self.device, "localhost", rp, local_port=local_port) as lp,
+            ):
+                yield lp
+            return
+
+        with self._forward("forward", local_port, remote_port) as lp:
+            yield lp
+
+    @Driver.check_active
+    @contextlib.contextmanager
+    def remote_forward(self, local_port: int, *, remote_port: int = 0):
+        if isinstance(self.device, RemoteUSBADBDevice):
+            with (
+                proxymanager.remote_forward(self.device, local_port) as lp,
+                self._forward("reverse", remote_port, lp) as rp,
+            ):
+                yield rp
+            return
+
+        with self._forward("reverse", remote_port, local_port) as rp:
+            yield rp
 
     # Reset Protocol
 

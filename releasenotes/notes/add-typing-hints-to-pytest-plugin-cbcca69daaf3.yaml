@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    The ``pytest``-specific parts of the labgrid framework now have typing hints.
+    The corresponding packages ship ``py.typed`` marker files, so type checkers
+    like mypy or pyright pick up the annotations when downstream users import
+    labgrid's pytest fixtures and plugins.

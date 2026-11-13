@@ -72,6 +72,7 @@ pyvisa = [
     "PyVISA-py>=0.5.2",
 ]
 snmp = ["pysnmp>=7.1.20"]
+telnet = ["telnetlib3>=4.0.0,<5"]
 vxi11 = ["python-vxi11>=0.9"]
 xena = ["xenavalkyrie>=3.0.1"]
 deb = ["labgrid[modbus,onewire,snmp]"]

@@ -30,6 +30,8 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         boot_command (str): optional boot command to boot target
         login_timeout (int): optional, timeout for login prompt detection
         boot_timeout (int): optional, timeout for initial Linux Kernel version detection
+        interrupt_interval (float): repeat interrupts before autoboot detection when nonzero
+        settle_time (float): quiet period before verifying the prompt
         strip_timestamp (bool, default=False): strip timestamps prepended to console when present
 
     """
@@ -46,11 +48,15 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     boot_commands = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict))
     login_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
     boot_timeout = attr.ib(default=30, validator=attr.validators.instance_of(int))
+    interrupt_interval = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
+    settle_time = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
     strip_timestamp = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self._status = 0
+        if self.interrupt_interval < 0 or self.settle_time < 0:
+            raise ValueError("interrupt_interval and settle_time must be nonnegative")
 
         if self.boot_expression:
             import warnings
@@ -163,9 +169,13 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
         expectations = [self.prompt, self.autoboot, self.password_prompt, TIMEOUT]
         while True:
+            if timeout.expired:
+                raise TIMEOUT(f"Timeout of {self.login_timeout} seconds waiting for U-Boot")
+            if self.interrupt_interval:
+                self.console.write(self.interrupt.encode('ASCII'))
             index, before, _, _ = self.console.expect(
                 expectations,
-                timeout=2
+                timeout=min(self.interrupt_interval or 2, timeout.remaining)
             )
             if index == 0:
                 self._status = 1
@@ -181,7 +191,7 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
             elif index == 3:
                 # expect hit a timeout while waiting for a match
-                if before == last_before:
+                if not self.interrupt_interval and before == last_before:
                     # we did not receive anything during the previous expect cycle
                     # let's assume the target is idle and we can safely issue a
                     # newline to check the state
@@ -194,6 +204,11 @@ class UBootDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
 
             last_before = before
 
+        if self.settle_time:
+            if not self.console.settle(self.settle_time, timeout=timeout.remaining):
+                raise TIMEOUT("U-Boot console did not settle")
+            self.console.sendline("")
+            self.console.expect(self.prompt, timeout=timeout.remaining)
         if self.prompt:
             self._check_prompt()
 

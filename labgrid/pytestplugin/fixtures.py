@@ -69,7 +69,8 @@ def env(request, record_testsuite_property):
         try:
             target = env.get_target(target_name)
         except UserError as e:
-            pytest.exit(e)
+            pytest.exit(str(e))
+        assert target, 'could not get target from environment'
         try:
             remote_place = target.get_resource(RemotePlace, wait_avail=False)
             remote_name = remote_place.name
@@ -129,7 +130,7 @@ def strategy(request, target):
     try:
         strategy = target.get_driver("Strategy")
     except NoDriverFoundError as e:
-        pytest.exit(e)
+        pytest.exit(str(e))
 
     state = request.config.option.lg_initial_state
     if state is not None:

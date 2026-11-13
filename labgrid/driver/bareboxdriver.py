@@ -9,6 +9,7 @@ from ..step import step
 from ..util import gen_marker, Timeout, re_vt100
 from .common import Driver
 from .commandmixin import CommandMixin
+from .exception import ExecutionError
 
 
 @target_factory.reg_driver
@@ -65,7 +66,7 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
     def run(self, cmd: str, *, timeout: int = 30):
         return self._run(cmd, timeout=timeout)
 
-    def _run(self, cmd: str, *, timeout: int = 30, adjust_log_level: bool = True, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=unused-argument,line-too-long
+    def _run(self, cmd: str, *, timeout: int = 30, adjust_log_level: bool = True, codec: str = "utf-8", decodeerrors: str = "strict"):  # pylint: disable=line-too-long
         """
         Runs the specified command on the shell and returns the output.
 
@@ -74,9 +75,14 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
             timeout (int): optional, timeout in seconds
 
         Returns:
-            Tuple[List[str],List[str], int]: if successful, None otherwise
+            Tuple[List[str],List[str], int]: stdout, stderr and exit code
+
+        Raises:
+            ExecutionError: if barebox is not at the prompt
         """
-        # FIXME: use codec, decodeerrors
+        if self._status != 1:
+            raise ExecutionError("barebox is not at the prompt, cannot run commands")
+
         marker = gen_marker()
         # hide marker from expect
         hidden_marker = f'"{marker[:4]}""{marker[4:]}"'
@@ -88,19 +94,16 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         if self.saved_log_level and adjust_log_level:
             cmp_command += ' global.loglevel=0;'
 
-        if self._status == 1:
-            self.console.sendline(cmp_command)
-            _, _, match, _ = self.console.expect(
-                rf'{marker}(.*){marker}\s+(\d+)\s+.*{self.prompt}',
-                timeout=timeout)
-            # Remove VT100 Codes and split by newline
-            data = re_vt100.sub('', match.group(1).decode('utf-8')).split('\r\n')[1:-1]
-            self.logger.debug("Received Data: %s", data)
-            # Get exit code
-            exitcode = int(match.group(2))
-            return (data, [], exitcode)
-
-        return None
+        self.console.sendline(cmp_command)
+        _, _, match, _ = self.console.expect(
+            rf'{marker}(.*){marker}\s+(\d+)\s+.*{self.prompt}',
+            timeout=timeout)
+        # Remove VT100 Codes and split by newline
+        data = re_vt100.sub('', match.group(1).decode(codec, decodeerrors)).split('\r\n')[1:-1]
+        self.logger.debug("Received Data: %s", data)
+        # Get exit code
+        exitcode = int(match.group(2))
+        return (data, [], exitcode)
 
     @Driver.check_active
     @step()
@@ -149,6 +152,10 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # Because pexpect keeps any read data in it's buffer when a timeout
         # occours, we can't lose any data this way.
         last_before = None
+        late_matches = set()
+        timeout_message = (
+            f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"
+        )
         password_entered = False
 
         expectations = [self.prompt, self.autoboot, "Password: ", TIMEOUT]
@@ -187,11 +194,14 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
                     self.console.sendline("")
 
                 if timeout.expired:
-                    raise TIMEOUT(
-                        f"Timeout of {self.login_timeout} seconds exceeded during waiting for login"
-                    )
+                    raise TIMEOUT(timeout_message)
 
             last_before = before
+
+            if index != 3 and timeout.expired:
+                if index in late_matches:
+                    raise TIMEOUT(timeout_message)
+                late_matches.add(index)
 
         self._check_prompt()
 
@@ -199,9 +209,11 @@ class BareboxDriver(CommandMixin, Driver, CommandProtocol, LinuxBootProtocol):
         # by pollers because no hardware interaction is triggered by echo, so
         # it should be safe to use the usual shell wrapper via _run()
         stdout, _, exitcode = self._run("echo $global.loglevel", adjust_log_level=False)
-        [saved_log_level] = stdout
-        if exitcode == 0 and saved_log_level.isnumeric():
-            self.saved_log_level = saved_log_level
+        if exitcode == 0 and len(stdout) == 1 and stdout[0].isnumeric():
+            self.saved_log_level = stdout[0]
+        else:
+            self.logger.debug("Unexpected output while reading the log level, keeping %s: %s",
+                              self.saved_log_level, stdout)
 
         # silence barebox, the driver can get confused by asynchronous messages
         # logged to the console otherwise

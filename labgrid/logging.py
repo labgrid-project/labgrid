@@ -1,5 +1,6 @@
 import logging
 import copy
+from typing import cast
 
 import attr
 
@@ -15,7 +16,7 @@ def basicConfig(**kwargs):
     root = logging.getLogger()
 
     parent = root.handlers[0].formatter
-    root.handlers[0].setFormatter(StepFormatter(indent=indent, parent=parent))
+    root.handlers[0].setFormatter(cast(logging.Formatter, StepFormatter(indent=indent, parent=parent)))
 
 
 logging.CONSOLE = logging.INFO - 5

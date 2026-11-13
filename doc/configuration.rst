@@ -2227,6 +2227,69 @@ Arguments:
   - extra_options (list or str): optional, extra options required for the SSH connection, e.g.
     defining host key algorithms
 
+CFEDriver
+~~~~~~~~~
+The :any:`CFEDriver` implements :any:`LinuxBootProtocol` for Broadcom CFE.
+It binds to a console and interrupts autoboot with Ctrl-C. ``autoboot`` may
+specify a banner to wait for before sending a single interrupt; otherwise
+interrupts repeat every ``interrupt_interval`` seconds until the prompt.
+All prompt acquisition is bounded by ``login_timeout``.
+
+.. code-block:: yaml
+
+   CFEDriver:
+     init_commands:
+       - ifconfig eth0 -auto
+     boot_command: boot -elf 192.0.2.1:sibyte/vmlinux.32
+     boot_timeout: 120
+
+For BCM4708 raw images, use a board-appropriate command such as
+``boot -raw -tftp -addr=0x01000000 -max=0x14000000 192.0.2.1:zImage``.
+``run_command(command, expect=..., timeout=...)`` checks an optional success
+expression against output before the next prompt. It does not implement
+CommandProtocol, since CFE has no portable shell exit status. ``init_commands``
+accepts strings or mappings with ``command``, optional ``expect`` and ``timeout``.
+The final command is configured with ``boot_command`` or selected by name from
+``boot_commands``. ``await_boot()`` waits for ``bootstring`` within ``boot_timeout``.
+
+YAMONDriver
+~~~~~~~~~~~
+The :any:`YAMONDriver` implements :any:`LinuxBootProtocol` for MIPS YAMON,
+including the MTX-1. It shares CFEDriver's prompt and command configuration.
+By default it interrupts at ``Press Ctrl-C to bypass this.`` and boots with
+``go .``. ``load("tftp://server/image", timeout=120)`` requires the successful
+``Start = 0x..., ... format = SREC`` summary before accepting the next prompt.
+A prompt following a failed load is not treated as success.
+
+.. code-block:: yaml
+
+   YAMONDriver:
+     init_commands:
+       - command: load tftp://192.0.2.1/mtx1/vmlinux.srec
+         expect: 'Start\s*=\s*0x[0-9a-fA-F]+,[^\r\n]*format\s*=\s*SREC'
+         timeout: 120
+     boot_command: go . console=ttyS0,115200
+
+CoLoDriver
+~~~~~~~~~~
+The :any:`CoLoDriver` implements :any:`LinuxBootProtocol` for Cobalt CoLo.
+It sends Ctrl-C at ``boot: running boot menu``, then waits for ``> ``.
+``load(server, filename)`` executes ``net`` and ``tftp server filename``.
+Configure ``boot_command`` to pass Linux arguments to ``exec``.
+
+.. code-block:: yaml
+
+   CoLoDriver:
+     init_commands:
+       - net
+       - command: tftp 192.0.2.1 cobalt/vmlinux64
+         timeout: 120
+     boot_command: 'exec "console=ttyS0,115200"'
+
+Bind CoLoDriver to a console implementing :any:`ConsoleProtocol`.
+CoLoDriver does not assume a firmware reset command; use power cycling or
+set ``reset_command`` for your firmware.
+
 UBootDriver
 ~~~~~~~~~~~
 A :any:`UBootDriver` interfaces with a U-Boot bootloader via a

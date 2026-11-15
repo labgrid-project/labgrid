@@ -379,10 +379,9 @@ class Place:
         if self.reservation:
             print(indent + f"reservation: {self.reservation}")
 
-        if reservation is not None:
+        if reservation is not None and reservation.state is ReservationState.leased:
             print(indent + f"lease timeout: {datetime.fromtimestamp(reservation.timeout)}")
-            if reservation.state is ReservationState.leased:
-                print(indent + f"lease started: {datetime.fromtimestamp(reservation.lease_start_time)}")
+            print(indent + f"lease started: {datetime.fromtimestamp(reservation.lease_start_time)}")
 
     def getmatch(self, resource_path):
         """Return the ResourceMatch object for the given resource path or None if not found.

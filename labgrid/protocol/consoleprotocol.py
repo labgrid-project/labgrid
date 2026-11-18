@@ -1,11 +1,13 @@
 import abc
+from typing import Optional, Union
+from pexpect import EOF, TIMEOUT
 
 
 class ConsoleProtocol(abc.ABC):
     """Abstract class for the ConsoleProtocol"""
 
     @abc.abstractmethod
-    def read(self):
+    def read(self, size: int = 1, timeout: float = 0.0, max_size: Optional[int] = None):
         """
         Read data from underlying port
         """
@@ -24,7 +26,11 @@ class ConsoleProtocol(abc.ABC):
     def sendcontrol(self, char: str):
         raise NotImplementedError
 
-    def expect(self, pattern: str):
+    def expect(
+        self,
+        pattern: Union[str, bytes, type[EOF], type[TIMEOUT], list[Union[str, bytes, type[EOF], type[TIMEOUT]]]],
+        timeout: float = -1,
+    ):
         raise NotImplementedError
 
     class Client(abc.ABC):

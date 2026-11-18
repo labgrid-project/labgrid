@@ -26,6 +26,14 @@ class BareboxStrategy(Strategy):
     }
 
     status = attr.ib(default=Status.unknown)
+    wait_for_systemd = attr.ib(
+        default=True,
+        validator=attr.validators.optional(attr.validators.instance_of(bool))
+    )
+    systemd_timeout = attr.ib(
+        default=30,
+        validator=attr.validators.optional(attr.validators.instance_of(int))
+    )
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
@@ -57,7 +65,8 @@ class BareboxStrategy(Strategy):
             self.barebox.boot("")
             self.barebox.await_boot()
             self.target.activate(self.shell)
-            self.shell.run("systemctl is-system-running --wait")
+            if self.wait_for_systemd:
+                self.shell.run("systemctl is-system-running --wait", timeout=self.systemd_timeout)
         else:
             raise StrategyError(
                 f"no transition found from {self.status} to {status}"

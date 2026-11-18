@@ -1298,16 +1298,6 @@ $ labgrid\-client \-p <placename> acquire
 .UNINDENT
 .UNINDENT
 .sp
-Open a console to the acquired place:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.EX
-$ labgrid\-client \-p <placename> console
-.EE
-.UNINDENT
-.UNINDENT
-.sp
 Add all resources with the group \(dqexample\-group\(dq to the place example\-place:
 .INDENT 0.0
 .INDENT 3.5
@@ -1327,6 +1317,35 @@ $ labgrid\-client \-\-tls [\-\-cacert PATH] places
 .EE
 .UNINDENT
 .UNINDENT
+.sp
+Open a console to an acquired place:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+$ labgrid\-client \-p <placename> console
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+While the console is open, \fBCtrl\-T\fP opens a \fBlabgrid>\fP command prompt.
+Matching commands are shown while typing and \fBTab\fP completes them, \fBUp\fP
+and \fBDown\fP go through the previous commands, \fBEnter\fP runs a command and
+\fBq\fP (followed by \fBEnter\fP) or \fBCtrl\-C\fP leaves the prompt. Console output
+is held back while the prompt is open. \fBCtrl\-T Ctrl\-T\fP sends a literal
+\fBCtrl\-T\fP to the target. The prompt is not available with \fB\-\-listenonly\fP or
+when stdin is not a terminal.
+.sp
+The available commands are:
+.INDENT 0.0
+.IP \(bu 2
+\fBpower (pw) on|off|cycle|get\fP
+.IP \(bu 2
+\fBhelp\fP
+.UNINDENT
+.sp
+They accept the same options as the corresponding \fBlabgrid\-client\fP
+command, e.g. \fBpw cycle \-t 5\fP, and \fB\-h\fP shows their help.
 .SH SEE ALSO
 .sp
 \fBlabgrid\-exporter\fP(1)

@@ -10,4 +10,5 @@ class TestSerialPort:
         s = RawSerialPort(target, 'serial', 'port', 115200)
         assert (s.port == 'port')
         assert (s.speed == 115200)
+        assert (s.xonxoff == False)
         assert s in target.resources

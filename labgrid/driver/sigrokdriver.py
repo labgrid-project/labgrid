@@ -28,13 +28,7 @@ from ..util import Timeout
 class SigrokCommon(Driver):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        # FIXME make sure we always have an environment or config
-        if self.target.env:
-            self.tool = self.target.env.config.get_tool(
-                'sigrok-cli'
-            ) or 'sigrok-cli'
-        else:
-            self.tool = 'sigrok-cli'
+        self.tool = self.target.get_tool('sigrok-cli') or 'sigrok-cli'
         self._running = False
 
     def _create_tmpdir(self):

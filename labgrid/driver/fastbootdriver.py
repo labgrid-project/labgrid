@@ -34,11 +34,7 @@ class AndroidFastbootDriver(Driver):
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
-        # FIXME make sure we always have an environment or config
-        if self.target.env:
-            self.tool = self.target.env.config.get_tool('fastboot')
-        else:
-            self.tool = 'fastboot'
+        self.tool = self.target.get_tool('fastboot')
 
     def _get_fastboot_prefix(self):
         if isinstance(self.fastboot, (AndroidUSBFastboot, RemoteAndroidUSBFastboot)):

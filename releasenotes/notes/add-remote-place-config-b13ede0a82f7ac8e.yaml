@@ -1,0 +1,22 @@
+---
+features:
+  - |
+    The coordinator can now store a *remote place config* per place: resources,
+    drivers and target options are received via the ``RemotePlace``.
+    The config is edited with the new ``labgrid-client edit`` subcommand and
+    shown by ``labgrid-client show``.
+  - |
+    ``RemotePlace`` has gained the ``ignore_resources`` and ``ignore_drivers``
+    arguments to ignore or override resources and drivers from the remote place
+    config with local definitions in the environment configuration.
+  - |
+    ``Target`` has gained an ``options`` attribute holding the target's options
+    from the environment configuration, extended by the options of the remote
+    place config. Local options take precedence over remote ones.
+  - |
+    The sync-places contrib script now syncs and dumps remote place configs via
+    a ``remote_place_config`` key per place.
+deprecations:
+  - |
+    ``Config.get_target_option()`` is deprecated. Use ``Target.options``
+    instead, which also contains options added by the remote place config.

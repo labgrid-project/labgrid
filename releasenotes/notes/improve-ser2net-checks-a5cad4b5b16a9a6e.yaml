@@ -3,3 +3,6 @@ features:
   - |
     Exporters now test ser2net connectivity instead of waiting 500 ms for every
     acquire under global coordinator lock.
+upgrade:
+  - |
+    The exporter now blindly assumes ser2net >=4.1.7 to be installed.

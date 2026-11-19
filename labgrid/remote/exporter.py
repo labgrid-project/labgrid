@@ -251,41 +251,19 @@ class SerialPortExport(ResourceExport):
         assert start_params["path"].startswith("/dev/")
         self.port = get_free_port()
 
-        # Ser2net has switched to using YAML format at version 4.0.0.
-        result = subprocess.run([self.ser2net_bin, "-v"], capture_output=True, text=True)
-        _, _, version = str(result.stdout).split(" ")
-        version = tuple(map(int, version.strip().split(".")))
-
-        # There is a bug in ser2net between 4.4.0 and 4.6.1 where it
-        # returns 1 on a successful call to 'ser2net -v'. We don't want
-        # a failure because of this, so raise an error only if ser2net
-        # is not one of those versions.
-        if version not in [(4, 4, 0), (4, 5, 0), (4, 5, 1), (4, 6, 0), (4, 6, 1)] and result.returncode == 1:
-            raise ExporterError(f"ser2net {version} returned a nonzero code during version check.")
-
-        if version >= (4, 2, 0):
-            cmd = [
-                self.ser2net_bin,
-                "-d",
-                "-n",
-                "-Y",
-                f"connection: &con01#  accepter: telnet(rfc2217,mode=server),tcp,{self.port}",
-                "-Y",
-                f"  connector: serialdev(nouucplock=true),{start_params['path']},{self.local.speed}n81,local",  # pylint: disable=line-too-long
-                "-Y",
-                "  options:",
-                "-Y",
-                "    max-connections: 10",
-            ]
-        else:
-            cmd = [
-                self.ser2net_bin,
-                "-d",
-                "-n",
-                "-u",
-                "-C",
-                f"{self.port}:telnet:0:{start_params['path']}:{self.local.speed} NONE 8DATABITS 1STOPBIT LOCAL",  # pylint: disable=line-too-long
-            ]
+        cmd = [
+            self.ser2net_bin,
+            "-d",
+            "-n",
+            "-Y",
+            f"connection: &con01#  accepter: telnet(rfc2217,mode=server),tcp,{self.port}",
+            "-Y",
+            f"  connector: serialdev(nouucplock=true),{start_params['path']},{self.local.speed}n81,local",  # pylint: disable=line-too-long
+            "-Y",
+            "  options:",
+            "-Y",
+            "    max-connections: 10",
+        ]
         self.logger.info("Starting ser2net with: %s", " ".join(cmd))
         self.child = subprocess.Popen(cmd)
         timeout = Timeout(0.5)

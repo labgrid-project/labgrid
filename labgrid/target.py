@@ -93,7 +93,7 @@ class Target:
             waiting = set(r for r in waiting if r.avail != avail)
             for r in waiting:
                 r.poll()
-            if not any(r for r in waiting if r.avail == avail):
+            if waiting and not any(r for r in waiting if r.avail == avail):
                 # sleep if no progress
                 sleep(0.5)
 

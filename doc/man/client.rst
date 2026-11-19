@@ -59,6 +59,12 @@ LG_COORDINATOR_TLS
 Set this variable to ``true`` or ``1`` to enable TLS gRPC channels without
 using the ``--tls`` option.
 
+LG_CONSOLE_KEEP_PROMPT
+~~~~~~~~~~~~~~~~~~~~~~
+Set this variable to ``true`` or ``1`` to keep the console command prompt open
+after a command without using the ``--keep-prompt`` option,
+``--no-keep-prompt`` overrides it.
+
 LG_PROXY
 ~~~~~~~~
 This variable can be used to specify a SSH proxy hostname which should be used
@@ -148,8 +154,10 @@ Open a console to an acquired place:
 While the console is open, ``Ctrl-T`` opens a ``labgrid>`` command prompt.
 Matching commands are shown while typing and ``Tab`` completes them, ``Up``
 and ``Down`` go through the previous commands, ``Enter`` runs a command and
-``q`` (followed by ``Enter``) or ``Ctrl-C`` leaves the prompt. Console output
-is held back while the prompt is open. ``Ctrl-T Ctrl-T`` sends a literal
+``q`` (followed by ``Enter``) or ``Ctrl-C`` leaves the prompt. The prompt
+closes after each command, unless ``--keep-prompt`` is given (or
+``LG_CONSOLE_KEEP_PROMPT`` is set), then it stays open until ``q`` or
+``Ctrl-C``. Console output is held back while the prompt is open. ``Ctrl-T Ctrl-T`` sends a literal
 ``Ctrl-T`` to the target. The prompt is not available with ``--listenonly`` or
 when stdin is not a terminal.
 

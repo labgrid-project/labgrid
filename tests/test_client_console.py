@@ -9,6 +9,7 @@ ENV = {**os.environ, "PROMPT_TOOLKIT_NO_CPR": "1"}
 
 SCRIPT = textwrap.dedent("""
     import asyncio
+    import os
     import sys
     from types import SimpleNamespace
     from labgrid.remote.client import ClientSession
@@ -31,7 +32,8 @@ SCRIPT = textwrap.dedent("""
 
     async def main():
         place = SimpleNamespace(name="test")
-        with Session()._console_pty(place, None, sys.argv[1:]) as (call, kwargs):
+        keep_prompt = "KEEP_PROMPT" in os.environ
+        with Session()._console_pty(place, None, sys.argv[1:], keep_prompt=keep_prompt) as (call, kwargs):
             p = await asyncio.create_subprocess_exec(*call, **kwargs)
             print("ready", flush=True)
             await p.wait()
@@ -130,5 +132,39 @@ def test_console_pty_ctty():
     prog = [sys.executable, "-c", "open('/dev/tty'); print('has ctty')"]
     with pexpect.spawn(sys.executable, ["-c", SCRIPT, *prog], env=ENV, timeout=10) as spawn:
         spawn.expect("has ctty")
+        spawn.expect(pexpect.EOF)
+    assert spawn.exitstatus == 0
+
+
+def test_console_pty_keep_prompt():
+    with pexpect.spawn(
+        sys.executable,
+        ["-c", SCRIPT, "sh", "-c", "sleep 1; echo late; exec cat"],
+        env={**ENV, "KEEP_PROMPT": "1"},
+        timeout=10,
+    ) as spawn:
+        spawn.expect("ready")
+        prompt(spawn, "pw on\r")
+        spawn.expect(r"\[labgrid\] pw on done")
+        # the prompt stays open for the next command, also after an empty line
+        spawn.expect("labgrid>")
+        spawn.send("\r")
+        spawn.expect("labgrid>")
+        spawn.send("pw get\r")
+        spawn.expect(r"\[labgrid\] power for place test is on")
+        spawn.expect("labgrid>")
+        # output is still held back until q leaves the prompt
+        assert spawn.expect(["late", pexpect.TIMEOUT], timeout=2) == 1
+        spawn.send("q\r")
+        spawn.expect_exact("\x1b[?2004l")
+        spawn.expect("late")
+        spawn.send("hello\r")
+        spawn.expect("hello\r\nhello")
+        # Ctrl-C leaves it as well
+        prompt(spawn, "\x03")
+        spawn.expect_exact("\x1b[?2004l")
+        spawn.send("world\r")
+        spawn.expect("world\r\nworld")
+        spawn.send("\x04")
         spawn.expect(pexpect.EOF)
     assert spawn.exitstatus == 0

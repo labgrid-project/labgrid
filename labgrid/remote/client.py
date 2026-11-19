@@ -1129,7 +1129,9 @@ class ClientSession:
         elif action == "low":
             drv.set(False)
 
-    async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
+    async def _console(
+        self, place, target, timeout, *, logfile=None, loop=False, listen_only=False, keep_prompt=False
+    ):
         name = self.args.name
         from ..resource import NetworkSerialPort
 
@@ -1179,7 +1181,7 @@ class ClientSession:
         print(f"connecting to {resource} calling {' '.join(call)}")
         if not listen_only and sys.stdin.isatty():
             print("press Ctrl-T (Ctrl and t, no Shift) for the labgrid command prompt (Tab lists commands, q leaves)")
-            ctx = self._console_pty(place, target, call)
+            ctx = self._console_pty(place, target, call, keep_prompt=keep_prompt)
         else:
             ctx = contextlib.nullcontext((call, {}))
         with ctx as (call, spawn_kwargs):
@@ -1218,7 +1220,7 @@ class ClientSession:
         }
 
     @contextlib.contextmanager
-    def _console_pty(self, place, target, call):
+    def _console_pty(self, place, target, call, keep_prompt=False):
         """Run the console program on a pty, forwarding the local terminal to it.
 
         Yields the command line and keyword arguments to start the console
@@ -1226,6 +1228,7 @@ class ClientSession:
 
         Ctrl-T opens a prompt_toolkit command prompt for the commands from
         _console_commands(). Console output is held back while it is open.
+        It closes after each command, unless keep_prompt is set.
         """
         from prompt_toolkit import PromptSession
         from prompt_toolkit.completion import NestedCompleter
@@ -1266,13 +1269,20 @@ class ClientSession:
         dropped = False
         busy = False
 
-        def say(msg):
+        def message(msg):
             msg = msg.rstrip("\n").replace("\n", "\r\n")
-            msg = f"\r\n[labgrid] {msg}\r\n".encode()
+            return f"\r\n[labgrid] {msg}\r\n".encode()
+
+        def show(msg):
+            os.write(stdout, message(msg))
+
+        def say(msg):
+            """Like show(), but held back while the prompt is open, e.g. for a
+            command started from an earlier prompt that finishes meanwhile"""
             if prompting:
-                held.extend(msg)
+                held.extend(message(msg))
             else:
-                os.write(stdout, msg)
+                show(msg)
 
         def resize():
             fcntl.ioctl(master, termios.TIOCSWINSZ, fcntl.ioctl(stdin, termios.TIOCGWINSZ, b"\0" * 8))
@@ -1288,7 +1298,7 @@ class ClientSession:
                 say("some console output was dropped while the prompt was open")
                 dropped = False
 
-        def command_done(name, fut):
+        def command_done(name, fut, say):
             nonlocal busy
             busy = False
             if fut.exception():
@@ -1296,14 +1306,14 @@ class ClientSession:
             else:
                 say(fut.result() or f"{name} done")
 
-        def run_command(line):
+        def run_command(line, say):
+            """Run a command line, return the future of a started command"""
             nonlocal busy
             try:
                 words = shlex.split(line)
             except ValueError as e:
                 say(str(e))
                 return
-            # Enter already closed the prompt, so there is nothing left to do for q
             if words in ([], ["q"]):
                 return
             if words == ["help"]:
@@ -1336,18 +1346,30 @@ class ClientSession:
             say(f"{line}...")
             # commands may block (e.g. the power cycle delay), keep the console running meanwhile
             fut = loop.run_in_executor(None, commands[parser.prog], args)
-            fut.add_done_callback(lambda f: command_done(line, f))
+            fut.add_done_callback(lambda f: command_done(line, f, say))
+            return fut
 
         async def run_prompt():
             nonlocal prompt_task
-            # prompt_toolkit reads the terminal itself and expects it in its
-            # normal mode while the prompt is open
-            termios.tcsetattr(stdin, termios.TCSADRAIN, old_attrs)
             os.write(stdout, b"\r\n")
             try:
-                line = await session.prompt_async()
-            except (KeyboardInterrupt, EOFError):
-                line = ""
+                while True:
+                    # prompt_toolkit reads the terminal itself and expects it
+                    # in its normal mode while the prompt is open
+                    termios.tcsetattr(stdin, termios.TCSADRAIN, old_attrs)
+                    try:
+                        line = await session.prompt_async()
+                    except (KeyboardInterrupt, EOFError):
+                        line = "q"
+                    if not keep_prompt or line is literal or line.strip() == "q":
+                        break
+                    # raw again while the command runs, so that Ctrl-C does
+                    # not interrupt labgrid-client; keys typed meanwhile are
+                    # read by the next prompt
+                    tty.setraw(stdin)
+                    fut = run_command(line, show)
+                    if fut:
+                        await asyncio.wait([fut])
             finally:
                 # not when cancelled since the console has ended
                 if prompt_task:
@@ -1358,7 +1380,7 @@ class ClientSession:
             if line is literal:
                 os.write(master, b"\x14")
             else:
-                run_command(line)
+                run_command(line, say)
 
         def from_stdin():
             nonlocal prompting, prompt_task
@@ -1438,7 +1460,13 @@ class ClientSession:
     async def console(self, place, target):
         while True:
             res = await self._console(
-                place, target, 10.0, logfile=self.args.logfile, loop=self.args.loop, listen_only=self.args.listenonly
+                place,
+                target,
+                10.0,
+                logfile=self.args.logfile,
+                loop=self.args.loop,
+                listen_only=self.args.listenonly,
+                keep_prompt=self.args.keep_prompt,
             )
             # place released
             if res == 255:
@@ -2523,6 +2551,12 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     )
     subparser.add_argument("name", help="optional resource name", nargs="?")
     subparser.add_argument("--logfile", metavar="FILE", help="Log output to FILE", default=None)
+    subparser.add_argument(
+        "--keep-prompt",
+        action=argparse.BooleanOptionalAction,
+        default=os.environ.get("LG_CONSOLE_KEEP_PROMPT", "").strip().lower() in {"1", "true"},
+        help="keep the Ctrl-T command prompt open after a command until q or Ctrl-C",
+    )
     subparser.set_defaults(func=ClientSession.console)
 
     subparser = subparsers.add_parser("dfu", help="communicate with device in DFU mode")

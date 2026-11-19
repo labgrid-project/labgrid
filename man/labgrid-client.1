@@ -266,7 +266,9 @@ connect to the console
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client console|con [\-l] [\-o] [\-\-logfile FILE] [name]
+usage: labgrid\-client console|con [\-l] [\-o] [\-\-logfile FILE]
+                                  [\-\-keep\-prompt | \-\-no\-keep\-prompt]
+                                  [name]
 .EE
 .UNINDENT
 .UNINDENT
@@ -289,6 +291,11 @@ do not modify local terminal, do not send input from stdin
 .TP
 .B \-\-logfile <file>
 Log output to FILE
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-keep\-prompt, \-\-no\-keep\-prompt
+keep the Ctrl\-T command prompt open after a command until q or Ctrl\-C
 .UNINDENT
 .SS labgrid\-client create
 .sp
@@ -1230,6 +1237,11 @@ This variable can be used to set the default coordinator in the format
 .sp
 Set this variable to \fBtrue\fP or \fB1\fP to enable TLS gRPC channels without
 using the \fB\-\-tls\fP option.
+.SS LG_CONSOLE_KEEP_PROMPT
+.sp
+Set this variable to \fBtrue\fP or \fB1\fP to keep the console command prompt open
+after a command without using the \fB\-\-keep\-prompt\fP option,
+\fB\-\-no\-keep\-prompt\fP overrides it.
 .SS LG_PROXY
 .sp
 This variable can be used to specify a SSH proxy hostname which should be used
@@ -1331,8 +1343,10 @@ $ labgrid\-client \-p <placename> console
 While the console is open, \fBCtrl\-T\fP opens a \fBlabgrid>\fP command prompt.
 Matching commands are shown while typing and \fBTab\fP completes them, \fBUp\fP
 and \fBDown\fP go through the previous commands, \fBEnter\fP runs a command and
-\fBq\fP (followed by \fBEnter\fP) or \fBCtrl\-C\fP leaves the prompt. Console output
-is held back while the prompt is open. \fBCtrl\-T Ctrl\-T\fP sends a literal
+\fBq\fP (followed by \fBEnter\fP) or \fBCtrl\-C\fP leaves the prompt. The prompt
+closes after each command, unless \fB\-\-keep\-prompt\fP is given (or
+\fBLG_CONSOLE_KEEP_PROMPT\fP is set), then it stays open until \fBq\fP or
+\fBCtrl\-C\fP\&. Console output is held back while the prompt is open. \fBCtrl\-T Ctrl\-T\fP sends a literal
 \fBCtrl\-T\fP to the target. The prompt is not available with \fB\-\-listenonly\fP or
 when stdin is not a terminal.
 .sp

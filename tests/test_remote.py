@@ -7,15 +7,17 @@ import asyncio
 import grpc
 import signal
 import sys
+import textwrap
 import time
 
 from labgrid import Environment, Target
-from labgrid.remote.common import get_client_credentials, get_metadata_single_value_by_key
+from labgrid.driver import NetworkPowerDriver, SSHDriver, SerialDriver
+from labgrid.remote.common import Place, ResourceEntry, get_client_credentials, get_metadata_single_value_by_key
 from labgrid.remote.coordinator import get_server_credentials
 from labgrid.remote.exporter import Exporter, SerialPortExport
 from labgrid.remote.generated import labgrid_coordinator_pb2
 from labgrid.remote.generated import labgrid_coordinator_pb2_grpc
-from labgrid.resource import RemotePlace
+from labgrid.resource import NetworkPowerPort, NetworkSerialPort, NetworkService, RawSerialPort, RemotePlace
 from labgrid.util.yaml import dump
 
 
@@ -430,18 +432,37 @@ def _make_remote_place_config(tmpdir, options=None):
     return config
 
 
-def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_env=None):
-    if tls_env is not None:
-        monkeypatch.setenv("LG_COORDINATOR_TLS", tls_env)
+@pytest.fixture
+def dummy_session(monkeypatch, isolated_resource_managers):
+    """Replaces the RemotePlaceManager's coordinator session with a dummy serving the place "test"."""
 
     class DummySession:
         loop = None
 
+        def __init__(self):
+            self.place = Place("test")
+            self.resources = {}
+            self.start_kwargs = None
+
         def get_place(self, name):
-            return argparse.Namespace(tags={}, acquired_resources=[])
+            return self.place
 
         def get_target_resources(self, place):
-            return {}
+            return self.resources
+
+    session = DummySession()
+
+    def start_session(address, **kwargs):
+        session.start_kwargs = kwargs
+        return session
+
+    monkeypatch.setattr("labgrid.remote.client.start_session", start_session)
+    return session
+
+
+def _capture_remote_place_credentials(monkeypatch, tmpdir, dummy_session, *, options=None, tls_env=None):
+    if tls_env is not None:
+        monkeypatch.setenv("LG_COORDINATOR_TLS", tls_env)
 
     captured = {}
 
@@ -450,18 +471,14 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
         captured["cacert"] = cacert
         return "credentials" if tls else None
 
-    def start_session(address, *, extra=None, credentials=None, **kwargs):
-        captured["credentials"] = credentials
-        return DummySession()
-
     monkeypatch.setattr("labgrid.remote.common.get_client_credentials", get_client_credentials)
-    monkeypatch.setattr("labgrid.remote.client.start_session", start_session)
 
     config = _make_remote_place_config(tmpdir, options=options)
     env = Environment(str(config))
     target = Target("test", env=env)
     RemotePlace(target, name="test")
 
+    captured["credentials"] = dummy_session.start_kwargs["credentials"]
     return captured
 
 
@@ -487,14 +504,14 @@ def _capture_remote_place_credentials(monkeypatch, tmpdir, *, options=None, tls_
     ],
 )
 def test_remote_place_client_credentials(
-    monkeypatch, tmpdir, options, tls_env, expected_tls, expected_cacert, isolated_resource_managers
+    monkeypatch, tmpdir, dummy_session, options, tls_env, expected_tls, expected_cacert
 ):
     cert_path, _ = setup_tmp_cert_key(tmpdir)
     assert cert_path.basename == "cert.pem"
     if expected_cacert:
         expected_cacert = str(tmpdir.join(expected_cacert))
 
-    captured = _capture_remote_place_credentials(monkeypatch, tmpdir, options=options, tls_env=tls_env)
+    captured = _capture_remote_place_credentials(monkeypatch, tmpdir, dummy_session, options=options, tls_env=tls_env)
 
     assert captured["tls"] is expected_tls
     assert captured["cacert"] == expected_cacert
@@ -577,3 +594,206 @@ def test_get_metadata_single_value_by_key_is_case_sensitive():
     metadata = [("Key", "value")]
     assert get_metadata_single_value_by_key(metadata, "key") is None
     assert get_metadata_single_value_by_key(metadata, "Key") == "value"
+
+
+def test_remote_place_config_drivers_bind(dummy_session):
+    # bind remote place config's SerialDriver to matched NetworkSerialPort resource
+    # bind remote place config's SSHDriver to remote place config's NetworkService resource
+    dummy_session.resources[("console", "NetworkSerialPort")] = ResourceEntry(
+        {"cls": "NetworkSerialPort", "params": {"host": "localhost", "port": 2342}, "avail": True}
+    )
+    dummy_session.place.remote_place_config = textwrap.dedent(
+        """\
+             resources:
+               NetworkService:
+                 address: "localhost"
+                 username: "root"
+             drivers:
+               SerialDriver: {}
+               SSHDriver: {}
+        """
+    )
+
+    target = Target("test")
+    RemotePlace(target, name="test")
+
+    serial_driver = target.get_driver(SerialDriver, activate=False)
+    assert serial_driver.port is target.get_resource(NetworkSerialPort, wait_avail=False)
+    ssh_driver = target.get_driver(SSHDriver, activate=False)
+    assert ssh_driver.networkservice is target.get_resource(NetworkService, wait_avail=False)
+
+
+def test_remote_place_config_environment(dummy_session, tmpdir, caplog):
+    # matched resource
+    dummy_session.resources[("power", "NetworkPowerPort")] = ResourceEntry(
+        {"cls": "NetworkPowerPort", "params": {"model": "gude", "host": "localhost", "index": 1}, "avail": True}
+    )
+    # remote place config:
+    dummy_session.place.remote_place_config = textwrap.dedent(
+        """\
+            resources:
+              NetworkService:
+                address: "192.168.1.42"
+                username: "root"
+            drivers:
+              SerialDriver: {}
+            options:
+              shared-option: "remote"
+              remote-option: 23
+        """
+    )
+    # local environment config
+    config = tmpdir.join("env.yaml")
+    config.write(
+        textwrap.dedent(
+            """\
+            targets:
+              main:
+                resources:
+                  # defined before RemotePlace, so remote place config's SerialDriver can bind to it
+                  RawSerialPort:
+                    port: "/dev/ttyUSB0"
+                  RemotePlace:
+                    name: "test"
+                drivers:
+                  NetworkPowerDriver: {}
+                  SSHDriver: {}
+                options:
+                  shared-option: "local"
+                  local-option: 42
+            """
+        )
+    )
+
+    target = Environment(str(config)).get_target()
+
+    # env config's NetworkPowerDriver binds to matched NetworkPowerPort resource
+    power_driver = target.get_driver(NetworkPowerDriver, activate=False)
+    assert power_driver.port is target.get_resource(NetworkPowerPort, wait_avail=False)
+
+    # env config's SSHDriver binds to remote place config's NetworkService resource
+    ssh_driver = target.get_driver(SSHDriver, activate=False)
+    assert ssh_driver.networkservice is target.get_resource(NetworkService, wait_avail=False)
+
+    # remote place config's SerialDriver binds to local RawSerialPort resource
+    serial_driver = target.get_driver(SerialDriver, activate=False)
+    assert serial_driver.port is target.get_resource(RawSerialPort, wait_avail=False)
+
+    # local options take precedence over the remote place config's options
+    assert "ignoring remote place config option 'shared-option' of place test, environment config takes precedence" in caplog.text
+    assert target.options == {"shared-option": "local", "remote-option": 23, "local-option": 42}
+
+
+@pytest.mark.parametrize(
+    ("ignore_resources", "expected_resources"),
+    [
+        pytest.param(
+            [],  # ignore nothing
+            {"NetworkService:eth0", "NetworkService:eth1", "NetworkPowerPort:power"},  # nothing ignored
+            id="none",
+        ),
+        pytest.param(
+            ["NetworkService"],  # ignore existent resource class
+            {"NetworkPowerPort:power"},  # both NetworkServices ignored
+            id="class",
+        ),
+        pytest.param(
+            ["NetworkService:eth1"],  # ignore existent resource by class:name
+            {"NetworkService:eth0", "NetworkPowerPort:power"},  # only eth1 ignored
+            id="class:name",
+        ),
+        pytest.param(
+            ["InexistentResource"],  # ignore inexistent resource class
+            {"NetworkService:eth0", "NetworkService:eth1", "NetworkPowerPort:power"},  # nothing ignored
+            id="inexistent-class",
+        ),
+        pytest.param(
+            ["NetworkService:foo"],  # ignore inexistent resource class/name combination
+            {"NetworkService:eth0", "NetworkService:eth1", "NetworkPowerPort:power"},  # nothing ignored
+            id="inexistent-class:name",
+        ),
+    ],
+)
+def test_remote_place_ignore_resources(dummy_session, ignore_resources, expected_resources):
+    # matched resources should never be ignored, so add one and make sure it's always in the target's resources
+    dummy_session.resources[("console", "NetworkSerialPort")] = ResourceEntry(
+        {"cls": "NetworkSerialPort", "params": {"host": "localhost", "port": 4000}, "avail": True}
+    )
+    dummy_session.place.remote_place_config = textwrap.dedent(
+        """\
+            resources:
+            - NetworkService:
+                name: "eth0"
+                address: "192.168.1.42"
+                username: "root"
+            - NetworkService:
+                name: "eth1"
+                address: "192.168.2.42"
+                username: "root"
+            - NetworkPowerPort:
+                name: "power"
+                model: "gude"
+                host: "192.168.1.2"
+                index: 1
+        """
+    )
+
+    target = Target("test")
+    RemotePlace(target, name="test", ignore_resources=ignore_resources)
+
+    resources = {f"{resource.__class__.__name__}:{resource.name}" for resource in target.resources}
+    assert resources == {"RemotePlace:test", "NetworkSerialPort:console"} | expected_resources
+
+
+@pytest.mark.parametrize(
+    ("ignore_drivers", "expected_drivers"),
+    [
+        pytest.param(
+            [],  # ignore nothing
+            {"SerialDriver:console", "ManualPowerDriver:power1", "ManualPowerDriver:power2"},  # nothing ignored
+            id="none",
+        ),
+        pytest.param(
+            ["ManualPowerDriver"],  # ignore existent driver class
+            {"SerialDriver:console"},  # both ManualPowerDrivers ignored
+            id="class",
+        ),
+        pytest.param(
+            ["ManualPowerDriver:power2"],  # ignore existent driver by class:name
+            {"SerialDriver:console", "ManualPowerDriver:power1"},  # only power2 ignored
+            id="class:name",
+        ),
+        pytest.param(
+            ["InexistentDriver"],  # ignore inexistent driver class
+            {"SerialDriver:console", "ManualPowerDriver:power1", "ManualPowerDriver:power2"},  # nothing ignored
+            id="inexistent-class",
+        ),
+        pytest.param(
+            ["SerialDriver:foo"],  # ignore inexistent driver class/name combination
+            {"SerialDriver:console", "ManualPowerDriver:power1", "ManualPowerDriver:power2"},  # nothing ignored
+            id="inexistent-class:name",
+        ),
+    ],
+)
+def test_remote_place_ignore_drivers(dummy_session, ignore_drivers, expected_drivers):
+    # the SerialDriver from the config binds to a matched NetworkSerialPort resource
+    dummy_session.resources[("console", "NetworkSerialPort")] = ResourceEntry(
+        {"cls": "NetworkSerialPort", "params": {"host": "localhost", "port": 4000}, "avail": True}
+    )
+    dummy_session.place.remote_place_config = textwrap.dedent(
+        """\
+            drivers:
+            - SerialDriver:
+                name: "console"
+            - ManualPowerDriver:
+                name: "power1"
+            - ManualPowerDriver:
+                name: "power2"
+        """
+    )
+
+    target = Target("test")
+    RemotePlace(target, name="test", ignore_drivers=ignore_drivers)
+
+    drivers = {f"{driver.__class__.__name__}:{driver.name}" for driver in target.drivers}
+    assert drivers == expected_drivers

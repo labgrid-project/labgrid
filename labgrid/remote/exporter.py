@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 import warnings
 from pathlib import Path
 from typing import Dict, Type
-from socket import gethostname, getfqdn
+from socket import create_connection, gethostname, getfqdn
 import pathlib
 
 import attr
@@ -29,7 +29,7 @@ from labgrid.remote.grpc.interceptor.client import (
 from .config import ResourceConfig
 from .common import ResourceEntry, get_client_credentials, queue_as_aiter
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
-from ..util import get_free_port, labgrid_version
+from ..util import Timeout, get_free_port, labgrid_version
 
 
 exports: Dict[str, Type[ResourceEntry]] = {}
@@ -288,12 +288,14 @@ class SerialPortExport(ResourceExport):
             ]
         self.logger.info("Starting ser2net with: %s", " ".join(cmd))
         self.child = subprocess.Popen(cmd)
-        try:
-            self.child.wait(timeout=0.5)
-            raise ExporterError(f"ser2net for {start_params['path']} exited immediately")
-        except subprocess.TimeoutExpired:
-            # good, ser2net didn't exit immediately
-            pass
+        timeout = Timeout(0.5)
+        while not timeout.expired:
+            try:
+                create_connection(("127.0.0.1", self.port)).close()
+                break
+            except ConnectionRefusedError:
+                if self.child.poll() is not None:
+                    raise ExporterError(f"ser2net for {start_params['path']} exited immediately")
         self.logger.info("started ser2net for %s on port %d", start_params["path"], self.port)
 
     def _stop(self, start_params):

@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Exporters now test ser2net connectivity instead of waiting 500 ms for every
+    acquire under global coordinator lock.

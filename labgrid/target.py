@@ -31,9 +31,6 @@ class Target:
         # argument at the BindingMixin level.
         # https://github.com/python-attrs/attrs/issues/106
         self._binding_map = {}
-        self._lookup_table = {
-            Strategy.__name__: Strategy,
-        }
         atexit.register(self._atexit_cleanup)
 
     def interact(self, msg):
@@ -307,8 +304,6 @@ class Target:
 
         # update state
         self.resources.append(resource)
-        # update lookup table
-        self._lookup_table[resource.__class__.__name__] = resource.__class__
         resource.target = self
         resource.state = BindingState.bound
 
@@ -411,12 +406,6 @@ class Target:
 
         # update relationship in both directions
         self.drivers.append(client)
-        # update lookup table
-        cls = client.__class__
-        self._lookup_table[cls.__name__] = cls
-        for c in cls.mro():
-            if abc.ABC in c.mro():
-                self._lookup_table[c.__name__] = c
 
         client.target = self
         for supplier in bound_suppliers:

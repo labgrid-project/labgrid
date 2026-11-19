@@ -1050,6 +1050,51 @@ class Exporter:
         msg.startup.name = self.name
         self.out_queue.put_nowait(msg)
 
+    async def _handle_resource_request(self, kind, request):
+        logging.debug("handling %s", kind)
+        success = False
+        reason = None
+        try:
+            if kind == "set_acquired_request":
+                if request.place_name:
+                    await self.acquire(request.group_name, request.resource_name, request.place_name)
+                else:
+                    await self.release(request.group_name, request.resource_name)
+            elif kind == "lease_started_request":
+                await self.lease_started(
+                    request.group_name, request.resource_name, request.place_name, request.duration
+                )
+            elif kind == "lease_extended_request":
+                await self.lease_extended(
+                    request.group_name,
+                    request.resource_name,
+                    request.place_name if request.HasField("place_name") else None,
+                    request.duration,
+                )
+            success = True
+        except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
+            reason = str(e)
+            logging.warning("%s failed: %s", kind, reason)
+        except Exception as e:
+            reason = str(e) or repr(e)
+            logging.exception("failed to handle %s: %s", kind, reason)
+        finally:
+            in_message = labgrid_coordinator_pb2.ExporterInMessage()
+            in_message.response.success = success
+            if success and kind == "set_acquired_request":
+                logging.info(
+                    "%s/%s %s by %s",
+                    request.group_name,
+                    request.resource_name,
+                    "acquired" if request.place_name else "released",
+                    request.client_identity.id,
+                )
+            if reason:
+                in_message.response.reason = reason
+            logging.debug("queuing %s", in_message)
+            self.out_queue.put_nowait(in_message)
+            logging.debug("queued %s", in_message)
+
     async def message_pump(self):
         got_message = False
         try:
@@ -1060,45 +1105,8 @@ class Exporter:
                 if kind == "hello":
                     print("Exporter ready", flush=True)
                     logging.info("connected to coordinator version %s", out_message.hello.version)
-                elif kind == "set_acquired_request":
-                    logging.debug("acquire request")
-                    success = False
-                    reason = None
-                    try:
-                        if out_message.set_acquired_request.place_name:
-                            await self.acquire(
-                                out_message.set_acquired_request.group_name,
-                                out_message.set_acquired_request.resource_name,
-                                out_message.set_acquired_request.place_name,
-                            )
-                        else:
-                            await self.release(
-                                out_message.set_acquired_request.group_name,
-                                out_message.set_acquired_request.resource_name,
-                            )
-                        success = True
-                    except (BrokenResourceError, InvalidResourceRequestError, UnknownResourceError) as e:
-                        reason = str(e)
-                        logging.warning("set_acquired_request failed: %s", reason)
-                    except Exception as e:
-                        reason = str(e) or repr(e)
-                        logging.exception("failed to handle set_acquired_request: %s", reason)
-                    finally:
-                        in_message = labgrid_coordinator_pb2.ExporterInMessage()
-                        in_message.response.success = success
-                        if success:
-                            logging.info(
-                                "%s/%s %s by %s",
-                                out_message.set_acquired_request.group_name,
-                                out_message.set_acquired_request.resource_name,
-                                "acquired" if out_message.set_acquired_request.place_name else "released",
-                                out_message.set_acquired_request.client_identity.id,
-                            )
-                        if reason:
-                            in_message.response.reason = reason
-                        logging.debug("queuing %s", in_message)
-                        self.out_queue.put_nowait(in_message)
-                        logging.debug("queued %s", in_message)
+                elif kind in ("set_acquired_request", "lease_started_request", "lease_extended_request"):
+                    await self._handle_resource_request(kind, getattr(out_message, kind))
                 else:
                     logging.debug("unknown request: %s", kind)
         except grpc.aio.AioRpcError as e:
@@ -1136,6 +1144,29 @@ class Exporter:
         finally:
             await self.update_resource(group_name, resource_name)
 
+    async def lease_started(self, group_name, resource_name, place_name, duration):
+        resource = self.groups.get(group_name, {}).get(resource_name)
+        if resource is None:
+            raise UnknownResourceError(
+                f"lease start request for unknown resource {group_name}/{resource_name} by {place_name}"
+            )
+
+        if resource.acquired:
+            raise InvalidResourceRequestError(
+                f"Resource {group_name}/{resource_name} is already acquired by {resource.acquired}"
+            )
+
+        logging.info(
+            "received lease start for %s/%s by %s seconds",
+            group_name,
+            resource_name,
+            duration,
+        )
+        try:
+            resource.acquire(place_name)
+        finally:
+            await self.update_resource(group_name, resource_name)
+
     async def release(self, group_name, resource_name):
         resource = self.groups.get(group_name, {}).get(resource_name)
         if resource is None:
@@ -1146,6 +1177,26 @@ class Exporter:
                 resource.release()
         finally:
             await self.update_resource(group_name, resource_name)
+
+    async def lease_extended(self, group_name, resource_name, place_name, duration):
+        resource = self.groups.get(group_name, {}).get(resource_name)
+        if resource is None:
+            raise UnknownResourceError(f"lease extension request for unknown resource {group_name}/{resource_name}")
+
+        if not resource.acquired:
+            raise InvalidResourceRequestError(f"Resource {group_name}/{resource_name} is not acquired")
+
+        if place_name is not None and resource.acquired != place_name:
+            raise InvalidResourceRequestError(
+                f"Resource {group_name}/{resource_name} is acquired by {resource.acquired}, not {place_name}"
+            )
+
+        logging.info(
+            "received lease extension for %s/%s by %s seconds",
+            group_name,
+            resource_name,
+            duration,
+        )
 
     async def _poll_step(self):
         for group_name, group in self.groups.items():

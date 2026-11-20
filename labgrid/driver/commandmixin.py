@@ -28,10 +28,12 @@ class CommandMixin:
             sleepduration (int): sleep time between the runs of the cmd
         """
         timeout = Timeout(timeout)
-        while not any(pattern in s for s in self.run_check(cmd)) and not timeout.expired:
-            sleep(sleepduration)
-        if timeout.expired:
-            raise ExecutionError("Wait timeout expired")
+        while True:
+            if any(pattern in s for s in self.run_check(cmd)):
+                return
+            if timeout.expired:
+                raise ExecutionError("Wait timeout expired")
+            sleep(min(sleepduration, timeout.remaining))
 
     @Driver.check_active
     @step(args=["cmd", "expected", "tries", "timeout", "sleepduration"])

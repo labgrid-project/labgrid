@@ -125,7 +125,9 @@ class USBStorageDriver(Driver):
 
     @Driver.check_active
     @step(args=['filename'])
-    def write_image(self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0):
+    def write_image(
+        self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0, block_size=None, count=None
+    ):
         """
         Writes the file specified by filename or if not specified by config image subkey to the
         bound USB storage root device or partition.
@@ -135,8 +137,12 @@ class USBStorageDriver(Driver):
             mode (Mode): optional, Mode.DD or Mode.BMAPTOOL (defaults to Mode.DD)
             partition (int or None): optional, write to the specified partition or None for writing
                 to root device (defaults to None)
-            skip (int): optional, skip n 512-sized blocks at start of input file (defaults to 0)
-            seek (int): optional, skip n 512-sized blocks at start of output (defaults to 0)
+            skip (int): optional, skip n blocks at start of input file (defaults to 0)
+            seek (int): optional, skip n blocks at start of output (defaults to 0)
+            block_size (int or str): optional, block size for dd, in bytes or with a suffix
+                such as 'K' or 'M'; skip and seek are counted in blocks of this size. Defaults
+                to 512 if skip or seek is given, else 4M
+            count (int): optional, write at most n blocks (defaults to the whole file)
         """
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
@@ -151,7 +157,8 @@ class USBStorageDriver(Driver):
 
         if mode == Mode.DD:
             self.logger.info('Writing %s to %s using dd.', remote_path, target)
-            block_size = '512' if skip or seek else '4M'
+            if block_size is None:
+                block_size = "512" if skip or seek else "4M"
             args = [
                 "dd",
                 f"if={remote_path}",
@@ -163,9 +170,13 @@ class USBStorageDriver(Driver):
                 f"seek={seek}",
                 "conv=fdatasync"
             ]
+            if count is not None:
+                args.append(f"count={count}")
         elif mode == Mode.BMAPTOOL:
             if skip or seek:
                 raise ExecutionError("bmaptool does not support skip or seek")
+            if block_size is not None or count is not None:
+                raise ExecutionError("bmaptool does not support block_size or count")
 
             # Try to find a block map file using the same logic that bmaptool
             # uses. Handles cases where the image is named like: <image>.bz2
@@ -209,14 +220,32 @@ class USBStorageDriver(Driver):
         # simple concatenation is sufficient for USB mass storage
         return f"{self.storage.path}{partition}"
 
+    def _can_write(self, partition):
+        """Check whether the device or partition can be written to
+
+        When a device first appears, there is a short time before udev updates
+        its permissions, so it may not be writable yet
+
+        Args:
+            partition (int or None): partition to check, or None for the root
+                device
+
+        Returns:
+            bool: True if it can be written to
+        """
+        args = ["test", "-w", self._get_devpath(partition)]
+        return subprocess.run(self.storage.wrap_command(args), check=False).returncode == 0
+
     @Driver.check_active
     def _wait_for_medium(self, partition):
         timeout = Timeout(self.WAIT_FOR_MEDIUM_TIMEOUT)
         while not timeout.expired:
-            if self.get_size(partition) > 0:
+            if self.get_size(partition) > 0 and self._can_write(partition):
                 break
             time.sleep(self.WAIT_FOR_MEDIUM_SLEEP)
         else:
+            if self.get_size(partition) > 0:
+                raise ExecutionError(f"Timeout while waiting for {self._get_devpath(partition)} to be writable")
             raise ExecutionError("Timeout while waiting for medium")
 
     @Driver.check_active

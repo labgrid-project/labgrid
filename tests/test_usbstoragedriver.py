@@ -1,0 +1,80 @@
+import subprocess
+
+import pytest
+
+from labgrid.driver import ExecutionError, USBStorageDriver
+from labgrid.resource.udev import USBMassStorage
+
+
+class FakeDevice:
+    """Fake block device to use for testing"""
+
+    device_node = "/dev/sdx"
+    properties = {}
+
+
+@pytest.fixture
+def storage(target, mocker):
+    """Create an active USBStorageDriver, with its device ready to write"""
+    res = USBMassStorage(target, name=None)
+    res.device = FakeDevice()
+    drv = USBStorageDriver(target, name=None)
+    drv.WAIT_FOR_MEDIUM_TIMEOUT = 0.5
+    drv.WAIT_FOR_MEDIUM_SLEEP = 0.01
+    target.activate(drv)
+    mocker.patch.object(drv, "get_size", return_value=1 << 20)
+    return drv
+
+
+@pytest.fixture
+def image(tmpdir):
+    path = tmpdir.join("image.bin")
+    path.write(b"image")
+    return str(path)
+
+
+def writable(mocker, *results):
+    """Make 'test -w' report each of the results in turn, then True"""
+    codes = [0 if ok else 1 for ok in results]
+
+    def run(cmd, check):
+        assert cmd[:2] == ["test", "-w"]
+        return subprocess.CompletedProcess(cmd, codes.pop(0) if codes else 0)
+
+    return mocker.patch("labgrid.driver.usbstoragedriver.subprocess.run", side_effect=run)
+
+
+def test_write_image_dd(storage, image, mocker):
+    writable(mocker)
+    pwrap = mocker.patch("labgrid.driver.usbstoragedriver.processwrapper")
+    storage.write_image(image)
+    args = pwrap.check_wrapped_output.call_args[0][1]
+    assert args == [
+        "dd",
+        f"if={image}",
+        "of=/dev/sdx",
+        "oflag=direct",
+        "status=progress",
+        "bs=4M",
+        "skip=0",
+        "seek=0",
+        "conv=fdatasync",
+    ]
+
+
+def test_wait_until_writable(storage, image, mocker):
+    """The image is not written until udev has made the device writable"""
+    run = writable(mocker, False, False, True)
+    pwrap = mocker.patch("labgrid.driver.usbstoragedriver.processwrapper")
+    storage.write_image(image)
+    assert run.call_count == 3
+    pwrap.check_wrapped_output.assert_called_once()
+
+
+def test_not_writable(storage, image, mocker):
+    """A device which never becomes writable gives a clear error"""
+    writable(mocker, *[False] * 1000)
+    pwrap = mocker.patch("labgrid.driver.usbstoragedriver.processwrapper")
+    with pytest.raises(ExecutionError, match="/dev/sdx to be writable"):
+        storage.write_image(image)
+    pwrap.check_wrapped_output.assert_not_called()

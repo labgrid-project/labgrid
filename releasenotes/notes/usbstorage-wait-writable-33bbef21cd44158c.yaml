@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    ``USBStorageDriver`` now waits until the device can be written to before
+    writing to it, as well as until it has a size. When a device first appears,
+    udev may not yet have set its permissions, so the write could fail.

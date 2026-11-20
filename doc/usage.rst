@@ -961,3 +961,19 @@ like this:
   $ labgrid-client -p example allow sirius/john
 
 To remove the allow it is currently necessary to unlock and lock the place.
+
+Internal console
+^^^^^^^^^^^^^^^^
+
+Labgrid uses microcom as its console by default. For situations where this is
+not suitable, an internal console is provided. To use this, provide the
+``--internal`` flag to the ``labgrid client`` command.
+
+When the internal console is used, the console transitions cleanly between use
+within a strategy or driver, and interactive use for the user. The console is
+not closed and therefore there is no loss of data.
+
+The internal console uses the target's console driver, if the environment
+configuration has one. Otherwise it creates a ``SerialDriver`` for the place's
+serial port, so ``labgrid-client -p <place> console --internal`` works without
+an environment configuration.

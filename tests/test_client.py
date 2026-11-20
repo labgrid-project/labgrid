@@ -186,6 +186,59 @@ def test_place_acquire(place):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
+def run_client(args):
+    """Run labgrid-client with the given arguments
+
+    Returns:
+        tuple: exit status and output
+    """
+    with pexpect.spawn(f'{sys.executable} -m labgrid.remote.client {args}') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        return spawn.exitstatus, spawn.before.decode()
+
+def test_place_acquire_option(place):
+    """-a acquires the place for the command and releases it afterwards"""
+    status, out = run_client('-p test -a env')
+    assert status == 0, out
+    assert 'acquired place test' in out
+    assert 'released place test' in out
+
+    status, out = run_client('-p test show')
+    assert 'acquired: None' in out, out
+
+def test_place_acquire_option_failure(place):
+    """-a releases the place even if the command fails"""
+    status, out = run_client('-p test -a power get')
+    assert status != 0, out
+    assert 'released place test' in out
+
+    status, out = run_client('-p test show')
+    assert 'acquired: None' in out, out
+
+def test_place_acquire_option_already_acquired(place):
+    """-a leaves an already acquired place acquired"""
+    status, out = run_client('-p test acquire')
+    assert status == 0, out
+
+    status, out = run_client('-p test -a env')
+    assert status == 0, out
+    assert 'acquired place' not in out
+    assert 'released place' not in out
+
+    status, out = run_client('-p test show')
+    assert 'acquired: None' not in out, out
+
+    status, out = run_client('-p test release')
+    assert status == 0, out
+
+@pytest.mark.parametrize('command', ['acquire', 'release', 'release-from someone/else'])
+def test_place_acquire_option_invalid(command):
+    """-a cannot be combined with commands which acquire or release"""
+    status, out = run_client(f'-p test -a {command}')
+    assert status == 1
+    assert 'The -a/--acquire option cannot be used with' in out
+
 def test_place_who_header_stays_first(monkeypatch, place):
     # A user name starting with an uppercase letter sorts before the "User"
     # header when comparing strings (uppercase letters have lower code points

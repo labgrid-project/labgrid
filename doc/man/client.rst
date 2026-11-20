@@ -133,6 +133,14 @@ Open a console to the acquired place:
 
    $ labgrid-client -p <placename> console
 
+The ``-a`` option acquires the place for a single command and releases it
+afterwards, even if the command fails. A place which is already acquired is
+left acquired:
+
+.. code-block:: bash
+
+   $ labgrid-client -p <placename> -a console
+
 Add all resources with the group "example-group" to the place example-place:
 
 .. code-block:: bash

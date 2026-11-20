@@ -125,7 +125,9 @@ class USBStorageDriver(Driver):
 
     @Driver.check_active
     @step(args=['filename'])
-    def write_image(self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0, block_size=None):
+    def write_image(
+        self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0, block_size=None, count=None
+    ):
         """
         Writes the file specified by filename or if not specified by config image subkey to the
         bound USB storage root device or partition.
@@ -140,6 +142,7 @@ class USBStorageDriver(Driver):
             block_size (int or str): optional, block size for dd, in bytes or with a suffix
                 such as 'K' or 'M'; skip and seek are counted in blocks of this size. Defaults
                 to 512 if skip or seek is given, else 4M
+            count (int): optional, write at most n blocks (defaults to the whole file)
         """
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
@@ -167,11 +170,13 @@ class USBStorageDriver(Driver):
                 f"seek={seek}",
                 "conv=fdatasync"
             ]
+            if count is not None:
+                args.append(f"count={count}")
         elif mode == Mode.BMAPTOOL:
             if skip or seek:
                 raise ExecutionError("bmaptool does not support skip or seek")
-            if block_size is not None:
-                raise ExecutionError("bmaptool does not support block_size")
+            if block_size is not None or count is not None:
+                raise ExecutionError("bmaptool does not support block_size or count")
 
             # Try to find a block map file using the same logic that bmaptool
             # uses. Handles cases where the image is named like: <image>.bz2

@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    ``USBStorageDriver.write_image()`` has a new ``count`` argument, which
+    limits how many blocks dd writes.

@@ -102,5 +102,19 @@ def test_write_image_block_size(storage, image, mocker, kwargs, block_size):
 
 def test_bmaptool_block_size(storage, image, mocker):
     writable(mocker)
-    with pytest.raises(ExecutionError, match="bmaptool does not support block_size"):
-        storage.write_image(image, mode=Mode.BMAPTOOL, block_size=512)
+    for kwargs in ({"block_size": 512}, {"count": 4}):
+        with pytest.raises(ExecutionError, match="bmaptool does not support block_size or count"):
+            storage.write_image(image, mode=Mode.BMAPTOOL, **kwargs)
+
+
+def test_write_image_count(storage, image, mocker):
+    """The number of blocks to write can be limited"""
+    writable(mocker)
+    pwrap = mocker.patch("labgrid.driver.usbstoragedriver.processwrapper")
+    storage.write_image(image)
+    assert not any(arg.startswith("count=") for arg in pwrap.check_wrapped_output.call_args[0][1])
+
+    storage.write_image(image, seek=1, block_size="128K", count=3)
+    args = pwrap.check_wrapped_output.call_args[0][1]
+    assert args[-1] == "count=3"
+    assert "bs=128K" in args

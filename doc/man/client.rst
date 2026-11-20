@@ -59,6 +59,12 @@ LG_COORDINATOR_TLS
 Set this variable to ``true`` or ``1`` to enable TLS gRPC channels without
 using the ``--tls`` option.
 
+LG_CONSOLE_KEEP_PROMPT
+~~~~~~~~~~~~~~~~~~~~~~
+Set this variable to ``true`` or ``1`` to keep the console command prompt open
+after a command without using the ``--keep-prompt`` option,
+``--no-keep-prompt`` overrides it.
+
 LG_PROXY
 ~~~~~~~~
 This variable can be used to specify a SSH proxy hostname which should be used
@@ -127,12 +133,6 @@ the ``acquire command`` and passing the placename as a -p parameter:
 
    $ labgrid-client -p <placename> acquire
 
-Open a console to the acquired place:
-
-.. code-block:: bash
-
-   $ labgrid-client -p <placename> console
-
 Add all resources with the group "example-group" to the place example-place:
 
 .. code-block:: bash
@@ -144,6 +144,30 @@ Retrieve a list of places on a ``labgrid-coordinator`` that uses TLS gRPC channe
 .. code-block:: bash
 
     $ labgrid-client --tls [--cacert PATH] places
+
+Open a console to an acquired place:
+
+.. code-block:: bash
+
+   $ labgrid-client -p <placename> console
+
+While the console is open, ``Ctrl-T`` opens a ``labgrid>`` command prompt.
+Matching commands are shown while typing and ``Tab`` completes them, ``Up``
+and ``Down`` go through the previous commands, ``Enter`` runs a command and
+``q`` (followed by ``Enter``) or ``Ctrl-C`` leaves the prompt. The prompt
+closes after each command, unless ``--keep-prompt`` is given (or
+``LG_CONSOLE_KEEP_PROMPT`` is set), then it stays open until ``q`` or
+``Ctrl-C``. Console output is held back while the prompt is open. ``Ctrl-T Ctrl-T`` sends a literal
+``Ctrl-T`` to the target. The prompt is not available with ``--listenonly`` or
+when stdin is not a terminal.
+
+The available commands are:
+
+- ``power (pw) on|off|cycle|get``
+- ``help``
+
+They accept the same options as the corresponding ``labgrid-client``
+command, e.g. ``pw cycle -t 5``, and ``-h`` shows their help.
 
 See Also
 --------

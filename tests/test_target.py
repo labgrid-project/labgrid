@@ -608,3 +608,20 @@ def test_get_bound_multiple_resources(target):
     assert target.get_active_driver(ADriver, resource=aresource) 
     assert target.get_active_driver(BDriver, resource=bresource) 
     assert target.get_active_driver(CDriver, resource=aresource) 
+
+def test_inherited_resource_no_multiple_error(target):
+    class AResource(Resource):
+        pass
+
+    class BResource(AResource):
+        pass
+
+    class ADriver(Driver):
+        bindings = {
+            "a": { AResource, BResource }
+        }
+
+    bresource = BResource(target, "bresource")
+    adriver = ADriver(target, "adriver")
+
+    assert adriver.get_bound_resources() == {bresource}

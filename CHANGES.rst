@@ -9,6 +9,11 @@ Bug fixes in 26.0.2
   in such cases.
 - Fix a bug where labgrid-tap-fwd would not exit when the pipe closed while a
   frame was still pending.
+- A bug was fixed where labgrid could raise a ``NoSupplierFoundError``
+  which complained about multiple available suppliers if a driver can
+  bind both to the class of a resource and its parent class. An example
+  for this was the ``NetworkInterfaceDriver`` together with the
+  ``USBNetworkInterface`` which is inherited from ``NetworkInterface``.
 
 Release 26.0.1 (Released Oct 14, 2026)
 --------------------------------------

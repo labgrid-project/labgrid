@@ -3,6 +3,7 @@ import subprocess
 import pytest
 
 from labgrid.driver import ExecutionError, USBStorageDriver
+from labgrid.driver.usbstoragedriver import Mode
 from labgrid.resource.udev import USBMassStorage
 
 
@@ -78,3 +79,28 @@ def test_not_writable(storage, image, mocker):
     with pytest.raises(ExecutionError, match="/dev/sdx to be writable"):
         storage.write_image(image)
     pwrap.check_wrapped_output.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "kwargs,block_size",
+    [
+        ({}, "4M"),
+        ({"seek": 16}, "512"),
+        ({"seek": 8, "block_size": 1024}, "1024"),
+        ({"block_size": "128K"}, "128K"),
+    ],
+)
+def test_write_image_block_size(storage, image, mocker, kwargs, block_size):
+    """The block size can be given, otherwise it depends on skip and seek"""
+    writable(mocker)
+    pwrap = mocker.patch("labgrid.driver.usbstoragedriver.processwrapper")
+    storage.write_image(image, **kwargs)
+    args = pwrap.check_wrapped_output.call_args[0][1]
+    assert f"bs={block_size}" in args
+    assert f"seek={kwargs.get('seek', 0)}" in args
+
+
+def test_bmaptool_block_size(storage, image, mocker):
+    writable(mocker)
+    with pytest.raises(ExecutionError, match="bmaptool does not support block_size"):
+        storage.write_image(image, mode=Mode.BMAPTOOL, block_size=512)

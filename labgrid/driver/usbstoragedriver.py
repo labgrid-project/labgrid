@@ -125,7 +125,7 @@ class USBStorageDriver(Driver):
 
     @Driver.check_active
     @step(args=['filename'])
-    def write_image(self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0):
+    def write_image(self, filename=None, mode=Mode.DD, partition=None, skip=0, seek=0, block_size=None):
         """
         Writes the file specified by filename or if not specified by config image subkey to the
         bound USB storage root device or partition.
@@ -135,8 +135,11 @@ class USBStorageDriver(Driver):
             mode (Mode): optional, Mode.DD or Mode.BMAPTOOL (defaults to Mode.DD)
             partition (int or None): optional, write to the specified partition or None for writing
                 to root device (defaults to None)
-            skip (int): optional, skip n 512-sized blocks at start of input file (defaults to 0)
-            seek (int): optional, skip n 512-sized blocks at start of output (defaults to 0)
+            skip (int): optional, skip n blocks at start of input file (defaults to 0)
+            seek (int): optional, skip n blocks at start of output (defaults to 0)
+            block_size (int or str): optional, block size for dd, in bytes or with a suffix
+                such as 'K' or 'M'; skip and seek are counted in blocks of this size. Defaults
+                to 512 if skip or seek is given, else 4M
         """
         if filename is None and self.image is not None:
             filename = self.target.env.config.get_image_path(self.image)
@@ -151,7 +154,8 @@ class USBStorageDriver(Driver):
 
         if mode == Mode.DD:
             self.logger.info('Writing %s to %s using dd.', remote_path, target)
-            block_size = '512' if skip or seek else '4M'
+            if block_size is None:
+                block_size = "512" if skip or seek else "4M"
             args = [
                 "dd",
                 f"if={remote_path}",
@@ -166,6 +170,8 @@ class USBStorageDriver(Driver):
         elif mode == Mode.BMAPTOOL:
             if skip or seek:
                 raise ExecutionError("bmaptool does not support skip or seek")
+            if block_size is not None:
+                raise ExecutionError("bmaptool does not support block_size")
 
             # Try to find a block map file using the same logic that bmaptool
             # uses. Handles cases where the image is named like: <image>.bz2

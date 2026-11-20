@@ -220,6 +220,7 @@ extend-exclude = [
 ]
 include = [
   "**/pyproject.toml",
+  "contrib/usb-hubs.py",
   "examples/**/*.py",
   "labgrid/driver/httpvideodriver.py",
   "labgrid/driver/manualswitchdriver.py",
@@ -242,6 +243,7 @@ include = [
   "labgrid/tapfwd.py",
   "tests/test_netns.py",
   "tests/test_tapfwd.py",
+  "tests/test_usb_hubs.py",
 ]
 
 [tool.ruff.lint]

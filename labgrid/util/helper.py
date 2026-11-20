@@ -126,6 +126,11 @@ class ProcessWrapper:
                         break
                     raise
 
+                # macOS signals EOF on the pty master with an empty read
+                # instead of EIO once all slave fds are closed
+                if raw == b"":
+                    break
+
                 if raw:
                     buf += raw
                     *parts, buf = buf.split(b'\r')

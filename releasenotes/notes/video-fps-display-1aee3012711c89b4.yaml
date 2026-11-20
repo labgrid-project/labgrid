@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    The stream() function of the USBVideoDriver now supports a fps keyword
+    argument to use fpsdisplaysink instead of the default sink. This is also
+    exposed as a ``--fps`` parameter for the client video command.

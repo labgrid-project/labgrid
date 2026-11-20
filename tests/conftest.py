@@ -31,6 +31,7 @@ def clean_env(monkeypatch):
     monkeypatch.delenv("LG_COORDINATOR_TLS", raising=False)
     monkeypatch.delenv("LG_ENV", raising=False)
     monkeypatch.delenv("LG_HOSTNAME", raising=False)
+    monkeypatch.delenv("LG_END_STATE", raising=False)
     monkeypatch.delenv("LG_INITIAL_STATE", raising=False)
     monkeypatch.delenv("LG_PLACE", raising=False)
     monkeypatch.delenv("LG_PROXY", raising=False)

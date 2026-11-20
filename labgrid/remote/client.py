@@ -139,6 +139,9 @@ class ClientSession:
         """Actions which are executed if a connection is successfully opened."""
         self.stopping = asyncio.Event()
 
+        # Target from the environment config, used to set the end state
+        self.env_target = None
+
         # It seems since https://github.com/grpc/grpc/pull/34647, the
         # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
         # so set it as well.
@@ -973,6 +976,7 @@ class ClientSession:
                     print(f"Selected role {self.role} from configuration file")
             target = self.env.get_target(self.role)
         if target:
+            self.env_target = target
             if self.args.state:
                 strategy = target.get_driver("Strategy")
                 if self.args.initial_state:
@@ -990,6 +994,18 @@ class ClientSession:
             target = Target(place.name, env=self.env)
             RemotePlace(target, name=place.name)
         return target
+
+    def set_end_state(self):
+        """Switch the strategy into the end state, if one is set
+
+        This only happens if the command used a target from the environment
+        config, as with the state set by -s
+        """
+        if not self.args.end_state or not self.env_target:
+            return
+        strategy = self.env_target.get_driver("Strategy")
+        print(f"Transitioning into state {self.args.end_state}")
+        strategy.transition(self.args.end_state)
 
     def _get_driver_or_new(self, target, cls, *, name=None, activate=True):
         """
@@ -2154,6 +2170,12 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         help="strategy state to force into before switching to desired state",
     )
     parser.add_argument(
+        "-e",
+        "--end-state",
+        type=str,
+        help="strategy state to switch into after the command (default: value from env variable LG_END_STATE)",
+    )
+    parser.add_argument(
         "-a",
         "--acquire",
         action="store_true",
@@ -2586,6 +2608,7 @@ def main():
     state = os.environ.get("STATE", None)
     state = os.environ.get("LG_STATE", state)
     initial_state = os.environ.get("LG_INITIAL_STATE", None)
+    end_state = os.environ.get("LG_END_STATE", None)
 
     parser = get_parser()
 
@@ -2609,6 +2632,9 @@ def main():
     if args.initial_state is None:
         args.initial_state = initial_state
 
+    if args.end_state is None:
+        args.end_state = end_state
+
     if args.command == "complete":
         args.needs_resources = args.type == "resources"
 
@@ -2627,7 +2653,7 @@ def main():
     if args.debug or args.verbose > 2:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    if not args.config and (args.state or args.initial_state):
+    if not args.config and (args.state or args.initial_state or args.end_state):
         print("Setting the state requires a configuration file", file=sys.stderr)
         exit(1)
     if args.initial_state and not args.state:
@@ -2725,8 +2751,11 @@ def main():
                     else:
                         args.func(session)
                 finally:
-                    if acquired:
-                        session.loop.run_until_complete(session._release_place(acquired))
+                    try:
+                        session.set_end_state()
+                    finally:
+                        if acquired:
+                            session.loop.run_until_complete(session._release_place(acquired))
             finally:
                 logging.debug("Stopping session")
                 session.loop.run_until_complete(session.stop())

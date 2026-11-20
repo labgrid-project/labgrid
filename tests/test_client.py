@@ -248,6 +248,66 @@ def test_place_release_auto(place):
     assert status == 0, out
     assert 'released place test' in out
 
+STRATEGY = """
+import os
+
+import attr
+
+from labgrid.factory import target_factory
+from labgrid.strategy import Strategy
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class RecordStrategy(Strategy):
+    \"\"\"Strategy which records each transition in a file\"\"\"
+
+    bindings = {}
+
+    def transition(self, status):
+        with open(os.environ["LG_TEST_RECORD"], "a") as outf:
+            outf.write(f"{status}\\n")
+"""
+
+def test_place_end_state(place, tmpdir, monkeypatch):
+    """-e sets the strategy state after the command, even if it fails"""
+    tmpdir.join('strategy.py').write(STRATEGY)
+    env = tmpdir.join('env.yaml')
+    env.write(textwrap.dedent("""\
+        targets:
+          main:
+            resources:
+              RemotePlace:
+                name: test
+            drivers:
+              RecordStrategy: {}
+        imports:
+          - strategy.py
+        """))
+    record = tmpdir.join('record')
+    monkeypatch.setenv('LG_TEST_RECORD', str(record))
+
+    status, out = run_client(f'-c {env} -s on -e off -a power get')
+    assert status != 0, out
+    assert record.read().split() == ['on', 'off']
+    assert 'released place test' in out
+
+    # LG_END_STATE does the same as -e
+    record.remove()
+    monkeypatch.setenv('LG_END_STATE', 'off')
+    status, out = run_client(f'-c {env} -a power get')
+    assert status != 0, out
+    assert record.read().split() == ['off']
+
+    # The place fixture releases the place without a config
+    monkeypatch.delenv('LG_END_STATE')
+
+def test_end_state_needs_config():
+    """-e needs a configuration file, like -s"""
+    status, out = run_client('-p test -e off power get')
+    assert status == 1
+    assert 'Setting the state requires a configuration file' in out
+
 @pytest.mark.parametrize('command', ['acquire', 'release', 'release-from someone/else'])
 def test_place_acquire_option_invalid(command):
     """-a cannot be combined with commands which acquire or release"""

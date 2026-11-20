@@ -44,6 +44,13 @@ This is useful during development. The Strategy used must implement the
 ``force()`` method.
 A desired state must be set using ``LG_STATE`` or ``-s``/``--state``.
 
+LG_END_STATE
+~~~~~~~~~~~~
+This variable can be used to specify a state which the device transitions into
+after executing a command, e.g. to power it off. This happens even if the
+command fails. Requires a configuration file and a Strategy specified for the
+device.
+
 LG_ENV
 ~~~~~~
 This variable can be used to specify the configuration file to use without

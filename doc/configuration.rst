@@ -4736,6 +4736,36 @@ for line comments.
 Statements like ``{{ 4000 + idx }}`` are expanded based on variables in the
 Jinja2 template.
 
+Exporting `USBSerialPort`_, `IMXUSBLoader`_ and `AndroidUSBFastboot`_ resources
+on all ports of a USB hub could look like this:
+
+.. code-block:: yaml
+
+   ## LogiLink 10 port USB hub
+   # for idx, sysfs in [
+           ('1',  'pci-0000:00:10.0-usb-0:2.5'),
+           ('2',  'pci-0000:00:10.0-usb-0:2.6'),
+           ('3',  'pci-0000:00:10.0-usb-0:2.7'),
+           ('4',  'pci-0000:00:10.0-usb-0:2.4'),
+           ('5',  'pci-0000:00:10.0-usb-0:2.3'),
+           ('6',  'pci-0000:00:10.0-usb-0:2.2'),
+           ('7',  'pci-0000:00:10.0-usb-0:2.1.4'),
+           ('8',  'pci-0000:00:10.0-usb-0:2.1.3'),
+           ('9',  'pci-0000:00:10.0-usb-0:2.1.2'),
+           ('10', 'pci-0000:00:10.0-usb-0:2.1.1')]
+   usbhub-1-p{{idx}}:
+     location: "LogiLink 10 port USB hub port #{{idx}} on my desk"
+     USBSerialPort:
+       match:
+           '@ID_PATH': '{{sysfs}}:1.0'
+     IMXUSBLoader:
+       match:
+           'ID_PATH': '{{sysfs}}'
+     AndroidUSBFastboot:
+       match:
+           'ID_PATH': '{{sysfs}}'
+   # endfor
+
 The template processing also supports use of OS environment variables, using
 something like ``{{ env['FOOBAR'] }}`` to insert the content of environment
 variable ``FOOBAR``.

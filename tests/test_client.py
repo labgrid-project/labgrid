@@ -232,6 +232,22 @@ def test_place_acquire_option_already_acquired(place):
     status, out = run_client('-p test release')
     assert status == 0, out
 
+def test_place_release_auto(place):
+    """release -a does nothing if the place is not acquired"""
+    status, out = run_client('-p test release')
+    assert status == 1
+    assert 'not acquired' in out
+
+    status, out = run_client('-p test release -a')
+    assert status == 0, out
+    assert 'released place' not in out
+
+    status, out = run_client('-p test acquire')
+    assert status == 0, out
+    status, out = run_client('-p test release -a')
+    assert status == 0, out
+    assert 'released place test' in out
+
 @pytest.mark.parametrize('command', ['acquire', 'release', 'release-from someone/else'])
 def test_place_acquire_option_invalid(command):
     """-a cannot be combined with commands which acquire or release"""

@@ -648,7 +648,7 @@ release a place
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client release|unlock [\-k]
+usage: labgrid\-client release|unlock [\-k] [\-a]
 .EE
 .UNINDENT
 .UNINDENT
@@ -656,6 +656,11 @@ usage: labgrid\-client release|unlock [\-k]
 .TP
 .B \-k, \-\-kick
 release a place even if it is acquired by a different user
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-a, \-\-auto
+do nothing if the place is not acquired, rather than failing
 .UNINDENT
 .SS labgrid\-client reservations
 .sp

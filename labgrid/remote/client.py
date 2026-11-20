@@ -852,6 +852,8 @@ class ClientSession:
         """Release a previously acquired place"""
         place = self.get_place(place)
         if not place.acquired:
+            if getattr(self.args, "auto", False):
+                return
             raise UserError(f"place {place.name} is not acquired")
         _, user = place.acquired.split("/")
         if user != self.getuser():
@@ -2254,6 +2256,9 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser = subparsers.add_parser("release", aliases=("unlock",), help="release a place")
     subparser.add_argument(
         "-k", "--kick", action="store_true", help="release a place even if it is acquired by a different user"
+    )
+    subparser.add_argument(
+        "-a", "--auto", action="store_true", help="do nothing if the place is not acquired, rather than failing"
     )
     subparser.set_defaults(func=ClientSession.release, needs_resources=False)
 

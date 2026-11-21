@@ -1,3 +1,4 @@
+import json
 import subprocess
 from urllib.parse import urlparse
 
@@ -10,6 +11,7 @@ from labgrid.driver.powerdriver import (
     ExternalPowerDriver,
     ManualPowerDriver,
     NetworkPowerDriver,
+    PDUDaemonDriver,
     YKUSHPowerDriver,
 )
 
@@ -341,6 +343,50 @@ class TestPDUDaemonPort:
         )
 
         assert resource.index == expected
+
+
+class TestPDUDaemonDriver:
+    @pytest.fixture
+    def driver(self, target):
+        PDUDaemonPort(target, "power", host="pduserver", pdu="pdu", index=3)
+        d = PDUDaemonDriver(target, "power")
+        target.activate(d)
+        return d
+
+    @staticmethod
+    def reply(mocker, status, body):
+        r = mocker.Mock(status_code=status, text=body)
+        r.json.side_effect = lambda: json.loads(body)
+        if status >= 400:
+            r.raise_for_status.side_effect = Exception(f"HTTP {status}")
+        return r
+
+    @pytest.mark.parametrize(("state", "expected"), (("on", True), ("off", False)))
+    def test_get(self, driver, mocker, state, expected):
+        get = mocker.patch.object(driver._requests, "get",
+                                  return_value=self.reply(mocker, 200, '{"state": "%s"}' % state))
+        assert driver.get() is expected
+        get.assert_called_once_with(
+            "http://pduserver:16421/power/control/get-port-state?hostname=pdu&port=3")
+
+    @pytest.mark.parametrize("status", (404, 501))
+    def test_get_unsupported(self, driver, mocker, status):
+        mocker.patch.object(driver._requests, "get",
+                            return_value=self.reply(mocker, status, "not supported"))
+        with pytest.raises(NotImplementedError):
+            driver.get()
+
+    def test_get_failed(self, driver, mocker):
+        mocker.patch.object(driver._requests, "get",
+                            return_value=self.reply(mocker, 500, "Request failed"))
+        with pytest.raises(Exception, match="HTTP 500"):
+            driver.get()
+
+    def test_get_unexpected_state(self, driver, mocker):
+        mocker.patch.object(driver._requests, "get",
+                            return_value=self.reply(mocker, 200, '{"state": "unknown"}'))
+        with pytest.raises(ExecutionError):
+            driver.get()
 
 
 class TestYKUSHPowerDriver:

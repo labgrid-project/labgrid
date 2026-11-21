@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    `PDUDaemonDriver` now implements ``get()`` with PDUDaemon's
+    ``get-port-state`` request (``labgrid-client power get``), where the
+    PDUDaemon version and its PDU driver support it; otherwise ``get()``
+    still raises ``NotImplementedError``.

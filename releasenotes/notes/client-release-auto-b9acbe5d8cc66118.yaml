@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    The labgrid-client ``release`` command has a new ``-a``/``--auto`` option,
+    which does nothing if the place is not acquired, rather than failing. This
+    is useful when cleaning up after a script.

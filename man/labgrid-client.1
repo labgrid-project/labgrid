@@ -40,8 +40,8 @@ This is the client to control a boards status and interface with it on remote ma
 .sp
 .EX
 usage: labgrid\-client [\-x ADDRESS] [\-\-tls] [\-\-cacert CACERT] [\-c CONFIG]
-                      [\-p PLACE] [\-s STATE] [\-i INITIAL_STATE] [\-d] [\-v]
-                      [\-P PROXY]
+                      [\-p PLACE] [\-s STATE] [\-i INITIAL_STATE] [\-e END_STATE]
+                      [\-a] [\-d] [\-v] [\-P PROXY]
                       COMMAND ...
 .EE
 .UNINDENT
@@ -80,6 +80,16 @@ strategy state to switch into before command (default: value from env variable L
 .TP
 .B \-i <initial_state>, \-\-initial\-state <initial_state>
 strategy state to force into before switching to desired state
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-e <end_state>, \-\-end\-state <end_state>
+strategy state to switch into after the command (default: value from env variable LG_END_STATE)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-a, \-\-acquire
+acquire the place before the command, if needed, and release it afterwards
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -643,7 +653,7 @@ release a place
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client release|unlock [\-k]
+usage: labgrid\-client release|unlock [\-k] [\-a]
 .EE
 .UNINDENT
 .UNINDENT
@@ -651,6 +661,11 @@ usage: labgrid\-client release|unlock [\-k]
 .TP
 .B \-k, \-\-kick
 release a place even if it is acquired by a different user
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-a, \-\-auto
+do nothing if the place is not acquired, rather than failing
 .UNINDENT
 .SS labgrid\-client reservations
 .sp
@@ -1223,6 +1238,12 @@ be in.
 This is useful during development. The Strategy used must implement the
 \fBforce()\fP method.
 A desired state must be set using \fBLG_STATE\fP or \fB\-s\fP/\fB\-\-state\fP\&.
+.SS LG_END_STATE
+.sp
+This variable can be used to specify a state which the device transitions into
+after executing a command, e.g. to power it off. This happens even if the
+command fails. Requires a configuration file and a Strategy specified for the
+device.
 .SS LG_ENV
 .sp
 This variable can be used to specify the configuration file to use without
@@ -1309,6 +1330,18 @@ Open a console to the acquired place:
 .sp
 .EX
 $ labgrid\-client \-p <placename> console
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+The \fB\-a\fP option acquires the place for a single command and releases it
+afterwards, even if the command fails. A place which is already acquired is
+left acquired:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+$ labgrid\-client \-p <placename> \-a console
 .EE
 .UNINDENT
 .UNINDENT

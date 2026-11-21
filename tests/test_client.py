@@ -186,6 +186,135 @@ def test_place_acquire(place):
         spawn.close()
         assert spawn.exitstatus == 0, spawn.before.strip()
 
+def run_client(args):
+    """Run labgrid-client with the given arguments
+
+    Returns:
+        tuple: exit status and output
+    """
+    with pexpect.spawn(f'{sys.executable} -m labgrid.remote.client {args}') as spawn:
+        spawn.expect(pexpect.EOF)
+        spawn.close()
+        return spawn.exitstatus, spawn.before.decode()
+
+def test_place_acquire_option(place):
+    """-a acquires the place for the command and releases it afterwards"""
+    status, out = run_client('-p test -a env')
+    assert status == 0, out
+    assert 'acquired place test' in out
+    assert 'released place test' in out
+
+    status, out = run_client('-p test show')
+    assert 'acquired: None' in out, out
+
+def test_place_acquire_option_failure(place):
+    """-a releases the place even if the command fails"""
+    status, out = run_client('-p test -a power get')
+    assert status != 0, out
+    assert 'released place test' in out
+
+    status, out = run_client('-p test show')
+    assert 'acquired: None' in out, out
+
+def test_place_acquire_option_already_acquired(place):
+    """-a leaves an already acquired place acquired"""
+    status, out = run_client('-p test acquire')
+    assert status == 0, out
+
+    status, out = run_client('-p test -a env')
+    assert status == 0, out
+    assert 'acquired place' not in out
+    assert 'released place' not in out
+
+    status, out = run_client('-p test show')
+    assert 'acquired: None' not in out, out
+
+    status, out = run_client('-p test release')
+    assert status == 0, out
+
+def test_place_release_auto(place):
+    """release -a does nothing if the place is not acquired"""
+    status, out = run_client('-p test release')
+    assert status == 1
+    assert 'not acquired' in out
+
+    status, out = run_client('-p test release -a')
+    assert status == 0, out
+    assert 'released place' not in out
+
+    status, out = run_client('-p test acquire')
+    assert status == 0, out
+    status, out = run_client('-p test release -a')
+    assert status == 0, out
+    assert 'released place test' in out
+
+STRATEGY = """
+import os
+
+import attr
+
+from labgrid.factory import target_factory
+from labgrid.strategy import Strategy
+
+
+@target_factory.reg_driver
+@attr.s(eq=False)
+class RecordStrategy(Strategy):
+    \"\"\"Strategy which records each transition in a file\"\"\"
+
+    bindings = {}
+
+    def transition(self, status):
+        with open(os.environ["LG_TEST_RECORD"], "a") as outf:
+            outf.write(f"{status}\\n")
+"""
+
+def test_place_end_state(place, tmpdir, monkeypatch):
+    """-e sets the strategy state after the command, even if it fails"""
+    tmpdir.join('strategy.py').write(STRATEGY)
+    env = tmpdir.join('env.yaml')
+    env.write(textwrap.dedent("""\
+        targets:
+          main:
+            resources:
+              RemotePlace:
+                name: test
+            drivers:
+              RecordStrategy: {}
+        imports:
+          - strategy.py
+        """))
+    record = tmpdir.join('record')
+    monkeypatch.setenv('LG_TEST_RECORD', str(record))
+
+    status, out = run_client(f'-c {env} -s on -e off -a power get')
+    assert status != 0, out
+    assert record.read().split() == ['on', 'off']
+    assert 'released place test' in out
+
+    # LG_END_STATE does the same as -e
+    record.remove()
+    monkeypatch.setenv('LG_END_STATE', 'off')
+    status, out = run_client(f'-c {env} -a power get')
+    assert status != 0, out
+    assert record.read().split() == ['off']
+
+    # The place fixture releases the place without a config
+    monkeypatch.delenv('LG_END_STATE')
+
+def test_end_state_needs_config():
+    """-e needs a configuration file, like -s"""
+    status, out = run_client('-p test -e off power get')
+    assert status == 1
+    assert 'Setting the state requires a configuration file' in out
+
+@pytest.mark.parametrize('command', ['acquire', 'release', 'release-from someone/else'])
+def test_place_acquire_option_invalid(command):
+    """-a cannot be combined with commands which acquire or release"""
+    status, out = run_client(f'-p test -a {command}')
+    assert status == 1
+    assert 'The -a/--acquire option cannot be used with' in out
+
 def test_place_who_header_stays_first(monkeypatch, place):
     # A user name starting with an uppercase letter sorts before the "User"
     # header when comparing strings (uppercase letters have lower code points

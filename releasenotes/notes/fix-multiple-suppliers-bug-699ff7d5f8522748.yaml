@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    A bug was fixed where labgrid could raise a ``NoSupplierFoundError``
+    which complained about multiple available suppliers if a driver can
+    bind both to the class of a resource and its parent class. An example
+    for this was the ``NetworkInterfaceDriver`` together with the
+    ``USBNetworkInterface`` which is inherited from ``NetworkInterface``.

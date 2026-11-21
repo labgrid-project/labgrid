@@ -349,18 +349,18 @@ class Target:
             requirements.discard(None)
 
             errors = []
-            suppliers = []
+            suppliers = set()
             for requirement in requirements:
                 # convert class name string to classes
                 if isinstance(requirement, str):
                     requirement = target_factory.class_from_string(requirement)
                 try:
                     if issubclass(requirement, Resource):
-                        suppliers.append(
+                        suppliers.add(
                             self.get_resource(requirement, name=supplier_name, wait_avail=False),
                         )
                     elif issubclass(requirement, (Driver, abc.ABC)): # all Protocols derive from ABC
-                        suppliers.append(
+                        suppliers.add(
                             self.get_driver(requirement, name=supplier_name, activate=False),
                         )
                     else:
@@ -382,7 +382,7 @@ class Target:
             elif len(suppliers) > 1:
                 raise NoSupplierFoundError(f"conflicting suppliers matching {requirements} found in target {self}")  # pylint: disable=line-too-long
             else:
-                supplier = suppliers[0]
+                supplier = suppliers.pop()
             if supplier is not None and (requirement, supplier) in bound_req_pairs:
                 raise BindingError(
                     f"duplicate bindings of {supplier} to {name} for {requirement} found in target {self}"  # pylint: disable=line-too-long

@@ -29,7 +29,7 @@ class ADBRebootMode(Enum):
 class ADBDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, ResetProtocol, PortForwardProtocol):
     """ADB driver for commands, file transfers, resets and port forwarding."""
 
-    bindings = {"device": {"USBADBDevice", "RemoteUSBADBDevice", "NetworkADBDevice"}}
+    bindings = {"device": {"USBADBDevice", "RemoteUSBADBDevice", "NetworkUSBADBDevice", "NetworkADBDevice"}}
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()

@@ -1102,7 +1102,15 @@ class Exporter:
                         self.out_queue.put_nowait(in_message)
                         logging.debug("queued %s", in_message)
                 else:
-                    logging.debug("unknown request: %s", kind)
+                    logging.warning(
+                        "Unknown request send to exporter, please update the exporter to support newer requests"
+                    )
+                    in_message = labgrid_coordinator_pb2.ExporterInMessage()
+                    in_message.response.success = False
+                    in_message.response.reason = "Unsupported request send to exporter, exporter needs an update"
+                    logging.debug("queuing %s", in_message)
+                    self.out_queue.put_nowait(in_message)
+                    logging.debug("queued %s", in_message)
         except grpc.aio.AioRpcError as e:
             self.out_queue.put_nowait(None)  # let the sender side exit gracefully
             if e.code() == grpc.StatusCode.UNAVAILABLE:

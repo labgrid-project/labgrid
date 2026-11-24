@@ -1262,6 +1262,20 @@ unspecified, defaults to 30 seconds.
 .sp
 Add a prefix to \fB\&.labgrid_agent_{agent_hash}.py\fP allowing specification for
 where on the exporter it should be uploaded to.
+.SS LG_GRPC_KEEPALIVE_TIME_MS
+.sp
+Set the interval in milliseconds after which a gRPC keepalive ping is sent to
+the coordinator. If unspecified, defaults to 7500 ms.
+.SS LG_GRPC_KEEPALIVE_TIMEOUT_MS
+.sp
+Set the time in milliseconds to wait for a keepalive ping acknowledgement
+before the connection to the coordinator is considered broken. If unspecified,
+defaults to 10000 ms.
+.SS LG_GRPC_PING_TIMEOUT_MS
+.sp
+Set the gRPC HTTP/2 ping timeout in milliseconds. This also limits how long to
+wait for a keepalive ping acknowledgement, so it should be increased together
+with \fBLG_GRPC_KEEPALIVE_TIMEOUT_MS\fP\&. If unspecified, defaults to 10000 ms.
 .SH MATCHES
 .sp
 Match patterns are used to assign a resource to a specific place. The format is:

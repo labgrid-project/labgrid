@@ -85,12 +85,29 @@ for more information.
 
 ENVIRONMENT VARIABLES
 ---------------------
-The following environment variable can be used to configure labgrid-exporter.
+The following environment variables can be used to configure labgrid-exporter.
 
 LG_COORDINATOR
 ~~~~~~~~~~~~~~
 This variable can be used to set the default coordinator in the format
 ``HOST[:PORT]`` (instead of using the ``-x`` option).
+
+LG_GRPC_KEEPALIVE_TIME_MS
+~~~~~~~~~~~~~~~~~~~~~~~~~
+Set the interval in milliseconds after which a gRPC keepalive ping is sent to
+the coordinator. If unspecified, defaults to 7500 ms.
+
+LG_GRPC_KEEPALIVE_TIMEOUT_MS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Set the time in milliseconds to wait for a keepalive ping acknowledgement
+before the connection to the coordinator is considered broken. If unspecified,
+defaults to 10000 ms.
+
+LG_GRPC_PING_TIMEOUT_MS
+~~~~~~~~~~~~~~~~~~~~~~~
+Set the gRPC HTTP/2 ping timeout in milliseconds. This also limits how long to
+wait for a keepalive ping acknowledgement, so it should be increased together
+with ``LG_GRPC_KEEPALIVE_TIMEOUT_MS``. If unspecified, defaults to 10000 ms.
 
 EXAMPLES
 --------

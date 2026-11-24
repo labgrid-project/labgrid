@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import logging
+import os
 import asyncio
 import traceback
 from enum import Enum
@@ -1444,9 +1445,9 @@ async def serve(listen, cleanup, server_credentials=None, debug=False) -> None:
     # Use GRPC_VERBOSITY=DEBUG GRPC_TRACE=http_keepalive for debugging.
     channel_options = [
         ("grpc.so_reuseport", 0),  # no load balancing
-        ("grpc.keepalive_time_ms", 10000),  # 10 seconds
-        ("grpc.keepalive_timeout_ms", 10000),  # 10 seconds
-        ("grpc.http2.ping_timeout_ms", 15000),  # 15 seconds
+        ("grpc.keepalive_time_ms", int(os.environ.get("LG_GRPC_KEEPALIVE_TIME_MS", 10000))),  # 10 seconds
+        ("grpc.keepalive_timeout_ms", int(os.environ.get("LG_GRPC_KEEPALIVE_TIMEOUT_MS", 10000))),  # 10 seconds
+        ("grpc.http2.ping_timeout_ms", int(os.environ.get("LG_GRPC_PING_TIMEOUT_MS", 15000))),  # 15 seconds
         ("grpc.http2.min_ping_interval_without_data_ms", 5000),
         ("grpc.http2.max_pings_without_data", 0),  # no limit
         ("grpc.keepalive_permit_without_calls", 1),  # allow keepalive pings even when there are no calls

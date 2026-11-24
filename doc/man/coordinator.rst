@@ -66,6 +66,26 @@ In this setup, start ``labgrid-coordinator`` without ``--tls`` and point
 ``--tls``.
 
 
+ENVIRONMENT VARIABLES
+---------------------
+The following environment variables can be used to configure labgrid-coordinator.
+
+LG_GRPC_KEEPALIVE_TIME_MS
+~~~~~~~~~~~~~~~~~~~~~~~~~
+Set the interval in milliseconds after which a gRPC keepalive ping is sent to
+connected clients and exporters. If unspecified, defaults to 10000 ms.
+
+LG_GRPC_KEEPALIVE_TIMEOUT_MS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Set the time in milliseconds to wait for a keepalive ping acknowledgement
+before a connection is considered broken. If unspecified, defaults to 10000 ms.
+
+LG_GRPC_PING_TIMEOUT_MS
+~~~~~~~~~~~~~~~~~~~~~~~
+Set the gRPC HTTP/2 ping timeout in milliseconds. This also limits how long to
+wait for a keepalive ping acknowledgement, so it should be increased together
+with ``LG_GRPC_KEEPALIVE_TIMEOUT_MS``. If unspecified, defaults to 15000 ms.
+
 SEE ALSO
 --------
 

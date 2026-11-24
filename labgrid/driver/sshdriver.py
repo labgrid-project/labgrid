@@ -101,7 +101,7 @@ class SSHDriverProcess:
         """
         return self.exitcode
 
-    @step(result=True)
+    @step()
     def stop(self):
         """
         Stops the running command, which will receive a SIGHUP

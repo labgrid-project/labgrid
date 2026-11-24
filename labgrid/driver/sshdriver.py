@@ -11,7 +11,6 @@ import tempfile
 import time
 import warnings
 from functools import cached_property
-from contextlib import contextmanager
 
 import attr
 import pexpect
@@ -388,7 +387,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Por
 
     @Driver.check_active
     @step(args=['cmd'])
-    @contextmanager
+    @contextlib.contextmanager
     def start_process(self, cmd: str, *, timeout=30):
         """Execute ``cmd`` on the target as a process in a pseudo-terminal (PTY)
 

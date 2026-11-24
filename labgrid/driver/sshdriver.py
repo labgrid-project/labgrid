@@ -53,8 +53,9 @@ class SSHDriverProcess:
             behave strangely if mixed with calls to :py:meth:`expect`.
 
         Note:
-            The ``timeout`` is per character read, not the entire API call,
-            which may be much longer.
+            The ``timeout`` is for the first character read. The call returns
+            as soon as any characters are available, which may be fewer than
+            ``size``.
         """
         return self._sub.read_nonblocking(size, timeout)
 

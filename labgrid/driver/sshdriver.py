@@ -69,7 +69,8 @@ class SSHDriverProcess:
         timeout.
 
         If no data or ``EOF`` occurs before the timeout, a ``pexpect.TIMEOUT``
-        exception is raised.
+        exception is raised. Data received so far is not lost, a later
+        :meth:`read` or :py:meth:`expect` returns it.
 
         Note:
             Unlike :py:meth:`read_nonblocking`, this uses the buffered process
@@ -79,33 +80,10 @@ class SSHDriverProcess:
             Unlike :py:meth:`read_nonblocking`, the ``timeout`` is for the
             entire call, not a single character.
         """
-
-        t = None
-        if timeout is not None:
-            if timeout < 0:
-                t = Timeout(self._sub.timeout)
-            else:
-                t = Timeout(timeout)
-
-        buf = self._sub.buffer[:size]
-        self._sub.buffer = self._sub.buffer[size:]
-
-        while len(buf) < size:
-            if t and t.expired:
-                if not buf:
-                    raise pexpect.TIMEOUT("Timeout expired")
-                break
-
-            try:
-                buf += self._sub.read_nonblocking(
-                    size - len(buf), timeout=1 if t else None
-                )
-            except pexpect.EOF:
-                break
-            except pexpect.TIMEOUT:
-                pass
-
-        return buf
+        pattern = re.compile(b".{%d}" % size, re.DOTALL)
+        if self._sub.expect([pattern, pexpect.EOF], timeout=timeout) == 0:
+            return self._sub.after
+        return self._sub.before
 
     @step(args=["data"])
     def write(self, data):

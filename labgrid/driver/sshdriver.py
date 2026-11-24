@@ -406,9 +406,10 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Por
 
         cmd = f"stty -echo -opost; {cmd}"
         complete_cmd = [self._ssh, "-o", "LogLevel=QUIET", "-x", *self.ssh_prefix,
-                        "-p", str(self.networkservice.port), "-l", self._get_username(),
-                        self.networkservice.address, "-tt", "--", '/bin/sh -c {}'.format(shlex.quote(cmd)),
-                        ]
+                        "-p", str(self.networkservice.port)]
+        if username := self._get_username():
+            complete_cmd += ["-l", username]
+        complete_cmd += [self.networkservice.address, "-tt", "--", '/bin/sh -c {}'.format(shlex.quote(cmd))]
         self.logger.debug("Sending command: %s", complete_cmd)
 
         try:

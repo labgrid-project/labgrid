@@ -280,6 +280,34 @@ class TestNetworkPowerDriver:
         d.cycle()
         assert d.get() is True
 
+    def test_create_secomp_backend(self, target, mocker):
+        get = mocker.patch("requests.get")
+
+        def fake_get(url, params=None, timeout=None):
+            resp = mocker.MagicMock()
+            if url.endswith("/control_outlet.htm"):
+                self._secomp_state = "on" if params["op"] == 0 else "off"
+                resp.content = b""
+            elif url.endswith("/status.xml"):
+                resp.content = f"<root><outletStat0>{self._secomp_state}</outletStat0></root>".encode()
+            return resp
+
+        self._secomp_state = "on"
+        get.side_effect = fake_get
+
+        NetworkPowerPort(
+            target,
+            "power",
+            model="secomp",
+            host="http://example.com",
+            index="1",
+        )
+        d = NetworkPowerDriver(target, "power")
+        target.activate(d)
+
+        d.cycle()
+        assert d.get() is True
+
     def test_import_backends(self):
         import labgrid.driver.power
         import labgrid.driver.power.apc
@@ -295,6 +323,7 @@ class TestNetworkPowerDriver:
         import labgrid.driver.power.poe_netgear_plus
         import labgrid.driver.power.rest
         import labgrid.driver.power.rpm1521
+        import labgrid.driver.power.secomp
         import labgrid.driver.power.sentry
         import labgrid.driver.power.eg_pms2_network
         import labgrid.driver.power.shelly_gen1

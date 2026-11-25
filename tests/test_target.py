@@ -106,8 +106,9 @@ def test_no_resource(target):
 
 
 def test_no_driver(target):
-    with pytest.raises(NoDriverFoundError):
+    with pytest.raises(NoDriverFoundError) as excinfo:
         target.get_driver(Target)
+    assert excinfo.value.found is None
 
 
 # test alternative suppliers
@@ -385,6 +386,7 @@ def test_get_by_same_priority(target):
     with pytest.raises(NoDriverFoundError) as e_info:
         target.get_driver(AProtocol)
     assert "multiple drivers matching" in str(e_info.value)
+    assert e_info.value.found == [a, c]
 
 def test_get_by_default_priority(target):
     class AProtocol(abc.ABC):
@@ -608,3 +610,20 @@ def test_get_bound_multiple_resources(target):
     assert target.get_active_driver(ADriver, resource=aresource) 
     assert target.get_active_driver(BDriver, resource=bresource) 
     assert target.get_active_driver(CDriver, resource=aresource) 
+
+def test_inherited_resource_no_multiple_error(target):
+    class AResource(Resource):
+        pass
+
+    class BResource(AResource):
+        pass
+
+    class ADriver(Driver):
+        bindings = {
+            "a": { AResource, BResource }
+        }
+
+    bresource = BResource(target, "bresource")
+    adriver = ADriver(target, "adriver")
+
+    assert adriver.get_bound_resources() == {bresource}

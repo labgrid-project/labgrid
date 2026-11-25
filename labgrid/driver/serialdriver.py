@@ -11,6 +11,31 @@ from ..util.proxy import proxymanager
 from ..resource import SerialPort
 
 
+# TODO: drop once https://github.com/pyserial/pyserial/commit/911a0b8c110f3d3513bab67e64d95d1310517454
+# is part of a pyserial release
+class _RFC2217Serial(serial.rfc2217.Serial):
+    """serial.rfc2217.Serial whose timeout setter does not renegotiate the port.
+
+    SerialBase.timeout calls _reconfigure_port() on every store, which for
+    RFC2217 means a full round of subnegotiations and a 50 ms wait per read.
+    """
+
+    @property
+    def timeout(self):
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, timeout):
+        if timeout is not None:
+            try:
+                timeout + 1
+            except TypeError:
+                raise ValueError(f"Not a valid timeout: {timeout!r}")
+            if timeout < 0:
+                raise ValueError(f"Not a valid timeout: {timeout!r}")
+        self._timeout = timeout
+
+
 @target_factory.reg_driver
 @attr.s(eq=False)
 class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
@@ -30,7 +55,7 @@ class SerialDriver(ConsoleExpectMixin, Driver, ConsoleProtocol):
             self.serial = serial.Serial()
         else:
             if self.port.protocol == "rfc2217":
-                self.serial = serial.rfc2217.Serial()
+                self.serial = _RFC2217Serial()
             elif self.port.protocol == "raw":
                 self.serial = serial.serial_for_url("socket://", do_not_open=True)
             else:

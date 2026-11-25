@@ -40,9 +40,9 @@ class SigrokCommon(Driver):
     def _create_tmpdir(self):
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
             self._tmpdir = f'/tmp/labgrid-sigrok-{uuid.uuid1()}'
-            command = self.sigrok.command_prefix + [
+            command = self.sigrok.wrap_command([
                 'mkdir', '-p', self._tmpdir
-            ]
+            ])
             self.logger.debug("Tmpdir command: %s", command)
             subprocess.call(
                 command,
@@ -59,9 +59,9 @@ class SigrokCommon(Driver):
 
     def _delete_tmpdir(self):
         if isinstance(self.sigrok, NetworkSigrokUSBDevice):
-            command = self.sigrok.command_prefix + [
+            command = self.sigrok.wrap_command([
                 'rm', '-r', self._tmpdir
-            ]
+            ])
             self.logger.debug("Tmpdir command: %s", command)
             subprocess.call(
                 command,
@@ -91,13 +91,14 @@ class SigrokCommon(Driver):
             prefix += ["-C", self.sigrok.channels]
         if self.sigrok.channel_group:
             prefix += ["-g", self.sigrok.channel_group]
-        return self.sigrok.command_prefix + prefix
+        return prefix
 
     @Driver.check_active
     @step(title='call_with_driver', args=['args'])
     def _call_with_driver(self, *args):
         combined = self._get_sigrok_prefix() + list(args)
         self.logger.debug("Combined command: %s", " ".join(combined))
+        combined = self.sigrok.wrap_command(combined)
         self._process = subprocess.Popen(
             combined,
             stdout=subprocess.PIPE,
@@ -111,6 +112,7 @@ class SigrokCommon(Driver):
     def _call_with_driver_blocking(self, *args, log_output=False):
         combined = self._get_sigrok_prefix() + list(args)
         self.logger.debug("Combined command: %s", " ".join(combined))
+        combined = self.sigrok.wrap_command(combined)
         process = subprocess.Popen(
             combined,
             stdout=subprocess.PIPE,
@@ -130,13 +132,14 @@ class SigrokCommon(Driver):
     @Driver.check_active
     @step(title='call', args=['args'])
     def _call(self, *args):
-        combined = self.sigrok.command_prefix + [self.tool]
+        combined = [self.tool]
         if self.sigrok.channels:
             combined += ["-C", self.sigrok.channels]
         if self.sigrok.channel_group:
             combined += ["-g", self.sigrok.channel_group]
         combined += list(args)
         self.logger.debug("Combined command: %s", combined)
+        combined = self.sigrok.wrap_command(combined)
         self._process = subprocess.Popen(
             combined,
             stdout=subprocess.PIPE,
@@ -186,7 +189,7 @@ class SigrokDriver(SigrokCommon):
         cmd.append(filename)
         self._call_with_driver(*cmd)
 
-        args = self.sigrok.command_prefix + ['test', '-e', filename]
+        args = self.sigrok.wrap_command(['test', '-e', filename])
 
         while subprocess.call(args):
             # in case the sigrok-cli call fails, this would wait forever.
@@ -290,7 +293,7 @@ class SigrokDriver(SigrokCommon):
         cmd.append(filename)
         self._call_with_driver_blocking(*cmd, log_output=True)
 
-        args = self.sigrok.command_prefix + ['test', '-e', filename]
+        args = self.sigrok.wrap_command(['test', '-e', filename])
 
         while subprocess.call(args):
             sleep(0.1)
@@ -421,7 +424,7 @@ class SigrokDriver(SigrokCommon):
             filename = os.path.join(self._tmpdir, self._basename)
         else:
             filename = os.path.abspath(filename)
-        check_file(filename, command_prefix=self.sigrok.command_prefix)
+        check_file(filename, resource=self.sigrok)
         args.insert(0, filename)
         if isinstance(args, str):
             args = args.split(" ")
@@ -429,8 +432,7 @@ class SigrokDriver(SigrokCommon):
         args.append("--protocol-decoder-samplenum")
         args.append("-l")
         args.append("4")
-        combined = self._get_sigrok_prefix() + args
-        output = subprocess.check_output(combined)
+        output = processwrapper.check_wrapped_output(self.sigrok, self._get_sigrok_prefix() + args, stderr=None)
         return [
             match.groupdict()
             for match in re.finditer(annotation_regex, output.decode("utf-8"))
@@ -464,15 +466,15 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
     @Driver.check_active
     @step()
     def on(self):
-        processwrapper.check_output(
-            self._get_sigrok_prefix() + ["--config", "enabled=yes", "--set"]
+        processwrapper.check_wrapped_output(
+            self.sigrok, self._get_sigrok_prefix() + ["--config", "enabled=yes", "--set"]
         )
 
     @Driver.check_active
     @step()
     def off(self):
-        processwrapper.check_output(
-            self._get_sigrok_prefix() + ["--config", "enabled=no", "--set"]
+        processwrapper.check_wrapped_output(
+            self.sigrok, self._get_sigrok_prefix() + ["--config", "enabled=no", "--set"]
         )
 
     @Driver.check_active
@@ -488,8 +490,8 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
         if self.max_voltage is not None and value > self.max_voltage:
             raise ValueError(
                 f"Requested voltage target({value}) is higher than configured maximum ({self.max_voltage})")  # pylint: disable=line-too-long
-        processwrapper.check_output(
-            self._get_sigrok_prefix() + ["--config", f"voltage_target={value:f}", "--set"]
+        processwrapper.check_wrapped_output(
+            self.sigrok, self._get_sigrok_prefix() + ["--config", f"voltage_target={value:f}", "--set"]
         )
 
     @Driver.check_active
@@ -498,15 +500,15 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
         if self.max_current is not None and value > self.max_current:
             raise ValueError(
                 f"Requested current limit ({value}) is higher than configured maximum ({self.max_current})")  # pylint: disable=line-too-long
-        processwrapper.check_output(
-            self._get_sigrok_prefix() + ["--config", f"current_limit={value:f}", "--set"]
+        processwrapper.check_wrapped_output(
+            self.sigrok, self._get_sigrok_prefix() + ["--config", f"current_limit={value:f}", "--set"]
         )
 
     @Driver.check_active
     @step(result=True)
     def get(self):
-        out = processwrapper.check_output(
-            self._get_sigrok_prefix() + ["--get", "enabled"]
+        out = processwrapper.check_wrapped_output(
+            self.sigrok, self._get_sigrok_prefix() + ["--get", "enabled"]
         )
         if out == b'true':
             return True
@@ -518,8 +520,8 @@ class SigrokPowerDriver(SigrokCommon, PowerResetMixin, PowerProtocol):
     @Driver.check_active
     @step(result=True)
     def measure(self):
-        out = processwrapper.check_output(
-            self._get_sigrok_prefix() + ["--show"]
+        out = processwrapper.check_wrapped_output(
+            self.sigrok, self._get_sigrok_prefix() + ["--show"]
         )
         res = {}
         for line in out.splitlines():

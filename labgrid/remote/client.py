@@ -14,9 +14,11 @@ import signal
 import sys
 import shlex
 import shutil
+import tempfile
 import json
 import itertools
 import ipaddress
+import warnings
 from textwrap import indent
 from socket import gethostname, gethostbyname
 from getpass import getuser
@@ -48,7 +50,7 @@ from .. import Environment, Target, target_factory
 from ..exceptions import NoDriverFoundError, NoResourceFoundError, InvalidConfigError
 from .generated import labgrid_coordinator_pb2, labgrid_coordinator_pb2_grpc
 from ..resource.remote import RemotePlaceManager, RemotePlace
-from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout
+from ..util import diff_dict, flat_dict, dump, atomic_replace, labgrid_version, Timeout, load
 from ..util.proxy import proxymanager
 from ..util.ssh import sshmanager
 from ..util.helper import processwrapper
@@ -123,6 +125,9 @@ class ClientSession:
     prog = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
     args = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(argparse.Namespace)))
     monitor = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    _subscribe_resources = attr.ib(
+        default=True, kw_only=True, alias="_subscribe_resources", validator=attr.validators.instance_of(bool)
+    )
 
     def gethostname(self):
         return os.environ.get("LG_HOSTNAME", gethostname())
@@ -192,9 +197,10 @@ class ClientSession:
         msg = labgrid_coordinator_pb2.ClientInMessage()
         msg.subscribe.all_places = True
         self.out_queue.put_nowait(msg)
-        msg = labgrid_coordinator_pb2.ClientInMessage()
-        msg.subscribe.all_resources = True
-        self.out_queue.put_nowait(msg)
+        if self._subscribe_resources:
+            msg = labgrid_coordinator_pb2.ClientInMessage()
+            msg.subscribe.all_resources = True
+            self.out_queue.put_nowait(msg)
         await self.sync_with_coordinator()
         if self.stopping.is_set():
             raise ServerError("Could not connect to coordinator")
@@ -525,11 +531,11 @@ class ClientSession:
             host, user = place.acquired.split("/")
             if user != self.getuser():
                 raise UserError(
-                    f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}"
+                    f"place {place.name} is not acquired by your user, acquired by {user}. To work simultaneously, {user} can execute labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()}"
                 )
             if host != self.gethostname():
                 raise UserError(
-                    f"place {place.name} is not acquired on this computer, acquired on {host}. To allow this host, use labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()} on the other host"
+                    f"place {place.name} is not acquired on this computer, acquired on {host}. To share with this host, use labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()} on the other host"
                 )
 
     def get_place(self, place=None):
@@ -605,15 +611,29 @@ class ClientSession:
                         print(f"Matching resource '{name}' ({exporter}/{group_name}/{resource.cls}/{resource_name}):")  # pylint: disable=line-too-long
                         print(indent(pformat(resource.asdict()), prefix="  "))
 
-    async def add_place(self):
-        """Add a place to the coordinator"""
+    async def _call_with_fallback(self, rpc, request, fallback_rpc, fallback_request):
+        """Use the legacy RPC only when the coordinator does not implement the new one."""
+        try:
+            return await rpc(request)
+        except grpc.aio.AioRpcError as e:
+            if e.code() != grpc.StatusCode.UNIMPLEMENTED:
+                raise
+        return await fallback_rpc(fallback_request)
+
+    async def create_place(self):
+        """Create a place on the coordinator"""
         name = self.args.place
         if not name:
             raise UserError("missing place name. Set with -p <place> or via env var LG_PLACE")
 
-        request = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
+        request = labgrid_coordinator_pb2.CreatePlaceRequest(name=name)
         try:
-            await self.stub.AddPlace(request)
+            await self._call_with_fallback(
+                self.stub.CreatePlace,
+                request,
+                self.stub.AddPlace,
+                labgrid_coordinator_pb2.AddPlaceRequest(name=name),
+            )
             await self.sync_with_coordinator()
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
@@ -777,17 +797,17 @@ class ClientSession:
         place = self.get_place(place)
         if place.acquired:
             host, user = place.acquired.split("/")
-            allowhelp = f"'labgrid-client -p {place.name} allow {self.gethostname()}/{self.getuser()}' on {host}."
+            sharehelp = f"'labgrid-client -p {place.name} share {self.gethostname()}/{self.getuser()}' on {host}."
             if self.getuser() == user:
                 if self.gethostname() == host:
                     raise UserError(f"You have already acquired place {place.name}.")
                 else:
                     raise UserError(
-                        f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {allowhelp}"
+                        f"You have already acquired place {place.name} on {host}. To work simultaneously, execute {sharehelp}"
                     )
             else:
                 raise UserError(
-                    f"Place {place.name} is already acquired by {place.acquired}. To work simultaneously, {user} can execute {allowhelp}"
+                    f"Place {place.name} is already acquired by {place.acquired}. To work simultaneously, {user} can execute {sharehelp}"
                 )
         if not self.args.allow_unmatched:
             self.check_matches(place)
@@ -854,20 +874,42 @@ class ClientSession:
 
         print(f"{self.args.acquired} has released place {place.name}")
 
-    async def allow(self):
-        """Allow another use access to a previously acquired place"""
+    async def share(self):
+        """Share access to a previously acquired place with another user"""
         place = self.get_acquired_place()
         if "/" not in self.args.user:
             raise UserError(f"user {self.args.user} must be in <host>/<username> format")
-        request = labgrid_coordinator_pb2.AllowPlaceRequest(placename=place.name, user=self.args.user)
+        request = labgrid_coordinator_pb2.SharePlaceRequest(name=place.name, user=self.args.user)
 
         try:
-            await self.stub.AllowPlace(request)
+            await self._call_with_fallback(
+                self.stub.SharePlace,
+                request,
+                self.stub.AllowPlace,
+                labgrid_coordinator_pb2.AllowPlaceRequest(placename=place.name, user=self.args.user),
+            )
             await self.sync_with_coordinator()
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
 
-        print(f"allowed {self.args.user} for place {place.name}")
+        print(f"shared place {place.name} with {self.args.user}")
+
+    async def unshare(self):
+        """Remove another user's access to a previously acquired place"""
+        place = self.get_acquired_place()
+        if "/" not in self.args.user:
+            raise UserError(f"user {self.args.user} must be in <host>/<username> format")
+        request = labgrid_coordinator_pb2.UnsharePlaceRequest(name=place.name, user=self.args.user)
+
+        try:
+            await self.stub.UnsharePlace(request)
+            await self.sync_with_coordinator()
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNIMPLEMENTED:
+                raise ServerError("This coordinator does not support unshare; update the coordinator to use it") from e
+            raise ServerError(e.details())
+
+        print(f"unshared place {place.name} with {self.args.user}")
 
     def get_target_resources(self, place):
         self._check_allowed(place)
@@ -1219,6 +1261,7 @@ class ClientSession:
             NetworkMXSUSBLoader,
             NetworkIMXUSBLoader,
             NetworkRKUSBLoader,
+            NetworkSunxiUSBLoader,
             NetworkAlteraUSBBlaster,
         )
         from ..driver import OpenOCDDriver
@@ -1245,6 +1288,9 @@ class ClientSession:
                     drv.interface.timeout = self.args.wait
                 elif isinstance(resource, NetworkRKUSBLoader):
                     drv = self._get_driver_or_new(target, "RKUSBDriver", activate=False, name=name)
+                    drv.loader.timeout = self.args.wait
+                elif isinstance(resource, NetworkSunxiUSBLoader):
+                    drv = self._get_driver_or_new(target, "SunxiUSBDriver", activate=False, name=name)
                     drv.loader.timeout = self.args.wait
                 if drv:
                     break
@@ -1346,10 +1392,25 @@ class ClientSession:
                 ip = self._get_ip(place)
                 if not ip:
                     return
-                resource = NetworkService(target, address=str(ip), username="root")
+                resource = NetworkService(target, name=None, address=str(ip))
 
             drv = self._get_driver_or_new(target, "SSHDriver", name=resource.name)
             return drv
+
+    def _get_port_forward(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+
+        try:
+            return target.get_driver("PortForwardProtocol", name=self.args.name)
+        except NoDriverFoundError as e:
+            if e.found:
+                raise
+            if self.env:
+                self.logger.warning(
+                    "no PortForwardProtocol driver found in configuration file, falling back to implicit SSH port forwarding"
+                )
+            return self._get_ssh()
 
     def ssh(self):
         drv = self._get_ssh()
@@ -1382,16 +1443,16 @@ class ClientSession:
             print("Nothing to forward", file=sys.stderr)
             return
 
-        drv = self._get_ssh()
+        drv = self._get_port_forward()
 
         with contextlib.ExitStack() as stack:
             for local, remote in self.args.local:
-                localport = stack.enter_context(drv.forward_local_port(remote, localport=local))
+                localport = stack.enter_context(drv.local_forward(remote, local_port=local or 0))
                 print(f"Forwarding local port {localport:d} to remote port {remote:d}")
 
             for local, remote in self.args.remote:
-                stack.enter_context(drv.forward_remote_port(remote, local))
-                print(f"Forwarding remote port {remote:d} to local port {local:d}")
+                allocated = stack.enter_context(drv.remote_forward(local, remote_port=remote))
+                print(f"Forwarding remote port {allocated:d} to local port {local:d}")
 
             try:
                 print("Waiting for CTRL+C...")
@@ -1413,6 +1474,7 @@ class ClientSession:
     def video(self):
         place = self.get_acquired_place()
         quality = self.args.quality
+        fps = self.args.fps
         controls = self.args.controls
         target = self._get_target(place)
         name = self.args.name
@@ -1442,7 +1504,7 @@ class ClientSession:
                 mark = "*" if default == name else " "
                 print(f"{mark} {name:<10s} {caps:s}")
         else:
-            res = drv.stream(quality, controls=controls)
+            res = drv.stream(quality, controls=controls, fps=fps)
             if res:
                 raise InteractiveCommandError("gst-launch-1.0 error", res)
 
@@ -1639,10 +1701,15 @@ class ClientSession:
 
     async def _wait_reservation(self, reservation_id: str, verbose=True):
         while True:
-            request = labgrid_coordinator_pb2.PollReservationRequest(token=reservation_id)
+            request = labgrid_coordinator_pb2.RefreshReservationRequest(reservation_id=reservation_id)
 
             try:
-                response: labgrid_coordinator_pb2.PollReservationResponse = await self.stub.PollReservation(request)
+                response = await self._call_with_fallback(
+                    self.stub.RefreshReservation,
+                    request,
+                    self.stub.PollReservation,
+                    labgrid_coordinator_pb2.PollReservationRequest(token=reservation_id),
+                )
             except grpc.aio.AioRpcError as e:
                 raise ServerError(e.details())
 
@@ -1659,10 +1726,15 @@ class ClientSession:
         await self._wait_reservation(reservation_id)
 
     async def print_reservations(self):
-        request = labgrid_coordinator_pb2.GetReservationsRequest()
+        request = labgrid_coordinator_pb2.ListReservationsRequest()
 
         try:
-            response: labgrid_coordinator_pb2.GetReservationsResponse = await self.stub.GetReservations(request)
+            response = await self._call_with_fallback(
+                self.stub.ListReservations,
+                request,
+                self.stub.GetReservations,
+                labgrid_coordinator_pb2.GetReservationsRequest(),
+            )
             reservations = [Reservation.from_pb2(x) for x in response.reservations]
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
@@ -1758,15 +1830,19 @@ class ClientSession:
                 env_var["ADB_SERVER_SOCKET"] = f"tcp:{ip_addr}:{adb_port}"
 
                 # Find a free port on the exporter machine
-                scrcpy_port = sshmanager.get(host).run_check(
-                    'python3 -c "'
-                    "import socket;"
-                    "s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(("
-                    "'', 0));"
-                    "addr = s.getsockname();"
-                    "print(addr[1]);"
-                    's.close()"'
-                )[0]
+                command = resource.wrap_command(
+                    [
+                        "python3",
+                        "-c",
+                        "import socket;"
+                        "s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(("
+                        "'', 0));"
+                        "addr = s.getsockname();"
+                        "print(addr[1]);"
+                        "s.close()",
+                    ]
+                )
+                scrcpy_port = subprocess.check_output(command, text=True).strip()
 
                 scrcpy_cmd = [
                     "scrcpy",
@@ -1799,6 +1875,79 @@ class ClientSession:
 
         scrcpy_cmd += self.args.leftover
         subprocess.run(scrcpy_cmd, env=env_var, check=True)
+
+    @staticmethod
+    def check_remote_place_config(remote_place_config_yaml):
+        """Checks a remote place config for errors."""
+        with warnings.catch_warnings():
+            # turn UserWarnings (e.g. emitted for unsupported attributes or duplicate YAML keys) into exceptions
+            warnings.simplefilter("error", UserWarning)
+
+            config = load(remote_place_config_yaml) or {}
+
+            if "RemotePlace" in target_factory.normalize_config(config)[0]:
+                raise ValueError("RemotePlace not allowed in remote place config")
+
+            # instantiate resources and drivers without a target and bindings (the config may be incomplete as
+            # drivers may bind to resources provided by the coordinator)
+            target_factory.make_resources_from_config(None, config.get("resources", {}))
+            target_factory.make_drivers_from_config(None, config.get("drivers", {}))
+
+    async def edit_remote_place_config(self):
+        """Edits the remote place config of an idle place in $EDITOR and stores it in the coordinator."""
+        place = self.get_idle_place()
+        editor = os.environ.get("EDITOR", "vi")
+        # remember last place change to be sent along with the new config for optimistic locking
+        changed = place.changed
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # write current remote place config to temporary file
+            path = pathlib.Path(tmpdir, "remote-place-config.yaml")
+            path.write_text(place.remote_place_config or "")
+
+            while True:
+                # open editor
+                subprocess.run(shlex.split(editor) + [str(path)], check=True)
+                new_remote_place_config = path.read_text()
+
+                try:
+                    self.check_remote_place_config(new_remote_place_config)
+                except Exception as e:
+                    # let the user decide how to proceed on errors during the check
+                    if self.args.debug:
+                        traceback.print_exc(file=sys.stderr)
+                    else:
+                        print(f"Error: {e}", file=sys.stderr)
+                    while (
+                        key := input("Save anyway? [y]es, [N]o and reopen editor, [q]uit without saving ").lower()
+                    ) not in ("", "y", "n", "q"):
+                        pass
+                    if key == "q":
+                        return
+                    if key != "y":
+                        # start over again
+                        continue
+
+                # the coordinator rejects the request if the place was changed since we fetched it
+                request = labgrid_coordinator_pb2.SetPlaceRemotePlaceConfigRequest(
+                    placename=place.name, changed=changed, remote_place_config=new_remote_place_config
+                )
+                try:
+                    await self.stub.SetPlaceRemotePlaceConfig(request)
+                except grpc.aio.AioRpcError as e:
+                    if self.args.debug:
+                        traceback.print_exc(file=sys.stderr)
+                    else:
+                        print(f"Coordinator Error: {e.debug_error_string()}", file=sys.stderr)
+                    # reopening the editor lets the user keep the config (e.g. copy it elsewhere) before starting over
+                    while (key := input("Reopen editor? [Y]es, [n]o ").lower()) not in ("", "y", "n"):
+                        pass
+                    if key == "n":
+                        return
+                    continue
+
+                await self.sync_with_coordinator()
+                return
 
 
 def start_session(
@@ -1994,6 +2143,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     parser.add_argument("-P", "--proxy", type=str, help="proxy connections via given ssh host")
+    parser.set_defaults(needs_resources=True)
     subparsers = parser.add_subparsers(
         dest="command",
         title="available subcommands",
@@ -2026,54 +2176,54 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument("-a", "--acquired", action="store_true")
     subparser.add_argument("-r", "--released", action="store_true")
     subparser.add_argument("--sort-last-changed", action="store_true", help="sort by last changed date (oldest first)")
-    subparser.set_defaults(func=ClientSession.print_places)
+    subparser.set_defaults(func=ClientSession.print_places, needs_resources=False)
 
     subparser = subparsers.add_parser("who", help="list acquired places by user")
     subparser.add_argument(
         "-e", "--show-exporters", action="store_true", help="show exporters currently used by each place"
     )
-    subparser.set_defaults(func=ClientSession.print_who)
+    subparser.set_defaults(func=ClientSession.print_who, needs_resources=False)
 
     subparser = subparsers.add_parser("show", help="show a place and related resources")
     subparser.set_defaults(func=ClientSession.print_place)
 
     subparser = subparsers.add_parser(
         "create",
-        help="add a new place with the name specified via --place or the LG_PLACE environment variable",
+        help="create a new place with the name specified via --place or the LG_PLACE environment variable",
     )
-    subparser.set_defaults(func=ClientSession.add_place)
+    subparser.set_defaults(func=ClientSession.create_place, needs_resources=False)
 
     subparser = subparsers.add_parser("delete", help="delete an existing place")
-    subparser.set_defaults(func=ClientSession.del_place)
+    subparser.set_defaults(func=ClientSession.del_place, needs_resources=False)
 
     subparser = subparsers.add_parser("add-alias", help="add an alias to a place")
     subparser.add_argument("alias")
-    subparser.set_defaults(func=ClientSession.add_alias)
+    subparser.set_defaults(func=ClientSession.add_alias, needs_resources=False)
 
     subparser = subparsers.add_parser("del-alias", help="delete an alias from a place")
     subparser.add_argument("alias")
-    subparser.set_defaults(func=ClientSession.del_alias)
+    subparser.set_defaults(func=ClientSession.del_alias, needs_resources=False)
 
     subparser = subparsers.add_parser("set-comment", help="update the place comment")
     subparser.add_argument("comment", nargs="+")
-    subparser.set_defaults(func=ClientSession.set_comment)
+    subparser.set_defaults(func=ClientSession.set_comment, needs_resources=False)
 
     subparser = subparsers.add_parser("set-tags", help="update the place tags")
     subparser.add_argument("tags", metavar="KEY=VALUE", nargs="+", help="use an empty value for deletion")
-    subparser.set_defaults(func=ClientSession.set_tags)
+    subparser.set_defaults(func=ClientSession.set_tags, needs_resources=False)
 
     subparser = subparsers.add_parser("add-match", help="add one (or multiple) match pattern(s) to a place")
     subparser.add_argument("patterns", metavar="PATTERN", nargs="+")
-    subparser.set_defaults(func=ClientSession.add_match)
+    subparser.set_defaults(func=ClientSession.add_match, needs_resources=False)
 
     subparser = subparsers.add_parser("del-match", help="delete one (or multiple) match pattern(s) from a place")
     subparser.add_argument("patterns", metavar="PATTERN", nargs="+")
-    subparser.set_defaults(func=ClientSession.del_match)
+    subparser.set_defaults(func=ClientSession.del_match, needs_resources=False)
 
     subparser = subparsers.add_parser("add-named-match", help="add one match pattern with a name to a place")
     subparser.add_argument("pattern", metavar="PATTERN")
     subparser.add_argument("name", metavar="NAME")
-    subparser.set_defaults(func=ClientSession.add_named_match)
+    subparser.set_defaults(func=ClientSession.add_named_match, needs_resources=False)
 
     subparser = subparsers.add_parser("acquire", aliases=("lock",), help="acquire a place")
     subparser.add_argument(
@@ -2085,7 +2235,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.add_argument(
         "-k", "--kick", action="store_true", help="release a place even if it is acquired by a different user"
     )
-    subparser.set_defaults(func=ClientSession.release)
+    subparser.set_defaults(func=ClientSession.release, needs_resources=False)
 
     subparser = subparsers.add_parser(
         "release-from",
@@ -2094,11 +2244,15 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         "meaning it may be acquired by another user or not at all.",
     )
     subparser.add_argument("acquired", metavar="HOST/USER", help="User and host to match against when releasing")
-    subparser.set_defaults(func=ClientSession.release_from)
+    subparser.set_defaults(func=ClientSession.release_from, needs_resources=False)
 
-    subparser = subparsers.add_parser("allow", help="allow another user to access a place")
+    subparser = subparsers.add_parser("share", aliases=("allow",), help="share a place with another user")
     subparser.add_argument("user", help="<host>/<username>")
-    subparser.set_defaults(func=ClientSession.allow)
+    subparser.set_defaults(func=ClientSession.share, needs_resources=False)
+
+    subparser = subparsers.add_parser("unshare", help="remove another user's access to a place")
+    subparser.add_argument("user", help="<host>/<username>")
+    subparser.set_defaults(func=ClientSession.unshare, needs_resources=False)
 
     subparser = subparsers.add_parser("env", help="generate a labgrid environment file for a place")
     subparser.set_defaults(func=ClientSession.print_env)
@@ -2215,6 +2369,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
 
     subparser = subparsers.add_parser("video", help="start a video stream")
     subparser.add_argument("-q", "--quality", type=str, help="select a video quality (use 'list' to show options)")
+    subparser.add_argument("-f", "--fps", action="store_true", help="Overlay FPS statistics")
     subparser.add_argument(
         "-c", "--controls", type=str, help="configure v4l controls (such as 'focus_auto=0,focus_absolute=40')"
     )
@@ -2329,7 +2484,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         "--prio", type=float, default=0.0, help="priority relative to other reservations (default 0)"
     )
     subparser.add_argument("filters", metavar="KEY=VALUE", nargs="+", help="required tags")
-    subparser.set_defaults(func=ClientSession.create_reservation)
+    subparser.set_defaults(func=ClientSession.create_reservation, needs_resources=False)
 
     subparser = subparsers.add_parser("cancel-reservation", help="cancel a reservation")
     subparser.add_argument(
@@ -2339,7 +2494,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         help="the reservation id (previously called token)",
         metavar="reservation-id",
     )
-    subparser.set_defaults(func=ClientSession.cancel_reservation)
+    subparser.set_defaults(func=ClientSession.cancel_reservation, needs_resources=False)
 
     subparser = subparsers.add_parser("wait", help="wait for a reservation to be allocated")
     subparser.add_argument(
@@ -2349,10 +2504,10 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         help="the reservation id (previously called token)",
         metavar="reservation-id",
     )
-    subparser.set_defaults(func=ClientSession.wait_reservation)
+    subparser.set_defaults(func=ClientSession.wait_reservation, needs_resources=False)
 
     subparser = subparsers.add_parser("reservations", help="list current reservations")
-    subparser.set_defaults(func=ClientSession.print_reservations)
+    subparser.set_defaults(func=ClientSession.print_reservations, needs_resources=False)
 
     subparser = subparsers.add_parser(
         "export", help="export driver information to a file (needs environment with drivers)"
@@ -2369,7 +2524,7 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser.set_defaults(func=ClientSession.export)
 
     subparser = subparsers.add_parser("version", help="show version")
-    subparser.set_defaults(func=ClientSession.print_version)
+    subparser.set_defaults(func=ClientSession.print_version, needs_resources=False)
 
     adb_subparser = subparsers.add_parser("adb", help="Run Android Debug Bridge")
     adb_subparser.add_argument("--name", "-n", help="optional resource name")
@@ -2382,6 +2537,9 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     scrcpy_subparser = adb_subparsers.add_parser("scrcpy", help="Run scrcpy to remote control an android device")
     scrcpy_subparser.add_argument("--name", "-n", help="optional resource name")
     scrcpy_subparser.set_defaults(func=ClientSession.scrcpy)
+
+    subparser = subparsers.add_parser("edit", help="edit remote place config")
+    subparser.set_defaults(func=ClientSession.edit_remote_place_config, needs_resources=False)
 
     return parser
 
@@ -2425,6 +2583,9 @@ def main():
 
     if args.initial_state is None:
         args.initial_state = initial_state
+
+    if args.command == "complete":
+        args.needs_resources = args.type == "resources"
 
     if args.command in ["cancel-reservation", "wait"] and args.reservation_id is None:
         reservation_id = _get_reservation_id_from_env()
@@ -2476,6 +2637,7 @@ def main():
         "env": env,
         "role": role,
         "prog": parser.prog,
+        "_subscribe_resources": args.needs_resources,
     }
 
     if args.command and args.command != "help":

@@ -16,6 +16,7 @@ from typing import Optional
 import attr
 import grpc
 from grpc_reflection.v1alpha import reflection
+from yaml import YAMLError
 
 from labgrid.remote.identity import ClientIdentity, infer_peer_identity
 
@@ -237,6 +238,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.lock = asyncio.Lock()
         self.exporters: dict[str, ExporterSession] = {}
         self.clients: dict[str, ClientSession] = {}
+        self.reservation_retry_cooldown = 60.0
+        self.reservation_place_cooldowns: dict[str, float] = {}
         self.load()
 
         self.loop = asyncio.get_running_loop()
@@ -560,8 +563,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         finally:
             await self._cleanup_exporter(peer, running_request_task)
 
-    @locked
-    async def AddPlace(self, request, context):
+    async def create_place(
+        self,
+        request: labgrid_coordinator_pb2.CreatePlaceRequest | labgrid_coordinator_pb2.AddPlaceRequest,
+        context,
+    ) -> Place:
         name = request.name
         if not name or not isinstance(name, str):
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
@@ -572,7 +578,19 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.places[name] = place
         self._publish_place(place)
         self.save_later()
+        return place
+
+    @locked
+    async def AddPlace(self, request, context):
+        logging.warning("AddPlace is deprecated; use CreatePlace instead")
+        await self.create_place(request, context)
         return labgrid_coordinator_pb2.AddPlaceResponse()
+
+    @locked
+    async def CreatePlace(self, request, context):
+        logging.debug("CreatePlace name=%s", request.name)
+        place = await self.create_place(request, context)
+        return labgrid_coordinator_pb2.CreatePlaceResponse(place=place.as_pb2())
 
     @locked
     async def DeletePlace(self, request, context):
@@ -663,6 +681,30 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self._publish_place(place)
         self.save_later()
         return labgrid_coordinator_pb2.SetPlaceCommentResponse()
+
+    @locked
+    async def SetPlaceRemotePlaceConfig(self, request, context):
+        placename = request.placename
+        changed = request.changed
+        remote_place_config = request.remote_place_config
+        try:
+            place = self.places[placename]
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {placename} does not exist")
+
+        try:
+            yaml.load(remote_place_config)
+        except YAMLError as e:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Invalid YAML in remote place config: {e}")
+
+        if place.changed != changed:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Config was changed elsewhere during your edit")
+
+        place.remote_place_config = remote_place_config
+        place.touch()
+        self._publish_place(place)
+        self.save_later()
+        return labgrid_coordinator_pb2.SetPlaceRemotePlaceConfigResponse()
 
     @locked
     async def AddPlaceMatch(self, request, context):
@@ -941,6 +983,24 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
             idx = place.acquired_resources.index(oldresource)
             place.acquired_resources[idx] = newresource
 
+    def _return_reservation_after_place_failure(self, place):
+        assert self.lock.locked()
+
+        reservation_id = place.reservation
+        reservation = self.reservations[reservation_id]
+
+        reservation.state = ReservationState.waiting
+        reservation.allocations.clear()
+        reservation.refresh()
+
+        place.reservation = None
+        place.acquired = None
+        place.allowed = set()
+        place.touch()
+        self.reservation_place_cooldowns[place.name] = time.monotonic() + self.reservation_retry_cooldown
+        self._publish_place(place)
+        self.save_later()
+
     @add_identity
     @locked
     async def AcquirePlace(self, request, context, *, identity):
@@ -976,11 +1036,18 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         try:
             await self._acquire_resources(place, resources)
         except CoordinatorError as e:
-            # revert earlier change
-            place.acquired = None
+            reservation_returned = bool(place.reservation)
+            if reservation_returned:
+                self._return_reservation_after_place_failure(place)
+                self.schedule_reservations()
+            else:
+                # revert earlier change
+                place.acquired = None
             message = f"Failed to acquire resources for place {name}"
             if str(e):
                 message += f": {e}"
+            if reservation_returned:
+                message += "; reservation was returned to waiting state"
             await context.abort(
                 grpc.StatusCode.FAILED_PRECONDITION,
                 message,
@@ -1034,11 +1101,7 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         print(f"{place.name}: place released")
         return labgrid_coordinator_pb2.ReleasePlaceResponse()
 
-    @add_identity
-    @locked
-    async def AllowPlace(self, request, context, *, identity):
-        placename = request.placename
-        user = request.user
+    async def share_place(self, placename, user, context, *, identity):
         peer = context.peer()
         try:
             username = infer_peer_identity(self.clients, context, identity)
@@ -1058,18 +1121,131 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         place.touch()
         self._publish_place(place)
         self.save_later()
+
+    @add_identity
+    @locked
+    async def AllowPlace(self, request, context, *, identity):
+        logging.warning("AllowPlace is deprecated; use SharePlace instead")
+        await self.share_place(request.placename, request.user, context, identity=identity)
         return labgrid_coordinator_pb2.AllowPlaceResponse()
+
+    @add_identity
+    @locked
+    async def SharePlace(self, request, context, *, identity):
+        name = request.name
+        logging.debug("SharePlace name=%s user=%s", name, request.user)
+        if not name or not isinstance(name, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+
+        await self.share_place(name, request.user, context, identity=identity)
+        return labgrid_coordinator_pb2.SharePlaceResponse()
+
+    @add_identity
+    @locked
+    async def UnsharePlace(self, request, context, *, identity):
+        placename = request.name
+        logging.debug("UnsharePlace name=%s user=%s", placename, request.user)
+        if not placename or not isinstance(placename, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+
+        user = request.user
+        peer = context.peer()
+        try:
+            username = infer_peer_identity(self.clients, context, identity)
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Peer {peer} does not have a valid session")
+        try:
+            place = self.places[placename]
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {placename} does not exist")
+        if not place.acquired:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired")
+        if not place.acquired == username:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not acquired by {username}"
+            )
+        try:
+            place.allowed.remove(user)
+            place.touch()
+            self._publish_place(place)
+            self.save_later()
+        except KeyError:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Place {placename} is not shared with {user}")
+
+        return labgrid_coordinator_pb2.UnsharePlaceResponse()
 
     def _get_places(self):
         return {k: v.asdict() for k, v in self.places.items()}
 
+    async def GetPlace(self, request, context):
+        name = request.name
+        logging.debug("GetPlace name=%s", name)
+        if not name or not isinstance(name, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+        try:
+            place = self.places[name]
+            # Copy without yielding: reads need not wait for exporter operations.
+            return labgrid_coordinator_pb2.GetPlaceResponse(place=place.as_pb2())
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
+        except Exception:
+            logging.exception("error during get place")
+            await context.abort(grpc.StatusCode.INTERNAL, "internal error")
+
     @locked
     async def GetPlaces(self, unused_request, unused_context):
-        logging.debug("GetPlaces")
+        logging.warning("GetPlaces is deprecated; use ListPlaces instead")
         try:
             return labgrid_coordinator_pb2.GetPlacesResponse(places=[x.as_pb2() for x in self.places.values()])
         except Exception:
             logging.exception("error during get places")
+
+    async def ListPlaces(self, request, context):
+        logging.debug("ListPlaces")
+        # Successful list reads do not yield while copying the current state.
+        # They need not wait for mutations which are awaiting exporter replies.
+
+        places = []
+        for place in self.places.values():
+            places.append(place.as_pb2())
+
+        return labgrid_coordinator_pb2.ListPlacesResponse(places=places)
+
+    async def ListResources(self, request, context):
+        logging.debug("ListResources")
+
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    serialised = resource.as_pb2()
+                    serialised.path.exporter_name = resource.path[0]
+                    serialised.path.group_name = resource.path[1]
+                    serialised.path.resource_name = resource.path[3]
+                    resources.append(serialised)
+        return labgrid_coordinator_pb2.ListResourcesResponse(resources=resources)
+
+    async def ListPlaceResources(self, request, context):
+        name = request.name
+        logging.debug("ListPlaceResources name=%s", name)
+        if not name or not isinstance(name, str):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "name was not a string")
+        try:
+            place = self.places[name]
+        except KeyError:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, f"Place {name} does not exist")
+        resources = []
+        for _, session in sorted(self.exporters.items()):
+            for _, group in sorted(session.groups.items()):
+                for _, resource in sorted(group.items()):
+                    if not place.hasmatch(resource.path):
+                        continue
+                    serialised = resource.as_pb2()
+                    serialised.path.exporter_name = resource.path[0]
+                    serialised.path.group_name = resource.path[1]
+                    serialised.path.resource_name = resource.path[3]
+                    resources.append(serialised)
+        return labgrid_coordinator_pb2.ListPlaceResourcesResponse(resources=resources)
 
     def schedule_reservations(self):
         # The primary information is stored in the reservations and the places
@@ -1077,6 +1253,11 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
 
         # expire reservations
         assert self.lock.locked()
+        now = time.monotonic()
+        for name, cooldown_until in list(self.reservation_place_cooldowns.items()):
+            if cooldown_until <= now:
+                del self.reservation_place_cooldowns[name]
+
         for res in list(self.reservations.values()):
             if res.state is ReservationState.acquired:
                 # acquired reservations do not expire
@@ -1124,6 +1305,8 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         # check which places are available for allocation
         available_places = set()
         for name, place in self.places.items():
+            if name in self.reservation_place_cooldowns:
+                continue
             if place.acquired is None and place.reservation is None:
                 available_places.add(name)
         assert not (available_places & allocated_places), "inconsistent allocation"
@@ -1217,20 +1400,40 @@ class Coordinator(labgrid_coordinator_pb2_grpc.CoordinatorServicer):
         self.schedule_reservations()
         return labgrid_coordinator_pb2.CancelReservationResponse()
 
-    @locked
-    async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context):
-        reservation_id = request.token
+    async def refresh_reservation(self, reservation_id: str, context) -> Reservation:
         try:
             res = self.reservations[reservation_id]
         except KeyError:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, f"Reservation {reservation_id} does not exist")
-        res.refresh()
+        if res.state in (ReservationState.waiting, ReservationState.allocated):
+            res.refresh()
+        return res
+
+    @locked
+    async def PollReservation(self, request: labgrid_coordinator_pb2.PollReservationRequest, context):
+        logging.warning("PollReservation is deprecated; use RefreshReservation instead")
+        res = await self.refresh_reservation(request.token, context)
         return labgrid_coordinator_pb2.PollReservationResponse(reservation=res.as_pb2())
 
     @locked
+    async def RefreshReservation(self, request: labgrid_coordinator_pb2.RefreshReservationRequest, context):
+        logging.debug("RefreshReservation reservation_id=%s", request.reservation_id)
+        res = await self.refresh_reservation(request.reservation_id, context)
+        return labgrid_coordinator_pb2.RefreshReservationResponse(reservation=res.as_pb2())
+
+    @locked
     async def GetReservations(self, request: labgrid_coordinator_pb2.GetReservationsRequest, context):
+        logging.warning("GetReservations is deprecated; use ListReservations instead")
         reservations = [x.as_pb2() for x in self.reservations.values()]
         return labgrid_coordinator_pb2.GetReservationsResponse(reservations=reservations)
+
+    async def ListReservations(self, request, context):
+        # Copy the current state without yielding or waiting for the mutation lock.
+        reservations = []
+        for reservation in self.reservations.values():
+            reservations.append(reservation.as_pb2())
+
+        return labgrid_coordinator_pb2.ListReservationsResponse(reservations=reservations)
 
 
 async def serve(listen, cleanup, server_credentials=None, debug=False) -> None:

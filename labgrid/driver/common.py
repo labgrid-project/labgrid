@@ -87,6 +87,9 @@ class Driver(BindingMixin):
         return res
 
 
-def check_file(filename, *, command_prefix: list[str] | None = None) -> None:
-    if subprocess.call((command_prefix or []) + ["test", "-r", filename]) != 0:
+def check_file(filename, *, resource: Resource | None = None) -> None:
+    cmd = ["test", "-r", filename]
+    if resource is not None:
+        cmd = resource.wrap_command(cmd)
+    if subprocess.call(cmd) != 0:
         raise ExecutionError(f"File {filename} is not readable")

@@ -83,6 +83,10 @@ The ``tools:`` top key provides paths to binaries such as fastboot.
 TOOLS KEYS
 ~~~~~~~~~~
 
+``adb``
+    Path to the adb binary, used by the ADBDriver.
+    See: https://developer.android.com/studio/releases/platform-tools
+
 ``dfu-util``
     Path to the dfu-util binary, used by the DFUDriver.
     See: https://dfu-util.sourceforge.net/
@@ -90,6 +94,10 @@ TOOLS KEYS
 ``dpcmd``
     Path to the dpcmd binary, used by the DediprogFlashDriver.
     See: https://github.com/DediProgSW/SF100Linux
+
+``em100``
+    Path to the em100 binary, used by the SFEmulatorDriver.
+    See: https://review.coreboot.org/em100.git
 
 ``fastboot``
     Path to the fastboot binary, used by the AndroidFastbootDriver.
@@ -119,6 +127,10 @@ TOOLS KEYS
     Path to the openocd binary, used by the OpenOCDDriver.
     See: https://openocd.org/
 
+``openFPGALoader``
+    Path to the openFPGALoader binary, used by the OpenFPGALoaderDriver.
+    See: https://github.com/trabucayre/openFPGALoader
+
 ``quartus_hps``
     Path to the quartus_hps binary, used by the QuartusHPSDriver.
     See: https://www.intel.com/content/www/us/en/docs/programmable/683039/22-3/hps-flash-programmer.html
@@ -139,9 +151,17 @@ TOOLS KEYS
     Path to the sd-mux-ctrl binary, used by the USBSDWireDriver.
     See: https://git.tizen.org/cgit/tools/testlab/sd-mux/
 
+``sdwire``
+    Path to the sdwire binary, used by the USBSDWire3Driver.
+    See: https://github.com/Badger-Embedded/sdwire-cli
+
 ``sispmctl``
     Path to the sispmctl binary, used by the SiSPMPowerDriver.
     See: https://sispmctl.sourceforge.net/
+
+``smdk-usbdl``
+    Path to the smdk-usbdl binary, used by the SamsungUSBDriver.
+    See: http://www.fluff.org/ben/smdk/tools/
 
 ``ssh``
     Path to the ssh binary, used by the SSHDriver.
@@ -150,6 +170,14 @@ TOOLS KEYS
 ``sshfs``
     Path to the sshfs binary, used by the SSHDriver.
     See: https://github.com/libfuse/sshfs
+
+``sunxi-fel``
+    Path to the sunxi-fel binary, used by the SunxiUSBDriver.
+    See: https://github.com/linux-sunxi/sunxi-tools
+
+``tegrarcm``
+    Path to the tegrarcm binary, used by the TegraUSBDriver.
+    See: https://github.com/NVIDIA/tegrarcm
 
 ``uhubctl``
     Path to the uhubctl binary, used by the USBPowerDriver.

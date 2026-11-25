@@ -2,6 +2,7 @@
 import contextlib
 import json
 import logging
+import shlex
 import subprocess
 import time
 import os
@@ -16,8 +17,9 @@ from ..util.agentwrapper import AgentWrapper
 from ..util.helper import processwrapper
 from ..util.managedfile import ManagedFile
 from ..util.timeout import Timeout
-from ..util.netns import NetNamespace
+from ..util.netns import DefaultNetNamespace, NetNamespace
 from ..resource.common import NetworkResource
+from ..resource.remote import RemoteNetworkInterface
 
 
 @target_factory.reg_driver
@@ -57,12 +59,7 @@ class RawNetworkInterfaceDriver(Driver):
             if extra_arg is not None:
                 cmd.append(extra_arg)
             cmd += args
-
-            if self.iface.command_prefix:
-                # add ssh prefix, convert command passed via ssh (including wrapper) to single argument
-                cmd = self.iface.command_prefix + [" ".join(cmd)]
-
-            return cmd
+            return self.iface.wrap_command(cmd)
 
         if self.logger.isEnabledFor(logging.DEBUG):
             try:
@@ -100,8 +97,8 @@ class RawNetworkInterfaceDriver(Driver):
         if if_state:
             return if_state
 
-        cmd = self.iface.command_prefix + ["cat", f"/sys/class/net/{self.iface.ifname}/operstate"]
-        output = processwrapper.check_output(cmd, loglevel=logging.DEBUG).decode("ascii")
+        cmd = ["cat", f"/sys/class/net/{self.iface.ifname}/operstate"]
+        output = processwrapper.check_wrapped_output(self.iface, cmd, loglevel=logging.DEBUG).decode("ascii")
         if_state = output.strip()
         return if_state
 
@@ -134,9 +131,11 @@ class RawNetworkInterfaceDriver(Driver):
         """
         Returns settings via ethtool of the bound network interface resource.
         """
-        cmd = self.iface.command_prefix + ["ethtool", "--json", self.iface.ifname]
+        cmd = ["ethtool", "--json", self.iface.ifname]
         # ignore netlink error: Operation not permitted, relevant info is still emitted
-        output = processwrapper.check_output(cmd, stderr=None, loglevel=logging.DEBUG).decode("utf-8")
+        output = processwrapper.check_wrapped_output(self.iface, cmd, stderr=None, loglevel=logging.DEBUG).decode(
+            "utf-8"
+        )
         return json.loads(output)[0]
 
     @Driver.check_active
@@ -158,8 +157,10 @@ class RawNetworkInterfaceDriver(Driver):
         Returns Energy-Efficient Ethernet settings via ethtool of the bound network interface
         resource.
         """
-        cmd = self.iface.command_prefix + ["ethtool", "--json", "--show-eee", self.iface.ifname]
-        output = processwrapper.check_output(cmd, stderr=None, loglevel=logging.DEBUG).decode("utf-8")
+        cmd = ["ethtool", "--json", "--show-eee", self.iface.ifname]
+        output = processwrapper.check_wrapped_output(self.iface, cmd, stderr=None, loglevel=logging.DEBUG).decode(
+            "utf-8"
+        )
         return json.loads(output)[0]
 
     @Driver.check_active
@@ -181,8 +182,10 @@ class RawNetworkInterfaceDriver(Driver):
         """
         Returns pause parameters via ethtool of the bound network interface resource.
         """
-        cmd = self.iface.command_prefix + ["ethtool", "--json", "--show-pause", self.iface.ifname]
-        output = processwrapper.check_output(cmd, stderr=None, loglevel=logging.DEBUG).decode("utf-8")
+        cmd = ["ethtool", "--json", "--show-pause", self.iface.ifname]
+        output = processwrapper.check_wrapped_output(self.iface, cmd, stderr=None, loglevel=logging.DEBUG).decode(
+            "utf-8"
+        )
         return json.loads(output)[0]
 
     @Driver.check_active
@@ -325,7 +328,8 @@ class RawNetworkInterfaceDriver(Driver):
         if isinstance(self.iface, NetworkResource):
             mf = ManagedFile(filename, self.iface)
             mf.sync_to_resource()
-            cmd = self._wrap_command([f"tcpreplay {self.iface.ifname} < {mf.get_remote_path()}"])
+            cmd = self._wrap_command(["tcpreplay", self.iface.ifname])
+            cmd += ["<", shlex.quote(mf.get_remote_path())]
             self.logger.debug("running %s", cmd)
             self._replay_handle = subprocess.Popen(cmd, stderr=subprocess.PIPE)
         else:
@@ -372,8 +376,8 @@ class RawNetworkInterfaceDriver(Driver):
         """
         Returns basic interface statistics of bound network interface resource.
         """
-        cmd = self.iface.command_prefix + ["ip", "--json", "-stats", "-stats", "link", "show", self.iface.ifname]
-        output = processwrapper.check_output(cmd, loglevel=logging.DEBUG)
+        cmd = ["ip", "--json", "-stats", "-stats", "link", "show", self.iface.ifname]
+        output = processwrapper.check_wrapped_output(self.iface, cmd, loglevel=logging.DEBUG)
         return json.loads(output)[0]
 
     @Driver.check_active
@@ -395,6 +399,10 @@ class RawNetworkInterfaceDriver(Driver):
     @step()
     @contextlib.contextmanager
     def setup_netns(self, mac_address=None):
+        if not isinstance(self.iface, RemoteNetworkInterface):
+            yield DefaultNetNamespace(intf=self.iface.ifname)
+            return
+
         with contextlib.ExitStack() as ctx:
             remote_ns = ctx.enter_context(self._netns(self.iface.host))
             local_ns = ctx.enter_context(self._netns(None))

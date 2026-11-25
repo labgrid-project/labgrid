@@ -230,3 +230,22 @@ def test_register_same_resource():
         target_factory.reg_resource(SameResource)
         target_factory.reg_resource(SameResource)
     assert "resource with name" in excinfo.value.msg
+
+def test_make_resources_drivers_from_config_ignore():
+    resources = [
+        {'RawSerialPort': {'name': 'port1', 'port': '/dev/foo'}},
+        {'RawSerialPort': {'name': 'port2', 'port': '/dev/bar'}},
+        {'NetworkService': {'address': 'localhost', 'username': 'root'}},
+    ]
+    drivers = [
+        {'SerialDriver': {'name': 'serial1', 'bindings': {'port': 'port1'}}},
+        {'SerialDriver': {'name': 'serial2', 'bindings': {'port': 'port2'}}},
+        {'SSHDriver': {}},
+    ]
+    t = Target('dummy')
+
+    target_factory.make_resources_from_config(t, resources, ignore=['RawSerialPort:port2', 'NetworkService'])
+    target_factory.make_drivers_from_config(t, drivers, ignore=['SerialDriver:serial2', 'SSHDriver'])
+
+    assert [(r.__class__.__name__, r.name) for r in t.resources] == [('RawSerialPort', 'port1')]
+    assert [(d.__class__.__name__, d.name) for d in t.drivers] == [('SerialDriver', 'serial1')]

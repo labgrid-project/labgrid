@@ -18,7 +18,7 @@ class SimpleSNMP:
 
     def get(self, oid):
         g = self.loop.run_until_complete(
-            hlapi.getCmd(
+            hlapi.get_cmd(
                 self.engine,
                 self.community,
                 self.transport,
@@ -36,7 +36,7 @@ class SimpleSNMP:
     def set(self, oid, value):
         identify = hlapi.ObjectType(hlapi.ObjectIdentity(oid), hlapi.Integer(value))
         g = self.loop.run_until_complete(
-            hlapi.setCmd(self.engine, self.community, self.transport, self.context, identify, lookupMib=False)
+            hlapi.set_cmd(self.engine, self.community, self.transport, self.context, identify, lookupMib=False)
         )
 
         error_indication, error_status, _, _ = g
@@ -44,7 +44,7 @@ class SimpleSNMP:
             raise ExecutionError("Failed to set SNMP value.")
 
     def cleanup(self):
-        self.engine.closeDispatcher()
+        self.engine.close_dispatcher()
         if is_new_loop(self.loop):
             self.loop.run_until_complete(self.loop.shutdown_asyncgens())
             self.loop.close()

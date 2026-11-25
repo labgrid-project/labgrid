@@ -9,6 +9,7 @@ from .exception import CleanUpError, ExecutionError
 from .fastbootdriver import AndroidFastbootDriver
 from .dfudriver import DFUDriver
 from .openocddriver import OpenOCDDriver
+from .openfpgaloaderdriver import OpenFPGALoaderDriver
 from .quartushpsdriver import QuartusHPSDriver
 from .flashromdriver import FlashromDriver
 from .onewiredriver import OneWirePIODriver
@@ -16,7 +17,9 @@ from .powerdriver import ManualPowerDriver, ExternalPowerDriver, \
                          DigitalOutputPowerDriver, YKUSHPowerDriver, \
                          USBPowerDriver, SiSPMPowerDriver, NetworkPowerDriver, \
                          PDUDaemonDriver
-from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, RKUSBDriver, UUUDriver
+from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, \
+                       RKUSBDriver, SamsungUSBDriver, SunxiUSBDriver, \
+                       TegraUSBDriver, UUUDriver
 from .usbsdmuxdriver import USBSDMuxDriver
 from .usbsdwiredriver import USBSDWireDriver
 from .usbsdwire3driver import USBSDWire3Driver
@@ -56,3 +59,4 @@ from .laadriver import LAASerialDriver, LAAPowerDriver, \
                        LAAButtonDriver, LAALedDriver, LAATempDriver, LAAWattDriver, \
                        LAAProviderDriver
 from .adb import ADBDriver
+from .sfemulatordriver import SFEmulatorDriver

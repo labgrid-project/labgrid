@@ -127,13 +127,13 @@ Install labgrid into the virtualenv:
 
 .. code-block:: bash
 
-   venv $ pip install .
+   venv $ pip install '.[dev]'
 
 Tests can now run via:
 
 .. code-block:: bash
 
-   venv $ python -m pytest --lg-env <config>
+   venv $ python -m pytest
 
 To install sphinx and the dependencies needed for generating man pages and documentation run:
 

@@ -180,7 +180,7 @@ class NetworkInterfaceDriver(Driver):
         if not self.ssh:
             raise ExecutionError("Resource is not on an exporter")
 
-        self.ssh.add_remote_port_forward(remote_port, local_port, remote_bind)
+        remote_port = self.ssh.add_remote_port_forward(remote_port, local_port, remote_bind)
         try:
             yield
         finally:

@@ -16,6 +16,7 @@ class UdevManager(ResourceManager):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
         self.queue = queue.Queue()
+        self._devices = {}
 
         self._pyudev = import_module('pyudev')
         self._context = self._pyudev.Context()
@@ -25,10 +26,11 @@ class UdevManager(ResourceManager):
         self._observer.start()
 
     def on_resource_added(self, resource):
-        devices = self._context.list_devices()
-        devices.match_subsystem(resource.match['SUBSYSTEM'])
-        for device in devices:
-            if resource.try_match(device):
+        subsystem = resource.match['SUBSYSTEM']
+        if subsystem not in self._devices:
+            self._devices[subsystem] = [(device, {}) for device in self._context.list_devices(subsystem=subsystem)]
+        for device, cache in self._devices[subsystem]:
+            if resource.try_match(device, cache):
                 self.logger.debug(" matched successfully against %s", resource.device)
 
     def _insert_into_queue(self, device):
@@ -41,9 +43,11 @@ class UdevManager(ResourceManager):
                 device = self.queue.get(False)
             except queue.Empty:
                 break
+            self._devices.clear()
             self.logger.debug("%s: %s", device.action, device)
+            cache = {}
             for resource in self.resources:
-                if resource.try_match(device):
+                if resource.try_match(device, cache):
                     self.logger.debug(" matched successfully")
 
 @attr.s(eq=False)
@@ -123,29 +127,32 @@ class USBResource(ManagedResource):
 
         return meta, suggestions
 
-    def try_match(self, device):
+    def try_match(self, device, cache):
         if self.device is None:  # new device
-            def match_single(dev, key, value):
-                if dev.properties.get(key) == value:
-                    return True
-                if dev.attributes.get(key) and dev.attributes.asstring(key) == value:
-                    return True
-                if getattr(dev, key, None) == value:
-                    return True
-                return False
+            def values(dev, key):
+                return (
+                    dev.properties.get(key),
+                    dev.attributes.asstring(key) if dev.attributes.get(key) else None,
+                    getattr(dev, key, None),
+                )
+
+            def match_single(key, value):
+                if key not in cache:
+                    cache[key] = values(device, key)
+                return value in cache[key]
 
             def match_ancestors(key, value):
-                for ancestor in device.ancestors:
-                    if match_single(ancestor, key, value):
-                        return True
-                return False
+                if key not in cache:
+                    cache[key] = tuple(v for ancestor in device.ancestors for v in values(ancestor, key[1:]))
+                return value in cache[key]
 
-            for k, v in self.match.items():
+            # process matches, SUBSYSTEM first
+            for k, v in sorted(self.match.items(), key=lambda item: item[0] != 'SUBSYSTEM'):
                 if k.startswith('@'):
-                    if not match_ancestors(k[1:], v):
+                    if not match_ancestors(k, v):
                         return False
                 else:
-                    if not match_single(device, k, v):
+                    if not match_single(k, v):
                         return False
 
             if not self.filter_match(device):
@@ -305,6 +312,11 @@ class IMXUSBLoader(USBResource):
             ("1fc9", "0027"),  # MX943
             ("1fc9", "0028"),  # MX952/MX937
             # SDP: entries
+            ("066f", "3780"),  # MX23
+            ("15a2", "0030"),  # MX35
+            ("15a2", "0041"),  # MX51
+            ("15a2", "004e"),  # MX53
+            ("15a2", "0052"),  # MX50
             ("15a2", "0076"),  # MX7D
             ("15a2", "0054"),  # MX6Q
             ("15a2", "0061"),  # MX6D
@@ -385,6 +397,40 @@ class MXSUSBLoader(USBResource):
 
 @target_factory.reg_resource
 @attr.s(eq=False)
+class SamsungUSBLoader(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("04e8", "1234")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class SunxiUSBLoader(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("1f3a", "efe8")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class TegraUSBLoader(USBResource):
+    def filter_match(self, device):
+        match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
+
+        if match not in [("0955", "7340"), ("0955", "7140"),
+                         ("0955", "7740")]:
+            return False
+
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
 class AndroidUSBFastboot(USBResource):
     usb_vendor_id = attr.ib(default='1d6b', validator=attr.validators.instance_of(str))
     usb_product_id = attr.ib(default='0104', validator=attr.validators.instance_of(str))
@@ -448,6 +494,30 @@ class AlteraUSBBlaster(USBResource):
         if device.properties.get('ID_VENDOR_ID') != "09fb":
             return False
         if device.properties.get('ID_MODEL_ID') not in ["6010", "6810"]:
+            return False
+        return super().filter_match(device)
+
+@target_factory.reg_resource
+@attr.s(eq=False)
+class SFEmulator(USBResource):
+    """The SFEmulator describes an attached Dediprog EM100-PRO SPI-flash
+    emulator, identified via usb using udev.
+
+    The EM100-PRO has no USB serial number, so it is normally matched by its
+    USB path.
+
+    Args:
+        chip (str): SPI-flash chip to emulate, e.g. W25Q64CV
+    """
+    chip = attr.ib(
+        default=None,
+        validator=attr.validators.instance_of(str)
+    )
+
+    def filter_match(self, device):
+        if device.properties.get('ID_VENDOR_ID') != "04b4":
+            return False
+        if device.properties.get('ID_MODEL_ID') != "1235":
             return False
         return super().filter_match(device)
 
@@ -706,7 +776,7 @@ class SiSPMPowerPort(USBResource):
     Args:
         index (int): port index
     """
-    index = attr.ib(default=0, validator=attr.validators.instance_of(int))
+    index = attr.ib(default=None, validator=attr.validators.instance_of(int))
 
     def filter_match(self, device):
         match = (device.properties.get('ID_VENDOR_ID'), device.properties.get('ID_MODEL_ID'))
@@ -859,6 +929,7 @@ class FTDIGPIO(USBResource):
         if match not in [("0403", "6010"),  # FT2232C/D/H Dual UART/FIFO IC
                          ("0403", "6011"),  # FT4232H Quad UART/MPSSE IC
                          ("0403", "6014"),  # FT232HL/Q
+                         ("0403", "6015"),  # FT-X series (FT230X, FT231X, FT234XD, ...)
                          ]:
             return False
 

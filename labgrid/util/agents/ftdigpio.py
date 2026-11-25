@@ -18,6 +18,7 @@ SUPPORTED_DEVICES = {
     0x6010: 2,  # FT2232C/D/H Dual UART/FIFO IC
     0x6011: 4,  # FT4232H Quad UART/MPSSE IC
     0x6014: 1,  # FT232HL/Q
+    0x6015: 1,  # FT-X series (FT230X, FT231X, FT234XD, ...)
 }
 
 

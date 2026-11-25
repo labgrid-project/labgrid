@@ -49,7 +49,8 @@ exclusion.
 display command line help
 .TP
 .BI \-l \ ADDRESS\fR,\fB \ \-\-listen \ ADDRESS
-make coordinator listen on host and port
+make coordinator listen on host and port (\fBHOST:PORT\fP), defaults to
+\fB[::]:20408\fP
 .TP
 .B  \-\-tls
 enable TLS gRPC channel
@@ -63,6 +64,12 @@ path to TLS key (in PEM format)
 .B  \-d\fP,\fB  \-\-debug
 enable debug mode (deployments with a large number of exported resources
 will suffer from performance overhead)
+.TP
+.B  \-\-pystuck
+enable \X'tty: link https://github.com/alonho/pystuck'\fI\%pystuck\fP\X'tty: link' for debugging
+.TP
+.BI \-\-pystuck\-port \ PORT
+use a different pystuck port than 6666
 .UNINDENT
 .SS TLS WITH A REVERSE PROXY
 .sp

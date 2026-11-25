@@ -98,6 +98,10 @@ The \fBtools:\fP top key provides paths to binaries such as fastboot.
 .SS TOOLS KEYS
 .INDENT 0.0
 .TP
+.B \fBadb\fP
+Path to the adb binary, used by the ADBDriver.
+See: \X'tty: link https://developer.android.com/studio/releases/platform-tools'\fI\%https://developer.android.com/studio/releases/platform\-tools\fP\X'tty: link'
+.TP
 .B \fBdfu\-util\fP
 Path to the dfu\-util binary, used by the DFUDriver.
 See: \X'tty: link https://dfu-util.sourceforge.net/'\fI\%https://dfu\-util.sourceforge.net/\fP\X'tty: link'
@@ -105,6 +109,10 @@ See: \X'tty: link https://dfu-util.sourceforge.net/'\fI\%https://dfu\-util.sourc
 .B \fBdpcmd\fP
 Path to the dpcmd binary, used by the DediprogFlashDriver.
 See: \X'tty: link https://github.com/DediProgSW/SF100Linux'\fI\%https://github.com/DediProgSW/SF100Linux\fP\X'tty: link'
+.TP
+.B \fBem100\fP
+Path to the em100 binary, used by the SFEmulatorDriver.
+See: \X'tty: link https://review.coreboot.org/em100.git'\fI\%https://review.coreboot.org/em100.git\fP\X'tty: link'
 .TP
 .B \fBfastboot\fP
 Path to the fastboot binary, used by the AndroidFastbootDriver.
@@ -134,6 +142,10 @@ See: \X'tty: link https://git.pengutronix.de/cgit/barebox/tree/scripts/mxs-usb-l
 Path to the openocd binary, used by the OpenOCDDriver.
 See: \X'tty: link https://openocd.org/'\fI\%https://openocd.org/\fP\X'tty: link'
 .TP
+.B \fBopenFPGALoader\fP
+Path to the openFPGALoader binary, used by the OpenFPGALoaderDriver.
+See: \X'tty: link https://github.com/trabucayre/openFPGALoader'\fI\%https://github.com/trabucayre/openFPGALoader\fP\X'tty: link'
+.TP
 .B \fBquartus_hps\fP
 Path to the quartus_hps binary, used by the QuartusHPSDriver.
 See: \X'tty: link https://www.intel.com/content/www/us/en/docs/programmable/683039/22-3/hps-flash-programmer.html'\fI\%https://www.intel.com/content/www/us/en/docs/programmable/683039/22\-3/hps\-flash\-programmer.html\fP\X'tty: link'
@@ -154,9 +166,17 @@ See: \X'tty: link https://github.com/openssh/openssh-portable'\fI\%https://githu
 Path to the sd\-mux\-ctrl binary, used by the USBSDWireDriver.
 See: \X'tty: link https://git.tizen.org/cgit/tools/testlab/sd-mux/'\fI\%https://git.tizen.org/cgit/tools/testlab/sd\-mux/\fP\X'tty: link'
 .TP
+.B \fBsdwire\fP
+Path to the sdwire binary, used by the USBSDWire3Driver.
+See: \X'tty: link https://github.com/Badger-Embedded/sdwire-cli'\fI\%https://github.com/Badger\-Embedded/sdwire\-cli\fP\X'tty: link'
+.TP
 .B \fBsispmctl\fP
 Path to the sispmctl binary, used by the SiSPMPowerDriver.
 See: \X'tty: link https://sispmctl.sourceforge.net/'\fI\%https://sispmctl.sourceforge.net/\fP\X'tty: link'
+.TP
+.B \fBsmdk\-usbdl\fP
+Path to the smdk\-usbdl binary, used by the SamsungUSBDriver.
+See: \X'tty: link http://www.fluff.org/ben/smdk/tools/'\fI\%http://www.fluff.org/ben/smdk/tools/\fP\X'tty: link'
 .TP
 .B \fBssh\fP
 Path to the ssh binary, used by the SSHDriver.
@@ -165,6 +185,14 @@ See: \X'tty: link https://github.com/openssh/openssh-portable'\fI\%https://githu
 .B \fBsshfs\fP
 Path to the sshfs binary, used by the SSHDriver.
 See: \X'tty: link https://github.com/libfuse/sshfs'\fI\%https://github.com/libfuse/sshfs\fP\X'tty: link'
+.TP
+.B \fBsunxi\-fel\fP
+Path to the sunxi\-fel binary, used by the SunxiUSBDriver.
+See: \X'tty: link https://github.com/linux-sunxi/sunxi-tools'\fI\%https://github.com/linux\-sunxi/sunxi\-tools\fP\X'tty: link'
+.TP
+.B \fBtegrarcm\fP
+Path to the tegrarcm binary, used by the TegraUSBDriver.
+See: \X'tty: link https://github.com/NVIDIA/tegrarcm'\fI\%https://github.com/NVIDIA/tegrarcm\fP\X'tty: link'
 .TP
 .B \fBuhubctl\fP
 Path to the uhubctl binary, used by the USBPowerDriver.

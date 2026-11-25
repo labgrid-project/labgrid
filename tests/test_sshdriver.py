@@ -88,6 +88,82 @@ def test_custom_tools(target, tmpdir):
     s = SSHDriver(target, "ssh")
     assert [s._ssh, s._scp, s._sshfs, s._rsync] == [f"/path/to/{t}" for t in ("ssh", "scp", "sshfs", "rsync")]
 
+def test_run_no_username(target, mocker):
+    NetworkService(target, "service", "1.2.3.4")
+    mocker.patch('os.path.exists', return_value=True)
+    mocker.patch('subprocess.call', return_value=0)
+    popen = mocker.patch('subprocess.Popen', autospec=True)
+    master = mocker.MagicMock()
+    master.wait = mocker.MagicMock(return_value=0)
+    master.communicate = mocker.MagicMock(return_value=(b"", b""))
+    keepalive = mocker.MagicMock()
+    keepalive.poll = mocker.MagicMock(return_value=None)
+    keepalive.communicate = mocker.MagicMock(return_value=("", ""))
+    run = mocker.MagicMock()
+    run.communicate = mocker.MagicMock(return_value=(b"Hello\n", b""))
+    run.returncode = 0
+    popen.side_effect = [
+        master,
+        keepalive,
+        run,
+    ]
+
+    SSHDriver(target, "ssh")
+    s = target.get_driver("SSHDriver")
+
+    assert s.networkservice.username is None
+    assert s.run("echo Hello") == (["Hello"], [], 0)
+    for call in popen.call_args_list:
+        assert "-l" not in call.args[0]
+
+    target.deactivate(s)
+
+def test_put_get_no_username(target, mocker):
+    NetworkService(target, "service", "1.2.3.4")
+    popen = mocker.patch('subprocess.Popen', autospec=True)
+    mocker.patch('os.path.exists', return_value=True)
+    call = mocker.patch('subprocess.call', return_value=0)
+    master = mocker.MagicMock()
+    master.wait = mocker.MagicMock(return_value=0)
+    master.communicate = mocker.MagicMock(return_value=(b"", b""))
+    keepalive = mocker.MagicMock()
+    keepalive.poll = mocker.MagicMock(return_value=None)
+    keepalive.communicate = mocker.MagicMock(return_value=("", ""))
+    popen.side_effect = [master, keepalive]
+
+    SSHDriver(target, "ssh")
+    s = target.get_driver("SSHDriver")
+
+    s.put("/tmp/local-file", "/tmp/remote-file")
+    s.get("/tmp/remote-file", "/tmp/local-file")
+
+    assert call.call_args_list[0].args[0][-1] == "1.2.3.4:/tmp/remote-file"
+    assert "@" not in call.call_args_list[0].args[0][-1]
+    assert call.call_args_list[1].args[0][-2] == "1.2.3.4:/tmp/remote-file"
+    assert "@" not in call.call_args_list[1].args[0][-2]
+
+    target.deactivate(s)
+
+def test_networkservice_export_keeps_empty_username_for_compat():
+    from labgrid.remote.exporter import NetworkServiceExport
+
+    export = NetworkServiceExport(
+        {
+            "avail": True,
+            "cls": "NetworkService",
+            "params": {
+                "address": "1.2.3.4",
+                "port": 22,
+            },
+        },
+        host="testhost",
+        proxy="testproxy",
+        proxy_required=False,
+    )
+
+    assert export.local.username is None
+    assert export._get_params()["username"] == ""
+
 @pytest.fixture(scope='function')
 def ssh_localhost(target, pytestconfig):
     name = pytestconfig.getoption("--ssh-username")
@@ -173,7 +249,7 @@ def test_local_port_forward(ssh_localhost, tmpdir):
     remoteport = get_free_port()
     test_string = "Hello World"
 
-    with ssh_localhost.forward_local_port(remoteport) as localport:
+    with ssh_localhost.local_forward(remoteport) as localport:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as send_socket:
                 server_socket.bind(("127.0.0.1", remoteport))
@@ -187,13 +263,24 @@ def test_local_port_forward(ssh_localhost, tmpdir):
 
                 assert client_socket.recv(16).decode("utf-8") == test_string
 
+def test_deprecated_local_port_forward(target, ssh_driver_mocked, mocker):
+    s = ssh_driver_mocked
+    target.activate(s)
+    s.local_forward = mocker.MagicMock()
+    s.local_forward.return_value.__enter__.return_value = 42000
+
+    with pytest.warns(DeprecationWarning, match="use local_forward"):
+        with s.forward_local_port(remoteport=1234, localport=None) as local_port:
+            assert local_port == 42000
+    s.local_forward.assert_called_once_with(1234, local_port=0)
+
 @pytest.mark.sshusername
-def test_local_remote_forward(ssh_localhost, tmpdir):
+def test_remote_port_forward(ssh_localhost, tmpdir):
     remoteport = get_free_port()
     localport = get_free_port()
     test_string = "Hello World"
 
-    with ssh_localhost.forward_remote_port(remoteport, localport):
+    with ssh_localhost.remote_forward(localport, remote_port=remoteport):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as send_socket:
                 server_socket.bind(("127.0.0.1", localport))
@@ -206,6 +293,35 @@ def test_local_remote_forward(ssh_localhost, tmpdir):
                 send_socket.send(test_string.encode('utf-8'))
 
                 assert client_socket.recv(16).decode("utf-8") == test_string
+
+@pytest.mark.sshusername
+def test_remote_port_forward_auto_allocation(ssh_localhost, tmpdir):
+    localport = get_free_port()
+    test_string = "Hello World"
+
+    with ssh_localhost.remote_forward(localport) as remoteport:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as send_socket:
+                server_socket.bind(("127.0.0.1", localport))
+                server_socket.listen(1)
+
+                send_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                send_socket.connect(("127.0.0.1", remoteport))
+
+                client_socket, address = server_socket.accept()
+                send_socket.send(test_string.encode('utf-8'))
+
+                assert client_socket.recv(16).decode("utf-8") == test_string
+
+def test_deprecated_remote_port_forward(target, ssh_driver_mocked, mocker):
+    s = ssh_driver_mocked
+    target.activate(s)
+    s.remote_forward = mocker.MagicMock()
+
+    with pytest.warns(DeprecationWarning, match="use remote_forward"):
+        with s.forward_remote_port(remoteport=42000, localport=1234) as result:
+            assert result is None
+    s.remote_forward.assert_called_once_with(1234, remote_port=42000)
 
 
 @pytest.mark.sshusername

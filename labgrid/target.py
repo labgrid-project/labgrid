@@ -19,6 +19,7 @@ from .factory import target_factory
 class Target:
     name = attr.ib(validator=attr.validators.instance_of(str))
     env = attr.ib(default=None)
+    options = attr.ib(default=attr.Factory(dict), validator=attr.validators.instance_of(dict), repr=False)
 
     def __attrs_post_init__(self):
         self.log = logging.getLogger(f"target({self.name})")
@@ -30,9 +31,6 @@ class Target:
         # argument at the BindingMixin level.
         # https://github.com/python-attrs/attrs/issues/106
         self._binding_map = {}
-        self._lookup_table = {
-            Strategy.__name__: Strategy,
-        }
         atexit.register(self._atexit_cleanup)
 
     def interact(self, msg):
@@ -93,7 +91,7 @@ class Target:
             waiting = set(r for r in waiting if r.avail != avail)
             for r in waiting:
                 r.poll()
-            if not any(r for r in waiting if r.avail == avail):
+            if waiting and not any(r for r in waiting if r.avail == avail):
                 # sleep if no progress
                 sleep(0.5)
 
@@ -203,7 +201,8 @@ class Target:
             else:
                 raise NoDriverFoundError(
                     "multiple {active}drivers matching {cls} found in {target} with the same priorities".format(  # pylint: disable=line-too-long
-                        active="active " if active else "", cls=cls.__name__, target=self)
+                        active="active " if active else "", cls=cls.__name__, target=self),
+                    found=prio_found
                 )
         if activate:
             self.activate(found[0])
@@ -305,8 +304,6 @@ class Target:
 
         # update state
         self.resources.append(resource)
-        # update lookup table
-        self._lookup_table[resource.__class__.__name__] = resource.__class__
         resource.target = self
         resource.state = BindingState.bound
 
@@ -352,18 +349,18 @@ class Target:
             requirements.discard(None)
 
             errors = []
-            suppliers = []
+            suppliers = set()
             for requirement in requirements:
                 # convert class name string to classes
                 if isinstance(requirement, str):
                     requirement = target_factory.class_from_string(requirement)
                 try:
                     if issubclass(requirement, Resource):
-                        suppliers.append(
+                        suppliers.add(
                             self.get_resource(requirement, name=supplier_name, wait_avail=False),
                         )
                     elif issubclass(requirement, (Driver, abc.ABC)): # all Protocols derive from ABC
-                        suppliers.append(
+                        suppliers.add(
                             self.get_driver(requirement, name=supplier_name, activate=False),
                         )
                     else:
@@ -385,7 +382,7 @@ class Target:
             elif len(suppliers) > 1:
                 raise NoSupplierFoundError(f"conflicting suppliers matching {requirements} found in target {self}")  # pylint: disable=line-too-long
             else:
-                supplier = suppliers[0]
+                supplier = suppliers.pop()
             if supplier is not None and (requirement, supplier) in bound_req_pairs:
                 raise BindingError(
                     f"duplicate bindings of {supplier} to {name} for {requirement} found in target {self}"  # pylint: disable=line-too-long
@@ -409,12 +406,6 @@ class Target:
 
         # update relationship in both directions
         self.drivers.append(client)
-        # update lookup table
-        cls = client.__class__
-        self._lookup_table[cls.__name__] = cls
-        for c in cls.mro():
-            if abc.ABC in c.mro():
-                self._lookup_table[c.__name__] = c
 
         client.target = self
         for supplier in bound_suppliers:

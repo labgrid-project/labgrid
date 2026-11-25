@@ -1,6 +1,8 @@
 import asyncio
 import os
 import signal
+import time
+from time import monotonic, sleep
 from types import SimpleNamespace
 
 import grpc
@@ -8,8 +10,8 @@ import pexpect
 import pytest
 import labgrid.remote.generated.labgrid_coordinator_pb2_grpc as labgrid_coordinator_pb2_grpc
 import labgrid.remote.generated.labgrid_coordinator_pb2 as labgrid_coordinator_pb2
-from labgrid.remote.common import Place
-from labgrid.remote.coordinator import Coordinator, ExporterError, ResourceImport
+from labgrid.remote.common import Place, Reservation, ReservationState
+from labgrid.remote.coordinator import Coordinator, CoordinatorError, ExporterError, ResourceImport
 
 
 class FakeExporterCommandQueue:
@@ -64,6 +66,8 @@ def make_place_with_acquired_resource():
     place.acquired_resources.append(resource)
     return place, resource
 
+LIST_PLACE_RESOURCES_PATTERN = "testhost/ClsNotEqualResourceName/NetworkSerialPort/ExampleResource"
+
 
 @pytest.fixture(scope="function")
 def channel_stub():
@@ -100,6 +104,20 @@ def coordinator_place(channel_stub):
     return channel_stub
 
 
+@pytest.fixture(scope="function")
+def coordinator_reservation(channel_stub):
+    res = channel_stub.CreateReservation(
+        labgrid_coordinator_pb2.CreateReservationRequest(
+            filters={
+                "main": labgrid_coordinator_pb2.Reservation.Filter(filter={"board": "test"}),
+            },
+            prio=1.0,
+        )
+    )
+    assert res, f"There was an error: {res}"
+    return res.reservation.token
+
+
 def test_startup(coordinator):
     pass
 
@@ -109,6 +127,37 @@ def test_coordinator_add_place(coordinator, channel_stub):
     place = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
     res = channel_stub.AddPlace(place)
     assert res, f"There was an error: {res}"
+
+
+def test_coordinator_create_place(coordinator, channel_stub):
+    name = "test"
+    place = labgrid_coordinator_pb2.CreatePlaceRequest(name=name)
+    res = channel_stub.CreatePlace(place)
+    assert res, f"There was an error: {res}"
+    assert res.place.name == name
+
+
+def test_coordinator_create_place_already_exists(coordinator, channel_stub):
+    name = "test"
+    place = labgrid_coordinator_pb2.CreatePlaceRequest(name=name)
+    res = channel_stub.CreatePlace(place)
+    assert res, f"There was an error: {res}"
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.CreatePlace(place)
+
+    assert excinfo.value.code() == grpc.StatusCode.ALREADY_EXISTS
+    assert excinfo.value.details() == "Place test already exists"
+
+
+def test_coordinator_create_place_not_provided(coordinator, channel_stub):
+    place = labgrid_coordinator_pb2.CreatePlaceRequest()
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.CreatePlace(place)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
 
 
 def test_coordinator_del_place(coordinator, channel_stub):
@@ -284,6 +333,61 @@ def test_coordinator_place_allow(coordinator, coordinator_place):
     assert res
     res = stub.AllowPlace(labgrid_coordinator_pb2.AllowPlaceRequest(placename="test", user="othertest"))
     assert res
+    res = stub.GetPlace(labgrid_coordinator_pb2.GetPlaceRequest(name="test"))
+    assert "othertest" in res.place.allowed
+
+
+def test_coordinator_place_share(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"))
+    assert res
+    res = stub.SharePlace(labgrid_coordinator_pb2.SharePlaceRequest(name="test", user="othertest"))
+    assert res
+    res = stub.GetPlace(labgrid_coordinator_pb2.GetPlaceRequest(name="test"))
+    assert "othertest" in res.place.allowed
+
+
+def test_coordinator_place_share_not_acquired(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.SharePlace(labgrid_coordinator_pb2.SharePlaceRequest(name="test", user="othertest"))
+
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+    assert excinfo.value.details() == "Place test is not acquired"
+
+
+def test_coordinator_place_share_name_not_provided(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.SharePlaceRequest(user="test")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.SharePlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_place_unshare(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"))
+    assert res
+    res = stub.AllowPlace(labgrid_coordinator_pb2.AllowPlaceRequest(placename="test", user="othertest"))
+    assert res
+    res = stub.UnsharePlace(labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest"))
+    assert res
+
+
+def test_coordinator_place_unshare_not_acquired(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(Exception, match=r".Place test is not acquired.*"):
+        stub.UnsharePlace(labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest"))
+
+
+def test_coordinator_place_unshare_not_shared(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.AcquirePlace(labgrid_coordinator_pb2.AcquirePlaceRequest(placename="test"))
+    assert res
+    with pytest.raises(Exception, match=r".Place test is not shared with othertest.*"):
+        stub.UnsharePlace(labgrid_coordinator_pb2.UnsharePlaceRequest(name="test", user="othertest"))
 
 
 def test_coordinator_create_reservation(coordinator, coordinator_place):
@@ -469,3 +573,301 @@ def test_coordinator_release_fromuser_noop_without_identity(mocker, acquired):
     assert place.acquired_resources == [resource]
     on_release.assert_not_called()
     context.abort.assert_not_awaited()
+
+
+class ReservationAcquireAbortError(Exception):
+    pass
+
+
+class ReservationAcquireContext:
+    def peer(self):
+        return "test-peer"
+
+    def invocation_metadata(self):
+        return ()
+
+    async def abort(self, code, details):
+        raise ReservationAcquireAbortError(details)
+
+
+def make_coordinator_with_reserved_place():
+    coordinator = Coordinator.__new__(Coordinator)
+    coordinator.lock = asyncio.Lock()
+    coordinator.clients = {"test-peer": SimpleNamespace(name="testuser", queue=asyncio.Queue())}
+    coordinator.exporters = {}
+    coordinator.places = {}
+    coordinator.reservations = {}
+    coordinator.save_scheduled = False
+    coordinator.reservation_retry_cooldown = 60.0
+    coordinator.reservation_place_cooldowns = {}
+
+    reservation = Reservation(
+        owner="testuser",
+        id="reservation-id",
+        state=ReservationState.allocated,
+        filters={"main": {"board": "test"}},
+        allocations={"main": ["test"]},
+        timeout=time.time() + 60,
+    )
+    place = Place("test", tags={"board": "test"}, reservation=reservation.id)
+    coordinator.reservations[reservation.id] = reservation
+    coordinator.places[place.name] = place
+    return coordinator, reservation, place
+
+
+def test_acquire_failure_returns_reservation_to_waiting_and_cools_place():
+    async def fail_acquire(_place, _resources):
+        raise CoordinatorError("acquire failed")
+
+    async def run_test():
+        coordinator, reservation, place = make_coordinator_with_reserved_place()
+        coordinator._acquire_resources = fail_acquire
+
+        with pytest.raises(ReservationAcquireAbortError, match="Failed to acquire resources"):
+            await coordinator.AcquirePlace(
+                labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name),
+                ReservationAcquireContext(),
+            )
+
+        assert reservation.state is ReservationState.waiting
+        assert reservation.allocations == {}
+        assert place.reservation is None
+        assert place.acquired is None
+        assert place.name in coordinator.reservation_place_cooldowns
+
+        async with coordinator.lock:
+            coordinator.schedule_reservations()
+
+        assert reservation.state is ReservationState.waiting
+        assert reservation.allocations == {}
+        assert place.reservation is None
+
+    asyncio.run(run_test())
+
+
+def test_coordinator_get_place(coordinator, channel_stub):
+    name = "test"
+    place = labgrid_coordinator_pb2.AddPlaceRequest(name=name)
+    res = channel_stub.AddPlace(place)
+    assert res, f"There was an error: {res}"
+
+    request = labgrid_coordinator_pb2.GetPlaceRequest(name=name)
+    res = channel_stub.GetPlace(request)
+
+    from labgrid.remote.common import Place
+
+    place = Place.from_pb2(res.place)
+
+    assert place.name == name, f"There was an error: {res}"
+
+
+def test_coordinator_get_place_missing(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.GetPlaceRequest(name="missing")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.GetPlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "Place missing does not exist"
+
+
+def test_coordinator_get_place_not_provided(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.GetPlaceRequest()
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.GetPlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_place_unshare_name_not_provided(coordinator, channel_stub):
+    request = labgrid_coordinator_pb2.UnsharePlaceRequest(user="test")
+
+    with pytest.raises(grpc.RpcError) as excinfo:
+        channel_stub.UnsharePlace(request)
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_poll_reservation(coordinator, coordinator_place):
+    tags = {"board": "test"}
+    stub = coordinator_place
+    res = stub.SetPlaceTags(labgrid_coordinator_pb2.SetPlaceTagsRequest(placename="test", tags=tags))
+    assert res
+    res = stub.CreateReservation(
+        labgrid_coordinator_pb2.CreateReservationRequest(
+            filters={
+                "main": labgrid_coordinator_pb2.Reservation.Filter(filter=tags),
+            },
+            prio=1.0,
+        )
+    )
+    assert res
+    token = res.reservation.token
+    res = stub.PollReservation(labgrid_coordinator_pb2.PollReservationRequest(token=token))
+    assert res
+    assert res.reservation.token == token
+
+
+def test_coordinator_poll_reservation_not_found(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.PollReservation(labgrid_coordinator_pb2.PollReservationRequest(token="nonexistent"))
+
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+    assert excinfo.value.details() == "Reservation nonexistent does not exist"
+
+
+def test_coordinator_refresh_reservation(coordinator, coordinator_place):
+    tags = {"board": "test"}
+    stub = coordinator_place
+    res = stub.SetPlaceTags(labgrid_coordinator_pb2.SetPlaceTagsRequest(placename="test", tags=tags))
+    assert res
+    res = stub.CreateReservation(
+        labgrid_coordinator_pb2.CreateReservationRequest(
+            filters={
+                "main": labgrid_coordinator_pb2.Reservation.Filter(filter=tags),
+            },
+            prio=1.0,
+        )
+    )
+    assert res
+    token = res.reservation.token
+    res = stub.RefreshReservation(labgrid_coordinator_pb2.RefreshReservationRequest(reservation_id=token))
+    assert res
+    assert res.reservation.token == token
+
+
+def test_coordinator_refresh_reservation_not_found(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.RefreshReservation(labgrid_coordinator_pb2.RefreshReservationRequest(reservation_id="nonexistent"))
+
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+    assert excinfo.value.details() == "Reservation nonexistent does not exist"
+
+
+def wait_for_list_place_resources(stub, name, expected_count, timeout=5.0):
+    deadline = monotonic() + timeout
+    request = labgrid_coordinator_pb2.ListPlaceResourcesRequest(name=name)
+    while monotonic() < deadline:
+        res = stub.ListPlaceResources(request)
+        if len(res.resources) == expected_count:
+            return res
+        sleep(0.1)
+    return stub.ListPlaceResources(request)
+
+
+def wait_for_list_resources(stub, expected_count, timeout=5.0):
+    deadline = monotonic() + timeout
+    request = labgrid_coordinator_pb2.ListResourcesRequest()
+    while monotonic() < deadline:
+        res = stub.ListResources(request)
+        if len(res.resources) == expected_count:
+            return res
+        sleep(0.1)
+    return stub.ListResources(request)
+
+
+def test_coordinator_list_place_resources(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = stub.AddPlaceMatch(
+        labgrid_coordinator_pb2.AddPlaceMatchRequest(placename="test", pattern=LIST_PLACE_RESOURCES_PATTERN)
+    )
+    assert res
+    res = wait_for_list_place_resources(stub, "test", 1)
+    assert len(res.resources) == 1
+    assert res.resources[0].cls == "NetworkSerialPort"
+    assert res.resources[0].path.exporter_name == "testhost"
+    assert res.resources[0].path.group_name == "ClsNotEqualResourceName"
+    assert res.resources[0].path.resource_name == "ExampleResource"
+
+
+def test_coordinator_list_place_resources_no_matches(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = stub.AddPlaceMatch(
+        labgrid_coordinator_pb2.AddPlaceMatchRequest(placename="test", pattern=LIST_PLACE_RESOURCES_PATTERN)
+    )
+    assert res
+    res = wait_for_list_place_resources(stub, "test", 1)
+    assert len(res.resources) == 1
+    res = stub.DeletePlaceMatch(
+        labgrid_coordinator_pb2.DeletePlaceMatchRequest(placename="test", pattern=LIST_PLACE_RESOURCES_PATTERN)
+    )
+    assert res
+    res = stub.ListPlaceResources(labgrid_coordinator_pb2.ListPlaceResourcesRequest(name="test"))
+    assert res
+    assert len(res.resources) == 0
+
+
+def test_coordinator_list_place_resources_place_does_not_exist(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaceResources(labgrid_coordinator_pb2.ListPlaceResourcesRequest(name="test_nonexistant_place"))
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "Place test_nonexistant_place does not exist"
+
+
+def test_coordinator_list_place_resources_name_not_provided(coordinator, coordinator_place):
+    stub = coordinator_place
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.ListPlaceResources(labgrid_coordinator_pb2.ListPlaceResourcesRequest())
+
+    assert excinfo.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert excinfo.value.details() == "name was not a string"
+
+
+def test_coordinator_list_resources(coordinator, coordinator_place, exporter):
+    stub = coordinator_place
+    res = wait_for_list_resources(stub, 5)
+    assert len(res.resources) == 5
+
+
+def test_coordinator_list_places(coordinator, coordinator_place):
+    stub = coordinator_place
+    res = stub.ListPlaces(labgrid_coordinator_pb2.ListPlacesRequest())
+    assert res
+    assert len(res.places) == 1
+    assert res.places[0].name == "test"
+
+
+def test_coordinator_list_reservations(coordinator, coordinator_place, coordinator_reservation):
+    stub = coordinator_place
+    res = stub.ListReservations(labgrid_coordinator_pb2.ListReservationsRequest())
+    assert res
+    assert len(res.reservations) == 1
+    assert res.reservations[0].token == coordinator_reservation
+
+def test_coordinator_place_set_remote_place_config(coordinator, coordinator_place):
+    stub = coordinator_place
+    changed = stub.GetPlace(labgrid_coordinator_pb2.GetPlaceRequest(name="test")).place.changed
+    res = stub.SetPlaceRemotePlaceConfig(
+        labgrid_coordinator_pb2.SetPlaceRemotePlaceConfigRequest(
+            placename="test", changed=changed, remote_place_config="drivers: {SerialDriver: {}}"
+        )
+    )
+    assert res
+
+    # the empty string removes the remote place config, the request needs the new change time
+    changed = stub.GetPlace(labgrid_coordinator_pb2.GetPlaceRequest(name="test")).place.changed
+    res = stub.SetPlaceRemotePlaceConfig(
+        labgrid_coordinator_pb2.SetPlaceRemotePlaceConfigRequest(placename="test", changed=changed, remote_place_config="")
+    )
+    assert res
+
+
+def test_coordinator_place_set_remote_place_config_changed(coordinator, coordinator_place):
+    stub = coordinator_place
+    changed = stub.GetPlace(labgrid_coordinator_pb2.GetPlaceRequest(name="test")).place.changed
+    request = labgrid_coordinator_pb2.SetPlaceRemotePlaceConfigRequest(
+        placename="test", changed=changed, remote_place_config="drivers: {SerialDriver: {}}"
+    )
+    assert stub.SetPlaceRemotePlaceConfig(request)
+
+    # the place changed, so the same request must be rejected now
+    with pytest.raises(grpc.RpcError) as excinfo:
+        stub.SetPlaceRemotePlaceConfig(request)
+    assert excinfo.value.code() == grpc.StatusCode.FAILED_PRECONDITION

@@ -197,22 +197,6 @@ usage: labgrid\-client add\-named\-match PATTERN NAME
 .TP
 .B name
 .UNINDENT
-.SS labgrid\-client allow
-.sp
-allow another user to access a place
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.EX
-usage: labgrid\-client allow user
-.EE
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.TP
-.B user
-<host>/<username>
-.UNINDENT
 .SS labgrid\-client audio
 .sp
 start a audio stream
@@ -308,7 +292,7 @@ Log output to FILE
 .UNINDENT
 .SS labgrid\-client create
 .sp
-add a new place with the name specified via \-\-place or the LG_PLACE environment variable
+create a new place with the name specified via \-\-place or the LG_PLACE environment variable
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -393,6 +377,17 @@ file to write into device (download only)
 .TP
 .B \-\-name <name>, \-n <name>
 optional resource name
+.UNINDENT
+.SS labgrid\-client edit
+.sp
+edit remote place config
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client edit
+.EE
+.UNINDENT
 .UNINDENT
 .SS labgrid\-client env
 .sp
@@ -835,6 +830,22 @@ usage: labgrid\-client set\-tags KEY=VALUE [KEY=VALUE ...]
 .B key=value
 use an empty value for deletion
 .UNINDENT
+.SS labgrid\-client share|allow
+.sp
+share a place with another user
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client share|allow user
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B user
+<host>/<username>
+.UNINDENT
 .SS labgrid\-client show
 .sp
 show a place and related resources
@@ -981,6 +992,22 @@ usage: labgrid\-client tmc screen {show,save}
 .TP
 .B action
 .UNINDENT
+.SS labgrid\-client unshare
+.sp
+remove another user\(aqs access to a place
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+usage: labgrid\-client unshare user
+.EE
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B user
+<host>/<username>
+.UNINDENT
 .SS labgrid\-client usb\-mux
 .sp
 switch USB Muxer
@@ -1020,7 +1047,7 @@ start a video stream
 .INDENT 3.5
 .sp
 .EX
-usage: labgrid\-client video [\-q QUALITY] [\-c CONTROLS] [\-\-name NAME]
+usage: labgrid\-client video [\-q QUALITY] [\-f] [\-c CONTROLS] [\-\-name NAME]
 .EE
 .UNINDENT
 .UNINDENT
@@ -1028,6 +1055,11 @@ usage: labgrid\-client video [\-q QUALITY] [\-c CONTROLS] [\-\-name NAME]
 .TP
 .B \-q <quality>, \-\-quality <quality>
 select a video quality (use \(aqlist\(aq to show options)
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-f, \-\-fps
+Overlay FPS statistics
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1177,8 +1209,8 @@ Various labgrid\-client commands use the following environment variable:
 This variable can be used to specify a place without using the \fB\-p\fP option, the \fB\-p\fP option overrides it.
 .SS LG_RESERVATION (previously LG_TOKEN)
 .sp
-This variable can be used to specify a reservation for the \fBwait\fP command and
-for the \fB+\fP place expansion.
+This variable can be used to specify a reservation for the \fBwait\fP and
+\fBcancel\-reservation\fP commands and for the \fB+\fP place expansion.
 .SS LG_STATE
 .sp
 This variable can be used to specify a state which the device transitions into

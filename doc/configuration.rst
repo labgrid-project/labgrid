@@ -61,7 +61,7 @@ The example would access the serial port on computer
 
 Arguments:
   - host (str): hostname of the remote host
-  - port (str): TCP port on the remote host to connect to
+  - port (int): TCP port on the remote host to connect to
   - speed (int, default=115200): baud rate of the serial port
   - protocol (str, default="rfc2217"): protocol used for connection: raw or
     rfc2217
@@ -191,6 +191,9 @@ Currently available are:
 
 ``gude8031``
   Controls *Gude Expert Power Control 8031 PDUs* and *Gude Expert Power Control 87-1210-18 PDUs* via a simple HTTP API.
+
+``gude8210``
+  Controls *Gude Expert Power Control 8210 PDUs* via SNMP.
 
 ``gude8225``
   Controls *Gude Expert Power Control 8225 PDUs* via a simple HTTP API.
@@ -612,11 +615,32 @@ interface, not CBUS ``ftdi-cbus`` gpiochips or EEPROM-configured ACBUS
 functions.
 
 Supported devices are FT2232-style devices (``0403:6010``, interfaces 1..2),
-FT4232H (``0403:6011``, interfaces 1..4), and FT232H (``0403:6014``,
-interface 1). For each interface, ``index`` selects bit ``0`` to ``7`` on
-that interface's data bus.
+FT4232H (``0403:6011``, interfaces 1..4), FT232H (``0403:6014``,
+interface 1), and FT-X series devices (``0403:6015``, interface 1). For each
+interface, ``index`` selects bit ``0`` to ``7`` on that interface's data bus.
 Writes use a read-modify-write cycle on the selected 8-bit interface to avoid
 changing unrelated bits managed by labgrid.
+
+On FT-X series devices the data bus uses the UART pins.
+
+===== ==========
+Index Pin
+===== ==========
+``0`` ``TXD``
+``1`` ``RXD``
+``2`` ``RTS#``
+``3`` ``CTS#``
+``4`` ``DTR#``
+``5`` ``DSR#``
+``6`` ``DCD#``
+``7`` ``RI#``
+===== ==========
+
+Smaller packages only bring out some of these pins. The FT234XD on the
+UMFT234XF module, for example, only has ``TXD``, ``RXD``, ``RTS#`` and
+``CTS#``.
+These chips have a single interface, so the serial port cannot be used while
+the interface is used for GPIO.
 
 .. code-block:: yaml
 
@@ -768,6 +792,8 @@ A :any:`NetworkService` describes a remote SSH connection.
 
 The example describes a remote SSH connection to the computer
 ``example.computer`` with the username ``root``.
+If ``username`` is omitted, labgrid will let SSH resolve the username through
+the local SSH configuration or the default SSH user selection.
 Set the optional password password property to make SSH login with a password
 instead of the key file.
 
@@ -780,7 +806,7 @@ These and the sudo configuration needs to be prepared by the administrator.
 
 Arguments:
   - address (str): hostname of the remote system
-  - username (str): username used by SSH
+  - username (str, default=None): optional, username used by SSH
   - password (str, default=None): optional, password used by SSH
   - port (int, default=22): port used by SSH
 
@@ -830,7 +856,7 @@ specific device from all connected supported devices use the
      channels: 'D0=CLK,D1=DATA'
 
 Arguments:
-  - driver (str): name of the sigrok driver to use
+  - driver (str, default="demo"): name of the sigrok driver to use
   - channels (str): optional, channel mapping as described in the
     ``sigrok-cli`` man page
   - channel_group (str): optional, channel group as described in the
@@ -893,6 +919,57 @@ Arguments:
 Used by:
   - `RKUSBDriver`_
 
+SamsungUSBLoader
+~~~~~~~~~~~~~~~~
+A :any:`SamsungUSBLoader` resource describes a USB device in the *Samsung
+loader state*.
+
+.. code-block:: yaml
+
+   SamsungUSBLoader:
+     match:
+       ID_PATH: pci-0000:03:00.2-usb-0:4.2.4
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `SamsungUSBDriver`_
+
+SunxiUSBLoader
+~~~~~~~~~~~~~~
+A :any:`SunxiUSBLoader` resource describes a USB device in the *Allwinner
+loader state*.
+
+.. code-block:: yaml
+
+   SunxiUSBLoader:
+     match:
+       'ID_PATH': 'pci-0000:00:14.0-usb-0:10.4.4:1.0'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `SunxiUSBDriver`_
+
+TegraUSBLoader
+~~~~~~~~~~~~~~
+A :any:`TegraUSBLoader` resource describes a USB device in the *Tegra
+loader state*.
+
+.. code-block:: yaml
+
+   TegraUSBLoader:
+     match:
+       'ID_PATH': 'pci-0000:03:00.2-usb-0:3.4.1'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+
+Used by:
+  - `TegraUSBDriver`_
+
 NetworkMXSUSBLoader
 ~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkMXSUSBLoader` describes an `MXSUSBLoader`_ resource available on
@@ -906,6 +983,21 @@ a remote computer.
 NetworkRKUSBLoader
 ~~~~~~~~~~~~~~~~~~
 A :any:`NetworkRKUSBLoader` describes an `RKUSBLoader`_ resource available on a
+remote computer.
+
+NetworkSamsungUSBLoader
+~~~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkSamsungUSBLoader` describes a `SamsungUSBLoader`_ available on a
+remote computer.
+
+NetworkSunxiUSBLoader
+~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkSunxiUSBLoader` describes a `SunxiUSBLoader`_ available on a
+remote computer.
+
+NetworkTegraUSBLoader
+~~~~~~~~~~~~~~~~~~~~~
+A :any:`NetworkTegraUSBLoader` describes a `TegraUSBLoader`_ available on a
 remote computer.
 
 AndroidUSBFastboot
@@ -935,6 +1027,8 @@ RemoteAndroidUSBFastboot
 ~~~~~~~~~~~~~~~~~~~~~~~~
 A :any:`RemoteAndroidUSBFastboot` describes a `AndroidUSBFastboot`_ resource
 available on a remote computer.
+Previously, this resource was named NetworkAndroidFastboot and this name is
+still supported for backwards compatibility.
 
 AndroidNetFastboot
 ~~~~~~~~~~~~~~~~~~
@@ -1038,6 +1132,7 @@ Arguments:
 
 Used by:
   - `OpenOCDDriver`_
+  - `OpenFPGALoaderDriver`_
   - `QuartusHPSDriver`_
 
 NetworkAlteraUSBBlaster
@@ -1061,6 +1156,7 @@ Arguments:
 
 Used by:
   - `OpenOCDDriver`_
+  - `OpenFPGALoaderDriver`_
 
 NetworkUSBDebugger
 ~~~~~~~~~~~~~~~~~~
@@ -1077,6 +1173,21 @@ which is accessible via SNMP.
    SNMPEthernetPort:
      switch: 'switch-012'
      interface: '17'
+
+Arguments:
+  - switch (str): host name of the Ethernet switch
+  - interface (str): interface name
+
+Used by:
+  - None
+
+EthernetPort
+~~~~~~~~~~~~
+An :any:`EthernetPort` resource describes a port on an Ethernet switch without
+any access method.
+The exporter exports a `SNMPEthernetPort`_ as an ``EthernetPort`` to the
+clients, where it is used by ``labgrid-client`` to look up the IP address of
+the device (e.g. for the ``ssh`` and ``scp`` subcommands).
 
 Arguments:
   - switch (str): host name of the Ethernet switch
@@ -1107,6 +1218,7 @@ Arguments:
 
 Used by:
   - `SigrokDriver`_
+  - `SigrokDmmDriver`_
 
 NetworkSigrokUSBDevice
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1402,6 +1514,35 @@ NetworkDediprogFlasher
 ~~~~~~~~~~~~~~~~~~~~~~
 A :any:`NetworkDediprogFlasher` describes a `DediprogFlasher`_ resource
 available on a remote computer.
+
+SFEmulator
+~~~~~~~~~~
+A :any:`SFEmulator` resource describes a USB-connected SPI-flash emulator.
+This allows a DUT's SPI flash to be replaced or overridden with the emulator,
+which is much faster to load than reprogramming the DUT's actual SPI flash.
+
+So far only the Dediprog EM100-PRO is supported, so there is no 'model' property
+defined. The EM100-PRO has no USB serial number, so it is normally matched by
+its USB path.
+
+.. code-block:: yaml
+
+   SFEmulator:
+     match:
+       ID_PATH: 'pci-0000:00:14.0-usb-0:3'
+     chip: 'W25Q64CV'
+
+Arguments:
+  - match (dict): key and value pairs for a udev match, see `udev Matching`_
+  - chip (str): SPI-flash chip to emulate, as accepted by ``em100 --set``
+
+Used by:
+  - `SFEmulatorDriver`_
+
+NetworkSFEmulator
+~~~~~~~~~~~~~~~~~
+A :any:`NetworkSFEmulator` describes a `SFEmulator`_ resource available on a
+remote computer.
 
 XenaManager
 ~~~~~~~~~~~
@@ -1810,6 +1951,8 @@ RemotePlace
 ~~~~~~~~~~~
 A :any:`RemotePlace` describes a set of resources attached to a labgrid remote
 place.
+Resources, drivers and options from the place's
+:ref:`remote place config <remote-place-config>` are created as well.
 
 .. code-block:: yaml
 
@@ -1822,6 +1965,10 @@ them to the internal environment.
 
 Arguments:
   - name (str): name or pattern of the remote place
+  - ignore_resources (list): optional, resources to ignore from the remote
+    place config. Given as ``<class>`` or ``<class>:<name>``.
+  - ignore_drivers (list): optional, drivers to ignore from the remote place
+    config. Given as ``<class>`` or ``<class>:<name>``.
 
 Used by:
   - potentially all drivers
@@ -2066,7 +2213,6 @@ Binds to:
 
 Implements:
   - :any:`ConsoleProtocol`
-  - :any:`ResetProtocol`
 
 Arguments:
   - txdelay (float, default=0.0): time in seconds to wait before sending a chunk
@@ -2154,7 +2300,7 @@ Arguments:
 SSHDriver
 ~~~~~~~~~
 An :any:`SSHDriver` requires a `NetworkService`_ resource and allows the
-execution of commands and file upload via network.
+execution of commands, file upload and TCP port forwarding via network.
 It uses SSH's ``ServerAliveInterval`` option to detect failed connections.
 
 If a shared SSH connection to the target is already open, it will reuse it when
@@ -2169,6 +2315,7 @@ Binds to:
 Implements:
   - :any:`CommandProtocol`
   - :any:`FileTransferProtocol`
+  - :any:`PortForwardProtocol`
 
 .. code-block:: yaml
 
@@ -2186,7 +2333,9 @@ Arguments:
     will explicitly use the SFTP protocol for file transfers instead of scp's default protocol
   - explicit_scp_mode (bool, default=False): if set to True, ``put()``, ``get()``, and ``scp()``
     will explicitly use the SCP protocol for file transfers instead of scp's default protocol
-  - username (str, default=username from `NetworkService`_): username used by SSH
+  - username (str, default=username from `NetworkService`_): optional, username used by SSH
+    If neither `SSHDriver`_ nor `NetworkService`_ specifies a username, SSH's
+    own username resolution is used.
   - password (str, default=password from `NetworkService`_): password used by SSH
   - extra_options (list or str): optional, extra options required for the SSH connection, e.g.
     defining host key algorithms
@@ -2219,8 +2368,8 @@ Arguments:
   - interrupt (str, default="\\n"): string to interrupt autoboot (use ``\\x03`` for CTRL-C)
   - init_commands (tuple): optional, tuple of commands to execute after matching the
     prompt
-  - password_prompt (str, default="enter Password: "): regex to match the U-Boot password prompt
-  - bootstring (str): optional, regex to match on Linux Kernel boot
+  - password_prompt (str, default="enter Password:"): regex to match the U-Boot password prompt
+  - bootstring (str, default="Linux version \\d"): regex to match on Linux Kernel boot
   - boot_command (str, default="run bootcmd"): boot command for booting target
   - boot_commands (dict, default={}): boot commands by name for LinuxBootProtocol boot command
   - login_timeout (int, default=30): timeout for login prompt detection in seconds
@@ -2434,6 +2583,41 @@ Arguments:
   - interface_config (str): optional, interface config in the ``openocd/scripts/interface/`` directory
   - board_config (str): optional, board config in the ``openocd/scripts/board/`` directory
   - load_commands (list of str): optional, load commands to use instead of ``init``, ``bootstrap {filename}``, ``shutdown``
+
+OpenFPGALoaderDriver
+~~~~~~~~~~~~~~~~~~~~
+
+An :any:`OpenFPGALoaderDriver` controls the openFPGALoader tool to bootstrap an FPGA chip with a
+bitstream.
+
+Lists of supported FPGA chips, boards and programming cables can be found on the project's page:
+
+- https://trabucayre.github.io/openFPGALoader/compatibility/fpga.html
+- https://trabucayre.github.io/openFPGALoader/compatibility/board.html
+- https://trabucayre.github.io/openFPGALoader/compatibility/cable.html
+
+Binds to:
+  interface:
+    - `AlteraUSBBlaster`_
+    - NetworkAlteraUSBBlaster
+    - `USBDebugger`_
+    - NetworkUSBDebugger
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+  OpenFPGALoaderDriver:
+    board: 'vcu118'
+    image: 'bitstreamkey'
+    frequency: 20000000
+
+Arguments:
+  - image (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
+    of the bitstream, if not specified when calling `load()`
+  - board (str): optional, the FPGA board identifier
+  - frequency (int): optional, force a non-default programmer frequency in Hz
 
 QuartusHPSDriver
 ~~~~~~~~~~~~~~~~
@@ -3049,6 +3233,138 @@ Arguments:
   - usb_loader (str): optional, key in :ref:`images <labgrid-device-config-images>` containing the path
     of a first-stage bootloader image to write
 
+SunxiUSBDriver
+~~~~~~~~~~~~~~
+A :any:`SunxiUSBDriver` is used to upload an image into a device in the
+*Allwinner loader state*. This is useful to bootstrap a bootloader onto a
+device.
+
+Note that sunxi is the common name for Allwinner SoCs, since they have product
+codes like sun50i, sun7i, etc.
+
+The load happens in two stages, first SPL and then U-Boot proper. SPL sets up
+DRAM, so it must run before U-Boot proper is loaded. The ``phase`` argument to
+``load()`` selects what to do:
+
+  - ``spl``: load SPL and run it
+  - ``u-boot``: write U-Boot proper to ``loadaddr``; use ``execute()`` to start
+    it
+
+With no phase, an image which the boot ROM can run, such as
+``u-boot-sunxi-with-spl.bin``, is handled in one go: SPL runs, then U-Boot
+proper is written and started. This is what ``labgrid-client bootstrap`` does.
+Any other image is treated as U-Boot proper.
+
+Binds to:
+  loader:
+    - `SunxiUSBLoader`_
+    - `NetworkSunxiUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         SunxiUSBDriver:
+           loadaddr: 0x4a000000
+   tools:
+     sunxi-fel: '/home/dev/bin/sunxi-fel'
+
+Arguments:
+  - loadaddr (int): address to use when loading U-Boot. This depends on the
+    SoC being used. The easiest way to find this value is to check the
+    *CONFIG_TEXT_BASE* value in U-Boot
+  - image (str): optional, reference to the images key for the image to load
+    when no filename is given
+
+SamsungUSBDriver
+~~~~~~~~~~~~~~~~
+A :any:`SamsungUSBDriver` is used to upload an image into a device in the
+*Samsung loader state*. This is useful to bootstrap a bootloader onto a device.
+
+The load happens in three stages: BL1, SPL and U-Boot proper.
+
+Binds to:
+  loader:
+    - `SamsungUSBLoader`_
+    - `NetworkSamsungUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         SamsungUSBDriver:
+           bl1_loadaddr: 0x02021400
+           spl_loadaddr: 0x02023400
+           loadaddr: 0x43e00000
+   images:
+     bl1: '/home/dev/exynos/snow/u-boot.bl1.bin'
+   tools:
+     smdk-usbdl: '/home/dev/bin/smdk-usbdl'
+
+Arguments:
+  - bl1_loadaddr (int): Load address of the BL1 file. This depends on the SoC
+  - spl_loadaddr (int): Load address of SPL. The easiest way to find this value
+    is to check the *CONFIG_SPL_TEXT_BASE* value in U-Boot
+  - loadaddr (int): address to use when loading U-Boot. This depends on the
+    SoC being used. The easiest way to find this value is to check the
+    *CONFIG_TEXT_BASE* value in U-Boot
+  - image (str): optional, reference to the images key for the image to load
+    when no filename is given
+  - bl1_image (str): optional, images key holding the BL1 file (default 'bl1')
+
+Images:
+  - bl1: the BL1 file which sets up the SoC
+
+TegraUSBDriver
+~~~~~~~~~~~~~~
+A :any:`TegraUSBDriver` is used to upload an image into a device in the
+*Nvidia Tegra loader state*. This is useful to bootstrap a bootloader onto a
+device.
+
+The load happens in a single stage, with the bootloader proper (e.g. U-Boot)
+sent along with a *BCT* (Boot Configuration Table) file which
+contains memory timings, etc.
+
+Binds to:
+  loader:
+    - `TegraUSBLoader`_
+    - `NetworkTegraUSBLoader`_
+
+Implements:
+  - :any:`BootstrapProtocol`
+
+.. code-block:: yaml
+
+   targets:
+     main:
+       drivers:
+         TegraUSBDriver:
+           loadaddr: 0x80108000
+   images:
+     bct: '/home/dev/tegra124/nvidia/norrin/PM370_Hynix_2GB_H5TC4G63AFR_PBA_924MHz_01212014.bct'
+   tools:
+     tegrarcm: '/home/dev/bin/tegrarcm'
+
+Arguments:
+  - loadaddr (int): address to use when loading U-Boot. This depends on the
+    SoC being used. The easiest way to find this value is to check the
+    *CONFIG_TEXT_BASE* value in U-Boot
+  - image (str): optional, reference to the images key for the image to load
+    when no filename is given
+  - bct_image (str): optional, images key holding the BCT file (default 'bct')
+
+Images:
+  - bct: the BCT (Boot Configuration Table) file, which contains memory
+    timings, etc.
+
 UUUDriver
 ~~~~~~~~~
 A :any:`UUUDriver` is used to upload an image into a device in the *NXP USB
@@ -3095,6 +3411,8 @@ Binds to:
     - `NetworkUSBSDMuxDevice`_
     - `USBSDWireDevice`_
     - `NetworkUSBSDWireDevice`_
+    - `USBSDWire3Device`_
+    - `NetworkUSBSDWire3Device`_
 
 Implements:
   - None (yet)
@@ -3413,7 +3731,7 @@ Arguments:
   - None
 
 The driver can be used in test cases by calling its ``set_mode()`` method with
-argument being "dut", "host", "off", or "client".
+argument being "dut" or "host".
 
 USBSDWire3Driver
 ~~~~~~~~~~~~~~~~
@@ -3501,7 +3819,8 @@ Arguments:
 Currently, it can be used by the ``labgrid-client`` ``tmc`` subcommands to show
 (and save) a screenshot, to show per channel measurements and to execute raw
 TMC commands.
-It only supports the *Keysight DSO-X 2000* series (with the USB ID ``0957:1798``),
+It supports the *Keysight DSO-X 2000* series (with the USB ID ``0957:1798``)
+and the *Tektronix TDS 2000* series (with the USB ID ``0699:0368``),
 but more devices can be added by extending ``on_activate()`` in
 ``labgrid/driver/usbtmcdriver.py`` and writing a corresponding backend in
 ``labgrid/driver/usbtmc/``.
@@ -3571,7 +3890,6 @@ Arguments:
   - script (str): optional, key in :ref:`images <labgrid-device-config-images>`
     containing the script to execute for writing of the flashable device
   - args (list of str): optional, list of arguments for flash script execution
-  - timeout (float): optional, timeout for script execution in seconds
 
 The FlashScriptDriver allows running arbitrary programs to flash a device.
 Some SoC or devices may require custom, one-off, or proprietary programs to
@@ -3645,6 +3963,16 @@ The DediprogFlashDriver allows using DediprogFlasher dpcmd to flash or erase SPI
 devices. It is assumed that the device flashing is an exporter wired, via a
 *Dediprog SF100 SPI NOR Flash Programmer* for instance, to the device being
 flashed.
+
+SFEmulatorDriver
+~~~~~~~~~~~~~~~~
+The :any:`SFEmulatorDriver` uses the ``em100`` tool to emulate a SPI-flash
+device on the DUT.
+
+Binds to:
+  emul:
+    - `SFEmulator`_
+    - `NetworkSFEmulator`_
 
 XenaDriver
 ~~~~~~~~~~
@@ -3898,6 +4226,7 @@ Binds to:
 
 Implements:
   - :any:`PowerProtocol`
+  - :any:`ResetProtocol`
 
 .. code-block:: yaml
 
@@ -4053,10 +4382,14 @@ method removes a file by name.
 
 ADBDriver
 ~~~~~~~~~
-The :any:`ADBDriver` allows interaction with ADB devices. It allows the 
-execution of commands, transfer of files, and rebooting of the device.
+The :any:`ADBDriver` allows interaction with ADB devices. It allows the
+execution of commands, transfer of files, TCP port forwarding and rebooting of
+the device.
 
 It can interact with both USB and TCP adb devices.
+Port forwarding with a :any:`RemoteUSBADBDevice` requires SSH port forwarding
+access to the exporter. The connection goes through ``LG_PROXY`` when set.
+See :ref:`overview-proxy-mechanism` for details.
 
 Binds to:
   device:
@@ -4067,6 +4400,7 @@ Binds to:
 Implements:
   - :any:`CommandProtocol`
   - :any:`FileTransferProtocol`
+  - :any:`PortForwardProtocol`
   - :any:`ResetProtocol`
 
 Arguments:
@@ -4646,6 +4980,36 @@ Use ``#`` for line statements (like the for loops in the example) and ``##``
 for line comments.
 Statements like ``{{ 4000 + idx }}`` are expanded based on variables in the
 Jinja2 template.
+
+Exporting `USBSerialPort`_, `IMXUSBLoader`_ and `AndroidUSBFastboot`_ resources
+on all ports of a USB hub could look like this:
+
+.. code-block:: yaml
+
+   ## LogiLink 10 port USB hub
+   # for idx, sysfs in [
+           ('1',  'pci-0000:00:10.0-usb-0:2.5'),
+           ('2',  'pci-0000:00:10.0-usb-0:2.6'),
+           ('3',  'pci-0000:00:10.0-usb-0:2.7'),
+           ('4',  'pci-0000:00:10.0-usb-0:2.4'),
+           ('5',  'pci-0000:00:10.0-usb-0:2.3'),
+           ('6',  'pci-0000:00:10.0-usb-0:2.2'),
+           ('7',  'pci-0000:00:10.0-usb-0:2.1.4'),
+           ('8',  'pci-0000:00:10.0-usb-0:2.1.3'),
+           ('9',  'pci-0000:00:10.0-usb-0:2.1.2'),
+           ('10', 'pci-0000:00:10.0-usb-0:2.1.1')]
+   usbhub-1-p{{idx}}:
+     location: "LogiLink 10 port USB hub port #{{idx}} on my desk"
+     USBSerialPort:
+       match:
+           '@ID_PATH': '{{sysfs}}:1.0'
+     IMXUSBLoader:
+       match:
+           'ID_PATH': '{{sysfs}}'
+     AndroidUSBFastboot:
+       match:
+           'ID_PATH': '{{sysfs}}'
+   # endfor
 
 The template processing also supports use of OS environment variables, using
 something like ``{{ env['FOOBAR'] }}`` to insert the content of environment

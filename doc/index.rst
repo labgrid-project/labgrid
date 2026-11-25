@@ -25,8 +25,7 @@ It currently supports:
 - integration of audio/video/measurement devices for remote development and
   testing
 - Docker/QEMU integration
-- functions to control external services such as emulated USB-Sticks and the
-  `hawkBit <https://github.com/eclipse/hawkbit>`_ deployment service
+- functions to control external services such as emulated USB-Sticks
 
 While labgrid is currently used for daily development on embedded boards and for
 automated testing, several planned features are not yet implemented and the APIs

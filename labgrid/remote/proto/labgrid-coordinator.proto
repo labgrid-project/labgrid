@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 package labgrid;
 
 service Coordinator {
@@ -41,6 +43,10 @@ service Coordinator {
 
   rpc AcquirePlace(AcquirePlaceRequest) returns (AcquirePlaceResponse) {}
 
+  rpc LeasePlace(LeasePlaceRequest) returns (LeasePlaceResponse);
+
+  rpc GetLeaseConfig(GetLeaseConfigRequest) returns (GetLeaseConfigResponse);
+
   rpc ReleasePlace(ReleasePlaceRequest) returns (ReleasePlaceResponse) {}
 
   rpc AllowPlace(AllowPlaceRequest) returns (AllowPlaceResponse) {
@@ -60,6 +66,8 @@ service Coordinator {
   }
 
   rpc RefreshReservation(RefreshReservationRequest) returns (RefreshReservationResponse) {}
+
+  rpc ExtendLease(ExtendLeaseRequest) returns (ExtendLeaseResponse);
 
   rpc GetReservations(GetReservationsRequest) returns (GetReservationsResponse) {
     option deprecated = true;
@@ -157,6 +165,8 @@ message ExporterOutMessage {
   oneof kind {
     Hello hello = 1;
     ExporterSetAcquiredRequest set_acquired_request = 2;
+    ExporterLeaseStartedRequest lease_started_request = 3;
+    ExporterLeaseExtendedRequest lease_extended_request = 4;
   };
 };
 
@@ -170,6 +180,20 @@ message ExporterSetAcquiredRequest {
   optional string place_name = 3;
   ClientIdentity client_identity = 4;
 };
+
+message ExporterLeaseStartedRequest {
+  string group_name = 1;
+  string resource_name = 2;
+  string place_name = 3;
+  uint64 duration = 4;
+}
+
+message ExporterLeaseExtendedRequest {
+  string group_name = 1;
+  string resource_name = 2;
+  optional string place_name = 3;
+  uint64 duration = 4;
+}
 
 message AddPlaceRequest {
   option deprecated = true;
@@ -316,6 +340,29 @@ message AcquirePlaceRequest {
 message AcquirePlaceResponse {
 };
 
+message LeasePlaceRequest {
+  string placename = 1;
+};
+
+message LeasePlaceResponse {
+};
+
+message ExtendLeaseRequest {
+  string token = 1;
+};
+
+message ExtendLeaseResponse {
+  Reservation reservation = 1;
+};
+
+message GetLeaseConfigRequest {}
+
+message GetLeaseConfigResponse {
+  uint32 default_lease_duration = 1;
+  uint32 default_extend_duration = 2;
+  uint32 max_lease_duration = 3;
+}
+
 message ReleasePlaceRequest {
   string placename = 1;
   optional string fromuser = 2;
@@ -372,6 +419,7 @@ message Reservation {
   map<string, string> allocations = 6;
   double created = 7;
   double timeout = 8;
+  google.protobuf.Timestamp lease_start_time = 9;
 };
 
 message CancelReservationRequest {

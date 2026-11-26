@@ -196,7 +196,6 @@ class NetNamespace:
                 )
             )
             stack.callback(lambda: socat.terminate())
-            stack.callback(lambda: print("A"))
             s.close()
             yield (port, password)
 

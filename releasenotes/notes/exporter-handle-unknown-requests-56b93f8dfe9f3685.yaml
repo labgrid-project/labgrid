@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    The exporter now handles unknown requests send to it by returning an error
+    to the user and logging a warning to esnure that users and administrators
+    are notified of necessary upgrades to the infrastructure.

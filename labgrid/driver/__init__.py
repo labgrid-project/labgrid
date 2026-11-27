@@ -15,7 +15,8 @@ from .flashromdriver import FlashromDriver
 from .onewiredriver import OneWirePIODriver
 from .powerdriver import ManualPowerDriver, ExternalPowerDriver, \
                          DigitalOutputPowerDriver, YKUSHPowerDriver, \
-                         USBPowerDriver, SiSPMPowerDriver, NetworkPowerDriver, \
+                         USBPowerDriver, LinkPiSmartHUBPowerDriver, \
+                         SiSPMPowerDriver, NetworkPowerDriver, \
                          PDUDaemonDriver
 from .usbloader import MXSUSBDriver, IMXUSBDriver, BDIMXUSBDriver, \
                        RKUSBDriver, SamsungUSBDriver, SunxiUSBDriver, \

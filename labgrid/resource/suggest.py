@@ -21,6 +21,7 @@ from .udev import (
     SunxiUSBLoader,
     TegraUSBLoader,
     USBNetworkInterface,
+    LinkPiSmartHUBPowerPort,
     SiSPMPowerPort,
     USBAudioInput,
     LXAUSBMux,
@@ -59,6 +60,7 @@ class Suggester:
         self.resources.append(SunxiUSBLoader(**args))
         self.resources.append(TegraUSBLoader(**args))
         self.resources.append(USBNetworkInterface(**args))
+        self.resources.append(LinkPiSmartHUBPowerPort(**args, index=0))
         self.resources.append(SiSPMPowerPort(**args, index=1))
         self.resources.append(USBAudioInput(**args))
         self.resources.append(LXAUSBMux(**args))

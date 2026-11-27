@@ -5037,3 +5037,30 @@ isolated
 
 name
   The name of the exporter.
+
+WTIPowerDriver
+~~~~~~~~~~~~~~
+The :any:`WTIPowerDriver` controls a single outlet on WTI NPS, IPS and NBB
+switches using their Telnet command interface. See the
+`WTI NPS-115 product page <https://www.wti.com/products/nps-115-remote-telnet-network-power-switch>`_
+for an example. Install the ``telnet`` extra.
+Disable command confirmations on the switch. Each operation opens its own
+connection; on/off commands are verified against the outlet status table.
+``cycle()`` switches off, waits ``delay`` seconds, and switches on.
+
+.. code-block:: yaml
+
+   resources:
+     WTIPowerPort:
+       host: pdu.example.com
+       index: 3
+   drivers:
+     WTIPowerDriver:
+       delay: 2.0
+       timeout: 10.0
+       port_number: 23
+
+The :any:`WTIPowerPort` resource specifies the switch hostname and an outlet
+index from 1 through 8. Set ``password`` if the switch requires one. Keep
+credentials in a private configuration. ``port_number`` is forwarded
+through labgrid's proxy manager when a proxy is configured.

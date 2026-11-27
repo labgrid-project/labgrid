@@ -60,3 +60,4 @@ from .laadriver import LAASerialDriver, LAAPowerDriver, \
                        LAAProviderDriver
 from .adb import ADBDriver
 from .sfemulatordriver import SFEmulatorDriver
+from .wtipowerdriver import WTIPowerDriver

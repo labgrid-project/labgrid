@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    ``USBStorageDriver.write_image()`` has a new ``block_size`` argument, which
+    sets the block size used by dd. The ``skip`` and ``seek`` arguments are
+    counted in blocks of this size. By default the block size is 512 bytes if
+    ``skip`` or ``seek`` is given, else 4M, as before.

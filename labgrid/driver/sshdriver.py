@@ -1,4 +1,5 @@
 """The SSHDriver uses SSH as a transport to implement CommandProtocol, FileTransferProtocol and PortForwardProtocol"""
+
 import contextlib
 import os
 import re
@@ -12,6 +13,7 @@ import warnings
 from functools import cached_property
 
 import attr
+import pexpect
 
 from ..factory import target_factory
 from ..protocol import CommandProtocol, FileTransferProtocol, PortForwardProtocol
@@ -23,6 +25,135 @@ from ..util.helper import get_free_port
 from ..util.proxy import proxymanager
 from ..util.timeout import Timeout
 from ..util.ssh import get_ssh_connect_timeout
+
+
+class SSHDriverProcess:
+    def __init__(self, sub):
+        self._sub = sub
+
+    @property
+    def exitcode(self):
+        """
+        The exit code of the process, or ``None`` if the process has not exited
+        """
+        if self._sub.isalive():
+            return None
+
+        if self._sub.exitstatus is None:
+            return -self._sub.signalstatus
+        return self._sub.exitstatus
+
+    def read_nonblocking(self, size=1, timeout=-1):
+        """
+        Reads from the remote process. For a detailed description, see
+        :py:meth:`pexpect.spawn.read_nonblocking`.
+
+        Note:
+            This does an unbuffered read from the process, meaning that it may
+            behave strangely if mixed with calls to :py:meth:`expect`.
+
+        Note:
+            The ``timeout`` is for the first character read. The call returns
+            as soon as any characters are available, which may be fewer than
+            ``size``.
+        """
+        return self._sub.read_nonblocking(size, timeout)
+
+    def read(self, size=1, timeout=-1):
+        """
+        Reads at most ``size`` bytes from the remote process. If ``EOF``
+        occurs, returns the bytes read up to that point (which may be 0).
+        ``timeout`` specifies the maximum amount of time to wait for the data.
+        A ``timeout`` of ``None`` means to wait forever (if ``EOF`` does not
+        occur first). A ``timeout`` of ``-1`` means to wait for the default
+        timeout.
+
+        If no data or ``EOF`` occurs before the timeout, a ``pexpect.TIMEOUT``
+        exception is raised. Data received so far is not lost, a later
+        :meth:`read` or :py:meth:`expect` returns it.
+
+        Note:
+            Unlike :py:meth:`read_nonblocking`, this uses the buffered process
+            output and thus works with :py:meth:`expect`.
+
+        Note:
+            Unlike :py:meth:`read_nonblocking`, the ``timeout`` is for the
+            entire call, not a single character.
+        """
+        pattern = re.compile(b".{%d}" % size, re.DOTALL)
+        if self._sub.expect([pattern, pexpect.EOF], timeout=timeout) == 0:
+            return self._sub.after
+        return self._sub.before
+
+    @step(args=["data"])
+    def write(self, data):
+        """
+        Writes data to the remote process. For a detailed description, see
+        :py:meth:`pexpect.spawn.write`
+        """
+        self._sub.write(data)
+
+    @step(result=True)
+    def poll(self):
+        """
+        Checks if the process is alive and returns the exitcode if it has
+        exited. If the process has not exited, returns ``None``
+        """
+        return self.exitcode
+
+    @step()
+    def stop(self):
+        """
+        Stops the running command, which will receive a SIGHUP
+
+        Note that not all processes will terminate on SIGHUP, specially if they
+        fork or daemonize.
+        """
+        self._sub.close(True)
+
+    @step(args=["pattern", "timeout"], result=True)
+    def expect(self, pattern, *, timeout=-1):
+        """
+        Searches through the output for a pattern, or timeout. For a detailed
+        description, see :py:meth:`pexpect.spawn.expect`.
+
+        Note:
+            This API buffers the output to look for patterns and may behave
+            unexpectedly if combined with :py:meth:`read_nonblocking`.
+        """
+        index = self._sub.expect(pattern, timeout=timeout)
+        return index, self._sub.before, self._sub.match, self._sub.after
+
+    @step(result=True)
+    def wait(self):
+        """
+        Waits for the process to terminate and returns the exit code. For
+        detailed information, see :py:meth:`pexpect.spawn.wait`.
+
+        This does not consume any output from the process, so if the process
+        produces any output it may block indefinitely, waiting for the output
+        to be consumed before it can terminate. To prevent this, use one of the
+        read() APIs to wait for EOF before calling this.
+
+        Note that if the process never exits, this will wait forever.
+        """
+        self._sub.wait()
+        return self.exitcode
+
+    @step(args=["char"])
+    def sendcontrol(self, char):
+        """
+        Sends a control character to the process. For detailed information, see
+        :py:meth:`pexpect.spawn.sendcontrol`.
+        """
+        self._sub.sendcontrol(char)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, typ, value, traceback):
+        self.stop()
+        return False
 
 
 @target_factory.reg_driver
@@ -47,6 +178,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Por
         self._scp = self._get_tool("scp")
         self._sshfs = self._get_tool("sshfs")
         self._rsync = self._get_tool("rsync")
+        self._processes = []
 
     def _get_tool(self, name):
         if self.target.env:
@@ -88,6 +220,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Por
         self._start_keepalive()
 
     def on_deactivate(self):
+        assert not self._processes, "Deactivating while a command process is running is not allowed"
         try:
             self._stop_keepalive()
         finally:
@@ -253,6 +386,46 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Por
             stderr.pop()
         return (stdout, stderr, sub.returncode)
 
+    @Driver.check_active
+    @step(args=['cmd'])
+    @contextlib.contextmanager
+    def start_process(self, cmd: str, *, timeout=30):
+        """Execute ``cmd`` on the target as a process in a pseudo-terminal (PTY)
+
+        The pseudo-terminal used by SSH merges stdout and stderr into a
+        single output stream.
+
+        ``timeout`` specifies the default timeout when reading
+
+        Yields:
+            :py:class:`SSHDriverProcess` object for interacting with the remote
+            process
+        """
+        if not self._check_keepalive():
+            raise ExecutionError("Keepalive no longer running")
+
+        cmd = f"stty -echo -opost; {cmd}"
+        complete_cmd = [self._ssh, "-o", "LogLevel=QUIET", "-x", *self.ssh_prefix,
+                        "-p", str(self.networkservice.port)]
+        if username := self._get_username():
+            complete_cmd += ["-l", username]
+        complete_cmd += [self.networkservice.address, "-tt", "--", '/bin/sh -c {}'.format(shlex.quote(cmd))]
+        self.logger.debug("Sending command: %s", complete_cmd)
+
+        try:
+            sub = pexpect.spawn(complete_cmd[0], complete_cmd[1:], echo=False, timeout=timeout)
+        except:
+            raise ExecutionError(
+                "error executing command: {}".format(complete_cmd)
+            )
+
+        with SSHDriverProcess(sub) as p:
+            self._processes.append(p)
+            try:
+                yield p
+            finally:
+                self._processes.remove(p)
+
     def interact(self, cmd=None):
         assert cmd is None or isinstance(cmd, list)
 
@@ -416,7 +589,7 @@ class SSHDriver(CommandMixin, Driver, CommandProtocol, FileTransferProtocol, Por
                 "-o", f"ControlPath={self.control.replace('%', '%%')}",
                 src, dst,
         ]
-        
+
         if self.explicit_sftp_mode and self._scp_supports_explicit_sftp_mode():
             complete_cmd.insert(1, "-s")
         if self.explicit_scp_mode and self._scp_supports_explicit_scp_mode():

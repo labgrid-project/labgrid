@@ -43,7 +43,12 @@ extensions = ['sphinx.ext.autodoc',
               'reno.sphinxext',
               'sphinxcontrib.autoprogram',
               'sphinx.ext.autosectionlabel',
+              'sphinx.ext.intersphinx',
               'sphinx_rtd_theme']
+
+intersphinx_mapping = {
+    'pexpect': ('https://pexpect.readthedocs.io/en/stable/', None),
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']

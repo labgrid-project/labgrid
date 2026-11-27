@@ -1,0 +1,11 @@
+---
+features:
+  - |
+    The :py:class:`labgrid.util.timeout.Timeout` class now accepts an integer
+    timeout value
+  - |
+    :py:class:`labgrid.driver.sshdriver.SSHDriver` now supports running
+    processes asynchronously, allowing tests to provide input and read output
+    from the process. See
+    :py:meth:`labgrid.driver.sshdriver.SSHDriver.start_process` and
+    :py:class:`labgrid.driver.sshdriver.SSHDriverProcess` for more details.

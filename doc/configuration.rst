@@ -2713,6 +2713,11 @@ target power state without user interaction.
   PDUDaemon processes commands in the background, so the actual state change
   may happen several seconds after calls to PDUDaemonDriver return.
 
+``get()`` asks PDUDaemon for the port's current state with its
+``get-port-state`` request, which reads it from the PDU.
+It raises ``NotImplementedError`` when PDUDaemon can't report the state: a
+PDUDaemon without that request, or a PDU driver that can't read the state.
+
 Binds to:
   port:
     - `PDUDaemonPort`_

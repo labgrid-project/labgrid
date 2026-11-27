@@ -457,5 +457,18 @@ class PDUDaemonDriver(Driver, PowerResetMixin, PowerProtocol):
         r.raise_for_status()
 
     @Driver.check_active
+    @step(result=True)
     def get(self):
-        raise NotImplementedError("pdudaemon does not support retrieving the port's state")
+        """The port's state from pdudaemon's get-port-state request (True:
+        on).  NotImplementedError if pdudaemon can't report it: 404 from a
+        pdudaemon without that request, 501 from a PDU driver without state."""
+        r = self._requests.get(self._build_url('get-port-state'))
+        if r.status_code in (404, 501):
+            raise NotImplementedError(
+                f"pdudaemon can't retrieve the state of {self.port.pdu} port {self.port.index}: "
+                f"{r.status_code} {r.text.strip()}")
+        r.raise_for_status()
+        state = r.json().get("state")
+        if state not in ("on", "off"):
+            raise ExecutionError(f"pdudaemon get-port-state: unexpected state {state!r}")
+        return state == "on"

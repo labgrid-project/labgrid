@@ -5,14 +5,19 @@ import argparse
 import asyncio
 import contextlib
 import enum
+import fcntl
+import io
 import os
 import pathlib
+import re
 import subprocess
 import traceback
 import logging
 import signal
 import sys
 import shlex
+import termios
+import tty
 import shutil
 import tempfile
 import json
@@ -106,6 +111,10 @@ def _get_reservation_id_from_env():
     if legacy_reservation_id:
         print("warning: LG_TOKEN is deprecated; use LG_RESERVATION instead", file=sys.stderr)
     return legacy_reservation_id
+
+
+# status, attribute, window size and colour queries the terminal replies to
+TERMINAL_QUERIES = re.compile(rb"\x1b\[[?>=]?[0-9;]*[cn]|\x1b\[1[489]t|\x1b\][0-9;]*;\?(?:\x07|\x1b\\)")
 
 
 @attr.s(eq=False)
@@ -1007,12 +1016,7 @@ class ClientSession:
                 target.activate(drv)
             return drv
 
-    def power(self):
-        place = self.get_acquired_place()
-        action = self.args.action
-        delay = self.args.delay
-        name = self.args.name
-        target = self._get_target(place)
+    def _get_power_driver(self, target, name=None):
         from ..resource.power import NetworkPowerPort, PDUDaemonPort
         from ..resource.remote import NetworkUSBPowerPort, NetworkSiSPMPowerPort, NetworkSysfsGPIO
         from ..resource import TasmotaPowerPort, NetworkYKUSHPowerPort
@@ -1044,11 +1048,24 @@ class ClientSession:
 
         if not drv:
             raise UserError("target has no compatible resource available")
+        return drv
+
+    def _power(self, place, target, action, name=None, delay=None):
+        """Run a power action, return a message to show for "get"."""
+        drv = self._get_power_driver(target, name)
         if delay is not None:
             drv.delay = delay
         res = getattr(drv, action)()
         if action == "get":
-            print(f"power{' ' + name if name else ''} for place {place.name} is {'on' if res else 'off'}")
+            return f"power{' ' + name if name else ''} for place {place.name} is {'on' if res else 'off'}"
+        return None
+
+    def power(self):
+        place = self.get_acquired_place()
+        target = self._get_target(place)
+        msg = self._power(place, target, self.args.action, self.args.name, self.args.delay)
+        if msg:
+            print(msg)
 
     def digital_io(self):
         place = self.get_acquired_place()
@@ -1112,7 +1129,9 @@ class ClientSession:
         elif action == "low":
             drv.set(False)
 
-    async def _console(self, place, target, timeout, *, logfile=None, loop=False, listen_only=False):
+    async def _console(
+        self, place, target, timeout, *, logfile=None, loop=False, listen_only=False, keep_prompt=False
+    ):
         name = self.args.name
         from ..resource import NetworkSerialPort
 
@@ -1160,36 +1179,294 @@ class ClientSession:
                 self.logger.warning("--logfile option not supported by telnet, ignoring")
 
         print(f"connecting to {resource} calling {' '.join(call)}")
-        try:
-            p = await asyncio.create_subprocess_exec(*call)
-        except FileNotFoundError as e:
-            raise ServerError(f"failed to execute remote console command: {e}")
-        while p.returncode is None:
+        if not listen_only and sys.stdin.isatty():
+            print("press Ctrl-T (Ctrl and t, no Shift) for the labgrid command prompt (Tab lists commands, q leaves)")
+            ctx = self._console_pty(place, target, call, keep_prompt=keep_prompt)
+        else:
+            ctx = contextlib.nullcontext((call, {}))
+        with ctx as (call, spawn_kwargs):
             try:
-                await asyncio.wait_for(p.wait(), 1.0)
-            except asyncio.TimeoutError:
-                # subprocess is still running
-                pass
-
-            try:
-                self._check_allowed(place)
-            except UserError:
-                p.terminate()
+                p = await asyncio.create_subprocess_exec(*call, **spawn_kwargs)
+            except FileNotFoundError as e:
+                raise ServerError(f"failed to execute remote console command: {e}")
+            while p.returncode is None:
                 try:
                     await asyncio.wait_for(p.wait(), 1.0)
                 except asyncio.TimeoutError:
-                    # try harder
-                    p.kill()
-                    await asyncio.wait_for(p.wait(), 1.0)
-                raise
+                    # subprocess is still running
+                    pass
+
+                try:
+                    self._check_allowed(place)
+                except UserError:
+                    p.terminate()
+                    try:
+                        await asyncio.wait_for(p.wait(), 1.0)
+                    except asyncio.TimeoutError:
+                        # try harder
+                        p.kill()
+                        await asyncio.wait_for(p.wait(), 1.0)
+                    raise
         if p.returncode:
             print("connection lost", file=sys.stderr)
         return p.returncode
 
+    def _console_commands(self, place, target):
+        """Return the labgrid-client commands available from the console
+        command prompt, as {command: func}. func is called with the parsed
+        arguments in a worker thread and may return a message to show."""
+        return {
+            "power": lambda args: self._power(place, target, args.action, args.name, args.delay),
+        }
+
+    @contextlib.contextmanager
+    def _console_pty(self, place, target, call, keep_prompt=False):
+        """Run the console program on a pty, forwarding the local terminal to it.
+
+        Yields the command line and keyword arguments to start the console
+        program with.
+
+        Ctrl-T opens a prompt_toolkit command prompt for the commands from
+        _console_commands(). Console output is held back while it is open.
+        It closes after each command, unless keep_prompt is set.
+        """
+        from prompt_toolkit import PromptSession
+        from prompt_toolkit.completion import NestedCompleter
+        from prompt_toolkit.key_binding import KeyBindings
+
+        if shutil.which(call[0]) is None:
+            raise ServerError(f"failed to execute remote console command: {call[0]} not found")
+        loop = asyncio.get_running_loop()
+        stdin, stdout = sys.stdin.fileno(), sys.stdout.fileno()
+        master, slave = os.openpty()
+        os.set_blocking(master, False)
+        commands = self._console_commands(place, target)
+        # use the labgrid-client subcommand parsers, so that aliases, choices and
+        # options match; argparse has no public API to access them
+        parsers = {}
+        completions = {"help": None, "q": None}
+        for name, parser in get_parser()._subparsers._group_actions[0].choices.items():
+            command = parser.prog.split()[-1]  # also for aliases
+            if command not in commands:
+                continue
+            parser.prog = command
+            parser.color = False  # Python 3.14 colours output on a tty, not the prompt's messages
+            parsers[name] = parser
+            choices = [c for a in parser._actions if not a.option_strings and a.choices for c in a.choices]
+            completions[name] = dict.fromkeys(choices) or None
+
+        # Ctrl-T Ctrl-T leaves the prompt and sends a literal Ctrl-T
+        literal = object()
+        bindings = KeyBindings()
+        bindings.add("c-t")(lambda event: event.app.exit(result=literal))
+        session = PromptSession(
+            "labgrid> ", completer=NestedCompleter.from_nested_dict(completions), key_bindings=bindings
+        )
+        prompting = False
+        prompt_task = None
+        held = bytearray()
+        held_limit = 1024 * 1024
+        dropped = False
+        busy = False
+
+        def message(msg):
+            msg = msg.rstrip("\n").replace("\n", "\r\n")
+            return f"\r\n[labgrid] {msg}\r\n".encode()
+
+        def show(msg):
+            os.write(stdout, message(msg))
+
+        def say(msg):
+            """Like show(), but held back while the prompt is open, e.g. for a
+            command started from an earlier prompt that finishes meanwhile"""
+            if prompting:
+                held.extend(message(msg))
+            else:
+                show(msg)
+
+        def resize():
+            fcntl.ioctl(master, termios.TIOCSWINSZ, fcntl.ioctl(stdin, termios.TIOCGWINSZ, b"\0" * 8))
+
+        def leave_prompt():
+            nonlocal prompting, dropped
+            prompting = False
+            # the target has stopped waiting for replies to terminal queries
+            # sent while the prompt was open, late replies would end up as input
+            os.write(stdout, TERMINAL_QUERIES.sub(b"", held))
+            held.clear()
+            if dropped:
+                say("some console output was dropped while the prompt was open")
+                dropped = False
+
+        def command_done(name, fut, say):
+            nonlocal busy
+            busy = False
+            if fut.exception():
+                say(f"{name} failed: {fut.exception()}")
+            else:
+                say(fut.result() or f"{name} done")
+
+        def run_command(line, say):
+            """Run a command line, return the future of a started command"""
+            nonlocal busy
+            try:
+                words = shlex.split(line)
+            except ValueError as e:
+                say(str(e))
+                return
+            if words in ([], ["q"]):
+                return
+            if words == ["help"]:
+                lines = []
+                for parser in dict.fromkeys(parsers.values()):
+                    aliases = [name for name, p in parsers.items() if p is parser and name != parser.prog]
+                    lines.append(parser.format_usage().strip())
+                    if aliases:
+                        lines.append(f"  (short: {', '.join(aliases)})")
+                lines.append("use <command> -h for details, q leaves the prompt")
+                say("\n".join(lines))
+                return
+            parser = parsers.get(words[0])
+            if parser is None:
+                say(f"unknown command '{words[0]}', press Tab to list commands")
+                return
+            if busy:
+                say("another command is still running")
+                return
+            # argparse prints usage, errors and -h output, then exits
+            out = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+                    args = parser.parse_args(words[1:])
+            except SystemExit:
+                say(out.getvalue())
+                return
+            line = " ".join(words)
+            busy = True
+            say(f"{line}...")
+            # commands may block (e.g. the power cycle delay), keep the console running meanwhile
+            fut = loop.run_in_executor(None, commands[parser.prog], args)
+            fut.add_done_callback(lambda f: command_done(line, f, say))
+            return fut
+
+        async def run_prompt():
+            nonlocal prompt_task
+            os.write(stdout, b"\r\n")
+            try:
+                while True:
+                    # prompt_toolkit reads the terminal itself and expects it
+                    # in its normal mode while the prompt is open
+                    termios.tcsetattr(stdin, termios.TCSADRAIN, old_attrs)
+                    try:
+                        line = await session.prompt_async()
+                    except (KeyboardInterrupt, EOFError):
+                        line = "q"
+                    if not keep_prompt or line is literal or line.strip() == "q":
+                        break
+                    # raw again while the command runs, so that Ctrl-C does
+                    # not interrupt labgrid-client; keys typed meanwhile are
+                    # read by the next prompt
+                    tty.setraw(stdin)
+                    fut = run_command(line, show)
+                    if fut:
+                        await asyncio.wait([fut])
+            finally:
+                # not when cancelled since the console has ended
+                if prompt_task:
+                    tty.setraw(stdin)
+                    loop.add_reader(stdin, from_stdin)
+                    leave_prompt()
+            prompt_task = None
+            if line is literal:
+                os.write(master, b"\x14")
+            else:
+                run_command(line, say)
+
+        def from_stdin():
+            nonlocal prompting, prompt_task
+            data = os.read(stdin, 1024)
+            if not data:
+                loop.remove_reader(stdin)
+                return
+            data, ctrl_t, rest = data.partition(b"\x14")
+            if data:
+                os.write(master, data)
+            if not ctrl_t:
+                return
+            if rest.startswith(b"\x14"):
+                # Ctrl-T Ctrl-T read in one go
+                os.write(master, b"\x14" + rest[1:])
+                return
+            # Any further input in this read is dropped, as prompt_toolkit reads
+            # the terminal itself. Typing is slow enough for that not to matter.
+            prompting = True
+            loop.remove_reader(stdin)
+            prompt_task = loop.create_task(run_prompt())
+
+        def from_master():
+            nonlocal dropped
+            try:
+                data = os.read(master, 4096)
+            except (BlockingIOError, OSError):
+                data = b""
+            if not data:
+                loop.remove_reader(master)
+                return
+            if prompting:
+                dropped |= len(held) + len(data) > held_limit
+                held.extend(data[: held_limit - len(held)])
+                return
+            os.write(stdout, data)
+
+        old_attrs = termios.tcgetattr(stdin)
+        try:
+            resize()
+            tty.setraw(stdin)
+            loop.add_signal_handler(signal.SIGWINCH, resize)
+            loop.add_reader(stdin, from_stdin)
+            loop.add_reader(master, from_master)
+            # Make the pty the controlling terminal of the console program, so
+            # it delivers signals and SIGWINCH. This is done by a python shim
+            # instead of a preexec_fn, which would force a fork() that runs
+            # gRPC's fork handlers and makes it log warnings.
+            set_ctty = (
+                "import fcntl, os, sys, termios; "
+                "fcntl.ioctl(0, termios.TIOCSCTTY, 0); "
+                "os.execvp(sys.argv[1], sys.argv[1:])"
+            )
+            yield (
+                [sys.executable, "-I", "-c", set_ctty, *call],
+                {
+                    "stdin": slave,
+                    "stdout": slave,
+                    "stderr": slave,
+                    "start_new_session": True,
+                },
+            )
+        finally:
+            loop.remove_reader(stdin)
+            if prompt_task:
+                prompt_task, task = None, prompt_task
+                task.cancel()
+            if prompting:
+                leave_prompt()
+            from_master()  # flush the console program's last output
+            loop.remove_reader(master)
+            loop.remove_signal_handler(signal.SIGWINCH)
+            termios.tcsetattr(stdin, termios.TCSAFLUSH, old_attrs)
+            os.close(slave)
+            os.close(master)
+
     async def console(self, place, target):
         while True:
             res = await self._console(
-                place, target, 10.0, logfile=self.args.logfile, loop=self.args.loop, listen_only=self.args.listenonly
+                place,
+                target,
+                10.0,
+                logfile=self.args.logfile,
+                loop=self.args.loop,
+                listen_only=self.args.listenonly,
+                keep_prompt=self.args.keep_prompt,
             )
             # place released
             if res == 255:
@@ -2279,6 +2556,12 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     )
     subparser.add_argument("name", help="optional resource name", nargs="?")
     subparser.add_argument("--logfile", metavar="FILE", help="Log output to FILE", default=None)
+    subparser.add_argument(
+        "--keep-prompt",
+        action=argparse.BooleanOptionalAction,
+        default=os.environ.get("LG_CONSOLE_KEEP_PROMPT", "").strip().lower() in {"1", "true"},
+        help="keep the Ctrl-T command prompt open after a command until q or Ctrl-C",
+    )
     subparser.set_defaults(func=ClientSession.console)
 
     subparser = subparsers.add_parser("dfu", help="communicate with device in DFU mode")

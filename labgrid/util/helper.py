@@ -35,6 +35,7 @@ def set_nonblocking(fd):
     flags = fcntl.fcntl(fd, fcntl.F_GETFL)
     fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
+
 @attr.s
 class ProcessWrapper:
     callbacks = attr.ib(default=attr.Factory(list))

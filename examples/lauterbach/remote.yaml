@@ -1,0 +1,13 @@
+targets:
+  main:
+    resources:
+      RemotePlace:
+        name: demo2
+    drivers:
+      LauterbachDriver:
+        enable_rcl: false
+        script: ./blackpill.cmm
+        t32_sys: ~/t32
+      SerialDriver:
+        txdelay: 0.05
+      USBPowerDriver: {}

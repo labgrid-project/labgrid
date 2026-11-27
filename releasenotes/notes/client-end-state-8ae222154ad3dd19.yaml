@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    labgrid-client has a new ``-e``/``--end-state`` option, and a matching
+    ``LG_END_STATE`` environment variable, which switch the strategy into a
+    state after the command, e.g. to power the board off. This happens even if
+    the command fails. It complements the existing ``-s``/``--state`` option.

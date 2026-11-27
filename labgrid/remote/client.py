@@ -139,6 +139,9 @@ class ClientSession:
         """Actions which are executed if a connection is successfully opened."""
         self.stopping = asyncio.Event()
 
+        # Target from the environment config, used to set the end state
+        self.env_target = None
+
         # It seems since https://github.com/grpc/grpc/pull/34647, the
         # ping_timeout_ms default of 60 seconds overrides keepalive_timeout_ms,
         # so set it as well.
@@ -809,7 +812,7 @@ class ClientSession:
                 raise UserError(
                     f"Place {place.name} is already acquired by {place.acquired}. To work simultaneously, {user} can execute {sharehelp}"
                 )
-        if not self.args.allow_unmatched:
+        if not getattr(self.args, "allow_unmatched", False):
             self.check_matches(place)
 
         request = labgrid_coordinator_pb2.AcquirePlaceRequest(placename=place.name)
@@ -820,6 +823,19 @@ class ClientSession:
             print(f"acquired place {place.name}")
         except grpc.aio.AioRpcError as e:
             raise ServerError(e.details())
+
+    async def acquire_for_command(self):
+        """Acquire the place for the duration of a command, unless it already is
+
+        Returns:
+            str: Name of the place, if it was acquired here and so must be
+            released afterwards, else None
+        """
+        place = self.get_place()
+        if place.acquired:
+            return None
+        await self._acquire_place(place.name)
+        return place.name
 
     async def release(self):
         errors = []
@@ -839,10 +855,12 @@ class ClientSession:
         """Release a previously acquired place"""
         place = self.get_place(place)
         if not place.acquired:
+            if getattr(self.args, "auto", False):
+                return
             raise UserError(f"place {place.name} is not acquired")
         _, user = place.acquired.split("/")
         if user != self.getuser():
-            if not self.args.kick:
+            if not getattr(self.args, "kick", False):
                 raise UserError(
                     f"place {place.name} is acquired by a different user ({place.acquired}), use --kick if you are sure"
                 )  # pylint: disable=line-too-long
@@ -958,6 +976,7 @@ class ClientSession:
                     print(f"Selected role {self.role} from configuration file")
             target = self.env.get_target(self.role)
         if target:
+            self.env_target = target
             if self.args.state:
                 strategy = target.get_driver("Strategy")
                 if self.args.initial_state:
@@ -975,6 +994,18 @@ class ClientSession:
             target = Target(place.name, env=self.env)
             RemotePlace(target, name=place.name)
         return target
+
+    def set_end_state(self):
+        """Switch the strategy into the end state, if one is set
+
+        This only happens if the command used a target from the environment
+        config, as with the state set by -s
+        """
+        if not self.args.end_state or not self.env_target:
+            return
+        strategy = self.env_target.get_driver("Strategy")
+        print(f"Transitioning into state {self.args.end_state}")
+        strategy.transition(self.args.end_state)
 
     def _get_driver_or_new(self, target, cls, *, name=None, activate=True):
         """
@@ -2139,6 +2170,19 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
         help="strategy state to force into before switching to desired state",
     )
     parser.add_argument(
+        "-e",
+        "--end-state",
+        type=str,
+        help="strategy state to switch into after the command (default: value from env variable LG_END_STATE)",
+    )
+    parser.add_argument(
+        "-a",
+        "--acquire",
+        action="store_true",
+        default=False,
+        help="acquire the place before the command, if needed, and release it afterwards",
+    )
+    parser.add_argument(
         "-d", "--debug", action="store_true", default=False, help="enable debug mode (show python tracebacks)"
     )
     parser.add_argument("-v", "--verbose", action="count", default=0)
@@ -2234,6 +2278,9 @@ def get_parser(auto_doc_mode=False) -> "argparse.ArgumentParser | AutoProgramArg
     subparser = subparsers.add_parser("release", aliases=("unlock",), help="release a place")
     subparser.add_argument(
         "-k", "--kick", action="store_true", help="release a place even if it is acquired by a different user"
+    )
+    subparser.add_argument(
+        "-a", "--auto", action="store_true", help="do nothing if the place is not acquired, rather than failing"
     )
     subparser.set_defaults(func=ClientSession.release, needs_resources=False)
 
@@ -2561,6 +2608,7 @@ def main():
     state = os.environ.get("STATE", None)
     state = os.environ.get("LG_STATE", state)
     initial_state = os.environ.get("LG_INITIAL_STATE", None)
+    end_state = os.environ.get("LG_END_STATE", None)
 
     parser = get_parser()
 
@@ -2584,6 +2632,9 @@ def main():
     if args.initial_state is None:
         args.initial_state = initial_state
 
+    if args.end_state is None:
+        args.end_state = end_state
+
     if args.command == "complete":
         args.needs_resources = args.type == "resources"
 
@@ -2602,11 +2653,18 @@ def main():
     if args.debug or args.verbose > 2:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    if not args.config and (args.state or args.initial_state):
+    if not args.config and (args.state or args.initial_state or args.end_state):
         print("Setting the state requires a configuration file", file=sys.stderr)
         exit(1)
     if args.initial_state and not args.state:
         print("Setting the initial state requires a desired state", file=sys.stderr)
+        exit(1)
+    if args.acquire and getattr(args, "func", None) in (
+        ClientSession.acquire,
+        ClientSession.release,
+        ClientSession.release_from,
+    ):
+        print(f"The -a/--acquire option cannot be used with {args.command}", file=sys.stderr)
         exit(1)
 
     if args.proxy:
@@ -2678,16 +2736,26 @@ def main():
             logging.debug("Started session")
 
             try:
-                if inspect.iscoroutinefunction(args.func):
-                    if getattr(args.func, "needs_target", False):
-                        place = session.get_acquired_place()
-                        target = session._get_target(place)
-                        coro = args.func(session, place, target)
+                acquired = None
+                if args.acquire:
+                    acquired = session.loop.run_until_complete(session.acquire_for_command())
+                try:
+                    if inspect.iscoroutinefunction(args.func):
+                        if getattr(args.func, "needs_target", False):
+                            place = session.get_acquired_place()
+                            target = session._get_target(place)
+                            coro = args.func(session, place, target)
+                        else:
+                            coro = args.func(session)
+                        session.loop.run_until_complete(coro)
                     else:
-                        coro = args.func(session)
-                    session.loop.run_until_complete(coro)
-                else:
-                    args.func(session)
+                        args.func(session)
+                finally:
+                    try:
+                        session.set_end_state()
+                    finally:
+                        if acquired:
+                            session.loop.run_until_complete(session._release_place(acquired))
             finally:
                 logging.debug("Stopping session")
                 session.loop.run_until_complete(session.stop())
